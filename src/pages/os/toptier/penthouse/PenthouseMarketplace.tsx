@@ -801,6 +801,103 @@ export default function PenthouseMarketplace() {
                 </>
               )}
 
+              {/* ═══ VEHICLE FORM ═══ */}
+              {formTable === 'tt_vehicles' && (
+                <>
+                  <div>
+                    <Label className="text-white/50 text-xs">Vehicle Image</Label>
+                    <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
+                    {formData.image_url ? (
+                      <div className="relative mt-1">
+                        <img src={formData.image_url} alt="" className="w-full h-40 rounded-lg object-cover border border-white/10" />
+                        <Button size="sm" variant="ghost" className="absolute top-1 right-1 h-6 w-6 bg-black/60 p-0" onClick={() => setFormData((d: any) => ({ ...d, image_url: null }))}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button variant="outline" className="w-full mt-1 border-dashed border-white/10 text-white/40" onClick={() => fileRef.current?.click()} disabled={uploading}>
+                        {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                        {uploading ? 'Uploading...' : 'Upload Photo'}
+                      </Button>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-white/50 text-xs">Gallery Images</Label>
+                    <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden" onChange={handleGalleryUpload} />
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {(formData.gallery_images || []).map((url: string, i: number) => (
+                        <div key={i} className="relative">
+                          <img src={url} alt="" className="h-16 w-20 rounded object-cover border border-white/10" />
+                          <button className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 flex items-center justify-center" onClick={() => removeGalleryImage(i)}>
+                            <X className="h-2.5 w-2.5 text-white" />
+                          </button>
+                        </div>
+                      ))}
+                      <Button variant="outline" className="h-16 w-20 border-dashed border-white/10 text-white/30 text-xs" onClick={() => galleryRef.current?.click()} disabled={galleryUploading}>
+                        {galleryUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-white/50 text-xs">Name</Label><Input className="bg-white/5 border-white/10 text-white" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
+                    <div><Label className="text-white/50 text-xs">Type</Label>
+                      <Select value={formData.type || 'exotic_car'} onValueChange={v => setFormData({ ...formData, type: v })}>
+                        <SelectTrigger className="bg-white/5 border-white/10 text-white"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="black_truck">Black Truck</SelectItem>
+                          <SelectItem value="exotic_car">Exotic Car</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div><Label className="text-white/50 text-xs">Make</Label><Input className="bg-white/5 border-white/10 text-white" value={formData.make || ''} onChange={e => setFormData({ ...formData, make: e.target.value })} /></div>
+                    <div><Label className="text-white/50 text-xs">Model</Label><Input className="bg-white/5 border-white/10 text-white" value={formData.model || ''} onChange={e => setFormData({ ...formData, model: e.target.value })} /></div>
+                    <div><Label className="text-white/50 text-xs">Year</Label><Input type="number" className="bg-white/5 border-white/10 text-white" value={formData.year || ''} onChange={e => setFormData({ ...formData, year: parseInt(e.target.value) || null })} /></div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div><Label className="text-white/50 text-xs">Color</Label><Input className="bg-white/5 border-white/10 text-white" value={formData.color || ''} onChange={e => setFormData({ ...formData, color: e.target.value })} /></div>
+                    <div><Label className="text-white/50 text-xs">Plate Number</Label><Input className="bg-white/5 border-white/10 text-white" value={formData.plate_number || ''} onChange={e => setFormData({ ...formData, plate_number: e.target.value })} /></div>
+                    <div><Label className="text-white/50 text-xs">Seats</Label><Input type="number" className="bg-white/5 border-white/10 text-white" value={formData.seats || ''} onChange={e => setFormData({ ...formData, seats: parseInt(e.target.value) || null })} /></div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div><Label className="text-white/50 text-xs">Base Price ($)</Label><Input type="number" className="bg-white/5 border-white/10 text-white" value={formData.base_price || ''} onChange={e => setFormData({ ...formData, base_price: e.target.value })} /></div>
+                    <div><Label className="text-white/50 text-xs">Daily Rate ($)</Label><Input type="number" className="bg-white/5 border-white/10 text-white" value={formData.daily_rate || ''} onChange={e => setFormData({ ...formData, daily_rate: e.target.value })} /></div>
+                    <div><Label className="text-white/50 text-xs">Sort Order</Label><Input type="number" className="bg-white/5 border-white/10 text-white" value={formData.sort_order ?? 0} onChange={e => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })} /></div>
+                  </div>
+                  <div><Label className="text-white/50 text-xs">Location</Label><Input className="bg-white/5 border-white/10 text-white" value={formData.location || ''} onChange={e => setFormData({ ...formData, location: e.target.value })} /></div>
+                  <div><Label className="text-white/50 text-xs">Description</Label><Textarea className="bg-white/5 border-white/10 text-white min-h-[80px]" value={formData.description || ''} onChange={e => setFormData({ ...formData, description: e.target.value })} /></div>
+                  <div><Label className="text-white/50 text-xs">Notes (Internal)</Label><Textarea className="bg-white/5 border-white/10 text-white min-h-[60px]" value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })} /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-white/50 text-xs">Status</Label>
+                      <Select value={formData.status || 'active'} onValueChange={v => setFormData({ ...formData, status: v })}>
+                        <SelectTrigger className="bg-white/5 border-white/10 text-white"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                          <SelectItem value="maintenance">Maintenance</SelectItem>
+                          <SelectItem value="reserved">Reserved</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center gap-3 pt-5">
+                      <Switch checked={formData.featured || false} onCheckedChange={v => setFormData({ ...formData, featured: v })} />
+                      <Label className="text-white/60 text-xs">Featured</Label>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-3">
+                      <Switch checked={formData.is_active ?? true} onCheckedChange={v => setFormData({ ...formData, is_active: v })} />
+                      <Label className="text-white/60 text-xs">Active</Label>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Switch checked={formData.is_popular || false} onCheckedChange={v => setFormData({ ...formData, is_popular: v })} />
+                      <Label className="text-white/60 text-xs">Popular</Label>
+                    </div>
+                  </div>
+                </>
+              )}
+
               {/* ═══ CHARTER FORM ═══ */}
               {formTable === 'tt_charter_requests' && (
                 <>
