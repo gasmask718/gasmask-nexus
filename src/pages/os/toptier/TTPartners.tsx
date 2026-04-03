@@ -91,8 +91,7 @@ export default function TTPartners() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from('tt_partners').update({ status }).eq('id', id);
-      if (error) throw error;
+      await patchTopTierData('partners', { 'id': `eq.${id}` }, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tt-partners'] });
