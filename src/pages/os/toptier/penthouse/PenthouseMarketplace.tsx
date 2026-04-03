@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 import {
   ShoppingBag, Car, Plane, Sparkles, ToggleLeft, ToggleRight,
   Edit, Trash2, Plus, Loader2, Upload, X, Image as ImageIcon,
-  Star, MapPin, Clock, Users, ArrowUpDown
+  Star, MapPin, Clock, Users, ArrowUpDown, Truck
 } from 'lucide-react';
 
 type FormMode = 'create' | 'edit';
@@ -43,6 +43,11 @@ export default function PenthouseMarketplace() {
   const { data: jets = [] } = useQuery({
     queryKey: ['ph-jets'],
     queryFn: () => fetchTopTierData('tt_private_jets', { select: '*', order: 'sort_order.asc,created_at.desc' }),
+  });
+
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['ph-vehicles'],
+    queryFn: () => fetchTopTierData('tt_vehicles', { select: '*', order: 'sort_order.asc,created_at.desc' }),
   });
 
   const { data: charters = [] } = useQuery({
@@ -70,7 +75,7 @@ export default function PenthouseMarketplace() {
     if (file.size > 10 * 1024 * 1024) { toast.error('Max 10MB'); return; }
     setUploading(true);
     try {
-      const folder = formTable === 'tt_private_jets' ? 'jets' : 'experiences';
+      const folder = formTable === 'tt_private_jets' ? 'jets' : formTable === 'tt_vehicles' ? 'vehicles' : 'experiences';
       const url = await uploadFile(file, folder);
       const field = formTable === 'tt_private_jets' ? 'photo_url' : 'image_url';
       setFormData((d: any) => ({ ...d, [field]: url }));
@@ -84,7 +89,7 @@ export default function PenthouseMarketplace() {
     if (!files?.length) return;
     setGalleryUploading(true);
     try {
-      const folder = formTable === 'tt_private_jets' ? 'jets/gallery' : 'experiences/gallery';
+      const folder = formTable === 'tt_private_jets' ? 'jets/gallery' : formTable === 'tt_vehicles' ? 'vehicles/gallery' : 'experiences/gallery';
       const urls: string[] = [];
       for (const file of Array.from(files)) {
         if (file.size > 10 * 1024 * 1024) continue;
@@ -117,7 +122,34 @@ export default function PenthouseMarketplace() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ph-experiences'] });
       queryClient.invalidateQueries({ queryKey: ['ph-jets'] });
+      queryClient.invalidateQueries({ queryKey: ['ph-vehicles'] });
       toast.success('Status toggled');
+    },
+  });
+
+  const toggleActive = useMutation({
+    mutationFn: async ({ id, currentActive }: { id: string; currentActive: boolean }) => {
+      const result = await patchTopTierData('tt_vehicles', { id: `eq.${id}` }, { is_active: !currentActive, updated_at: new Date().toISOString() });
+      const actorId = await getActorId();
+      await logPenthouseAction({ action: 'toggle_vehicle_active', target_type: 'tt_vehicles', target_id: id, actor_user_id: actorId, before: { is_active: currentActive }, after: { is_active: !currentActive } });
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ph-vehicles'] });
+      toast.success('Active status toggled');
+    },
+  });
+
+  const togglePopular = useMutation({
+    mutationFn: async ({ id, current }: { id: string; current: boolean }) => {
+      const result = await patchTopTierData('tt_vehicles', { id: `eq.${id}` }, { is_popular: !current, updated_at: new Date().toISOString() });
+      const actorId = await getActorId();
+      await logPenthouseAction({ action: 'toggle_vehicle_popular', target_type: 'tt_vehicles', target_id: id, actor_user_id: actorId, before: { is_popular: current }, after: { is_popular: !current } });
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ph-vehicles'] });
+      toast.success('Popular status toggled');
     },
   });
 
@@ -131,6 +163,7 @@ export default function PenthouseMarketplace() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ph-experiences'] });
       queryClient.invalidateQueries({ queryKey: ['ph-jets'] });
+      queryClient.invalidateQueries({ queryKey: ['ph-vehicles'] });
       toast.success('Featured toggled');
     },
   });
@@ -151,6 +184,7 @@ export default function PenthouseMarketplace() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ph-experiences'] });
       queryClient.invalidateQueries({ queryKey: ['ph-jets'] });
+      queryClient.invalidateQueries({ queryKey: ['ph-vehicles'] });
       queryClient.invalidateQueries({ queryKey: ['ph-charters'] });
       setFormOpen(false);
       toast.success(formMode === 'create' ? 'Created' : 'Updated');
@@ -167,6 +201,7 @@ export default function PenthouseMarketplace() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ph-experiences'] });
       queryClient.invalidateQueries({ queryKey: ['ph-jets'] });
+      queryClient.invalidateQueries({ queryKey: ['ph-vehicles'] });
       setDeleteConfirm(null);
       toast.success('Deleted');
     },
@@ -213,10 +248,11 @@ export default function PenthouseMarketplace() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         {[
           { label: 'Experiences', count: experiences.length, featured: experiences.filter((e: any) => e.featured).length, icon: Sparkles },
           { label: 'Private Jets', count: jets.length, featured: jets.filter((j: any) => j.featured).length, icon: Plane },
+          { label: 'Vehicles', count: vehicles.length, featured: vehicles.filter((v: any) => v.featured).length, icon: Truck },
           { label: 'Charter Requests', count: charters.length, featured: 0, icon: Car },
         ].map((s, i) => (
           <Card key={i} className="bg-[#111] border-white/5">
@@ -236,6 +272,7 @@ export default function PenthouseMarketplace() {
         <TabsList className="bg-[#111] border border-white/5">
           <TabsTrigger value="experiences" className="data-[state=active]:bg-[#C9A84C]/10 data-[state=active]:text-[#C9A84C]">Experiences</TabsTrigger>
           <TabsTrigger value="jets" className="data-[state=active]:bg-[#C9A84C]/10 data-[state=active]:text-[#C9A84C]">Private Jets</TabsTrigger>
+          <TabsTrigger value="vehicles" className="data-[state=active]:bg-[#C9A84C]/10 data-[state=active]:text-[#C9A84C]">Vehicles</TabsTrigger>
           <TabsTrigger value="charters" className="data-[state=active]:bg-[#C9A84C]/10 data-[state=active]:text-[#C9A84C]">Charter Requests</TabsTrigger>
         </TabsList>
 
@@ -370,7 +407,156 @@ export default function PenthouseMarketplace() {
           </Card>
         </TabsContent>
 
-        {/* CHARTERS TAB */}
+        {/* VEHICLES TAB */}
+        <TabsContent value="vehicles">
+          <div className="flex justify-end mb-3">
+            <Button onClick={() => openCreate('tt_vehicles')} className="bg-[#C9A84C] hover:bg-[#B89A3C] text-black text-xs h-8">
+              <Plus className="h-3 w-3 mr-1" /> New Vehicle
+            </Button>
+          </div>
+
+          {/* Black Trucks */}
+          {(() => {
+            const blackTrucks = vehicles.filter((v: any) => v.type === 'black_truck');
+            const exoticCars = vehicles.filter((v: any) => v.type !== 'black_truck');
+            return (
+              <>
+                <h3 className="text-sm font-semibold text-white/60 mb-2 flex items-center gap-2"><Truck className="h-4 w-4" /> Black Trucks ({blackTrucks.length})</h3>
+                <Card className="bg-[#111] border-white/5 mb-6">
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-white/5">
+                          <TableHead className="text-white/40">Image</TableHead>
+                          <TableHead className="text-white/40">Name</TableHead>
+                          <TableHead className="text-white/40">Make / Model</TableHead>
+                          <TableHead className="text-white/40">Price</TableHead>
+                          <TableHead className="text-white/40">Status</TableHead>
+                          <TableHead className="text-white/40">Active</TableHead>
+                          <TableHead className="text-white/40">Popular</TableHead>
+                          <TableHead className="text-white/40">Featured</TableHead>
+                          <TableHead className="text-white/40">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {blackTrucks.map((v: any) => (
+                          <TableRow key={v.id} className="border-white/5 hover:bg-white/[0.02]">
+                            <TableCell>
+                              {v.image_url ? (
+                                <img src={v.image_url} alt="" className="h-10 w-14 rounded object-cover border border-white/10" />
+                              ) : (
+                                <div className="h-10 w-14 rounded bg-white/5 flex items-center justify-center"><Truck className="h-4 w-4 text-white/20" /></div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-white/80 text-sm font-medium">{v.name}</TableCell>
+                            <TableCell className="text-white/50 text-sm">{[v.make, v.model].filter(Boolean).join(' ') || '—'}</TableCell>
+                            <TableCell className="text-[#C9A84C] text-sm font-mono">{v.base_price ? `$${Number(v.base_price).toLocaleString()}` : '—'}</TableCell>
+                            <TableCell>{statusBadge(v.status || 'active')}</TableCell>
+                            <TableCell>
+                              <button onClick={() => toggleActive.mutate({ id: v.id, currentActive: v.is_active })}>
+                                {v.is_active ? <ToggleRight className="h-4 w-4 text-emerald-400" /> : <ToggleLeft className="h-4 w-4 text-white/20" />}
+                              </button>
+                            </TableCell>
+                            <TableCell>
+                              <button onClick={() => togglePopular.mutate({ id: v.id, current: !!v.is_popular })}>
+                                <Star className={`h-4 w-4 ${v.is_popular ? 'text-amber-400 fill-amber-400' : 'text-white/15'}`} />
+                              </button>
+                            </TableCell>
+                            <TableCell>
+                              <button onClick={() => toggleFeatured.mutate({ table: 'tt_vehicles', id: v.id, current: !!v.featured })}>
+                                <Star className={`h-4 w-4 ${v.featured ? 'text-[#C9A84C] fill-[#C9A84C]' : 'text-white/15'}`} />
+                              </button>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="ghost" className="h-7 text-xs text-blue-400" onClick={() => openEdit('tt_vehicles', v)}>
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400" onClick={() => setDeleteConfirm({ table: 'tt_vehicles', id: v.id, title: v.name })}>
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {blackTrucks.length === 0 && (
+                          <TableRow><TableCell colSpan={9} className="text-center text-white/30 py-6">No black trucks</TableCell></TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+
+                <h3 className="text-sm font-semibold text-white/60 mb-2 flex items-center gap-2"><Car className="h-4 w-4" /> Exotic Cars ({exoticCars.length})</h3>
+                <Card className="bg-[#111] border-white/5">
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-white/5">
+                          <TableHead className="text-white/40">Image</TableHead>
+                          <TableHead className="text-white/40">Name</TableHead>
+                          <TableHead className="text-white/40">Make / Model</TableHead>
+                          <TableHead className="text-white/40">Price</TableHead>
+                          <TableHead className="text-white/40">Status</TableHead>
+                          <TableHead className="text-white/40">Active</TableHead>
+                          <TableHead className="text-white/40">Popular</TableHead>
+                          <TableHead className="text-white/40">Featured</TableHead>
+                          <TableHead className="text-white/40">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {exoticCars.map((v: any) => (
+                          <TableRow key={v.id} className="border-white/5 hover:bg-white/[0.02]">
+                            <TableCell>
+                              {v.image_url ? (
+                                <img src={v.image_url} alt="" className="h-10 w-14 rounded object-cover border border-white/10" />
+                              ) : (
+                                <div className="h-10 w-14 rounded bg-white/5 flex items-center justify-center"><Car className="h-4 w-4 text-white/20" /></div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-white/80 text-sm font-medium">{v.name}</TableCell>
+                            <TableCell className="text-white/50 text-sm">{[v.make, v.model].filter(Boolean).join(' ') || '—'}</TableCell>
+                            <TableCell className="text-[#C9A84C] text-sm font-mono">{v.base_price ? `$${Number(v.base_price).toLocaleString()}` : '—'}</TableCell>
+                            <TableCell>{statusBadge(v.status || 'active')}</TableCell>
+                            <TableCell>
+                              <button onClick={() => toggleActive.mutate({ id: v.id, currentActive: v.is_active })}>
+                                {v.is_active ? <ToggleRight className="h-4 w-4 text-emerald-400" /> : <ToggleLeft className="h-4 w-4 text-white/20" />}
+                              </button>
+                            </TableCell>
+                            <TableCell>
+                              <button onClick={() => togglePopular.mutate({ id: v.id, current: !!v.is_popular })}>
+                                <Star className={`h-4 w-4 ${v.is_popular ? 'text-amber-400 fill-amber-400' : 'text-white/15'}`} />
+                              </button>
+                            </TableCell>
+                            <TableCell>
+                              <button onClick={() => toggleFeatured.mutate({ table: 'tt_vehicles', id: v.id, current: !!v.featured })}>
+                                <Star className={`h-4 w-4 ${v.featured ? 'text-[#C9A84C] fill-[#C9A84C]' : 'text-white/15'}`} />
+                              </button>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="ghost" className="h-7 text-xs text-blue-400" onClick={() => openEdit('tt_vehicles', v)}>
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400" onClick={() => setDeleteConfirm({ table: 'tt_vehicles', id: v.id, title: v.name })}>
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {exoticCars.length === 0 && (
+                          <TableRow><TableCell colSpan={9} className="text-center text-white/30 py-6">No exotic cars</TableCell></TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </>
+            );
+          })()}
+        </TabsContent>
+
         <TabsContent value="charters">
           <Card className="bg-[#111] border-white/5">
             <CardContent className="p-0">
@@ -610,6 +796,103 @@ export default function PenthouseMarketplace() {
                     <div className="flex items-center gap-3 pt-5">
                       <Switch checked={formData.featured || false} onCheckedChange={v => setFormData({ ...formData, featured: v })} />
                       <Label className="text-white/60 text-xs">Featured</Label>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ═══ VEHICLE FORM ═══ */}
+              {formTable === 'tt_vehicles' && (
+                <>
+                  <div>
+                    <Label className="text-white/50 text-xs">Vehicle Image</Label>
+                    <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
+                    {formData.image_url ? (
+                      <div className="relative mt-1">
+                        <img src={formData.image_url} alt="" className="w-full h-40 rounded-lg object-cover border border-white/10" />
+                        <Button size="sm" variant="ghost" className="absolute top-1 right-1 h-6 w-6 bg-black/60 p-0" onClick={() => setFormData((d: any) => ({ ...d, image_url: null }))}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button variant="outline" className="w-full mt-1 border-dashed border-white/10 text-white/40" onClick={() => fileRef.current?.click()} disabled={uploading}>
+                        {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                        {uploading ? 'Uploading...' : 'Upload Photo'}
+                      </Button>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-white/50 text-xs">Gallery Images</Label>
+                    <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden" onChange={handleGalleryUpload} />
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {(formData.gallery_images || []).map((url: string, i: number) => (
+                        <div key={i} className="relative">
+                          <img src={url} alt="" className="h-16 w-20 rounded object-cover border border-white/10" />
+                          <button className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 flex items-center justify-center" onClick={() => removeGalleryImage(i)}>
+                            <X className="h-2.5 w-2.5 text-white" />
+                          </button>
+                        </div>
+                      ))}
+                      <Button variant="outline" className="h-16 w-20 border-dashed border-white/10 text-white/30 text-xs" onClick={() => galleryRef.current?.click()} disabled={galleryUploading}>
+                        {galleryUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-white/50 text-xs">Name</Label><Input className="bg-white/5 border-white/10 text-white" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
+                    <div><Label className="text-white/50 text-xs">Type</Label>
+                      <Select value={formData.type || 'exotic_car'} onValueChange={v => setFormData({ ...formData, type: v })}>
+                        <SelectTrigger className="bg-white/5 border-white/10 text-white"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="black_truck">Black Truck</SelectItem>
+                          <SelectItem value="exotic_car">Exotic Car</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div><Label className="text-white/50 text-xs">Make</Label><Input className="bg-white/5 border-white/10 text-white" value={formData.make || ''} onChange={e => setFormData({ ...formData, make: e.target.value })} /></div>
+                    <div><Label className="text-white/50 text-xs">Model</Label><Input className="bg-white/5 border-white/10 text-white" value={formData.model || ''} onChange={e => setFormData({ ...formData, model: e.target.value })} /></div>
+                    <div><Label className="text-white/50 text-xs">Year</Label><Input type="number" className="bg-white/5 border-white/10 text-white" value={formData.year || ''} onChange={e => setFormData({ ...formData, year: parseInt(e.target.value) || null })} /></div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div><Label className="text-white/50 text-xs">Color</Label><Input className="bg-white/5 border-white/10 text-white" value={formData.color || ''} onChange={e => setFormData({ ...formData, color: e.target.value })} /></div>
+                    <div><Label className="text-white/50 text-xs">Plate Number</Label><Input className="bg-white/5 border-white/10 text-white" value={formData.plate_number || ''} onChange={e => setFormData({ ...formData, plate_number: e.target.value })} /></div>
+                    <div><Label className="text-white/50 text-xs">Seats</Label><Input type="number" className="bg-white/5 border-white/10 text-white" value={formData.seats || ''} onChange={e => setFormData({ ...formData, seats: parseInt(e.target.value) || null })} /></div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div><Label className="text-white/50 text-xs">Base Price ($)</Label><Input type="number" className="bg-white/5 border-white/10 text-white" value={formData.base_price || ''} onChange={e => setFormData({ ...formData, base_price: e.target.value })} /></div>
+                    <div><Label className="text-white/50 text-xs">Daily Rate ($)</Label><Input type="number" className="bg-white/5 border-white/10 text-white" value={formData.daily_rate || ''} onChange={e => setFormData({ ...formData, daily_rate: e.target.value })} /></div>
+                    <div><Label className="text-white/50 text-xs">Sort Order</Label><Input type="number" className="bg-white/5 border-white/10 text-white" value={formData.sort_order ?? 0} onChange={e => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })} /></div>
+                  </div>
+                  <div><Label className="text-white/50 text-xs">Location</Label><Input className="bg-white/5 border-white/10 text-white" value={formData.location || ''} onChange={e => setFormData({ ...formData, location: e.target.value })} /></div>
+                  <div><Label className="text-white/50 text-xs">Description</Label><Textarea className="bg-white/5 border-white/10 text-white min-h-[80px]" value={formData.description || ''} onChange={e => setFormData({ ...formData, description: e.target.value })} /></div>
+                  <div><Label className="text-white/50 text-xs">Notes (Internal)</Label><Textarea className="bg-white/5 border-white/10 text-white min-h-[60px]" value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })} /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-white/50 text-xs">Status</Label>
+                      <Select value={formData.status || 'active'} onValueChange={v => setFormData({ ...formData, status: v })}>
+                        <SelectTrigger className="bg-white/5 border-white/10 text-white"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                          <SelectItem value="maintenance">Maintenance</SelectItem>
+                          <SelectItem value="reserved">Reserved</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center gap-3 pt-5">
+                      <Switch checked={formData.featured || false} onCheckedChange={v => setFormData({ ...formData, featured: v })} />
+                      <Label className="text-white/60 text-xs">Featured</Label>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-3">
+                      <Switch checked={formData.is_active ?? true} onCheckedChange={v => setFormData({ ...formData, is_active: v })} />
+                      <Label className="text-white/60 text-xs">Active</Label>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Switch checked={formData.is_popular || false} onCheckedChange={v => setFormData({ ...formData, is_popular: v })} />
+                      <Label className="text-white/60 text-xs">Popular</Label>
                     </div>
                   </div>
                 </>
