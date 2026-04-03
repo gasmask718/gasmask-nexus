@@ -712,6 +712,11 @@ const TTOverview = lazy(() => import('@/pages/os/toptier/TTOverview'));
 const TTBookings = lazy(() => import('@/pages/os/toptier/TTBookings'));
 const TTRevenue = lazy(() => import('@/pages/os/toptier/TTRevenue'));
 const TTPlaceholder = lazy(() => import('@/pages/os/toptier/TTPlaceholder'));
+const TTPartners = lazy(() => import('@/pages/os/toptier/TTPartners'));
+const TTItinerary = lazy(() => import('@/pages/os/toptier/TTItinerary'));
+const TTAmbassadors = lazy(() => import('@/pages/os/toptier/TTAmbassadors'));
+const TTOperations = lazy(() => import('@/pages/os/toptier/TTOperations'));
+const TTAIBrain = lazy(() => import('@/pages/os/toptier/TTAIBrain'));
 
 // Unforgettable
 const UnforgettableDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDashboard })));
@@ -1640,11 +1645,11 @@ export default function AppRoutes() {
           <Route index element={<TTOverview />} />
           <Route path="bookings" element={<TTBookings />} />
           <Route path="revenue" element={<TTRevenue />} />
-          <Route path="partners" element={<TTPlaceholder />} />
-          <Route path="itinerary" element={<TTPlaceholder />} />
-          <Route path="ambassadors" element={<TTPlaceholder />} />
-          <Route path="operations" element={<TTPlaceholder />} />
-          <Route path="ai" element={<TTPlaceholder />} />
+          <Route path="partners" element={<TTPartners />} />
+          <Route path="itinerary" element={<TTItinerary />} />
+          <Route path="ambassadors" element={<TTAmbassadors />} />
+          <Route path="operations" element={<TTOperations />} />
+          <Route path="ai" element={<TTAIBrain />} />
           <Route path="settings" element={<TTPlaceholder />} />
         </Route>
         
