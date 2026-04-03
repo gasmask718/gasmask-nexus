@@ -46,10 +46,10 @@ export default function TTItinerary() {
   // Fetch active partners for reassignment
   const { data: activePartners } = useQuery({
     queryKey: ['tt-active-partners'],
-    queryFn: async () => {
-      const { data } = await supabase.from('tt_partners').select('id, name, service_category').eq('status', 'active');
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('partners', {
+      select: 'id,name,service_category',
+      filters: { 'status': 'eq.active' },
+    }),
   });
 
   // Realtime subscription
