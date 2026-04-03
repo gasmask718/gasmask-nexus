@@ -1662,6 +1662,19 @@ export default function AppRoutes() {
           <Route path="ai" element={<TTAIBrain />} />
           <Route path="settings" element={<TTPlaceholder />} />
         </Route>
+
+        {/* Penthouse Control System */}
+        <Route path="/os/toptier/penthouse" element={<PenthouseLayout />}>
+          <Route index element={<PenthouseDashboard />} />
+          <Route path="partners" element={<PenthousePartners />} />
+          <Route path="affiliates" element={<PenthouseAffiliates />} />
+          <Route path="marketplace" element={<PenthouseMarketplace />} />
+          <Route path="finance" element={<PenthouseFinance />} />
+          <Route path="roles" element={<PenthouseRoles />} />
+          <Route path="system" element={<PenthouseSystem />} />
+          <Route path="analytics" element={<PenthouseAnalytics />} />
+          <Route path="audit" element={<PenthouseAudit />} />
+        </Route>
         
         {/* Unforgettable Times CRM Routes */}
         <Route path="/crm/unforgettable_times_usa/event-halls" element={<UnforgettableEventHalls />} />
