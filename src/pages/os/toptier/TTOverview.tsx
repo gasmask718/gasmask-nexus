@@ -104,8 +104,6 @@ function RevenueChart() {
   const { data, isLoading } = useQuery({
     queryKey: ['tt-revenue-7d'],
     queryFn: async () => {
-      const { data } = await supabase.rpc('', {}).catch(() => ({ data: null }));
-      // Fallback: query bookings directly
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const { data: bookings } = await supabase
