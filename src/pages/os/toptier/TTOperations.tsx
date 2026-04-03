@@ -65,10 +65,7 @@ export default function TTOperations() {
   // System health: pending confirmations
   const { data: pendingConfirmations } = useQuery({
     queryKey: ['tt-pending-confirmations'],
-    queryFn: async () => {
-      const { data } = await supabase.from('tt_confirmation_requests').select('id').eq('status', 'pending');
-      return data?.length || 0;
-    },
+    queryFn: () => fetchTopTierCount('confirmation_requests', { 'status': 'eq.pending' }),
   });
 
   // Bookings without partner
