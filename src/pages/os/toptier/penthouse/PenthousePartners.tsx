@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchTopTierData, patchTopTierData } from '@/lib/toptierApi';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { fetchTopTierData, patchTopTierData, logPenthouseAction } from '@/lib/toptierApi';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { toast } from 'sonner';
-import { Users, CheckCircle, Clock, Star, Download, Eye, Ban, Check } from 'lucide-react';
+import { Users, CheckCircle, Clock, Star, Download, Eye, Ban, Check, Loader2 } from 'lucide-react';
 
 export default function PenthousePartners() {
   const queryClient = useQueryClient();
@@ -25,8 +26,19 @@ export default function PenthousePartners() {
   });
 
   const mutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      patchTopTierData('tt_partners', { id: `eq.${id}` }, { status, updated_at: new Date().toISOString() }),
+    mutationFn: async ({ id, status, currentStatus }: { id: string; status: string; currentStatus?: string }) => {
+      const result = await patchTopTierData('tt_partners', { id: `eq.${id}` }, { status, updated_at: new Date().toISOString() });
+      const { data } = await supabase.auth.getUser();
+      await logPenthouseAction({
+        action: `partner_${status === 'active' ? 'approve' : status === 'suspended' ? 'suspend' : 'reject'}`,
+        target_type: 'tt_partners',
+        target_id: id,
+        actor_user_id: data.user?.id || 'unknown',
+        before: { status: currentStatus },
+        after: { status },
+      });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ph-partners-list'] });
       toast.success('Partner status updated');
@@ -53,8 +65,7 @@ export default function PenthousePartners() {
     return 'bg-red-500/20 text-red-400 border-red-500/30';
   };
 
-  const partnerEarnings = (pid: string) =>
-    earnings.filter((e: any) => e.partner_id === pid);
+  const partnerEarnings = (pid: string) => earnings.filter((e: any) => e.partner_id === pid);
 
   const exportCSV = () => {
     const rows = [['Name','Business','Category','Status','Trust Score','Bookings','Earnings']];
@@ -71,7 +82,7 @@ export default function PenthousePartners() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-serif font-bold text-[#C9A84C]">Partner Management</h1>
-          <p className="text-white/40 text-sm mt-1">Manage and monitor all TopTier partners</p>
+          <p className="text-white/40 text-sm mt-1">Approve, suspend, and monitor all TopTier partners</p>
         </div>
         <Button onClick={exportCSV} variant="outline" className="border-[#C9A84C]/30 text-[#C9A84C] hover:bg-[#C9A84C]/10">
           <Download className="h-4 w-4 mr-2" /> Export CSV
@@ -141,12 +152,12 @@ export default function PenthousePartners() {
                         <Eye className="h-3 w-3" />
                       </Button>
                       {p.status === 'pending' && (
-                        <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-400" onClick={() => mutation.mutate({ id: p.id, status: 'active' })}>
-                          <Check className="h-3 w-3" />
+                        <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-400" disabled={mutation.isPending} onClick={() => mutation.mutate({ id: p.id, status: 'active', currentStatus: p.status })}>
+                          {mutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
                         </Button>
                       )}
                       {p.status !== 'suspended' && (
-                        <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400" onClick={() => mutation.mutate({ id: p.id, status: 'suspended' })}>
+                        <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400" disabled={mutation.isPending} onClick={() => mutation.mutate({ id: p.id, status: 'suspended', currentStatus: p.status })}>
                           <Ban className="h-3 w-3" />
                         </Button>
                       )}
@@ -159,7 +170,6 @@ export default function PenthousePartners() {
         </CardContent>
       </Card>
 
-      {/* Slide-over */}
       <Sheet open={!!selectedPartner} onOpenChange={() => setSelectedPartner(null)}>
         <SheetContent className="bg-[#111] border-l border-[#C9A84C]/10 text-white w-[500px]">
           {selectedPartner && (
@@ -169,30 +179,19 @@ export default function PenthousePartners() {
               </SheetHeader>
               <div className="space-y-4 mt-6">
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-white/[0.03] rounded-lg">
-                    <p className="text-[10px] text-white/40 uppercase">Business</p>
-                    <p className="text-sm text-white/80 mt-1">{selectedPartner.business_name}</p>
-                  </div>
-                  <div className="p-3 bg-white/[0.03] rounded-lg">
-                    <p className="text-[10px] text-white/40 uppercase">Category</p>
-                    <p className="text-sm text-white/80 mt-1">{selectedPartner.service_category}</p>
-                  </div>
-                  <div className="p-3 bg-white/[0.03] rounded-lg">
-                    <p className="text-[10px] text-white/40 uppercase">Email</p>
-                    <p className="text-sm text-white/80 mt-1">{selectedPartner.email}</p>
-                  </div>
-                  <div className="p-3 bg-white/[0.03] rounded-lg">
-                    <p className="text-[10px] text-white/40 uppercase">Phone</p>
-                    <p className="text-sm text-white/80 mt-1">{selectedPartner.phone}</p>
-                  </div>
-                  <div className="p-3 bg-white/[0.03] rounded-lg">
-                    <p className="text-[10px] text-white/40 uppercase">Total Earnings</p>
-                    <p className="text-sm text-[#C9A84C] mt-1">${Number(selectedPartner.total_earnings || 0).toLocaleString()}</p>
-                  </div>
-                  <div className="p-3 bg-white/[0.03] rounded-lg">
-                    <p className="text-[10px] text-white/40 uppercase">Status</p>
-                    <Badge className={`mt-1 text-[10px] ${statusColor(selectedPartner.status)}`}>{selectedPartner.status}</Badge>
-                  </div>
+                  {[
+                    ['Business', selectedPartner.business_name],
+                    ['Category', selectedPartner.service_category],
+                    ['Email', selectedPartner.email],
+                    ['Phone', selectedPartner.phone],
+                    ['Total Earnings', `$${Number(selectedPartner.total_earnings || 0).toLocaleString()}`],
+                    ['Status', selectedPartner.status],
+                  ].map(([label, val]) => (
+                    <div key={label as string} className="p-3 bg-white/[0.03] rounded-lg">
+                      <p className="text-[10px] text-white/40 uppercase">{label}</p>
+                      <p className="text-sm text-white/80 mt-1">{val || '—'}</p>
+                    </div>
+                  ))}
                 </div>
 
                 <div>
@@ -207,13 +206,13 @@ export default function PenthousePartners() {
 
                 <div className="flex gap-2 pt-4">
                   {selectedPartner.status !== 'active' && (
-                    <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => mutation.mutate({ id: selectedPartner.id, status: 'active' })}>
-                      Approve
+                    <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={mutation.isPending} onClick={() => mutation.mutate({ id: selectedPartner.id, status: 'active', currentStatus: selectedPartner.status })}>
+                      {mutation.isPending && <Loader2 className="h-3 w-3 mr-1 animate-spin" />} Approve
                     </Button>
                   )}
                   {selectedPartner.status !== 'suspended' && (
-                    <Button className="flex-1 bg-red-600 hover:bg-red-700" onClick={() => mutation.mutate({ id: selectedPartner.id, status: 'suspended' })}>
-                      Suspend
+                    <Button className="flex-1 bg-red-600 hover:bg-red-700" disabled={mutation.isPending} onClick={() => mutation.mutate({ id: selectedPartner.id, status: 'suspended', currentStatus: selectedPartner.status })}>
+                      {mutation.isPending && <Loader2 className="h-3 w-3 mr-1 animate-spin" />} Suspend
                     </Button>
                   )}
                 </div>
