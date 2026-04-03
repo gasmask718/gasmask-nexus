@@ -407,7 +407,156 @@ export default function PenthouseMarketplace() {
           </Card>
         </TabsContent>
 
-        {/* CHARTERS TAB */}
+        {/* VEHICLES TAB */}
+        <TabsContent value="vehicles">
+          <div className="flex justify-end mb-3">
+            <Button onClick={() => openCreate('tt_vehicles')} className="bg-[#C9A84C] hover:bg-[#B89A3C] text-black text-xs h-8">
+              <Plus className="h-3 w-3 mr-1" /> New Vehicle
+            </Button>
+          </div>
+
+          {/* Black Trucks */}
+          {(() => {
+            const blackTrucks = vehicles.filter((v: any) => v.type === 'black_truck');
+            const exoticCars = vehicles.filter((v: any) => v.type !== 'black_truck');
+            return (
+              <>
+                <h3 className="text-sm font-semibold text-white/60 mb-2 flex items-center gap-2"><Truck className="h-4 w-4" /> Black Trucks ({blackTrucks.length})</h3>
+                <Card className="bg-[#111] border-white/5 mb-6">
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-white/5">
+                          <TableHead className="text-white/40">Image</TableHead>
+                          <TableHead className="text-white/40">Name</TableHead>
+                          <TableHead className="text-white/40">Make / Model</TableHead>
+                          <TableHead className="text-white/40">Price</TableHead>
+                          <TableHead className="text-white/40">Status</TableHead>
+                          <TableHead className="text-white/40">Active</TableHead>
+                          <TableHead className="text-white/40">Popular</TableHead>
+                          <TableHead className="text-white/40">Featured</TableHead>
+                          <TableHead className="text-white/40">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {blackTrucks.map((v: any) => (
+                          <TableRow key={v.id} className="border-white/5 hover:bg-white/[0.02]">
+                            <TableCell>
+                              {v.image_url ? (
+                                <img src={v.image_url} alt="" className="h-10 w-14 rounded object-cover border border-white/10" />
+                              ) : (
+                                <div className="h-10 w-14 rounded bg-white/5 flex items-center justify-center"><Truck className="h-4 w-4 text-white/20" /></div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-white/80 text-sm font-medium">{v.name}</TableCell>
+                            <TableCell className="text-white/50 text-sm">{[v.make, v.model].filter(Boolean).join(' ') || '—'}</TableCell>
+                            <TableCell className="text-[#C9A84C] text-sm font-mono">{v.base_price ? `$${Number(v.base_price).toLocaleString()}` : '—'}</TableCell>
+                            <TableCell>{statusBadge(v.status || 'active')}</TableCell>
+                            <TableCell>
+                              <button onClick={() => toggleActive.mutate({ id: v.id, currentActive: v.is_active })}>
+                                {v.is_active ? <ToggleRight className="h-4 w-4 text-emerald-400" /> : <ToggleLeft className="h-4 w-4 text-white/20" />}
+                              </button>
+                            </TableCell>
+                            <TableCell>
+                              <button onClick={() => togglePopular.mutate({ id: v.id, current: !!v.is_popular })}>
+                                <Star className={`h-4 w-4 ${v.is_popular ? 'text-amber-400 fill-amber-400' : 'text-white/15'}`} />
+                              </button>
+                            </TableCell>
+                            <TableCell>
+                              <button onClick={() => toggleFeatured.mutate({ table: 'tt_vehicles', id: v.id, current: !!v.featured })}>
+                                <Star className={`h-4 w-4 ${v.featured ? 'text-[#C9A84C] fill-[#C9A84C]' : 'text-white/15'}`} />
+                              </button>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="ghost" className="h-7 text-xs text-blue-400" onClick={() => openEdit('tt_vehicles', v)}>
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400" onClick={() => setDeleteConfirm({ table: 'tt_vehicles', id: v.id, title: v.name })}>
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {blackTrucks.length === 0 && (
+                          <TableRow><TableCell colSpan={9} className="text-center text-white/30 py-6">No black trucks</TableCell></TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+
+                <h3 className="text-sm font-semibold text-white/60 mb-2 flex items-center gap-2"><Car className="h-4 w-4" /> Exotic Cars ({exoticCars.length})</h3>
+                <Card className="bg-[#111] border-white/5">
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-white/5">
+                          <TableHead className="text-white/40">Image</TableHead>
+                          <TableHead className="text-white/40">Name</TableHead>
+                          <TableHead className="text-white/40">Make / Model</TableHead>
+                          <TableHead className="text-white/40">Price</TableHead>
+                          <TableHead className="text-white/40">Status</TableHead>
+                          <TableHead className="text-white/40">Active</TableHead>
+                          <TableHead className="text-white/40">Popular</TableHead>
+                          <TableHead className="text-white/40">Featured</TableHead>
+                          <TableHead className="text-white/40">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {exoticCars.map((v: any) => (
+                          <TableRow key={v.id} className="border-white/5 hover:bg-white/[0.02]">
+                            <TableCell>
+                              {v.image_url ? (
+                                <img src={v.image_url} alt="" className="h-10 w-14 rounded object-cover border border-white/10" />
+                              ) : (
+                                <div className="h-10 w-14 rounded bg-white/5 flex items-center justify-center"><Car className="h-4 w-4 text-white/20" /></div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-white/80 text-sm font-medium">{v.name}</TableCell>
+                            <TableCell className="text-white/50 text-sm">{[v.make, v.model].filter(Boolean).join(' ') || '—'}</TableCell>
+                            <TableCell className="text-[#C9A84C] text-sm font-mono">{v.base_price ? `$${Number(v.base_price).toLocaleString()}` : '—'}</TableCell>
+                            <TableCell>{statusBadge(v.status || 'active')}</TableCell>
+                            <TableCell>
+                              <button onClick={() => toggleActive.mutate({ id: v.id, currentActive: v.is_active })}>
+                                {v.is_active ? <ToggleRight className="h-4 w-4 text-emerald-400" /> : <ToggleLeft className="h-4 w-4 text-white/20" />}
+                              </button>
+                            </TableCell>
+                            <TableCell>
+                              <button onClick={() => togglePopular.mutate({ id: v.id, current: !!v.is_popular })}>
+                                <Star className={`h-4 w-4 ${v.is_popular ? 'text-amber-400 fill-amber-400' : 'text-white/15'}`} />
+                              </button>
+                            </TableCell>
+                            <TableCell>
+                              <button onClick={() => toggleFeatured.mutate({ table: 'tt_vehicles', id: v.id, current: !!v.featured })}>
+                                <Star className={`h-4 w-4 ${v.featured ? 'text-[#C9A84C] fill-[#C9A84C]' : 'text-white/15'}`} />
+                              </button>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="ghost" className="h-7 text-xs text-blue-400" onClick={() => openEdit('tt_vehicles', v)}>
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400" onClick={() => setDeleteConfirm({ table: 'tt_vehicles', id: v.id, title: v.name })}>
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {exoticCars.length === 0 && (
+                          <TableRow><TableCell colSpan={9} className="text-center text-white/30 py-6">No exotic cars</TableCell></TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </>
+            );
+          })()}
+        </TabsContent>
+
         <TabsContent value="charters">
           <Card className="bg-[#111] border-white/5">
             <CardContent className="p-0">
