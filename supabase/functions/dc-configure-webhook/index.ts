@@ -50,6 +50,15 @@ Deno.serve(async (req) => {
 
     const lookupData = await lookupResp.json()
 
+    // Detect auth failures explicitly
+    if (lookupResp.status === 401) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Twilio credentials rejected (401). Your TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN is incorrect. Go to console.twilio.com → Account → copy the exact Account SID (starts with AC) and Auth Token, then update them in your backend secrets.',
+        credential_issue: true
+      }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     if (!lookupResp.ok || !lookupData.incoming_phone_numbers?.length) {
       return new Response(JSON.stringify({
         success: false,
