@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchTopTierData, patchTopTierData } from '@/lib/toptierApi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,20 +37,19 @@ export default function TTItinerary() {
   // Fetch bookings grouped by client
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['tt-itinerary-bookings'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('tt_bookings').select('*').order('scheduled_at', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('bookings', {
+      select: '*',
+      order: 'scheduled_at.asc',
+    }),
   });
 
   // Fetch active partners for reassignment
   const { data: activePartners } = useQuery({
     queryKey: ['tt-active-partners'],
-    queryFn: async () => {
-      const { data } = await supabase.from('tt_partners').select('id, name, service_category').eq('status', 'active');
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('partners', {
+      select: 'id,name,service_category',
+      filters: { 'status': 'eq.active' },
+    }),
   });
 
   // Realtime subscription
@@ -64,8 +64,7 @@ export default function TTItinerary() {
 
   const reassignMutation = useMutation({
     mutationFn: async ({ bookingId, partnerId, partnerName }: { bookingId: string; partnerId: string; partnerName: string }) => {
-      const { error } = await supabase.from('tt_bookings').update({ partner_id: partnerId, partner_name: partnerName, status: 'confirmed' }).eq('id', bookingId);
-      if (error) throw error;
+      await patchTopTierData('bookings', { 'id': `eq.${bookingId}` }, { partner_id: partnerId, partner_name: partnerName, status: 'confirmed' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tt-itinerary-bookings'] });
@@ -76,7 +75,7 @@ export default function TTItinerary() {
   });
 
   // Group by client
-  const clientGroups = (bookings || []).reduce((acc, b) => {
+  const clientGroups = (bookings || []).reduce((acc: Record<string, any[]>, b: any) => {
     const key = b.client_name || 'Unknown';
     if (!acc[key]) acc[key] = [];
     acc[key].push(b);
@@ -130,12 +129,12 @@ export default function TTItinerary() {
         <Card className="bg-[#111111] border-[#C9A84C]/10"><CardContent className="p-12 text-center text-white/30">No itinerary items found</CardContent></Card>
       ) : (
         <div className="space-y-3">
-          {Object.entries(clientGroups).map(([clientName, items]) => {
+          {Object.entries(clientGroups).map(([clientName, items]: [string, any[]]) => {
             const isOpen = expandedClients.has(clientName);
-            const clientConfirmed = items.filter(i => i.status === 'confirmed').length;
-            const clientPending = items.filter(i => i.status === 'pending').length;
-            const clientIssues = items.filter(i => i.status === 'cancelled').length;
-            const totalValue = items.reduce((s, i) => s + Number(i.total_price || 0), 0);
+            const clientConfirmed = items.filter((i: any) => i.status === 'confirmed').length;
+            const clientPending = items.filter((i: any) => i.status === 'pending').length;
+            const clientIssues = items.filter((i: any) => i.status === 'cancelled').length;
+            const totalValue = items.reduce((s: number, i: any) => s + Number(i.total_price || 0), 0);
 
             return (
               <Collapsible key={clientName} open={isOpen} onOpenChange={() => toggleClient(clientName)}>
@@ -163,7 +162,7 @@ export default function TTItinerary() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <CardContent className="pt-0 space-y-2">
-                      {items.map(item => (
+                      {items.map((item: any) => (
                         <div key={item.id} className="bg-white/5 rounded-lg p-4 flex items-center justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchTopTierData, patchTopTierData } from '@/lib/toptierApi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,35 +62,36 @@ export default function TTPartners() {
 
   const { data: partners, isLoading } = useQuery({
     queryKey: ['tt-partners'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('tt_partners').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('partners', {
+      select: '*',
+      order: 'created_at.desc',
+    }),
   });
 
   const { data: partnerBookings } = useQuery({
     queryKey: ['tt-partner-bookings', selectedPartner?.id],
     enabled: !!selectedPartner,
-    queryFn: async () => {
-      const { data } = await supabase.from('tt_bookings').select('*').eq('partner_id', selectedPartner.id).order('created_at', { ascending: false }).limit(5);
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('bookings', {
+      select: '*',
+      filters: { 'partner_id': `eq.${selectedPartner.id}` },
+      order: 'created_at.desc',
+      limit: 5,
+    }),
   });
 
   const { data: partnerEarnings } = useQuery({
     queryKey: ['tt-partner-earnings', selectedPartner?.id],
     enabled: !!selectedPartner,
-    queryFn: async () => {
-      const { data } = await supabase.from('tt_partner_earnings').select('*').eq('partner_id', selectedPartner.id).order('created_at', { ascending: false });
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('partner_earnings', {
+      select: '*',
+      filters: { 'partner_id': `eq.${selectedPartner.id}` },
+      order: 'created_at.desc',
+    }),
   });
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from('tt_partners').update({ status }).eq('id', id);
-      if (error) throw error;
+      await patchTopTierData('partners', { 'id': `eq.${id}` }, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tt-partners'] });

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchTopTierData, fetchTopTierCount, patchTopTierData } from '@/lib/toptierApi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,54 +35,51 @@ export default function TTOperations() {
     queryKey: ['tt-stale-bookings'],
     queryFn: async () => {
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-      const { data, error } = await supabase.from('tt_bookings').select('*').eq('status', 'pending').lt('created_at', twoHoursAgo).order('created_at', { ascending: true });
-      if (error) throw error;
-      return data || [];
+      return fetchTopTierData('bookings', {
+        select: '*',
+        filters: { 'status': 'eq.pending', 'created_at': `lt.${twoHoursAgo}` },
+        order: 'created_at.asc',
+      });
     },
   });
 
   // All pending bookings for dispatch
   const { data: pendingBookings } = useQuery({
     queryKey: ['tt-pending-bookings'],
-    queryFn: async () => {
-      const { data } = await supabase.from('tt_bookings').select('*').eq('status', 'pending').order('created_at', { ascending: false });
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('bookings', {
+      select: '*',
+      filters: { 'status': 'eq.pending' },
+      order: 'created_at.desc',
+    }),
   });
 
   // Active partners for dispatch
   const { data: activePartners } = useQuery({
     queryKey: ['tt-active-partners-ops'],
-    queryFn: async () => {
-      const { data } = await supabase.from('tt_partners').select('id, name, service_category').eq('status', 'active');
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('partners', {
+      select: 'id,name,service_category',
+      filters: { 'status': 'eq.active' },
+    }),
   });
 
   // System health: pending confirmations
   const { data: pendingConfirmations } = useQuery({
     queryKey: ['tt-pending-confirmations'],
-    queryFn: async () => {
-      const { data } = await supabase.from('tt_confirmation_requests').select('id').eq('status', 'pending');
-      return data?.length || 0;
-    },
+    queryFn: () => fetchTopTierCount('confirmation_requests', { 'status': 'eq.pending' }),
   });
 
   // Bookings without partner
   const { data: unassignedCount } = useQuery({
     queryKey: ['tt-unassigned-bookings'],
-    queryFn: async () => {
-      const { data } = await supabase.from('tt_bookings').select('id').is('partner_id', null).eq('status', 'pending');
-      return data?.length || 0;
-    },
+    queryFn: () => fetchTopTierCount('bookings', { 'status': 'eq.pending', 'partner_id': 'is.null' }),
   });
 
   // Health checks
   useEffect(() => {
     (async () => {
       try {
-        const { error } = await supabase.from('tt_bookings').select('id').limit(1);
-        setDbOk(!error);
+        await fetchTopTierData('bookings', { select: 'id', limit: 1 });
+        setDbOk(true);
       } catch { setDbOk(false); }
     })();
 
@@ -93,9 +91,8 @@ export default function TTOperations() {
 
   const reassignMutation = useMutation({
     mutationFn: async ({ bookingId, partnerId }: { bookingId: string; partnerId: string }) => {
-      const partner = activePartners?.find(p => p.id === partnerId);
-      const { error } = await supabase.from('tt_bookings').update({ partner_id: partnerId, partner_name: partner?.name || '', status: 'confirmed' }).eq('id', bookingId);
-      if (error) throw error;
+      const partner = activePartners?.find((p: any) => p.id === partnerId);
+      await patchTopTierData('bookings', { 'id': `eq.${bookingId}` }, { partner_id: partnerId, partner_name: partner?.name || '', status: 'confirmed' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tt-stale-bookings'] });
