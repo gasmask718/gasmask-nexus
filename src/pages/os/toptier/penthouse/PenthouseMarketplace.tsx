@@ -45,6 +45,11 @@ export default function PenthouseMarketplace() {
     queryFn: () => fetchTopTierData('tt_private_jets', { select: '*', order: 'sort_order.asc,created_at.desc' }),
   });
 
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['ph-vehicles'],
+    queryFn: () => fetchTopTierData('tt_vehicles', { select: '*', order: 'sort_order.asc,created_at.desc' }),
+  });
+
   const { data: charters = [] } = useQuery({
     queryKey: ['ph-charters'],
     queryFn: () => fetchTopTierData('tt_charter_requests', { select: '*', order: 'created_at.desc' }),
