@@ -89,7 +89,7 @@ export default function PenthouseMarketplace() {
     if (!files?.length) return;
     setGalleryUploading(true);
     try {
-      const folder = formTable === 'tt_private_jets' ? 'jets/gallery' : 'experiences/gallery';
+      const folder = formTable === 'tt_private_jets' ? 'jets/gallery' : formTable === 'tt_vehicles' ? 'vehicles/gallery' : 'experiences/gallery';
       const urls: string[] = [];
       for (const file of Array.from(files)) {
         if (file.size > 10 * 1024 * 1024) continue;
