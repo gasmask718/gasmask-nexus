@@ -71,10 +71,7 @@ export default function TTOperations() {
   // Bookings without partner
   const { data: unassignedCount } = useQuery({
     queryKey: ['tt-unassigned-bookings'],
-    queryFn: async () => {
-      const { data } = await supabase.from('tt_bookings').select('id').is('partner_id', null).eq('status', 'pending');
-      return data?.length || 0;
-    },
+    queryFn: () => fetchTopTierCount('bookings', { 'status': 'eq.pending', 'partner_id': 'is.null' }),
   });
 
   // Health checks
