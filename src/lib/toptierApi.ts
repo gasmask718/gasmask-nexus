@@ -85,7 +85,7 @@ export async function fetchTopTierCount(
 }
 
 /**
- * Mutate TopTier data (PATCH/POST)
+ * Mutate TopTier data (PATCH)
  */
 export async function patchTopTierData(
   table: string,
@@ -113,4 +113,85 @@ export async function patchTopTierData(
     throw new Error(`TopTier PATCH error: ${res.status} - ${text}`);
   }
   return res.json();
+}
+
+/**
+ * Create TopTier data (POST)
+ */
+export async function postTopTierData(
+  table: string,
+  body: Record<string, any>
+): Promise<any> {
+  const url = new URL(`${TOPTIER_URL}/rest/v1/${table}`);
+
+  const res = await fetch(url.toString(), {
+    method: 'POST',
+    headers: {
+      apikey: TOPTIER_KEY,
+      Authorization: `Bearer ${TOPTIER_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`TopTier POST error: ${res.status} - ${text}`);
+  }
+  return res.json();
+}
+
+/**
+ * Delete TopTier data (DELETE)
+ */
+export async function deleteTopTierData(
+  table: string,
+  filters: Record<string, string>
+): Promise<void> {
+  const url = new URL(`${TOPTIER_URL}/rest/v1/${table}`);
+  Object.entries(filters).forEach(([key, val]) => {
+    url.searchParams.set(key, val);
+  });
+
+  const res = await fetch(url.toString(), {
+    method: 'DELETE',
+    headers: {
+      apikey: TOPTIER_KEY,
+      Authorization: `Bearer ${TOPTIER_KEY}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`TopTier DELETE error: ${res.status} - ${text}`);
+  }
+}
+
+/**
+ * Write to admin_audit_log for any Penthouse action
+ */
+export async function logPenthouseAction(params: {
+  action: string;
+  target_type: string;
+  target_id?: string;
+  reason?: string;
+  before?: any;
+  after?: any;
+  actor_user_id: string;
+}): Promise<void> {
+  try {
+    await postTopTierData('admin_audit_log', {
+      action: params.action,
+      target_type: params.target_type,
+      target_id: params.target_id || null,
+      reason: params.reason || null,
+      before: params.before || null,
+      after: params.after || null,
+      actor_user_id: params.actor_user_id,
+    });
+  } catch (e) {
+    console.error('Audit log write failed:', e);
+  }
 }
