@@ -163,6 +163,7 @@ export default function PenthouseMarketplace() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ph-experiences'] });
       queryClient.invalidateQueries({ queryKey: ['ph-jets'] });
+      queryClient.invalidateQueries({ queryKey: ['ph-vehicles'] });
       toast.success('Featured toggled');
     },
   });
