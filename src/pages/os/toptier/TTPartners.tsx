@@ -71,10 +71,12 @@ export default function TTPartners() {
   const { data: partnerBookings } = useQuery({
     queryKey: ['tt-partner-bookings', selectedPartner?.id],
     enabled: !!selectedPartner,
-    queryFn: async () => {
-      const { data } = await supabase.from('tt_bookings').select('*').eq('partner_id', selectedPartner.id).order('created_at', { ascending: false }).limit(5);
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('bookings', {
+      select: '*',
+      filters: { 'partner_id': `eq.${selectedPartner.id}` },
+      order: 'created_at.desc',
+      limit: 5,
+    }),
   });
 
   const { data: partnerEarnings } = useQuery({
