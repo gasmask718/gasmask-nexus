@@ -104,7 +104,7 @@ export default function PenthouseSystem() {
                 ))}
               </CardContent>
             </Card>
-          ))}
+          })}
         </div>
       )}
 
