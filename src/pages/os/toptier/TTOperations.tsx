@@ -35,9 +35,11 @@ export default function TTOperations() {
     queryKey: ['tt-stale-bookings'],
     queryFn: async () => {
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-      const { data, error } = await supabase.from('tt_bookings').select('*').eq('status', 'pending').lt('created_at', twoHoursAgo).order('created_at', { ascending: true });
-      if (error) throw error;
-      return data || [];
+      return fetchTopTierData('bookings', {
+        select: '*',
+        filters: { 'status': 'eq.pending', 'created_at': `lt.${twoHoursAgo}` },
+        order: 'created_at.asc',
+      });
     },
   });
 
