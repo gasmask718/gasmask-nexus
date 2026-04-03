@@ -2,12 +2,24 @@
  * TopTier REST API Client
  * 
  * Fetches data from the TopTier Supabase project via REST API.
- * Uses VITE_TOPTIER_SUPABASE_URL / VITE_TOPTIER_SUPABASE_ANON_KEY
- * if set, otherwise falls back to the local Supabase project.
+ * Uses the logged-in user's JWT for Authorization so RLS policies
+ * that check auth.uid() work correctly.
  */
+
+import { supabase } from '@/integrations/supabase/client';
 
 const TOPTIER_URL = import.meta.env.VITE_SUPABASE_URL;
 const TOPTIER_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token || TOPTIER_KEY;
+  return {
+    apikey: TOPTIER_KEY,
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+}
 
 export async function fetchTopTierData<T = any>(
   table: string,
@@ -30,14 +42,10 @@ export async function fetchTopTierData<T = any>(
     });
   }
 
-  const res = await fetch(url.toString(), {
-    headers: {
-      apikey: TOPTIER_KEY,
-      Authorization: `Bearer ${TOPTIER_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    },
-  });
+  const headers = await getAuthHeaders();
+  headers['Prefer'] = 'return=representation';
+
+  const res = await fetch(url.toString(), { headers });
 
   if (!res.ok) {
     const text = await res.text();
@@ -48,9 +56,6 @@ export async function fetchTopTierData<T = any>(
   return res.json();
 }
 
-/**
- * Fetch with count header (for exact counts without full data)
- */
 export async function fetchTopTierCount(
   table: string,
   filters?: Record<string, string>
@@ -64,15 +69,11 @@ export async function fetchTopTierCount(
     });
   }
 
-  const res = await fetch(url.toString(), {
-    headers: {
-      apikey: TOPTIER_KEY,
-      Authorization: `Bearer ${TOPTIER_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'count=exact',
-      Range: '0-0',
-    },
-  });
+  const headers = await getAuthHeaders();
+  headers['Prefer'] = 'count=exact';
+  headers['Range'] = '0-0';
+
+  const res = await fetch(url.toString(), { headers });
 
   if (!res.ok) return 0;
   const range = res.headers.get('content-range');
@@ -84,9 +85,6 @@ export async function fetchTopTierCount(
   return Array.isArray(data) ? data.length : 0;
 }
 
-/**
- * Mutate TopTier data (PATCH)
- */
 export async function patchTopTierData(
   table: string,
   filters: Record<string, string>,
@@ -97,14 +95,12 @@ export async function patchTopTierData(
     url.searchParams.set(key, val);
   });
 
+  const headers = await getAuthHeaders();
+  headers['Prefer'] = 'return=representation';
+
   const res = await fetch(url.toString(), {
     method: 'PATCH',
-    headers: {
-      apikey: TOPTIER_KEY,
-      Authorization: `Bearer ${TOPTIER_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    },
+    headers,
     body: JSON.stringify(body),
   });
 
@@ -115,23 +111,18 @@ export async function patchTopTierData(
   return res.json();
 }
 
-/**
- * Create TopTier data (POST)
- */
 export async function postTopTierData(
   table: string,
   body: Record<string, any>
 ): Promise<any> {
   const url = new URL(`${TOPTIER_URL}/rest/v1/${table}`);
 
+  const headers = await getAuthHeaders();
+  headers['Prefer'] = 'return=representation';
+
   const res = await fetch(url.toString(), {
     method: 'POST',
-    headers: {
-      apikey: TOPTIER_KEY,
-      Authorization: `Bearer ${TOPTIER_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    },
+    headers,
     body: JSON.stringify(body),
   });
 
@@ -142,9 +133,6 @@ export async function postTopTierData(
   return res.json();
 }
 
-/**
- * Delete TopTier data (DELETE)
- */
 export async function deleteTopTierData(
   table: string,
   filters: Record<string, string>
@@ -154,13 +142,11 @@ export async function deleteTopTierData(
     url.searchParams.set(key, val);
   });
 
+  const headers = await getAuthHeaders();
+
   const res = await fetch(url.toString(), {
     method: 'DELETE',
-    headers: {
-      apikey: TOPTIER_KEY,
-      Authorization: `Bearer ${TOPTIER_KEY}`,
-      'Content-Type': 'application/json',
-    },
+    headers,
   });
 
   if (!res.ok) {
@@ -169,9 +155,6 @@ export async function deleteTopTierData(
   }
 }
 
-/**
- * Write to admin_audit_log for any Penthouse action
- */
 export async function logPenthouseAction(params: {
   action: string;
   target_type: string;
