@@ -248,10 +248,11 @@ export default function PenthouseMarketplace() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         {[
           { label: 'Experiences', count: experiences.length, featured: experiences.filter((e: any) => e.featured).length, icon: Sparkles },
           { label: 'Private Jets', count: jets.length, featured: jets.filter((j: any) => j.featured).length, icon: Plane },
+          { label: 'Vehicles', count: vehicles.length, featured: vehicles.filter((v: any) => v.featured).length, icon: Truck },
           { label: 'Charter Requests', count: charters.length, featured: 0, icon: Car },
         ].map((s, i) => (
           <Card key={i} className="bg-[#111] border-white/5">
