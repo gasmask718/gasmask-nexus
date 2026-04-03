@@ -14,6 +14,8 @@ const penthouseNav = [
   { path: '/os/toptier/penthouse/partners', label: 'Partners', icon: Users },
   { path: '/os/toptier/penthouse/affiliates', label: 'Affiliates', icon: UserCheck },
   { path: '/os/toptier/penthouse/marketplace', label: 'Marketplace', icon: ShoppingBag },
+  { path: '/os/toptier/penthouse/drivers', label: 'Drivers', icon: Car },
+  { path: '/os/toptier/penthouse/confirmations', label: 'Confirmations', icon: ClipboardCheck },
   { path: '/os/toptier/penthouse/finance', label: 'Finance', icon: DollarSign },
   { path: '/os/toptier/penthouse/roles', label: 'Roles & Permissions', icon: Shield },
   { path: '/os/toptier/penthouse/system', label: 'System Controls', icon: Settings2 },
