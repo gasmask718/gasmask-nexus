@@ -37,11 +37,10 @@ export default function TTItinerary() {
   // Fetch bookings grouped by client
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['tt-itinerary-bookings'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('tt_bookings').select('*').order('scheduled_at', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('bookings', {
+      select: '*',
+      order: 'scheduled_at.asc',
+    }),
   });
 
   // Fetch active partners for reassignment
