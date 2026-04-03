@@ -129,12 +129,12 @@ export default function TTItinerary() {
         <Card className="bg-[#111111] border-[#C9A84C]/10"><CardContent className="p-12 text-center text-white/30">No itinerary items found</CardContent></Card>
       ) : (
         <div className="space-y-3">
-          {Object.entries(clientGroups).map(([clientName, items]) => {
+          {Object.entries(clientGroups).map(([clientName, items]: [string, any[]]) => {
             const isOpen = expandedClients.has(clientName);
-            const clientConfirmed = items.filter(i => i.status === 'confirmed').length;
-            const clientPending = items.filter(i => i.status === 'pending').length;
-            const clientIssues = items.filter(i => i.status === 'cancelled').length;
-            const totalValue = items.reduce((s, i) => s + Number(i.total_price || 0), 0);
+            const clientConfirmed = items.filter((i: any) => i.status === 'confirmed').length;
+            const clientPending = items.filter((i: any) => i.status === 'pending').length;
+            const clientIssues = items.filter((i: any) => i.status === 'cancelled').length;
+            const totalValue = items.reduce((s: number, i: any) => s + Number(i.total_price || 0), 0);
 
             return (
               <Collapsible key={clientName} open={isOpen} onOpenChange={() => toggleClient(clientName)}>
