@@ -1635,9 +1635,18 @@ export default function AppRoutes() {
           }
         />
 
-        {/* Dynasty OS Business Units */}
-        <Route path="/os/toptier" element={<TopTierDashboard />} />
-        {/* Old UT flat routes removed — now uses UTHubLayout nested routes below */}
+        {/* Dynasty OS — TopTier Hub */}
+        <Route path="/os/toptier" element={<TopTierHubLayout />}>
+          <Route index element={<TTOverview />} />
+          <Route path="bookings" element={<TTBookings />} />
+          <Route path="revenue" element={<TTRevenue />} />
+          <Route path="partners" element={<TTPlaceholder />} />
+          <Route path="itinerary" element={<TTPlaceholder />} />
+          <Route path="ambassadors" element={<TTPlaceholder />} />
+          <Route path="operations" element={<TTPlaceholder />} />
+          <Route path="ai" element={<TTPlaceholder />} />
+          <Route path="settings" element={<TTPlaceholder />} />
+        </Route>
         
         {/* Unforgettable Times CRM Routes */}
         <Route path="/crm/unforgettable_times_usa/event-halls" element={<UnforgettableEventHalls />} />
