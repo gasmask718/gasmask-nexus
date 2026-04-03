@@ -712,6 +712,11 @@ const TTOverview = lazy(() => import('@/pages/os/toptier/TTOverview'));
 const TTBookings = lazy(() => import('@/pages/os/toptier/TTBookings'));
 const TTRevenue = lazy(() => import('@/pages/os/toptier/TTRevenue'));
 const TTPlaceholder = lazy(() => import('@/pages/os/toptier/TTPlaceholder'));
+const TTPartners = lazy(() => import('@/pages/os/toptier/TTPartners'));
+const TTItinerary = lazy(() => import('@/pages/os/toptier/TTItinerary'));
+const TTAmbassadors = lazy(() => import('@/pages/os/toptier/TTAmbassadors'));
+const TTOperations = lazy(() => import('@/pages/os/toptier/TTOperations'));
+const TTAIBrain = lazy(() => import('@/pages/os/toptier/TTAIBrain'));
 
 // Unforgettable
 const UnforgettableDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDashboard })));
