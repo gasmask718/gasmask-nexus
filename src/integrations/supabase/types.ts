@@ -74724,6 +74724,100 @@ export type Database = {
           },
         ]
       }
+      tt_booking_events: {
+        Row: {
+          actor: string | null
+          booking_id: string
+          created_at: string
+          description: string | null
+          event_type: string
+          id: string
+        }
+        Insert: {
+          actor?: string | null
+          booking_id: string
+          created_at?: string
+          description?: string | null
+          event_type: string
+          id?: string
+        }
+        Update: {
+          actor?: string | null
+          booking_id?: string
+          created_at?: string
+          description?: string | null
+          event_type?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_booking_events_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "tt_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tt_bookings: {
+        Row: {
+          client_email: string | null
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          partner_id: string | null
+          partner_name: string | null
+          scheduled_at: string | null
+          service_name: string
+          service_type: string
+          status: string
+          total_price: number
+          updated_at: string
+        }
+        Insert: {
+          client_email?: string | null
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          partner_id?: string | null
+          partner_name?: string | null
+          scheduled_at?: string | null
+          service_name: string
+          service_type?: string
+          status?: string
+          total_price?: number
+          updated_at?: string
+        }
+        Update: {
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          partner_id?: string | null
+          partner_name?: string | null
+          scheduled_at?: string | null
+          service_name?: string
+          service_type?: string
+          status?: string
+          total_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_bookings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "tt_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tt_charter_requests: {
         Row: {
           arrival_location: string | null
@@ -74804,6 +74898,51 @@ export type Database = {
             columns: ["jet_id"]
             isOneToOne: false
             referencedRelation: "tt_private_jets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tt_confirmation_requests: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          id: string
+          partner_id: string | null
+          requested_at: string
+          responded_at: string | null
+          status: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          partner_id?: string | null
+          requested_at?: string
+          responded_at?: string | null
+          status?: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          partner_id?: string | null
+          requested_at?: string
+          responded_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_confirmation_requests_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "tt_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tt_confirmation_requests_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "tt_partners"
             referencedColumns: ["id"]
           },
         ]
@@ -75068,6 +75207,105 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tt_partner_earnings: {
+        Row: {
+          amount: number
+          booking_id: string | null
+          created_at: string
+          id: string
+          paid_at: string | null
+          partner_id: string
+          status: string
+        }
+        Insert: {
+          amount?: number
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          partner_id: string
+          status?: string
+        }
+        Update: {
+          amount?: number
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          partner_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_partner_earnings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "tt_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tt_partner_earnings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "tt_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tt_partners: {
+        Row: {
+          avatar_url: string | null
+          business_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          last_active_at: string | null
+          name: string
+          phone: string | null
+          response_rate: number
+          service_category: string
+          status: string
+          total_bookings: number
+          total_earnings: number
+          trust_score: number
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          business_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_active_at?: string | null
+          name: string
+          phone?: string | null
+          response_rate?: number
+          service_category?: string
+          status?: string
+          total_bookings?: number
+          total_earnings?: number
+          trust_score?: number
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          business_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_active_at?: string | null
+          name?: string
+          phone?: string | null
+          response_rate?: number
+          service_category?: string
+          status?: string
+          total_bookings?: number
+          total_earnings?: number
+          trust_score?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       tt_private_jets: {
         Row: {
