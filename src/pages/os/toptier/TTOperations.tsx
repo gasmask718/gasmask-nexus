@@ -84,7 +84,7 @@ export default function TTOperations() {
     })();
 
     const channel = supabase.channel('ops-health-check')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tt_bookings' }, () => {})
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {})
       .subscribe((status) => { setRealtimeOk(status === 'SUBSCRIBED'); });
     return () => { supabase.removeChannel(channel); };
   }, []);

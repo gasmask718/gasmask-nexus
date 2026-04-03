@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Brain, Send, Loader2, Sparkles } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Brain, Send, Loader2, Sparkles, TrendingUp, AlertTriangle, Target } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 
@@ -13,15 +14,18 @@ type Msg = { role: 'user' | 'assistant'; content: string };
 
 const QUICK_ACTIONS = [
   "Summarize today's performance",
-  "Which bookings need attention?",
-  "Top service this week?",
-  "Any issues I should know about?",
+  "Which bookings need attention right now?",
+  "What's our top performing service this week?",
+  "Are there any partner issues I should know about?",
+  "What should I prioritize today?",
 ];
 
 export default function TTAIBrain() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [insights, setInsights] = useState<{ title: string; content: string; icon: any }[]>([]);
+  const [insightsLoading, setInsightsLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Fetch live context
@@ -58,9 +62,79 @@ export default function TTAIBrain() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
+  // Auto-generate insight cards on load
+  useEffect(() => {
+    if (!liveContext) return;
+    const generateInsights = async () => {
+      setInsightsLoading(true);
+      try {
+        const prompt = `Based on this live business data for TopTier Experience (luxury concierge in NYC):
+- Revenue Today: $${liveContext.revenueToday.toLocaleString()}
+- Active Bookings: ${liveContext.activeBookings}
+- Pending Confirmations: ${liveContext.pendingConfirmations}
+- Active Partners: ${liveContext.activePartners}
+- Top Service This Week: ${liveContext.topServiceThisWeek}
+
+Give me exactly 3 brief insights (1-2 sentences each), formatted as JSON array:
+[{"title":"Performance","content":"..."},{"title":"Anomalies","content":"..."},{"title":"Top Action","content":"..."}]
+Only return the JSON array, nothing else.`;
+
+        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tt-ai-brain`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            messages: [{ role: 'user', content: prompt }],
+            systemPrompt: 'You are a business analytics AI. Return only valid JSON arrays. Be concise.',
+          }),
+        });
+
+        if (!resp.ok || !resp.body) throw new Error('Failed');
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let full = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          for (const line of chunk.split('\n')) {
+            if (!line.startsWith('data: ')) continue;
+            const json = line.slice(6).trim();
+            if (json === '[DONE]') continue;
+            try {
+              const parsed = JSON.parse(json);
+              const c = parsed.choices?.[0]?.delta?.content;
+              if (c) full += c;
+            } catch {}
+          }
+        }
+
+        // Extract JSON from response
+        const match = full.match(/\[[\s\S]*\]/);
+        if (match) {
+          const parsed = JSON.parse(match[0]);
+          const icons = [TrendingUp, AlertTriangle, Target];
+          setInsights(parsed.map((p: any, i: number) => ({ ...p, icon: icons[i] || Sparkles })));
+        }
+      } catch (e) {
+        console.error('Insight generation error:', e);
+        setInsights([
+          { title: 'Performance', content: `Revenue today: $${liveContext.revenueToday.toLocaleString()} with ${liveContext.activeBookings} active bookings.`, icon: TrendingUp },
+          { title: 'Attention', content: `${liveContext.pendingConfirmations} pending confirmations need review.`, icon: AlertTriangle },
+          { title: 'Action', content: `Top service: ${liveContext.topServiceThisWeek}. Focus on partner availability.`, icon: Target },
+        ]);
+      }
+      setInsightsLoading(false);
+    };
+    generateInsights();
+  }, [liveContext]);
+
   const buildSystemPrompt = () => {
     const ctx = liveContext || { revenueToday: 0, activeBookings: 0, pendingConfirmations: 0, activePartners: 0, topServiceThisWeek: 'N/A' };
-    return `You are the Dynasty OS AI Command Brain for TopTier Experience. You have real-time access to this live business data:
+    return `You are the Dynasty OS AI Command Brain for TopTier Experience — a luxury concierge marketplace in NYC. Live business data right now:
 
 - Revenue Today: $${ctx.revenueToday.toLocaleString()}
 - Active Bookings: ${ctx.activeBookings}
@@ -68,7 +142,7 @@ export default function TTAIBrain() {
 - Active Partners: ${ctx.activePartners}
 - Top Service This Week: ${ctx.topServiceThisWeek}
 
-Answer questions about the business, identify issues, suggest actions, and analyze performance. Be concise and direct. Use bullet points and numbers. Format responses in markdown.`;
+Answer questions about the business concisely and directly. Identify problems. Suggest actions. Analyze performance. Use bullet points and numbers. Format responses in markdown.`;
   };
 
   const sendMessage = async (text: string) => {
@@ -164,6 +238,29 @@ Answer questions about the business, identify issues, suggest actions, and analy
         </div>
       )}
 
+      {/* AI Insight Cards */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        {insightsLoading ? (
+          Array(3).fill(0).map((_, i) => (
+            <Card key={i} className="bg-[#111111] border-[#C9A84C]/20">
+              <CardContent className="p-4"><Skeleton className="h-12 bg-white/5" /></CardContent>
+            </Card>
+          ))
+        ) : insights.map((insight, i) => (
+          <Card key={i} className="bg-[#111111] border-[#C9A84C]/20 hover:border-[#C9A84C]/40 transition-colors">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-2">
+                <insight.icon className="h-4 w-4 text-[#C9A84C] mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold text-[#C9A84C] mb-1">{insight.title}</p>
+                  <p className="text-xs text-white/60 leading-relaxed">{insight.content}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {/* Chat Area */}
       <Card className="flex-1 bg-[#0D0D0D]/80 backdrop-blur border-[#C9A84C]/10 flex flex-col overflow-hidden">
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
@@ -182,7 +279,7 @@ Answer questions about the business, identify issues, suggest actions, and analy
                   <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                     msg.role === 'user'
                       ? 'bg-[#C9A84C] text-black rounded-br-md'
-                      : 'bg-white/5 text-white border border-white/5 rounded-bl-md'
+                      : 'bg-[#1A1A1A] text-white border border-white/5 rounded-bl-md'
                   }`}>
                     {msg.role === 'assistant' ? (
                       <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0.5">
@@ -196,8 +293,10 @@ Answer questions about the business, identify issues, suggest actions, and analy
               ))}
               {isLoading && messages[messages.length - 1]?.role === 'user' && (
                 <div className="flex justify-start">
-                  <div className="bg-white/5 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3">
-                    <Loader2 className="h-4 w-4 animate-spin text-[#C9A84C]" />
+                  <div className="bg-[#1A1A1A] border border-white/5 rounded-2xl rounded-bl-md px-4 py-3 flex gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-[#C9A84C] animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-[#C9A84C] animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-[#C9A84C] animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               )}
