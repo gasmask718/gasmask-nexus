@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, UserCheck, ShoppingBag, DollarSign,
-  Shield, Settings2, BarChart3, FileText, Bell, RefreshCw, Crown
+  Shield, Settings2, BarChart3, FileText, Bell, RefreshCw, Crown,
+  Car, ClipboardCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
