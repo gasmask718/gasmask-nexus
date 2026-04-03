@@ -717,6 +717,16 @@ const TTItinerary = lazy(() => import('@/pages/os/toptier/TTItinerary'));
 const TTAmbassadors = lazy(() => import('@/pages/os/toptier/TTAmbassadors'));
 const TTOperations = lazy(() => import('@/pages/os/toptier/TTOperations'));
 const TTAIBrain = lazy(() => import('@/pages/os/toptier/TTAIBrain'));
+const PenthouseLayout = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseLayout'));
+const PenthouseDashboard = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseDashboard'));
+const PenthousePartners = lazy(() => import('@/pages/os/toptier/penthouse/PenthousePartners'));
+const PenthouseAffiliates = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseAffiliates'));
+const PenthouseMarketplace = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseMarketplace'));
+const PenthouseFinance = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseFinance'));
+const PenthouseRoles = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseRoles'));
+const PenthouseSystem = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseSystem'));
+const PenthouseAnalytics = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseAnalytics'));
+const PenthouseAudit = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseAudit'));
 
 // Unforgettable
 const UnforgettableDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDashboard })));
