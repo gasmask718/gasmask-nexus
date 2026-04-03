@@ -75,7 +75,7 @@ export default function PenthouseMarketplace() {
     if (file.size > 10 * 1024 * 1024) { toast.error('Max 10MB'); return; }
     setUploading(true);
     try {
-      const folder = formTable === 'tt_private_jets' ? 'jets' : 'experiences';
+      const folder = formTable === 'tt_private_jets' ? 'jets' : formTable === 'tt_vehicles' ? 'vehicles' : 'experiences';
       const url = await uploadFile(file, folder);
       const field = formTable === 'tt_private_jets' ? 'photo_url' : 'image_url';
       setFormData((d: any) => ({ ...d, [field]: url }));
