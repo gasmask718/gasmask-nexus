@@ -6,8 +6,8 @@
  * if set, otherwise falls back to the local Supabase project.
  */
 
-const TOPTIER_URL = import.meta.env.VITE_TOPTIER_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
-const TOPTIER_KEY = import.meta.env.VITE_TOPTIER_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const TOPTIER_URL = import.meta.env.VITE_SUPABASE_URL;
+const TOPTIER_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export async function fetchTopTierData<T = any>(
   table: string,
