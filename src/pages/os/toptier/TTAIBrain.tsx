@@ -31,24 +31,23 @@ export default function TTAIBrain() {
       const today = new Date().toISOString().split('T')[0];
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      const [bookingsRes, partnersRes, confirmationsRes, revenueRes, topServiceRes] = await Promise.all([
-        supabase.from('tt_bookings').select('id, status').gte('created_at', today),
-        supabase.from('tt_partners').select('id').eq('status', 'active'),
-        supabase.from('tt_confirmation_requests').select('id').eq('status', 'pending'),
-        supabase.from('tt_bookings').select('total_price').gte('created_at', today),
-        supabase.from('tt_bookings').select('service_type').gte('created_at', weekAgo),
+      const [revenueData, activePartnerCount, pendingConfCount, topServiceData] = await Promise.all([
+        fetchTopTierData('bookings', { select: 'total_price', filters: { 'created_at': `gte.${today}` } }),
+        fetchTopTierCount('partners', { 'status': 'eq.active' }),
+        fetchTopTierCount('confirmation_requests', { 'status': 'eq.pending' }),
+        fetchTopTierData('bookings', { select: 'service_type', filters: { 'created_at': `gte.${weekAgo}` } }),
       ]);
 
-      const revenue = (revenueRes.data || []).reduce((s, b) => s + Number(b.total_price || 0), 0);
-      const activeBookings = (bookingsRes.data || []).filter(b => b.status !== 'cancelled').length;
-      const serviceCounts = (topServiceRes.data || []).reduce((acc, b) => { acc[b.service_type || 'unknown'] = (acc[b.service_type || 'unknown'] || 0) + 1; return acc; }, {} as Record<string, number>);
-      const topService = Object.entries(serviceCounts).sort((a, b) => b[1] - a[1])[0];
+      const revenue = revenueData.reduce((s: number, b: any) => s + Number(b.total_price || 0), 0);
+      const activeBookings = revenueData.length;
+      const serviceCounts = topServiceData.reduce((acc: Record<string, number>, b: any) => { acc[b.service_type || 'unknown'] = (acc[b.service_type || 'unknown'] || 0) + 1; return acc; }, {} as Record<string, number>);
+      const topService = Object.entries(serviceCounts).sort((a, b) => (b[1] as number) - (a[1] as number))[0];
 
       return {
         revenueToday: revenue,
         activeBookings,
-        pendingConfirmations: confirmationsRes.data?.length || 0,
-        activePartners: partnersRes.data?.length || 0,
+        pendingConfirmations: pendingConfCount,
+        activePartners: activePartnerCount,
         topServiceThisWeek: topService ? `${topService[0]} (${topService[1]} bookings)` : 'N/A',
       };
     },
