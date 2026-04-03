@@ -55,7 +55,7 @@ export default function TTItinerary() {
   // Realtime subscription
   useEffect(() => {
     const channel = supabase.channel('tt-itinerary-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tt_bookings' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
         queryClient.invalidateQueries({ queryKey: ['tt-itinerary-bookings'] });
       })
       .subscribe();

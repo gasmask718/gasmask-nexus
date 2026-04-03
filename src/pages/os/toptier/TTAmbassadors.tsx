@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchTopTierData, patchTopTierData } from '@/lib/toptierApi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,27 +37,26 @@ export default function TTAmbassadors() {
 
   const { data: ambassadors, isLoading } = useQuery({
     queryKey: ['tt-ambassadors'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('ambassadors').select('*').is('deleted_at', null).order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('ambassadors', {
+      select: '*',
+      order: 'created_at.desc',
+    }),
   });
 
   const { data: commissions } = useQuery({
     queryKey: ['tt-amb-commissions', selectedAmb?.id],
     enabled: !!selectedAmb,
-    queryFn: async () => {
-      const { data } = await supabase.from('ambassador_commissions').select('*').eq('ambassador_id', selectedAmb.id).order('created_at', { ascending: false });
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('ambassador_commissions', {
+      select: '*',
+      filters: { 'ambassador_id': `eq.${selectedAmb.id}` },
+      order: 'created_at.desc',
+    }),
   });
 
   const payoutMutation = useMutation({
     mutationFn: async (commissionIds: string[]) => {
       for (const id of commissionIds) {
-        const { error } = await supabase.from('ambassador_commissions').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', id);
-        if (error) throw error;
+        await patchTopTierData('ambassador_commissions', { 'id': `eq.${id}` }, { status: 'paid', paid_at: new Date().toISOString() });
       }
     },
     onSuccess: () => {
@@ -68,8 +67,8 @@ export default function TTAmbassadors() {
   });
 
   const filtered = (ambassadors || [])
-    .filter(a => !search || a.name?.toLowerCase().includes(search.toLowerCase()) || a.referral_code?.toLowerCase().includes(search.toLowerCase()) || a.tracking_code?.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => {
+    .filter((a: any) => !search || a.name?.toLowerCase().includes(search.toLowerCase()) || a.referral_code?.toLowerCase().includes(search.toLowerCase()) || a.tracking_code?.toLowerCase().includes(search.toLowerCase()))
+    .sort((a: any, b: any) => {
       const av = a[sortKey], bv = b[sortKey];
       if (av == null) return 1;
       if (bv == null) return -1;
@@ -79,8 +78,9 @@ export default function TTAmbassadors() {
 
   const stats = {
     total: ambassadors?.length || 0,
-    active: ambassadors?.filter(a => a.is_active).length || 0,
-    totalEarnings: ambassadors?.reduce((s, a) => s + Number(a.total_earnings || 0), 0) || 0,
+    active: ambassadors?.filter((a: any) => a.is_active).length || 0,
+    totalEarnings: ambassadors?.reduce((s: number, a: any) => s + Number(a.total_earnings || 0), 0) || 0,
+    pendingPayouts: 0,
   };
 
   const toggleSort = (key: SortKey) => {
@@ -90,8 +90,8 @@ export default function TTAmbassadors() {
 
   const exportCSV = () => {
     const headers = ['Name', 'Referral Code', 'Status', 'Tier', 'Total Earnings'];
-    const rows = filtered.map(a => [a.name, a.referral_code || a.tracking_code, a.is_active ? 'Active' : 'Inactive', a.tier, a.total_earnings]);
-    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const rows = filtered.map((a: any) => [a.name, a.referral_code || a.tracking_code, a.is_active ? 'Active' : 'Inactive', a.tier, a.total_earnings]);
+    const csv = [headers, ...rows].map((r: any) => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a2 = document.createElement('a'); a2.href = url; a2.download = `ambassadors_${format(new Date(), 'yyyyMMdd')}.csv`; a2.click();
@@ -103,11 +103,9 @@ export default function TTAmbassadors() {
     </TableHead>
   );
 
-  const pendingCommissions = commissions?.filter(c => c.status === 'pending') || [];
-  const paidCommissions = commissions?.filter(c => c.status === 'paid') || [];
-  const pendingTotal = pendingCommissions.reduce((s, c) => s + Number(c.amount || 0), 0);
+  const pendingCommissions = commissions?.filter((c: any) => c.status === 'pending') || [];
+  const pendingTotal = pendingCommissions.reduce((s: number, c: any) => s + Number(c.amount || 0), 0);
 
-  // Tier progress
   const ambTier = selectedAmb?.tier || 'starter';
   const cfg = TIER_CONFIG[ambTier] || TIER_CONFIG.starter;
   const referralCount = commissions?.length || 0;
@@ -170,10 +168,17 @@ export default function TTAmbassadors() {
                 <TableRow key={i} className="border-white/5"><TableCell colSpan={6}><Skeleton className="h-10 bg-white/5" /></TableCell></TableRow>
               )) : filtered.length === 0 ? (
                 <TableRow className="border-white/5"><TableCell colSpan={6} className="text-center text-white/30 py-12">No ambassadors found</TableCell></TableRow>
-              ) : filtered.map(a => (
+              ) : filtered.map((a: any) => (
                 <TableRow key={a.id} className="border-white/5 hover:bg-white/5 cursor-pointer" onClick={() => setSelectedAmb(a)}>
-                  <TableCell className="text-white font-medium">{a.name}</TableCell>
-                  <TableCell className="text-white/60 font-mono text-xs">{a.referral_code || a.tracking_code}</TableCell>
+                  <TableCell className="text-white font-medium">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-[#C9A84C]/20 flex items-center justify-center text-[#C9A84C] font-bold text-xs">
+                        {a.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '?'}
+                      </div>
+                      {a.name}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-[#C9A84C] font-mono text-xs">{a.referral_code || a.tracking_code}</TableCell>
                   <TableCell>
                     <Badge className={a.is_active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}>
                       {a.is_active ? 'Active' : 'Inactive'}
@@ -189,7 +194,6 @@ export default function TTAmbassadors() {
         </CardContent>
       </Card>
 
-      {/* Ambassador Detail Sheet */}
       <Sheet open={!!selectedAmb} onOpenChange={open => !open && setSelectedAmb(null)}>
         <SheetContent className="bg-[#111111] border-l border-[#C9A84C]/10 text-white w-[500px] sm:max-w-[500px]">
           {selectedAmb && (
@@ -207,7 +211,6 @@ export default function TTAmbassadors() {
               </SheetHeader>
 
               <div className="mt-6 space-y-6">
-                {/* Referral Code */}
                 <div className="bg-white/5 rounded-lg p-4">
                   <p className="text-xs text-white/40 mb-2">Referral Code</p>
                   <div className="flex items-center gap-2">
@@ -221,7 +224,6 @@ export default function TTAmbassadors() {
                   </div>
                 </div>
 
-                {/* Tier Progress */}
                 <div className="bg-white/5 rounded-lg p-4">
                   <div className="flex justify-between mb-2">
                     <p className="text-xs text-white/40">Tier Progress</p>
@@ -233,7 +235,6 @@ export default function TTAmbassadors() {
                   </div>
                 </div>
 
-                {/* Stats */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-white/5 rounded-lg p-3">
                     <p className="text-xs text-white/40">Total Earned</p>
@@ -245,21 +246,19 @@ export default function TTAmbassadors() {
                   </div>
                 </div>
 
-                {/* Process Payout */}
                 {pendingCommissions.length > 0 && (
                   <Button className="w-full bg-[#C9A84C] hover:bg-[#B8973F] text-black" disabled={payoutMutation.isPending}
-                    onClick={() => payoutMutation.mutate(pendingCommissions.map(c => c.id))}>
+                    onClick={() => payoutMutation.mutate(pendingCommissions.map((c: any) => c.id))}>
                     <DollarSign className="h-4 w-4 mr-2" />
                     Process {pendingCommissions.length} Pending Payouts (${pendingTotal.toLocaleString()})
                   </Button>
                 )}
 
-                {/* Commission History */}
                 <div>
                   <h3 className="text-sm font-semibold text-[#C9A84C] mb-3">Commission History</h3>
                   {(commissions || []).length === 0 ? (
                     <p className="text-sm text-white/30">No commissions recorded</p>
-                  ) : commissions!.slice(0, 10).map(c => (
+                  ) : commissions!.slice(0, 10).map((c: any) => (
                     <div key={c.id} className="flex justify-between items-center bg-white/5 rounded-lg p-3 mb-2">
                       <div>
                         <span className="text-[#C9A84C] font-semibold">${Number(c.amount || 0).toLocaleString()}</span>
