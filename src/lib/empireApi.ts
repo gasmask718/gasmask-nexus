@@ -1,9 +1,8 @@
 const TOPTIER_METRICS_URL =
-  'https://qalaaroashbggynpvqct.supabase.co' +
-  '/functions/v1/get-os-metrics';
+  `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-os-metrics`;
 
 const TOPTIER_ANON_KEY =
-  import.meta.env.VITE_SUPABASE_ANON_KEY;
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export async function fetchTopTierMetrics() {
   const res = await fetch(TOPTIER_METRICS_URL, {
