@@ -37,8 +37,19 @@ export default function PenthouseAffiliates() {
   });
 
   const mutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: any }) =>
-      patchTopTierData('tt_affiliates', { id: `eq.${id}` }, { ...updates, updated_at: new Date().toISOString() }),
+    mutationFn: async ({ id, updates, currentStatus }: { id: string; updates: any; currentStatus?: string }) => {
+      const result = await patchTopTierData('tt_affiliates', { id: `eq.${id}` }, { ...updates, updated_at: new Date().toISOString() });
+      const { data } = await supabase.auth.getUser();
+      await logPenthouseAction({
+        action: `affiliate_${updates.status || 'update'}`,
+        target_type: 'tt_affiliates',
+        target_id: id,
+        actor_user_id: data.user?.id || 'unknown',
+        before: { status: currentStatus },
+        after: updates,
+      });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ph-affiliates-list'] });
       toast.success('Affiliate updated');
