@@ -9,7 +9,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 const TOPTIER_URL = import.meta.env.VITE_SUPABASE_URL;
-const TOPTIER_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const TOPTIER_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession();
