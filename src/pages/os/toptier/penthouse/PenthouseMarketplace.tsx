@@ -184,6 +184,7 @@ export default function PenthouseMarketplace() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ph-experiences'] });
       queryClient.invalidateQueries({ queryKey: ['ph-jets'] });
+      queryClient.invalidateQueries({ queryKey: ['ph-vehicles'] });
       queryClient.invalidateQueries({ queryKey: ['ph-charters'] });
       setFormOpen(false);
       toast.success(formMode === 'create' ? 'Created' : 'Updated');
