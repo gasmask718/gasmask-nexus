@@ -78,8 +78,8 @@ export default function TTOperations() {
   useEffect(() => {
     (async () => {
       try {
-        const { error } = await supabase.from('tt_bookings').select('id').limit(1);
-        setDbOk(!error);
+        await fetchTopTierData('bookings', { select: 'id', limit: 1 });
+        setDbOk(true);
       } catch { setDbOk(false); }
     })();
 
