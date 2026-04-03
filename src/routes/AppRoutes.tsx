@@ -1663,8 +1663,14 @@ export default function AppRoutes() {
           <Route path="settings" element={<TTPlaceholder />} />
         </Route>
 
-        {/* Penthouse Control System */}
-        <Route path="/os/toptier/penthouse" element={<PenthouseLayout />}>
+        {/* Penthouse Control System — Admin/Owner Only */}
+        <Route path="/os/toptier/penthouse" element={
+          <ProtectedRoute>
+            <RequireRole allowedRoles={['owner', 'admin']} showLocked>
+              <PenthouseLayout />
+            </RequireRole>
+          </ProtectedRoute>
+        }>
           <Route index element={<PenthouseDashboard />} />
           <Route path="partners" element={<PenthousePartners />} />
           <Route path="affiliates" element={<PenthouseAffiliates />} />

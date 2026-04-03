@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchTopTierData, patchTopTierData } from '@/lib/toptierApi';
+import { fetchTopTierData, patchTopTierData, logPenthouseAction } from '@/lib/toptierApi';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { DollarSign, CheckCircle, Clock, TrendingUp, Check, X } from 'lucide-react';
+import { DollarSign, CheckCircle, Clock, TrendingUp, Check, X, Loader2 } from 'lucide-react';
 
 export default function PenthouseFinance() {
   const queryClient = useQueryClient();
@@ -27,15 +28,28 @@ export default function PenthouseFinance() {
   });
 
   const payoutMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      patchTopTierData('tt_partner_earnings', { id: `eq.${id}` }, {
+    mutationFn: async ({ id, status, currentStatus, amount, partnerName }: { id: string; status: string; currentStatus: string; amount: number; partnerName: string }) => {
+      const result = await patchTopTierData('tt_partner_earnings', { id: `eq.${id}` }, {
         status,
         ...(status === 'paid' ? { paid_at: new Date().toISOString() } : {}),
-      }),
+      });
+      const { data } = await supabase.auth.getUser();
+      await logPenthouseAction({
+        action: status === 'paid' ? 'approve_payout' : 'reject_payout',
+        target_type: 'tt_partner_earnings',
+        target_id: id,
+        actor_user_id: data.user?.id || 'unknown',
+        reason: `${status === 'paid' ? 'Approved' : 'Rejected'} $${amount} payout for ${partnerName}`,
+        before: { status: currentStatus },
+        after: { status },
+      });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ph-finance-earnings'] });
       toast.success('Payout updated');
     },
+    onError: (e) => toast.error(e.message),
   });
 
   const totalPaid = earnings.filter((e: any) => e.status === 'paid').reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
@@ -56,7 +70,7 @@ export default function PenthouseFinance() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-serif font-bold text-[#C9A84C]">Finance Control</h1>
-        <p className="text-white/40 text-sm mt-1">Manage payouts, earnings, and financial operations</p>
+        <p className="text-white/40 text-sm mt-1">Approve/reject payouts — all actions audit-logged</p>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
@@ -77,11 +91,8 @@ export default function PenthouseFinance() {
         ))}
       </div>
 
-      {/* Pending Payouts */}
       <Card className="bg-[#111] border-white/5">
-        <CardHeader>
-          <CardTitle className="text-sm text-white/70">Pending Payouts</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-sm text-white/70">Pending Payouts</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -102,10 +113,12 @@ export default function PenthouseFinance() {
                   <TableCell><Badge className="bg-amber-500/20 text-amber-400 text-[10px]">pending</Badge></TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-400" onClick={() => payoutMutation.mutate({ id: e.id, status: 'paid' })}>
-                        <Check className="h-3 w-3 mr-1" /> Approve
+                      <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-400" disabled={payoutMutation.isPending}
+                        onClick={() => payoutMutation.mutate({ id: e.id, status: 'paid', currentStatus: 'pending', amount: Number(e.amount), partnerName: getPartnerName(e.partner_id) })}>
+                        {payoutMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />} Approve
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400" onClick={() => payoutMutation.mutate({ id: e.id, status: 'rejected' })}>
+                      <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400" disabled={payoutMutation.isPending}
+                        onClick={() => payoutMutation.mutate({ id: e.id, status: 'rejected', currentStatus: 'pending', amount: Number(e.amount), partnerName: getPartnerName(e.partner_id) })}>
                         <X className="h-3 w-3 mr-1" /> Reject
                       </Button>
                     </div>
@@ -120,11 +133,8 @@ export default function PenthouseFinance() {
         </CardContent>
       </Card>
 
-      {/* Transaction History */}
       <Card className="bg-[#111] border-white/5">
-        <CardHeader>
-          <CardTitle className="text-sm text-white/70">Transaction History</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-sm text-white/70">Transaction History</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
