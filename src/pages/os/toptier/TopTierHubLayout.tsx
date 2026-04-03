@@ -17,6 +17,7 @@ const navItems = [
   { path: '/os/toptier/ambassadors', label: 'Ambassadors', icon: Star },
   { path: '/os/toptier/operations', label: 'Operations', icon: Settings2 },
   { path: '/os/toptier/ai', label: 'AI Brain', icon: Brain },
+  { path: '/os/toptier/penthouse', label: 'Penthouse Control', icon: Crown },
 ];
 
 function LiveClock() {
