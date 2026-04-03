@@ -66,7 +66,6 @@ export default function TTItinerary() {
     mutationFn: async ({ bookingId, partnerId, partnerName }: { bookingId: string; partnerId: string; partnerName: string }) => {
       await patchTopTierData('bookings', { 'id': `eq.${bookingId}` }, { partner_id: partnerId, partner_name: partnerName, status: 'confirmed' });
     },
-    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tt-itinerary-bookings'] });
       setReassignBooking(null);
