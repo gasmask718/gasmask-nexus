@@ -1,32 +1,45 @@
-## Session 6 — Three Deliverables
+## Phase 1: TopTier Experience Hub Rebuild
 
-### 1. PostGrid Certified Mail Integration
-- Add PostGrid API call to Credit Repair's Send Certified Mail flow
-- Store letter ID + tracking number in `funding_mailing_log`
-- Display USPS tracking link
-- Requires POSTGRID_API_KEY secret
+### Database Migration
+Create the missing TopTier-specific tables needed for Phase 1:
+- `tt_bookings` — client bookings with service_type, total_price, status, partner assignment
+- `tt_partners` — service partners with trust_score, status, response_rate
+- `tt_confirmation_requests` — partner confirmation tracking
+- `tt_booking_events` — timeline/audit log for booking status changes
+- `tt_partner_earnings` — partner payout tracking
+All with RLS policies for authenticated users.
 
-### 2. Document Vault
-- Create `funding-documents` storage bucket
-- Create `funding_client_documents` table with RLS
-- Build tabbed vault UI (Identity, Business, Financial, Lender Packages)
-- Integrate into client profile page
-- Upload to Supabase Storage under `client_id/category/filename`
+### New Layout: TopTierHubLayout
+- Fixed left sidebar (240px) with dark luxury theme (#0A0A0A background, gold #C9A84C accents)
+- Dynasty OS logo, TopTier Hub navigation (9 items), live status indicator
+- Top header bar with breadcrumb, live clock, notifications, LIVE badge
+- Replaces current simple TopTierDashboard for `/os/toptier/*` routes
 
-### 3. Client Portal
-- New route `/client-portal` with magic link auth
-- Read-only view of DFS score, checklist, tasks
-- Document upload capability
-- Progress timeline showing pipeline phase
-- Magic link via SendGrid transactional email
+### Page 1: Overview Dashboard (`/os/toptier`)
+- 4 KPI cards (Revenue Today, Active Bookings, Partners Active, Pending Issues) — live from Supabase
+- Live Booking Feed (Realtime subscription) + Revenue 7-day area chart
+- 3 status cards (Partner Response Rate, Top Service, Ambassador Activity)
+- Operations alerts section
 
-### Database Changes
-- `funding_client_documents` table
-- `funding-documents` storage bucket + policies
-- Alter `funding_mailing_log` to add `postgrid_letter_id` and `tracking_number` columns if not present
+### Page 2: Bookings Manager (`/os/toptier/bookings`)
+- Filter row (date range, status, service type, search)
+- 5 metric cards from filtered data
+- Sortable paginated table with slide-over detail panel
+- Actions: Reassign, Complete, Refund, Add Note
 
-### Edge Function Updates
-- Update credit repair mail flow to call PostGrid API
-- Add client portal magic link endpoint
+### Page 3: Revenue Dashboard (`/os/toptier/revenue`)
+- Date range selector with 6 presets
+- 6 top metric cards
+- Revenue + Bookings charts (AreaChart + BarChart)
+- Revenue by category (PieChart) + Top services (horizontal bar)
+- Partner payout queue table
 
-Shall I proceed with Session 6?
+### Routing Changes
+- Add nested routes under `/os/toptier/*` inside existing AppRoutes
+- Keep existing TopTier module sidebar items working
+- New pages are lazy-loaded
+
+### Design System
+- Add TopTier dark theme CSS variables to index.css scoped under `.toptier-hub`
+- All components use semantic tokens, no hardcoded colors
+- Gold accents, dark glass cards, no white backgrounds
