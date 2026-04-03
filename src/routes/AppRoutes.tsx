@@ -387,6 +387,7 @@ const DCInfrastructure = lazy(() => import('@/pages/dynasty-connect/DCInfrastruc
 const DCLiveCalls = lazy(() => import('@/pages/dynasty-connect/DCLiveCalls'));
 const DCClients = lazy(() => import('@/pages/dynasty-connect/DCClients'));
 const DCPhoneSetup = lazy(() => import('@/pages/dynasty-connect/DCPhoneSetup'));
+const DCPhoneNumbers = lazy(() => import('@/pages/dynasty-connect/DCPhoneNumbers'));
 // Pipeline sub-pages
 const SurplusFundsPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/SurplusFundsPipeline'));
 const DCRealEstatePipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/RealEstatePipeline'));
@@ -1294,6 +1295,7 @@ export default function AppRoutes() {
           <Route path="infrastructure" element={<DCInfrastructure />} />
           <Route path="infrastructure/numbers" element={<DCInfrastructure />} />
           <Route path="infrastructure/phone-setup" element={<DCPhoneSetup />} />
+          <Route path="phone-numbers" element={<DCPhoneNumbers />} />
           <Route path="clients" element={<DCClients />} />
         </Route>
 

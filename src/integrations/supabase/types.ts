@@ -30994,6 +30994,8 @@ export type Database = {
           assigned_agent_name: string | null
           business: string | null
           created_at: string | null
+          display_name: string | null
+          elevenlabs_agent_name: string | null
           elevenlabs_phone_id: string | null
           friendly_name: string | null
           id: string
@@ -31006,6 +31008,7 @@ export type Database = {
           sid: string | null
           status: string | null
           twilio_sid: string | null
+          twilio_webhook_configured: boolean
           webhook_url: string | null
         }
         Insert: {
@@ -31013,6 +31016,8 @@ export type Database = {
           assigned_agent_name?: string | null
           business?: string | null
           created_at?: string | null
+          display_name?: string | null
+          elevenlabs_agent_name?: string | null
           elevenlabs_phone_id?: string | null
           friendly_name?: string | null
           id?: string
@@ -31025,6 +31030,7 @@ export type Database = {
           sid?: string | null
           status?: string | null
           twilio_sid?: string | null
+          twilio_webhook_configured?: boolean
           webhook_url?: string | null
         }
         Update: {
@@ -31032,6 +31038,8 @@ export type Database = {
           assigned_agent_name?: string | null
           business?: string | null
           created_at?: string | null
+          display_name?: string | null
+          elevenlabs_agent_name?: string | null
           elevenlabs_phone_id?: string | null
           friendly_name?: string | null
           id?: string
@@ -31044,6 +31052,7 @@ export type Database = {
           sid?: string | null
           status?: string | null
           twilio_sid?: string | null
+          twilio_webhook_configured?: boolean
           webhook_url?: string | null
         }
         Relationships: []
