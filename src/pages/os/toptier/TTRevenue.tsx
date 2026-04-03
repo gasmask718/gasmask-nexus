@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchTopTierData } from '@/lib/toptierApi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,87 +35,62 @@ export default function TTRevenue() {
 
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['tt-revenue-bookings', range],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('tt_bookings')
-        .select('id, service_type, service_name, total_price, status, created_at, partner_name')
-        .neq('status', 'cancelled')
-        .gte('created_at', startDate)
-        .order('created_at', { ascending: true });
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('bookings', {
+      select: 'id,service_type,service_name,total_price,status,created_at,partner_name',
+      filters: {
+        'status': 'neq.cancelled',
+        'created_at': `gte.${startDate}`,
+      },
+      order: 'created_at.asc',
+    }),
     refetchInterval: 30000,
   });
 
   const metrics = useMemo(() => {
     if (!bookings?.length) return { total: 0, avg: 0, highest: 0, count: 0, avgBooking: 0, platform: 0 };
-    const total = bookings.reduce((s, b) => s + Number(b.total_price), 0);
+    const total = bookings.reduce((s: number, b: any) => s + Number(b.total_price), 0);
     const days = Math.max(1, range === 0 ? 1 : range === -1 ? Math.ceil((Date.now() - new Date(new Date().getFullYear(), 0, 1).getTime()) / 86400000) : range);
-    
     const byDate: Record<string, number> = {};
-    bookings.forEach(b => {
-      const d = new Date(b.created_at).toISOString().split('T')[0];
-      byDate[d] = (byDate[d] || 0) + Number(b.total_price);
-    });
+    bookings.forEach((b: any) => { const d = new Date(b.created_at).toISOString().split('T')[0]; byDate[d] = (byDate[d] || 0) + Number(b.total_price); });
     const highest = Math.max(...Object.values(byDate), 0);
-    
-    return {
-      total,
-      avg: Math.round(total / days),
-      highest,
-      count: bookings.length,
-      avgBooking: Math.round(total / bookings.length),
-      platform: Math.round(total * 0.2), // 20% platform fee estimate
-    };
+    return { total, avg: Math.round(total / days), highest, count: bookings.length, avgBooking: Math.round(total / bookings.length), platform: Math.round(total * 0.2) };
   }, [bookings, range]);
 
   const revenueOverTime = useMemo(() => {
     if (!bookings?.length) return [];
     const byDate: Record<string, number> = {};
-    bookings.forEach(b => {
-      const d = new Date(b.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      byDate[d] = (byDate[d] || 0) + Number(b.total_price);
-    });
+    bookings.forEach((b: any) => { const d = new Date(b.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); byDate[d] = (byDate[d] || 0) + Number(b.total_price); });
     return Object.entries(byDate).map(([date, revenue]) => ({ date, revenue }));
   }, [bookings]);
 
   const bookingsOverTime = useMemo(() => {
     if (!bookings?.length) return [];
     const byDate: Record<string, number> = {};
-    bookings.forEach(b => {
-      const d = new Date(b.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      byDate[d] = (byDate[d] || 0) + 1;
-    });
+    bookings.forEach((b: any) => { const d = new Date(b.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); byDate[d] = (byDate[d] || 0) + 1; });
     return Object.entries(byDate).map(([date, count]) => ({ date, count }));
   }, [bookings]);
 
   const byCategory = useMemo(() => {
     if (!bookings?.length) return [];
     const grouped: Record<string, number> = {};
-    bookings.forEach(b => { grouped[b.service_type] = (grouped[b.service_type] || 0) + Number(b.total_price); });
+    bookings.forEach((b: any) => { grouped[b.service_type] = (grouped[b.service_type] || 0) + Number(b.total_price); });
     return Object.entries(grouped).map(([name, value]) => ({ name, value }));
   }, [bookings]);
 
   const topServices = useMemo(() => {
     if (!bookings?.length) return [];
     const grouped: Record<string, number> = {};
-    bookings.forEach(b => { grouped[b.service_name] = (grouped[b.service_name] || 0) + Number(b.total_price); });
-    return Object.entries(grouped)
-      .map(([name, revenue]) => ({ name, revenue }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 10);
+    bookings.forEach((b: any) => { grouped[b.service_name] = (grouped[b.service_name] || 0) + Number(b.total_price); });
+    return Object.entries(grouped).map(([name, revenue]) => ({ name, revenue })).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
   }, [bookings]);
 
   const { data: payouts, isLoading: payoutsLoading } = useQuery({
     queryKey: ['tt-payout-queue'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('tt_partner_earnings')
-        .select('*, tt_partners(name)')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('partner_earnings', {
+      select: '*,partners(name)',
+      filters: { 'status': 'eq.pending' },
+      order: 'created_at.desc',
+    }),
     refetchInterval: 30000,
   });
 
@@ -127,20 +102,13 @@ export default function TTRevenue() {
         <h1 className="text-2xl font-bold text-white/90">Revenue Dashboard</h1>
         <div className="flex gap-1 bg-[#111111] rounded-lg p-1 border border-white/5">
           {RANGES.map(r => (
-            <Button
-              key={r.label}
-              variant="ghost"
-              size="sm"
+            <Button key={r.label} variant="ghost" size="sm"
               className={`text-xs px-3 ${range === r.days ? 'bg-[#C9A84C]/20 text-[#C9A84C]' : 'text-white/40 hover:text-white'}`}
-              onClick={() => setRange(r.days)}
-            >
-              {r.label}
-            </Button>
+              onClick={() => setRange(r.days)}>{r.label}</Button>
           ))}
         </div>
       </div>
 
-      {/* Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { label: 'Total Revenue', value: `$${metrics.total.toLocaleString()}`, icon: DollarSign },
@@ -160,7 +128,6 @@ export default function TTRevenue() {
         ))}
       </div>
 
-      {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="bg-[#111111] border-[#C9A84C]/10">
           <CardHeader className="pb-2"><CardTitle className="text-sm text-white/60">Revenue Over Time</CardTitle></CardHeader>
@@ -195,7 +162,6 @@ export default function TTRevenue() {
         </Card>
       </div>
 
-      {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="bg-[#111111] border-[#C9A84C]/10">
           <CardHeader className="pb-2"><CardTitle className="text-sm text-white/60">Revenue by Category</CardTitle></CardHeader>
@@ -230,20 +196,12 @@ export default function TTRevenue() {
         </Card>
       </div>
 
-      {/* Payout Queue */}
       <Card className="bg-[#111111] border-[#C9A84C]/10">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base text-white/70">Partner Payout Queue</CardTitle>
-          <ExportButton
-            data={(payouts || []) as Record<string, unknown>[]}
-            filename="toptier-payouts"
-            columns={[
-              { key: 'tt_partners.name', label: 'Partner' },
-              { key: 'amount', label: 'Amount' },
-              { key: 'status', label: 'Status' },
-              { key: 'created_at', label: 'Date' },
-            ]}
-          />
+          <ExportButton data={(payouts || []) as Record<string, unknown>[]} filename="toptier-payouts" columns={[
+            { key: 'partners.name', label: 'Partner' }, { key: 'amount', label: 'Amount' }, { key: 'status', label: 'Status' }, { key: 'created_at', label: 'Date' },
+          ]} />
         </CardHeader>
         <CardContent>
           {payoutsLoading ? <Skeleton className="h-32 bg-white/5" /> : !payouts?.length ? (
@@ -260,13 +218,11 @@ export default function TTRevenue() {
                 <tbody className="divide-y divide-white/5">
                   {payouts.map((p: any) => (
                     <tr key={p.id} className="hover:bg-white/[0.02]">
-                      <td className="px-4 py-3 text-sm text-white/70">{(p.tt_partners as any)?.name || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-white/70">{p.partners?.name || '—'}</td>
                       <td className="px-4 py-3 text-sm font-semibold text-[#C9A84C]">${Number(p.amount).toLocaleString()}</td>
                       <td className="px-4 py-3"><Badge className="bg-amber-500/20 text-amber-400 text-[10px]">{p.status}</Badge></td>
                       <td className="px-4 py-3">
-                        <Button size="sm" variant="outline" className="text-xs border-[#C9A84C]/30 text-[#C9A84C] hover:bg-[#C9A84C]/10">
-                          Process Payout
-                        </Button>
+                        <Button size="sm" variant="outline" className="text-xs border-[#C9A84C]/30 text-[#C9A84C] hover:bg-[#C9A84C]/10">Process Payout</Button>
                       </td>
                     </tr>
                   ))}

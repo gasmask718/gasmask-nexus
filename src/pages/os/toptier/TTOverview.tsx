@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchTopTierData, fetchTopTierCount } from '@/lib/toptierApi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -39,20 +40,17 @@ function LiveBookingFeed() {
   
   const { data, isLoading } = useQuery({
     queryKey: ['tt-live-bookings'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('tt_bookings')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('bookings', {
+      select: '*',
+      order: 'created_at.desc',
+      limit: 10,
+    }),
     refetchInterval: 30000,
   });
 
   useEffect(() => { if (data) setBookings(data); }, [data]);
 
-  // Realtime subscription
+  // Realtime subscription (local supabase client — cross-project realtime in Phase 3)
   useEffect(() => {
     const channel = supabase
       .channel('tt-bookings-live')
@@ -106,15 +104,15 @@ function RevenueChart() {
     queryFn: async () => {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const { data: bookings } = await supabase
-        .from('tt_bookings')
-        .select('created_at, total_price')
-        .neq('status', 'cancelled')
-        .gte('created_at', sevenDaysAgo.toISOString());
+      const bookings = await fetchTopTierData('bookings', {
+        select: 'created_at,total_price',
+        filters: {
+          'status': 'neq.cancelled',
+          'created_at': `gte.${sevenDaysAgo.toISOString()}`,
+        },
+      });
       
-      if (!bookings) return [];
-      
-      const byDate = bookings.reduce((acc: any, b) => {
+      const byDate = bookings.reduce((acc: any, b: any) => {
         const date = new Date(b.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         acc[date] = (acc[date] || 0) + Number(b.total_price);
         return acc;
@@ -157,12 +155,12 @@ function StatusCards() {
     queryKey: ['tt-partner-response-rate'],
     queryFn: async () => {
       const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-      const { data } = await supabase
-        .from('tt_confirmation_requests')
-        .select('status')
-        .gte('created_at', weekAgo.toISOString());
-      if (!data || data.length === 0) return 0;
-      const confirmed = data.filter(d => d.status === 'confirmed').length;
+      const data = await fetchTopTierData('confirmation_requests', {
+        select: 'status',
+        filters: { 'created_at': `gte.${weekAgo.toISOString()}` },
+      });
+      if (!data.length) return 0;
+      const confirmed = data.filter((d: any) => d.status === 'confirmed').length;
       return Math.round((confirmed / data.length) * 100);
     },
     refetchInterval: 30000,
@@ -172,13 +170,13 @@ function StatusCards() {
     queryKey: ['tt-top-service'],
     queryFn: async () => {
       const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-      const { data } = await supabase
-        .from('tt_bookings')
-        .select('service_type, total_price')
-        .gte('created_at', weekAgo.toISOString());
-      if (!data || data.length === 0) return { name: 'N/A', count: 0, revenue: 0 };
+      const data = await fetchTopTierData('bookings', {
+        select: 'service_type,total_price',
+        filters: { 'created_at': `gte.${weekAgo.toISOString()}` },
+      });
+      if (!data.length) return { name: 'N/A', count: 0, revenue: 0 };
       const grouped: Record<string, { count: number; revenue: number }> = {};
-      data.forEach(b => {
+      data.forEach((b: any) => {
         if (!grouped[b.service_type]) grouped[b.service_type] = { count: 0, revenue: 0 };
         grouped[b.service_type].count++;
         grouped[b.service_type].revenue += Number(b.total_price);
@@ -213,7 +211,7 @@ function StatusCards() {
         <CardContent className="p-5">
           <p className="text-xs text-white/40 uppercase tracking-wider">Ambassador Activity</p>
           <p className="text-2xl font-bold text-white/90 mt-2">—</p>
-          <p className="text-xs text-white/30 mt-1">Coming in Phase 2</p>
+          <p className="text-xs text-white/30 mt-1">Coming in Phase 3</p>
         </CardContent>
       </Card>
     </div>
@@ -225,24 +223,27 @@ function OperationsAlerts() {
     queryKey: ['tt-ops-alerts'],
     queryFn: async () => {
       const items: any[] = [];
-      // Bookings stuck pending > 2 hours
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-      const { data: stuck } = await supabase
-        .from('tt_bookings')
-        .select('id, service_name, created_at')
-        .eq('status', 'pending')
-        .lt('created_at', twoHoursAgo)
-        .limit(5);
-      stuck?.forEach(b => items.push({ type: 'stuck_booking', id: b.id, desc: `Booking "${b.service_name}" pending for over 2 hours`, severity: 'high' }));
       
-      // Low trust partners
-      const { data: lowTrust } = await supabase
-        .from('tt_partners')
-        .select('id, name, trust_score')
-        .lt('trust_score', 3)
-        .eq('status', 'active')
-        .limit(5);
-      lowTrust?.forEach(p => items.push({ type: 'low_trust', id: p.id, desc: `Partner "${p.name}" has trust score ${p.trust_score}/5`, severity: 'medium' }));
+      const stuck = await fetchTopTierData('bookings', {
+        select: 'id,service_name,created_at',
+        filters: {
+          'status': 'eq.pending',
+          'created_at': `lt.${twoHoursAgo}`,
+        },
+        limit: 5,
+      });
+      stuck.forEach((b: any) => items.push({ type: 'stuck_booking', id: b.id, desc: `Booking "${b.service_name}" pending for over 2 hours`, severity: 'high' }));
+      
+      const lowTrust = await fetchTopTierData('partners', {
+        select: 'id,name,trust_score',
+        filters: {
+          'trust_score': 'lt.3',
+          'status': 'eq.active',
+        },
+        limit: 5,
+      });
+      lowTrust.forEach((p: any) => items.push({ type: 'low_trust', id: p.id, desc: `Partner "${p.name}" has trust score ${p.trust_score}/5`, severity: 'medium' }));
       
       return items;
     },
@@ -282,26 +283,26 @@ export default function TTOverview() {
       const today = new Date().toISOString().split('T')[0];
       const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
-      const [rev, revYest, active, pending, partners, newPartners] = await Promise.all([
-        supabase.from('tt_bookings').select('total_price').neq('status', 'cancelled').gte('created_at', today),
-        supabase.from('tt_bookings').select('total_price').neq('status', 'cancelled').gte('created_at', yesterday).lt('created_at', today),
-        supabase.from('tt_bookings').select('id', { count: 'exact', head: true }).in('status', ['confirmed', 'pending']),
-        supabase.from('tt_bookings').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('tt_partners').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-        supabase.from('tt_confirmation_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      const [rev, revYest, activeCount, pendingCount, partnersCount, pendingConfCount] = await Promise.all([
+        fetchTopTierData('bookings', { select: 'total_price', filters: { 'status': 'neq.cancelled', 'created_at': `gte.${today}` } }),
+        fetchTopTierData('bookings', { select: 'total_price', filters: { 'status': 'neq.cancelled', 'created_at': `gte.${yesterday}`, 'created_at@1': `lt.${today}` } }).catch(() => []),
+        fetchTopTierCount('bookings', { 'status': 'in.(confirmed,pending)' }),
+        fetchTopTierCount('bookings', { 'status': 'eq.pending' }),
+        fetchTopTierCount('partners', { 'status': 'eq.active' }),
+        fetchTopTierCount('confirmation_requests', { 'status': 'eq.pending' }),
       ]);
 
-      const todayRev = (rev.data || []).reduce((s, b) => s + Number(b.total_price), 0);
-      const yesterdayRev = (revYest.data || []).reduce((s, b) => s + Number(b.total_price), 0);
+      const todayRev = rev.reduce((s: number, b: any) => s + Number(b.total_price), 0);
+      const yesterdayRev = revYest.reduce((s: number, b: any) => s + Number(b.total_price), 0);
       const revTrend = yesterdayRev > 0 ? Math.round(((todayRev - yesterdayRev) / yesterdayRev) * 100) : 0;
 
       return {
         revenue: todayRev,
         revTrend,
-        activeBookings: active.count || 0,
-        pendingBookings: pending.count || 0,
-        activePartners: partners.count || 0,
-        pendingConfirmations: newPartners.count || 0,
+        activeBookings: activeCount,
+        pendingBookings: pendingCount,
+        activePartners: partnersCount,
+        pendingConfirmations: pendingConfCount,
       };
     },
     refetchInterval: 30000,
@@ -309,56 +310,19 @@ export default function TTOverview() {
 
   return (
     <div className="space-y-6">
-      {/* KPI Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
-          title="Revenue Today"
-          value={isLoading ? '—' : `$${kpis?.revenue?.toLocaleString() ?? '0'}`}
-          subtitle="Today's revenue"
-          detail={kpis?.revTrend ? `${kpis.revTrend > 0 ? '+' : ''}${kpis.revTrend}% vs yesterday` : undefined}
-          detailColor={kpis?.revTrend && kpis.revTrend >= 0 ? 'text-emerald-400' : 'text-red-400'}
-          icon={DollarSign}
-          loading={isLoading}
-        />
-        <KPICard
-          title="Active Bookings"
-          value={isLoading ? '—' : kpis?.activeBookings}
-          subtitle="Active bookings"
-          detail={kpis?.pendingBookings ? `${kpis.pendingBookings} pending confirmation` : undefined}
-          detailColor="text-amber-400"
-          icon={CalendarCheck}
-          loading={isLoading}
-        />
-        <KPICard
-          title="Partners Active"
-          value={isLoading ? '—' : kpis?.activePartners}
-          subtitle="Active partners"
-          icon={Users}
-          loading={isLoading}
-        />
-        <KPICard
-          title="Pending Issues"
-          value={isLoading ? '—' : kpis?.pendingConfirmations}
-          subtitle="Pending confirmations"
-          icon={AlertTriangle}
-          loading={isLoading}
-        />
+        <KPICard title="Revenue Today" value={isLoading ? '—' : `$${kpis?.revenue?.toLocaleString() ?? '0'}`} subtitle="Today's revenue" detail={kpis?.revTrend ? `${kpis.revTrend > 0 ? '+' : ''}${kpis.revTrend}% vs yesterday` : undefined} detailColor={kpis?.revTrend && kpis.revTrend >= 0 ? 'text-emerald-400' : 'text-red-400'} icon={DollarSign} loading={isLoading} />
+        <KPICard title="Active Bookings" value={isLoading ? '—' : kpis?.activeBookings} subtitle="Active bookings" detail={kpis?.pendingBookings ? `${kpis.pendingBookings} pending confirmation` : undefined} detailColor="text-amber-400" icon={CalendarCheck} loading={isLoading} />
+        <KPICard title="Partners Active" value={isLoading ? '—' : kpis?.activePartners} subtitle="Active partners" icon={Users} loading={isLoading} />
+        <KPICard title="Pending Issues" value={isLoading ? '—' : kpis?.pendingConfirmations} subtitle="Pending confirmations" icon={AlertTriangle} loading={isLoading} />
       </div>
 
-      {/* Live Feed + Revenue Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <div className="lg:col-span-3">
-          <LiveBookingFeed />
-        </div>
-        <div className="lg:col-span-2">
-          <RevenueChart />
-        </div>
+        <div className="lg:col-span-3"><LiveBookingFeed /></div>
+        <div className="lg:col-span-2"><RevenueChart /></div>
       </div>
 
-      {/* Status Cards */}
       <StatusCards />
-
-      {/* Operations Alerts */}
       <OperationsAlerts />
     </div>
   );
