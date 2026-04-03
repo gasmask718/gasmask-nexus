@@ -6,6 +6,7 @@ import { CommunicationWidget } from '@/components/communication/CommunicationWid
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { getSimulationDashboardStats } from '@/lib/simulation/coreSimulationData';
 import { PwaInstallBanner } from '@/components/pwa/PwaInstallBanner';
+import { TopTierEmpireCard } from '@/components/empire/TopTierEmpireCard';
 import {
   Store, 
   TrendingUp, 
@@ -151,6 +152,9 @@ const Dashboard = () => {
           </Card>
         ))}
       </div>
+
+      {/* Connected Business Units */}
+      <TopTierEmpireCard />
 
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-3">
