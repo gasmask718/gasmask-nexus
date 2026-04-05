@@ -730,6 +730,7 @@ const PenthouseAudit = lazy(() => import('@/pages/os/toptier/penthouse/Penthouse
 const PenthouseDrivers = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseDrivers'));
 const PenthouseConfirmations = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseConfirmations'));
 const PenthouseNightlife = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseNightlife'));
+const PenthouseHotels = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseHotels'));
 
 // Unforgettable
 const UnforgettableDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDashboard })));
