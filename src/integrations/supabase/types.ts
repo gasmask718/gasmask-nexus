@@ -29175,6 +29175,50 @@ export type Database = {
           },
         ]
       }
+      corporate_event_proposal_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string | null
+          item_name: string | null
+          price: number
+          proposal_id: string
+          quantity: number
+          subtotal: number | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          item_name?: string | null
+          price?: number
+          proposal_id: string
+          quantity?: number
+          subtotal?: number | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          item_name?: string | null
+          price?: number
+          proposal_id?: string
+          quantity?: number
+          subtotal?: number | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "corporate_event_proposal_items_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "corporate_event_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       corporate_event_proposals: {
         Row: {
           created_at: string | null
