@@ -117,6 +117,20 @@ export default function PenthouseNightlife() {
           status: 'confirmed',
         });
       }
+
+      // Send notification (SMS + admin alert)
+      try {
+        await supabase.functions.invoke('nightlife-notify', {
+          body: {
+            request_id: respondModal.id,
+            action: responseAction,
+            counter_price: counterPrice || null,
+            counter_details: counterDetails || null,
+          },
+        });
+      } catch (e) {
+        console.error('Notification failed:', e);
+      }
     },
     onSuccess: () => {
       toast.success(`Request ${responseAction === 'counter_offer' ? 'counter-offered' : responseAction}!`);
