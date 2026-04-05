@@ -29327,6 +29327,54 @@ export type Database = {
           },
         ]
       }
+      corporate_event_provider_links: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          provider_id: string
+          quantity: number
+          request_id: string
+          subtotal: number | null
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          provider_id: string
+          quantity?: number
+          request_id: string
+          subtotal?: number | null
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          provider_id?: string
+          quantity?: number
+          request_id?: string
+          subtotal?: number | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "corporate_event_provider_links_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "experience_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "corporate_event_provider_links_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "corporate_event_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       corporate_event_rentals: {
         Row: {
           category: string | null
@@ -36378,6 +36426,51 @@ export type Database = {
           id?: string
           sort_order?: number | null
           tax_deductible?: boolean
+        }
+        Relationships: []
+      }
+      experience_providers: {
+        Row: {
+          category: string
+          city: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          media: Json | null
+          name: string
+          price: number
+          rating: number | null
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          city: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          media?: Json | null
+          name: string
+          price?: number
+          rating?: number | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          city?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          media?: Json | null
+          name?: string
+          price?: number
+          rating?: number | null
+          tags?: string[] | null
+          updated_at?: string
         }
         Relationships: []
       }
