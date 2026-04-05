@@ -152,6 +152,7 @@ export default function PenthouseNightlife() {
         email: newPartner.email || null,
         role: newPartner.role,
         bio: newPartner.bio || null,
+        venues: newPartner.venues ? newPartner.venues.split(',').map(v => v.trim()).filter(Boolean) : [],
       });
       if (error) throw error;
     },
