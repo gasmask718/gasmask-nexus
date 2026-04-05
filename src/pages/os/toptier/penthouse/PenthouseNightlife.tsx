@@ -160,7 +160,7 @@ export default function PenthouseNightlife() {
       toast.success('Partner added!');
       qc.invalidateQueries({ queryKey: ['nightlife-partners'] });
       setAddPartnerOpen(false);
-      setNewPartner({ name: '', city: '', phone: '', email: '', role: 'promoter', bio: '' });
+      setNewPartner({ name: '', city: '', phone: '', email: '', role: 'promoter', bio: '', venues: '' });
     },
     onError: (e: any) => toast.error(e.message),
   });
