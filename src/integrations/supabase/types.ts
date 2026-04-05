@@ -29175,6 +29175,64 @@ export type Database = {
           },
         ]
       }
+      corporate_event_bundles: {
+        Row: {
+          addons: Json | null
+          chauffeur_id: string | null
+          created_at: string
+          hotel_id: string | null
+          id: string
+          nightlife_id: string | null
+          request_id: string
+          total_price: number
+          updated_at: string
+        }
+        Insert: {
+          addons?: Json | null
+          chauffeur_id?: string | null
+          created_at?: string
+          hotel_id?: string | null
+          id?: string
+          nightlife_id?: string | null
+          request_id: string
+          total_price?: number
+          updated_at?: string
+        }
+        Update: {
+          addons?: Json | null
+          chauffeur_id?: string | null
+          created_at?: string
+          hotel_id?: string | null
+          id?: string
+          nightlife_id?: string | null
+          request_id?: string
+          total_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "corporate_event_bundles_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "tt_hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "corporate_event_bundles_nightlife_id_fkey"
+            columns: ["nightlife_id"]
+            isOneToOne: false
+            referencedRelation: "nightlife_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "corporate_event_bundles_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "corporate_event_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       corporate_event_proposal_items: {
         Row: {
           created_at: string
