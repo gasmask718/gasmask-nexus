@@ -47910,6 +47910,163 @@ export type Database = {
         }
         Relationships: []
       }
+      nightlife_bookings: {
+        Row: {
+          confirmed_by: string | null
+          created_at: string
+          final_price: number | null
+          id: string
+          notes: string | null
+          request_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          confirmed_by?: string | null
+          created_at?: string
+          final_price?: number | null
+          id?: string
+          notes?: string | null
+          request_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          confirmed_by?: string | null
+          created_at?: string
+          final_price?: number | null
+          id?: string
+          notes?: string | null
+          request_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nightlife_bookings_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "nightlife_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nightlife_partners: {
+        Row: {
+          bio: string | null
+          city: string
+          contact: string | null
+          created_at: string
+          email: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          phone: string | null
+          role: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          bio?: string | null
+          city: string
+          contact?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          phone?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          bio?: string | null
+          city?: string
+          contact?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          phone?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      nightlife_requests: {
+        Row: {
+          assigned_promoter_id: string | null
+          city: string
+          counter_offer_details: string | null
+          counter_offer_price: number | null
+          created_at: string
+          date: string
+          email: string | null
+          id: string
+          party_size: number
+          phone: string | null
+          promoter_notes: string | null
+          request_details: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+          user_name: string
+          venue: string | null
+        }
+        Insert: {
+          assigned_promoter_id?: string | null
+          city: string
+          counter_offer_details?: string | null
+          counter_offer_price?: number | null
+          created_at?: string
+          date: string
+          email?: string | null
+          id?: string
+          party_size?: number
+          phone?: string | null
+          promoter_notes?: string | null
+          request_details?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          user_name: string
+          venue?: string | null
+        }
+        Update: {
+          assigned_promoter_id?: string | null
+          city?: string
+          counter_offer_details?: string | null
+          counter_offer_price?: number | null
+          created_at?: string
+          date?: string
+          email?: string | null
+          id?: string
+          party_size?: number
+          phone?: string | null
+          promoter_notes?: string | null
+          request_details?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          user_name?: string
+          venue?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nightlife_requests_assigned_promoter_id_fkey"
+            columns: ["assigned_promoter_id"]
+            isOneToOne: false
+            referencedRelation: "nightlife_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       note_cleaner_jobs: {
         Row: {
           completed_at: string | null
