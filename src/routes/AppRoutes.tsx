@@ -729,6 +729,7 @@ const PenthouseAnalytics = lazy(() => import('@/pages/os/toptier/penthouse/Penth
 const PenthouseAudit = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseAudit'));
 const PenthouseDrivers = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseDrivers'));
 const PenthouseConfirmations = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseConfirmations'));
+const PenthouseNightlife = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseNightlife'));
 
 // Unforgettable
 const UnforgettableDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDashboard })));
@@ -1679,6 +1680,7 @@ export default function AppRoutes() {
           <Route path="marketplace" element={<PenthouseMarketplace />} />
           <Route path="drivers" element={<PenthouseDrivers />} />
           <Route path="confirmations" element={<PenthouseConfirmations />} />
+          <Route path="nightlife" element={<PenthouseNightlife />} />
           <Route path="finance" element={<PenthouseFinance />} />
           <Route path="roles" element={<PenthouseRoles />} />
           <Route path="system" element={<PenthouseSystem />} />
