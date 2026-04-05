@@ -541,6 +541,7 @@ export default function PenthouseNightlife() {
                 <SelectItem value="club">Club</SelectItem>
               </SelectContent>
             </Select>
+            <Input placeholder="Venues (comma-separated)" value={newPartner.venues} onChange={e => setNewPartner(p => ({ ...p, venues: e.target.value }))} className="bg-white/5 border-white/10 text-white" />
             <Textarea placeholder="Bio (optional)" value={newPartner.bio} onChange={e => setNewPartner(p => ({ ...p, bio: e.target.value }))} className="bg-white/5 border-white/10 text-white" rows={2} />
           </div>
           <DialogFooter>
