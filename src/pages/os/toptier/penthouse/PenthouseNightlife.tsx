@@ -185,6 +185,18 @@ export default function PenthouseNightlife() {
     setPromoterNotes('');
   }
 
+  /* ─── realtime subscription ─── */
+  useEffect(() => {
+    const channel = supabase
+      .channel('nightlife-requests-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'nightlife_requests' }, () => {
+        qc.invalidateQueries({ queryKey: ['nightlife-requests'] });
+        qc.invalidateQueries({ queryKey: ['nightlife-bookings'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
+
   const filteredRequests = statusFilter === 'all'
     ? requests
     : requests.filter(r => r.status === statusFilter);
