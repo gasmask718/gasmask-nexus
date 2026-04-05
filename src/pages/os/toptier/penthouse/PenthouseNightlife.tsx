@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +30,7 @@ type NightlifePartner = {
   id: string; name: string; city: string; contact: string | null;
   email: string | null; phone: string | null; role: string;
   bio: string | null; is_active: boolean; created_at: string;
+  venues: string[] | null;
 };
 
 /* ─── status helpers ─── */
@@ -49,7 +50,7 @@ export default function PenthouseNightlife() {
   const [counterDetails, setCounterDetails] = useState('');
   const [promoterNotes, setPromoterNotes] = useState('');
   const [addPartnerOpen, setAddPartnerOpen] = useState(false);
-  const [newPartner, setNewPartner] = useState({ name: '', city: '', phone: '', email: '', role: 'promoter', bio: '' });
+  const [newPartner, setNewPartner] = useState({ name: '', city: '', phone: '', email: '', role: 'promoter', bio: '', venues: '' });
   const [statusFilter, setStatusFilter] = useState('all');
 
   /* ─── queries ─── */
@@ -151,6 +152,7 @@ export default function PenthouseNightlife() {
         email: newPartner.email || null,
         role: newPartner.role,
         bio: newPartner.bio || null,
+        venues: newPartner.venues ? newPartner.venues.split(',').map(v => v.trim()).filter(Boolean) : [],
       });
       if (error) throw error;
     },
@@ -158,7 +160,7 @@ export default function PenthouseNightlife() {
       toast.success('Partner added!');
       qc.invalidateQueries({ queryKey: ['nightlife-partners'] });
       setAddPartnerOpen(false);
-      setNewPartner({ name: '', city: '', phone: '', email: '', role: 'promoter', bio: '' });
+      setNewPartner({ name: '', city: '', phone: '', email: '', role: 'promoter', bio: '', venues: '' });
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -183,6 +185,18 @@ export default function PenthouseNightlife() {
     setCounterDetails('');
     setPromoterNotes('');
   }
+
+  /* ─── realtime subscription ─── */
+  useEffect(() => {
+    const channel = supabase
+      .channel('nightlife-requests-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'nightlife_requests' }, () => {
+        qc.invalidateQueries({ queryKey: ['nightlife-requests'] });
+        qc.invalidateQueries({ queryKey: ['nightlife-bookings'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
 
   const filteredRequests = statusFilter === 'all'
     ? requests
@@ -527,6 +541,7 @@ export default function PenthouseNightlife() {
                 <SelectItem value="club">Club</SelectItem>
               </SelectContent>
             </Select>
+            <Input placeholder="Venues (comma-separated)" value={newPartner.venues} onChange={e => setNewPartner(p => ({ ...p, venues: e.target.value }))} className="bg-white/5 border-white/10 text-white" />
             <Textarea placeholder="Bio (optional)" value={newPartner.bio} onChange={e => setNewPartner(p => ({ ...p, bio: e.target.value }))} className="bg-white/5 border-white/10 text-white" rows={2} />
           </div>
           <DialogFooter>
