@@ -715,7 +715,7 @@ function ProvidersTab() {
         tags: form.tags ? form.tags.split(',').map(t => t.trim()) : [],
       });
       if (error) throw error;
-      await logPenthouseAction('create', 'experience_provider', null, null, { name: form.name, category: form.category });
+      await logPenthouseAction({ action: 'create', target_type: 'experience_provider', after: { name: form.name, category: form.category } });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['exp-providers'] }); setOpen(false); setForm({ name: '', category: 'photographer', city: '', price: '', description: '', tags: '' }); toast.success('Provider added'); },
   });
