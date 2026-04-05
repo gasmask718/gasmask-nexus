@@ -47966,6 +47966,7 @@ export type Database = {
           role: string
           updated_at: string
           user_id: string | null
+          venues: string[] | null
         }
         Insert: {
           bio?: string | null
@@ -47981,6 +47982,7 @@ export type Database = {
           role?: string
           updated_at?: string
           user_id?: string | null
+          venues?: string[] | null
         }
         Update: {
           bio?: string | null
@@ -47996,6 +47998,7 @@ export type Database = {
           role?: string
           updated_at?: string
           user_id?: string | null
+          venues?: string[] | null
         }
         Relationships: []
       }
