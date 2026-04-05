@@ -577,12 +577,129 @@ function ProposalsTab() {
   );
 }
 
+// ─── Bundles Tab ──────────────────────────────────────
+function BundlesTab() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ request_id: '', hotel_id: '', nightlife_id: '', chauffeur_id: '', addons: '', total_price: '' });
+
+  const { data: bundles = [] } = useQuery({
+    queryKey: ['corp-bundles'],
+    queryFn: async () => {
+      const { data } = await supabase.from('corporate_event_bundles').select('*, corporate_event_requests(company_name, event_type, city)').order('created_at', { ascending: false });
+      return data || [];
+    },
+  });
+
+  const { data: requests = [] } = useQuery({
+    queryKey: ['corp-requests-for-bundles'],
+    queryFn: async () => {
+      const { data } = await supabase.from('corporate_event_requests').select('id, company_name, event_type').order('created_at', { ascending: false }).limit(50);
+      return data || [];
+    },
+  });
+
+  const { data: hotels = [] } = useQuery({
+    queryKey: ['corp-hotels-list'],
+    queryFn: async () => {
+      const { data } = await supabase.from('tt_hotels').select('id, name, city').eq('is_active', true);
+      return data || [];
+    },
+  });
+
+  const addMut = useMutation({
+    mutationFn: async () => {
+      let addonsJson: any[] = [];
+      try { addonsJson = form.addons ? JSON.parse(form.addons) : []; } catch { addonsJson = form.addons ? [{ note: form.addons }] : []; }
+      const { error } = await supabase.from('corporate_event_bundles').insert({
+        request_id: form.request_id,
+        hotel_id: form.hotel_id || null,
+        nightlife_id: form.nightlife_id || null,
+        chauffeur_id: form.chauffeur_id || null,
+        addons: addonsJson,
+        total_price: Number(form.total_price) || 0,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['corp-bundles'] });
+      setOpen(false);
+      setForm({ request_id: '', hotel_id: '', nightlife_id: '', chauffeur_id: '', addons: '', total_price: '' });
+      toast.success('Bundle created');
+    },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('corporate_event_bundles').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['corp-bundles'] }); toast.success('Bundle removed'); },
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-[#C9A84C]">Service Bundles ({bundles.length})</h3>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild><Button size="sm" className="bg-[#C9A84C] text-black hover:bg-[#C9A84C]/80"><Plus className="h-4 w-4 mr-1" />Create Bundle</Button></DialogTrigger>
+          <DialogContent className="bg-[#111] border-[#C9A84C]/20">
+            <DialogHeader><DialogTitle className="text-[#C9A84C]">Create Service Bundle</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <Label>Event Request *</Label>
+                <Select value={form.request_id} onValueChange={v => setForm(p => ({ ...p, request_id: v }))}>
+                  <SelectTrigger className="bg-black/50 border-white/10"><SelectValue placeholder="Select request" /></SelectTrigger>
+                  <SelectContent>{requests.map((r: any) => <SelectItem key={r.id} value={r.id}>{r.company_name} — {r.event_type}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Hotel</Label>
+                <Select value={form.hotel_id} onValueChange={v => setForm(p => ({ ...p, hotel_id: v }))}>
+                  <SelectTrigger className="bg-black/50 border-white/10"><SelectValue placeholder="None" /></SelectTrigger>
+                  <SelectContent>{hotels.map((h: any) => <SelectItem key={h.id} value={h.id}>{h.name} ({h.city})</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Nightlife Request ID</Label><Input value={form.nightlife_id} onChange={e => setForm(p => ({ ...p, nightlife_id: e.target.value }))} placeholder="Optional UUID" className="bg-black/50 border-white/10" /></div>
+                <div><Label>Chauffeur ID</Label><Input value={form.chauffeur_id} onChange={e => setForm(p => ({ ...p, chauffeur_id: e.target.value }))} placeholder="Optional UUID" className="bg-black/50 border-white/10" /></div>
+              </div>
+              <div><Label>Add-ons (JSON or text)</Label><Textarea value={form.addons} onChange={e => setForm(p => ({ ...p, addons: e.target.value }))} placeholder='e.g. [{"service":"photographer","price":500}]' className="bg-black/50 border-white/10" /></div>
+              <div><Label>Total Price ($)</Label><Input type="number" value={form.total_price} onChange={e => setForm(p => ({ ...p, total_price: e.target.value }))} className="bg-black/50 border-white/10" /></div>
+              <Button onClick={() => addMut.mutate()} disabled={!form.request_id} className="w-full bg-[#C9A84C] text-black">Save Bundle</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+      <Table>
+        <TableHeader><TableRow className="border-white/10">
+          <TableHead>Company</TableHead><TableHead>Event</TableHead><TableHead>Hotel</TableHead><TableHead>Nightlife</TableHead><TableHead>Chauffeur</TableHead><TableHead>Total</TableHead><TableHead>Actions</TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {bundles.map((b: any) => (
+            <TableRow key={b.id} className="border-white/5">
+              <TableCell className="font-medium">{b.corporate_event_requests?.company_name || '—'}</TableCell>
+              <TableCell>{b.corporate_event_requests?.event_type || '—'}</TableCell>
+              <TableCell>{b.hotel_id ? <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400">Hotel ✓</Badge> : '—'}</TableCell>
+              <TableCell>{b.nightlife_id ? <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-400">VIP ✓</Badge> : '—'}</TableCell>
+              <TableCell>{b.chauffeur_id ? <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400">Car ✓</Badge> : '—'}</TableCell>
+              <TableCell className="font-bold text-[#C9A84C]">${Number(b.total_price).toLocaleString()}</TableCell>
+              <TableCell><Button size="sm" variant="ghost" onClick={() => deleteMut.mutate(b.id)} className="text-red-400 hover:text-red-300"><Trash2 className="h-4 w-4" /></Button></TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────
 export default function PenthouseCorporateEvents() {
   const { data: venues = [] } = useQuery({ queryKey: ['corp-venues'], queryFn: async () => { const { data } = await supabase.from('corporate_event_venues').select('id'); return data || []; } });
   const { data: staff = [] } = useQuery({ queryKey: ['corp-staff-count'], queryFn: async () => { const { data } = await supabase.from('corporate_event_staff_roles').select('id'); return data || []; } });
   const { data: rentals = [] } = useQuery({ queryKey: ['corp-rentals-count'], queryFn: async () => { const { data } = await supabase.from('corporate_event_rentals').select('id'); return data || []; } });
   const { data: requests = [] } = useQuery({ queryKey: ['corp-requests-count'], queryFn: async () => { const { data } = await supabase.from('corporate_event_requests').select('id, status'); return data || []; } });
+  const { data: bundles = [] } = useQuery({ queryKey: ['corp-bundles-count'], queryFn: async () => { const { data } = await supabase.from('corporate_event_bundles').select('id'); return data || []; } });
 
   const pending = requests.filter((r: any) => r.status === 'pending').length;
 
@@ -593,12 +710,13 @@ export default function PenthouseCorporateEvents() {
         <p className="text-white/40 text-sm">Powered by Unforgettable Times · Venue, Staff & Rental Marketplace</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-5 gap-4">
         {[
           { label: 'Venues', value: venues.length, icon: Building2 },
           { label: 'Staff Roles', value: staff.length, icon: Users },
           { label: 'Rentals', value: rentals.length, icon: Package },
           { label: 'Pending Requests', value: pending, icon: FileText },
+          { label: 'Bundles', value: bundles.length, icon: Layers },
         ].map(s => (
           <Card key={s.label} className="bg-white/5 border-white/10">
             <CardContent className="p-4 flex items-center gap-3">
@@ -616,12 +734,14 @@ export default function PenthouseCorporateEvents() {
         <TabsList className="bg-white/5 border border-white/10">
           <TabsTrigger value="requests" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><FileText className="h-4 w-4 mr-1" />Requests</TabsTrigger>
           <TabsTrigger value="proposals" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Send className="h-4 w-4 mr-1" />Proposals</TabsTrigger>
+          <TabsTrigger value="bundles" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Layers className="h-4 w-4 mr-1" />Bundles</TabsTrigger>
           <TabsTrigger value="venues" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Building2 className="h-4 w-4 mr-1" />Venues</TabsTrigger>
           <TabsTrigger value="staff" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Users className="h-4 w-4 mr-1" />Staff</TabsTrigger>
           <TabsTrigger value="rentals" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Package className="h-4 w-4 mr-1" />Rentals</TabsTrigger>
         </TabsList>
         <TabsContent value="requests"><RequestsTab /></TabsContent>
         <TabsContent value="proposals"><ProposalsTab /></TabsContent>
+        <TabsContent value="bundles"><BundlesTab /></TabsContent>
         <TabsContent value="venues"><VenuesTab /></TabsContent>
         <TabsContent value="staff"><StaffTab /></TabsContent>
         <TabsContent value="rentals"><RentalsTab /></TabsContent>
