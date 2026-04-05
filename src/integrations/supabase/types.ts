@@ -75417,6 +75417,319 @@ export type Database = {
           },
         ]
       }
+      tt_hotel_addons: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          price: number
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          price?: number
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          price?: number
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tt_hotel_booking_requests: {
+        Row: {
+          addon_revenue: number | null
+          check_in: string
+          check_out: string
+          commission: number | null
+          created_at: string
+          deposit_amount: number | null
+          guests: number
+          hotel_id: string
+          id: string
+          itinerary_synced: boolean
+          markup: number | null
+          notes: string | null
+          payment_status: string
+          payout_status: string
+          room_offer_id: string | null
+          selected_addons: Json | null
+          service_fee: number | null
+          source: string | null
+          status: string
+          subtotal: number
+          supplier: string | null
+          supplier_booking_reference: string | null
+          supplier_payout: number | null
+          taxes_estimate: number | null
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          addon_revenue?: number | null
+          check_in: string
+          check_out: string
+          commission?: number | null
+          created_at?: string
+          deposit_amount?: number | null
+          guests?: number
+          hotel_id: string
+          id?: string
+          itinerary_synced?: boolean
+          markup?: number | null
+          notes?: string | null
+          payment_status?: string
+          payout_status?: string
+          room_offer_id?: string | null
+          selected_addons?: Json | null
+          service_fee?: number | null
+          source?: string | null
+          status?: string
+          subtotal?: number
+          supplier?: string | null
+          supplier_booking_reference?: string | null
+          supplier_payout?: number | null
+          taxes_estimate?: number | null
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          addon_revenue?: number | null
+          check_in?: string
+          check_out?: string
+          commission?: number | null
+          created_at?: string
+          deposit_amount?: number | null
+          guests?: number
+          hotel_id?: string
+          id?: string
+          itinerary_synced?: boolean
+          markup?: number | null
+          notes?: string | null
+          payment_status?: string
+          payout_status?: string
+          room_offer_id?: string | null
+          selected_addons?: Json | null
+          service_fee?: number | null
+          source?: string | null
+          status?: string
+          subtotal?: number
+          supplier?: string | null
+          supplier_booking_reference?: string | null
+          supplier_payout?: number | null
+          taxes_estimate?: number | null
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_hotel_booking_requests_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "tt_hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tt_hotel_booking_requests_room_offer_id_fkey"
+            columns: ["room_offer_id"]
+            isOneToOne: false
+            referencedRelation: "tt_hotel_room_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tt_hotel_room_offers: {
+        Row: {
+          bed_type: string | null
+          created_at: string
+          currency: string
+          hotel_id: string
+          id: string
+          included_perks: string[] | null
+          is_active: boolean
+          is_refundable: boolean
+          nightly_price: number
+          occupancy: number
+          refund_policy: string | null
+          room_name: string
+          sort_order: number | null
+          supplier_offer_id: string | null
+          total_price: number | null
+          updated_at: string
+        }
+        Insert: {
+          bed_type?: string | null
+          created_at?: string
+          currency?: string
+          hotel_id: string
+          id?: string
+          included_perks?: string[] | null
+          is_active?: boolean
+          is_refundable?: boolean
+          nightly_price: number
+          occupancy?: number
+          refund_policy?: string | null
+          room_name: string
+          sort_order?: number | null
+          supplier_offer_id?: string | null
+          total_price?: number | null
+          updated_at?: string
+        }
+        Update: {
+          bed_type?: string | null
+          created_at?: string
+          currency?: string
+          hotel_id?: string
+          id?: string
+          included_perks?: string[] | null
+          is_active?: boolean
+          is_refundable?: boolean
+          nightly_price?: number
+          occupancy?: number
+          refund_policy?: string | null
+          room_name?: string
+          sort_order?: number | null
+          supplier_offer_id?: string | null
+          total_price?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_hotel_room_offers_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "tt_hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tt_hotel_suppliers: {
+        Row: {
+          api_type: string
+          created_at: string
+          credentials_configured: boolean
+          id: string
+          name: string
+          notes: string | null
+          payout_model: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          api_type?: string
+          created_at?: string
+          credentials_configured?: boolean
+          id?: string
+          name: string
+          notes?: string | null
+          payout_model?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          api_type?: string
+          created_at?: string
+          credentials_configured?: boolean
+          id?: string
+          name?: string
+          notes?: string | null
+          payout_model?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tt_hotels: {
+        Row: {
+          address: string | null
+          amenities: string[] | null
+          city: string
+          created_at: string
+          description: string | null
+          gallery: Json | null
+          hero_image: string | null
+          id: string
+          inventory_mode: string
+          is_active: boolean
+          name: string
+          review_score: number | null
+          star_rating: number | null
+          supplier_hotel_id: string | null
+          supplier_id: string | null
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          amenities?: string[] | null
+          city: string
+          created_at?: string
+          description?: string | null
+          gallery?: Json | null
+          hero_image?: string | null
+          id?: string
+          inventory_mode?: string
+          is_active?: boolean
+          name: string
+          review_score?: number | null
+          star_rating?: number | null
+          supplier_hotel_id?: string | null
+          supplier_id?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          amenities?: string[] | null
+          city?: string
+          created_at?: string
+          description?: string | null
+          gallery?: Json | null
+          hero_image?: string | null
+          id?: string
+          inventory_mode?: string
+          is_active?: boolean
+          name?: string
+          review_score?: number | null
+          star_rating?: number | null
+          supplier_hotel_id?: string | null
+          supplier_id?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_hotels_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "tt_hotel_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tt_kpi_definitions: {
         Row: {
           business_id: string | null
