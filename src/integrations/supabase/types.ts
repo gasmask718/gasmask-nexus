@@ -29175,6 +29175,313 @@ export type Database = {
           },
         ]
       }
+      corporate_event_proposals: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          fees: number | null
+          id: string
+          notes: string | null
+          request_id: string
+          sent_at: string | null
+          status: string | null
+          subtotal: number | null
+          total: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          fees?: number | null
+          id?: string
+          notes?: string | null
+          request_id: string
+          sent_at?: string | null
+          status?: string | null
+          subtotal?: number | null
+          total?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          fees?: number | null
+          id?: string
+          notes?: string | null
+          request_id?: string
+          sent_at?: string | null
+          status?: string | null
+          subtotal?: number | null
+          total?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "corporate_event_proposals_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "corporate_event_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      corporate_event_rentals: {
+        Row: {
+          category: string | null
+          city: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          inventory_count: number | null
+          is_active: boolean | null
+          item_name: string
+          rental_rate: number | null
+          supplier: string | null
+          supplier_rental_id: string | null
+          unit_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          inventory_count?: number | null
+          is_active?: boolean | null
+          item_name: string
+          rental_rate?: number | null
+          supplier?: string | null
+          supplier_rental_id?: string | null
+          unit_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          inventory_count?: number | null
+          is_active?: boolean | null
+          item_name?: string
+          rental_rate?: number | null
+          supplier?: string | null
+          supplier_rental_id?: string | null
+          unit_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      corporate_event_request_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          item_id: string
+          item_type: string
+          quantity: number | null
+          request_id: string
+          selected_rate: number | null
+          subtotal: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item_id: string
+          item_type: string
+          quantity?: number | null
+          request_id: string
+          selected_rate?: number | null
+          subtotal?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item_id?: string
+          item_type?: string
+          quantity?: number | null
+          request_id?: string
+          selected_rate?: number | null
+          subtotal?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "corporate_event_request_items_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "corporate_event_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      corporate_event_requests: {
+        Row: {
+          assigned_planner: string | null
+          budget_range: string | null
+          city: string | null
+          company_name: string
+          contact_name: string
+          created_at: string | null
+          email: string | null
+          event_date: string | null
+          event_type: string | null
+          guest_count: number | null
+          id: string
+          notes: string | null
+          phone: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          assigned_planner?: string | null
+          budget_range?: string | null
+          city?: string | null
+          company_name: string
+          contact_name: string
+          created_at?: string | null
+          email?: string | null
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          assigned_planner?: string | null
+          budget_range?: string | null
+          city?: string | null
+          company_name?: string
+          contact_name?: string
+          created_at?: string | null
+          email?: string | null
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      corporate_event_staff_roles: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          rate_amount: number | null
+          rate_type: string | null
+          role_name: string
+          supplier: string | null
+          supplier_role_id: string | null
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          rate_amount?: number | null
+          rate_type?: string | null
+          role_name: string
+          supplier?: string | null
+          supplier_role_id?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          rate_amount?: number | null
+          rate_type?: string | null
+          role_name?: string
+          supplier?: string | null
+          supplier_role_id?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      corporate_event_venues: {
+        Row: {
+          address: string | null
+          amenities: string[] | null
+          capacity: number | null
+          city: string
+          created_at: string | null
+          description: string | null
+          gallery: string[] | null
+          hero_image: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          neighborhood: string | null
+          starting_rate: number | null
+          style_tags: string[] | null
+          supplier: string | null
+          supplier_venue_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          amenities?: string[] | null
+          capacity?: number | null
+          city: string
+          created_at?: string | null
+          description?: string | null
+          gallery?: string[] | null
+          hero_image?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          neighborhood?: string | null
+          starting_rate?: number | null
+          style_tags?: string[] | null
+          supplier?: string | null
+          supplier_venue_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          amenities?: string[] | null
+          capacity?: number | null
+          city?: string
+          created_at?: string | null
+          description?: string | null
+          gallery?: string[] | null
+          hero_image?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          neighborhood?: string | null
+          starting_rate?: number | null
+          style_tags?: string[] | null
+          supplier?: string | null
+          supplier_venue_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       crm_backup_settings: {
         Row: {
           auto_export_enabled: boolean | null
