@@ -50,7 +50,7 @@ export default function PenthouseNightlife() {
   const [counterDetails, setCounterDetails] = useState('');
   const [promoterNotes, setPromoterNotes] = useState('');
   const [addPartnerOpen, setAddPartnerOpen] = useState(false);
-  const [newPartner, setNewPartner] = useState({ name: '', city: '', phone: '', email: '', role: 'promoter', bio: '' });
+  const [newPartner, setNewPartner] = useState({ name: '', city: '', phone: '', email: '', role: 'promoter', bio: '', venues: '' });
   const [statusFilter, setStatusFilter] = useState('all');
 
   /* ─── queries ─── */
