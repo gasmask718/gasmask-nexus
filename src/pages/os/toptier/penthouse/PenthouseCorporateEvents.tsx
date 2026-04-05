@@ -12,7 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Building2, Users, Package, FileText, Send, Plus, Eye, DollarSign } from 'lucide-react';
+import { Building2, Users, Package, FileText, Send, Plus, Eye, DollarSign, Trash2 } from 'lucide-react';
+import { logPenthouseAction } from '@/lib/toptierApi';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
@@ -25,6 +26,7 @@ const statusColors: Record<string, string> = {
   declined: 'bg-red-500/20 text-red-400 border-red-500/30',
 };
 
+// ─── Venues Tab ───────────────────────────────────────
 function VenuesTab() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -101,6 +103,7 @@ function VenuesTab() {
   );
 }
 
+// ─── Staff Tab ────────────────────────────────────────
 function StaffTab() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -171,6 +174,7 @@ function StaffTab() {
   );
 }
 
+// ─── Rentals Tab ──────────────────────────────────────
 function RentalsTab() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -245,8 +249,11 @@ function RentalsTab() {
   );
 }
 
+// ─── Requests Tab (with Generate Proposal) ────────────
 function RequestsTab() {
   const qc = useQueryClient();
+  const [buildFor, setBuildFor] = useState<any>(null);
+
   const { data: requests = [] } = useQuery({
     queryKey: ['corp-requests'],
     queryFn: async () => {
@@ -255,6 +262,10 @@ function RequestsTab() {
     },
   });
 
+  const { data: venues = [] } = useQuery({ queryKey: ['corp-venues-list'], queryFn: async () => { const { data } = await supabase.from('corporate_event_venues').select('id, name, starting_rate').eq('is_active', true); return data || []; } });
+  const { data: staffRoles = [] } = useQuery({ queryKey: ['corp-staff-list'], queryFn: async () => { const { data } = await supabase.from('corporate_event_staff_roles').select('id, role_name, rate_amount').eq('is_active', true); return data || []; } });
+  const { data: rentals = [] } = useQuery({ queryKey: ['corp-rentals-list'], queryFn: async () => { const { data } = await supabase.from('corporate_event_rentals').select('id, item_name, rental_rate').eq('is_active', true); return data || []; } });
+
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase.from('corporate_event_requests').update({ status }).eq('id', id);
@@ -262,6 +273,99 @@ function RequestsTab() {
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['corp-requests'] }); toast.success('Status updated'); },
   });
+
+  // Proposal builder state
+  const [venueId, setVenueId] = useState('');
+  const [lineItems, setLineItems] = useState<{ type: string; item_id: string; item_name: string; quantity: number; price: number }[]>([]);
+  const [feePercent, setFeePercent] = useState('15');
+
+  const addLineItem = (type: string) => {
+    setLineItems(prev => [...prev, { type, item_id: '', item_name: '', quantity: 1, price: 0 }]);
+  };
+  const removeLineItem = (idx: number) => setLineItems(prev => prev.filter((_, i) => i !== idx));
+  const updateLineItem = (idx: number, field: string, value: any) => {
+    setLineItems(prev => prev.map((item, i) => {
+      if (i !== idx) return item;
+      const updated = { ...item, [field]: value };
+      // Auto-fill price/name when item selected
+      if (field === 'item_id' && value) {
+        if (updated.type === 'venue') {
+          const v = venues.find((x: any) => x.id === value);
+          if (v) { updated.item_name = v.name; updated.price = Number(v.starting_rate) || 0; }
+        } else if (updated.type === 'staff') {
+          const s = staffRoles.find((x: any) => x.id === value);
+          if (s) { updated.item_name = s.role_name; updated.price = Number(s.rate_amount) || 0; }
+        } else if (updated.type === 'rental') {
+          const r = rentals.find((x: any) => x.id === value);
+          if (r) { updated.item_name = r.item_name; updated.price = Number(r.rental_rate) || 0; }
+        }
+      }
+      return updated;
+    }));
+  };
+
+  const itemsSubtotal = lineItems.reduce((sum, li) => sum + li.quantity * li.price, 0);
+  const fees = itemsSubtotal * (Number(feePercent) / 100);
+  const total = itemsSubtotal + fees;
+
+  const generateProposal = useMutation({
+    mutationFn: async () => {
+      if (!buildFor) return;
+      const staffSummary = lineItems.filter(l => l.type === 'staff').map(l => `${l.quantity}x ${l.item_name}`).join(', ') || null;
+      const rentalSummary = lineItems.filter(l => l.type === 'rental').map(l => `${l.quantity}x ${l.item_name}`).join(', ') || null;
+      const venueItem = lineItems.find(l => l.type === 'venue');
+
+      const { data: proposal, error } = await supabase.from('corporate_event_proposals').insert({
+        request_id: buildFor.id,
+        venue_id: venueItem?.item_id || null,
+        staff_summary: staffSummary,
+        rental_summary: rentalSummary,
+        subtotal: itemsSubtotal,
+        fees,
+        total,
+        status: 'draft',
+      }).select().single();
+      if (error) throw error;
+
+      // Insert line items
+      if (lineItems.length > 0 && proposal) {
+        const items = lineItems.map(li => ({
+          proposal_id: proposal.id,
+          type: li.type,
+          item_id: li.item_id || null,
+          item_name: li.item_name,
+          quantity: li.quantity,
+          price: li.price,
+        }));
+        const { error: itemErr } = await supabase.from('corporate_event_proposal_items').insert(items);
+        if (itemErr) console.error('Line items error:', itemErr);
+      }
+
+      // Update request status
+      await supabase.from('corporate_event_requests').update({ status: 'proposal_sent' }).eq('id', buildFor.id);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        logPenthouseAction({ action: 'generate_proposal', target_type: 'corporate_event_proposals', target_id: proposal.id, actor_user_id: session.user.id, after: { request_id: buildFor.id, total } });
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['corp-requests'] });
+      qc.invalidateQueries({ queryKey: ['corp-proposals'] });
+      setBuildFor(null);
+      setLineItems([]);
+      setVenueId('');
+      toast.success('Proposal generated');
+    },
+    onError: (e) => toast.error(`Failed: ${e.message}`),
+  });
+
+  const getItemOptions = (type: string) => {
+    if (type === 'venue') return venues.map((v: any) => ({ id: v.id, label: v.name }));
+    if (type === 'staff') return staffRoles.map((s: any) => ({ id: s.id, label: s.role_name }));
+    if (type === 'rental') return rentals.map((r: any) => ({ id: r.id, label: r.item_name }));
+    return [];
+  };
 
   return (
     <div className="space-y-4">
@@ -298,6 +402,11 @@ function RequestsTab() {
                         <SelectItem value="cancelled">Cancelled</SelectItem>
                       </SelectContent>
                     </Select>
+                    {r.status === 'pending' && (
+                      <Button size="sm" onClick={() => { setBuildFor(r); setLineItems([]); setVenueId(''); setFeePercent('15'); }} className="bg-[#C9A84C] text-black hover:bg-[#C9A84C]/80 text-xs">
+                        <DollarSign className="h-3 w-3 mr-1" />Build Proposal
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -305,28 +414,110 @@ function RequestsTab() {
           ))}
         </div>
       )}
+
+      {/* Proposal Builder Dialog */}
+      <Dialog open={!!buildFor} onOpenChange={o => { if (!o) setBuildFor(null); }}>
+        <DialogContent className="bg-[#111] border-[#C9A84C]/20 max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="text-[#C9A84C]">Build Proposal — {buildFor?.company_name}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <p className="text-xs text-white/40">{buildFor?.event_type} · {buildFor?.guest_count} guests · {buildFor?.event_date} · Budget: {buildFor?.budget_range}</p>
+
+            {/* Line Items */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label className="text-sm text-white/70">Line Items</Label>
+                <div className="flex gap-1">
+                  <Button size="sm" variant="outline" onClick={() => addLineItem('venue')} className="text-xs h-7 border-white/10"><Building2 className="h-3 w-3 mr-1" />Venue</Button>
+                  <Button size="sm" variant="outline" onClick={() => addLineItem('staff')} className="text-xs h-7 border-white/10"><Users className="h-3 w-3 mr-1" />Staff</Button>
+                  <Button size="sm" variant="outline" onClick={() => addLineItem('rental')} className="text-xs h-7 border-white/10"><Package className="h-3 w-3 mr-1" />Rental</Button>
+                </div>
+              </div>
+
+              {lineItems.length === 0 && <p className="text-xs text-white/30 py-2">Add venue, staff, and rental items above.</p>}
+
+              {lineItems.map((li, idx) => (
+                <div key={idx} className="flex gap-2 items-center bg-white/5 p-2 rounded border border-white/5">
+                  <Badge variant="outline" className="text-[10px] w-14 justify-center shrink-0">{li.type}</Badge>
+                  <Select value={li.item_id} onValueChange={v => updateLineItem(idx, 'item_id', v)}>
+                    <SelectTrigger className="bg-black/50 border-white/10 h-8 text-xs flex-1"><SelectValue placeholder="Select item" /></SelectTrigger>
+                    <SelectContent>
+                      {getItemOptions(li.type).map((opt: any) => <SelectItem key={opt.id} value={opt.id}>{opt.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Input type="number" value={li.quantity} onChange={e => updateLineItem(idx, 'quantity', Number(e.target.value) || 1)} className="w-16 h-8 text-xs bg-black/50 border-white/10" placeholder="Qty" />
+                  <Input type="number" value={li.price} onChange={e => updateLineItem(idx, 'price', Number(e.target.value) || 0)} className="w-24 h-8 text-xs bg-black/50 border-white/10" placeholder="Price" />
+                  <span className="text-xs text-white/50 w-20 text-right">${(li.quantity * li.price).toLocaleString()}</span>
+                  <Button size="sm" variant="ghost" onClick={() => removeLineItem(idx)} className="h-7 w-7 p-0"><Trash2 className="h-3 w-3 text-red-400" /></Button>
+                </div>
+              ))}
+            </div>
+
+            {/* Fee */}
+            <div className="flex gap-3 items-center">
+              <Label className="text-sm text-white/70 shrink-0">Service Fee %</Label>
+              <Input type="number" value={feePercent} onChange={e => setFeePercent(e.target.value)} className="w-20 h-8 text-xs bg-black/50 border-white/10" />
+            </div>
+
+            {/* Summary */}
+            <Card className="bg-white/5 border-white/10">
+              <CardContent className="p-3 space-y-1">
+                <div className="flex justify-between text-sm text-white/60"><span>Subtotal</span><span>${itemsSubtotal.toLocaleString()}</span></div>
+                <div className="flex justify-between text-sm text-white/60"><span>Fees ({feePercent}%)</span><span>${fees.toLocaleString()}</span></div>
+                <div className="flex justify-between text-sm font-bold text-[#C9A84C] pt-1 border-t border-white/10"><span>Total</span><span>${total.toLocaleString()}</span></div>
+              </CardContent>
+            </Card>
+
+            <Button onClick={() => generateProposal.mutate()} disabled={lineItems.length === 0 || generateProposal.isPending} className="w-full bg-[#C9A84C] text-black hover:bg-[#C9A84C]/80">
+              <Send className="h-4 w-4 mr-2" />Generate Proposal
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
+// ─── Proposals Tab (with line item detail) ────────────
 function ProposalsTab() {
+  const qc = useQueryClient();
+  const [viewId, setViewId] = useState<string | null>(null);
+
   const { data: proposals = [] } = useQuery({
     queryKey: ['corp-proposals'],
     queryFn: async () => {
-      const { data } = await supabase.from('corporate_event_proposals').select('*, corporate_event_requests(company_name, event_type)').order('created_at', { ascending: false });
+      const { data } = await supabase.from('corporate_event_proposals').select('*, corporate_event_requests(company_name, event_type, contact_name, email)').order('created_at', { ascending: false });
       return data || [];
     },
+  });
+
+  const { data: viewItems = [] } = useQuery({
+    queryKey: ['corp-proposal-items', viewId],
+    enabled: !!viewId,
+    queryFn: async () => {
+      const { data } = await supabase.from('corporate_event_proposal_items').select('*').eq('proposal_id', viewId!).order('created_at');
+      return data || [];
+    },
+  });
+
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const updates: any = { status };
+      if (status === 'sent') updates.sent_at = new Date().toISOString();
+      const { error } = await supabase.from('corporate_event_proposals').update(updates).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['corp-proposals'] }); toast.success('Proposal updated'); },
   });
 
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-[#C9A84C]">Proposals ({proposals.length})</h3>
       {proposals.length === 0 ? (
-        <Card className="bg-white/5 border-white/10"><CardContent className="p-8 text-center text-white/40">No proposals yet. Create one from the Requests tab.</CardContent></Card>
+        <Card className="bg-white/5 border-white/10"><CardContent className="p-8 text-center text-white/40">No proposals yet. Generate one from the Requests tab.</CardContent></Card>
       ) : (
         <Table>
           <TableHeader><TableRow className="border-white/10">
-            <TableHead>Company</TableHead><TableHead>Event</TableHead><TableHead>Subtotal</TableHead><TableHead>Fees</TableHead><TableHead>Total</TableHead><TableHead>Status</TableHead><TableHead>Sent</TableHead>
+            <TableHead>Company</TableHead><TableHead>Event</TableHead><TableHead>Subtotal</TableHead><TableHead>Fees</TableHead><TableHead>Total</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {proposals.map((p: any) => (
@@ -336,17 +527,57 @@ function ProposalsTab() {
                 <TableCell>${Number(p.subtotal).toLocaleString()}</TableCell>
                 <TableCell>${Number(p.fees).toLocaleString()}</TableCell>
                 <TableCell className="font-semibold text-[#C9A84C]">${Number(p.total).toLocaleString()}</TableCell>
-                <TableCell><Badge className={statusColors[p.status] || ''}>{p.status}</Badge></TableCell>
-                <TableCell className="text-xs text-white/40">{p.sent_at ? new Date(p.sent_at).toLocaleDateString() : '—'}</TableCell>
+                <TableCell>
+                  <Select value={p.status} onValueChange={v => updateStatus.mutate({ id: p.id, status: v })}>
+                    <SelectTrigger className="w-[120px] h-7 text-xs bg-transparent border-white/10"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="sent">Sent</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="declined">Declined</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Button size="sm" variant="ghost" onClick={() => setViewId(viewId === p.id ? null : p.id)} className="text-xs"><Eye className="h-3 w-3 mr-1" />Items</Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       )}
+
+      {/* Line Item Detail */}
+      <Dialog open={!!viewId} onOpenChange={o => { if (!o) setViewId(null); }}>
+        <DialogContent className="bg-[#111] border-[#C9A84C]/20">
+          <DialogHeader><DialogTitle className="text-[#C9A84C]">Proposal Line Items</DialogTitle></DialogHeader>
+          {viewItems.length === 0 ? (
+            <p className="text-white/40 text-sm">No line items.</p>
+          ) : (
+            <Table>
+              <TableHeader><TableRow className="border-white/10">
+                <TableHead>Type</TableHead><TableHead>Item</TableHead><TableHead>Qty</TableHead><TableHead>Price</TableHead><TableHead>Subtotal</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {viewItems.map((item: any) => (
+                  <TableRow key={item.id} className="border-white/5">
+                    <TableCell><Badge variant="outline" className="text-[10px]">{item.type}</Badge></TableCell>
+                    <TableCell>{item.item_name || '—'}</TableCell>
+                    <TableCell>{item.quantity}</TableCell>
+                    <TableCell>${Number(item.price).toLocaleString()}</TableCell>
+                    <TableCell className="font-medium">${Number(item.subtotal).toLocaleString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
+// ─── Main Page ────────────────────────────────────────
 export default function PenthouseCorporateEvents() {
   const { data: venues = [] } = useQuery({ queryKey: ['corp-venues'], queryFn: async () => { const { data } = await supabase.from('corporate_event_venues').select('id'); return data || []; } });
   const { data: staff = [] } = useQuery({ queryKey: ['corp-staff-count'], queryFn: async () => { const { data } = await supabase.from('corporate_event_staff_roles').select('id'); return data || []; } });
@@ -381,19 +612,19 @@ export default function PenthouseCorporateEvents() {
         ))}
       </div>
 
-      <Tabs defaultValue="venues" className="space-y-4">
+      <Tabs defaultValue="requests" className="space-y-4">
         <TabsList className="bg-white/5 border border-white/10">
+          <TabsTrigger value="requests" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><FileText className="h-4 w-4 mr-1" />Requests</TabsTrigger>
+          <TabsTrigger value="proposals" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Send className="h-4 w-4 mr-1" />Proposals</TabsTrigger>
           <TabsTrigger value="venues" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Building2 className="h-4 w-4 mr-1" />Venues</TabsTrigger>
           <TabsTrigger value="staff" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Users className="h-4 w-4 mr-1" />Staff</TabsTrigger>
           <TabsTrigger value="rentals" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Package className="h-4 w-4 mr-1" />Rentals</TabsTrigger>
-          <TabsTrigger value="requests" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><FileText className="h-4 w-4 mr-1" />Requests</TabsTrigger>
-          <TabsTrigger value="proposals" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Send className="h-4 w-4 mr-1" />Proposals</TabsTrigger>
         </TabsList>
+        <TabsContent value="requests"><RequestsTab /></TabsContent>
+        <TabsContent value="proposals"><ProposalsTab /></TabsContent>
         <TabsContent value="venues"><VenuesTab /></TabsContent>
         <TabsContent value="staff"><StaffTab /></TabsContent>
         <TabsContent value="rentals"><RentalsTab /></TabsContent>
-        <TabsContent value="requests"><RequestsTab /></TabsContent>
-        <TabsContent value="proposals"><ProposalsTab /></TabsContent>
       </Tabs>
     </div>
   );
