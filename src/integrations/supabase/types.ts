@@ -66114,6 +66114,66 @@ export type Database = {
         }
         Relationships: []
       }
+      security_agents: {
+        Row: {
+          armed: boolean | null
+          availability: Json | null
+          bio: string | null
+          city: string | null
+          created_at: string | null
+          hourly_rate: number | null
+          id: string
+          independent_contractor: boolean | null
+          is_active: boolean | null
+          name: string
+          profile_image: string | null
+          specialties: string[] | null
+          state: string | null
+          updated_at: string | null
+          user_id: string | null
+          verified: boolean | null
+          years_experience: number | null
+        }
+        Insert: {
+          armed?: boolean | null
+          availability?: Json | null
+          bio?: string | null
+          city?: string | null
+          created_at?: string | null
+          hourly_rate?: number | null
+          id?: string
+          independent_contractor?: boolean | null
+          is_active?: boolean | null
+          name: string
+          profile_image?: string | null
+          specialties?: string[] | null
+          state?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          verified?: boolean | null
+          years_experience?: number | null
+        }
+        Update: {
+          armed?: boolean | null
+          availability?: Json | null
+          bio?: string | null
+          city?: string | null
+          created_at?: string | null
+          hourly_rate?: number | null
+          id?: string
+          independent_contractor?: boolean | null
+          is_active?: boolean | null
+          name?: string
+          profile_image?: string | null
+          specialties?: string[] | null
+          state?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          verified?: boolean | null
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
       security_audit_log: {
         Row: {
           action: string
@@ -66158,6 +66218,153 @@ export type Database = {
           was_denied?: boolean | null
         }
         Relationships: []
+      }
+      security_bookings: {
+        Row: {
+          agent_id: string | null
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
+          created_at: string | null
+          event_date: string | null
+          event_time: string | null
+          hours: number | null
+          id: string
+          location: string | null
+          notes: string | null
+          number_of_agents: number | null
+          service_type: string
+          status: string | null
+          total_price: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string | null
+          event_date?: string | null
+          event_time?: string | null
+          hours?: number | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          number_of_agents?: number | null
+          service_type: string
+          status?: string | null
+          total_price?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string | null
+          event_date?: string | null
+          event_time?: string | null
+          hours?: number | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          number_of_agents?: number | null
+          service_type?: string
+          status?: string | null
+          total_price?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_bookings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "security_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      security_certifications: {
+        Row: {
+          agent_id: string
+          created_at: string | null
+          document_url: string | null
+          expiration_date: string | null
+          id: string
+          insurance_status: string | null
+          license_number: string | null
+          license_type: string
+          verified: boolean | null
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string | null
+          document_url?: string | null
+          expiration_date?: string | null
+          id?: string
+          insurance_status?: string | null
+          license_number?: string | null
+          license_type: string
+          verified?: boolean | null
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string | null
+          document_url?: string | null
+          expiration_date?: string | null
+          id?: string
+          insurance_status?: string | null
+          license_number?: string | null
+          license_type?: string
+          verified?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_certifications_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "security_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      security_media: {
+        Row: {
+          agent_id: string
+          caption: string | null
+          created_at: string | null
+          id: string
+          type: string
+          url: string
+        }
+        Insert: {
+          agent_id: string
+          caption?: string | null
+          created_at?: string | null
+          id?: string
+          type?: string
+          url: string
+        }
+        Update: {
+          agent_id?: string
+          caption?: string | null
+          created_at?: string | null
+          id?: string
+          type?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_media_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "security_agents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sell_through_analytics_events: {
         Row: {
