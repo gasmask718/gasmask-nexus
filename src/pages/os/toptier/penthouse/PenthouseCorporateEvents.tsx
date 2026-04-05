@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Building2, Users, Package, FileText, Send, Plus, Eye, DollarSign, Trash2, Layers } from 'lucide-react';
+import { Building2, Users, Package, FileText, Send, Plus, Eye, DollarSign, Trash2, Layers, Star, Sparkles } from 'lucide-react';
 import { logPenthouseAction } from '@/lib/toptierApi';
 
 const statusColors: Record<string, string> = {
@@ -693,6 +693,98 @@ function BundlesTab() {
   );
 }
 
+// ─── Providers Tab ────────────────────────────────────
+function ProvidersTab() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: '', category: 'photographer', city: '', price: '', description: '', tags: '' });
+
+  const { data: providers = [] } = useQuery({
+    queryKey: ['exp-providers'],
+    queryFn: async () => {
+      const { data } = await supabase.from('experience_providers').select('*').order('created_at', { ascending: false });
+      return data || [];
+    },
+  });
+
+  const addMut = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('experience_providers').insert({
+        name: form.name, category: form.category, city: form.city,
+        price: Number(form.price) || 0, description: form.description,
+        tags: form.tags ? form.tags.split(',').map(t => t.trim()) : [],
+      });
+      if (error) throw error;
+      await logPenthouseAction({ action: 'create', target_type: 'experience_provider', actor_user_id: 'system', after: { name: form.name, category: form.category } });
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['exp-providers'] }); setOpen(false); setForm({ name: '', category: 'photographer', city: '', price: '', description: '', tags: '' }); toast.success('Provider added'); },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('experience_providers').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['exp-providers'] }); toast.success('Deleted'); },
+  });
+
+  const categories = ['photographer', 'dj', 'decor', 'catering', 'entertainment', 'florist', 'lighting', 'security', 'mc', 'other'];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-[#C9A84C]">Experience Providers ({providers.length})</h3>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild><Button size="sm" className="bg-[#C9A84C] text-black hover:bg-[#C9A84C]/80"><Plus className="h-4 w-4 mr-1" />Add Provider</Button></DialogTrigger>
+          <DialogContent className="bg-[#111] border-[#C9A84C]/20">
+            <DialogHeader><DialogTitle className="text-[#C9A84C]">Add Experience Provider</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div><Label>Name</Label><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="bg-black/50 border-white/10" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Category</Label>
+                  <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v }))}>
+                    <SelectTrigger className="bg-black/50 border-white/10"><SelectValue /></SelectTrigger>
+                    <SelectContent>{categories.map(c => <SelectItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label>City</Label><Input value={form.city} onChange={e => setForm(p => ({ ...p, city: e.target.value }))} className="bg-black/50 border-white/10" /></div>
+              </div>
+              <div><Label>Price ($)</Label><Input type="number" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} className="bg-black/50 border-white/10" /></div>
+              <div><Label>Tags (comma-separated)</Label><Input value={form.tags} onChange={e => setForm(p => ({ ...p, tags: e.target.value }))} className="bg-black/50 border-white/10" placeholder="luxury, corporate, premium" /></div>
+              <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="bg-black/50 border-white/10" /></div>
+              <Button onClick={() => addMut.mutate()} disabled={!form.name || !form.city} className="w-full bg-[#C9A84C] text-black">Save Provider</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+      <Table>
+        <TableHeader><TableRow className="border-white/10">
+          <TableHead className="text-white/50">Provider</TableHead>
+          <TableHead className="text-white/50">Category</TableHead>
+          <TableHead className="text-white/50">City</TableHead>
+          <TableHead className="text-white/50">Price</TableHead>
+          <TableHead className="text-white/50">Rating</TableHead>
+          <TableHead className="text-white/50">Tags</TableHead>
+          <TableHead />
+        </TableRow></TableHeader>
+        <TableBody>
+          {providers.map((p: any) => (
+            <TableRow key={p.id} className="border-white/5">
+              <TableCell className="text-white font-medium">{p.name}</TableCell>
+              <TableCell><Badge variant="outline" className="border-[#C9A84C]/30 text-[#C9A84C]">{p.category}</Badge></TableCell>
+              <TableCell className="text-white/60">{p.city}</TableCell>
+              <TableCell className="text-white/60">${Number(p.price).toLocaleString()}</TableCell>
+              <TableCell className="text-amber-400 flex items-center gap-1"><Star className="h-3 w-3 fill-amber-400" />{p.rating}</TableCell>
+              <TableCell>{(p.tags || []).map((t: string) => <Badge key={t} variant="outline" className="mr-1 text-[10px] border-white/10 text-white/40">{t}</Badge>)}</TableCell>
+              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-300" onClick={() => deleteMut.mutate(p.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────
 export default function PenthouseCorporateEvents() {
   const { data: venues = [] } = useQuery({ queryKey: ['corp-venues'], queryFn: async () => { const { data } = await supabase.from('corporate_event_venues').select('id'); return data || []; } });
@@ -700,6 +792,7 @@ export default function PenthouseCorporateEvents() {
   const { data: rentals = [] } = useQuery({ queryKey: ['corp-rentals-count'], queryFn: async () => { const { data } = await supabase.from('corporate_event_rentals').select('id'); return data || []; } });
   const { data: requests = [] } = useQuery({ queryKey: ['corp-requests-count'], queryFn: async () => { const { data } = await supabase.from('corporate_event_requests').select('id, status'); return data || []; } });
   const { data: bundles = [] } = useQuery({ queryKey: ['corp-bundles-count'], queryFn: async () => { const { data } = await supabase.from('corporate_event_bundles').select('id'); return data || []; } });
+  const { data: providers = [] } = useQuery({ queryKey: ['exp-providers-count'], queryFn: async () => { const { data } = await supabase.from('experience_providers').select('id'); return data || []; } });
 
   const pending = requests.filter((r: any) => r.status === 'pending').length;
 
@@ -710,12 +803,13 @@ export default function PenthouseCorporateEvents() {
         <p className="text-white/40 text-sm">Powered by Unforgettable Times · Venue, Staff & Rental Marketplace</p>
       </div>
 
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-6 gap-4">
         {[
           { label: 'Venues', value: venues.length, icon: Building2 },
           { label: 'Staff Roles', value: staff.length, icon: Users },
           { label: 'Rentals', value: rentals.length, icon: Package },
-          { label: 'Pending Requests', value: pending, icon: FileText },
+          { label: 'Providers', value: providers.length, icon: Sparkles },
+          { label: 'Pending', value: pending, icon: FileText },
           { label: 'Bundles', value: bundles.length, icon: Layers },
         ].map(s => (
           <Card key={s.label} className="bg-white/5 border-white/10">
@@ -735,6 +829,7 @@ export default function PenthouseCorporateEvents() {
           <TabsTrigger value="requests" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><FileText className="h-4 w-4 mr-1" />Requests</TabsTrigger>
           <TabsTrigger value="proposals" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Send className="h-4 w-4 mr-1" />Proposals</TabsTrigger>
           <TabsTrigger value="bundles" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Layers className="h-4 w-4 mr-1" />Bundles</TabsTrigger>
+          <TabsTrigger value="providers" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Sparkles className="h-4 w-4 mr-1" />Providers</TabsTrigger>
           <TabsTrigger value="venues" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Building2 className="h-4 w-4 mr-1" />Venues</TabsTrigger>
           <TabsTrigger value="staff" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Users className="h-4 w-4 mr-1" />Staff</TabsTrigger>
           <TabsTrigger value="rentals" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Package className="h-4 w-4 mr-1" />Rentals</TabsTrigger>
@@ -742,6 +837,7 @@ export default function PenthouseCorporateEvents() {
         <TabsContent value="requests"><RequestsTab /></TabsContent>
         <TabsContent value="proposals"><ProposalsTab /></TabsContent>
         <TabsContent value="bundles"><BundlesTab /></TabsContent>
+        <TabsContent value="providers"><ProvidersTab /></TabsContent>
         <TabsContent value="venues"><VenuesTab /></TabsContent>
         <TabsContent value="staff"><StaffTab /></TabsContent>
         <TabsContent value="rentals"><RentalsTab /></TabsContent>
