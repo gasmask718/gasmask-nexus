@@ -30,6 +30,7 @@ type NightlifePartner = {
   id: string; name: string; city: string; contact: string | null;
   email: string | null; phone: string | null; role: string;
   bio: string | null; is_active: boolean; created_at: string;
+  venues: string[] | null;
 };
 
 /* ─── status helpers ─── */
