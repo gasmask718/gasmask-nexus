@@ -384,7 +384,7 @@ export default function PenthouseVehicleDecor() {
         <p className="text-sm text-white/40">Manage decorators, styles, bookings & add-ons</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
         {stats.map(s => (
           <Card key={s.label} className="bg-[#111] border-white/5">
             <CardContent className="p-4 flex items-center gap-3">
