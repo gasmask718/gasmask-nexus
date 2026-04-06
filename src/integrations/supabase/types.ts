@@ -8870,6 +8870,7 @@ export type Database = {
           application_notes: string | null
           approved_at: string | null
           approved_by: string | null
+          availability_status: string
           bio: string | null
           business_name: string | null
           category: string
@@ -8901,6 +8902,7 @@ export type Database = {
           application_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          availability_status?: string
           bio?: string | null
           business_name?: string | null
           category: string
@@ -8932,6 +8934,7 @@ export type Database = {
           application_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          availability_status?: string
           bio?: string | null
           business_name?: string | null
           category?: string
@@ -97321,6 +97324,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      match_beauty_provider_media: {
+        Args: {
+          p_category?: string
+          p_lat: number
+          p_lng: number
+          p_max_distance?: number
+          p_media_type?: string
+        }
+        Returns: {
+          distance_miles: number
+          media_id: string
+          media_type: string
+          provider_category: string
+          provider_id: string
+          provider_name: string
+          url: string
+        }[]
+      }
       match_beauty_providers_by_location: {
         Args: {
           p_category?: string
@@ -97329,14 +97350,20 @@ export type Database = {
           p_max_distance?: number
         }
         Returns: {
+          availability_status: string
           category: string
           city: string
           distance_miles: number
-          provider_id: string
-          provider_name: string
+          id: string
+          is_featured: boolean
+          is_priority: boolean
+          lat: number
+          lng: number
+          name: string
           rating: number
-          service_radius: number
-          total_reviews: number
+          service_radius_miles: number
+          total_bookings: number
+          verification_status: string
         }[]
       }
       match_decorators_by_location: {
