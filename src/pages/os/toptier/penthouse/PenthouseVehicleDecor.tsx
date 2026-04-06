@@ -365,11 +365,16 @@ export default function PenthouseVehicleDecor() {
   const { data: bookingCt = 0 } = useQuery({ queryKey: ['decor-bookings-ct'], queryFn: async () => { const { count } = await supabase.from('decor_bookings').select('*', { count: 'exact', head: true }); return count || 0; } });
   const { data: addonCt = 0 } = useQuery({ queryKey: ['decor-addons-ct'], queryFn: async () => { const { count } = await supabase.from('decor_addons').select('*', { count: 'exact', head: true }); return count || 0; } });
 
+  const { data: transformCt = 0 } = useQuery({ queryKey: ['decor-transforms-ct'], queryFn: async () => { const { count } = await supabase.from('decor_transformations').select('*', { count: 'exact', head: true }); return count || 0; } });
+  const { data: matchCt = 0 } = useQuery({ queryKey: ['decor-matches-ct'], queryFn: async () => { const { count } = await supabase.from('decor_matches').select('*', { count: 'exact', head: true }); return count || 0; } });
+
   const stats = [
     { label: 'Styles', value: styleCt, icon: Palette, color: 'text-pink-400' },
     { label: 'Providers', value: providerCt, icon: Users, color: 'text-blue-400' },
     { label: 'Bookings', value: bookingCt, icon: CalendarCheck, color: 'text-green-400' },
     { label: 'Add-ons', value: addonCt, icon: Sparkles, color: 'text-amber-400' },
+    { label: 'Transformations', value: transformCt, icon: Image, color: 'text-violet-400' },
+    { label: 'Matches', value: matchCt, icon: Target, color: 'text-cyan-400' },
   ];
 
   return (
