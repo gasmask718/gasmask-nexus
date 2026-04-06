@@ -20,6 +20,7 @@ const penthouseNav = [
   { path: '/os/toptier/penthouse/hotels', label: 'Luxury Hotels', icon: Hotel },
   { path: '/os/toptier/penthouse/corporate-events', label: 'Corporate Events', icon: Building2 },
   { path: '/os/toptier/penthouse/vehicle-decor', label: 'Vehicle Decor', icon: Palette },
+  { path: '/os/toptier/penthouse/fleet', label: 'Unified Fleet', icon: Truck },
   { path: '/os/toptier/penthouse/security', label: 'Security', icon: Shield },
   { path: '/os/toptier/penthouse/finance', label: 'Finance', icon: DollarSign },
   { path: '/os/toptier/penthouse/roles', label: 'Roles & Permissions', icon: Shield },
