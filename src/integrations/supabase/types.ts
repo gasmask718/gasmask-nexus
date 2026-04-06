@@ -31923,6 +31923,112 @@ export type Database = {
           },
         ]
       }
+      decor_inspirations: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          image_url: string
+          notes: string | null
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          image_url: string
+          notes?: string | null
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decor_inspirations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "decor_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decor_matches: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          match_score: number | null
+          provider_id: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          match_score?: number | null
+          provider_id: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          match_score?: number | null
+          provider_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decor_matches_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "decor_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decor_matches_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "decor_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decor_preview_settings: {
+        Row: {
+          booking_id: string | null
+          color: string | null
+          created_at: string
+          decor_type: string | null
+          id: string
+          theme: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          color?: string | null
+          created_at?: string
+          decor_type?: string | null
+          id?: string
+          theme?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          color?: string | null
+          created_at?: string
+          decor_type?: string | null
+          id?: string
+          theme?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decor_preview_settings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "decor_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decor_providers: {
         Row: {
           bio: string | null
@@ -31967,6 +32073,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      decor_transformations: {
+        Row: {
+          after_image: string | null
+          before_image: string | null
+          created_at: string
+          description: string | null
+          id: string
+          provider_id: string
+          style: string | null
+        }
+        Insert: {
+          after_image?: string | null
+          before_image?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          provider_id: string
+          style?: string | null
+        }
+        Update: {
+          after_image?: string | null
+          before_image?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          provider_id?: string
+          style?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decor_transformations_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "decor_providers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dedupe_suggestions: {
         Row: {
