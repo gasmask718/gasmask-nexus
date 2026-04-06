@@ -9761,6 +9761,61 @@ export type Database = {
           },
         ]
       }
+      booking_service_selections: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          package_id: string | null
+          quantity: number
+          service_menu_id: string | null
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          package_id?: string | null
+          quantity?: number
+          service_menu_id?: string | null
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          package_id?: string | null
+          quantity?: number
+          service_menu_id?: string | null
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_service_selections_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_service_selections_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "provider_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_service_selections_service_menu_id_fkey"
+            columns: ["service_menu_id"]
+            isOneToOne: false
+            referencedRelation: "provider_service_menu"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boroughs: {
         Row: {
           business_id: string | null
@@ -60297,6 +60352,50 @@ export type Database = {
           },
         ]
       }
+      provider_packages: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          included_services: string[] | null
+          is_active: boolean
+          package_name: string
+          price: number
+          provider_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          included_services?: string[] | null
+          is_active?: boolean
+          package_name: string
+          price: number
+          provider_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          included_services?: string[] | null
+          is_active?: boolean
+          package_name?: string
+          price?: number
+          provider_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_packages_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       provider_reviews: {
         Row: {
           comment: string | null
@@ -60325,6 +60424,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "provider_reviews_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider_service_menu: {
+        Row: {
+          base_price: number
+          category: string | null
+          created_at: string
+          display_order: number
+          duration: number | null
+          id: string
+          is_addon: boolean
+          is_featured: boolean
+          price_type: string
+          provider_id: string
+          service_name: string
+          updated_at: string
+        }
+        Insert: {
+          base_price: number
+          category?: string | null
+          created_at?: string
+          display_order?: number
+          duration?: number | null
+          id?: string
+          is_addon?: boolean
+          is_featured?: boolean
+          price_type?: string
+          provider_id: string
+          service_name: string
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          category?: string | null
+          created_at?: string
+          display_order?: number
+          duration?: number | null
+          id?: string
+          is_addon?: boolean
+          is_featured?: boolean
+          price_type?: string
+          provider_id?: string
+          service_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_service_menu_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "beauty_providers"
