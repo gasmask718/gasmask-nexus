@@ -50,6 +50,7 @@ const App = () => (
                           <SchemaSanityChecker />
                           <ViewAsBanner />
                           <SimulationModeBanner />
+                          <VACallWidget />
                           <AppRoutes />
                         </MessageProvider>
                       </CallProvider>
