@@ -267,6 +267,97 @@ function BookingsTab() {
   );
 }
 
+// ─── Transformations Tab ────────────────────────────────
+function TransformationsTab() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ provider_id: '', before_image: '', after_image: '', style: '', description: '' });
+
+  const { data: providers = [] } = useQuery({ queryKey: ['decor-providers'], queryFn: async () => { const { data } = await supabase.from('decor_providers').select('id,name'); return data || []; } });
+  const { data: items = [] } = useQuery({
+    queryKey: ['decor-transformations'],
+    queryFn: async () => { const { data } = await supabase.from('decor_transformations').select('*, decor_providers(name)').order('created_at', { ascending: false }); return data || []; },
+  });
+
+  const create = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('decor_transformations').insert({ provider_id: form.provider_id, before_image: form.before_image, after_image: form.after_image, style: form.style, description: form.description });
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['decor-transformations'] }); setOpen(false); toast.success('Transformation added'); },
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-white">Before / After Transformations</h3>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild><Button size="sm" className="bg-[#C9A84C] text-black hover:bg-[#C9A84C]/80"><Plus className="h-4 w-4 mr-1" />Add</Button></DialogTrigger>
+          <DialogContent className="bg-[#111] border-[#C9A84C]/20">
+            <DialogHeader><DialogTitle className="text-[#C9A84C]">New Transformation</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div><Label>Provider</Label>
+                <Select value={form.provider_id} onValueChange={v => setForm(p => ({ ...p, provider_id: v }))}>
+                  <SelectTrigger className="bg-black/50 border-white/10"><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>{providers.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label>Before Image URL</Label><Input value={form.before_image} onChange={e => setForm(p => ({ ...p, before_image: e.target.value }))} className="bg-black/50 border-white/10" /></div>
+              <div><Label>After Image URL</Label><Input value={form.after_image} onChange={e => setForm(p => ({ ...p, after_image: e.target.value }))} className="bg-black/50 border-white/10" /></div>
+              <div><Label>Style</Label><Input value={form.style} onChange={e => setForm(p => ({ ...p, style: e.target.value }))} className="bg-black/50 border-white/10" /></div>
+              <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="bg-black/50 border-white/10" /></div>
+              <Button onClick={() => create.mutate()} className="w-full bg-[#C9A84C] text-black">Save</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+      <Table>
+        <TableHeader><TableRow className="border-white/10"><TableHead>Provider</TableHead><TableHead>Style</TableHead><TableHead>Before</TableHead><TableHead>After</TableHead><TableHead>Date</TableHead></TableRow></TableHeader>
+        <TableBody>
+          {items.map((t: any) => (
+            <TableRow key={t.id} className="border-white/5">
+              <TableCell className="text-white">{t.decor_providers?.name || '—'}</TableCell>
+              <TableCell><Badge variant="outline" className="capitalize">{t.style || '—'}</Badge></TableCell>
+              <TableCell>{t.before_image ? <a href={t.before_image} target="_blank" className="text-[#C9A84C] underline text-xs">View</a> : '—'}</TableCell>
+              <TableCell>{t.after_image ? <a href={t.after_image} target="_blank" className="text-[#C9A84C] underline text-xs">View</a> : '—'}</TableCell>
+              <TableCell className="text-white/40 text-xs">{new Date(t.created_at).toLocaleDateString()}</TableCell>
+            </TableRow>
+          ))}
+          {items.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-white/30 py-8">No transformations yet</TableCell></TableRow>}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+// ─── Matches Tab ────────────────────────────────────────
+function MatchesTab() {
+  const { data: matches = [] } = useQuery({
+    queryKey: ['decor-matches'],
+    queryFn: async () => { const { data } = await supabase.from('decor_matches').select('*, decor_providers(name), decor_bookings(event_type, status)').order('match_score', { ascending: false }); return data || []; },
+  });
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold text-white">Provider Matches</h3>
+      <Table>
+        <TableHeader><TableRow className="border-white/10"><TableHead>Booking Event</TableHead><TableHead>Provider</TableHead><TableHead>Match Score</TableHead><TableHead>Booking Status</TableHead></TableRow></TableHeader>
+        <TableBody>
+          {matches.map((m: any) => (
+            <TableRow key={m.id} className="border-white/5">
+              <TableCell className="text-white">{m.decor_bookings?.event_type || '—'}</TableCell>
+              <TableCell className="text-white/60">{m.decor_providers?.name || '—'}</TableCell>
+              <TableCell><Badge variant="outline" className={Number(m.match_score) >= 80 ? 'text-green-400 border-green-500/30' : Number(m.match_score) >= 50 ? 'text-amber-400 border-amber-500/30' : 'text-red-400 border-red-500/30'}>{Number(m.match_score).toFixed(0)}%</Badge></TableCell>
+              <TableCell><Badge variant="outline" className={statusColors[m.decor_bookings?.status] || ''}>{m.decor_bookings?.status || '—'}</Badge></TableCell>
+            </TableRow>
+          ))}
+          {matches.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-white/30 py-8">No matches yet</TableCell></TableRow>}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 // ─── Main Page ──────────────────────────────────────────
 export default function PenthouseVehicleDecor() {
   const { data: styleCt = 0 } = useQuery({ queryKey: ['decor-styles-ct'], queryFn: async () => { const { count } = await supabase.from('vehicle_decor_styles').select('*', { count: 'exact', head: true }); return count || 0; } });
