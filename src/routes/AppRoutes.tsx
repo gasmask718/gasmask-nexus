@@ -734,6 +734,7 @@ const PenthouseHotels = lazy(() => import('@/pages/os/toptier/penthouse/Penthous
 const PenthouseSecurity = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseSecurity'));
 const PenthouseCorporateEvents = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseCorporateEvents'));
 const PenthouseVehicleDecor = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseVehicleDecor'));
+const DecorExperienceWizard = lazy(() => import('@/pages/os/toptier/DecorExperienceWizard'));
 const PenthouseFleet = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseFleet'));
 const PenthouseAddons = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseAddons'));
 
@@ -1670,6 +1671,7 @@ export default function AppRoutes() {
           <Route path="operations" element={<TTOperations />} />
           <Route path="ai" element={<TTAIBrain />} />
           <Route path="settings" element={<TTPlaceholder />} />
+          <Route path="decor-experience" element={<DecorExperienceWizard />} />
         </Route>
 
         {/* Penthouse Control System — Admin/Owner Only */}
