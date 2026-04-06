@@ -46477,6 +46477,7 @@ export type Database = {
           distress_signals: Json | null
           equity: number | null
           estimated_value: number | null
+          external_sync_id: string | null
           id: string
           last_sale_date: string | null
           last_sale_price: number | null
@@ -46503,6 +46504,7 @@ export type Database = {
           distress_signals?: Json | null
           equity?: number | null
           estimated_value?: number | null
+          external_sync_id?: string | null
           id?: string
           last_sale_date?: string | null
           last_sale_price?: number | null
@@ -46529,6 +46531,7 @@ export type Database = {
           distress_signals?: Json | null
           equity?: number | null
           estimated_value?: number | null
+          external_sync_id?: string | null
           id?: string
           last_sale_date?: string | null
           last_sale_price?: number | null

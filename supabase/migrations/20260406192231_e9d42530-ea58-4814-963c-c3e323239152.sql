@@ -1,0 +1,2 @@
+ALTER TABLE public.leads_raw ADD COLUMN IF NOT EXISTS external_sync_id text;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_raw_external_sync_id ON public.leads_raw(external_sync_id) WHERE external_sync_id IS NOT NULL;
