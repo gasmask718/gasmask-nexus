@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useState, useCallback, useEffect } from "react";
+import { createContext, useContext, ReactNode, useState, useCallback, useEffect, useRef } from "react";
 import { useVoiceDevice } from "@/contexts/VoiceDeviceProvider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,11 +6,11 @@ import { toast } from "sonner";
 import { CallModal } from "./CallModal";
 import { ActiveCallOverlay } from "./ActiveCallOverlay";
 import { GlobalCallHUD } from "./GlobalCallHUD";
+import { useLocation } from "react-router-dom";
 
 /**
  * GLOBAL CALL PROVIDER (Twilio Voice SDK)
- * 
- * Uses the Twilio Voice JS SDK for real two-way browser-to-phone calls.
+ * Manages all call state globally so calls persist across route changes.
  */
 
 interface CallParams {
@@ -22,6 +22,17 @@ interface CallParams {
   notes?: string;
   agentId?: string;
   isTestCall?: boolean;
+}
+
+export interface VACallMetadata {
+  leadId?: string | null;
+  leadName?: string;
+  twilioNumber?: string;
+  callLogId?: string | null;
+  disposition?: string | null;
+  excitementLevel?: string | null;
+  isVACall?: boolean;
+  direction?: "inbound" | "outbound";
 }
 
 interface ActiveCallInfo {
@@ -39,6 +50,16 @@ interface CallContextValue {
   isCallModalOpen: boolean;
   activeCall: ActiveCallInfo | null;
   formatPhoneDisplay: (phone: string) => string;
+  // VA-specific global state
+  callDuration: number;
+  isMuted: boolean;
+  isMinimized: boolean;
+  vaCallMetadata: VACallMetadata | null;
+  setVACallMetadata: (meta: VACallMetadata | null) => void;
+  minimizeCall: () => void;
+  expandCall: () => void;
+  endActiveCall: () => void;
+  toggleMuteGlobal: () => void;
 }
 
 const CallContext = createContext<CallContextValue | null>(null);
@@ -54,11 +75,58 @@ export function useCall() {
 export function CallProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const twilioDevice = useVoiceDevice();
+  const location = useLocation();
 
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [pendingCall, setPendingCall] = useState<CallParams | null>(null);
   const [activeCallInfo, setActiveCallInfo] = useState<ActiveCallInfo | null>(null);
   const [isPlacingCall, setIsPlacingCall] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [vaCallMetadata, setVACallMetadata] = useState<VACallMetadata | null>(null);
+
+  // Global duration counter
+  const [callDuration, setCallDuration] = useState(0);
+  const durationRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Start/stop duration timer based on active call
+  useEffect(() => {
+    if (activeCallInfo && (activeCallInfo.status === "in-progress" || activeCallInfo.status === "ringing" || activeCallInfo.status === "initiated")) {
+      if (!durationRef.current) {
+        durationRef.current = setInterval(() => {
+          setCallDuration(prev => prev + 1);
+        }, 1000);
+      }
+    } else {
+      if (durationRef.current) {
+        clearInterval(durationRef.current);
+        durationRef.current = null;
+      }
+    }
+    return () => {
+      if (durationRef.current) {
+        clearInterval(durationRef.current);
+        durationRef.current = null;
+      }
+    };
+  }, [activeCallInfo?.status]);
+
+  // Reset duration when a new call starts
+  useEffect(() => {
+    if (!activeCallInfo) {
+      setCallDuration(0);
+    }
+  }, [activeCallInfo]);
+
+  // Auto-minimize when navigating away from VA dashboard during an active call
+  const isOnVADashboard = location.pathname === "/va/dashboard";
+  useEffect(() => {
+    if (activeCallInfo && vaCallMetadata?.isVACall && !isOnVADashboard) {
+      setIsMinimized(true);
+    }
+    if (isOnVADashboard) {
+      setIsMinimized(false);
+    }
+  }, [isOnVADashboard, activeCallInfo, vaCallMetadata]);
 
   // Fetch business phone numbers for caller ID selection
   const { data: businessPhoneNumbers = [] } = useQuery({
@@ -99,10 +167,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
       activeCallInfo &&
       (twilioDevice.callStatus === "completed" || twilioDevice.callStatus === "cancelled")
     ) {
-      // Keep showing for 2s so user sees "Call Ended"
       setTimeout(() => {
         setActiveCallInfo(null);
+        setVACallMetadata(null);
+        setIsMinimized(false);
         queryClient.invalidateQueries({ queryKey: ["manual-call-logs"] });
+        queryClient.invalidateQueries({ queryKey: ["va-today-stats"] });
       }, 2000);
     }
   }, [twilioDevice.callStatus, activeCallInfo, queryClient]);
@@ -121,7 +191,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
     return businessPhoneNumbers.find((bp) => bp.is_default) || businessPhoneNumbers[0];
   }, [businessPhoneNumbers]);
 
-  // Format phone for E.164
   const formatE164 = (phone: string) => {
     let cleaned = phone.replace(/\D/g, "");
     if (cleaned.length === 10) cleaned = `+1${cleaned}`;
@@ -130,22 +199,29 @@ export function CallProvider({ children }: { children: ReactNode }) {
     return cleaned.startsWith("+") ? cleaned : `+${cleaned}`;
   };
 
-  // Place call using Twilio Voice SDK (browser WebRTC)
+  // Place call using Twilio Voice SDK
   const placeCall = useCallback(async (params: CallParams) => {
     const formattedPhone = formatE164(params.destinationPhone);
 
     setIsPlacingCall(true);
+    setCallDuration(0);
     try {
-      const call = await twilioDevice.makeCall(formattedPhone, params.isTestCall ? { test_call: "true" } : undefined);
+      const connectParams: Record<string, string> = {};
+      if (params.isTestCall) connectParams.test_call = "true";
+      // Enable recording
+      connectParams.Record = "true";
+
+      const call = await twilioDevice.makeCall(formattedPhone, Object.keys(connectParams).length > 0 ? connectParams : undefined);
       if (call) {
-        setActiveCallInfo({
+        const newCallInfo: ActiveCallInfo = {
           callSid: (call as any).parameters?.CallSid || `browser-${Date.now()}`,
           callLogId: "",
           destinationPhone: params.destinationPhone,
           entityName: params.entityName,
           status: "initiated",
           startedAt: new Date(),
-        });
+        };
+        setActiveCallInfo(newCallInfo);
         toast.success("Call connecting...");
       }
     } catch (err: any) {
@@ -180,15 +256,24 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setPendingCall(null);
   }, []);
 
-  const handleEndCall = useCallback(() => {
+  const endActiveCall = useCallback(() => {
     twilioDevice.hangUp();
     setActiveCallInfo(null);
+    setVACallMetadata(null);
+    setIsMinimized(false);
     queryClient.invalidateQueries({ queryKey: ["manual-call-logs"] });
+    queryClient.invalidateQueries({ queryKey: ["va-today-stats"] });
   }, [twilioDevice, queryClient]);
 
-  const handleToggleMute = useCallback(() => {
+  const toggleMuteGlobal = useCallback(() => {
     twilioDevice.toggleMute();
   }, [twilioDevice]);
+
+  const minimizeCall = useCallback(() => setIsMinimized(true), []);
+  const expandCall = useCallback(() => setIsMinimized(false), []);
+
+  // Determine visibility: only show ActiveCallOverlay for non-VA calls or when on dashboard
+  const showActiveCallOverlay = activeCallInfo && !vaCallMetadata?.isVACall;
 
   return (
     <CallContext.Provider
@@ -198,6 +283,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
         isCallModalOpen,
         activeCall: activeCallInfo,
         formatPhoneDisplay,
+        callDuration,
+        isMuted: twilioDevice.isMuted,
+        isMinimized,
+        vaCallMetadata,
+        setVACallMetadata,
+        minimizeCall,
+        expandCall,
+        endActiveCall,
+        toggleMuteGlobal,
       }}
     >
       {children}
@@ -214,7 +308,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         isLoading={isPlacingCall}
       />
 
-      {activeCallInfo && (
+      {showActiveCallOverlay && (
         <ActiveCallOverlay
           callSid={activeCallInfo.callSid}
           callLogId={activeCallInfo.callLogId}
@@ -222,8 +316,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
           entityName={activeCallInfo.entityName}
           status={activeCallInfo.status}
           startedAt={activeCallInfo.startedAt}
-          onEndCall={handleEndCall}
-          onToggleMute={handleToggleMute}
+          onEndCall={endActiveCall}
+          onToggleMute={toggleMuteGlobal}
           isMuted={twilioDevice.isMuted}
           formatPhoneDisplay={formatPhoneDisplay}
         />
