@@ -76,6 +76,13 @@ const hubNav = [
     { title: "Campaigns", path: "/brandaro/campaigns", icon: Zap },
     { title: "Reviews", path: "/brandaro/reviews", icon: Star },
   ]},
+  { section: "Admin / Ops", items: [
+    { title: "Phone Numbers", path: "/brandaro/admin-numbers", icon: Phone },
+    { title: "Leaderboard", path: "/brandaro/admin-leaderboard", icon: BarChart3 },
+    { title: "Call Review", path: "/brandaro/admin-call-review", icon: Eye },
+    { title: "VA Monitor", path: "/brandaro/admin-monitor", icon: Activity },
+    { title: "DNC Manager", path: "/brandaro/admin-dnc", icon: Shield },
+  ]},
 ];
 
 export default function BrandaroHubLayout() {
