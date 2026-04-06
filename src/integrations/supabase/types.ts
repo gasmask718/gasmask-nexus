@@ -31772,6 +31772,202 @@ export type Database = {
           },
         ]
       }
+      decor_addons: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price?: number
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
+      decor_booking_addons: {
+        Row: {
+          addon_id: string
+          booking_id: string
+          created_at: string
+          id: string
+          quantity: number
+          subtotal: number | null
+          unit_price: number
+        }
+        Insert: {
+          addon_id: string
+          booking_id: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          subtotal?: number | null
+          unit_price?: number
+        }
+        Update: {
+          addon_id?: string
+          booking_id?: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          subtotal?: number | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decor_booking_addons_addon_id_fkey"
+            columns: ["addon_id"]
+            isOneToOne: false
+            referencedRelation: "decor_addons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decor_booking_addons_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "decor_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decor_bookings: {
+        Row: {
+          created_at: string
+          customization_data: Json | null
+          event_type: string | null
+          external_vehicle: string | null
+          id: string
+          location: string | null
+          notes: string | null
+          provider_id: string | null
+          scheduled_at: string | null
+          service_type: string
+          status: string
+          style_id: string | null
+          total_price: number
+          updated_at: string
+          user_id: string | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          customization_data?: Json | null
+          event_type?: string | null
+          external_vehicle?: string | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          provider_id?: string | null
+          scheduled_at?: string | null
+          service_type?: string
+          status?: string
+          style_id?: string | null
+          total_price?: number
+          updated_at?: string
+          user_id?: string | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          customization_data?: Json | null
+          event_type?: string | null
+          external_vehicle?: string | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          provider_id?: string | null
+          scheduled_at?: string | null
+          service_type?: string
+          status?: string
+          style_id?: string | null
+          total_price?: number
+          updated_at?: string
+          user_id?: string | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decor_bookings_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "decor_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decor_bookings_style_id_fkey"
+            columns: ["style_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_decor_styles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decor_bookings_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "tt_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decor_providers: {
+        Row: {
+          bio: string | null
+          city: string
+          created_at: string
+          id: string
+          independent_contractor: boolean
+          is_active: boolean
+          media: Json | null
+          name: string
+          price_range: string | null
+          rating: number | null
+          specialties: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          bio?: string | null
+          city: string
+          created_at?: string
+          id?: string
+          independent_contractor?: boolean
+          is_active?: boolean
+          media?: Json | null
+          name: string
+          price_range?: string | null
+          rating?: number | null
+          specialties?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          bio?: string | null
+          city?: string
+          created_at?: string
+          id?: string
+          independent_contractor?: boolean
+          is_active?: boolean
+          media?: Json | null
+          name?: string
+          price_range?: string | null
+          rating?: number | null
+          specialties?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dedupe_suggestions: {
         Row: {
           created_at: string
@@ -86110,6 +86306,42 @@ export type Database = {
           total_tasks_completed?: number | null
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      vehicle_decor_styles: {
+        Row: {
+          base_price: number
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          media: Json | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          base_price?: number
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          media?: Json | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          media?: Json | null
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }
