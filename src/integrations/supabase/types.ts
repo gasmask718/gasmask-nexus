@@ -60173,6 +60173,47 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_availability_schedule: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_available: boolean
+          provider_id: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_available?: boolean
+          provider_id: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_available?: boolean
+          provider_id?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_availability_schedule_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       provider_locations: {
         Row: {
           address: string | null
@@ -60211,30 +60252,39 @@ export type Database = {
       }
       provider_media: {
         Row: {
+          before_after_pair_id: string | null
           caption: string | null
           created_at: string
           display_order: number
           id: string
+          is_before: boolean | null
           media_type: string
           provider_id: string
+          tags: string[] | null
           url: string
         }
         Insert: {
+          before_after_pair_id?: string | null
           caption?: string | null
           created_at?: string
           display_order?: number
           id?: string
+          is_before?: boolean | null
           media_type: string
           provider_id: string
+          tags?: string[] | null
           url: string
         }
         Update: {
+          before_after_pair_id?: string | null
           caption?: string | null
           created_at?: string
           display_order?: number
           id?: string
+          is_before?: boolean | null
           media_type?: string
           provider_id?: string
+          tags?: string[] | null
           url?: string
         }
         Relationships: [
@@ -97112,6 +97162,10 @@ export type Database = {
       get_payout_statement: { Args: { p_batch_id: string }; Returns: Json }
       get_phase5_mode: { Args: never; Returns: Json }
       get_portal_queue_health: { Args: never; Returns: Json }
+      get_provider_profile_data: {
+        Args: { p_provider_id: string }
+        Returns: Json
+      }
       get_rolling_connect_rate: {
         Args: { p_business_id: string; p_window?: number }
         Returns: number
