@@ -1,82 +1,95 @@
 
-# Penthouse Control System — Build Plan
 
-## Migration Status: Admin Consolidation Complete
+# VA Dashboard Global Calling System Refactor
 
-### Feature Parity Matrix
+## Problem
+When a VA navigates away from `/va/dashboard`, the call UI disappears but the Twilio call continues in the background. The user loses all call controls (mute, hang up, timer). This is because the call UI components (`VAPowerDialer`, `VACallPanel`) are mounted only inside the dashboard page component.
 
-| Feature | Public Admin Route | OS Route | Tables | Media/Storage | R/W | Status |
-|---------|-------------------|----------|--------|---------------|-----|--------|
-| Dashboard | — | /os/toptier/penthouse | tt_bookings, tt_partners, tt_partner_earnings, tt_affiliates | — | R | verified |
-| Partner Mgmt | — | /os/toptier/penthouse/partners | tt_partners, tt_partner_earnings | toptier-assets/partners | R/W | verified |
-| Affiliate Mgmt | — | /os/toptier/penthouse/affiliates | tt_affiliates, tt_affiliate_commissions | toptier-assets/affiliates | R/W | verified |
-| Marketplace | /admin/marketplace-control (GasMask) | /os/toptier/penthouse/marketplace | tt_experiences, tt_private_jets, tt_charter_requests | toptier-assets/experiences, toptier-assets/jets | R/W | verified |
-| Drivers | — | /os/toptier/penthouse/drivers | tt_drivers | toptier-assets/drivers | R/W | verified |
-| Confirmations | — | /os/toptier/penthouse/confirmations | tt_confirmation_requests, tt_bookings, tt_partners | — | R/W | verified |
-| Finance | — | /os/toptier/penthouse/finance | tt_partner_earnings, tt_bookings, tt_partners | — | R/W | verified |
-| Roles | — | /os/toptier/penthouse/roles | user_roles, role_permissions, permissions_matrix | — | R | verified |
-| System | — | /os/toptier/penthouse/system | tt_system_controls | — | R/W | verified |
-| Analytics | — | /os/toptier/penthouse/analytics | tt_bookings, tt_partners, tt_partner_earnings | — | R | verified |
-| Audit Logs | — | /os/toptier/penthouse/audit | admin_audit_log | — | R | verified |
+## Current Architecture
+- `VoiceDeviceProvider` (global) — manages Twilio Device, token, raw call state
+- `CallProvider` (global) — wraps VoiceDeviceProvider, renders `ActiveCallOverlay` and `GlobalCallHUD`
+- `VACallPanel` / `VAPowerDialer` — dashboard-local components that duplicate call state tracking with their own `useEffect` syncing `voice.callStatus`
 
-### Consolidation Audit Results
+The `CallProvider` already renders `ActiveCallOverlay` globally, but the VA dashboard components maintain their own parallel call state that doesn't feed back into the global provider. The VA components directly call `voice.makeCall()` bypassing `CallProvider`.
 
-**TopTier has NO existing public admin routes** — the /admin/marketplace-control is GasMask's marketplace (separate business unit). TopTier was always Dynasty-OS-only.
+## Solution
 
-### Admin Consolidation Features Added
+### Step 1: Extend CallProvider with VA-specific state
+Add fields to the global `CallContext` to support VA workflow needs:
+- `callDuration` (live seconds counter)
+- `isMuted` (expose from VoiceDeviceProvider)
+- `isMinimized` flag
+- `direction` (inbound/outbound)
+- `minimize()` / `expand()` actions
+- `vaCallMetadata` (lead info, disposition, notes) for VA-specific context
 
-1. **Media Management** (NEW)
-   - `toptier-assets` storage bucket created with public read + authenticated write
-   - Experience cover images + gallery management
-   - Jet photos + gallery management
-   - Partner avatar uploads
-   - Affiliate avatar uploads
-   - All media URLs stored in respective table columns
+### Step 2: Create a persistent `VACallWidget` component
+A floating bottom-right widget that:
+- Renders globally (mounted in `CallProvider` or `App.tsx`)
+- Shows only when there's an active call AND user is NOT on `/va/dashboard`
+- Displays: timer, contact name, mute/hangup/expand buttons
+- Expand navigates back to `/va/dashboard` or opens a mini-modal
+- Uses framer-motion for smooth transitions
 
-2. **Enhanced Marketplace Control**
-   - image_url, gallery_images (JSONB), featured, sort_order, pricing_tier, pricing_notes columns added to tt_experiences
-   - gallery_images, featured, sort_order columns added to tt_private_jets
-   - Full-field experience editor: title, category, price, pricing tier, pricing notes, description, location, duration, max guests, availability, special requirements, notes, status, featured, complimentary toggle
-   - Full-field jet editor: name, tail number, manufacturer, model, year, capacity, range, hourly/daily rates, locations, notes, maintenance notes, status, featured
-   - Full-field charter editor: customer, routes, dates, pricing, special requests, notes, status
-   - Inline featured star toggle in table view
-   - Sort order display and editing
-   - Image thumbnails in table rows
+### Step 3: Refactor VAPowerDialer and VACallPanel
+- Remove their local call state duplication (`callStatus`, `seconds`, timer refs)
+- Consume call state from `useCall()` global context instead
+- Route all `voice.makeCall()` calls through `CallProvider.placeCallNow()` so global state stays in sync
+- Pass `onCallStarted` / `onCallEnded` callbacks up for VA-specific logging
 
-3. **Enhanced Partner Management** (NEW)
-   - Create new partners (was view/status only)
-   - Edit all partner fields: name, business, email, phone, category, commission rate, website, address, bio
-   - Avatar upload with preview
-   - Commission rate column added to tt_partners (default 15%)
-   - Bio, website, address fields added
+### Step 4: Add automatic call recording
+Update the `twilio-voice-token` edge function's TwiML app or the `placeCall` flow to include `record: true` parameter when connecting via `device.connect()`. The Twilio `Call.connect()` params will include `Record=true`.
 
-4. **Enhanced Affiliate Management** (NEW)
-   - Create new affiliates (was view/status only)
-   - Edit all affiliate fields: name, email, phone, referral code, category, commission override, tier, notes
-   - Avatar upload with preview
-   - Commission override column added to tt_affiliates
-   - Category assignment column added
+### Step 5: Enhance database call logging
+The `va_call_logs` table already exists with `call_sid`, `recording_url`, `duration_seconds`, `disposition`, etc. Ensure:
+- `CallProvider.placeCall` creates a `va_call_logs` row on call start
+- On call end, update with duration, recording URL, and status
+- Add `provider_call_sid` and `direction` columns if missing
 
-### Data + Media Preservation
+### Step 6: Fix dashboard metrics
+- `VALeaderboard` already queries `va_leaderboard_stats` with realtime subscription — verify it works
+- Add a `VARecentCalls` component querying `va_call_logs` for the current VA
+- Add summary stats (calls today, total duration) from `va_leaderboard_stats`
 
-| Entity | Table | Image Field | Gallery Field | Storage Bucket |
-|--------|-------|-------------|---------------|----------------|
-| Experiences | tt_experiences | image_url | gallery_images (jsonb) | toptier-assets/experiences |
-| Jets | tt_private_jets | photo_url | gallery_images (jsonb) | toptier-assets/jets |
-| Partners | tt_partners | avatar_url | — | toptier-assets/partners |
-| Affiliates | tt_affiliates | avatar_url | — | toptier-assets/affiliates |
+## Files to Create/Edit
 
-### Security
+| File | Action | Purpose |
+|------|--------|---------|
+| `src/components/communication/CallProvider.tsx` | Edit | Add VA metadata, duration counter, minimize state, direction |
+| `src/components/va/VACallWidget.tsx` | Create | Floating persistent call widget for off-dashboard navigation |
+| `src/components/va/VAPowerDialer.tsx` | Edit | Remove local state duplication, use global `useCall()` |
+| `src/components/va/VACallPanel.tsx` | Edit | Remove local state duplication, use global `useCall()` |
+| `src/components/va/VARecentCalls.tsx` | Create | Recent calls list component for dashboard |
+| `src/components/va/VACallStats.tsx` | Create | Today's call statistics card |
+| `src/pages/va/VADashboard.tsx` | Edit | Add stats and recent calls sections |
+| `src/App.tsx` | Edit | Mount `VACallWidget` globally alongside existing providers |
+| DB migration | Create | Add `direction` column to `va_call_logs` if missing |
 
-- All pages require admin/super_admin role via RequireRole + ProtectedRoute
-- All mutations log to admin_audit_log with actor_user_id
-- Storage bucket: public read, authenticated write only
-- No hardcoded credentials
-- No dev-only setup paths
+## Technical Details
 
-### Design
+**Call state flow (after refactor):**
+```text
+VAPowerDialer/VACallPanel
+  → useCall().placeCallNow({ phone, leadId, entityName })
+    → CallProvider.placeCall()
+      → voice.makeCall(phone, { Record: "true" })
+      → INSERT va_call_logs (status: 'initiated')
+      → setActiveCallInfo({ callSid, leadId, ... })
+      → Start duration timer
 
-- Dark penthouse: #0A0A0A background, #C9A84C gold accent
-- Consistent luxury design across all modules
-- Admin-only badge in header
-- ScrollArea for long forms, max-h dialogs
+ActiveCallOverlay (global, visible on dashboard)
+VACallWidget (global, visible off-dashboard)
+  → Both read from CallContext
+  → hangUp / mute / minimize all go through CallProvider
+```
+
+**Widget visibility logic:**
+```text
+const location = useLocation();
+const isOnDashboard = location.pathname === '/va/dashboard';
+const showWidget = activeCall && !isOnDashboard;
+const showOverlay = activeCall && isOnDashboard;
+```
+
+**Recording:** Pass `Record=true` in Twilio Device connect params. The recording URL will be fetched via a status callback webhook or polling after call completion.
+
