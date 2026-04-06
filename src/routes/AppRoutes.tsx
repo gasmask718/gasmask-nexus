@@ -3186,6 +3186,13 @@ export default function AppRoutes() {
           <Route path="phone-numbers" element={<BrandaroPhoneNumbersPage />} />
           <Route path="canva-assets" element={<CanvaAssetsPage />} />
           <Route path="canva-templates" element={<CanvaTemplatesPage />} />
+
+          {/* ── Admin / Operations ── */}
+          <Route path="admin-numbers" element={<AdminNumbersPage />} />
+          <Route path="admin-leaderboard" element={<AdminLeaderboardPage />} />
+          <Route path="admin-call-review" element={<AdminCallReviewPage />} />
+          <Route path="admin-monitor" element={<AdminVAMonitorPage />} />
+          <Route path="admin-dnc" element={<AdminDNCManagerPage />} />
         </Route>
       </Route>
 
