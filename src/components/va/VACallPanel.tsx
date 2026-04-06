@@ -30,6 +30,7 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
   const { t, twilioNumber, sessionId } = useVASession();
   const { user } = useAuth();
   const voice = useVoiceDevice();
+  const { setVACallMetadata } = useCall();
   const [callStatus, setCallStatus] = useState<'idle' | 'ringing' | 'connected' | 'ended'>('idle');
   const [seconds, setSeconds] = useState(0);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
