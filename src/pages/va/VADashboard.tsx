@@ -14,6 +14,8 @@ import { VAPowerDialer } from '@/components/va/VAPowerDialer';
 import { VADialerAssist } from '@/components/va/VADialerAssist';
 import { VALeaderboard } from '@/components/va/VALeaderboard';
 import { VACallbacksQueue } from '@/components/va/VACallbacksQueue';
+import { VACallStats } from '@/components/va/VACallStats';
+import { VARecentCalls } from '@/components/va/VARecentCalls';
 import { VASessionSummary } from '@/components/va/VASessionSummary';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
