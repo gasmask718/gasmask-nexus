@@ -32081,6 +32081,79 @@ export type Database = {
           },
         ]
       }
+      decor_personal_photos: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          image_url: string
+          is_feature: boolean
+          uploaded_by: string | null
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          image_url: string
+          is_feature?: boolean
+          uploaded_by?: string | null
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_feature?: boolean
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decor_personal_photos_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "decor_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decor_photo_preferences: {
+        Row: {
+          booking_id: string
+          caption_text: string | null
+          created_at: string
+          display_style: string
+          id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          booking_id: string
+          caption_text?: string | null
+          created_at?: string
+          display_style?: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          booking_id?: string
+          caption_text?: string | null
+          created_at?: string
+          display_style?: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decor_photo_preferences_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "decor_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decor_preview_settings: {
         Row: {
           booking_id: string | null
