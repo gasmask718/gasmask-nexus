@@ -94,6 +94,7 @@ export default function RealEstateLeads() {
                 <SelectItem value="expired_listing">Expired Listing</SelectItem>
                 <SelectItem value="fsbo">FSBO</SelectItem>
                 <SelectItem value="wholesale_network">Wholesale Network</SelectItem>
+                <SelectItem value="solar_website">Solar Website</SelectItem>
                 <SelectItem value="zillow">Zillow</SelectItem>
                 <SelectItem value="redfin">Redfin</SelectItem>
               </SelectContent>
