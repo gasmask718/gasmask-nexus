@@ -98553,6 +98553,7 @@ export type Database = {
         | "redfin"
         | "direct_mail"
         | "cold_call"
+        | "solar_website"
       loyalty_level_type: "Bronze" | "Silver" | "Gold" | "VIP"
       market_type:
         | "spread"
@@ -99186,6 +99187,7 @@ export const Constants = {
         "redfin",
         "direct_mail",
         "cold_call",
+        "solar_website",
       ],
       loyalty_level_type: ["Bronze", "Silver", "Gold", "VIP"],
       market_type: [
