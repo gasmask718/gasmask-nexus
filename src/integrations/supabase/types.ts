@@ -35997,6 +35997,66 @@ export type Database = {
         }
         Relationships: []
       }
+      dynamic_pricing_engine: {
+        Row: {
+          base_price: number
+          created_at: string
+          demand_level: string
+          effective_price: number | null
+          id: string
+          provider_id: string | null
+          service_id: string | null
+          surge_multiplier: number
+          time_factor: number
+          updated_at: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          base_price: number
+          created_at?: string
+          demand_level?: string
+          effective_price?: number | null
+          id?: string
+          provider_id?: string | null
+          service_id?: string | null
+          surge_multiplier?: number
+          time_factor?: number
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          base_price?: number
+          created_at?: string
+          demand_level?: string
+          effective_price?: number | null
+          id?: string
+          provider_id?: string | null
+          service_id?: string | null
+          surge_multiplier?: number
+          time_factor?: number
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dynamic_pricing_engine_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dynamic_pricing_engine_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "provider_service_menu"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dynasty_agent_actions: {
         Row: {
           action_data: Json | null
@@ -37688,6 +37748,48 @@ export type Database = {
           rating?: number | null
           service_radius_miles?: number | null
           tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      experience_stack_rules: {
+        Row: {
+          avg_order_value: number
+          conversion_rate: number
+          created_at: string
+          id: string
+          is_active: boolean
+          priority_score: number
+          recommended_service: string
+          times_accepted: number
+          times_shown: number
+          trigger_service: string
+          updated_at: string
+        }
+        Insert: {
+          avg_order_value?: number
+          conversion_rate?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          priority_score?: number
+          recommended_service: string
+          times_accepted?: number
+          times_shown?: number
+          trigger_service: string
+          updated_at?: string
+        }
+        Update: {
+          avg_order_value?: number
+          conversion_rate?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          priority_score?: number
+          recommended_service?: string
+          times_accepted?: number
+          times_shown?: number
+          trigger_service?: string
           updated_at?: string
         }
         Relationships: []
@@ -79563,6 +79665,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_behavior_profile: {
+        Row: {
+          avg_spend: number
+          booking_time_patterns: Json
+          created_at: string
+          id: string
+          location: string | null
+          preferred_categories: string[] | null
+          total_bookings: number
+          updated_at: string
+          user_id: string
+          vip_status: boolean
+        }
+        Insert: {
+          avg_spend?: number
+          booking_time_patterns?: Json
+          created_at?: string
+          id?: string
+          location?: string | null
+          preferred_categories?: string[] | null
+          total_bookings?: number
+          updated_at?: string
+          user_id: string
+          vip_status?: boolean
+        }
+        Update: {
+          avg_spend?: number
+          booking_time_patterns?: Json
+          created_at?: string
+          id?: string
+          location?: string | null
+          preferred_categories?: string[] | null
+          total_bookings?: number
+          updated_at?: string
+          user_id?: string
+          vip_status?: boolean
+        }
+        Relationships: []
       }
       user_brand_map: {
         Row: {
