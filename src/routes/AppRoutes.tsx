@@ -1123,11 +1123,12 @@ export default function AppRoutes() {
       <Route path="/va/dashboard" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
       <Route path="/va/profile" element={<ProtectedRoute><VAProfilePage /></ProtectedRoute>} />
       <Route path="/va/lead-discovery" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
-      <Route path="/admin/numbers" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminNumbersPage /></RequireRole></ProtectedRoute>} />
-      <Route path="/admin/leaderboard" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminLeaderboardPage /></RequireRole></ProtectedRoute>} />
-      <Route path="/admin/call-review" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminCallReviewPage /></RequireRole></ProtectedRoute>} />
-      <Route path="/admin/monitor" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminVAMonitorPage /></RequireRole></ProtectedRoute>} />
-      <Route path="/admin/dnc" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminDNCManagerPage /></RequireRole></ProtectedRoute>} />
+      {/* Legacy admin paths → redirect into Brandaro hub */}
+      <Route path="/admin/numbers" element={<Navigate to="/brandaro/admin-numbers" replace />} />
+      <Route path="/admin/leaderboard" element={<Navigate to="/brandaro/admin-leaderboard" replace />} />
+      <Route path="/admin/call-review" element={<Navigate to="/brandaro/admin-call-review" replace />} />
+      <Route path="/admin/monitor" element={<Navigate to="/brandaro/admin-monitor" replace />} />
+      <Route path="/admin/dnc" element={<Navigate to="/brandaro/admin-dnc" replace />} />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PROTECTED ROUTES (Authentication required)                                   */}
