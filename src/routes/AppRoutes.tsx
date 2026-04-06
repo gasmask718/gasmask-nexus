@@ -1101,6 +1101,7 @@ export default function AppRoutes() {
       <Route path="/portal/biker/login" element={<BikerLogin />} />
       {/* Public Ambassador Application Form */}
       <Route path="/apply/ambassador" element={<AmbassadorApplication />} />
+      <Route path="/apply/beauty-specialist" element={<BeautyProviderSignup />} />
       <Route path="/ambassador/login" element={<AmbassadorLogin />} />
       <Route path="/ambassador/set-password" element={<AmbassadorSetPassword />} />
       <Route path="/ut/ambassador/dashboard" element={<UTAmbassadorDashboard />} />
