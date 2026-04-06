@@ -8,3 +8,4 @@ export { default as PenthouseRoles } from './PenthouseRoles';
 export { default as PenthouseSystem } from './PenthouseSystem';
 export { default as PenthouseAnalytics } from './PenthouseAnalytics';
 export { default as PenthouseAudit } from './PenthouseAudit';
+export { default as PenthouseVehicleDecor } from './PenthouseVehicleDecor';
