@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useState, useCallback, useEffect, useRef } from "react";
+import { ReactNode, useState, useCallback, useEffect, useRef } from "react";
 import { useVoiceDevice } from "@/contexts/VoiceDeviceProvider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,70 +7,12 @@ import { CallModal } from "./CallModal";
 import { ActiveCallOverlay } from "./ActiveCallOverlay";
 import { GlobalCallHUD } from "./GlobalCallHUD";
 import { useLocation } from "react-router-dom";
+import { CallContext } from "./CallContext";
+import type { CallParams, ActiveCallInfo } from "./CallContext";
 
-/**
- * GLOBAL CALL PROVIDER (Twilio Voice SDK)
- * Manages all call state globally so calls persist across route changes.
- */
-
-interface CallParams {
-  destinationPhone: string;
-  businessId?: string;
-  entityType?: "store" | "customer" | "wholesaler" | "driver" | "ambassador" | "other";
-  entityId?: string;
-  entityName?: string;
-  notes?: string;
-  agentId?: string;
-  isTestCall?: boolean;
-}
-
-export interface VACallMetadata {
-  leadId?: string | null;
-  leadName?: string;
-  twilioNumber?: string;
-  callLogId?: string | null;
-  disposition?: string | null;
-  excitementLevel?: string | null;
-  isVACall?: boolean;
-  direction?: "inbound" | "outbound";
-}
-
-interface ActiveCallInfo {
-  callSid: string;
-  callLogId: string;
-  destinationPhone: string;
-  entityName?: string;
-  status: string;
-  startedAt: Date;
-}
-
-interface CallContextValue {
-  initiateCall: (params: CallParams) => void;
-  placeCallNow: (params: CallParams) => Promise<any>;
-  isCallModalOpen: boolean;
-  activeCall: ActiveCallInfo | null;
-  formatPhoneDisplay: (phone: string) => string;
-  // VA-specific global state
-  callDuration: number;
-  isMuted: boolean;
-  isMinimized: boolean;
-  vaCallMetadata: VACallMetadata | null;
-  setVACallMetadata: (meta: VACallMetadata | null) => void;
-  minimizeCall: () => void;
-  expandCall: () => void;
-  endActiveCall: () => void;
-  toggleMuteGlobal: () => void;
-}
-
-const CallContext = createContext<CallContextValue | null>(null);
-
-export function useCall() {
-  const context = useContext(CallContext);
-  if (!context) {
-    throw new Error("useCall must be used within CallProvider");
-  }
-  return context;
-}
+// Re-export for backward compatibility
+export { useCall } from "./CallContext";
+export type { VACallMetadata, CallParams, ActiveCallInfo } from "./CallContext";
 
 export function CallProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
@@ -82,7 +24,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [activeCallInfo, setActiveCallInfo] = useState<ActiveCallInfo | null>(null);
   const [isPlacingCall, setIsPlacingCall] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [vaCallMetadata, setVACallMetadata] = useState<VACallMetadata | null>(null);
+  const [vaCallMetadata, setVACallMetadata] = useState<import("./CallContext").VACallMetadata | null>(null);
 
   // Global duration counter
   const [callDuration, setCallDuration] = useState(0);
@@ -208,7 +150,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
     try {
       const connectParams: Record<string, string> = {};
       if (params.isTestCall) connectParams.test_call = "true";
-      // Enable recording
       connectParams.Record = "true";
 
       const call = await twilioDevice.makeCall(formattedPhone, Object.keys(connectParams).length > 0 ? connectParams : undefined);
@@ -272,7 +213,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const minimizeCall = useCallback(() => setIsMinimized(true), []);
   const expandCall = useCallback(() => setIsMinimized(false), []);
 
-  // Determine visibility: only show ActiveCallOverlay for non-VA calls or when on dashboard
   const showActiveCallOverlay = activeCallInfo && !vaCallMetadata?.isVACall;
 
   return (
