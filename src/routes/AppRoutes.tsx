@@ -1696,6 +1696,7 @@ export default function AppRoutes() {
           <Route path="vehicle-decor" element={<PenthouseVehicleDecor />} />
           <Route path="fleet" element={<PenthouseFleet />} />
           <Route path="addons" element={<PenthouseAddons />} />
+          <Route path="gift-experiences" element={<PenthouseGiftExperiences />} />
           <Route path="finance" element={<PenthouseFinance />} />
           <Route path="roles" element={<PenthouseRoles />} />
           <Route path="system" element={<PenthouseSystem />} />
