@@ -10,3 +10,4 @@ export { default as PenthouseAnalytics } from './PenthouseAnalytics';
 export { default as PenthouseAudit } from './PenthouseAudit';
 export { default as PenthouseVehicleDecor } from './PenthouseVehicleDecor';
 export { default as PenthouseFleet } from './PenthouseFleet';
+export { default as PenthouseAddons } from './PenthouseAddons';
