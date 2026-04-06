@@ -57,8 +57,8 @@ export default function PenthouseGiftExperiences() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const actorId = await getActorId();
-      await deleteTopTierData('vehicle_gift_experiences', id);
-      await logPenthouseAction(actorId, 'delete_gift_experience', 'vehicle_gift_experiences', id);
+      await deleteTopTierData('vehicle_gift_experiences', { 'id': `eq.${id}` });
+      await logPenthouseAction({ actor_user_id: actorId, action: 'delete_gift_experience', target_type: 'vehicle_gift_experiences', target_id: id });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['ph-gift-experiences'] });
