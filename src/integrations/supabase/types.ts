@@ -37193,6 +37193,161 @@ export type Database = {
         }
         Relationships: []
       }
+      fleet_bookings: {
+        Row: {
+          created_at: string
+          dropoff_location: string | null
+          duration_hours: number | null
+          experience_type: string
+          id: string
+          notes: string | null
+          pickup_location: string | null
+          pricing_snapshot: Json | null
+          scheduled_at: string | null
+          source_booking_id: string | null
+          status: string
+          total_price: number | null
+          updated_at: string
+          user_id: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          dropoff_location?: string | null
+          duration_hours?: number | null
+          experience_type: string
+          id?: string
+          notes?: string | null
+          pickup_location?: string | null
+          pricing_snapshot?: Json | null
+          scheduled_at?: string | null
+          source_booking_id?: string | null
+          status?: string
+          total_price?: number | null
+          updated_at?: string
+          user_id?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          dropoff_location?: string | null
+          duration_hours?: number | null
+          experience_type?: string
+          id?: string
+          notes?: string | null
+          pickup_location?: string | null
+          pricing_snapshot?: Json | null
+          scheduled_at?: string | null
+          source_booking_id?: string | null
+          status?: string
+          total_price?: number | null
+          updated_at?: string
+          user_id?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_bookings_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_vehicles: {
+        Row: {
+          available_for_chauffeur: boolean
+          available_for_decor: boolean
+          available_for_nightlife: boolean
+          capacity: number
+          category: string
+          chauffeur_only: boolean
+          city: string | null
+          color: string | null
+          created_at: string
+          decor_compatible: boolean
+          decor_price_override: number | null
+          decor_tags: string[] | null
+          description: string | null
+          driver_required: boolean
+          hourly_rate: number
+          id: string
+          images: string[] | null
+          is_active: boolean
+          make: string | null
+          minimum_hours: number
+          model: string | null
+          name: string
+          nightlife_price_override: number | null
+          nightlife_ready: boolean
+          plate_number: string | null
+          updated_at: string
+          vip_transport: boolean
+          year: number | null
+        }
+        Insert: {
+          available_for_chauffeur?: boolean
+          available_for_decor?: boolean
+          available_for_nightlife?: boolean
+          capacity?: number
+          category?: string
+          chauffeur_only?: boolean
+          city?: string | null
+          color?: string | null
+          created_at?: string
+          decor_compatible?: boolean
+          decor_price_override?: number | null
+          decor_tags?: string[] | null
+          description?: string | null
+          driver_required?: boolean
+          hourly_rate?: number
+          id?: string
+          images?: string[] | null
+          is_active?: boolean
+          make?: string | null
+          minimum_hours?: number
+          model?: string | null
+          name: string
+          nightlife_price_override?: number | null
+          nightlife_ready?: boolean
+          plate_number?: string | null
+          updated_at?: string
+          vip_transport?: boolean
+          year?: number | null
+        }
+        Update: {
+          available_for_chauffeur?: boolean
+          available_for_decor?: boolean
+          available_for_nightlife?: boolean
+          capacity?: number
+          category?: string
+          chauffeur_only?: boolean
+          city?: string | null
+          color?: string | null
+          created_at?: string
+          decor_compatible?: boolean
+          decor_price_override?: number | null
+          decor_tags?: string[] | null
+          description?: string | null
+          driver_required?: boolean
+          hourly_rate?: number
+          id?: string
+          images?: string[] | null
+          is_active?: boolean
+          make?: string | null
+          minimum_hours?: number
+          model?: string | null
+          name?: string
+          nightlife_price_override?: number | null
+          nightlife_ready?: boolean
+          plate_number?: string | null
+          updated_at?: string
+          vip_transport?: boolean
+          year?: number | null
+        }
+        Relationships: []
+      }
       follow_up_audit_log: {
         Row: {
           action_taken: string

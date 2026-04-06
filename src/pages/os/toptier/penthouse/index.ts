@@ -9,3 +9,4 @@ export { default as PenthouseSystem } from './PenthouseSystem';
 export { default as PenthouseAnalytics } from './PenthouseAnalytics';
 export { default as PenthouseAudit } from './PenthouseAudit';
 export { default as PenthouseVehicleDecor } from './PenthouseVehicleDecor';
+export { default as PenthouseFleet } from './PenthouseFleet';
