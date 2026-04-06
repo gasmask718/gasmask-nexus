@@ -40,6 +40,7 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
   const { t, twilioNumber } = useVASession();
   const { user } = useAuth();
   const voice = useVoiceDevice();
+  const { setVACallMetadata, activeCall: globalActiveCall, endActiveCall } = useCall();
 
   const [isDialing, setIsDialing] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
