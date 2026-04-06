@@ -87390,6 +87390,7 @@ export type Database = {
           call_status: string | null
           callback_scheduled_at: string | null
           called_at: string | null
+          direction: string
           disposition: string | null
           duration_seconds: number | null
           excitement_level: string | null
@@ -87409,6 +87410,7 @@ export type Database = {
           call_status?: string | null
           callback_scheduled_at?: string | null
           called_at?: string | null
+          direction?: string
           disposition?: string | null
           duration_seconds?: number | null
           excitement_level?: string | null
@@ -87428,6 +87430,7 @@ export type Database = {
           call_status?: string | null
           callback_scheduled_at?: string | null
           called_at?: string | null
+          direction?: string
           disposition?: string | null
           duration_seconds?: number | null
           excitement_level?: string | null
