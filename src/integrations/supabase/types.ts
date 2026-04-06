@@ -8770,6 +8770,101 @@ export type Database = {
           },
         ]
       }
+      beauty_provider_listings: {
+        Row: {
+          created_at: string
+          id: string
+          is_featured: boolean
+          is_priority: boolean
+          listing_fee_paid: number | null
+          priority_expires_at: string | null
+          provider_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_featured?: boolean
+          is_priority?: boolean
+          listing_fee_paid?: number | null
+          priority_expires_at?: string | null
+          provider_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_featured?: boolean
+          is_priority?: boolean
+          listing_fee_paid?: number | null
+          priority_expires_at?: string | null
+          provider_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beauty_provider_listings_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: true
+            referencedRelation: "beauty_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      beauty_provider_quotes: {
+        Row: {
+          add_ons_json: Json | null
+          booking_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          provider_id: string
+          quote_notes: string | null
+          quoted_price: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          add_ons_json?: Json | null
+          booking_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          provider_id: string
+          quote_notes?: string | null
+          quoted_price: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          add_ons_json?: Json | null
+          booking_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          provider_id?: string
+          quote_notes?: string | null
+          quoted_price?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beauty_provider_quotes_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "beauty_provider_quotes_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       beauty_providers: {
         Row: {
           application_notes: string | null
@@ -8863,6 +8958,45 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           verification_status?: string
+        }
+        Relationships: []
+      }
+      beauty_service_categories: {
+        Row: {
+          category_name: string
+          commission_rate_percent: number
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          minimum_price_threshold: number
+          starting_from_price: number
+          updated_at: string
+        }
+        Insert: {
+          category_name: string
+          commission_rate_percent?: number
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          minimum_price_threshold?: number
+          starting_from_price?: number
+          updated_at?: string
+        }
+        Update: {
+          category_name?: string
+          commission_rate_percent?: number
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          minimum_price_threshold?: number
+          starting_from_price?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -60147,28 +60281,34 @@ export type Database = {
       }
       provider_services: {
         Row: {
+          allows_custom_quotes: boolean
           created_at: string
           duration_minutes: number
           id: string
           is_active: boolean
+          platform_starting_price: number | null
           price: number
           provider_id: string
           service_name: string
         }
         Insert: {
+          allows_custom_quotes?: boolean
           created_at?: string
           duration_minutes?: number
           id?: string
           is_active?: boolean
+          platform_starting_price?: number | null
           price?: number
           provider_id: string
           service_name: string
         }
         Update: {
+          allows_custom_quotes?: boolean
           created_at?: string
           duration_minutes?: number
           id?: string
           is_active?: boolean
+          platform_starting_price?: number | null
           price?: number
           provider_id?: string
           service_name?: string
