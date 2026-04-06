@@ -37698,6 +37698,59 @@ export type Database = {
           },
         ]
       }
+      experience_bookings: {
+        Row: {
+          booking_status: string
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          experience_id: string
+          id: string
+          notes: string | null
+          selected_addons: Json | null
+          total_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          booking_status?: string
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          experience_id: string
+          id?: string
+          notes?: string | null
+          selected_addons?: Json | null
+          total_price?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          booking_status?: string
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          experience_id?: string
+          id?: string
+          notes?: string | null
+          selected_addons?: Json | null
+          total_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experience_bookings_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experiences_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       experience_providers: {
         Row: {
           category: string
@@ -37791,6 +37844,96 @@ export type Database = {
           times_shown?: number
           trigger_service?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      experience_sync_errors: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          error_type: string
+          id: string
+          payload: Json | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          error_type: string
+          id?: string
+          payload?: Json | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          error_type?: string
+          id?: string
+          payload?: Json | null
+        }
+        Relationships: []
+      }
+      experiences_master: {
+        Row: {
+          booking_type: string
+          category: string | null
+          city: string | null
+          created_at: string
+          description: string | null
+          display_price: number | null
+          duration: string | null
+          external_url: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          markup_pct: number
+          price: number
+          rating: number | null
+          supplier_name: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          viator_product_code: string | null
+        }
+        Insert: {
+          booking_type?: string
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          display_price?: number | null
+          duration?: string | null
+          external_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          markup_pct?: number
+          price?: number
+          rating?: number | null
+          supplier_name?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          viator_product_code?: string | null
+        }
+        Update: {
+          booking_type?: string
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          display_price?: number | null
+          duration?: string | null
+          external_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          markup_pct?: number
+          price?: number
+          rating?: number | null
+          supplier_name?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          viator_product_code?: string | null
         }
         Relationships: []
       }
