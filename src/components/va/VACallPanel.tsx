@@ -118,8 +118,8 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
     if (timerRef.current) clearInterval(timerRef.current);
     setCallStatus('ended');
 
-    // Disconnect browser audio
-    voice.hangUp();
+    // Disconnect via global provider
+    endActiveCall();
 
     // Update call log
     if (callLogId) {

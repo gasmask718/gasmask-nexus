@@ -236,8 +236,8 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
     setCallStatus('ended');
     setNeedsDisposition(true);
 
-    // Hang up via Twilio Device SDK (disconnects the browser audio)
-    voice.hangUp();
+    // Hang up via global provider (disconnects browser audio + clears global state)
+    endActiveCall();
 
     // Update call log with duration
     if (callLogId) {
