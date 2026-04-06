@@ -24691,6 +24691,50 @@ export type Database = {
           },
         ]
       }
+      cart_tracking: {
+        Row: {
+          created_at: string
+          id: string
+          provider_id: string | null
+          selected_services: Json
+          status: string
+          total_value: number
+          updated_at: string
+          upsell_interactions: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          provider_id?: string | null
+          selected_services?: Json
+          status?: string
+          total_value?: number
+          updated_at?: string
+          upsell_interactions?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          provider_id?: string | null
+          selected_services?: Json
+          status?: string
+          total_value?: number
+          updated_at?: string
+          upsell_interactions?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_tracking_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       carts: {
         Row: {
           created_at: string | null
@@ -79304,6 +79348,182 @@ export type Database = {
             columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upsell_bundles: {
+        Row: {
+          bundle_name: string
+          bundle_price: number
+          created_at: string
+          id: string
+          included_services: string[] | null
+          is_active: boolean
+          original_price: number
+          provider_id: string
+          savings_display: string | null
+          updated_at: string
+        }
+        Insert: {
+          bundle_name: string
+          bundle_price: number
+          created_at?: string
+          id?: string
+          included_services?: string[] | null
+          is_active?: boolean
+          original_price: number
+          provider_id: string
+          savings_display?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bundle_name?: string
+          bundle_price?: number
+          created_at?: string
+          id?: string
+          included_services?: string[] | null
+          is_active?: boolean
+          original_price?: number
+          provider_id?: string
+          savings_display?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upsell_bundles_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upsell_conversion_log: {
+        Row: {
+          bundle_id: string | null
+          cart_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          provider_id: string
+          upsell_rule_id: string | null
+          user_id: string
+        }
+        Insert: {
+          bundle_id?: string | null
+          cart_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          provider_id: string
+          upsell_rule_id?: string | null
+          user_id: string
+        }
+        Update: {
+          bundle_id?: string | null
+          cart_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          provider_id?: string
+          upsell_rule_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upsell_conversion_log_bundle_id_fkey"
+            columns: ["bundle_id"]
+            isOneToOne: false
+            referencedRelation: "upsell_bundles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upsell_conversion_log_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "cart_tracking"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upsell_conversion_log_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upsell_conversion_log_upsell_rule_id_fkey"
+            columns: ["upsell_rule_id"]
+            isOneToOne: false
+            referencedRelation: "upsell_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upsell_rules: {
+        Row: {
+          conversion_rate: number
+          created_at: string
+          display_priority: number
+          id: string
+          is_active: boolean
+          provider_id: string
+          times_accepted: number
+          times_shown: number
+          trigger_service_id: string
+          updated_at: string
+          upsell_service_id: string
+          upsell_type: string
+        }
+        Insert: {
+          conversion_rate?: number
+          created_at?: string
+          display_priority?: number
+          id?: string
+          is_active?: boolean
+          provider_id: string
+          times_accepted?: number
+          times_shown?: number
+          trigger_service_id: string
+          updated_at?: string
+          upsell_service_id: string
+          upsell_type: string
+        }
+        Update: {
+          conversion_rate?: number
+          created_at?: string
+          display_priority?: number
+          id?: string
+          is_active?: boolean
+          provider_id?: string
+          times_accepted?: number
+          times_shown?: number
+          trigger_service_id?: string
+          updated_at?: string
+          upsell_service_id?: string
+          upsell_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upsell_rules_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upsell_rules_trigger_service_id_fkey"
+            columns: ["trigger_service_id"]
+            isOneToOne: false
+            referencedRelation: "provider_service_menu"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upsell_rules_upsell_service_id_fkey"
+            columns: ["upsell_service_id"]
+            isOneToOne: false
+            referencedRelation: "provider_service_menu"
             referencedColumns: ["id"]
           },
         ]
