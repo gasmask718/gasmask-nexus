@@ -15,6 +15,7 @@ import { ViewAsBanner } from "./components/admin/ViewAsBanner";
 import { BackendFingerprint, BackendMismatchGuard } from "./components/dev/BackendFingerprint";
 import { SchemaSanityChecker } from "./components/dev/SchemaSanityChecker";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { VACallWidget } from "./components/va/VACallWidget";
 
 import './modules';
 import AppRoutes from './routes/AppRoutes';
@@ -49,6 +50,7 @@ const App = () => (
                           <SchemaSanityChecker />
                           <ViewAsBanner />
                           <SimulationModeBanner />
+                          <VACallWidget />
                           <AppRoutes />
                         </MessageProvider>
                       </CallProvider>

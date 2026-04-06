@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useVASession } from '@/contexts/VASessionContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVoiceDevice } from '@/contexts/VoiceDeviceProvider';
+import { useCall } from '@/components/communication/CallProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,7 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
   const { t, twilioNumber, sessionId } = useVASession();
   const { user } = useAuth();
   const voice = useVoiceDevice();
+  const { setVACallMetadata } = useCall();
   const [callStatus, setCallStatus] = useState<'idle' | 'ringing' | 'connected' | 'ended'>('idle');
   const [seconds, setSeconds] = useState(0);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
@@ -84,7 +86,17 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
       setCallLogId(data?.callLogId || null);
 
       // Place the call from the browser using Twilio Voice SDK
-      const call = await voice.makeCall(lead.phone);
+      const call = await voice.makeCall(lead.phone, { Record: "true" });
+      
+      // Set global VA call metadata
+      setVACallMetadata({
+        isVACall: true,
+        leadId: lead.id,
+        leadName: lead.business_name,
+        twilioNumber,
+        callLogId: data?.callLogId || null,
+        direction: 'outbound',
+      });
 
       if (!call) {
         // Fallback: if SDK not ready, use server-initiated call
