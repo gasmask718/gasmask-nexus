@@ -13,6 +13,7 @@ import {
   Sparkles, User, Package, Star, Navigation, Loader2, PartyPopper
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { resolveLocation, matchProviders, matchVehicles, type MatchedProvider, type MatchedVehicle } from '@/services/locationMatching';
 
 // ─── Types ──────────────────────────────────────────────
 interface WizardState {
