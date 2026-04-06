@@ -181,6 +181,9 @@ function VADashboardInner() {
           <main className="flex-1 overflow-y-auto p-4 md:p-6">
             {view === 'leads' && (
               <div className="space-y-4">
+                {/* Today's Stats */}
+                <VACallStats />
+                
                 <div className="flex justify-end">
                   <Button onClick={handleStartDialer} className="bg-cyan-600 hover:bg-cyan-700 gap-2">
                     <Zap className="h-4 w-4" /> Start Power Dialer ({allLeads.length} leads)
@@ -191,6 +194,14 @@ function VADashboardInner() {
                   onCreateInvoice={lead => { setInvoiceLead(lead); setInvoiceOpen(true); }}
                   onSendInvoice={lead => { setInvoiceLead(lead); setInvoiceOpen(true); }}
                 />
+                
+                {/* Recent Calls */}
+                <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-4">
+                  <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-cyan-400" /> Recent Calls
+                  </h3>
+                  <VARecentCalls />
+                </div>
               </div>
             )}
             {view === 'discovery' && <VALeadDiscovery />}
