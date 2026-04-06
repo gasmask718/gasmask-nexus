@@ -1671,6 +1671,7 @@ export default function AppRoutes() {
           <Route path="operations" element={<TTOperations />} />
           <Route path="ai" element={<TTAIBrain />} />
           <Route path="settings" element={<TTPlaceholder />} />
+          <Route path="decor-experience" element={<DecorExperienceWizard />} />
         </Route>
 
         {/* Penthouse Control System — Admin/Owner Only */}
