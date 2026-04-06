@@ -13,6 +13,7 @@ import {
   Sparkles, User, Package, Star, Navigation, Loader2, PartyPopper
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { resolveLocation, matchProviders, matchVehicles, type MatchedProvider, type MatchedVehicle } from '@/services/locationMatching';
 
 // ─── Types ──────────────────────────────────────────────
 interface WizardState {
@@ -75,19 +76,37 @@ export default function DecorExperienceWizard() {
 
   const hasLocation = !!(state.location || state.city || state.zip);
 
-  // ─── Data Queries ──────────────────────────────────────
-  const { data: providers = [], isLoading: loadingProviders } = useQuery({
-    queryKey: ['decor-providers-match', derivedCity],
+  // ─── Resolve coordinates from location ─────────────────
+  const { data: coords } = useQuery({
+    queryKey: ['resolve-location', state.location, state.city, state.zip],
+    queryFn: () => resolveLocation(state.location, state.city, state.zip),
+    enabled: hasLocation,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  // ─── Data Queries (geo-matched) ───────────────────────
+  const { data: matchedProviders = [], isLoading: loadingProviders } = useQuery({
+    queryKey: ['match-providers', coords?.lat, coords?.lng],
+    queryFn: () => matchProviders(coords!.lat, coords!.lng, 'decor'),
+    enabled: !!coords,
+  });
+
+  // Also fetch full provider details for matched IDs
+  const matchedProviderIds = matchedProviders.map((p: MatchedProvider) => p.provider_id);
+  const { data: providers = [] } = useQuery({
+    queryKey: ['decor-providers-detail', matchedProviderIds],
     queryFn: async () => {
-      if (!derivedCity) return [];
+      if (matchedProviderIds.length === 0) return [];
       const { data } = await supabase
         .from('decor_providers')
         .select('*')
-        .eq('is_active', true)
-        .ilike('city', `%${derivedCity}%`);
-      return data || [];
+        .in('id', matchedProviderIds);
+      return (data || []).map((p: any) => ({
+        ...p,
+        distance_miles: matchedProviders.find((mp: MatchedProvider) => mp.provider_id === p.id)?.distance_miles,
+      }));
     },
-    enabled: hasLocation,
+    enabled: matchedProviderIds.length > 0,
   });
 
   const { data: allStyles = [] } = useQuery({
@@ -102,19 +121,28 @@ export default function DecorExperienceWizard() {
     },
   });
 
-  const { data: vehicles = [], isLoading: loadingVehicles } = useQuery({
-    queryKey: ['fleet-vehicles-decor', derivedCity],
+  const { data: matchedVehicles = [], isLoading: loadingVehicles } = useQuery({
+    queryKey: ['match-vehicles', coords?.lat, coords?.lng],
+    queryFn: () => matchVehicles(coords!.lat, coords!.lng, 50),
+    enabled: !!coords,
+  });
+
+  // Fetch full vehicle details for matched IDs
+  const matchedVehicleIds = matchedVehicles.filter((v: MatchedVehicle) => v.available_for_decor).map((v: MatchedVehicle) => v.vehicle_id);
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['fleet-vehicles-detail', matchedVehicleIds],
     queryFn: async () => {
-      if (!derivedCity) return [];
+      if (matchedVehicleIds.length === 0) return [];
       const { data } = await supabase
         .from('fleet_vehicles')
         .select('*')
-        .eq('is_active', true)
-        .eq('available_for_decor', true)
-        .ilike('city', `%${derivedCity}%`);
-      return data || [];
+        .in('id', matchedVehicleIds);
+      return (data || []).map((v: any) => ({
+        ...v,
+        distance_miles: matchedVehicles.find((mv: MatchedVehicle) => mv.vehicle_id === v.id)?.distance_miles,
+      }));
     },
-    enabled: hasLocation,
+    enabled: matchedVehicleIds.length > 0,
   });
 
   const { data: addons = [] } = useQuery({

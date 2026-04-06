@@ -32069,10 +32069,13 @@ export type Database = {
           id: string
           independent_contractor: boolean
           is_active: boolean
+          lat: number | null
+          lng: number | null
           media: Json | null
           name: string
           price_range: string | null
           rating: number | null
+          service_radius_miles: number | null
           specialties: string[] | null
           updated_at: string
         }
@@ -32083,10 +32086,13 @@ export type Database = {
           id?: string
           independent_contractor?: boolean
           is_active?: boolean
+          lat?: number | null
+          lng?: number | null
           media?: Json | null
           name: string
           price_range?: string | null
           rating?: number | null
+          service_radius_miles?: number | null
           specialties?: string[] | null
           updated_at?: string
         }
@@ -32097,10 +32103,13 @@ export type Database = {
           id?: string
           independent_contractor?: boolean
           is_active?: boolean
+          lat?: number | null
+          lng?: number | null
           media?: Json | null
           name?: string
           price_range?: string | null
           rating?: number | null
+          service_radius_miles?: number | null
           specialties?: string[] | null
           updated_at?: string
         }
@@ -36884,10 +36893,13 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          lat: number | null
+          lng: number | null
           media: Json | null
           name: string
           price: number
           rating: number | null
+          service_radius_miles: number | null
           tags: string[] | null
           updated_at: string
         }
@@ -36898,10 +36910,13 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          lat?: number | null
+          lng?: number | null
           media?: Json | null
           name: string
           price?: number
           rating?: number | null
+          service_radius_miles?: number | null
           tags?: string[] | null
           updated_at?: string
         }
@@ -36912,10 +36927,13 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          lat?: number | null
+          lng?: number | null
           media?: Json | null
           name?: string
           price?: number
           rating?: number | null
+          service_radius_miles?: number | null
           tags?: string[] | null
           updated_at?: string
         }
@@ -37382,6 +37400,8 @@ export type Database = {
           id: string
           images: string[] | null
           is_active: boolean
+          lat: number | null
+          lng: number | null
           make: string | null
           minimum_hours: number
           model: string | null
@@ -37412,6 +37432,8 @@ export type Database = {
           id?: string
           images?: string[] | null
           is_active?: boolean
+          lat?: number | null
+          lng?: number | null
           make?: string | null
           minimum_hours?: number
           model?: string | null
@@ -37442,6 +37464,8 @@ export type Database = {
           id?: string
           images?: string[] | null
           is_active?: boolean
+          lat?: number | null
+          lng?: number | null
           make?: string | null
           minimum_hours?: number
           model?: string | null
@@ -59394,6 +59418,42 @@ export type Database = {
           updated_at?: string
           upload_group_id?: string | null
           value_score?: number | null
+        }
+        Relationships: []
+      }
+      provider_locations: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          lat: number
+          lng: number
+          provider_id: string
+          provider_type: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          lat: number
+          lng: number
+          provider_id: string
+          provider_type: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          lat?: number
+          lng?: number
+          provider_id?: string
+          provider_type?: string
         }
         Relationships: []
       }
@@ -95553,6 +95613,10 @@ export type Database = {
       bulk_approve_enrichment: { Args: never; Returns: number }
       bump_number_usage: { Args: { p_number_id: string }; Returns: undefined }
       calculate_and_persist_drift_alerts: { Args: never; Returns: number }
+      calculate_distance_miles: {
+        Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
+      }
       calculate_predictive_profit_score: {
         Args: { p_business_id: string; p_store_id: string }
         Returns: Json
@@ -96357,6 +96421,30 @@ export type Database = {
           p_transfer_id?: string
         }
         Returns: undefined
+      }
+      match_providers_by_location: {
+        Args: { p_category?: string; p_lat: number; p_lng: number }
+        Returns: {
+          city: string
+          distance_miles: number
+          provider_id: string
+          provider_name: string
+          provider_type: string
+          service_radius: number
+        }[]
+      }
+      match_vehicles_by_location: {
+        Args: { p_lat: number; p_lng: number; p_max_distance?: number }
+        Returns: {
+          available_for_chauffeur: boolean
+          available_for_decor: boolean
+          available_for_nightlife: boolean
+          category: string
+          city: string
+          distance_miles: number
+          vehicle_id: string
+          vehicle_name: string
+        }[]
       }
       normalize_brand_name: { Args: { raw_brand: string }; Returns: string }
       normalize_phone: { Args: { raw_phone: string }; Returns: string }
