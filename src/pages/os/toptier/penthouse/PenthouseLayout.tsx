@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, UserCheck, ShoppingBag, DollarSign,
   Shield, Settings2, BarChart3, FileText, Bell, RefreshCw, Crown,
-  Car, ClipboardCheck, Moon, Hotel, Building2, Palette, Truck, Package
+  Car, ClipboardCheck, Moon, Hotel, Building2, Palette, Truck, Package, Gift
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ const penthouseNav = [
   { path: '/os/toptier/penthouse/vehicle-decor', label: 'Vehicle Decor', icon: Palette },
   { path: '/os/toptier/penthouse/fleet', label: 'Unified Fleet', icon: Truck },
   { path: '/os/toptier/penthouse/addons', label: 'Experience Add-Ons', icon: Package },
+  { path: '/os/toptier/penthouse/gift-experiences', label: 'Gift Experiences', icon: Gift },
   { path: '/os/toptier/penthouse/security', label: 'Security', icon: Shield },
   { path: '/os/toptier/penthouse/finance', label: 'Finance', icon: DollarSign },
   { path: '/os/toptier/penthouse/roles', label: 'Roles & Permissions', icon: Shield },
