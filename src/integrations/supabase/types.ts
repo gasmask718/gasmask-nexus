@@ -31987,6 +31987,61 @@ export type Database = {
           },
         ]
       }
+      decor_marketplace_bookings: {
+        Row: {
+          created_at: string
+          decorator_id: string
+          final_price: number
+          id: string
+          quote_id: string
+          request_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decorator_id: string
+          final_price: number
+          id?: string
+          quote_id: string
+          request_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decorator_id?: string
+          final_price?: number
+          id?: string
+          quote_id?: string
+          request_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decor_marketplace_bookings_decorator_id_fkey"
+            columns: ["decorator_id"]
+            isOneToOne: false
+            referencedRelation: "decorators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decor_marketplace_bookings_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "decorator_quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decor_marketplace_bookings_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: true
+            referencedRelation: "decor_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decor_matches: {
         Row: {
           booking_id: string
@@ -32115,6 +32170,69 @@ export type Database = {
         }
         Relationships: []
       }
+      decor_requests: {
+        Row: {
+          budget_max: number | null
+          budget_min: number | null
+          city: string | null
+          created_at: string
+          description: string | null
+          event_date: string | null
+          id: string
+          occasion: string
+          room_type: string | null
+          state: string | null
+          status: string
+          updated_at: string
+          uploaded_images: string[] | null
+          user_id: string
+          user_lat: number | null
+          user_lng: number | null
+          user_location: string
+          zip: string | null
+        }
+        Insert: {
+          budget_max?: number | null
+          budget_min?: number | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          occasion: string
+          room_type?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          uploaded_images?: string[] | null
+          user_id: string
+          user_lat?: number | null
+          user_lng?: number | null
+          user_location: string
+          zip?: string | null
+        }
+        Update: {
+          budget_max?: number | null
+          budget_min?: number | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          occasion?: string
+          room_type?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          uploaded_images?: string[] | null
+          user_id?: string
+          user_lat?: number | null
+          user_lng?: number | null
+          user_location?: string
+          zip?: string | null
+        }
+        Relationships: []
+      }
       decor_transformations: {
         Row: {
           after_image: string | null
@@ -32152,6 +32270,117 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      decorator_quotes: {
+        Row: {
+          created_at: string
+          decorator_id: string
+          estimated_hours: number | null
+          id: string
+          notes: string | null
+          price: number
+          request_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decorator_id: string
+          estimated_hours?: number | null
+          id?: string
+          notes?: string | null
+          price: number
+          request_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decorator_id?: string
+          estimated_hours?: number | null
+          id?: string
+          notes?: string | null
+          price?: number
+          request_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decorator_quotes_decorator_id_fkey"
+            columns: ["decorator_id"]
+            isOneToOne: false
+            referencedRelation: "decorators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decorator_quotes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "decor_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decorators: {
+        Row: {
+          base_price_max: number | null
+          base_price_min: number | null
+          bio: string | null
+          city: string
+          created_at: string
+          id: string
+          is_active: boolean
+          lat: number | null
+          lng: number | null
+          name: string
+          portfolio_images: string[] | null
+          rating: number | null
+          service_radius_miles: number
+          specialties: string[]
+          state: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          base_price_max?: number | null
+          base_price_min?: number | null
+          bio?: string | null
+          city: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          lat?: number | null
+          lng?: number | null
+          name: string
+          portfolio_images?: string[] | null
+          rating?: number | null
+          service_radius_miles?: number
+          specialties?: string[]
+          state?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          base_price_max?: number | null
+          base_price_min?: number | null
+          bio?: string | null
+          city?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          portfolio_images?: string[] | null
+          rating?: number | null
+          service_radius_miles?: number
+          specialties?: string[]
+          state?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       dedupe_suggestions: {
         Row: {
@@ -96552,6 +96781,20 @@ export type Database = {
           p_transfer_id?: string
         }
         Returns: undefined
+      }
+      match_decorators_by_location: {
+        Args: { p_lat: number; p_lng: number; p_occasion?: string }
+        Returns: {
+          base_price_max: number
+          base_price_min: number
+          city: string
+          decorator_id: string
+          decorator_name: string
+          distance_miles: number
+          rating: number
+          service_radius: number
+          specialties: string[]
+        }[]
       }
       match_providers_by_location: {
         Args: { p_category?: string; p_lat: number; p_lng: number }
