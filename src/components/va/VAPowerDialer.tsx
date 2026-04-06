@@ -179,18 +179,33 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
 
       // Step 2: Initiate the call from the browser using Twilio Voice SDK
       // This calls our TwiML App which returns <Dial><Number>phone</Number></Dial>
-      const call = await voice.makeCall(phone);
+      const call = await voice.makeCall(phone, { Record: "true" });
 
       if (call) {
         setCallSid(call.parameters?.CallSid || null);
         setCallStatus('ringing');
-        // Real call state updates happen via the voice.callStatus sync above
+        // Set global VA call metadata so the widget works across routes
+        setVACallMetadata({
+          isVACall: true,
+          leadId: leadId,
+          leadName: leadName,
+          twilioNumber,
+          callLogId: data?.callLogId || null,
+          direction: 'outbound',
+        });
       } else {
         // Voice SDK not available — call was initiated server-side as fallback
         if (data?.callSid) {
           setCallSid(data.callSid);
           setCallStatus('ringing');
-          // Use timer-based status for server-initiated calls
+          setVACallMetadata({
+            isVACall: true,
+            leadId: leadId,
+            leadName: leadName,
+            twilioNumber,
+            callLogId: data?.callLogId || null,
+            direction: 'outbound',
+          });
           setTimeout(() => setCallStatus(prev => prev === 'ringing' ? 'connected' : prev), 4000);
         } else {
           toast.error('Could not place call — check microphone permissions');
