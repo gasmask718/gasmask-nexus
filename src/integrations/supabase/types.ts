@@ -39929,6 +39929,104 @@ export type Database = {
           },
         ]
       }
+      gift_addons: {
+        Row: {
+          addon_id: string
+          booking_id: string
+          created_at: string
+          id: string
+          quantity: number
+        }
+        Insert: {
+          addon_id: string
+          booking_id: string
+          created_at?: string
+          id?: string
+          quantity?: number
+        }
+        Update: {
+          addon_id?: string
+          booking_id?: string
+          created_at?: string
+          id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_addons_addon_id_fkey"
+            columns: ["addon_id"]
+            isOneToOne: false
+            referencedRelation: "experience_addons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gift_customization: {
+        Row: {
+          booking_id: string
+          created_at: string
+          favorite_color: string | null
+          id: string
+          message_text: string | null
+          recipient_name: string | null
+          song_choice: string | null
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          favorite_color?: string | null
+          id?: string
+          message_text?: string | null
+          recipient_name?: string | null
+          song_choice?: string | null
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          favorite_color?: string | null
+          id?: string
+          message_text?: string | null
+          recipient_name?: string | null
+          song_choice?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gift_delivery: {
+        Row: {
+          address: string | null
+          booking_id: string
+          created_at: string
+          delivery_time: string | null
+          id: string
+          location_type: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          booking_id: string
+          created_at?: string
+          delivery_time?: string | null
+          id?: string
+          location_type?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          booking_id?: string
+          created_at?: string
+          delivery_time?: string | null
+          id?: string
+          location_type?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       global_tags: {
         Row: {
           category: string | null
@@ -86806,6 +86904,39 @@ export type Database = {
           id?: string
           is_active?: boolean
           media?: Json | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      vehicle_gift_experiences: {
+        Row: {
+          base_price: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          base_price?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
           name?: string
           updated_at?: string
         }
