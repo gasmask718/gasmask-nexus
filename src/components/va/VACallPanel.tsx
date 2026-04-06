@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useVASession } from '@/contexts/VASessionContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVoiceDevice } from '@/contexts/VoiceDeviceProvider';
+import { useCall } from '@/components/communication/CallProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
