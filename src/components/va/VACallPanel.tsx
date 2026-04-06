@@ -86,7 +86,17 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
       setCallLogId(data?.callLogId || null);
 
       // Place the call from the browser using Twilio Voice SDK
-      const call = await voice.makeCall(lead.phone);
+      const call = await voice.makeCall(lead.phone, { Record: "true" });
+      
+      // Set global VA call metadata
+      setVACallMetadata({
+        isVACall: true,
+        leadId: lead.id,
+        leadName: lead.business_name,
+        twilioNumber,
+        callLogId: data?.callLogId || null,
+        direction: 'outbound',
+      });
 
       if (!call) {
         // Fallback: if SDK not ready, use server-initiated call
