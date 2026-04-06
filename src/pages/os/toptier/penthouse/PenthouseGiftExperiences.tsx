@@ -38,13 +38,13 @@ export default function PenthouseGiftExperiences() {
     mutationFn: async (d: any) => {
       const actorId = await getActorId();
       if (mode === 'create') {
-        const res = await postTopTierData('vehicle_gift_experiences', d);
-        await logPenthouseAction(actorId, 'create_gift_experience', 'vehicle_gift_experiences', res?.[0]?.id, null, d);
+      const res = await postTopTierData('vehicle_gift_experiences', d);
+        await logPenthouseAction({ actor_user_id: actorId, action: 'create_gift_experience', target_type: 'vehicle_gift_experiences', target_id: res?.[0]?.id, after: d });
         return res;
       }
       const { id, ...rest } = d;
       await patchTopTierData('vehicle_gift_experiences', id, rest);
-      await logPenthouseAction(actorId, 'update_gift_experience', 'vehicle_gift_experiences', id, null, rest);
+      await logPenthouseAction({ actor_user_id: actorId, action: 'update_gift_experience', target_type: 'vehicle_gift_experiences', target_id: id, after: rest });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['ph-gift-experiences'] });
