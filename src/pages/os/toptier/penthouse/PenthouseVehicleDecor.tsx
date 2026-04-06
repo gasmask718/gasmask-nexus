@@ -401,11 +401,15 @@ export default function PenthouseVehicleDecor() {
           <TabsTrigger value="providers" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Users className="h-4 w-4 mr-1" />Providers</TabsTrigger>
           <TabsTrigger value="addons" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Sparkles className="h-4 w-4 mr-1" />Add-ons</TabsTrigger>
           <TabsTrigger value="bookings" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><CalendarCheck className="h-4 w-4 mr-1" />Bookings</TabsTrigger>
+          <TabsTrigger value="transformations" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Image className="h-4 w-4 mr-1" />Transforms</TabsTrigger>
+          <TabsTrigger value="matches" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]"><Target className="h-4 w-4 mr-1" />Matches</TabsTrigger>
         </TabsList>
         <TabsContent value="styles"><StylesTab /></TabsContent>
         <TabsContent value="providers"><ProvidersTab /></TabsContent>
         <TabsContent value="addons"><AddonsTab /></TabsContent>
         <TabsContent value="bookings"><BookingsTab /></TabsContent>
+        <TabsContent value="transformations"><TransformationsTab /></TabsContent>
+        <TabsContent value="matches"><MatchesTab /></TabsContent>
       </Tabs>
     </div>
   );
