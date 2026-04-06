@@ -8651,6 +8651,138 @@ export type Database = {
         }
         Relationships: []
       }
+      beauty_bookings: {
+        Row: {
+          booking_time: string
+          created_at: string
+          id: string
+          location_address: string | null
+          location_lat: number | null
+          location_lng: number | null
+          notes: string | null
+          provider_id: string
+          service_id: string | null
+          service_name: string
+          status: string
+          total_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          booking_time: string
+          created_at?: string
+          id?: string
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          notes?: string | null
+          provider_id: string
+          service_id?: string | null
+          service_name: string
+          status?: string
+          total_price?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          booking_time?: string
+          created_at?: string
+          id?: string
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          notes?: string | null
+          provider_id?: string
+          service_id?: string | null
+          service_name?: string
+          status?: string
+          total_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beauty_bookings_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "beauty_bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "provider_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      beauty_providers: {
+        Row: {
+          bio: string | null
+          category: string
+          city: string | null
+          created_at: string
+          email: string | null
+          id: string
+          insurance_verified: boolean
+          is_active: boolean
+          lat: number | null
+          license_verified: boolean
+          lng: number | null
+          name: string
+          phone: string | null
+          rating: number | null
+          service_radius_miles: number
+          state: string | null
+          total_reviews: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          bio?: string | null
+          category: string
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          insurance_verified?: boolean
+          is_active?: boolean
+          lat?: number | null
+          license_verified?: boolean
+          lng?: number | null
+          name: string
+          phone?: string | null
+          rating?: number | null
+          service_radius_miles?: number
+          state?: string | null
+          total_reviews?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          bio?: string | null
+          category?: string
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          insurance_verified?: boolean
+          is_active?: boolean
+          lat?: number | null
+          license_verified?: boolean
+          lng?: number | null
+          name?: string
+          phone?: string | null
+          rating?: number | null
+          service_radius_miles?: number
+          state?: string | null
+          total_reviews?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       behavior_violation_log: {
         Row: {
           action_taken: string | null
@@ -59857,6 +59989,117 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_media: {
+        Row: {
+          caption: string | null
+          created_at: string
+          display_order: number
+          id: string
+          media_type: string
+          provider_id: string
+          url: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          media_type: string
+          provider_id: string
+          url: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          media_type?: string
+          provider_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_media_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          provider_id: string
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          provider_id: string
+          rating: number
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          provider_id?: string
+          rating?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_reviews_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider_services: {
+        Row: {
+          created_at: string
+          duration_minutes: number
+          id: string
+          is_active: boolean
+          price: number
+          provider_id: string
+          service_name: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean
+          price?: number
+          provider_id: string
+          service_name: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean
+          price?: number
+          provider_id?: string
+          service_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_services_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_order_items: {
         Row: {
           computed_units_total: number | null
@@ -96854,6 +97097,24 @@ export type Database = {
           p_transfer_id?: string
         }
         Returns: undefined
+      }
+      match_beauty_providers_by_location: {
+        Args: {
+          p_category?: string
+          p_lat: number
+          p_lng: number
+          p_max_distance?: number
+        }
+        Returns: {
+          category: string
+          city: string
+          distance_miles: number
+          provider_id: string
+          provider_name: string
+          rating: number
+          service_radius: number
+          total_reviews: number
+        }[]
       }
       match_decorators_by_location: {
         Args: { p_lat: number; p_lng: number; p_occasion?: string }
