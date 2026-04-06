@@ -8717,69 +8717,152 @@ export type Database = {
           },
         ]
       }
+      beauty_provider_applications: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          id: string
+          insurance_uploaded: boolean
+          license_uploaded: boolean
+          portfolio_photo_count: number
+          portfolio_video_count: number
+          provider_id: string
+          reviewer_id: string | null
+          reviewer_notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          insurance_uploaded?: boolean
+          license_uploaded?: boolean
+          portfolio_photo_count?: number
+          portfolio_video_count?: number
+          provider_id: string
+          reviewer_id?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          insurance_uploaded?: boolean
+          license_uploaded?: boolean
+          portfolio_photo_count?: number
+          portfolio_video_count?: number
+          provider_id?: string
+          reviewer_id?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beauty_provider_applications_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "beauty_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       beauty_providers: {
         Row: {
+          application_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
           bio: string | null
+          business_name: string | null
           category: string
           city: string | null
           created_at: string
           email: string | null
           id: string
+          independent_contractor: boolean
+          insurance_url: string | null
           insurance_verified: boolean
           is_active: boolean
           lat: number | null
+          license_url: string | null
           license_verified: boolean
           lng: number | null
           name: string
           phone: string | null
+          platform_fee_percent: number
           rating: number | null
           service_radius_miles: number
+          specialties: string[] | null
           state: string | null
           total_reviews: number
           updated_at: string
           user_id: string | null
+          verification_status: string
         }
         Insert: {
+          application_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           bio?: string | null
+          business_name?: string | null
           category: string
           city?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          independent_contractor?: boolean
+          insurance_url?: string | null
           insurance_verified?: boolean
           is_active?: boolean
           lat?: number | null
+          license_url?: string | null
           license_verified?: boolean
           lng?: number | null
           name: string
           phone?: string | null
+          platform_fee_percent?: number
           rating?: number | null
           service_radius_miles?: number
+          specialties?: string[] | null
           state?: string | null
           total_reviews?: number
           updated_at?: string
           user_id?: string | null
+          verification_status?: string
         }
         Update: {
+          application_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           bio?: string | null
+          business_name?: string | null
           category?: string
           city?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          independent_contractor?: boolean
+          insurance_url?: string | null
           insurance_verified?: boolean
           is_active?: boolean
           lat?: number | null
+          license_url?: string | null
           license_verified?: boolean
           lng?: number | null
           name?: string
           phone?: string | null
+          platform_fee_percent?: number
           rating?: number | null
           service_radius_miles?: number
+          specialties?: string[] | null
           state?: string | null
           total_reviews?: number
           updated_at?: string
           user_id?: string | null
+          verification_status?: string
         }
         Relationships: []
       }
