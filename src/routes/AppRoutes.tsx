@@ -739,6 +739,7 @@ const PenthouseFleet = lazy(() => import('@/pages/os/toptier/penthouse/Penthouse
 const PenthouseAddons = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseAddons'));
 const PenthouseGiftExperiences = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseGiftExperiences'));
 const PenthouseBeautyProviders = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseBeautyProviders'));
+const PenthouseCoachBusDispatch = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseCoachBusDispatch'));
 const BeautyProviderSignup = lazy(() => import('@/pages/public/BeautyProviderSignup'));
 const ThingsToDoExperiences = lazy(() => import('@/pages/os/toptier/ThingsToDoExperiences'));
 const ThingsToDoBookings = lazy(() => import('@/pages/os/toptier/ThingsToDoBookings'));
@@ -1727,6 +1728,7 @@ export default function AppRoutes() {
           <Route path="addons" element={<PenthouseAddons />} />
           <Route path="gift-experiences" element={<PenthouseGiftExperiences />} />
           <Route path="beauty-providers" element={<PenthouseBeautyProviders />} />
+          <Route path="coach-bus-dispatch" element={<PenthouseCoachBusDispatch />} />
           <Route path="finance" element={<PenthouseFinance />} />
           <Route path="roles" element={<PenthouseRoles />} />
           <Route path="system" element={<PenthouseSystem />} />
