@@ -49470,9 +49470,46 @@ export type Database = {
         }
         Relationships: []
       }
+      media_ai_logs: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          creator_id: string | null
+          id: string
+          input_data: Json | null
+          output_data: Json | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          creator_id?: string | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          creator_id?: string | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_ai_logs_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media_bookings: {
         Row: {
           addon_amount: number | null
+          ai_price_used: boolean | null
+          booking_source: string | null
           booking_status: string | null
           city: string | null
           client_notes: string | null
@@ -49480,8 +49517,10 @@ export type Database = {
           creator_id: string | null
           creator_notes: string | null
           creator_payout_amount: number | null
+          creator_score_at_booking: number | null
           deliverables_summary: string | null
           delivery_status: string | null
+          dispatch_request_id: string | null
           duration_hours: number | null
           event_date: string | null
           event_title: string | null
@@ -49504,6 +49543,7 @@ export type Database = {
           state: string | null
           status: string
           subtotal_amount: number | null
+          surge_applied: number | null
           total_amount: number | null
           travel_fee_amount: number | null
           updated_at: string | null
@@ -49511,6 +49551,8 @@ export type Database = {
         }
         Insert: {
           addon_amount?: number | null
+          ai_price_used?: boolean | null
+          booking_source?: string | null
           booking_status?: string | null
           city?: string | null
           client_notes?: string | null
@@ -49518,8 +49560,10 @@ export type Database = {
           creator_id?: string | null
           creator_notes?: string | null
           creator_payout_amount?: number | null
+          creator_score_at_booking?: number | null
           deliverables_summary?: string | null
           delivery_status?: string | null
+          dispatch_request_id?: string | null
           duration_hours?: number | null
           event_date?: string | null
           event_title?: string | null
@@ -49542,6 +49586,7 @@ export type Database = {
           state?: string | null
           status?: string
           subtotal_amount?: number | null
+          surge_applied?: number | null
           total_amount?: number | null
           travel_fee_amount?: number | null
           updated_at?: string | null
@@ -49549,6 +49594,8 @@ export type Database = {
         }
         Update: {
           addon_amount?: number | null
+          ai_price_used?: boolean | null
+          booking_source?: string | null
           booking_status?: string | null
           city?: string | null
           client_notes?: string | null
@@ -49556,8 +49603,10 @@ export type Database = {
           creator_id?: string | null
           creator_notes?: string | null
           creator_payout_amount?: number | null
+          creator_score_at_booking?: number | null
           deliverables_summary?: string | null
           delivery_status?: string | null
+          dispatch_request_id?: string | null
           duration_hours?: number | null
           event_date?: string | null
           event_title?: string | null
@@ -49580,6 +49629,7 @@ export type Database = {
           state?: string | null
           status?: string
           subtotal_amount?: number | null
+          surge_applied?: number | null
           total_amount?: number | null
           travel_fee_amount?: number | null
           updated_at?: string | null
@@ -49591,6 +49641,13 @@ export type Database = {
             columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_bookings_dispatch_request_id_fkey"
+            columns: ["dispatch_request_id"]
+            isOneToOne: false
+            referencedRelation: "media_dispatch_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -49889,6 +49946,44 @@ export type Database = {
           },
         ]
       }
+      media_creator_insights: {
+        Row: {
+          created_at: string | null
+          creator_id: string
+          id: string
+          insight_type: string
+          is_dismissed: boolean | null
+          message: string
+          priority: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_id: string
+          id?: string
+          insight_type: string
+          is_dismissed?: boolean | null
+          message: string
+          priority?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_id?: string
+          id?: string
+          insight_type?: string
+          is_dismissed?: boolean | null
+          message?: string
+          priority?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_insights_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media_creator_notifications: {
         Row: {
           body: string | null
@@ -50161,6 +50256,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "media_creator_projects_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_creator_rankings: {
+        Row: {
+          created_at: string | null
+          creator_id: string
+          id: string
+          last_calculated: string | null
+          overall_score: number | null
+          ranking_tier: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_id: string
+          id?: string
+          last_calculated?: string | null
+          overall_score?: number | null
+          ranking_tier?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_id?: string
+          id?: string
+          last_calculated?: string | null
+          overall_score?: number | null
+          ranking_tier?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_rankings_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "media_creators"
@@ -50600,6 +50730,93 @@ export type Database = {
         }
         Relationships: []
       }
+      media_demand_metrics: {
+        Row: {
+          active_requests: number | null
+          available_creators: number | null
+          city: string | null
+          demand_level: string | null
+          event_type: string | null
+          id: string
+          surge_multiplier: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active_requests?: number | null
+          available_creators?: number | null
+          city?: string | null
+          demand_level?: string | null
+          event_type?: string | null
+          id?: string
+          surge_multiplier?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active_requests?: number | null
+          available_creators?: number | null
+          city?: string | null
+          demand_level?: string | null
+          event_type?: string | null
+          id?: string
+          surge_multiplier?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      media_dispatch_candidates: {
+        Row: {
+          created_at: string | null
+          creator_id: string
+          dispatch_request_id: string
+          distance_miles: number | null
+          id: string
+          notified_at: string | null
+          responded_at: string | null
+          score: number | null
+          status: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_id: string
+          dispatch_request_id: string
+          distance_miles?: number | null
+          id?: string
+          notified_at?: string | null
+          responded_at?: string | null
+          score?: number | null
+          status?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_id?: string
+          dispatch_request_id?: string
+          distance_miles?: number | null
+          id?: string
+          notified_at?: string | null
+          responded_at?: string | null
+          score?: number | null
+          status?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_dispatch_candidates_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_dispatch_candidates_dispatch_request_id_fkey"
+            columns: ["dispatch_request_id"]
+            isOneToOne: false
+            referencedRelation: "media_dispatch_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media_dispatch_log: {
         Row: {
           action: string
@@ -50638,6 +50855,59 @@ export type Database = {
             columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_dispatch_requests: {
+        Row: {
+          booking_id: string | null
+          budget_range: string | null
+          city: string | null
+          client_id: string | null
+          created_at: string | null
+          duration_hours: number | null
+          event_type: string | null
+          id: string
+          location_lat: number | null
+          location_lng: number | null
+          status: string | null
+          urgency_level: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          budget_range?: string | null
+          city?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          duration_hours?: number | null
+          event_type?: string | null
+          id?: string
+          location_lat?: number | null
+          location_lng?: number | null
+          status?: string | null
+          urgency_level?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          budget_range?: string | null
+          city?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          duration_hours?: number | null
+          event_type?: string | null
+          id?: string
+          location_lat?: number | null
+          location_lng?: number | null
+          status?: string | null
+          urgency_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_dispatch_requests_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "media_bookings"
             referencedColumns: ["id"]
           },
         ]
@@ -50687,6 +50957,7 @@ export type Database = {
       media_job_offers: {
         Row: {
           addon_summary: string | null
+          ai_match_score: number | null
           booking_id: string
           client_notes: string | null
           creator_id: string
@@ -50698,13 +50969,17 @@ export type Database = {
           location_text: string | null
           offered_payout: number | null
           offered_price: number
+          priority_score: number | null
+          recommended_creator_rank: number | null
           requested_start_at: string | null
           responded_at: string | null
           sent_at: string | null
           status: string
+          urgency_multiplier: number | null
         }
         Insert: {
           addon_summary?: string | null
+          ai_match_score?: number | null
           booking_id: string
           client_notes?: string | null
           creator_id: string
@@ -50716,13 +50991,17 @@ export type Database = {
           location_text?: string | null
           offered_payout?: number | null
           offered_price?: number
+          priority_score?: number | null
+          recommended_creator_rank?: number | null
           requested_start_at?: string | null
           responded_at?: string | null
           sent_at?: string | null
           status?: string
+          urgency_multiplier?: number | null
         }
         Update: {
           addon_summary?: string | null
+          ai_match_score?: number | null
           booking_id?: string
           client_notes?: string | null
           creator_id?: string
@@ -50734,10 +51013,13 @@ export type Database = {
           location_text?: string | null
           offered_payout?: number | null
           offered_price?: number
+          priority_score?: number | null
+          recommended_creator_rank?: number | null
           requested_start_at?: string | null
           responded_at?: string | null
           sent_at?: string | null
           status?: string
+          urgency_multiplier?: number | null
         }
         Relationships: [
           {
@@ -50785,6 +51067,38 @@ export type Database = {
           rush_fee?: number
         }
         Relationships: []
+      }
+      media_user_engagement: {
+        Row: {
+          created_at: string | null
+          creator_id: string | null
+          id: string
+          interaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          creator_id?: string | null
+          id?: string
+          interaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          creator_id?: string | null
+          id?: string
+          interaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_user_engagement_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       memory_events: {
         Row: {
@@ -99729,8 +100043,26 @@ export type Database = {
         Args: { p_creator_id: string }
         Returns: number
       }
+      calculate_creator_score_v2: {
+        Args: {
+          p_acceptance_rate: number
+          p_cancellation_rate: number
+          p_rating: number
+          p_response_time: number
+          p_total_jobs: number
+        }
+        Returns: number
+      }
       calculate_distance_miles: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
+      }
+      calculate_dynamic_price: {
+        Args: {
+          p_base_price: number
+          p_demand_level: string
+          p_urgency: string
+        }
         Returns: number
       }
       calculate_media_price: {
@@ -100275,6 +100607,7 @@ export type Database = {
       get_creator_dashboard_summary: { Args: never; Returns: Json }
       get_creator_profile_completion: { Args: never; Returns: Json }
       get_creator_public_profile: { Args: { p_slug: string }; Returns: Json }
+      get_creator_recommendations: { Args: never; Returns: Json }
       get_current_user_role: { Args: never; Returns: string }
       get_intent_queue_health: { Args: never; Returns: Json }
       get_managed_office_ids: { Args: { _user_id: string }; Returns: string[] }
