@@ -25122,6 +25122,50 @@ export type Database = {
           },
         ]
       }
+      cb_partner_response_tokens: {
+        Row: {
+          booking_request_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          partner_id: string
+          response_type: string | null
+          secure_token: string
+          used: boolean
+          used_at: string | null
+        }
+        Insert: {
+          booking_request_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          partner_id: string
+          response_type?: string | null
+          secure_token?: string
+          used?: boolean
+          used_at?: string | null
+        }
+        Update: {
+          booking_request_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          partner_id?: string
+          response_type?: string | null
+          secure_token?: string
+          used?: boolean
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cb_partner_response_tokens_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "cb_booking_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cb_quote_margins: {
         Row: {
           admin_override: boolean | null
