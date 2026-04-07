@@ -106,6 +106,9 @@ import {
   Star,
   Link2,
   Swords,
+  Landmark,
+  Sunrise,
+  CheckSquare,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
@@ -380,11 +383,28 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/special-needs', label: '♿ Special Needs App OS', icon: Accessibility },
     ],
   },
+  dynastyFundingHub: {
+    id: 'dynasty-funding-hub',
+    name: '🏦 Dynasty Funding Hub',
+    items: [
+      { path: '/funding-machine', label: '🏦 Penthouse — Command Center', icon: Landmark },
+      { path: '/funding-machine/morning-briefing', label: '🌅 Floor 1 — Morning Briefing', icon: Sunrise },
+      { path: '/funding-machine/intake', label: '➕ Floor 2 — Client Intake', icon: UserPlus },
+      { path: '/funding-machine/credit-repair', label: '🛡️ Floor 3 — Credit Repair', icon: Shield },
+      { path: '/funding-machine/business-builder', label: '🏗️ Floor 4 — Business Builder', icon: Building2 },
+      { path: '/funding-machine/bureau-intel', label: '💳 Floor 5 — Bureau Intelligence', icon: CreditCard },
+      { path: '/funding-machine/funding-matrix', label: '🏛️ Floor 6 — Funding Matrix', icon: Landmark },
+      { path: '/funding-machine/applications', label: '📋 Floor 7 — Applications', icon: ClipboardList },
+      { path: '/funding-machine/velocity', label: '📈 Floor 8 — Velocity Calculator', icon: TrendingUp },
+      { path: '/funding-machine/tradeline-vault', label: '📄 Floor 9 — Tradeline Vault', icon: FileText },
+      { path: '/funding-machine/tasks', label: '✅ Floor 10 — Task Cards', icon: CheckSquare },
+      { path: '/funding-machine/settings', label: '⚙️ Settings', icon: Settings },
+    ],
+  },
   financeAcquisition: {
     id: 'finance-acquisition',
     name: '💰 Finance & Acquisition',
     items: [
-      { path: '/funding-machine', label: '🏦 Dynasty Funding Hub', icon: CreditCard },
       { path: '/os/grants', label: '🏆 Grant Company OS', icon: Trophy },
       { path: '/os/wealth-engine', label: '📈 Wealth Engine OS', icon: TrendingUp },
     ],
@@ -614,7 +634,7 @@ const Layout = ({ children }: LayoutProps) => {
   const [openSections, setOpenSections] = useState<string[]>([
     'penthouse', 'sbo-ai-engine', 'security-governance',
     'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9',
-    'surplus-funds-os', 'real-estate-os', 'solar-os',
+    'surplus-funds-os', 'dynasty-funding-hub', 'real-estate-os', 'solar-os',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
     'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
     'brandaro-hub', 'dynasty-connect', 'voice-ops', 'global-dashboard', 'portals'
@@ -866,6 +886,18 @@ const Layout = ({ children }: LayoutProps) => {
           DYNASTY_NAVIGATION.surplusFundsOs.id,
           DYNASTY_NAVIGATION.surplusFundsOs.name,
           DYNASTY_NAVIGATION.surplusFundsOs.items
+        )}
+      </div>
+
+      {/* 🏦 DYNASTY FUNDING HUB — STANDALONE HUB */}
+      <div className="pt-2 border-t border-blue-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-blue-400/80 tracking-wider">
+          🏦 Dynasty Funding Hub
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.dynastyFundingHub.id,
+          DYNASTY_NAVIGATION.dynastyFundingHub.name,
+          DYNASTY_NAVIGATION.dynastyFundingHub.items
         )}
       </div>
 
