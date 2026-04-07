@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, CalendarCheck, Users, Map, TrendingUp, 
   Star, Settings2, Brain, Bell, RefreshCw, Settings, Crown, Palette,
-  Sparkles, BarChart3, Percent, Package, DollarSign
+  Sparkles, BarChart3, Percent, Package, DollarSign, Baby, Store, Plug, Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
