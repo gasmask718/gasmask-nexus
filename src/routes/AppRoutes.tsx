@@ -865,7 +865,7 @@ const UnforgettableGifts = lazy(() => import('@/pages/crm/unforgettable').then(m
 const ICleanDashboard = lazy(() => import('@/pages/os/iclean/ICleanDashboard'));
 const PlayboxxxDashboard = lazy(() => import('@/pages/os/playboxxx/PlayboxxxDashboard'));
 const SpecialNeedsDashboard = lazy(() => import('@/pages/os/specialneeds/SpecialNeedsDashboard'));
-const FundingDashboard = lazy(() => import('@/pages/os/funding/FundingDashboard'));
+// FundingDashboard (orphan /os/funding) — REMOVED, use /funding-machine instead
 const GrantsDashboard = lazy(() => import('@/pages/os/grants/GrantsDashboard'));
 const WealthEngineDashboard = lazy(() => import('@/pages/os/wealth/WealthEngineDashboard'));
 // Funding Machine (Floor 10)
@@ -1246,12 +1246,12 @@ export default function AppRoutes() {
         <Route path="/hotmama/*" element={<BrandPlaceholder />} />
 
         {/* Finance & Real Estate */}
-        <Route path="/finance" element={<FundingDashboard />} />
-        <Route path="/finance/funding" element={<FundingDashboard />} />
+        <Route path="/finance" element={<Navigate to="/funding-machine" replace />} />
+        <Route path="/finance/funding" element={<Navigate to="/funding-machine" replace />} />
         <Route path="/finance/funding-requests" element={<FundingRequests />} />
         <Route path="/finance/grants" element={<GrantsDashboard />} />
-        <Route path="/finance/credit-repair" element={<FundingDashboard />} />
-        <Route path="/finance/chexsystems" element={<FundingDashboard />} />
+        <Route path="/finance/credit-repair" element={<Navigate to="/funding-machine/credit-repair" replace />} />
+        <Route path="/finance/chexsystems" element={<Navigate to="/funding-machine" replace />} />
         <Route path="/finance/investment" element={<WealthEngineDashboard />} />
         <Route path="/finance/trading" element={<WealthEngineDashboard />} />
         <Route path="/finance/economic-analytics" element={<EconomicAnalytics />} />
@@ -1744,7 +1744,7 @@ export default function AppRoutes() {
         <Route path="/os/iclean" element={<ICleanDashboard />} />
         <Route path="/os/playboxxx" element={<PlayboxxxDashboard />} />
         <Route path="/os/special-needs" element={<SpecialNeedsDashboard />} />
-        <Route path="/os/funding" element={<FundingDashboard />} />
+        {/* /os/funding removed — orphan mock page, real system is /funding-machine */}
         <Route path="/os/grants" element={<GrantsDashboard />} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
         {/* Floor 10 — Dynasty Funding Machine */}
