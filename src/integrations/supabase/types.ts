@@ -49438,6 +49438,194 @@ export type Database = {
         }
         Relationships: []
       }
+      media_bookings: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          creator_id: string | null
+          duration_hours: number | null
+          event_date: string | null
+          event_type: string | null
+          final_price: number | null
+          guest_count: number | null
+          id: string
+          latitude: number | null
+          location_address: string | null
+          longitude: number | null
+          notes: string | null
+          payment_status: string | null
+          quoted_price: number | null
+          state: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          creator_id?: string | null
+          duration_hours?: number | null
+          event_date?: string | null
+          event_type?: string | null
+          final_price?: number | null
+          guest_count?: number | null
+          id?: string
+          latitude?: number | null
+          location_address?: string | null
+          longitude?: number | null
+          notes?: string | null
+          payment_status?: string | null
+          quoted_price?: number | null
+          state?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          creator_id?: string | null
+          duration_hours?: number | null
+          event_date?: string | null
+          event_type?: string | null
+          final_price?: number | null
+          guest_count?: number | null
+          id?: string
+          latitude?: number | null
+          location_address?: string | null
+          longitude?: number | null
+          notes?: string | null
+          payment_status?: string | null
+          quoted_price?: number | null
+          state?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_bookings_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_creators: {
+        Row: {
+          bio: string | null
+          city: string | null
+          created_at: string | null
+          email: string | null
+          equipment_list: string[] | null
+          full_name: string
+          hourly_rate: number
+          id: string
+          is_available: boolean | null
+          latitude: number | null
+          longitude: number | null
+          phone: string | null
+          portfolio_url: string | null
+          profile_image_url: string | null
+          rating: number | null
+          service_radius_miles: number | null
+          specialty: string
+          state: string | null
+          updated_at: string | null
+          user_id: string | null
+          verified: boolean | null
+        }
+        Insert: {
+          bio?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          equipment_list?: string[] | null
+          full_name: string
+          hourly_rate?: number
+          id?: string
+          is_available?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          phone?: string | null
+          portfolio_url?: string | null
+          profile_image_url?: string | null
+          rating?: number | null
+          service_radius_miles?: number | null
+          specialty?: string
+          state?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          verified?: boolean | null
+        }
+        Update: {
+          bio?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          equipment_list?: string[] | null
+          full_name?: string
+          hourly_rate?: number
+          id?: string
+          is_available?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          phone?: string | null
+          portfolio_url?: string | null
+          profile_image_url?: string | null
+          rating?: number | null
+          service_radius_miles?: number | null
+          specialty?: string
+          state?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
+      media_dispatch_log: {
+        Row: {
+          action: string
+          booking_id: string
+          created_at: string | null
+          creator_id: string | null
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          action: string
+          booking_id: string
+          created_at?: string | null
+          creator_id?: string | null
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          action?: string
+          booking_id?: string
+          created_at?: string | null
+          creator_id?: string | null
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_dispatch_log_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "media_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_dispatch_log_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memory_events: {
         Row: {
           actor: string
