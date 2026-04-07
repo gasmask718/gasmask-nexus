@@ -49472,71 +49472,169 @@ export type Database = {
       }
       media_bookings: {
         Row: {
+          addon_amount: number | null
+          booking_status: string | null
           city: string | null
+          client_notes: string | null
           created_at: string | null
           creator_id: string | null
+          creator_notes: string | null
+          creator_payout_amount: number | null
+          deliverables_summary: string | null
+          delivery_status: string | null
           duration_hours: number | null
           event_date: string | null
+          event_title: string | null
           event_type: string | null
           final_price: number | null
           guest_count: number | null
           id: string
+          instant_booking: boolean | null
           latitude: number | null
           location_address: string | null
+          location_text: string | null
           longitude: number | null
           notes: string | null
           payment_status: string | null
+          quote_requested: boolean | null
           quoted_price: number | null
+          requested_end_at: string | null
+          requested_start_at: string | null
+          rush_fee_amount: number | null
           state: string | null
           status: string
+          subtotal_amount: number | null
+          total_amount: number | null
+          travel_fee_amount: number | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          addon_amount?: number | null
+          booking_status?: string | null
           city?: string | null
+          client_notes?: string | null
           created_at?: string | null
           creator_id?: string | null
+          creator_notes?: string | null
+          creator_payout_amount?: number | null
+          deliverables_summary?: string | null
+          delivery_status?: string | null
           duration_hours?: number | null
           event_date?: string | null
+          event_title?: string | null
           event_type?: string | null
           final_price?: number | null
           guest_count?: number | null
           id?: string
+          instant_booking?: boolean | null
           latitude?: number | null
           location_address?: string | null
+          location_text?: string | null
           longitude?: number | null
           notes?: string | null
           payment_status?: string | null
+          quote_requested?: boolean | null
           quoted_price?: number | null
+          requested_end_at?: string | null
+          requested_start_at?: string | null
+          rush_fee_amount?: number | null
           state?: string | null
           status?: string
+          subtotal_amount?: number | null
+          total_amount?: number | null
+          travel_fee_amount?: number | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          addon_amount?: number | null
+          booking_status?: string | null
           city?: string | null
+          client_notes?: string | null
           created_at?: string | null
           creator_id?: string | null
+          creator_notes?: string | null
+          creator_payout_amount?: number | null
+          deliverables_summary?: string | null
+          delivery_status?: string | null
           duration_hours?: number | null
           event_date?: string | null
+          event_title?: string | null
           event_type?: string | null
           final_price?: number | null
           guest_count?: number | null
           id?: string
+          instant_booking?: boolean | null
           latitude?: number | null
           location_address?: string | null
+          location_text?: string | null
           longitude?: number | null
           notes?: string | null
           payment_status?: string | null
+          quote_requested?: boolean | null
           quoted_price?: number | null
+          requested_end_at?: string | null
+          requested_start_at?: string | null
+          rush_fee_amount?: number | null
           state?: string | null
           status?: string
+          subtotal_amount?: number | null
+          total_amount?: number | null
+          travel_fee_amount?: number | null
           updated_at?: string | null
           user_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "media_bookings_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_creator_addons: {
+        Row: {
+          addon_code: string
+          addon_name: string
+          created_at: string | null
+          creator_id: string
+          description: string | null
+          id: string
+          is_enabled: boolean | null
+          price: number | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          addon_code: string
+          addon_name: string
+          created_at?: string | null
+          creator_id: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          price?: number | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          addon_code?: string
+          addon_name?: string
+          created_at?: string | null
+          creator_id?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          price?: number | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_addons_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "media_creators"
@@ -49600,6 +49698,85 @@ export type Database = {
           years_experience?: number | null
         }
         Relationships: []
+      }
+      media_creator_availability_rules: {
+        Row: {
+          booking_mode: string | null
+          created_at: string | null
+          creator_id: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_available: boolean | null
+          start_time: string
+          updated_at: string | null
+        }
+        Insert: {
+          booking_mode?: string | null
+          created_at?: string | null
+          creator_id: string
+          day_of_week: number
+          end_time?: string
+          id?: string
+          is_available?: boolean | null
+          start_time?: string
+          updated_at?: string | null
+        }
+        Update: {
+          booking_mode?: string | null
+          created_at?: string | null
+          creator_id?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_available?: boolean | null
+          start_time?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_availability_rules_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_creator_blackout_dates: {
+        Row: {
+          created_at: string | null
+          creator_id: string
+          end_date: string
+          id: string
+          reason: string | null
+          start_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          creator_id: string
+          end_date: string
+          id?: string
+          reason?: string | null
+          start_date: string
+        }
+        Update: {
+          created_at?: string | null
+          creator_id?: string
+          end_date?: string
+          id?: string
+          reason?: string | null
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_blackout_dates_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       media_creator_earnings: {
         Row: {
@@ -49668,42 +49845,318 @@ export type Database = {
           },
         ]
       }
-      media_creator_projects: {
+      media_creator_gear: {
         Row: {
-          category: string | null
-          created_at: string
+          created_at: string | null
+          creator_id: string
+          gear_category: string
+          gear_name: string
+          id: string
+          is_public: boolean | null
+          notes: string | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_id: string
+          gear_category: string
+          gear_name: string
+          id?: string
+          is_public?: boolean | null
+          notes?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_id?: string
+          gear_category?: string
+          gear_name?: string
+          id?: string
+          is_public?: boolean | null
+          notes?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_gear_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_creator_notifications: {
+        Row: {
+          body: string | null
+          created_at: string | null
           creator_id: string
           id: string
-          is_featured: boolean | null
-          media_type: string
-          media_url: string
-          sort_order: number | null
-          thumbnail_url: string | null
+          is_read: boolean | null
+          notification_type: string
+          related_booking_id: string | null
+          related_offer_id: string | null
           title: string
         }
         Insert: {
-          category?: string | null
-          created_at?: string
+          body?: string | null
+          created_at?: string | null
           creator_id: string
           id?: string
-          is_featured?: boolean | null
-          media_type?: string
-          media_url: string
-          sort_order?: number | null
-          thumbnail_url?: string | null
+          is_read?: boolean | null
+          notification_type: string
+          related_booking_id?: string | null
+          related_offer_id?: string | null
           title: string
         }
         Update: {
-          category?: string | null
-          created_at?: string
+          body?: string | null
+          created_at?: string | null
           creator_id?: string
           id?: string
+          is_read?: boolean | null
+          notification_type?: string
+          related_booking_id?: string | null
+          related_offer_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_notifications_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_creator_notifications_related_booking_id_fkey"
+            columns: ["related_booking_id"]
+            isOneToOne: false
+            referencedRelation: "media_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_creator_notifications_related_offer_id_fkey"
+            columns: ["related_offer_id"]
+            isOneToOne: false
+            referencedRelation: "media_job_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_creator_payouts: {
+        Row: {
+          created_at: string | null
+          creator_id: string
+          fees_amount: number | null
+          gross_amount: number | null
+          id: string
+          net_amount: number | null
+          payout_period_end: string
+          payout_period_start: string
+          payout_reference: string | null
+          payout_sent_at: string | null
+          payout_status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_id: string
+          fees_amount?: number | null
+          gross_amount?: number | null
+          id?: string
+          net_amount?: number | null
+          payout_period_end: string
+          payout_period_start: string
+          payout_reference?: string | null
+          payout_sent_at?: string | null
+          payout_status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_id?: string
+          fees_amount?: number | null
+          gross_amount?: number | null
+          id?: string
+          net_amount?: number | null
+          payout_period_end?: string
+          payout_period_start?: string
+          payout_reference?: string | null
+          payout_sent_at?: string | null
+          payout_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_payouts_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_creator_performance_snapshots: {
+        Row: {
+          accepted_jobs: number | null
+          avg_rating: number | null
+          avg_response_minutes: number | null
+          booking_requests: number | null
+          cancelled_jobs: number | null
+          completed_jobs: number | null
+          conversion_rate: number | null
+          created_at: string | null
+          creator_id: string
+          gross_earnings: number | null
+          id: string
+          profile_views: number | null
+          repeat_clients: number | null
+          snapshot_date: string
+        }
+        Insert: {
+          accepted_jobs?: number | null
+          avg_rating?: number | null
+          avg_response_minutes?: number | null
+          booking_requests?: number | null
+          cancelled_jobs?: number | null
+          completed_jobs?: number | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          creator_id: string
+          gross_earnings?: number | null
+          id?: string
+          profile_views?: number | null
+          repeat_clients?: number | null
+          snapshot_date: string
+        }
+        Update: {
+          accepted_jobs?: number | null
+          avg_rating?: number | null
+          avg_response_minutes?: number | null
+          booking_requests?: number | null
+          cancelled_jobs?: number | null
+          completed_jobs?: number | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          creator_id?: string
+          gross_earnings?: number | null
+          id?: string
+          profile_views?: number | null
+          repeat_clients?: number | null
+          snapshot_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_performance_snapshots_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_creator_profile_sections: {
+        Row: {
+          created_at: string | null
+          creator_id: string
+          id: string
+          is_enabled: boolean | null
+          section_key: string
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_id: string
+          id?: string
+          is_enabled?: boolean | null
+          section_key: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_id?: string
+          id?: string
+          is_enabled?: boolean | null
+          section_key?: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_profile_sections_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_creator_projects: {
+        Row: {
+          category: string | null
+          city: string | null
+          created_at: string
+          creator_id: string
+          delivery_type: string | null
+          description: string | null
+          event_type: string | null
+          id: string
+          is_case_study: boolean | null
+          is_featured: boolean | null
+          is_public: boolean | null
+          media_type: string
+          media_url: string
+          sort_order: number | null
+          tags: string[] | null
+          thumbnail_url: string | null
+          title: string
+          turnaround_hours: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          creator_id: string
+          delivery_type?: string | null
+          description?: string | null
+          event_type?: string | null
+          id?: string
+          is_case_study?: boolean | null
           is_featured?: boolean | null
+          is_public?: boolean | null
+          media_type?: string
+          media_url: string
+          sort_order?: number | null
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title: string
+          turnaround_hours?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          creator_id?: string
+          delivery_type?: string | null
+          description?: string | null
+          event_type?: string | null
+          id?: string
+          is_case_study?: boolean | null
+          is_featured?: boolean | null
+          is_public?: boolean | null
           media_type?: string
           media_url?: string
           sort_order?: number | null
+          tags?: string[] | null
           thumbnail_url?: string | null
           title?: string
+          turnaround_hours?: number | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -49724,8 +50177,12 @@ export type Database = {
           creator_response: string | null
           event_type: string | null
           id: string
+          is_public: boolean | null
           rating: number
+          review_month: number | null
           review_text: string | null
+          review_year: number | null
+          updated_at: string | null
         }
         Insert: {
           booking_id?: string | null
@@ -49735,8 +50192,12 @@ export type Database = {
           creator_response?: string | null
           event_type?: string | null
           id?: string
+          is_public?: boolean | null
           rating: number
+          review_month?: number | null
           review_text?: string | null
+          review_year?: number | null
+          updated_at?: string | null
         }
         Update: {
           booking_id?: string | null
@@ -49746,8 +50207,12 @@ export type Database = {
           creator_response?: string | null
           event_type?: string | null
           id?: string
+          is_public?: boolean | null
           rating?: number
+          review_month?: number | null
           review_text?: string | null
+          review_year?: number | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -49804,38 +50269,118 @@ export type Database = {
           },
         ]
       }
+      media_creator_settings: {
+        Row: {
+          auto_accept_disabled: boolean | null
+          created_at: string | null
+          creator_id: string
+          default_service_radius_miles: number | null
+          email_notifications_enabled: boolean | null
+          id: string
+          instant_booking_enabled: boolean | null
+          preferred_booking_notice_hours: number | null
+          public_profile_visible: boolean | null
+          push_notifications_enabled: boolean | null
+          scheduled_booking_enabled: boolean | null
+          sms_notifications_enabled: boolean | null
+          timezone: string | null
+          travel_enabled: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_accept_disabled?: boolean | null
+          created_at?: string | null
+          creator_id: string
+          default_service_radius_miles?: number | null
+          email_notifications_enabled?: boolean | null
+          id?: string
+          instant_booking_enabled?: boolean | null
+          preferred_booking_notice_hours?: number | null
+          public_profile_visible?: boolean | null
+          push_notifications_enabled?: boolean | null
+          scheduled_booking_enabled?: boolean | null
+          sms_notifications_enabled?: boolean | null
+          timezone?: string | null
+          travel_enabled?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_accept_disabled?: boolean | null
+          created_at?: string | null
+          creator_id?: string
+          default_service_radius_miles?: number | null
+          email_notifications_enabled?: boolean | null
+          id?: string
+          instant_booking_enabled?: boolean | null
+          preferred_booking_notice_hours?: number | null
+          public_profile_visible?: boolean | null
+          push_notifications_enabled?: boolean | null
+          scheduled_booking_enabled?: boolean | null
+          sms_notifications_enabled?: boolean | null
+          timezone?: string | null
+          travel_enabled?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_settings_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: true
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media_creator_verification: {
         Row: {
+          approval_status: string | null
           approved_at: string | null
           approved_by: string | null
           created_at: string | null
           creator_id: string
+          equipment_verified: boolean | null
           id: string
           id_verified: boolean | null
+          identity_verified: boolean | null
+          notes_internal: string | null
+          payout_setup_complete: boolean | null
           portfolio_verified: boolean | null
           skill_score: number | null
+          tax_setup_complete: boolean | null
           updated_at: string | null
         }
         Insert: {
+          approval_status?: string | null
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string | null
           creator_id: string
+          equipment_verified?: boolean | null
           id?: string
           id_verified?: boolean | null
+          identity_verified?: boolean | null
+          notes_internal?: string | null
+          payout_setup_complete?: boolean | null
           portfolio_verified?: boolean | null
           skill_score?: number | null
+          tax_setup_complete?: boolean | null
           updated_at?: string | null
         }
         Update: {
+          approval_status?: string | null
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string | null
           creator_id?: string
+          equipment_verified?: boolean | null
           id?: string
           id_verified?: boolean | null
+          identity_verified?: boolean | null
+          notes_internal?: string | null
+          payout_setup_complete?: boolean | null
           portfolio_verified?: boolean | null
           skill_score?: number | null
+          tax_setup_complete?: boolean | null
           updated_at?: string | null
         }
         Relationships: [
@@ -49851,11 +50396,18 @@ export type Database = {
       media_creators: {
         Row: {
           acceptance_rate: number | null
+          accepts_instant_bookings: boolean | null
+          accepts_scheduled_bookings: boolean | null
+          assistant_team_available: boolean | null
+          average_delivery_hours: number | null
           bio: string | null
           cancellation_rate: number | null
           city: string | null
+          country: string | null
           cover_image: string | null
+          cover_image_url: string | null
           created_at: string | null
+          custom_quote_enabled: boolean | null
           display_name: string | null
           drone_available: boolean | null
           editing_available: boolean | null
@@ -49870,20 +50422,32 @@ export type Database = {
           is_available: boolean | null
           is_online: boolean | null
           is_verified: boolean | null
+          languages_spoken: string[] | null
           last_active_at: string | null
           latitude: number | null
+          legal_name: string | null
           longitude: number | null
+          minimum_booking_hours: number | null
+          multi_camera_available: boolean | null
+          on_site_editing_available: boolean | null
+          onboarding_status: string | null
           phone: string | null
           portfolio_images: string[] | null
           portfolio_url: string | null
           portfolio_videos: string[] | null
           profile_image_url: string | null
+          profile_visibility_status: string | null
           provider_type: string | null
+          public_badges: string[] | null
           rating: number | null
+          repeat_client_rate: number | null
           response_time_hours: number | null
+          rush_booking_enabled: boolean | null
           same_day_edit_available: boolean | null
           service_area: string | null
           service_radius_miles: number | null
+          short_tagline: string | null
+          signature_style: string | null
           slug: string | null
           specialties: string[] | null
           specialty: string
@@ -49895,15 +50459,23 @@ export type Database = {
           user_id: string | null
           verified: boolean | null
           website_url: string | null
+          weekend_pricing_enabled: boolean | null
           years_experience: number | null
         }
         Insert: {
           acceptance_rate?: number | null
+          accepts_instant_bookings?: boolean | null
+          accepts_scheduled_bookings?: boolean | null
+          assistant_team_available?: boolean | null
+          average_delivery_hours?: number | null
           bio?: string | null
           cancellation_rate?: number | null
           city?: string | null
+          country?: string | null
           cover_image?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
+          custom_quote_enabled?: boolean | null
           display_name?: string | null
           drone_available?: boolean | null
           editing_available?: boolean | null
@@ -49918,20 +50490,32 @@ export type Database = {
           is_available?: boolean | null
           is_online?: boolean | null
           is_verified?: boolean | null
+          languages_spoken?: string[] | null
           last_active_at?: string | null
           latitude?: number | null
+          legal_name?: string | null
           longitude?: number | null
+          minimum_booking_hours?: number | null
+          multi_camera_available?: boolean | null
+          on_site_editing_available?: boolean | null
+          onboarding_status?: string | null
           phone?: string | null
           portfolio_images?: string[] | null
           portfolio_url?: string | null
           portfolio_videos?: string[] | null
           profile_image_url?: string | null
+          profile_visibility_status?: string | null
           provider_type?: string | null
+          public_badges?: string[] | null
           rating?: number | null
+          repeat_client_rate?: number | null
           response_time_hours?: number | null
+          rush_booking_enabled?: boolean | null
           same_day_edit_available?: boolean | null
           service_area?: string | null
           service_radius_miles?: number | null
+          short_tagline?: string | null
+          signature_style?: string | null
           slug?: string | null
           specialties?: string[] | null
           specialty?: string
@@ -49943,15 +50527,23 @@ export type Database = {
           user_id?: string | null
           verified?: boolean | null
           website_url?: string | null
+          weekend_pricing_enabled?: boolean | null
           years_experience?: number | null
         }
         Update: {
           acceptance_rate?: number | null
+          accepts_instant_bookings?: boolean | null
+          accepts_scheduled_bookings?: boolean | null
+          assistant_team_available?: boolean | null
+          average_delivery_hours?: number | null
           bio?: string | null
           cancellation_rate?: number | null
           city?: string | null
+          country?: string | null
           cover_image?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
+          custom_quote_enabled?: boolean | null
           display_name?: string | null
           drone_available?: boolean | null
           editing_available?: boolean | null
@@ -49966,20 +50558,32 @@ export type Database = {
           is_available?: boolean | null
           is_online?: boolean | null
           is_verified?: boolean | null
+          languages_spoken?: string[] | null
           last_active_at?: string | null
           latitude?: number | null
+          legal_name?: string | null
           longitude?: number | null
+          minimum_booking_hours?: number | null
+          multi_camera_available?: boolean | null
+          on_site_editing_available?: boolean | null
+          onboarding_status?: string | null
           phone?: string | null
           portfolio_images?: string[] | null
           portfolio_url?: string | null
           portfolio_videos?: string[] | null
           profile_image_url?: string | null
+          profile_visibility_status?: string | null
           provider_type?: string | null
+          public_badges?: string[] | null
           rating?: number | null
+          repeat_client_rate?: number | null
           response_time_hours?: number | null
+          rush_booking_enabled?: boolean | null
           same_day_edit_available?: boolean | null
           service_area?: string | null
           service_radius_miles?: number | null
+          short_tagline?: string | null
+          signature_style?: string | null
           slug?: string | null
           specialties?: string[] | null
           specialty?: string
@@ -49991,6 +50595,7 @@ export type Database = {
           user_id?: string | null
           verified?: boolean | null
           website_url?: string | null
+          weekend_pricing_enabled?: boolean | null
           years_experience?: number | null
         }
         Relationships: []
@@ -50081,31 +50686,55 @@ export type Database = {
       }
       media_job_offers: {
         Row: {
+          addon_summary: string | null
           booking_id: string
+          client_notes: string | null
           creator_id: string
           distance_miles: number | null
+          duration_hours: number | null
+          event_type: string | null
+          expires_at: string | null
           id: string
+          location_text: string | null
+          offered_payout: number | null
           offered_price: number
+          requested_start_at: string | null
           responded_at: string | null
           sent_at: string | null
           status: string
         }
         Insert: {
+          addon_summary?: string | null
           booking_id: string
+          client_notes?: string | null
           creator_id: string
           distance_miles?: number | null
+          duration_hours?: number | null
+          event_type?: string | null
+          expires_at?: string | null
           id?: string
+          location_text?: string | null
+          offered_payout?: number | null
           offered_price?: number
+          requested_start_at?: string | null
           responded_at?: string | null
           sent_at?: string | null
           status?: string
         }
         Update: {
+          addon_summary?: string | null
           booking_id?: string
+          client_notes?: string | null
           creator_id?: string
           distance_miles?: number | null
+          duration_hours?: number | null
+          event_type?: string | null
+          expires_at?: string | null
           id?: string
+          location_text?: string | null
+          offered_payout?: number | null
           offered_price?: number
+          requested_start_at?: string | null
           responded_at?: string | null
           sent_at?: string | null
           status?: string
@@ -99643,6 +100272,9 @@ export type Database = {
         Args: { p_business_id: string; p_store_id: string }
         Returns: Json
       }
+      get_creator_dashboard_summary: { Args: never; Returns: Json }
+      get_creator_profile_completion: { Args: never; Returns: Json }
+      get_creator_public_profile: { Args: { p_slug: string }; Returns: Json }
       get_current_user_role: { Args: never; Returns: string }
       get_intent_queue_health: { Args: never; Returns: Json }
       get_managed_office_ids: { Args: { _user_id: string }; Returns: string[] }
@@ -99793,6 +100425,7 @@ export type Database = {
       ingest_portal_actions: { Args: { _actions: Json }; Returns: Json }
       ingest_territory_addresses: { Args: { p_addresses: Json }; Returns: Json }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_admin_user: { Args: { p_user_id: string }; Returns: boolean }
       is_ambassador_for_store: {
         Args: { _store_id: string; _user_id: string }
         Returns: boolean
