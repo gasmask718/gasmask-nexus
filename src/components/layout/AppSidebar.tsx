@@ -30,6 +30,7 @@ export default function AppSidebar() {
   // Determine which floor section contains the active route
   const getActiveSection = (pathname: string): string | null => {
     if (pathname.startsWith('/surplus-funds')) return 'surplus-funds-os';
+    if (pathname.startsWith('/funding-machine')) return 'funding-hub';
     if (pathname.startsWith('/solar')) return 'solar-os';
     if (pathname.startsWith('/sbo-ai-engine') || pathname.startsWith('/os/sports-betting')) return 'sbo-ai-engine';
     if (pathname.startsWith('/real-estate')) return 'real-estate-os';
