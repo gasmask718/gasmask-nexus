@@ -187,7 +187,7 @@ function buildCustomerOfferEmail(req: any, quote: any, margin: any, approveUrl: 
 
 // ── ACTIONS ─────────────────────────────────────────────────────────────
 
-type Action = "dispatch" | "select_quote" | "send_customer_offer" | "submit_quote" | "kpis" | "recommend";
+type Action = "dispatch" | "select_quote" | "send_customer_offer" | "submit_quote" | "kpis" | "recommend" | "auto_evaluate";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
