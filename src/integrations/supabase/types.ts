@@ -8179,6 +8179,38 @@ export type Database = {
         }
         Relationships: []
       }
+      availability_sessions: {
+        Row: {
+          creator_id: string
+          ended_at: string | null
+          id: string
+          is_live: boolean
+          started_at: string
+        }
+        Insert: {
+          creator_id: string
+          ended_at?: string | null
+          id?: string
+          is_live?: boolean
+          started_at?: string
+        }
+        Update: {
+          creator_id?: string
+          ended_at?: string | null
+          id?: string
+          is_live?: boolean
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_sessions_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bag_inventory_ledger: {
         Row: {
           bags_delta: number
@@ -49523,6 +49555,7 @@ export type Database = {
           hourly_rate: number
           id: string
           is_available: boolean | null
+          last_active_at: string | null
           latitude: number | null
           longitude: number | null
           phone: string | null
@@ -49546,6 +49579,7 @@ export type Database = {
           hourly_rate?: number
           id?: string
           is_available?: boolean | null
+          last_active_at?: string | null
           latitude?: number | null
           longitude?: number | null
           phone?: string | null
@@ -49569,6 +49603,7 @@ export type Database = {
           hourly_rate?: number
           id?: string
           is_available?: boolean | null
+          last_active_at?: string | null
           latitude?: number | null
           longitude?: number | null
           phone?: string | null
@@ -49625,6 +49660,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      media_dispatch_responses: {
+        Row: {
+          booking_id: string
+          created_at: string | null
+          creator_id: string
+          id: string
+          responded_at: string | null
+          status: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string | null
+          creator_id: string
+          id?: string
+          responded_at?: string | null
+          status?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string | null
+          creator_id?: string
+          id?: string
+          responded_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_dispatch_responses_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "media_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_dispatch_responses_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_pricing_rules: {
+        Row: {
+          city: string
+          created_at: string | null
+          demand_level: string
+          id: string
+          multiplier: number
+          peak_hours: Json | null
+          rush_fee: number
+        }
+        Insert: {
+          city: string
+          created_at?: string | null
+          demand_level?: string
+          id?: string
+          multiplier?: number
+          peak_hours?: Json | null
+          rush_fee?: number
+        }
+        Update: {
+          city?: string
+          created_at?: string | null
+          demand_level?: string
+          id?: string
+          multiplier?: number
+          peak_hours?: Json | null
+          rush_fee?: number
+        }
+        Relationships: []
       }
       memory_events: {
         Row: {
@@ -98568,6 +98675,16 @@ export type Database = {
       calculate_distance_miles: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
+      }
+      calculate_media_price: {
+        Args: {
+          p_base_rate?: number
+          p_city: string
+          p_demand_level?: string
+          p_duration_hours: number
+          p_service_type: string
+        }
+        Returns: Json
       }
       calculate_predictive_profit_score: {
         Args: { p_business_id: string; p_store_id: string }
