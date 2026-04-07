@@ -36656,6 +36656,74 @@ export type Database = {
           },
         ]
       }
+      event_cart: {
+        Row: {
+          created_at: string | null
+          id: string
+          status: string | null
+          total_price: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          total_price?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          total_price?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      event_cart_items: {
+        Row: {
+          cart_id: string
+          created_at: string | null
+          hours: number | null
+          id: string
+          item_id: string
+          item_type: string
+          price: number | null
+          quantity: number | null
+        }
+        Insert: {
+          cart_id: string
+          created_at?: string | null
+          hours?: number | null
+          id?: string
+          item_id: string
+          item_type: string
+          price?: number | null
+          quantity?: number | null
+        }
+        Update: {
+          cart_id?: string
+          created_at?: string | null
+          hours?: number | null
+          id?: string
+          item_id?: string
+          item_type?: string
+          price?: number | null
+          quantity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_cart_items_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "event_cart"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_halls: {
         Row: {
           address: string | null
@@ -36784,6 +36852,62 @@ export type Database = {
           zip_code?: string | null
         }
         Relationships: []
+      }
+      event_rentals: {
+        Row: {
+          category: string | null
+          city: string | null
+          created_at: string | null
+          id: string
+          image_url: string | null
+          inventory_count: number | null
+          name: string
+          price: number | null
+          price_type: string | null
+          state: string | null
+          status: string | null
+          supplier_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          city?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          inventory_count?: number | null
+          name: string
+          price?: number | null
+          price_type?: string | null
+          state?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          city?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          inventory_count?: number | null
+          name?: string
+          price?: number | null
+          price_type?: string | null
+          state?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_rentals_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "event_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       event_space_availability: {
         Row: {
@@ -36984,6 +37108,101 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      event_staff: {
+        Row: {
+          availability_status: string | null
+          city: string | null
+          created_at: string | null
+          hourly_rate: number | null
+          id: string
+          name: string
+          profile_image: string | null
+          rating: number | null
+          role: string | null
+          state: string | null
+          supplier_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          availability_status?: string | null
+          city?: string | null
+          created_at?: string | null
+          hourly_rate?: number | null
+          id?: string
+          name: string
+          profile_image?: string | null
+          rating?: number | null
+          role?: string | null
+          state?: string | null
+          supplier_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          availability_status?: string | null
+          city?: string | null
+          created_at?: string | null
+          hourly_rate?: number | null
+          id?: string
+          name?: string
+          profile_image?: string | null
+          rating?: number | null
+          role?: string | null
+          state?: string | null
+          supplier_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_staff_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "event_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_suppliers: {
+        Row: {
+          city: string | null
+          company_name: string
+          contact_email: string | null
+          created_at: string | null
+          id: string
+          phone: string | null
+          rating: number | null
+          state: string | null
+          status: string | null
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          city?: string | null
+          company_name: string
+          contact_email?: string | null
+          created_at?: string | null
+          id?: string
+          phone?: string | null
+          rating?: number | null
+          state?: string | null
+          status?: string | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string | null
+          company_name?: string
+          contact_email?: string | null
+          created_at?: string | null
+          id?: string
+          phone?: string | null
+          rating?: number | null
+          state?: string | null
+          status?: string | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       excel_analyses: {
         Row: {
