@@ -740,6 +740,9 @@ const PenthouseAddons = lazy(() => import('@/pages/os/toptier/penthouse/Penthous
 const PenthouseGiftExperiences = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseGiftExperiences'));
 const PenthouseBeautyProviders = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseBeautyProviders'));
 const BeautyProviderSignup = lazy(() => import('@/pages/public/BeautyProviderSignup'));
+const ThingsToDoExperiences = lazy(() => import('@/pages/os/toptier/ThingsToDoExperiences'));
+const ThingsToDoBookings = lazy(() => import('@/pages/os/toptier/ThingsToDoBookings'));
+const ThingsToDoAnalytics = lazy(() => import('@/pages/os/toptier/ThingsToDoAnalytics'));
 
 // Unforgettable
 const UnforgettableDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDashboard })));
@@ -1677,6 +1680,9 @@ export default function AppRoutes() {
           <Route path="ai" element={<TTAIBrain />} />
           <Route path="settings" element={<TTPlaceholder />} />
           <Route path="decor-experience" element={<DecorExperienceWizard />} />
+          <Route path="things-to-do" element={<ThingsToDoExperiences />} />
+          <Route path="things-to-do/bookings" element={<ThingsToDoBookings />} />
+          <Route path="things-to-do/analytics" element={<ThingsToDoAnalytics />} />
         </Route>
 
         {/* Penthouse Control System — Admin/Owner Only */}
