@@ -1680,6 +1680,9 @@ export default function AppRoutes() {
           <Route path="ai" element={<TTAIBrain />} />
           <Route path="settings" element={<TTPlaceholder />} />
           <Route path="decor-experience" element={<DecorExperienceWizard />} />
+          <Route path="things-to-do" element={<ThingsToDoExperiences />} />
+          <Route path="things-to-do/bookings" element={<ThingsToDoBookings />} />
+          <Route path="things-to-do/analytics" element={<ThingsToDoAnalytics />} />
         </Route>
 
         {/* Penthouse Control System — Admin/Owner Only */}
