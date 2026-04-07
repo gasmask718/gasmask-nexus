@@ -865,7 +865,7 @@ const UnforgettableGifts = lazy(() => import('@/pages/crm/unforgettable').then(m
 const ICleanDashboard = lazy(() => import('@/pages/os/iclean/ICleanDashboard'));
 const PlayboxxxDashboard = lazy(() => import('@/pages/os/playboxxx/PlayboxxxDashboard'));
 const SpecialNeedsDashboard = lazy(() => import('@/pages/os/specialneeds/SpecialNeedsDashboard'));
-const FundingDashboard = lazy(() => import('@/pages/os/funding/FundingDashboard'));
+// FundingDashboard (orphan /os/funding) — REMOVED, use /funding-machine instead
 const GrantsDashboard = lazy(() => import('@/pages/os/grants/GrantsDashboard'));
 const WealthEngineDashboard = lazy(() => import('@/pages/os/wealth/WealthEngineDashboard'));
 // Funding Machine (Floor 10)
