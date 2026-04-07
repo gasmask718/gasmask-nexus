@@ -746,6 +746,12 @@ const ThingsToDoAnalytics = lazy(() => import('@/pages/os/toptier/ThingsToDoAnal
 const ThingsToDoMarkup = lazy(() => import('@/pages/os/toptier/ThingsToDoMarkup'));
 const ThingsToDoAddons = lazy(() => import('@/pages/os/toptier/ThingsToDoAddons'));
 const ThingsToDoProfitDashboard = lazy(() => import('@/pages/os/toptier/ThingsToDoProfitDashboard'));
+const KidsFamilyExperiences = lazy(() => import('@/pages/os/toptier/KidsFamilyExperiences'));
+const KidsFamilyVendors = lazy(() => import('@/pages/os/toptier/KidsFamilyVendors'));
+const KidsFamilyBundles = lazy(() => import('@/pages/os/toptier/KidsFamilyBundles'));
+const KidsFamilyPerformance = lazy(() => import('@/pages/os/toptier/KidsFamilyPerformance'));
+const KidsFamilyApiPanel = lazy(() => import('@/pages/os/toptier/KidsFamilyApiPanel'));
+const KidsFamilyVendorLeads = lazy(() => import('@/pages/os/toptier/KidsFamilyVendorLeads'));
 
 // Unforgettable
 const UnforgettableDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDashboard })));
