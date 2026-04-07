@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, CalendarCheck, Users, Map, TrendingUp, 
   Star, Settings2, Brain, Bell, RefreshCw, Settings, Crown, Palette,
-  Sparkles, BarChart3, Percent, Package, DollarSign
+  Sparkles, BarChart3, Percent, Package, DollarSign, Baby, Store, Plug, Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,12 @@ const navItems = [
   { path: '/os/toptier/things-to-do/addons', label: 'TTD Add-ons', icon: Package },
   { path: '/os/toptier/things-to-do/profit', label: 'TTD Profit', icon: DollarSign },
   { path: '/os/toptier/things-to-do/analytics', label: 'TTD Analytics', icon: BarChart3 },
+  { path: '/os/toptier/kids-family', label: 'Kids & Family', icon: Baby },
+  { path: '/os/toptier/kids-family/vendors', label: 'KF Vendors', icon: Store },
+  { path: '/os/toptier/kids-family/bundles', label: 'KF Bundles', icon: Package },
+  { path: '/os/toptier/kids-family/performance', label: 'KF Performance', icon: BarChart3 },
+  { path: '/os/toptier/kids-family/api', label: 'KF API Panel', icon: Plug },
+  { path: '/os/toptier/kids-family/leads', label: 'KF Expansion', icon: Globe },
   { path: '/os/toptier/penthouse', label: 'Penthouse Control', icon: Crown },
 ];
 

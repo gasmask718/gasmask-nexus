@@ -746,6 +746,12 @@ const ThingsToDoAnalytics = lazy(() => import('@/pages/os/toptier/ThingsToDoAnal
 const ThingsToDoMarkup = lazy(() => import('@/pages/os/toptier/ThingsToDoMarkup'));
 const ThingsToDoAddons = lazy(() => import('@/pages/os/toptier/ThingsToDoAddons'));
 const ThingsToDoProfitDashboard = lazy(() => import('@/pages/os/toptier/ThingsToDoProfitDashboard'));
+const KidsFamilyExperiences = lazy(() => import('@/pages/os/toptier/KidsFamilyExperiences'));
+const KidsFamilyVendors = lazy(() => import('@/pages/os/toptier/KidsFamilyVendors'));
+const KidsFamilyBundles = lazy(() => import('@/pages/os/toptier/KidsFamilyBundles'));
+const KidsFamilyPerformance = lazy(() => import('@/pages/os/toptier/KidsFamilyPerformance'));
+const KidsFamilyApiPanel = lazy(() => import('@/pages/os/toptier/KidsFamilyApiPanel'));
+const KidsFamilyVendorLeads = lazy(() => import('@/pages/os/toptier/KidsFamilyVendorLeads'));
 
 // Unforgettable
 const UnforgettableDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDashboard })));
@@ -1689,6 +1695,12 @@ export default function AppRoutes() {
           <Route path="things-to-do/markup" element={<ThingsToDoMarkup />} />
           <Route path="things-to-do/addons" element={<ThingsToDoAddons />} />
           <Route path="things-to-do/profit" element={<ThingsToDoProfitDashboard />} />
+          <Route path="kids-family" element={<KidsFamilyExperiences />} />
+          <Route path="kids-family/vendors" element={<KidsFamilyVendors />} />
+          <Route path="kids-family/bundles" element={<KidsFamilyBundles />} />
+          <Route path="kids-family/performance" element={<KidsFamilyPerformance />} />
+          <Route path="kids-family/api" element={<KidsFamilyApiPanel />} />
+          <Route path="kids-family/leads" element={<KidsFamilyVendorLeads />} />
         </Route>
 
         {/* Penthouse Control System — Admin/Owner Only */}

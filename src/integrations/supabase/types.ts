@@ -46375,6 +46375,358 @@ export type Database = {
           },
         ]
       }
+      kf_api_connections: {
+        Row: {
+          api_endpoint: string | null
+          config: Json | null
+          created_at: string | null
+          error_count: number | null
+          id: string
+          last_error: string | null
+          last_sync_at: string | null
+          provider_name: string
+          status: string | null
+          sync_frequency: string | null
+          total_synced: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          api_endpoint?: string | null
+          config?: Json | null
+          created_at?: string | null
+          error_count?: number | null
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          provider_name: string
+          status?: string | null
+          sync_frequency?: string | null
+          total_synced?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          api_endpoint?: string | null
+          config?: Json | null
+          created_at?: string | null
+          error_count?: number | null
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          provider_name?: string
+          status?: string | null
+          sync_frequency?: string | null
+          total_synced?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      kf_bundle_components: {
+        Row: {
+          bundle_id: string
+          component_cost: number | null
+          component_name: string
+          component_type: string
+          created_at: string | null
+          experience_id: string | null
+          id: string
+          quantity: number | null
+          vendor_id: string | null
+        }
+        Insert: {
+          bundle_id: string
+          component_cost?: number | null
+          component_name: string
+          component_type?: string
+          created_at?: string | null
+          experience_id?: string | null
+          id?: string
+          quantity?: number | null
+          vendor_id?: string | null
+        }
+        Update: {
+          bundle_id?: string
+          component_cost?: number | null
+          component_name?: string
+          component_type?: string
+          created_at?: string | null
+          experience_id?: string | null
+          id?: string
+          quantity?: number | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kf_bundle_components_bundle_id_fkey"
+            columns: ["bundle_id"]
+            isOneToOne: false
+            referencedRelation: "kf_bundles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kf_bundle_components_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experiences_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kf_bundle_components_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "kf_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kf_bundles: {
+        Row: {
+          base_cost: number | null
+          bundle_name: string
+          category: string | null
+          city: string | null
+          created_at: string | null
+          description: string | null
+          final_price: number | null
+          id: string
+          image_url: string | null
+          is_ai_generated: boolean | null
+          markup_pct: number | null
+          performance_score: number | null
+          status: string | null
+          tags: string[] | null
+          total_sold: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_cost?: number | null
+          bundle_name: string
+          category?: string | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          final_price?: number | null
+          id?: string
+          image_url?: string | null
+          is_ai_generated?: boolean | null
+          markup_pct?: number | null
+          performance_score?: number | null
+          status?: string | null
+          tags?: string[] | null
+          total_sold?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_cost?: number | null
+          bundle_name?: string
+          category?: string | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          final_price?: number | null
+          id?: string
+          image_url?: string | null
+          is_ai_generated?: boolean | null
+          markup_pct?: number | null
+          performance_score?: number | null
+          status?: string | null
+          tags?: string[] | null
+          total_sold?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      kf_family_profiles: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          kids_ages: number[] | null
+          last_booking_at: string | null
+          notes: string | null
+          parent_name: string | null
+          phone: string | null
+          preferences: Json | null
+          state: string | null
+          total_bookings: number | null
+          total_spend: number | null
+          updated_at: string | null
+          vip_status: boolean | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          kids_ages?: number[] | null
+          last_booking_at?: string | null
+          notes?: string | null
+          parent_name?: string | null
+          phone?: string | null
+          preferences?: Json | null
+          state?: string | null
+          total_bookings?: number | null
+          total_spend?: number | null
+          updated_at?: string | null
+          vip_status?: boolean | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          kids_ages?: number[] | null
+          last_booking_at?: string | null
+          notes?: string | null
+          parent_name?: string | null
+          phone?: string | null
+          preferences?: Json | null
+          state?: string | null
+          total_bookings?: number | null
+          total_spend?: number | null
+          updated_at?: string | null
+          vip_status?: boolean | null
+        }
+        Relationships: []
+      }
+      kf_vendor_leads: {
+        Row: {
+          category: string | null
+          city: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          outreach_notes: string | null
+          outreach_status: string | null
+          phone: string | null
+          place_id: string | null
+          rating: number | null
+          review_count: number | null
+          source: string | null
+          state: string | null
+          status: string | null
+          website: string | null
+        }
+        Insert: {
+          category?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          outreach_notes?: string | null
+          outreach_status?: string | null
+          phone?: string | null
+          place_id?: string | null
+          rating?: number | null
+          review_count?: number | null
+          source?: string | null
+          state?: string | null
+          status?: string | null
+          website?: string | null
+        }
+        Update: {
+          category?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          outreach_notes?: string | null
+          outreach_status?: string | null
+          phone?: string | null
+          place_id?: string | null
+          rating?: number | null
+          review_count?: number | null
+          source?: string | null
+          state?: string | null
+          status?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      kf_vendors: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          base_rate: number | null
+          category: string
+          city: string | null
+          created_at: string | null
+          description: string | null
+          email: string | null
+          id: string
+          metadata: Json | null
+          name: string
+          notes: string | null
+          phone: string | null
+          portfolio_urls: string[] | null
+          pricing_type: string | null
+          profile_image_url: string | null
+          state: string | null
+          status: string | null
+          subcategory: string | null
+          total_bookings: number | null
+          total_revenue: number | null
+          trust_score: number | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          base_rate?: number | null
+          category?: string
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          portfolio_urls?: string[] | null
+          pricing_type?: string | null
+          profile_image_url?: string | null
+          state?: string | null
+          status?: string | null
+          subcategory?: string | null
+          total_bookings?: number | null
+          total_revenue?: number | null
+          trust_score?: number | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          base_rate?: number | null
+          category?: string
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          portfolio_urls?: string[] | null
+          pricing_type?: string | null
+          profile_image_url?: string | null
+          state?: string | null
+          status?: string | null
+          subcategory?: string | null
+          total_bookings?: number | null
+          total_revenue?: number | null
+          trust_score?: number | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       kill_switch_state: {
         Row: {
           business_id: string | null
