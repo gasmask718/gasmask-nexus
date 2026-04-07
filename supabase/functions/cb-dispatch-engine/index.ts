@@ -250,7 +250,18 @@ serve(async (req) => {
       const startTime = Date.now();
 
       for (const partner of partners) {
-        const responseUrl = `${baseUrl}/partner/quote-response/${request.id}?partner=${partner.id}`;
+        // Generate secure response token
+        const secureToken = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+        const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+
+        await supabase.from("cb_partner_response_tokens").insert({
+          booking_request_id: request.id,
+          partner_id: partner.id,
+          secure_token: secureToken,
+          expires_at: expiresAt,
+        });
+
+        const responseUrl = `${baseUrl}/partner/respond/${secureToken}`;
 
         // Create dispatch record
         const { data: dispatch } = await supabase
