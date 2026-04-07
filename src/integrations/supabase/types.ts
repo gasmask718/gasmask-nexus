@@ -49544,9 +49544,188 @@ export type Database = {
           },
         ]
       }
+      media_creator_applications: {
+        Row: {
+          city: string
+          created_at: string | null
+          email: string
+          equipment_list: string[] | null
+          full_name: string
+          id: string
+          instagram_handle: string | null
+          is_approved: boolean | null
+          phone: string | null
+          portfolio_links: string[] | null
+          specialties: string[] | null
+          state: string
+          status: string
+          submitted_at: string | null
+          user_id: string | null
+          years_experience: number | null
+        }
+        Insert: {
+          city: string
+          created_at?: string | null
+          email: string
+          equipment_list?: string[] | null
+          full_name: string
+          id?: string
+          instagram_handle?: string | null
+          is_approved?: boolean | null
+          phone?: string | null
+          portfolio_links?: string[] | null
+          specialties?: string[] | null
+          state: string
+          status?: string
+          submitted_at?: string | null
+          user_id?: string | null
+          years_experience?: number | null
+        }
+        Update: {
+          city?: string
+          created_at?: string | null
+          email?: string
+          equipment_list?: string[] | null
+          full_name?: string
+          id?: string
+          instagram_handle?: string | null
+          is_approved?: boolean | null
+          phone?: string | null
+          portfolio_links?: string[] | null
+          specialties?: string[] | null
+          state?: string
+          status?: string
+          submitted_at?: string | null
+          user_id?: string | null
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
+      media_creator_earnings: {
+        Row: {
+          avg_rating: number | null
+          completed_jobs: number | null
+          creator_id: string
+          id: string
+          last_job_at: string | null
+          total_earnings: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_rating?: number | null
+          completed_jobs?: number | null
+          creator_id: string
+          id?: string
+          last_job_at?: string | null
+          total_earnings?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_rating?: number | null
+          completed_jobs?: number | null
+          creator_id?: string
+          id?: string
+          last_job_at?: string | null
+          total_earnings?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_earnings_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: true
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_creator_sessions: {
+        Row: {
+          creator_id: string
+          current_location_lat: number | null
+          current_location_lng: number | null
+          ended_at: string | null
+          id: string
+          is_online: boolean
+          started_at: string
+        }
+        Insert: {
+          creator_id: string
+          current_location_lat?: number | null
+          current_location_lng?: number | null
+          ended_at?: string | null
+          id?: string
+          is_online?: boolean
+          started_at?: string
+        }
+        Update: {
+          creator_id?: string
+          current_location_lat?: number | null
+          current_location_lng?: number | null
+          ended_at?: string | null
+          id?: string
+          is_online?: boolean
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_sessions_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_creator_verification: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          creator_id: string
+          id: string
+          id_verified: boolean | null
+          portfolio_verified: boolean | null
+          skill_score: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          creator_id: string
+          id?: string
+          id_verified?: boolean | null
+          portfolio_verified?: boolean | null
+          skill_score?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          creator_id?: string
+          id?: string
+          id_verified?: boolean | null
+          portfolio_verified?: boolean | null
+          skill_score?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_verification_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media_creators: {
         Row: {
+          acceptance_rate: number | null
           bio: string | null
+          cancellation_rate: number | null
           city: string | null
           created_at: string | null
           email: string | null
@@ -49555,6 +49734,8 @@ export type Database = {
           hourly_rate: number
           id: string
           is_available: boolean | null
+          is_online: boolean | null
+          is_verified: boolean | null
           last_active_at: string | null
           latitude: number | null
           longitude: number | null
@@ -49565,12 +49746,15 @@ export type Database = {
           service_radius_miles: number | null
           specialty: string
           state: string | null
+          total_jobs_completed: number | null
           updated_at: string | null
           user_id: string | null
           verified: boolean | null
         }
         Insert: {
+          acceptance_rate?: number | null
           bio?: string | null
+          cancellation_rate?: number | null
           city?: string | null
           created_at?: string | null
           email?: string | null
@@ -49579,6 +49763,8 @@ export type Database = {
           hourly_rate?: number
           id?: string
           is_available?: boolean | null
+          is_online?: boolean | null
+          is_verified?: boolean | null
           last_active_at?: string | null
           latitude?: number | null
           longitude?: number | null
@@ -49589,12 +49775,15 @@ export type Database = {
           service_radius_miles?: number | null
           specialty?: string
           state?: string | null
+          total_jobs_completed?: number | null
           updated_at?: string | null
           user_id?: string | null
           verified?: boolean | null
         }
         Update: {
+          acceptance_rate?: number | null
           bio?: string | null
+          cancellation_rate?: number | null
           city?: string | null
           created_at?: string | null
           email?: string | null
@@ -49603,6 +49792,8 @@ export type Database = {
           hourly_rate?: number
           id?: string
           is_available?: boolean | null
+          is_online?: boolean | null
+          is_verified?: boolean | null
           last_active_at?: string | null
           latitude?: number | null
           longitude?: number | null
@@ -49613,6 +49804,7 @@ export type Database = {
           service_radius_miles?: number | null
           specialty?: string
           state?: string | null
+          total_jobs_completed?: number | null
           updated_at?: string | null
           user_id?: string | null
           verified?: boolean | null
@@ -49696,6 +49888,54 @@ export type Database = {
           },
           {
             foreignKeyName: "media_dispatch_responses_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_job_offers: {
+        Row: {
+          booking_id: string
+          creator_id: string
+          distance_miles: number | null
+          id: string
+          offered_price: number
+          responded_at: string | null
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          booking_id: string
+          creator_id: string
+          distance_miles?: number | null
+          id?: string
+          offered_price?: number
+          responded_at?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          booking_id?: string
+          creator_id?: string
+          distance_miles?: number | null
+          id?: string
+          offered_price?: number
+          responded_at?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_job_offers_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "media_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_job_offers_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "media_creators"
@@ -98672,6 +98912,10 @@ export type Database = {
       bulk_approve_enrichment: { Args: never; Returns: number }
       bump_number_usage: { Args: { p_number_id: string }; Returns: undefined }
       calculate_and_persist_drift_alerts: { Args: never; Returns: number }
+      calculate_creator_score: {
+        Args: { p_creator_id: string }
+        Returns: number
+      }
       calculate_distance_miles: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
