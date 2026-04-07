@@ -50,27 +50,21 @@ async function sendEmail(to: string, subject: string, html: string) {
   return res.ok ? { success: true } : { success: false, error: await res.text() };
 }
 
-// ── Build notification content ──────────────────────────────────────────
-function buildSMS(booking: any) {
+// ── REQUEST_CONFIRM templates ───────────────────────────────────────────
+function buildRequestConfirmSMS(booking: any) {
   return `🔔 New booking request:\n${booking.service_name}\n${booking.notes || "N/A"}\nDate: ${booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD"}\n\nReply:\n1 = Available\n2 = Not Available`;
 }
 
-function buildEmailHTML(booking: any, confirmUrl: string, declineUrl: string) {
-  return `
-<!DOCTYPE html>
-<html>
-<head><style>
-  body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
-  .card { background: #fff; border-radius: 12px; padding: 30px; max-width: 600px; margin: 0 auto; }
-  h1 { color: #1a1a1a; font-size: 22px; }
-  .detail { background: #f9f9f9; border-radius: 8px; padding: 16px; margin: 16px 0; }
-  .detail p { margin: 4px 0; color: #333; }
-  .btn { display: inline-block; padding: 12px 28px; border-radius: 8px; color: #fff; text-decoration: none; font-weight: bold; margin-right: 12px; }
-  .confirm { background: #10b981; }
-  .decline { background: #ef4444; }
-</style></head>
-<body>
-<div class="card">
+function buildRequestConfirmEmailHTML(booking: any, confirmUrl: string, declineUrl: string) {
+  return `<!DOCTYPE html><html><head><style>
+  body{font-family:Arial,sans-serif;background:#f4f4f4;padding:20px}
+  .card{background:#fff;border-radius:12px;padding:30px;max-width:600px;margin:0 auto}
+  h1{color:#1a1a1a;font-size:22px}
+  .detail{background:#f9f9f9;border-radius:8px;padding:16px;margin:16px 0}
+  .detail p{margin:4px 0;color:#333}
+  .btn{display:inline-block;padding:12px 28px;border-radius:8px;color:#fff;text-decoration:none;font-weight:bold;margin-right:12px}
+  .confirm{background:#10b981}.decline{background:#ef4444}
+</style></head><body><div class="card">
   <h1>🔔 New Booking Request – TopTier</h1>
   <div class="detail">
     <p><strong>Service:</strong> ${booking.service_name}</p>
@@ -82,28 +76,78 @@ function buildEmailHTML(booking: any, confirmUrl: string, declineUrl: string) {
   </div>
   <a href="${confirmUrl}" class="btn confirm">✅ Confirm</a>
   <a href="${declineUrl}" class="btn decline">❌ Decline</a>
-</div>
-</body>
-</html>`;
+</div></body></html>`;
 }
 
-function buildQuoteBroadcastSMS(booking: any) {
+// ── COACH BUS QUOTE BROADCAST templates ─────────────────────────────────
+function buildCoachBusSMS(booking: any) {
+  const pickup = booking.pickup_city || "TBD";
+  const dropoff = booking.dropoff_city || "TBD";
+  const date = booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD";
+  const pax = booking.passenger_count || "TBD";
+  const baseUrl = Deno.env.get("FRONTEND_BASE_URL") || "https://gasmask-os-nexus.lovable.app";
+  return `🚌 New Coach Bus Request:\n${pickup} → ${dropoff}\n${date}\nPassengers: ${pax}\n\nSubmit quote: ${baseUrl}/partner/quote/${booking.id}`;
+}
+
+function buildCoachBusEmailHTML(booking: any, quoteUrl: string) {
+  const pickup = booking.pickup_city || "TBD";
+  const dropoff = booking.dropoff_city || "TBD";
+  const date = booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD";
+  const time = booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleTimeString() : "TBD";
+  const pax = booking.passenger_count || "TBD";
+  const special = booking.special_requests || "None";
+
+  return `<!DOCTYPE html><html><head><style>
+  body{font-family:Arial,sans-serif;background:#f4f4f4;padding:20px}
+  .card{background:#fff;border-radius:12px;padding:30px;max-width:600px;margin:0 auto}
+  h1{color:#1a1a1a;font-size:22px}
+  .route{background:linear-gradient(135deg,#1e3a5f,#2d5a8e);color:#fff;border-radius:10px;padding:20px;margin:16px 0;text-align:center}
+  .route h2{margin:0;font-size:24px;letter-spacing:1px}
+  .route .arrow{font-size:28px;margin:8px 0}
+  .detail{background:#f9f9f9;border-radius:8px;padding:16px;margin:16px 0}
+  .detail p{margin:6px 0;color:#333;font-size:14px}
+  .detail strong{color:#1a1a1a}
+  .btn-quote{display:inline-block;padding:14px 36px;background:#10b981;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;margin-top:16px}
+  .footer{color:#888;font-size:12px;margin-top:24px;text-align:center}
+</style></head><body><div class="card">
+  <h1>🚌 Coach Bus Quote Request – TopTier</h1>
+  <p>A customer needs coach bus transportation. Submit your best quote!</p>
+
+  <div class="route">
+    <h2>${pickup}</h2>
+    <div class="arrow">↓</div>
+    <h2>${dropoff}</h2>
+  </div>
+
+  <div class="detail">
+    <p><strong>📅 Date:</strong> ${date}</p>
+    <p><strong>🕐 Time:</strong> ${time}</p>
+    <p><strong>👥 Passengers:</strong> ${pax}</p>
+    <p><strong>📝 Special Requests:</strong> ${special}</p>
+    ${booking.notes ? `<p><strong>💬 Notes:</strong> ${booking.notes}</p>` : ""}
+  </div>
+
+  <div style="text-align:center">
+    <a href="${quoteUrl}" class="btn-quote">📋 Submit Your Quote</a>
+  </div>
+
+  <p class="footer">You're receiving this because you're a verified TopTier transportation partner.<br/>Reply within 24 hours for priority consideration.</p>
+</div></body></html>`;
+}
+
+// ── Generic quote broadcast templates (jets, etc.) ──────────────────────
+function buildGenericQuoteSMS(booking: any) {
   return `🔔 TopTier quote request:\n${booking.service_name}\nDate: ${booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD"}\nClient: ${booking.client_name}\n\nSubmit your quote at toptierlifestyle.com`;
 }
 
-function buildQuoteBroadcastEmailHTML(booking: any) {
-  return `
-<!DOCTYPE html>
-<html>
-<head><style>
-  body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
-  .card { background: #fff; border-radius: 12px; padding: 30px; max-width: 600px; margin: 0 auto; }
-  h1 { color: #1a1a1a; font-size: 22px; }
-  .detail { background: #f9f9f9; border-radius: 8px; padding: 16px; margin: 16px 0; }
-  .detail p { margin: 4px 0; color: #333; }
-</style></head>
-<body>
-<div class="card">
+function buildGenericQuoteEmailHTML(booking: any) {
+  return `<!DOCTYPE html><html><head><style>
+  body{font-family:Arial,sans-serif;background:#f4f4f4;padding:20px}
+  .card{background:#fff;border-radius:12px;padding:30px;max-width:600px;margin:0 auto}
+  h1{color:#1a1a1a;font-size:22px}
+  .detail{background:#f9f9f9;border-radius:8px;padding:16px;margin:16px 0}
+  .detail p{margin:4px 0;color:#333}
+</style></head><body><div class="card">
   <h1>📋 Quote Request – TopTier</h1>
   <p>A customer is looking for your services. Submit your best quote!</p>
   <div class="detail">
@@ -113,9 +157,7 @@ function buildQuoteBroadcastEmailHTML(booking: any) {
     ${booking.notes ? `<p><strong>Notes:</strong> ${booking.notes}</p>` : ""}
   </div>
   <p>Log into your TopTier partner dashboard to submit a quote.</p>
-</div>
-</body>
-</html>`;
+</div></body></html>`;
 }
 
 // ── Main Handler ────────────────────────────────────────────────────────
@@ -138,6 +180,7 @@ serve(async (req) => {
 
     const fulfillmentModel = booking.fulfillment_model || "request_confirm";
     const results: any = { model: fulfillmentModel, notifications: [] };
+    const baseUrl = Deno.env.get("FRONTEND_BASE_URL") || "https://gasmask-os-nexus.lovable.app";
 
     if (fulfillmentModel === "request_confirm") {
       // ── REQUEST CONFIRM: notify ONE partner ──
@@ -150,105 +193,167 @@ serve(async (req) => {
         .single();
       if (!partner) throw new Error("Partner not found");
 
-      // Create confirmation request
       const { data: confirmReq } = await supabase
         .from("tt_confirmation_requests")
-        .insert({
-          booking_id: booking.id,
-          partner_id: partner.id,
-          status: "pending",
-        })
+        .insert({ booking_id: booking.id, partner_id: partner.id, status: "pending" })
         .select("id")
         .single();
 
-      const baseUrl = Deno.env.get("FRONTEND_BASE_URL") || "https://gasmask-os-nexus.lovable.app";
       const confirmUrl = `${baseUrl}/partner/confirm?id=${confirmReq?.id}&action=confirm`;
       const declineUrl = `${baseUrl}/partner/confirm?id=${confirmReq?.id}&action=decline`;
 
-      // Send SMS
       if (partner.phone) {
-        const smsResult = await sendSMS(partner.phone, buildSMS(booking));
+        const smsResult = await sendSMS(partner.phone, buildRequestConfirmSMS(booking));
         results.notifications.push({ type: "sms", partner: partner.name, ...smsResult });
       }
-
-      // Send Email
       if (partner.email) {
         const emailResult = await sendEmail(
           partner.email,
           `New Booking Request – TopTier | ${booking.service_name}`,
-          buildEmailHTML(booking, confirmUrl, declineUrl)
+          buildRequestConfirmEmailHTML(booking, confirmUrl, declineUrl)
         );
         results.notifications.push({ type: "email", partner: partner.name, ...emailResult });
       }
 
-      // Log booking event
       await supabase.from("tt_booking_events").insert({
         booking_id: booking.id,
         event_type: "partner_notified",
         details: { partner_id: partner.id, partner_name: partner.name, method: "sms+email" },
       });
 
-      // Update booking status
-      await supabase
-        .from("tt_bookings")
+      await supabase.from("tt_bookings")
         .update({ status: "awaiting_partner", updated_at: new Date().toISOString() })
         .eq("id", booking.id);
 
     } else if (fulfillmentModel === "quote_broadcast") {
       // ── QUOTE BROADCAST: notify MULTIPLE partners ──
+      const isCoachBus = (booking.service_type === "coach_bus");
       const serviceCategory = booking.service_type || "transport";
 
-      // Find eligible partners by category
-      const { data: partners } = await supabase
+      // Build partner query – match by category + location
+      let partnerQuery = supabase
         .from("tt_partners")
         .select("*")
         .eq("service_category", serviceCategory)
         .eq("status", "approved")
         .order("trust_score", { ascending: false })
-        .limit(20);
+        .limit(30);
 
-      if (!partners || partners.length === 0) {
-        results.warning = "No approved partners found for category: " + serviceCategory;
-      } else {
-        for (const partner of partners) {
-          // Create broadcast quote entry (pending)
-          await supabase.from("tt_broadcast_quotes").insert({
-            booking_id: booking.id,
-            partner_id: partner.id,
-            quoted_price: 0,
-            status: "submitted",
-            message: null,
-          });
+      // City/state match for coach bus
+      if (isCoachBus && booking.pickup_city) {
+        // Get partners in pickup city/state first, then expand
+        const { data: localPartners } = await supabase
+          .from("tt_partners")
+          .select("*")
+          .eq("service_category", serviceCategory)
+          .eq("status", "approved")
+          .or(`city.ilike.%${booking.pickup_city}%,city.ilike.%${booking.dropoff_city || ""}%`)
+          .order("trust_score", { ascending: false })
+          .limit(20);
 
-          // SMS
-          if (partner.phone) {
-            const smsResult = await sendSMS(partner.phone, buildQuoteBroadcastSMS(booking));
-            results.notifications.push({ type: "sms", partner: partner.name, ...smsResult });
-          }
+        // Also get statewide partners
+        const { data: statePartners } = await supabase
+          .from("tt_partners")
+          .select("*")
+          .eq("service_category", serviceCategory)
+          .eq("status", "approved")
+          .order("trust_score", { ascending: false })
+          .limit(30);
 
-          // Email
-          if (partner.email) {
-            const emailResult = await sendEmail(
-              partner.email,
-              `Quote Request – TopTier | ${booking.service_name}`,
-              buildQuoteBroadcastEmailHTML(booking)
-            );
-            results.notifications.push({ type: "email", partner: partner.name, ...emailResult });
+        // Merge: local first, then statewide (deduplicated)
+        const seenIds = new Set<string>();
+        const allPartners: any[] = [];
+        for (const p of [...(localPartners || []), ...(statePartners || [])]) {
+          if (!seenIds.has(p.id)) {
+            seenIds.add(p.id);
+            allPartners.push(p);
           }
         }
 
-        // Log event
-        await supabase.from("tt_booking_events").insert({
-          booking_id: booking.id,
-          event_type: "quote_broadcast_sent",
-          details: { partner_count: partners.length, categories: [serviceCategory] },
-        });
+        if (allPartners.length === 0) {
+          results.warning = `No approved partners found for category: ${serviceCategory}`;
+        } else {
+          const quoteUrl = `${baseUrl}/partner/quote/${booking.id}`;
 
-        // Update booking status
-        await supabase
-          .from("tt_bookings")
-          .update({ status: "collecting_quotes", updated_at: new Date().toISOString() })
-          .eq("id", booking.id);
+          for (const partner of allPartners) {
+            await supabase.from("tt_broadcast_quotes").insert({
+              booking_id: booking.id,
+              partner_id: partner.id,
+              quoted_price: 0,
+              status: "pending",
+              availability: "pending",
+            });
+
+            if (partner.phone) {
+              const smsResult = await sendSMS(partner.phone, buildCoachBusSMS(booking));
+              results.notifications.push({ type: "sms", partner: partner.name, ...smsResult });
+            }
+            if (partner.email) {
+              const emailResult = await sendEmail(
+                partner.email,
+                `🚌 Coach Bus Quote Request – ${booking.pickup_city || "Trip"} → ${booking.dropoff_city || "Destination"}`,
+                buildCoachBusEmailHTML(booking, quoteUrl)
+              );
+              results.notifications.push({ type: "email", partner: partner.name, ...emailResult });
+            }
+          }
+
+          await supabase.from("tt_booking_events").insert({
+            booking_id: booking.id,
+            event_type: "quote_broadcast_sent",
+            details: {
+              partner_count: allPartners.length,
+              category: serviceCategory,
+              pickup_city: booking.pickup_city,
+              dropoff_city: booking.dropoff_city,
+              passenger_count: booking.passenger_count,
+            },
+          });
+
+          await supabase.from("tt_bookings")
+            .update({ status: "dispatched", updated_at: new Date().toISOString() })
+            .eq("id", booking.id);
+        }
+      } else {
+        // Generic quote broadcast (private jets, etc.)
+        const { data: partners } = partnerQuery;
+
+        if (!partners || partners.length === 0) {
+          results.warning = "No approved partners found for category: " + serviceCategory;
+        } else {
+          for (const partner of partners) {
+            await supabase.from("tt_broadcast_quotes").insert({
+              booking_id: booking.id,
+              partner_id: partner.id,
+              quoted_price: 0,
+              status: "pending",
+              availability: "pending",
+            });
+
+            if (partner.phone) {
+              const smsResult = await sendSMS(partner.phone, buildGenericQuoteSMS(booking));
+              results.notifications.push({ type: "sms", partner: partner.name, ...smsResult });
+            }
+            if (partner.email) {
+              const emailResult = await sendEmail(
+                partner.email,
+                `Quote Request – TopTier | ${booking.service_name}`,
+                buildGenericQuoteEmailHTML(booking)
+              );
+              results.notifications.push({ type: "email", partner: partner.name, ...emailResult });
+            }
+          }
+
+          await supabase.from("tt_booking_events").insert({
+            booking_id: booking.id,
+            event_type: "quote_broadcast_sent",
+            details: { partner_count: partners.length, categories: [serviceCategory] },
+          });
+
+          await supabase.from("tt_bookings")
+            .update({ status: "dispatched", updated_at: new Date().toISOString() })
+            .eq("id", booking.id);
+        }
       }
     }
 
