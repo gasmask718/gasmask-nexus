@@ -1,10 +1,11 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Phone, Clock } from "lucide-react";
+import { Phone, Clock, PhoneOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
+import { motion } from "framer-motion";
 
 export function VARecentCalls() {
   const { user } = useAuth();
@@ -32,19 +33,19 @@ export function VARecentCalls() {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
-  const dispositionColors: Record<string, string> = {
-    closed: "bg-emerald-500/20 text-emerald-400",
-    not_interested: "bg-red-500/20 text-red-400",
-    callback: "bg-orange-500/20 text-orange-400",
-    no_answer: "bg-slate-500/20 text-slate-400",
-    voicemail: "bg-purple-500/20 text-purple-400",
+  const dispositionConfig: Record<string, { bg: string; text: string }> = {
+    closed: { bg: "bg-emerald-500/15", text: "text-emerald-400" },
+    not_interested: { bg: "bg-destructive/15", text: "text-destructive" },
+    callback: { bg: "bg-orange-500/15", text: "text-orange-400" },
+    no_answer: { bg: "bg-muted/30", text: "text-muted-foreground" },
+    voicemail: { bg: "bg-purple-500/15", text: "text-purple-400" },
   };
 
   if (isLoading) {
     return (
       <div className="space-y-2">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full bg-slate-700/50" />
+          <Skeleton key={i} className="h-14 w-full rounded-lg" />
         ))}
       </div>
     );
@@ -52,37 +53,56 @@ export function VARecentCalls() {
 
   if (recentCalls.length === 0) {
     return (
-      <div className="text-center py-8 text-slate-500">
-        <Phone className="h-8 w-8 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">No calls yet today</p>
+      <div className="text-center py-12 space-y-3">
+        <div className="w-16 h-16 rounded-2xl bg-muted/30 flex items-center justify-center mx-auto">
+          <PhoneOff className="h-7 w-7 text-muted-foreground/50" />
+        </div>
+        <p className="text-sm text-muted-foreground">No calls yet today</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-1">
-      {recentCalls.map((call: any) => (
-        <div key={call.id} className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-800/50 transition-colors">
-          <div className="flex items-center gap-3 min-w-0">
-            <Phone className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-            <div className="min-w-0">
-              <p className="text-sm text-white truncate">{call.lead_id ? "Lead Call" : "Manual Call"}</p>
-              <p className="text-xs text-slate-500 flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {call.called_at ? formatDistanceToNow(new Date(call.called_at), { addSuffix: true }) : "—"}
-              </p>
+    <div className="space-y-1.5">
+      {recentCalls.map((call: any, idx: number) => {
+        const config = dispositionConfig[call.disposition] || { bg: "bg-muted/20", text: "text-muted-foreground" };
+        return (
+          <motion.div
+            key={call.id}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: idx * 0.04, duration: 0.3 }}
+            className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-accent/50 transition-all duration-200 cursor-default group"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-accent/50 flex items-center justify-center shrink-0 group-hover:bg-accent transition-colors">
+                <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {call.lead_id ? "Lead Call" : "Manual Call"}
+                </p>
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Clock className="h-3 w-3" />
+                  {call.called_at
+                    ? formatDistanceToNow(new Date(call.called_at), { addSuffix: true })
+                    : "—"}
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-mono text-slate-400">{formatDuration(call.duration_seconds)}</span>
-            {call.disposition && (
-              <Badge className={`text-[10px] h-5 px-1.5 ${dispositionColors[call.disposition] || "bg-slate-600 text-slate-300"}`}>
-                {call.disposition}
-              </Badge>
-            )}
-          </div>
-        </div>
-      ))}
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-xs font-mono text-muted-foreground tabular-nums">
+                {formatDuration(call.duration_seconds)}
+              </span>
+              {call.disposition && (
+                <Badge variant="outline" className={`text-[10px] h-5 px-2 border-transparent ${config.bg} ${config.text}`}>
+                  {call.disposition.replace("_", " ")}
+                </Badge>
+              )}
+            </div>
+          </motion.div>
+        );
+      })}
     </div>
   );
 }
