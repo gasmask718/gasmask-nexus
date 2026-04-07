@@ -21,6 +21,9 @@ const navItems = [
   { path: '/os/toptier/ai', label: 'AI Brain', icon: Brain },
   { path: '/os/toptier/things-to-do', label: 'Things To Do', icon: Sparkles },
   { path: '/os/toptier/things-to-do/bookings', label: 'TTD Bookings', icon: CalendarCheck },
+  { path: '/os/toptier/things-to-do/markup', label: 'TTD Markup', icon: Percent },
+  { path: '/os/toptier/things-to-do/addons', label: 'TTD Add-ons', icon: Package },
+  { path: '/os/toptier/things-to-do/profit', label: 'TTD Profit', icon: DollarSign },
   { path: '/os/toptier/things-to-do/analytics', label: 'TTD Analytics', icon: BarChart3 },
   { path: '/os/toptier/penthouse', label: 'Penthouse Control', icon: Crown },
 ];
