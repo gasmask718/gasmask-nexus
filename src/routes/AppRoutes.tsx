@@ -1744,7 +1744,7 @@ export default function AppRoutes() {
         <Route path="/os/iclean" element={<ICleanDashboard />} />
         <Route path="/os/playboxxx" element={<PlayboxxxDashboard />} />
         <Route path="/os/special-needs" element={<SpecialNeedsDashboard />} />
-        <Route path="/os/funding" element={<FundingDashboard />} />
+        {/* /os/funding removed — orphan mock page, real system is /funding-machine */}
         <Route path="/os/grants" element={<GrantsDashboard />} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
         {/* Floor 10 — Dynasty Funding Machine */}

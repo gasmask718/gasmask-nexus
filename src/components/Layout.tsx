@@ -384,7 +384,7 @@ const DYNASTY_NAVIGATION = {
     id: 'finance-acquisition',
     name: '💰 Finance & Acquisition',
     items: [
-      { path: '/os/funding', label: '💳 Funding Company OS', icon: CreditCard },
+      { path: '/funding-machine', label: '🏦 Dynasty Funding Hub', icon: CreditCard },
       { path: '/os/grants', label: '🏆 Grant Company OS', icon: Trophy },
       { path: '/os/wealth-engine', label: '📈 Wealth Engine OS', icon: TrendingUp },
     ],
