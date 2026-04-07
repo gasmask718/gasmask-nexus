@@ -889,6 +889,18 @@ const Layout = ({ children }: LayoutProps) => {
         )}
       </div>
 
+      {/* 🏦 DYNASTY FUNDING HUB — STANDALONE HUB */}
+      <div className="pt-2 border-t border-blue-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-blue-400/80 tracking-wider">
+          🏦 Dynasty Funding Hub
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.dynastyFundingHub.id,
+          DYNASTY_NAVIGATION.dynastyFundingHub.name,
+          DYNASTY_NAVIGATION.dynastyFundingHub.items
+        )}
+      </div>
+
       {/* 🏠 REAL ESTATE OS — STANDALONE HUB */}
       <div className="pt-2 border-t border-green-600/30">
         <div className="px-3 py-1 text-[10px] font-semibold uppercase text-green-600/80 tracking-wider">
