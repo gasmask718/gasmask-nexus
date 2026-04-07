@@ -197,6 +197,12 @@ export default function FundingMachineDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Cross-System Visibility (Read-Only) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <SurplusVisibilityPanel />
+        <RealEstateVisibilityPanel />
+      </div>
     </div>
   );
 }
