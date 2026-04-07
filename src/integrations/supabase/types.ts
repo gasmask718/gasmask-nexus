@@ -36785,6 +36785,206 @@ export type Database = {
         }
         Relationships: []
       }
+      event_space_availability: {
+        Row: {
+          created_at: string
+          date: string
+          event_space_id: string
+          id: string
+          is_available: boolean
+          notes: string | null
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          event_space_id: string
+          id?: string
+          is_available?: boolean
+          notes?: string | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          event_space_id?: string
+          id?: string
+          is_available?: boolean
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_space_availability_event_space_id_fkey"
+            columns: ["event_space_id"]
+            isOneToOne: false
+            referencedRelation: "event_spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_space_features: {
+        Row: {
+          created_at: string
+          event_space_id: string
+          feature: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          event_space_id: string
+          feature: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          event_space_id?: string
+          feature?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_space_features_event_space_id_fkey"
+            columns: ["event_space_id"]
+            isOneToOne: false
+            referencedRelation: "event_spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_space_images: {
+        Row: {
+          created_at: string
+          event_space_id: string
+          id: string
+          image_url: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string
+          event_space_id: string
+          id?: string
+          image_url: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string
+          event_space_id?: string
+          id?: string
+          image_url?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_space_images_event_space_id_fkey"
+            columns: ["event_space_id"]
+            isOneToOne: false
+            referencedRelation: "event_spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_space_partners: {
+        Row: {
+          city: string | null
+          commission_rate: number | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          state: string | null
+          status: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          city?: string | null
+          commission_rate?: number | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          city?: string | null
+          commission_rate?: number | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      event_spaces: {
+        Row: {
+          base_price: number | null
+          capacity: number | null
+          category: string
+          city: string
+          commission_rate: number | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          partner_id: string | null
+          state: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          base_price?: number | null
+          capacity?: number | null
+          category?: string
+          city: string
+          commission_rate?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          partner_id?: string | null
+          state: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number | null
+          capacity?: number | null
+          category?: string
+          city?: string
+          commission_rate?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          partner_id?: string | null
+          state?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_spaces_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "event_space_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       excel_analyses: {
         Row: {
           action_plan: Json | null
