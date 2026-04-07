@@ -78250,6 +78250,193 @@ export type Database = {
           },
         ]
       }
+      toptier_booking_intents: {
+        Row: {
+          booking_status: string | null
+          cart_id: string | null
+          created_at: string | null
+          id: string
+          payment_status: string | null
+          quote_request_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          booking_status?: string | null
+          cart_id?: string | null
+          created_at?: string | null
+          id?: string
+          payment_status?: string | null
+          quote_request_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          booking_status?: string | null
+          cart_id?: string | null
+          created_at?: string | null
+          id?: string
+          payment_status?: string | null
+          quote_request_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "toptier_booking_intents_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "toptier_event_carts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "toptier_booking_intents_quote_request_id_fkey"
+            columns: ["quote_request_id"]
+            isOneToOne: false
+            referencedRelation: "toptier_quote_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      toptier_event_cart_items: {
+        Row: {
+          cart_id: string
+          created_at: string | null
+          external_item_id: string
+          hours: number | null
+          id: string
+          item_name_snapshot: string | null
+          item_type: string
+          metadata_json: Json | null
+          price_snapshot: number | null
+          qty: number | null
+          source_system: string
+        }
+        Insert: {
+          cart_id: string
+          created_at?: string | null
+          external_item_id: string
+          hours?: number | null
+          id?: string
+          item_name_snapshot?: string | null
+          item_type: string
+          metadata_json?: Json | null
+          price_snapshot?: number | null
+          qty?: number | null
+          source_system?: string
+        }
+        Update: {
+          cart_id?: string
+          created_at?: string | null
+          external_item_id?: string
+          hours?: number | null
+          id?: string
+          item_name_snapshot?: string | null
+          item_type?: string
+          metadata_json?: Json | null
+          price_snapshot?: number | null
+          qty?: number | null
+          source_system?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "toptier_event_cart_items_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "toptier_event_carts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      toptier_event_carts: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          estimated_total: number | null
+          event_date: string | null
+          event_type: string | null
+          guest_count: number | null
+          id: string
+          status: string | null
+          subtotal: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          estimated_total?: number | null
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          id?: string
+          status?: string | null
+          subtotal?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          estimated_total?: number | null
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          id?: string
+          status?: string | null
+          subtotal?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      toptier_quote_requests: {
+        Row: {
+          cart_id: string | null
+          created_at: string | null
+          customer_name: string | null
+          email: string | null
+          id: string
+          notes: string | null
+          phone: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cart_id?: string | null
+          created_at?: string | null
+          customer_name?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cart_id?: string | null
+          created_at?: string | null
+          customer_name?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "toptier_quote_requests_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "toptier_event_carts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_badges: {
         Row: {
           created_at: string | null
