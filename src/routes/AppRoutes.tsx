@@ -851,6 +851,7 @@ const UTShippingQuotes = lazy(() => import('@/pages/os/unforgettable/UTShippingQ
 const UTAutoFinder = lazy(() => import('@/pages/os/unforgettable/UTAutoFinder'));
 const UTCategoryDomination = lazy(() => import('@/pages/os/unforgettable/UTCategoryDomination'));
 const UTGlobalSupplierControl = lazy(() => import('@/pages/os/unforgettable/UTGlobalSupplierControl'));
+const UTEventSpaces = lazy(() => import('@/pages/os/unforgettable/UTEventSpaces'));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
@@ -3312,7 +3313,8 @@ export default function AppRoutes() {
             <Route path="shipping-quotes" element={<UTShippingQuotes />} />
             <Route path="auto-finder" element={<UTAutoFinder />} />
             <Route path="category-domination" element={<UTCategoryDomination />} />
-            <Route path="global-supplier-control" element={<UTGlobalSupplierControl />} />
+             <Route path="global-supplier-control" element={<UTGlobalSupplierControl />} />
+             <Route path="event-spaces" element={<UTEventSpaces />} />
           <Route path="halls" element={<Navigate to="/os/unforgettable/venues" replace />} />
           <Route path="vendors" element={<Navigate to="/os/unforgettable/staff-management" replace />} />
           <Route path="rentals" element={<Navigate to="/os/unforgettable/venues" replace />} />
