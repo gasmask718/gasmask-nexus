@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, CalendarCheck, Users, Map, TrendingUp, 
-  Star, Settings2, Brain, Bell, RefreshCw, Settings, Crown, Palette
+  Star, Settings2, Brain, Bell, RefreshCw, Settings, Crown, Palette,
+  Sparkles, BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
