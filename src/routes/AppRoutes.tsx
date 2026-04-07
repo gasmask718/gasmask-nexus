@@ -852,9 +852,6 @@ const UTAutoFinder = lazy(() => import('@/pages/os/unforgettable/UTAutoFinder'))
 const UTCategoryDomination = lazy(() => import('@/pages/os/unforgettable/UTCategoryDomination'));
 const UTGlobalSupplierControl = lazy(() => import('@/pages/os/unforgettable/UTGlobalSupplierControl'));
 const UTEventSpaces = lazy(() => import('@/pages/os/unforgettable/UTEventSpaces'));
-const UTEventRentals = lazy(() => import('@/pages/os/unforgettable/UTEventRentals'));
-const UTEventStaff = lazy(() => import('@/pages/os/unforgettable/UTEventStaff'));
-const UTEventSuppliers = lazy(() => import('@/pages/os/unforgettable/UTEventSuppliers'));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
@@ -3318,9 +3315,6 @@ export default function AppRoutes() {
             <Route path="category-domination" element={<UTCategoryDomination />} />
              <Route path="global-supplier-control" element={<UTGlobalSupplierControl />} />
              <Route path="event-spaces" element={<UTEventSpaces />} />
-             <Route path="event-rentals" element={<UTEventRentals />} />
-             <Route path="event-staff" element={<UTEventStaff />} />
-             <Route path="event-suppliers" element={<UTEventSuppliers />} />
           <Route path="halls" element={<Navigate to="/os/unforgettable/venues" replace />} />
           <Route path="vendors" element={<Navigate to="/os/unforgettable/staff-management" replace />} />
           <Route path="rentals" element={<Navigate to="/os/unforgettable/venues" replace />} />
