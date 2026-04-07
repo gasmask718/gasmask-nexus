@@ -1246,12 +1246,12 @@ export default function AppRoutes() {
         <Route path="/hotmama/*" element={<BrandPlaceholder />} />
 
         {/* Finance & Real Estate */}
-        <Route path="/finance" element={<FundingDashboard />} />
-        <Route path="/finance/funding" element={<FundingDashboard />} />
+        <Route path="/finance" element={<Navigate to="/funding-machine" replace />} />
+        <Route path="/finance/funding" element={<Navigate to="/funding-machine" replace />} />
         <Route path="/finance/funding-requests" element={<FundingRequests />} />
         <Route path="/finance/grants" element={<GrantsDashboard />} />
-        <Route path="/finance/credit-repair" element={<FundingDashboard />} />
-        <Route path="/finance/chexsystems" element={<FundingDashboard />} />
+        <Route path="/finance/credit-repair" element={<Navigate to="/funding-machine/credit-repair" replace />} />
+        <Route path="/finance/chexsystems" element={<Navigate to="/funding-machine" replace />} />
         <Route path="/finance/investment" element={<WealthEngineDashboard />} />
         <Route path="/finance/trading" element={<WealthEngineDashboard />} />
         <Route path="/finance/economic-analytics" element={<EconomicAnalytics />} />
