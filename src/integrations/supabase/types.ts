@@ -55938,6 +55938,54 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_payouts: {
+        Row: {
+          booking_id: string | null
+          commission_taken: number | null
+          created_at: string | null
+          id: string
+          partner_id: string
+          payout_amount: number | null
+          status: string | null
+          total_amount: number | null
+        }
+        Insert: {
+          booking_id?: string | null
+          commission_taken?: number | null
+          created_at?: string | null
+          id?: string
+          partner_id: string
+          payout_amount?: number | null
+          status?: string | null
+          total_amount?: number | null
+        }
+        Update: {
+          booking_id?: string | null
+          commission_taken?: number | null
+          created_at?: string | null
+          id?: string
+          partner_id?: string
+          payout_amount?: number | null
+          status?: string | null
+          total_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_payouts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "rental_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_payouts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "rental_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_promises: {
         Row: {
           broken_at: string | null
@@ -64720,6 +64768,260 @@ export type Database = {
             columns: ["wholesaler_id"]
             isOneToOne: false
             referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rental_addons: {
+        Row: {
+          active: boolean | null
+          category: string | null
+          created_at: string | null
+          id: string
+          name: string
+          price: number
+        }
+        Insert: {
+          active?: boolean | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          price?: number
+        }
+        Update: {
+          active?: boolean | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
+      rental_booking_addons: {
+        Row: {
+          addon_id: string
+          booking_id: string
+          id: string
+          price_at_booking: number | null
+          quantity: number | null
+        }
+        Insert: {
+          addon_id: string
+          booking_id: string
+          id?: string
+          price_at_booking?: number | null
+          quantity?: number | null
+        }
+        Update: {
+          addon_id?: string
+          booking_id?: string
+          id?: string
+          price_at_booking?: number | null
+          quantity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_booking_addons_addon_id_fkey"
+            columns: ["addon_id"]
+            isOneToOne: false
+            referencedRelation: "rental_addons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rental_booking_addons_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "rental_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rental_bookings: {
+        Row: {
+          base_price: number | null
+          commission_amount: number | null
+          commission_rate: number | null
+          created_at: string | null
+          duration_type: string | null
+          end_date: string
+          id: string
+          partner_id: string
+          start_date: string
+          status: string | null
+          total_price: number | null
+          updated_at: string | null
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          base_price?: number | null
+          commission_amount?: number | null
+          commission_rate?: number | null
+          created_at?: string | null
+          duration_type?: string | null
+          end_date: string
+          id?: string
+          partner_id: string
+          start_date: string
+          status?: string | null
+          total_price?: number | null
+          updated_at?: string | null
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          base_price?: number | null
+          commission_amount?: number | null
+          commission_rate?: number | null
+          created_at?: string | null
+          duration_type?: string | null
+          end_date?: string
+          id?: string
+          partner_id?: string
+          start_date?: string
+          status?: string | null
+          total_price?: number | null
+          updated_at?: string | null
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_bookings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "rental_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rental_bookings_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "rental_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rental_partners: {
+        Row: {
+          business_name: string
+          city: string | null
+          commission_rate: number | null
+          created_at: string | null
+          email: string | null
+          geo_lat: number | null
+          geo_lng: number | null
+          id: string
+          owner_name: string
+          phone: string | null
+          rating: number | null
+          state: string | null
+          status: string | null
+          total_bookings: number | null
+          updated_at: string | null
+          user_id: string | null
+          verified: boolean | null
+        }
+        Insert: {
+          business_name: string
+          city?: string | null
+          commission_rate?: number | null
+          created_at?: string | null
+          email?: string | null
+          geo_lat?: number | null
+          geo_lng?: number | null
+          id?: string
+          owner_name: string
+          phone?: string | null
+          rating?: number | null
+          state?: string | null
+          status?: string | null
+          total_bookings?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          verified?: boolean | null
+        }
+        Update: {
+          business_name?: string
+          city?: string | null
+          commission_rate?: number | null
+          created_at?: string | null
+          email?: string | null
+          geo_lat?: number | null
+          geo_lng?: number | null
+          id?: string
+          owner_name?: string
+          phone?: string | null
+          rating?: number | null
+          state?: string | null
+          status?: string | null
+          total_bookings?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
+      rental_vehicles: {
+        Row: {
+          approved: boolean | null
+          availability_status: string | null
+          brand: string
+          color: string | null
+          created_at: string | null
+          daily_price: number | null
+          hourly_price: number | null
+          id: string
+          images: string[] | null
+          instant_book: boolean | null
+          model: string | null
+          partner_id: string
+          updated_at: string | null
+          vehicle_type: string
+          year: number | null
+        }
+        Insert: {
+          approved?: boolean | null
+          availability_status?: string | null
+          brand: string
+          color?: string | null
+          created_at?: string | null
+          daily_price?: number | null
+          hourly_price?: number | null
+          id?: string
+          images?: string[] | null
+          instant_book?: boolean | null
+          model?: string | null
+          partner_id: string
+          updated_at?: string | null
+          vehicle_type: string
+          year?: number | null
+        }
+        Update: {
+          approved?: boolean | null
+          availability_status?: string | null
+          brand?: string
+          color?: string | null
+          created_at?: string | null
+          daily_price?: number | null
+          hourly_price?: number | null
+          id?: string
+          images?: string[] | null
+          instant_book?: boolean | null
+          model?: string | null
+          partner_id?: string
+          updated_at?: string | null
+          vehicle_type?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_vehicles_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "rental_partners"
             referencedColumns: ["id"]
           },
         ]
@@ -101198,6 +101500,31 @@ export type Database = {
           state: string
           store_name: string
           total_count: number
+        }[]
+      }
+      search_rental_vehicles_by_location: {
+        Args: {
+          p_lat: number
+          p_lng: number
+          p_radius_miles?: number
+          p_vehicle_type?: string
+        }
+        Returns: {
+          brand: string
+          business_name: string
+          color: string
+          daily_price: number
+          distance_miles: number
+          hourly_price: number
+          images: string[]
+          instant_book: boolean
+          model: string
+          partner_id: string
+          partner_rating: number
+          partner_verified: boolean
+          vehicle_id: string
+          vehicle_type: string
+          year: number
         }[]
       }
       seed_outbound_queue_from_inventory: {
