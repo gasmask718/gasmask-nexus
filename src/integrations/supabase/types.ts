@@ -81000,52 +81000,122 @@ export type Database = {
           client_name: string
           client_phone: string | null
           created_at: string
+          fulfillment_model: string | null
           id: string
           notes: string | null
           partner_id: string | null
           partner_name: string | null
+          payment_hold_status: string | null
           scheduled_at: string | null
           service_name: string
           service_type: string
           status: string
           total_price: number
           updated_at: string
+          vehicle_id: string | null
         }
         Insert: {
           client_email?: string | null
           client_name: string
           client_phone?: string | null
           created_at?: string
+          fulfillment_model?: string | null
           id?: string
           notes?: string | null
           partner_id?: string | null
           partner_name?: string | null
+          payment_hold_status?: string | null
           scheduled_at?: string | null
           service_name: string
           service_type?: string
           status?: string
           total_price?: number
           updated_at?: string
+          vehicle_id?: string | null
         }
         Update: {
           client_email?: string | null
           client_name?: string
           client_phone?: string | null
           created_at?: string
+          fulfillment_model?: string | null
           id?: string
           notes?: string | null
           partner_id?: string | null
           partner_name?: string | null
+          payment_hold_status?: string | null
           scheduled_at?: string | null
           service_name?: string
           service_type?: string
           status?: string
           total_price?: number
           updated_at?: string
+          vehicle_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "tt_bookings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "tt_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tt_bookings_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "tt_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tt_broadcast_quotes: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          is_selected: boolean
+          message: string | null
+          partner_id: string
+          quoted_price: number
+          responded_at: string | null
+          status: string
+          submitted_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          is_selected?: boolean
+          message?: string | null
+          partner_id: string
+          quoted_price: number
+          responded_at?: string | null
+          status?: string
+          submitted_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          is_selected?: boolean
+          message?: string | null
+          partner_id?: string
+          quoted_price?: number
+          responded_at?: string | null
+          status?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_broadcast_quotes_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "tt_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tt_broadcast_quotes_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "tt_partners"
@@ -82036,6 +82106,7 @@ export type Database = {
           daily_rate: number | null
           description: string | null
           featured: boolean
+          fulfillment_model: string
           gallery_images: Json | null
           id: string
           image_url: string | null
@@ -82061,6 +82132,7 @@ export type Database = {
           daily_rate?: number | null
           description?: string | null
           featured?: boolean
+          fulfillment_model?: string
           gallery_images?: Json | null
           id?: string
           image_url?: string | null
@@ -82086,6 +82158,7 @@ export type Database = {
           daily_rate?: number | null
           description?: string | null
           featured?: boolean
+          fulfillment_model?: string
           gallery_images?: Json | null
           id?: string
           image_url?: string | null
