@@ -1695,6 +1695,12 @@ export default function AppRoutes() {
           <Route path="things-to-do/markup" element={<ThingsToDoMarkup />} />
           <Route path="things-to-do/addons" element={<ThingsToDoAddons />} />
           <Route path="things-to-do/profit" element={<ThingsToDoProfitDashboard />} />
+          <Route path="kids-family" element={<KidsFamilyExperiences />} />
+          <Route path="kids-family/vendors" element={<KidsFamilyVendors />} />
+          <Route path="kids-family/bundles" element={<KidsFamilyBundles />} />
+          <Route path="kids-family/performance" element={<KidsFamilyPerformance />} />
+          <Route path="kids-family/api" element={<KidsFamilyApiPanel />} />
+          <Route path="kids-family/leads" element={<KidsFamilyVendorLeads />} />
         </Route>
 
         {/* Penthouse Control System — Admin/Owner Only */}

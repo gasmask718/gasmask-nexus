@@ -25,6 +25,12 @@ const navItems = [
   { path: '/os/toptier/things-to-do/addons', label: 'TTD Add-ons', icon: Package },
   { path: '/os/toptier/things-to-do/profit', label: 'TTD Profit', icon: DollarSign },
   { path: '/os/toptier/things-to-do/analytics', label: 'TTD Analytics', icon: BarChart3 },
+  { path: '/os/toptier/kids-family', label: 'Kids & Family', icon: Baby },
+  { path: '/os/toptier/kids-family/vendors', label: 'KF Vendors', icon: Store },
+  { path: '/os/toptier/kids-family/bundles', label: 'KF Bundles', icon: Package },
+  { path: '/os/toptier/kids-family/performance', label: 'KF Performance', icon: BarChart3 },
+  { path: '/os/toptier/kids-family/api', label: 'KF API Panel', icon: Plug },
+  { path: '/os/toptier/kids-family/leads', label: 'KF Expansion', icon: Globe },
   { path: '/os/toptier/penthouse', label: 'Penthouse Control', icon: Crown },
 ];
 
