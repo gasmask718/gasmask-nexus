@@ -745,6 +745,7 @@ export default function PenthouseCoachBusDispatch() {
                           <Zap className="w-3.5 h-3.5 mr-1.5" />
                           {autoEvalMutation.isPending ? 'Evaluating...' : 'Auto-Select Best'}
                         </Button>
+                      )}
                       {activeRequest.status === 'selected' && (
                         <Button
                           size="sm"
