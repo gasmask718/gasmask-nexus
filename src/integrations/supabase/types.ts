@@ -81000,15 +81000,19 @@ export type Database = {
           client_name: string
           client_phone: string | null
           created_at: string
+          dropoff_city: string | null
           fulfillment_model: string | null
           id: string
           notes: string | null
           partner_id: string | null
           partner_name: string | null
+          passenger_count: number | null
           payment_hold_status: string | null
+          pickup_city: string | null
           scheduled_at: string | null
           service_name: string
           service_type: string
+          special_requests: string | null
           status: string
           total_price: number
           updated_at: string
@@ -81019,15 +81023,19 @@ export type Database = {
           client_name: string
           client_phone?: string | null
           created_at?: string
+          dropoff_city?: string | null
           fulfillment_model?: string | null
           id?: string
           notes?: string | null
           partner_id?: string | null
           partner_name?: string | null
+          passenger_count?: number | null
           payment_hold_status?: string | null
+          pickup_city?: string | null
           scheduled_at?: string | null
           service_name: string
           service_type?: string
+          special_requests?: string | null
           status?: string
           total_price?: number
           updated_at?: string
@@ -81038,15 +81046,19 @@ export type Database = {
           client_name?: string
           client_phone?: string | null
           created_at?: string
+          dropoff_city?: string | null
           fulfillment_model?: string | null
           id?: string
           notes?: string | null
           partner_id?: string | null
           partner_name?: string | null
+          passenger_count?: number | null
           payment_hold_status?: string | null
+          pickup_city?: string | null
           scheduled_at?: string | null
           service_name?: string
           service_type?: string
+          special_requests?: string | null
           status?: string
           total_price?: number
           updated_at?: string
@@ -81071,40 +81083,49 @@ export type Database = {
       }
       tt_broadcast_quotes: {
         Row: {
+          availability: string | null
           booking_id: string
           created_at: string
           id: string
           is_selected: boolean
           message: string | null
+          notes: string | null
           partner_id: string
           quoted_price: number
           responded_at: string | null
           status: string
           submitted_at: string
+          vehicle_details: string | null
         }
         Insert: {
+          availability?: string | null
           booking_id: string
           created_at?: string
           id?: string
           is_selected?: boolean
           message?: string | null
+          notes?: string | null
           partner_id: string
           quoted_price: number
           responded_at?: string | null
           status?: string
           submitted_at?: string
+          vehicle_details?: string | null
         }
         Update: {
+          availability?: string | null
           booking_id?: string
           created_at?: string
           id?: string
           is_selected?: boolean
           message?: string | null
+          notes?: string | null
           partner_id?: string
           quoted_price?: number
           responded_at?: string | null
           status?: string
           submitted_at?: string
+          vehicle_details?: string | null
         }
         Relationships: [
           {
@@ -81895,6 +81916,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           business_name: string | null
+          city: string | null
           commission_rate: number | null
           created_at: string
           email: string | null
@@ -81904,6 +81926,8 @@ export type Database = {
           phone: string | null
           response_rate: number
           service_category: string
+          service_radius_miles: number | null
+          state: string | null
           status: string
           total_bookings: number
           total_earnings: number
@@ -81916,6 +81940,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           business_name?: string | null
+          city?: string | null
           commission_rate?: number | null
           created_at?: string
           email?: string | null
@@ -81925,6 +81950,8 @@ export type Database = {
           phone?: string | null
           response_rate?: number
           service_category?: string
+          service_radius_miles?: number | null
+          state?: string | null
           status?: string
           total_bookings?: number
           total_earnings?: number
@@ -81937,6 +81964,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           business_name?: string | null
+          city?: string | null
           commission_rate?: number | null
           created_at?: string
           email?: string | null
@@ -81946,6 +81974,8 @@ export type Database = {
           phone?: string | null
           response_rate?: number
           service_category?: string
+          service_radius_miles?: number | null
+          state?: string | null
           status?: string
           total_bookings?: number
           total_earnings?: number
