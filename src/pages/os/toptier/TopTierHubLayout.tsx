@@ -18,6 +18,9 @@ const navItems = [
   { path: '/os/toptier/operations', label: 'Operations', icon: Settings2 },
   { path: '/os/toptier/decor-experience', label: 'Decor Experience', icon: Palette },
   { path: '/os/toptier/ai', label: 'AI Brain', icon: Brain },
+  { path: '/os/toptier/things-to-do', label: 'Things To Do', icon: Sparkles },
+  { path: '/os/toptier/things-to-do/bookings', label: 'TTD Bookings', icon: CalendarCheck },
+  { path: '/os/toptier/things-to-do/analytics', label: 'TTD Analytics', icon: BarChart3 },
   { path: '/os/toptier/penthouse', label: 'Penthouse Control', icon: Crown },
 ];
 
