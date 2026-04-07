@@ -130,3 +130,21 @@ export function useCBRecommendations() {
     },
   });
 }
+
+/** Auto-evaluate quotes and select the best option */
+export function useCBAutoEvaluate() {
+  return useMutation({
+    mutationFn: async ({ requestId, triggerType }: { requestId: string; triggerType?: 'threshold' | 'timeout' | 'manual' }) => {
+      const { data, error } = await supabase.functions.invoke('cb-dispatch-engine', {
+        body: { action: 'auto_evaluate', request_id: requestId, trigger_type: triggerType || 'manual' },
+      });
+      if (error) throw new Error(error.message || 'Auto-evaluation failed');
+      if (!data?.success) throw new Error(data?.error || 'Auto-evaluation failed');
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Auto-selected best quote – Customer price: $${data.winner?.final_customer_price?.toLocaleString()}`);
+    },
+    onError: (e: Error) => toast.error('Auto-evaluation failed: ' + e.message),
+  });
+}
