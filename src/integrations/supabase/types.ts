@@ -73113,6 +73113,7 @@ export type Database = {
           lead_id: string | null
           partner_id: string
           payout_status: string | null
+          status: string | null
           updated_at: string | null
         }
         Insert: {
@@ -73124,6 +73125,7 @@ export type Database = {
           lead_id?: string | null
           partner_id: string
           payout_status?: string | null
+          status?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -73135,6 +73137,7 @@ export type Database = {
           lead_id?: string | null
           partner_id?: string
           payout_status?: string | null
+          status?: string | null
           updated_at?: string | null
         }
         Relationships: [
