@@ -372,6 +372,9 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/unforgettable/analytics', label: '📊 Floor 7 — Analytics', icon: BarChart3 },
       { path: '/os/unforgettable/pricing-intelligence', label: '💰 Floor 8 — Pricing Intelligence', icon: DollarSign },
       { path: '/os/unforgettable/event-spaces', label: '🏛️ Floor 9 — Event Spaces', icon: Building },
+      { path: '/os/unforgettable/event-rentals', label: '🪑 Floor 10 — Event Rentals', icon: Package },
+      { path: '/os/unforgettable/event-staff', label: '🧑‍🍳 Floor 11 — Event Staff', icon: Users },
+      { path: '/os/unforgettable/event-suppliers', label: '🏢 Floor 12 — Event Suppliers', icon: Factory },
     ],
   },
   dynastyBusiness: {
