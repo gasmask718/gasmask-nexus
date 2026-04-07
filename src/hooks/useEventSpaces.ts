@@ -36,7 +36,7 @@ export function useUpsertEventSpace() {
     mutationFn: async (space: Record<string, any>) => {
       const { data, error } = await supabase
         .from('event_spaces')
-        .upsert(space)
+        .upsert(space as any)
         .select()
         .single();
       if (error) throw error;
@@ -71,7 +71,7 @@ export function useUpsertPartner() {
     mutationFn: async (partner: Record<string, any>) => {
       const { data, error } = await supabase
         .from('event_space_partners')
-        .upsert(partner)
+        .upsert(partner as any)
         .select()
         .single();
       if (error) throw error;
