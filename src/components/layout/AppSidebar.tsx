@@ -30,6 +30,7 @@ export default function AppSidebar() {
   // Determine which floor section contains the active route
   const getActiveSection = (pathname: string): string | null => {
     if (pathname.startsWith('/surplus-funds')) return 'surplus-funds-os';
+    if (pathname.startsWith('/funding-machine')) return 'funding-hub';
     if (pathname.startsWith('/solar')) return 'solar-os';
     if (pathname.startsWith('/sbo-ai-engine') || pathname.startsWith('/os/sports-betting')) return 'sbo-ai-engine';
     if (pathname.startsWith('/real-estate')) return 'real-estate-os';
@@ -482,79 +483,27 @@ export default function AppSidebar() {
           )}
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
-          {/* 🏠 REAL ESTATE OS — Standalone Hub                                */}
-          {/* ═══════════════════════════════════════════════════════════════════ */}
-          {canAccessRealEstateHub && (
-            <div className="mb-4 pt-2 border-t border-sidebar-border">
-              <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: 'rgba(59, 109, 17, 0.8)' }}>
-                🏠 Real Estate OS
-              </div>
-              {renderSection('real-estate-os', 'Real Estate OS', '🏠', [
-                { path: '/real-estate', label: 'Penthouse — Command Center', emoji: '🏠' },
-                { path: '/real-estate/leads', label: 'Floor 1 — Lead Intelligence', emoji: '🎯' },
-                { path: '/real-estate/campaigns', label: 'Floor 2 — DC Campaigns', emoji: '📞' },
-                { path: '/real-estate/deals', label: 'Floor 3 — Active Deals', emoji: '📋' },
-                { path: '/real-estate/buyers', label: 'Floor 4 — Buyer Network', emoji: '🏦' },
-                { path: '/real-estate/va-desk', label: 'Floor 5 — VA Desk', emoji: '👥' },
-                { path: '/real-estate/analyzer', label: 'Floor 6 — Deal Analyzer', emoji: '🔢' },
-                { path: '/real-estate/automation', label: 'Floor 7 — Automation Engine', emoji: '🤖' },
-                { path: '/real-estate/markets', label: 'Floor 8 — Market Intelligence', emoji: '🗺️' },
-              { path: '/real-estate/analytics', label: 'Floor 9 — Analytics', emoji: '📊' },
-              ], "text-green-500 hover:bg-green-500/10")}
-
-            </div>
-          )}
-
-          {/* ☀️ BRIGHTSUN SOLAR HUB — Independent Hub */}
-          {canAccessSolarHub && (
-            <div className="mb-4 pt-2 border-t border-sidebar-border">
-              <div className="px-3 py-2 text-xs font-semibold uppercase text-amber-400/80 tracking-wider">
-                ☀️ BrightSun Solar Hub
-              </div>
-              {renderSection('solar-os', 'BrightSun Solar Hub', '☀️', [
-                { path: '/solar', label: 'Penthouse — Command Center', emoji: '☀️' },
-                { path: '/solar/leads', label: 'Floor 1 — Lead Intelligence', emoji: '🎯' },
-                { path: '/solar/outreach', label: 'Floor 2 — AI Outreach', emoji: '📞' },
-                { path: '/solar/qualification', label: 'Floor 3 — Qualification', emoji: '🧠' },
-                { path: '/solar/appointments', label: 'Floor 4 — Appointments', emoji: '📅' },
-                { path: '/solar/live-calls', label: 'Floor 5 — Live Call Assist', emoji: '🔴' },
-                { path: '/solar/deals', label: 'Floor 6 — Deals', emoji: '💰' },
-                { path: '/solar/partners', label: 'Floor 7 — Partner Network', emoji: '🤝' },
-                { path: '/solar/agents', label: 'Floor 8 — Agents', emoji: '👥' },
-                { path: '/solar/ai-brain', label: 'Floor 9 — AI Brain', emoji: '🧠' },
-                { path: '/solar/analytics', label: 'Floor 10 — Analytics', emoji: '📊' },
-              ], "text-amber-400 hover:bg-amber-500/10")}
-            </div>
-          )}
-
-          {/* ═══════════════════════════════════════════════════════════════════ */}
-          {/* 🧠 SBO AI ENGINE — STANDALONE HUB */}
+          {/* 🏦 DYNASTY FUNDING HUB — Standalone Hub                           */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {isAdmin && (
             <div className="mb-4 pt-2 border-t border-sidebar-border">
-              <div className="px-3 py-2 text-xs font-semibold uppercase text-lime-400/80 tracking-wider">
-                🧠 SBO AI Engine
+              <div className="px-3 py-2 text-xs font-semibold uppercase text-blue-400/80 tracking-wider">
+                🏦 Dynasty Funding Hub
               </div>
-              {renderSection('sbo-ai-engine', 'SBO AI Engine', '🧠', [
-                { path: '/os/sports-betting/ai-os', label: 'SBO Cockpit', emoji: '🎯' },
-                { path: '/sbo-ai-engine/tonight', label: 'Tonight', emoji: '🏀' },
-                { path: '/sbo-ai-engine/prop-hub', label: 'Prop Intelligence Hub', emoji: '⚡' },
-                { path: '/sbo-ai-engine/value', label: 'Value Spots', emoji: '💎' },
-                { path: '/sbo-ai-engine/accuracy', label: 'Accuracy', emoji: '📈' },
-                { path: '/sbo-ai-engine/model', label: 'Model Intel', emoji: '🧬' },
-                { path: '/sbo-ai-engine/my-bets', label: 'My Bets', emoji: '📱' },
-                { path: '/sbo-ai-engine/wallet-intelligence', label: 'Wallet Intelligence', emoji: '🔮' },
-                { path: '/sbo-ai-engine/capper-intelligence', label: 'Capper Intelligence', emoji: '📊' },
-                { path: '/sbo-ai-engine/signal-alignment', label: 'Signal Alignment', emoji: '⚡' },
-                { path: '/os/sports-betting/profit-center', label: 'Profit Center', emoji: '💰' },
-                { path: '/sbo-ai-engine/hedge-center', label: 'Hedge Center', emoji: '💹' },
-                { path: '/sbo-ai-engine/simulation', label: 'Simulation', emoji: '⚡' },
-                { path: '/sbo-ai-engine/history', label: 'History', emoji: '📜' },
-                { path: '/sbo-ai-engine/sms', label: 'ChingWorld SMS', emoji: '📱' },
-                { path: '/sbo-ai-engine/health', label: 'Health', emoji: '🩺' },
-                { path: '/sbo-ai-engine/sync', label: 'Sync', emoji: '⚙️' },
-                { path: '/sbo-ai-engine/va-entry', label: 'VA Entry', emoji: '📋' },
-              ], "text-lime-400 hover:bg-lime-500/10")}
+              {renderSection('funding-hub', 'Dynasty Funding Machine', '🏦', [
+                { path: '/funding-machine', label: 'Penthouse — Command Center', emoji: '🏦' },
+                { path: '/funding-machine/morning-briefing', label: 'Floor 1 — Morning Briefing', emoji: '🌅' },
+                { path: '/funding-machine/intake', label: 'Floor 2 — Client Intake', emoji: '➕' },
+                { path: '/funding-machine/credit-repair', label: 'Floor 3 — Credit Repair', emoji: '🛡️' },
+                { path: '/funding-machine/business-builder', label: 'Floor 4 — Business Builder', emoji: '🏗️' },
+                { path: '/funding-machine/bureau-intel', label: 'Floor 5 — Bureau Intelligence', emoji: '💳' },
+                { path: '/funding-machine/funding-matrix', label: 'Floor 6 — Funding Matrix', emoji: '🏛️' },
+                { path: '/funding-machine/applications', label: 'Floor 7 — Applications', emoji: '📋' },
+                { path: '/funding-machine/velocity', label: 'Floor 8 — Velocity Calculator', emoji: '📈' },
+                { path: '/funding-machine/tradeline-vault', label: 'Floor 9 — Tradeline Vault', emoji: '📄' },
+                { path: '/funding-machine/tasks', label: 'Floor 10 — Task Cards', emoji: '✅' },
+                { path: '/funding-machine/settings', label: 'Settings', emoji: '⚙️' },
+              ], "text-blue-400 hover:bg-blue-500/10")}
             </div>
           )}
 
@@ -624,12 +573,7 @@ export default function AppSidebar() {
                 💰 Finance & Acquisition
               </div>
               
-              {renderSection('funding-os', 'Funding Company OS', '💵', [
-                { path: '/finance', label: 'Finance Overview', emoji: '📊' },
-                { path: '/finance/funding', label: 'Funding Pipeline', emoji: '📈' },
-                { path: '/finance/funding-requests', label: 'Funding Requests', emoji: '📝' },
-                { path: '/finance/credit-repair', label: 'Credit & Deletion', emoji: '💳' },
-              ], "text-green-400 hover:bg-green-500/10")}
+              {/* Funding Company OS → Moved to standalone Dynasty Funding Hub above */}
 
               {renderSection('grants-os', 'Grant Company OS', '🎓', [
                 { path: '/finance/grants', label: 'Grant Cases', emoji: '📋' },
