@@ -573,12 +573,7 @@ export default function AppSidebar() {
                 💰 Finance & Acquisition
               </div>
               
-              {renderSection('funding-os', 'Funding Company OS', '💵', [
-                { path: '/finance', label: 'Finance Overview', emoji: '📊' },
-                { path: '/finance/funding', label: 'Funding Pipeline', emoji: '📈' },
-                { path: '/finance/funding-requests', label: 'Funding Requests', emoji: '📝' },
-                { path: '/finance/credit-repair', label: 'Credit & Deletion', emoji: '💳' },
-              ], "text-green-400 hover:bg-green-500/10")}
+              {/* Funding Company OS → Moved to standalone Dynasty Funding Hub above */}
 
               {renderSection('grants-os', 'Grant Company OS', '🎓', [
                 { path: '/finance/grants', label: 'Grant Cases', emoji: '📋' },
