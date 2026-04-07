@@ -634,7 +634,7 @@ const Layout = ({ children }: LayoutProps) => {
   const [openSections, setOpenSections] = useState<string[]>([
     'penthouse', 'sbo-ai-engine', 'security-governance',
     'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9',
-    'surplus-funds-os', 'real-estate-os', 'solar-os',
+    'surplus-funds-os', 'dynasty-funding-hub', 'real-estate-os', 'solar-os',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
     'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
     'brandaro-hub', 'dynasty-connect', 'voice-ops', 'global-dashboard', 'portals'
