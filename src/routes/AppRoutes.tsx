@@ -1686,6 +1686,9 @@ export default function AppRoutes() {
           <Route path="things-to-do" element={<ThingsToDoExperiences />} />
           <Route path="things-to-do/bookings" element={<ThingsToDoBookings />} />
           <Route path="things-to-do/analytics" element={<ThingsToDoAnalytics />} />
+          <Route path="things-to-do/markup" element={<ThingsToDoMarkup />} />
+          <Route path="things-to-do/addons" element={<ThingsToDoAddons />} />
+          <Route path="things-to-do/profit" element={<ThingsToDoProfitDashboard />} />
         </Route>
 
         {/* Penthouse Control System — Admin/Owner Only */}
