@@ -24829,6 +24829,72 @@ export type Database = {
           },
         ]
       }
+      cb_auto_evaluations: {
+        Row: {
+          availability_score: number | null
+          booking_request_id: string
+          capacity_score: number | null
+          created_at: string
+          final_customer_price: number | null
+          id: string
+          is_winner: boolean | null
+          margin_applied: number | null
+          markup_amount: number | null
+          partner_id: string
+          partner_price: number | null
+          price_score: number | null
+          quote_id: string
+          rating_score: number | null
+          scoring_weights: Json | null
+          selection_reason: string | null
+          speed_score: number | null
+          trigger_type: string | null
+          weighted_total: number | null
+        }
+        Insert: {
+          availability_score?: number | null
+          booking_request_id: string
+          capacity_score?: number | null
+          created_at?: string
+          final_customer_price?: number | null
+          id?: string
+          is_winner?: boolean | null
+          margin_applied?: number | null
+          markup_amount?: number | null
+          partner_id: string
+          partner_price?: number | null
+          price_score?: number | null
+          quote_id: string
+          rating_score?: number | null
+          scoring_weights?: Json | null
+          selection_reason?: string | null
+          speed_score?: number | null
+          trigger_type?: string | null
+          weighted_total?: number | null
+        }
+        Update: {
+          availability_score?: number | null
+          booking_request_id?: string
+          capacity_score?: number | null
+          created_at?: string
+          final_customer_price?: number | null
+          id?: string
+          is_winner?: boolean | null
+          margin_applied?: number | null
+          markup_amount?: number | null
+          partner_id?: string
+          partner_price?: number | null
+          price_score?: number | null
+          quote_id?: string
+          rating_score?: number | null
+          scoring_weights?: Json | null
+          selection_reason?: string | null
+          speed_score?: number | null
+          trigger_type?: string | null
+          weighted_total?: number | null
+        }
+        Relationships: []
+      }
       cb_booking_requests: {
         Row: {
           bus_type_preference: string | null

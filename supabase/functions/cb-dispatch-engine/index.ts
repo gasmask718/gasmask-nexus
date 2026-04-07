@@ -187,7 +187,7 @@ function buildCustomerOfferEmail(req: any, quote: any, margin: any, approveUrl: 
 
 // ── ACTIONS ─────────────────────────────────────────────────────────────
 
-type Action = "dispatch" | "select_quote" | "send_customer_offer" | "submit_quote" | "kpis" | "recommend";
+type Action = "dispatch" | "select_quote" | "send_customer_offer" | "submit_quote" | "kpis" | "recommend" | "auto_evaluate";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -496,6 +496,236 @@ serve(async (req) => {
       }
 
       return json({ success: true, recommendations: data });
+    }
+
+    // ── AUTO EVALUATE ───────────────────────────────────────────────
+    if (action === "auto_evaluate") {
+      const { request_id, trigger_type } = body;
+      if (!request_id) throw new Error("request_id required");
+
+      const { data: request } = await supabase
+        .from("cb_booking_requests").select("*").eq("id", request_id).single();
+      if (!request) throw new Error("Request not found");
+
+      // Fetch all valid quotes
+      const { data: quotes } = await supabase
+        .from("cb_partner_quotes").select("*")
+        .eq("booking_request_id", request_id)
+        .in("availability_status", ["quoted", "alternate_offer"]);
+
+      if (!quotes || quotes.length === 0) {
+        return json({ success: false, error: "No quotes available for evaluation" });
+      }
+
+      // Fetch partner metadata for rating scores
+      const partnerIds = [...new Set(quotes.map((q: any) => q.partner_id))];
+      const { data: partners } = await supabase
+        .from("tt_partners").select("id, trust_score, rating")
+        .in("id", partnerIds);
+      const partnerMap = new Map((partners || []).map((p: any) => [p.id, p]));
+
+      // Scoring weights
+      const weights = { price: 0.4, speed: 0.2, rating: 0.2, capacity: 0.1, availability: 0.1 };
+
+      // Compute min/max for normalization
+      const prices = quotes.map((q: any) => q.quoted_price).filter(Boolean);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+      const priceRange = maxPrice - minPrice || 1;
+
+      const speeds = quotes.map((q: any) => q.response_time_seconds).filter(Boolean);
+      const minSpeed = Math.min(...speeds.length ? speeds : [0]);
+      const maxSpeed = Math.max(...speeds.length ? speeds : [1]);
+      const speedRange = maxSpeed - minSpeed || 1;
+
+      const requestedCapacity = request.passenger_count || 40;
+
+      // Score each quote
+      const scored = quotes.map((q: any) => {
+        const partner = partnerMap.get(q.partner_id) || {};
+
+        // Price: lower is better (invert normalized)
+        const priceScore = prices.length > 1
+          ? 1 - ((q.quoted_price - minPrice) / priceRange)
+          : 1;
+
+        // Speed: faster is better (invert normalized)
+        const speedScore = q.response_time_seconds != null && speeds.length > 1
+          ? 1 - ((q.response_time_seconds - minSpeed) / speedRange)
+          : q.response_time_seconds != null ? 0.8 : 0.5;
+
+        // Rating: normalized 0-1 from trust_score (0-100) or rating (0-5)
+        const ratingScore = partner.trust_score
+          ? Math.min(partner.trust_score / 100, 1)
+          : partner.rating ? partner.rating / 5 : 0.5;
+
+        // Capacity fit: how well capacity matches requested
+        const capacityScore = q.capacity
+          ? q.capacity >= requestedCapacity
+            ? Math.min(1, requestedCapacity / q.capacity + 0.2) // slight penalty for oversized
+            : q.capacity / requestedCapacity // penalty for undersized
+          : 0.5;
+
+        // Availability: quoted = 1, alternate_offer = 0.6
+        const availabilityScore = q.availability_status === "quoted" ? 1.0 : 0.6;
+
+        const weightedTotal =
+          (priceScore * weights.price) +
+          (speedScore * weights.speed) +
+          (ratingScore * weights.rating) +
+          (capacityScore * weights.capacity) +
+          (availabilityScore * weights.availability);
+
+        return {
+          quote_id: q.id,
+          partner_id: q.partner_id,
+          quoted_price: q.quoted_price,
+          price_score: Math.round(priceScore * 1000) / 1000,
+          speed_score: Math.round(speedScore * 1000) / 1000,
+          rating_score: Math.round(ratingScore * 1000) / 1000,
+          capacity_score: Math.round(capacityScore * 1000) / 1000,
+          availability_score: Math.round(availabilityScore * 1000) / 1000,
+          weighted_total: Math.round(weightedTotal * 1000) / 1000,
+        };
+      });
+
+      // Sort by weighted_total DESC
+      scored.sort((a: any, b: any) => b.weighted_total - a.weighted_total);
+      const winner = scored[0];
+
+      // Margin engine
+      const { data: marginConfig } = await supabase
+        .from("cb_dispatch_config").select("*").eq("category", "coach_bus").single();
+      const targetMarginPct = marginConfig?.margin_percentage || 25;
+      const minMarginPct = 15;
+      const maxMarginPct = 40;
+
+      let marginPct = targetMarginPct;
+      const partnerPrice = winner.quoted_price;
+      let markupAmount = Math.round(partnerPrice * (marginPct / 100) * 100) / 100;
+      let finalCustomerPrice = Math.round((partnerPrice + markupAmount) * 100) / 100;
+
+      // Cap: if price > $10k and margin > 30%, reduce
+      if (finalCustomerPrice > 10000 && marginPct > 30) {
+        marginPct = 30;
+        markupAmount = Math.round(partnerPrice * (marginPct / 100) * 100) / 100;
+        finalCustomerPrice = Math.round((partnerPrice + markupAmount) * 100) / 100;
+      }
+      // Floor: ensure minimum margin
+      if (marginPct < minMarginPct) {
+        marginPct = minMarginPct;
+        markupAmount = Math.round(partnerPrice * (marginPct / 100) * 100) / 100;
+        finalCustomerPrice = Math.round((partnerPrice + markupAmount) * 100) / 100;
+      }
+
+      // Store evaluations for ALL quotes
+      const evalRows = scored.map((s: any) => ({
+        booking_request_id: request_id,
+        quote_id: s.quote_id,
+        partner_id: s.partner_id,
+        price_score: s.price_score,
+        speed_score: s.speed_score,
+        rating_score: s.rating_score,
+        capacity_score: s.capacity_score,
+        availability_score: s.availability_score,
+        weighted_total: s.weighted_total,
+        is_winner: s.quote_id === winner.quote_id,
+        selection_reason: s.quote_id === winner.quote_id ? "auto_selected_highest_score" : null,
+        trigger_type: trigger_type || "threshold",
+        partner_price: s.quoted_price,
+        margin_applied: s.quote_id === winner.quote_id ? marginPct : null,
+        markup_amount: s.quote_id === winner.quote_id ? markupAmount : null,
+        final_customer_price: s.quote_id === winner.quote_id ? finalCustomerPrice : null,
+        scoring_weights: weights,
+      }));
+
+      await supabase.from("cb_auto_evaluations").insert(evalRows);
+
+      // Auto-select the winning quote (reuse select_quote logic)
+      await supabase.from("cb_partner_quotes")
+        .update({ is_selected: true }).eq("id", winner.quote_id);
+
+      // Update margin table
+      await supabase.from("cb_quote_margins").upsert({
+        quote_id: winner.quote_id,
+        partner_price: partnerPrice,
+        margin_type: "percentage",
+        margin_value: marginPct,
+        markup_amount: markupAmount,
+        final_customer_price: finalCustomerPrice,
+      }, { onConflict: "quote_id" });
+
+      // Create selection event
+      await supabase.from("cb_quote_selection_events").insert({
+        booking_request_id: request_id,
+        selected_quote_id: winner.quote_id,
+        selected_partner_id: winner.partner_id,
+        selection_reason: "auto_selected",
+        quote_snapshot: { scores: scored, margin: { marginPct, markupAmount, finalCustomerPrice } },
+        backup_quote_ids: scored.length > 1 ? [scored[1].quote_id] : null,
+      });
+
+      // Update request
+      await supabase.from("cb_booking_requests").update({
+        status: "selected",
+        selected_quote_id: winner.quote_id,
+        selected_partner_id: winner.partner_id,
+        recommended_quote_id: winner.quote_id,
+        customer_offer_price: finalCustomerPrice,
+        updated_at: new Date().toISOString(),
+      }).eq("id", request_id);
+
+      // Auto-send customer offer
+      const { data: winningQuote } = await supabase
+        .from("cb_partner_quotes").select("*").eq("id", winner.quote_id).single();
+
+      const approveUrl = `${baseUrl}/booking/approve/${request.id}`;
+      const offerResults: any[] = [];
+
+      if (request.customer_phone) {
+        const smsBody = `🚌 Your Coach Bus is Available!\n${request.pickup_city} → ${request.dropoff_city}\n${request.trip_date || "TBD"}\nPrice: $${finalCustomerPrice.toLocaleString()}\n\nConfirm: ${approveUrl}`;
+        const smsResult = await sendSMS(request.customer_phone, smsBody);
+        offerResults.push({ channel: "sms", ...smsResult });
+        await logComm(supabase, request.id, null, "outbound", "sms", "cb_auto_customer_offer_sms",
+          smsBody, smsResult.success ? "sent" : "failed", smsResult.sid);
+      }
+
+      if (request.customer_email) {
+        const marginObj = { final_customer_price: finalCustomerPrice };
+        const html = buildCustomerOfferEmail(request, winningQuote || {}, marginObj, approveUrl);
+        const emailResult = await sendEmail(
+          request.customer_email,
+          `🚌 Your Coach Bus Quote – ${request.pickup_city} → ${request.dropoff_city}`,
+          html
+        );
+        offerResults.push({ channel: "email", ...emailResult });
+        await logComm(supabase, request.id, null, "outbound", "email", "cb_auto_customer_offer_email",
+          `Auto offer: $${finalCustomerPrice}`, emailResult.success ? "sent" : "failed");
+      }
+
+      // Update status to customer_review
+      await supabase.from("cb_booking_requests").update({
+        status: "customer_review",
+        customer_offer_sent_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }).eq("id", request_id);
+
+      return json({
+        success: true,
+        auto_selected: true,
+        winner: {
+          quote_id: winner.quote_id,
+          partner_id: winner.partner_id,
+          weighted_score: winner.weighted_total,
+          partner_price: partnerPrice,
+          margin_pct: marginPct,
+          markup_amount: markupAmount,
+          final_customer_price: finalCustomerPrice,
+        },
+        total_evaluated: scored.length,
+        scores: scored,
+        offer_sent: offerResults,
+      });
     }
 
     throw new Error(`Unknown action: ${action}`);
