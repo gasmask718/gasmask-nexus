@@ -24791,6 +24791,519 @@ export type Database = {
         }
         Relationships: []
       }
+      cb_admin_internal_notes: {
+        Row: {
+          author_id: string | null
+          author_name: string | null
+          booking_request_id: string
+          created_at: string
+          id: string
+          note: string
+          pinned: boolean | null
+        }
+        Insert: {
+          author_id?: string | null
+          author_name?: string | null
+          booking_request_id: string
+          created_at?: string
+          id?: string
+          note: string
+          pinned?: boolean | null
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string | null
+          booking_request_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+          pinned?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cb_admin_internal_notes_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "cb_booking_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cb_booking_requests: {
+        Row: {
+          bus_type_preference: string | null
+          created_at: string
+          created_by: string | null
+          customer_approved_at: string | null
+          customer_email: string | null
+          customer_name: string
+          customer_offer_price: number | null
+          customer_offer_sent_at: string | null
+          customer_phone: string | null
+          dropoff_address: string | null
+          dropoff_city: string
+          dropoff_state: string | null
+          expires_at: string | null
+          id: string
+          notes: string | null
+          passenger_count: number
+          pickup_address: string | null
+          pickup_city: string
+          pickup_state: string | null
+          recommended_quote_id: string | null
+          requested_amenities: string[] | null
+          return_date: string | null
+          return_time: string | null
+          selected_partner_id: string | null
+          selected_quote_id: string | null
+          special_requests: string | null
+          status: string
+          trip_date: string | null
+          trip_time: string | null
+          trip_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          bus_type_preference?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_approved_at?: string | null
+          customer_email?: string | null
+          customer_name: string
+          customer_offer_price?: number | null
+          customer_offer_sent_at?: string | null
+          customer_phone?: string | null
+          dropoff_address?: string | null
+          dropoff_city: string
+          dropoff_state?: string | null
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          passenger_count?: number
+          pickup_address?: string | null
+          pickup_city: string
+          pickup_state?: string | null
+          recommended_quote_id?: string | null
+          requested_amenities?: string[] | null
+          return_date?: string | null
+          return_time?: string | null
+          selected_partner_id?: string | null
+          selected_quote_id?: string | null
+          special_requests?: string | null
+          status?: string
+          trip_date?: string | null
+          trip_time?: string | null
+          trip_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bus_type_preference?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_approved_at?: string | null
+          customer_email?: string | null
+          customer_name?: string
+          customer_offer_price?: number | null
+          customer_offer_sent_at?: string | null
+          customer_phone?: string | null
+          dropoff_address?: string | null
+          dropoff_city?: string
+          dropoff_state?: string | null
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          passenger_count?: number
+          pickup_address?: string | null
+          pickup_city?: string
+          pickup_state?: string | null
+          recommended_quote_id?: string | null
+          requested_amenities?: string[] | null
+          return_date?: string | null
+          return_time?: string | null
+          selected_partner_id?: string | null
+          selected_quote_id?: string | null
+          special_requests?: string | null
+          status?: string
+          trip_date?: string | null
+          trip_time?: string | null
+          trip_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cb_communication_logs: {
+        Row: {
+          booking_request_id: string | null
+          channel: string
+          content_preview: string | null
+          created_at: string
+          customer_identifier: string | null
+          delivered_at: string | null
+          delivery_status: string | null
+          direction: string
+          external_message_id: string | null
+          failed_at: string | null
+          failure_reason: string | null
+          full_content: string | null
+          id: string
+          partner_id: string | null
+          sent_at: string | null
+          template_used: string | null
+        }
+        Insert: {
+          booking_request_id?: string | null
+          channel?: string
+          content_preview?: string | null
+          created_at?: string
+          customer_identifier?: string | null
+          delivered_at?: string | null
+          delivery_status?: string | null
+          direction?: string
+          external_message_id?: string | null
+          failed_at?: string | null
+          failure_reason?: string | null
+          full_content?: string | null
+          id?: string
+          partner_id?: string | null
+          sent_at?: string | null
+          template_used?: string | null
+        }
+        Update: {
+          booking_request_id?: string | null
+          channel?: string
+          content_preview?: string | null
+          created_at?: string
+          customer_identifier?: string | null
+          delivered_at?: string | null
+          delivery_status?: string | null
+          direction?: string
+          external_message_id?: string | null
+          failed_at?: string | null
+          failure_reason?: string | null
+          full_content?: string | null
+          id?: string
+          partner_id?: string | null
+          sent_at?: string | null
+          template_used?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cb_communication_logs_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "cb_booking_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cb_dispatch_config: {
+        Row: {
+          auto_recommend: boolean | null
+          category: string
+          created_at: string
+          default_markup_type: string | null
+          default_markup_value: number | null
+          id: string
+          max_partners_per_request: number | null
+          quote_expiration_hours: number | null
+          routing_mode: string
+          target_margin_percentage: number | null
+          updated_at: string
+        }
+        Insert: {
+          auto_recommend?: boolean | null
+          category?: string
+          created_at?: string
+          default_markup_type?: string | null
+          default_markup_value?: number | null
+          id?: string
+          max_partners_per_request?: number | null
+          quote_expiration_hours?: number | null
+          routing_mode?: string
+          target_margin_percentage?: number | null
+          updated_at?: string
+        }
+        Update: {
+          auto_recommend?: boolean | null
+          category?: string
+          created_at?: string
+          default_markup_type?: string | null
+          default_markup_value?: number | null
+          id?: string
+          max_partners_per_request?: number | null
+          quote_expiration_hours?: number | null
+          routing_mode?: string
+          target_margin_percentage?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cb_partner_quotes: {
+        Row: {
+          alternate_offer_notes: string | null
+          amenities: string[] | null
+          availability_status: string
+          booking_request_id: string
+          capacity: number | null
+          created_at: string
+          currency: string | null
+          deposit_required: number | null
+          dispatch_id: string | null
+          expiration_at: string | null
+          id: string
+          is_selected: boolean | null
+          partner_id: string
+          quote_notes: string | null
+          quoted_price: number
+          raw_response_payload: Json | null
+          response_method: string | null
+          response_time_seconds: number | null
+          updated_at: string
+          vehicle_type: string | null
+        }
+        Insert: {
+          alternate_offer_notes?: string | null
+          amenities?: string[] | null
+          availability_status?: string
+          booking_request_id: string
+          capacity?: number | null
+          created_at?: string
+          currency?: string | null
+          deposit_required?: number | null
+          dispatch_id?: string | null
+          expiration_at?: string | null
+          id?: string
+          is_selected?: boolean | null
+          partner_id: string
+          quote_notes?: string | null
+          quoted_price: number
+          raw_response_payload?: Json | null
+          response_method?: string | null
+          response_time_seconds?: number | null
+          updated_at?: string
+          vehicle_type?: string | null
+        }
+        Update: {
+          alternate_offer_notes?: string | null
+          amenities?: string[] | null
+          availability_status?: string
+          booking_request_id?: string
+          capacity?: number | null
+          created_at?: string
+          currency?: string | null
+          deposit_required?: number | null
+          dispatch_id?: string | null
+          expiration_at?: string | null
+          id?: string
+          is_selected?: boolean | null
+          partner_id?: string
+          quote_notes?: string | null
+          quoted_price?: number
+          raw_response_payload?: Json | null
+          response_method?: string | null
+          response_time_seconds?: number | null
+          updated_at?: string
+          vehicle_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cb_partner_quotes_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "cb_booking_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cb_partner_quotes_dispatch_id_fkey"
+            columns: ["dispatch_id"]
+            isOneToOne: false
+            referencedRelation: "cb_request_partner_dispatches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cb_quote_margins: {
+        Row: {
+          admin_override: boolean | null
+          booking_request_id: string
+          created_at: string
+          expected_margin_amount: number
+          expected_margin_percentage: number
+          final_customer_price: number
+          id: string
+          markup_type: string
+          markup_value: number
+          override_notes: string | null
+          partner_quote_amount: number
+          quote_id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_override?: boolean | null
+          booking_request_id: string
+          created_at?: string
+          expected_margin_amount: number
+          expected_margin_percentage: number
+          final_customer_price: number
+          id?: string
+          markup_type?: string
+          markup_value?: number
+          override_notes?: string | null
+          partner_quote_amount: number
+          quote_id: string
+          updated_at?: string
+        }
+        Update: {
+          admin_override?: boolean | null
+          booking_request_id?: string
+          created_at?: string
+          expected_margin_amount?: number
+          expected_margin_percentage?: number
+          final_customer_price?: number
+          id?: string
+          markup_type?: string
+          markup_value?: number
+          override_notes?: string | null
+          partner_quote_amount?: number
+          quote_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cb_quote_margins_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "cb_booking_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cb_quote_margins_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "cb_partner_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cb_quote_selection_events: {
+        Row: {
+          backup_quote_ids: string[] | null
+          booking_request_id: string
+          created_at: string
+          id: string
+          quote_snapshot: Json
+          selected_by: string | null
+          selected_partner_id: string
+          selected_quote_id: string
+          selection_reason: string | null
+        }
+        Insert: {
+          backup_quote_ids?: string[] | null
+          booking_request_id: string
+          created_at?: string
+          id?: string
+          quote_snapshot: Json
+          selected_by?: string | null
+          selected_partner_id: string
+          selected_quote_id: string
+          selection_reason?: string | null
+        }
+        Update: {
+          backup_quote_ids?: string[] | null
+          booking_request_id?: string
+          created_at?: string
+          id?: string
+          quote_snapshot?: Json
+          selected_by?: string | null
+          selected_partner_id?: string
+          selected_quote_id?: string
+          selection_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cb_quote_selection_events_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "cb_booking_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cb_quote_selection_events_selected_quote_id_fkey"
+            columns: ["selected_quote_id"]
+            isOneToOne: false
+            referencedRelation: "cb_partner_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cb_request_partner_dispatches: {
+        Row: {
+          booking_request_id: string
+          channel: string
+          created_at: string
+          delivered_at: string | null
+          dispatch_payload: Json | null
+          failure_reason: string | null
+          id: string
+          partner_email: string | null
+          partner_id: string
+          partner_name: string | null
+          partner_phone: string | null
+          responded_at: string | null
+          response_token: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+          viewed_at: string | null
+        }
+        Insert: {
+          booking_request_id: string
+          channel?: string
+          created_at?: string
+          delivered_at?: string | null
+          dispatch_payload?: Json | null
+          failure_reason?: string | null
+          id?: string
+          partner_email?: string | null
+          partner_id: string
+          partner_name?: string | null
+          partner_phone?: string | null
+          responded_at?: string | null
+          response_token?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Update: {
+          booking_request_id?: string
+          channel?: string
+          created_at?: string
+          delivered_at?: string | null
+          dispatch_payload?: Json | null
+          failure_reason?: string | null
+          id?: string
+          partner_email?: string | null
+          partner_id?: string
+          partner_name?: string | null
+          partner_phone?: string | null
+          responded_at?: string | null
+          response_token?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cb_request_partner_dispatches_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "cb_booking_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ceo_actions: {
         Row: {
           action_type: string
@@ -100659,6 +101172,8 @@ export type Database = {
       }
       can_send_messages: { Args: { user_id: string }; Returns: boolean }
       cancel_payout_batch: { Args: { p_batch_id: string }; Returns: undefined }
+      cb_dispatch_kpis: { Args: never; Returns: Json }
+      cb_recommend_quote: { Args: { p_request_id: string }; Returns: Json }
       check_autonomy_eligibility: {
         Args: { p_worker_id: string }
         Returns: Json
