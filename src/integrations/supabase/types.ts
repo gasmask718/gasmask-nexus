@@ -49639,6 +49639,133 @@ export type Database = {
           },
         ]
       }
+      media_creator_favorites: {
+        Row: {
+          created_at: string
+          creator_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_favorites_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_creator_projects: {
+        Row: {
+          category: string | null
+          created_at: string
+          creator_id: string
+          id: string
+          is_featured: boolean | null
+          media_type: string
+          media_url: string
+          sort_order: number | null
+          thumbnail_url: string | null
+          title: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          creator_id: string
+          id?: string
+          is_featured?: boolean | null
+          media_type?: string
+          media_url: string
+          sort_order?: number | null
+          thumbnail_url?: string | null
+          title: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          creator_id?: string
+          id?: string
+          is_featured?: boolean | null
+          media_type?: string
+          media_url?: string
+          sort_order?: number | null
+          thumbnail_url?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_projects_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_creator_reviews: {
+        Row: {
+          booking_id: string | null
+          client_user_id: string
+          created_at: string
+          creator_id: string
+          creator_response: string | null
+          event_type: string | null
+          id: string
+          rating: number
+          review_text: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          client_user_id: string
+          created_at?: string
+          creator_id: string
+          creator_response?: string | null
+          event_type?: string | null
+          id?: string
+          rating: number
+          review_text?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          client_user_id?: string
+          created_at?: string
+          creator_id?: string
+          creator_response?: string | null
+          event_type?: string | null
+          id?: string
+          rating?: number
+          review_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_creator_reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "media_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_creator_reviews_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "media_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media_creator_sessions: {
         Row: {
           creator_id: string
@@ -49727,12 +49854,19 @@ export type Database = {
           bio: string | null
           cancellation_rate: number | null
           city: string | null
+          cover_image: string | null
           created_at: string | null
+          display_name: string | null
+          drone_available: boolean | null
+          editing_available: boolean | null
           email: string | null
           equipment_list: string[] | null
+          full_day_rate: number | null
           full_name: string
+          half_day_rate: number | null
           hourly_rate: number
           id: string
+          instagram_handle: string | null
           is_available: boolean | null
           is_online: boolean | null
           is_verified: boolean | null
@@ -49740,28 +49874,47 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           phone: string | null
+          portfolio_images: string[] | null
           portfolio_url: string | null
+          portfolio_videos: string[] | null
           profile_image_url: string | null
+          provider_type: string | null
           rating: number | null
+          response_time_hours: number | null
+          same_day_edit_available: boolean | null
+          service_area: string | null
           service_radius_miles: number | null
+          slug: string | null
+          specialties: string[] | null
           specialty: string
           state: string | null
+          total_jobs: number | null
           total_jobs_completed: number | null
+          travel_radius_miles: number | null
           updated_at: string | null
           user_id: string | null
           verified: boolean | null
+          website_url: string | null
+          years_experience: number | null
         }
         Insert: {
           acceptance_rate?: number | null
           bio?: string | null
           cancellation_rate?: number | null
           city?: string | null
+          cover_image?: string | null
           created_at?: string | null
+          display_name?: string | null
+          drone_available?: boolean | null
+          editing_available?: boolean | null
           email?: string | null
           equipment_list?: string[] | null
+          full_day_rate?: number | null
           full_name: string
+          half_day_rate?: number | null
           hourly_rate?: number
           id?: string
+          instagram_handle?: string | null
           is_available?: boolean | null
           is_online?: boolean | null
           is_verified?: boolean | null
@@ -49769,28 +49922,47 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           phone?: string | null
+          portfolio_images?: string[] | null
           portfolio_url?: string | null
+          portfolio_videos?: string[] | null
           profile_image_url?: string | null
+          provider_type?: string | null
           rating?: number | null
+          response_time_hours?: number | null
+          same_day_edit_available?: boolean | null
+          service_area?: string | null
           service_radius_miles?: number | null
+          slug?: string | null
+          specialties?: string[] | null
           specialty?: string
           state?: string | null
+          total_jobs?: number | null
           total_jobs_completed?: number | null
+          travel_radius_miles?: number | null
           updated_at?: string | null
           user_id?: string | null
           verified?: boolean | null
+          website_url?: string | null
+          years_experience?: number | null
         }
         Update: {
           acceptance_rate?: number | null
           bio?: string | null
           cancellation_rate?: number | null
           city?: string | null
+          cover_image?: string | null
           created_at?: string | null
+          display_name?: string | null
+          drone_available?: boolean | null
+          editing_available?: boolean | null
           email?: string | null
           equipment_list?: string[] | null
+          full_day_rate?: number | null
           full_name?: string
+          half_day_rate?: number | null
           hourly_rate?: number
           id?: string
+          instagram_handle?: string | null
           is_available?: boolean | null
           is_online?: boolean | null
           is_verified?: boolean | null
@@ -49798,16 +49970,28 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           phone?: string | null
+          portfolio_images?: string[] | null
           portfolio_url?: string | null
+          portfolio_videos?: string[] | null
           profile_image_url?: string | null
+          provider_type?: string | null
           rating?: number | null
+          response_time_hours?: number | null
+          same_day_edit_available?: boolean | null
+          service_area?: string | null
           service_radius_miles?: number | null
+          slug?: string | null
+          specialties?: string[] | null
           specialty?: string
           state?: string | null
+          total_jobs?: number | null
           total_jobs_completed?: number | null
+          travel_radius_miles?: number | null
           updated_at?: string | null
           user_id?: string | null
           verified?: boolean | null
+          website_url?: string | null
+          years_experience?: number | null
         }
         Relationships: []
       }
