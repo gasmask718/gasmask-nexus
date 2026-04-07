@@ -466,7 +466,25 @@ export default function PenthouseCoachBusDispatch() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // ── Computed ──────────────────────────────────────────────────────
+  const autoEvalMutation = useMutation({
+    mutationFn: async (requestId: string) => {
+      const { data, error } = await supabase.functions.invoke('cb-dispatch-engine', {
+        body: { action: 'auto_evaluate', request_id: requestId, trigger_type: 'manual' },
+      });
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error(data?.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Auto-selected best quote – $${data.winner?.final_customer_price?.toLocaleString()}`);
+      queryClient.invalidateQueries({ queryKey: ['cb-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['cb-quotes'] });
+      queryClient.invalidateQueries({ queryKey: ['cb-kpis'] });
+    },
+    onError: (e: Error) => toast.error('Auto-evaluation failed: ' + e.message),
+  });
+
+
   const filtered = useMemo(() => {
     return requests.filter((r: any) => {
       if (statusFilter !== 'all' && r.status !== statusFilter) return false;
@@ -717,6 +735,16 @@ export default function PenthouseCoachBusDispatch() {
                           {dispatchMutation.isPending ? 'Dispatching...' : activeRequest.status === 'new' ? 'Dispatch to Partners' : 'Redispatch'}
                         </Button>
                       )}
+                      {['awaiting_quotes', 'quotes_received'].includes(activeRequest.status) && (
+                        <Button
+                          size="sm"
+                          className="text-xs font-bold h-8 shadow-lg hover:scale-[1.02] transition-transform bg-violet-600 hover:bg-violet-500 text-white"
+                          disabled={autoEvalMutation.isPending}
+                          onClick={() => autoEvalMutation.mutate(activeRequest.id)}
+                        >
+                          <Zap className="w-3.5 h-3.5 mr-1.5" />
+                          {autoEvalMutation.isPending ? 'Evaluating...' : 'Auto-Select Best'}
+                        </Button>
                       {activeRequest.status === 'selected' && (
                         <Button
                           size="sm"
