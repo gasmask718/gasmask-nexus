@@ -743,6 +743,9 @@ const BeautyProviderSignup = lazy(() => import('@/pages/public/BeautyProviderSig
 const ThingsToDoExperiences = lazy(() => import('@/pages/os/toptier/ThingsToDoExperiences'));
 const ThingsToDoBookings = lazy(() => import('@/pages/os/toptier/ThingsToDoBookings'));
 const ThingsToDoAnalytics = lazy(() => import('@/pages/os/toptier/ThingsToDoAnalytics'));
+const ThingsToDoMarkup = lazy(() => import('@/pages/os/toptier/ThingsToDoMarkup'));
+const ThingsToDoAddons = lazy(() => import('@/pages/os/toptier/ThingsToDoAddons'));
+const ThingsToDoProfitDashboard = lazy(() => import('@/pages/os/toptier/ThingsToDoProfitDashboard'));
 
 // Unforgettable
 const UnforgettableDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDashboard })));
@@ -1683,6 +1686,9 @@ export default function AppRoutes() {
           <Route path="things-to-do" element={<ThingsToDoExperiences />} />
           <Route path="things-to-do/bookings" element={<ThingsToDoBookings />} />
           <Route path="things-to-do/analytics" element={<ThingsToDoAnalytics />} />
+          <Route path="things-to-do/markup" element={<ThingsToDoMarkup />} />
+          <Route path="things-to-do/addons" element={<ThingsToDoAddons />} />
+          <Route path="things-to-do/profit" element={<ThingsToDoProfitDashboard />} />
         </Route>
 
         {/* Penthouse Control System — Admin/Owner Only */}

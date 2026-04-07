@@ -37644,6 +37644,39 @@ export type Database = {
         }
         Relationships: []
       }
+      experience_addon_links: {
+        Row: {
+          addon_id: string
+          experience_id: string
+          id: string
+        }
+        Insert: {
+          addon_id: string
+          experience_id: string
+          id?: string
+        }
+        Update: {
+          addon_id?: string
+          experience_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experience_addon_links_addon_id_fkey"
+            columns: ["addon_id"]
+            isOneToOne: false
+            referencedRelation: "experience_addons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "experience_addon_links_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experiences_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       experience_addons: {
         Row: {
           category_id: string
@@ -37698,8 +37731,70 @@ export type Database = {
           },
         ]
       }
+      experience_alerts: {
+        Row: {
+          alert_type: string
+          booking_id: string | null
+          created_at: string
+          experience_id: string | null
+          id: string
+          message: string | null
+          payload: Json | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          booking_id?: string | null
+          created_at?: string
+          experience_id?: string | null
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          booking_id?: string | null
+          created_at?: string
+          experience_id?: string | null
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experience_alerts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "experience_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "experience_alerts_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experiences_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       experience_bookings: {
         Row: {
+          addon_total: number | null
+          base_price: number | null
           booking_status: string
           created_at: string
           customer_email: string | null
@@ -37707,13 +37802,19 @@ export type Database = {
           customer_phone: string | null
           experience_id: string
           id: string
+          markup_amount: number | null
           notes: string | null
+          profit: number | null
           selected_addons: Json | null
+          supplier_confirmation: string | null
+          supplier_type: string | null
           total_price: number
           updated_at: string
           user_id: string
         }
         Insert: {
+          addon_total?: number | null
+          base_price?: number | null
           booking_status?: string
           created_at?: string
           customer_email?: string | null
@@ -37721,13 +37822,19 @@ export type Database = {
           customer_phone?: string | null
           experience_id: string
           id?: string
+          markup_amount?: number | null
           notes?: string | null
+          profit?: number | null
           selected_addons?: Json | null
+          supplier_confirmation?: string | null
+          supplier_type?: string | null
           total_price?: number
           updated_at?: string
           user_id: string
         }
         Update: {
+          addon_total?: number | null
+          base_price?: number | null
           booking_status?: string
           created_at?: string
           customer_email?: string | null
@@ -37735,8 +37842,12 @@ export type Database = {
           customer_phone?: string | null
           experience_id?: string
           id?: string
+          markup_amount?: number | null
           notes?: string | null
+          profit?: number | null
           selected_addons?: Json | null
+          supplier_confirmation?: string | null
+          supplier_type?: string | null
           total_price?: number
           updated_at?: string
           user_id?: string
@@ -37750,6 +37861,87 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      experience_customers: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          last_booking_at: string | null
+          name: string | null
+          phone: string | null
+          total_bookings: number
+          total_spend: number
+          updated_at: string
+          upsells_accepted: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_booking_at?: string | null
+          name?: string | null
+          phone?: string | null
+          total_bookings?: number
+          total_spend?: number
+          updated_at?: string
+          upsells_accepted?: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_booking_at?: string | null
+          name?: string | null
+          phone?: string | null
+          total_bookings?: number
+          total_spend?: number
+          updated_at?: string
+          upsells_accepted?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      experience_markup_rules: {
+        Row: {
+          category: string | null
+          city: string | null
+          created_at: string
+          demand_level: string | null
+          id: string
+          is_active: boolean
+          markup_pct: number
+          priority: number
+          rule_name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          demand_level?: string | null
+          id?: string
+          is_active?: boolean
+          markup_pct?: number
+          priority?: number
+          rule_name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          demand_level?: string | null
+          id?: string
+          is_active?: boolean
+          markup_pct?: number
+          priority?: number
+          rule_name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       experience_providers: {
         Row: {

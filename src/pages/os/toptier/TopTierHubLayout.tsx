@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, CalendarCheck, Users, Map, TrendingUp, 
   Star, Settings2, Brain, Bell, RefreshCw, Settings, Crown, Palette,
-  Sparkles, BarChart3
+  Sparkles, BarChart3, Percent, Package, DollarSign
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,9 @@ const navItems = [
   { path: '/os/toptier/ai', label: 'AI Brain', icon: Brain },
   { path: '/os/toptier/things-to-do', label: 'Things To Do', icon: Sparkles },
   { path: '/os/toptier/things-to-do/bookings', label: 'TTD Bookings', icon: CalendarCheck },
+  { path: '/os/toptier/things-to-do/markup', label: 'TTD Markup', icon: Percent },
+  { path: '/os/toptier/things-to-do/addons', label: 'TTD Add-ons', icon: Package },
+  { path: '/os/toptier/things-to-do/profit', label: 'TTD Profit', icon: DollarSign },
   { path: '/os/toptier/things-to-do/analytics', label: 'TTD Analytics', icon: BarChart3 },
   { path: '/os/toptier/penthouse', label: 'Penthouse Control', icon: Crown },
 ];
