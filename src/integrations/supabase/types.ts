@@ -31005,6 +31005,128 @@ export type Database = {
           },
         ]
       }
+      cross_sell_bundles: {
+        Row: {
+          active: boolean | null
+          bundle_discount: number | null
+          bundle_name: string
+          categories: string[]
+          city: string | null
+          created_at: string | null
+          id: string
+          partner_id: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          bundle_discount?: number | null
+          bundle_name: string
+          categories: string[]
+          city?: string | null
+          created_at?: string | null
+          id?: string
+          partner_id?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          bundle_discount?: number | null
+          bundle_name?: string
+          categories?: string[]
+          city?: string | null
+          created_at?: string | null
+          id?: string
+          partner_id?: string | null
+        }
+        Relationships: []
+      }
+      cross_sell_impressions: {
+        Row: {
+          action: string | null
+          created_at: string | null
+          id: string
+          recommendation_id: string | null
+          source_booking_id: string | null
+          source_category: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string | null
+          id?: string
+          recommendation_id?: string | null
+          source_booking_id?: string | null
+          source_category?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string | null
+          created_at?: string | null
+          id?: string
+          recommendation_id?: string | null
+          source_booking_id?: string | null
+          source_category?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cross_sell_impressions_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "cross_sell_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cross_sell_recommendations: {
+        Row: {
+          active: boolean | null
+          city_filter: string | null
+          created_at: string | null
+          description: string | null
+          discount_percentage: number | null
+          icon: string | null
+          id: string
+          priority_score: number | null
+          recommended_category: string
+          same_city_boost: boolean | null
+          same_date_boost: boolean | null
+          title: string
+          trigger_category: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          city_filter?: string | null
+          created_at?: string | null
+          description?: string | null
+          discount_percentage?: number | null
+          icon?: string | null
+          id?: string
+          priority_score?: number | null
+          recommended_category: string
+          same_city_boost?: boolean | null
+          same_date_boost?: boolean | null
+          title: string
+          trigger_category: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          city_filter?: string | null
+          created_at?: string | null
+          description?: string | null
+          discount_percentage?: number | null
+          icon?: string | null
+          id?: string
+          priority_score?: number | null
+          recommended_category?: string
+          same_city_boost?: boolean | null
+          same_date_boost?: boolean | null
+          title?: string
+          trigger_category?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       custom_contact_roles: {
         Row: {
           brand: string | null
@@ -100913,6 +101035,18 @@ export type Database = {
       get_creator_profile_completion: { Args: never; Returns: Json }
       get_creator_public_profile: { Args: { p_slug: string }; Returns: Json }
       get_creator_recommendations: { Args: never; Returns: Json }
+      get_cross_sell_recommendations: {
+        Args: { p_city?: string; p_trigger_category: string }
+        Returns: {
+          description: string
+          discount_percentage: number
+          icon: string
+          id: string
+          priority_score: number
+          recommended_category: string
+          title: string
+        }[]
+      }
       get_current_user_role: { Args: never; Returns: string }
       get_intent_queue_health: { Args: never; Returns: Json }
       get_managed_office_ids: { Args: { _user_id: string }; Returns: string[] }
