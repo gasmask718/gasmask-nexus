@@ -109,6 +109,7 @@ import {
   Landmark,
   Sunrise,
   CheckSquare,
+  Camera,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
@@ -372,6 +373,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/unforgettable/analytics', label: '📊 Floor 7 — Analytics', icon: BarChart3 },
       { path: '/os/unforgettable/pricing-intelligence', label: '💰 Floor 8 — Pricing Intelligence', icon: DollarSign },
       { path: '/os/unforgettable/event-spaces', label: '🏛️ Floor 9 — Event Spaces', icon: Building },
+      { path: '/os/unforgettable/virtual-tours', label: '📸 Floor 10 — Virtual Tours', icon: Camera },
     ],
   },
   dynastyBusiness: {

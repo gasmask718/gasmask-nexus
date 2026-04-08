@@ -58027,6 +58027,120 @@ export type Database = {
           },
         ]
       }
+      photographer_jobs: {
+        Row: {
+          commission_amount: number | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          payout_status: string
+          photographer_id: string
+          photographer_payout: number | null
+          price: number | null
+          rejection_reason: string | null
+          request_id: string
+          scheduled_date: string | null
+          status: string
+          tour_url: string | null
+        }
+        Insert: {
+          commission_amount?: number | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          payout_status?: string
+          photographer_id: string
+          photographer_payout?: number | null
+          price?: number | null
+          rejection_reason?: string | null
+          request_id: string
+          scheduled_date?: string | null
+          status?: string
+          tour_url?: string | null
+        }
+        Update: {
+          commission_amount?: number | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          payout_status?: string
+          photographer_id?: string
+          photographer_payout?: number | null
+          price?: number | null
+          rejection_reason?: string | null
+          request_id?: string
+          scheduled_date?: string | null
+          status?: string
+          tour_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photographer_jobs_photographer_id_fkey"
+            columns: ["photographer_id"]
+            isOneToOne: false
+            referencedRelation: "photographers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photographer_jobs_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_tour_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photographers: {
+        Row: {
+          commission_rate: number
+          created_at: string
+          email: string | null
+          equipment_type: string
+          id: string
+          is_active: boolean
+          jobs_completed: number
+          lat: number | null
+          lng: number | null
+          name: string
+          phone: string | null
+          radius_miles: number
+          rating: number
+          service_area: string | null
+        }
+        Insert: {
+          commission_rate?: number
+          created_at?: string
+          email?: string | null
+          equipment_type?: string
+          id?: string
+          is_active?: boolean
+          jobs_completed?: number
+          lat?: number | null
+          lng?: number | null
+          name: string
+          phone?: string | null
+          radius_miles?: number
+          rating?: number
+          service_area?: string | null
+        }
+        Update: {
+          commission_rate?: number
+          created_at?: string
+          email?: string | null
+          equipment_type?: string
+          id?: string
+          is_active?: boolean
+          jobs_completed?: number
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          phone?: string | null
+          radius_miles?: number
+          rating?: number
+          service_area?: string | null
+        }
+        Relationships: []
+      }
       pick_entries: {
         Row: {
           actual_result_value: number | null
@@ -92827,6 +92941,39 @@ export type Database = {
           },
         ]
       }
+      venue_virtual_tours: {
+        Row: {
+          created_at: string
+          id: string
+          is_verified: boolean
+          tour_type: string
+          tour_url: string
+          venue_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_verified?: boolean
+          tour_type?: string
+          tour_url: string
+          venue_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_verified?: boolean
+          tour_type?: string
+          tour_url?: string
+          venue_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
       vertical_brands: {
         Row: {
           brand_id: string
@@ -92934,6 +93081,77 @@ export type Database = {
             columns: ["vertical_id"]
             isOneToOne: false
             referencedRelation: "brand_verticals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      virtual_tour_requests: {
+        Row: {
+          address: string | null
+          assigned_photographer_id: string | null
+          budget_range: string | null
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          notes: string | null
+          phone: string | null
+          preferred_date: string | null
+          status: string
+          updated_at: string
+          venue_id: string | null
+          venue_name: string
+          venue_size: string | null
+          venue_type: string | null
+        }
+        Insert: {
+          address?: string | null
+          assigned_photographer_id?: string | null
+          budget_range?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          phone?: string | null
+          preferred_date?: string | null
+          status?: string
+          updated_at?: string
+          venue_id?: string | null
+          venue_name: string
+          venue_size?: string | null
+          venue_type?: string | null
+        }
+        Update: {
+          address?: string | null
+          assigned_photographer_id?: string | null
+          budget_range?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          phone?: string | null
+          preferred_date?: string | null
+          status?: string
+          updated_at?: string
+          venue_id?: string | null
+          venue_name?: string
+          venue_size?: string | null
+          venue_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "virtual_tour_requests_photographer_fkey"
+            columns: ["assigned_photographer_id"]
+            isOneToOne: false
+            referencedRelation: "photographers"
             referencedColumns: ["id"]
           },
         ]
@@ -102325,6 +102543,17 @@ export type Database = {
           rating: number
           service_radius: number
           specialties: string[]
+        }[]
+      }
+      match_photographers_by_location: {
+        Args: { equipment?: string; req_lat: number; req_lng: number }
+        Returns: {
+          distance_miles: number
+          photographer_equipment: string
+          photographer_id: string
+          photographer_jobs_completed: number
+          photographer_name: string
+          photographer_rating: number
         }[]
       }
       match_providers_by_location: {
