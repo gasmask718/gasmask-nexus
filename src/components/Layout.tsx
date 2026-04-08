@@ -402,6 +402,13 @@ const DYNASTY_NAVIGATION = {
       { path: '/funding-machine/settings', label: '⚙️ Settings', icon: Settings },
     ],
   },
+  ubenHq: {
+    id: 'uben-hq',
+    name: '💛 UBEN HQ',
+    items: [
+      { path: '/os/uben', label: '💛 UBEN Dashboard', icon: Heart },
+    ],
+  },
   financeAcquisition: {
     id: 'finance-acquisition',
     name: '💰 Finance & Acquisition',
