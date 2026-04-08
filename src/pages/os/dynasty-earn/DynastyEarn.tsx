@@ -120,9 +120,9 @@ export default function DynastyEarn() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <DollarSign className="h-7 w-7 text-primary" /> Dynasty Earn — Affiliate Command
+            <DollarSign className="h-7 w-7 text-primary" /> Dynasty Monetization Engine
           </h1>
-          <p className="text-muted-foreground text-sm">Centralized affiliate management across all Dynasty businesses</p>
+          <p className="text-muted-foreground text-sm">Affiliate Engine • Talent Management • Brand Deal Exchange</p>
         </div>
         <div className="flex gap-2">
           <Badge variant="outline" className="gap-1"><Bell className="h-3 w-3" />{notifications.filter(n => !n.is_read).length} new</Badge>
@@ -138,6 +138,9 @@ export default function DynastyEarn() {
           <TabsTrigger value="commissions">💰 Commissions</TabsTrigger>
           <TabsTrigger value="payouts">💳 Payouts</TabsTrigger>
           <TabsTrigger value="leaderboard">🏆 Leaderboard</TabsTrigger>
+          <TabsTrigger value="talent">🎭 Talent</TabsTrigger>
+          <TabsTrigger value="brands">🏢 Brand Deals</TabsTrigger>
+          <TabsTrigger value="admin">⚙️ Admin</TabsTrigger>
           <TabsTrigger value="notifications">🔔 Notifications</TabsTrigger>
         </TabsList>
 
@@ -148,6 +151,9 @@ export default function DynastyEarn() {
         <TabsContent value="commissions"><CommissionsTab commissions={commissions} affiliates={affiliates} programs={programs} queryClient={queryClient} /></TabsContent>
         <TabsContent value="payouts"><PayoutsTab payouts={payouts} affiliates={affiliates} queryClient={queryClient} /></TabsContent>
         <TabsContent value="leaderboard"><LeaderboardTab affiliates={affiliates} commissions={commissions} /></TabsContent>
+        <TabsContent value="talent"><Suspense fallback={<TabLoader />}><TalentManagementTab /></Suspense></TabsContent>
+        <TabsContent value="brands"><Suspense fallback={<TabLoader />}><BrandDealExchangeTab /></Suspense></TabsContent>
+        <TabsContent value="admin"><Suspense fallback={<TabLoader />}><AdminControlTab /></Suspense></TabsContent>
         <TabsContent value="notifications"><NotificationsTab notifications={notifications} queryClient={queryClient} /></TabsContent>
       </Tabs>
     </div>
