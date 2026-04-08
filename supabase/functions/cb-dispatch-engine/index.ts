@@ -280,10 +280,12 @@ serve(async (req) => {
       // Merge & deduplicate (local priority)
       const seen = new Set<string>();
       const partners: any[] = [];
-      for (const p of [...(cityPartners || []), ...(statePartners || []), ...(allPartners || [])]) {
-        if (!seen.has(p.id) && partners.length < maxPartners) {
-          seen.add(p.id);
-          partners.push(p);
+      for (const source of partnerSources) {
+        for (const p of source) {
+          if (!seen.has(p.id) && partners.length < maxPartners) {
+            seen.add(p.id);
+            partners.push(p);
+          }
         }
       }
 
