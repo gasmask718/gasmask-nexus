@@ -180,17 +180,22 @@ export default function UTVirtualTours() {
   const [territories, setTerritories] = useState<Territory[]>([]);
   const [coverageZones, setCoverageZones] = useState<CoverageZone[]>([]);
   const [scorecards, setScorecards] = useState<Scorecard[]>([]);
+  const [payouts, setPayouts] = useState<any[]>([]);
+  const [payoutItems, setPayoutItems] = useState<any[]>([]);
+  const [payoutAccounts, setPayoutAccounts] = useState<any[]>([]);
+  const [payoutAuditLog, setPayoutAuditLog] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewRequest, setShowNewRequest] = useState(false);
   const [showNewPhotographer, setShowNewPhotographer] = useState(false);
   const [showNewApplication, setShowNewApplication] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [payoutSubTab, setPayoutSubTab] = useState('overview');
 
   // ─── Data Fetching ─────────────────────────────────────────────────
   const fetchAll = async () => {
     setLoading(true);
-    const [r1, r2, r3, r4, r5, r6, r7, r8, r9] = await Promise.all([
+    const [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13] = await Promise.all([
       supabase.from('virtual_tour_requests').select('*').order('created_at', { ascending: false }).limit(500),
       supabase.from('photographers').select('*').order('rating', { ascending: false }),
       supabase.from('photographer_jobs').select('*').order('created_at', { ascending: false }).limit(500),
@@ -200,6 +205,10 @@ export default function UTVirtualTours() {
       (supabase.from('photographer_territories' as any) as any).select('*'),
       (supabase.from('market_coverage_zones' as any) as any).select('*').order('demand_score', { ascending: false }),
       (supabase.from('photographer_scorecards' as any) as any).select('*'),
+      (supabase.from('photographer_payouts' as any) as any).select('*').order('created_at', { ascending: false }),
+      (supabase.from('photographer_payout_items' as any) as any).select('*'),
+      (supabase.from('photographer_payout_accounts' as any) as any).select('*'),
+      (supabase.from('photographer_payout_audit_log' as any) as any).select('*').order('created_at', { ascending: false }).limit(200),
     ]);
     if (r1.data) setRequests(r1.data as any);
     if (r2.data) setPhotographers(r2.data as any);
@@ -210,6 +219,10 @@ export default function UTVirtualTours() {
     if (r7.data) setTerritories(r7.data as any);
     if (r8.data) setCoverageZones(r8.data as any);
     if (r9.data) setScorecards(r9.data as any);
+    if (r10.data) setPayouts(r10.data as any);
+    if (r11.data) setPayoutItems(r11.data as any);
+    if (r12.data) setPayoutAccounts(r12.data as any);
+    if (r13.data) setPayoutAuditLog(r13.data as any);
     setLoading(false);
   };
 
@@ -512,10 +525,10 @@ export default function UTVirtualTours() {
         <ScrollArea className="w-full">
           <TabsList className="bg-[#0a0f1a] border border-[#1e293b] p-1 w-max">
             {[
-              { v: 'dashboard', l: 'Dashboard' }, { v: 'requests', l: 'Requests' }, { v: 'quotes', l: 'Quotes' },
-              { v: 'photographers', l: 'Photographers' }, { v: 'applications', l: `Applications${pendingApps ? ` (${pendingApps})` : ''}` },
-              { v: 'territories', l: 'Territories' }, { v: 'jobs', l: 'Jobs' }, { v: 'tours', l: 'Tours' },
-              { v: 'commissions', l: 'Commissions' }, { v: 'recruitment', l: 'Recruitment Intel' }, { v: 'qa', l: 'QA' },
+               { v: 'dashboard', l: 'Dashboard' }, { v: 'requests', l: 'Requests' }, { v: 'quotes', l: 'Quotes' },
+               { v: 'photographers', l: 'Photographers' }, { v: 'applications', l: `Applications${pendingApps ? ` (${pendingApps})` : ''}` },
+               { v: 'territories', l: 'Territories' }, { v: 'jobs', l: 'Jobs' }, { v: 'tours', l: 'Tours' },
+               { v: 'commissions', l: 'Commissions' }, { v: 'payouts', l: 'Payouts' }, { v: 'recruitment', l: 'Recruitment Intel' }, { v: 'qa', l: 'QA' },
             ].map(t => (
               <TabsTrigger key={t.v} value={t.v} className="data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400 text-xs">{t.l}</TabsTrigger>
             ))}
@@ -1172,6 +1185,285 @@ export default function UTVirtualTours() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ═══ TAB: Payouts ═══ */}
+        <TabsContent value="payouts" className="space-y-6">
+          {/* Sub-tabs */}
+          <div className="flex gap-2 flex-wrap">
+            {['overview', 'eligible', 'pending', 'processing', 'paid', 'failed', 'accounts', 'audit'].map(st => (
+              <Button key={st} size="sm" variant={payoutSubTab === st ? 'default' : 'outline'}
+                className={payoutSubTab === st ? 'bg-amber-500 text-black' : 'border-[#1e293b] text-muted-foreground'}
+                onClick={() => setPayoutSubTab(st)}>
+                {st.charAt(0).toUpperCase() + st.slice(1).replace(/_/g, ' ')}
+              </Button>
+            ))}
+          </div>
+
+          {/* Payout KPIs */}
+          {payoutSubTab === 'overview' && (() => {
+            const eligibleJobs = jobs.filter((j: any) => j.payout_eligible && j.payout_status !== 'paid');
+            const totalAvailable = eligibleJobs.reduce((s, j: any) => s + ((j.price || 0) - (j.commission_amount || 0) + (j.bonus_amount || 0) + (j.adjustment_amount || 0)), 0);
+            const pendingPayouts = payouts.filter((p: any) => p.payout_status === 'pending');
+            const totalPending = pendingPayouts.reduce((s: number, p: any) => s + Number(p.total_amount || 0), 0);
+            const paidThisMonth = payouts.filter((p: any) => p.payout_status === 'paid' && p.paid_at && new Date(p.paid_at).getMonth() === new Date().getMonth());
+            const totalPaidMonth = paidThisMonth.reduce((s: number, p: any) => s + Number(p.total_amount || 0), 0);
+            const failedPayouts = payouts.filter((p: any) => p.payout_status === 'failed');
+            const heldPayouts = payouts.filter((p: any) => p.payout_status === 'on_hold');
+            const totalHeld = heldPayouts.reduce((s: number, p: any) => s + Number(p.total_amount || 0), 0);
+            const totalPaidAll = payouts.filter((p: any) => p.payout_status === 'paid').reduce((s: number, p: any) => s + Number(p.total_amount || 0), 0);
+            return (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                  <KPICard icon={DollarSign} label="Available to Pay" value={`$${totalAvailable.toLocaleString()}`} color="text-emerald-400" sub={`${eligibleJobs.length} jobs`} />
+                  <KPICard icon={Clock} label="Pending Payout" value={`$${totalPending.toLocaleString()}`} color="text-amber-400" sub={`${pendingPayouts.length} batches`} />
+                  <KPICard icon={CheckCircle} label="Paid This Month" value={`$${totalPaidMonth.toLocaleString()}`} color="text-blue-400" sub={`${paidThisMonth.length} payouts`} />
+                  <KPICard icon={AlertTriangle} label="Failed" value={failedPayouts.length.toString()} color="text-red-400" />
+                  <KPICard icon={Shield} label="Held Funds" value={`$${totalHeld.toLocaleString()}`} color="text-purple-400" sub={`${heldPayouts.length} holds`} />
+                  <KPICard icon={TrendingUp} label="Total Paid (All)" value={`$${totalPaidAll.toLocaleString()}`} color="text-emerald-400" />
+                </div>
+
+                {/* Recent Payouts */}
+                <Card className="bg-[#0a0f1a]/80 border-[#1e293b]">
+                  <CardHeader><CardTitle className="text-amber-400 text-lg">Recent Payouts</CardTitle></CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader><TableRow className="border-[#1e293b]">
+                        <TableHead>Photographer</TableHead><TableHead>Amount</TableHead><TableHead>Status</TableHead><TableHead>Type</TableHead><TableHead>Date</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {payouts.slice(0, 10).map((p: any) => (
+                          <TableRow key={p.id} className="border-[#1e293b]">
+                            <TableCell className="font-medium">{photographers.find(ph => ph.id === p.photographer_id)?.name || 'Unknown'}</TableCell>
+                            <TableCell className="text-emerald-400 font-semibold">${Number(p.total_amount || 0).toLocaleString()}</TableCell>
+                            <TableCell><StatusBadge status={p.payout_status} /></TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{p.payout_type}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString()}</TableCell>
+                          </TableRow>
+                        ))}
+                        {payouts.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No payouts yet</TableCell></TableRow>}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })()}
+
+          {/* Eligible Jobs */}
+          {payoutSubTab === 'eligible' && (() => {
+            const eligibleJobs = jobs.filter((j: any) => j.status === 'completed' && j.payout_status !== 'paid');
+            const checkEligibility = async (jobId: string) => {
+              const { data, error } = await supabase.rpc('vt_check_payout_eligibility' as any, { p_job_id: jobId });
+              if (error) { toast.error('Check failed'); return; }
+              const result = data as any;
+              if (result?.eligible) { toast.success('Job is payout eligible'); fetchAll(); }
+              else { toast.warning(`Not eligible: ${(result?.reasons || []).join(', ')}`); }
+            };
+            const createPayout = async (photographerId: string, jobIds: string[]) => {
+              const jobsForPayout = jobs.filter(j => jobIds.includes(j.id));
+              const totalAmount = jobsForPayout.reduce((s, j: any) => s + ((j.price || 0) - (j.commission_amount || 0) + (j.bonus_amount || 0) + (j.adjustment_amount || 0)), 0);
+              const { data: payout, error } = await (supabase.from('photographer_payouts' as any) as any).insert({
+                photographer_id: photographerId, total_amount: totalAmount, payout_status: 'pending', payout_type: 'manual'
+              }).select().single();
+              if (error || !payout) { toast.error('Failed to create payout'); return; }
+              for (const jid of jobIds) {
+                const j = jobs.find(x => x.id === jid);
+                await (supabase.from('photographer_payout_items' as any) as any).insert({
+                  payout_id: payout.id, photographer_job_id: jid,
+                  gross_job_amount: j?.price || 0, platform_fee: j?.commission_amount || 0,
+                  photographer_payout_amount: (j?.price || 0) - (j?.commission_amount || 0)
+                });
+                await supabase.from('photographer_jobs').update({ payout_id: payout.id, payout_status: 'batched' } as any).eq('id', jid);
+              }
+              await (supabase.from('photographer_payout_audit_log' as any) as any).insert({
+                photographer_id: photographerId, payout_id: payout.id,
+                action_type: 'payout_created', new_status: 'pending', notes: `Batch of ${jobIds.length} jobs, total $${totalAmount}`
+              });
+              toast.success(`Payout batch created: $${totalAmount}`);
+              fetchAll();
+            };
+            // Group eligible by photographer
+            const byPhotographer: Record<string, any[]> = {};
+            eligibleJobs.forEach((j: any) => {
+              if (!byPhotographer[j.photographer_id]) byPhotographer[j.photographer_id] = [];
+              byPhotographer[j.photographer_id].push(j);
+            });
+            return (
+              <Card className="bg-[#0a0f1a]/80 border-[#1e293b]">
+                <CardHeader><CardTitle className="text-amber-400 text-lg">Eligible Jobs for Payout</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  {Object.entries(byPhotographer).map(([pid, pJobs]) => {
+                    const p = photographers.find(x => x.id === pid);
+                    const total = pJobs.reduce((s: number, j: any) => s + ((j.price || 0) - (j.commission_amount || 0)), 0);
+                    return (
+                      <div key={pid} className="p-3 rounded-lg border border-[#1e293b] bg-[#0f172a]/50 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{p?.name || 'Unknown'}</p>
+                            <p className="text-xs text-muted-foreground">{pJobs.length} jobs • ${total.toLocaleString()} payout</p>
+                          </div>
+                          <Button size="sm" className="bg-emerald-500 text-black text-xs" onClick={() => createPayout(pid, pJobs.map(j => j.id))}>
+                            <DollarSign className="h-3 w-3 mr-1" /> Create Payout Batch
+                          </Button>
+                        </div>
+                        {pJobs.map((j: any) => (
+                          <div key={j.id} className="flex items-center justify-between text-xs p-2 rounded bg-[#0a0f1a] border border-[#1e293b]/50">
+                            <span className="text-muted-foreground">Job #{j.id.slice(0, 8)}</span>
+                            <span className="text-emerald-400">${((j.price || 0) - (j.commission_amount || 0)).toLocaleString()}</span>
+                            <StatusBadge status={j.payout_eligible ? 'eligible' : 'checking'} />
+                            <Button size="sm" variant="ghost" className="text-blue-400 text-xs h-6" onClick={() => checkEligibility(j.id)}>
+                              <RefreshCw className="h-3 w-3 mr-1" /> Check
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                  {Object.keys(byPhotographer).length === 0 && <p className="text-center text-muted-foreground py-8">No eligible jobs</p>}
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* Pending / Processing / Paid / Failed sub-tabs */}
+          {['pending', 'processing', 'paid', 'failed'].includes(payoutSubTab) && (() => {
+            const statusMap: Record<string, string[]> = {
+              pending: ['pending', 'approved'],
+              processing: ['processing'],
+              paid: ['paid'],
+              failed: ['failed', 'on_hold', 'cancelled'],
+            };
+            const filtered = payouts.filter((p: any) => statusMap[payoutSubTab]?.includes(p.payout_status));
+            const updatePayoutStatus = async (payoutId: string, newStatus: string, photographerId: string, oldStatus: string) => {
+              const updates: any = { payout_status: newStatus };
+              if (newStatus === 'approved') updates.approved_at = new Date().toISOString();
+              if (newStatus === 'processing') updates.processed_at = new Date().toISOString();
+              if (newStatus === 'paid') updates.paid_at = new Date().toISOString();
+              await (supabase.from('photographer_payouts' as any) as any).update(updates).eq('id', payoutId);
+              if (newStatus === 'paid') {
+                const items = payoutItems.filter((i: any) => i.payout_id === payoutId);
+                for (const item of items) {
+                  await supabase.from('photographer_jobs').update({ payout_status: 'paid' } as any).eq('id', item.photographer_job_id);
+                }
+                const totalPaid = items.reduce((s: number, i: any) => s + Number(i.photographer_payout_amount || 0), 0);
+                const ph = photographers.find(p => p.id === photographerId);
+                await supabase.from('photographers').update({ last_payout_at: new Date().toISOString(), lifetime_paid_out: (Number((ph as any)?.lifetime_paid_out || 0) + totalPaid) } as any).eq('id', photographerId);
+              }
+              await (supabase.from('photographer_payout_audit_log' as any) as any).insert({
+                photographer_id: photographerId, payout_id: payoutId,
+                action_type: `status_${newStatus}`, old_status: oldStatus, new_status: newStatus
+              });
+              toast.success(`Payout ${newStatus}`);
+              fetchAll();
+            };
+            return (
+              <Card className="bg-[#0a0f1a]/80 border-[#1e293b]">
+                <CardHeader><CardTitle className="text-amber-400 text-lg capitalize">{payoutSubTab} Payouts</CardTitle></CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader><TableRow className="border-[#1e293b]">
+                      <TableHead>Photographer</TableHead><TableHead>Amount</TableHead><TableHead>Items</TableHead><TableHead>Status</TableHead><TableHead>Date</TableHead><TableHead>Actions</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {filtered.map((p: any) => {
+                        const items = payoutItems.filter((i: any) => i.payout_id === p.id);
+                        return (
+                          <TableRow key={p.id} className="border-[#1e293b]">
+                            <TableCell className="font-medium">{photographers.find(ph => ph.id === p.photographer_id)?.name || 'Unknown'}</TableCell>
+                            <TableCell className="text-emerald-400 font-semibold">${Number(p.total_amount || 0).toLocaleString()}</TableCell>
+                            <TableCell>{items.length} jobs</TableCell>
+                            <TableCell><StatusBadge status={p.payout_status} /></TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString()}</TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                {p.payout_status === 'pending' && (
+                                  <>
+                                    <Button size="sm" variant="ghost" className="text-emerald-400 text-xs h-7" onClick={() => updatePayoutStatus(p.id, 'approved', p.photographer_id, p.payout_status)}>Approve</Button>
+                                    <Button size="sm" variant="ghost" className="text-amber-400 text-xs h-7" onClick={() => updatePayoutStatus(p.id, 'on_hold', p.photographer_id, p.payout_status)}>Hold</Button>
+                                    <Button size="sm" variant="ghost" className="text-red-400 text-xs h-7" onClick={() => updatePayoutStatus(p.id, 'cancelled', p.photographer_id, p.payout_status)}>Reject</Button>
+                                  </>
+                                )}
+                                {p.payout_status === 'approved' && (
+                                  <Button size="sm" variant="ghost" className="text-blue-400 text-xs h-7" onClick={() => updatePayoutStatus(p.id, 'processing', p.photographer_id, p.payout_status)}>Process</Button>
+                                )}
+                                {p.payout_status === 'processing' && (
+                                  <Button size="sm" variant="ghost" className="text-emerald-400 text-xs h-7" onClick={() => updatePayoutStatus(p.id, 'paid', p.photographer_id, p.payout_status)}>Mark Paid</Button>
+                                )}
+                                {(p.payout_status === 'failed' || p.payout_status === 'on_hold') && (
+                                  <Button size="sm" variant="ghost" className="text-blue-400 text-xs h-7" onClick={() => updatePayoutStatus(p.id, 'pending', p.photographer_id, p.payout_status)}>Retry</Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      {filtered.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No {payoutSubTab} payouts</TableCell></TableRow>}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* Accounts / Compliance */}
+          {payoutSubTab === 'accounts' && (
+            <Card className="bg-[#0a0f1a]/80 border-[#1e293b]">
+              <CardHeader><CardTitle className="text-amber-400 text-lg">Payout Accounts & Compliance</CardTitle></CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader><TableRow className="border-[#1e293b]">
+                    <TableHead>Photographer</TableHead><TableHead>Provider</TableHead><TableHead>Onboarding</TableHead><TableHead>Payouts Enabled</TableHead><TableHead>Tax</TableHead><TableHead>Identity</TableHead><TableHead>Compliance Hold</TableHead><TableHead>Lifetime Paid</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {photographers.map(p => {
+                      const acct = payoutAccounts.find((a: any) => a.photographer_id === p.id);
+                      return (
+                        <TableRow key={p.id} className="border-[#1e293b]">
+                          <TableCell className="font-medium">{p.name}</TableCell>
+                          <TableCell><Badge variant="outline" className="text-xs">{acct?.provider || (p as any).payout_method_status || 'not_setup'}</Badge></TableCell>
+                          <TableCell><StatusBadge status={acct?.onboarding_status || 'not_started'} /></TableCell>
+                          <TableCell>{acct?.payouts_enabled ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : <AlertCircle className="h-4 w-4 text-red-400" />}</TableCell>
+                          <TableCell><StatusBadge status={acct?.tax_status || 'pending'} /></TableCell>
+                          <TableCell><StatusBadge status={acct?.identity_status || 'pending'} /></TableCell>
+                          <TableCell>{(p as any).compliance_hold ? <Badge variant="outline" className="text-red-400 border-red-500/30">HELD</Badge> : <Badge variant="outline" className="text-emerald-400 border-emerald-500/30">Clear</Badge>}</TableCell>
+                          <TableCell className="text-emerald-400">${Number((p as any).lifetime_paid_out || 0).toLocaleString()}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {photographers.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No photographers</TableCell></TableRow>}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Audit Log */}
+          {payoutSubTab === 'audit' && (
+            <Card className="bg-[#0a0f1a]/80 border-[#1e293b]">
+              <CardHeader><CardTitle className="text-amber-400 text-lg">Payout Audit Log</CardTitle></CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader><TableRow className="border-[#1e293b]">
+                    <TableHead>Date</TableHead><TableHead>Photographer</TableHead><TableHead>Action</TableHead><TableHead>Old Status</TableHead><TableHead>New Status</TableHead><TableHead>Notes</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {payoutAuditLog.map((log: any) => (
+                      <TableRow key={log.id} className="border-[#1e293b]">
+                        <TableCell className="text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString()}</TableCell>
+                        <TableCell className="font-medium">{photographers.find(p => p.id === log.photographer_id)?.name || 'Unknown'}</TableCell>
+                        <TableCell><Badge variant="outline" className="text-xs">{log.action_type}</Badge></TableCell>
+                        <TableCell>{log.old_status && <StatusBadge status={log.old_status} />}</TableCell>
+                        <TableCell>{log.new_status && <StatusBadge status={log.new_status} />}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{log.notes}</TableCell>
+                      </TableRow>
+                    ))}
+                    {payoutAuditLog.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No audit entries</TableCell></TableRow>}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
