@@ -82,7 +82,7 @@ interface Territory {
 interface CoverageZone {
   id: string; city: string; state: string; demand_score: number;
   active_requests_count: number; completed_jobs_count: number;
-  active_photographers_count: number; coverage_gap_score: number;
+  active_photographers_count: number; coverage_gap_score: number; avg_time_to_assign: number;
   average_quote_value: number; recruitment_priority: string;
 }
 
