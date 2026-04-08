@@ -37153,6 +37153,116 @@ export type Database = {
         }
         Relationships: []
       }
+      dsn_affiliate_sales_bridge: {
+        Row: {
+          affiliate_id: string | null
+          closer_id: string | null
+          created_at: string
+          deal_id: string | null
+          id: string
+          lead_id: string | null
+          revenue_split: Json | null
+          setter_id: string | null
+        }
+        Insert: {
+          affiliate_id?: string | null
+          closer_id?: string | null
+          created_at?: string
+          deal_id?: string | null
+          id?: string
+          lead_id?: string | null
+          revenue_split?: Json | null
+          setter_id?: string | null
+        }
+        Update: {
+          affiliate_id?: string | null
+          closer_id?: string | null
+          created_at?: string
+          deal_id?: string | null
+          id?: string
+          lead_id?: string | null
+          revenue_split?: Json | null
+          setter_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dsn_affiliate_sales_bridge_closer_id_fkey"
+            columns: ["closer_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_sales_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dsn_affiliate_sales_bridge_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dsn_affiliate_sales_bridge_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dsn_affiliate_sales_bridge_setter_id_fkey"
+            columns: ["setter_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_sales_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dsn_agent_progress: {
+        Row: {
+          agent_id: string
+          completed_at: string | null
+          completion_status: string
+          created_at: string
+          id: string
+          module_id: string
+          score: number | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          completed_at?: string | null
+          completion_status?: string
+          created_at?: string
+          id?: string
+          module_id: string
+          score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          completed_at?: string | null
+          completion_status?: string
+          created_at?: string
+          id?: string
+          module_id?: string
+          score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dsn_agent_progress_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_sales_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dsn_agent_progress_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dsn_appointments: {
         Row: {
           agent_id: string
@@ -37201,6 +37311,86 @@ export type Database = {
           },
         ]
       }
+      dsn_call_logs: {
+        Row: {
+          agent_id: string
+          ai_suggestions_used: number | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          outcome: string
+          recording_url: string | null
+        }
+        Insert: {
+          agent_id: string
+          ai_suggestions_used?: number | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          outcome?: string
+          recording_url?: string | null
+        }
+        Update: {
+          agent_id?: string
+          ai_suggestions_used?: number | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          outcome?: string
+          recording_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dsn_call_logs_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_sales_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dsn_call_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dsn_certifications: {
+        Row: {
+          agent_id: string
+          category: string
+          certified_at: string
+          id: string
+        }
+        Insert: {
+          agent_id: string
+          category: string
+          certified_at?: string
+          id?: string
+        }
+        Update: {
+          agent_id?: string
+          category?: string
+          certified_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dsn_certifications_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_sales_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dsn_commissions: {
         Row: {
           affiliate_id: string | null
@@ -37211,7 +37401,9 @@ export type Database = {
           deal_id: string
           deal_value: number | null
           id: string
+          network_override: number | null
           platform_fee: number | null
+          platform_total_profit: number | null
           setter_id: string | null
           setter_payout: number | null
           status: string | null
@@ -37225,7 +37417,9 @@ export type Database = {
           deal_id: string
           deal_value?: number | null
           id?: string
+          network_override?: number | null
           platform_fee?: number | null
+          platform_total_profit?: number | null
           setter_id?: string | null
           setter_payout?: number | null
           status?: string | null
@@ -37239,7 +37433,9 @@ export type Database = {
           deal_id?: string
           deal_value?: number | null
           id?: string
+          network_override?: number | null
           platform_fee?: number | null
+          platform_total_profit?: number | null
           setter_id?: string | null
           setter_payout?: number | null
           status?: string | null
@@ -37270,6 +37466,9 @@ export type Database = {
       }
       dsn_deals: {
         Row: {
+          affiliate_id: string | null
+          brand_id: string | null
+          business_vertical: string | null
           category: string | null
           closed_at: string | null
           closer_id: string | null
@@ -37278,11 +37477,16 @@ export type Database = {
           lead_id: string | null
           notes: string | null
           platform_fee_pct: number | null
+          revenue_channel: string | null
           setter_id: string | null
+          source_type: string | null
           status: string | null
           value: number
         }
         Insert: {
+          affiliate_id?: string | null
+          brand_id?: string | null
+          business_vertical?: string | null
           category?: string | null
           closed_at?: string | null
           closer_id?: string | null
@@ -37291,11 +37495,16 @@ export type Database = {
           lead_id?: string | null
           notes?: string | null
           platform_fee_pct?: number | null
+          revenue_channel?: string | null
           setter_id?: string | null
+          source_type?: string | null
           status?: string | null
           value?: number
         }
         Update: {
+          affiliate_id?: string | null
+          brand_id?: string | null
+          business_vertical?: string | null
           category?: string | null
           closed_at?: string | null
           closer_id?: string | null
@@ -37304,7 +37513,9 @@ export type Database = {
           lead_id?: string | null
           notes?: string | null
           platform_fee_pct?: number | null
+          revenue_channel?: string | null
           setter_id?: string | null
+          source_type?: string | null
           status?: string | null
           value?: number
         }
@@ -37334,8 +37545,11 @@ export type Database = {
       }
       dsn_leads: {
         Row: {
+          affiliate_id: string | null
           assigned_closer_id: string | null
           assigned_setter_id: string | null
+          business_vertical: string | null
+          campaign_id: string | null
           category: string | null
           created_at: string | null
           email: string | null
@@ -37345,12 +37559,16 @@ export type Database = {
           notes: string | null
           phone: string | null
           source: string | null
+          source_type: string | null
           status: string | null
           updated_at: string | null
         }
         Insert: {
+          affiliate_id?: string | null
           assigned_closer_id?: string | null
           assigned_setter_id?: string | null
+          business_vertical?: string | null
+          campaign_id?: string | null
           category?: string | null
           created_at?: string | null
           email?: string | null
@@ -37360,12 +37578,16 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           source?: string | null
+          source_type?: string | null
           status?: string | null
           updated_at?: string | null
         }
         Update: {
+          affiliate_id?: string | null
           assigned_closer_id?: string | null
           assigned_setter_id?: string | null
+          business_vertical?: string | null
+          campaign_id?: string | null
           category?: string | null
           created_at?: string | null
           email?: string | null
@@ -37375,6 +37597,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           source?: string | null
+          source_type?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -37439,6 +37662,7 @@ export type Database = {
           close_rate: number | null
           created_at: string | null
           email: string | null
+          experience_level: string | null
           id: string
           name: string
           performance_score: number | null
@@ -37455,6 +37679,7 @@ export type Database = {
           close_rate?: number | null
           created_at?: string | null
           email?: string | null
+          experience_level?: string | null
           id?: string
           name: string
           performance_score?: number | null
@@ -37471,6 +37696,7 @@ export type Database = {
           close_rate?: number | null
           created_at?: string | null
           email?: string | null
+          experience_level?: string | null
           id?: string
           name?: string
           performance_score?: number | null
@@ -37481,6 +37707,42 @@ export type Database = {
           total_earnings?: number | null
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      dsn_training_modules: {
+        Row: {
+          category: string
+          content: string | null
+          created_at: string
+          difficulty_level: string
+          id: string
+          required_for_certification: boolean
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          difficulty_level?: string
+          id?: string
+          required_for_certification?: boolean
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          difficulty_level?: string
+          id?: string
+          required_for_certification?: boolean
+          sort_order?: number
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
