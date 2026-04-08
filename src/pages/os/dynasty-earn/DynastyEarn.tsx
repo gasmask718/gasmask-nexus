@@ -25,10 +25,7 @@ const BrandDealExchangeTab = lazy(() => import('./BrandDealExchangeTab'));
 const AdminControlTab = lazy(() => import('./AdminControlTab'));
 
 const TabLoader = () => <div className="flex items-center justify-center py-12"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
-import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell
-} from 'recharts';
+
 
 const BUSINESS_UNITS = ['Unforgettable Times', 'TopTier Experience', 'iClean WeClean', 'GasMask', 'UBEN Programs'];
 const CHART_COLORS = ['hsl(var(--primary))', '#f59e0b', '#10b981', '#6366f1', '#ec4899'];
