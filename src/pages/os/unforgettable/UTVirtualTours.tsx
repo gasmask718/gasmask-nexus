@@ -541,7 +541,7 @@ export default function UTVirtualTours() {
                { v: 'dashboard', l: 'Dashboard' }, { v: 'requests', l: 'Requests' }, { v: 'quotes', l: 'Quotes' },
                { v: 'photographers', l: 'Photographers' }, { v: 'applications', l: `Applications${pendingApps ? ` (${pendingApps})` : ''}` },
                { v: 'territories', l: 'Territories' }, { v: 'jobs', l: 'Jobs' }, { v: 'tours', l: 'Tours' },
-               { v: 'commissions', l: 'Commissions' }, { v: 'payouts', l: 'Payouts' }, { v: 'recruitment', l: 'Recruitment Intel' }, { v: 'qa', l: 'QA' },
+               { v: 'commissions', l: 'Commissions' }, { v: 'payouts', l: 'Payouts' }, { v: 'booking', l: 'Booking Conversion' }, { v: 'recruitment', l: 'Recruitment Intel' }, { v: 'qa', l: 'QA' },
             ].map(t => (
               <TabsTrigger key={t.v} value={t.v} className="data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400 text-xs">{t.l}</TabsTrigger>
             ))}
