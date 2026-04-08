@@ -180,17 +180,22 @@ export default function UTVirtualTours() {
   const [territories, setTerritories] = useState<Territory[]>([]);
   const [coverageZones, setCoverageZones] = useState<CoverageZone[]>([]);
   const [scorecards, setScorecards] = useState<Scorecard[]>([]);
+  const [payouts, setPayouts] = useState<any[]>([]);
+  const [payoutItems, setPayoutItems] = useState<any[]>([]);
+  const [payoutAccounts, setPayoutAccounts] = useState<any[]>([]);
+  const [payoutAuditLog, setPayoutAuditLog] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewRequest, setShowNewRequest] = useState(false);
   const [showNewPhotographer, setShowNewPhotographer] = useState(false);
   const [showNewApplication, setShowNewApplication] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [payoutSubTab, setPayoutSubTab] = useState('overview');
 
   // ─── Data Fetching ─────────────────────────────────────────────────
   const fetchAll = async () => {
     setLoading(true);
-    const [r1, r2, r3, r4, r5, r6, r7, r8, r9] = await Promise.all([
+    const [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13] = await Promise.all([
       supabase.from('virtual_tour_requests').select('*').order('created_at', { ascending: false }).limit(500),
       supabase.from('photographers').select('*').order('rating', { ascending: false }),
       supabase.from('photographer_jobs').select('*').order('created_at', { ascending: false }).limit(500),
@@ -200,6 +205,10 @@ export default function UTVirtualTours() {
       (supabase.from('photographer_territories' as any) as any).select('*'),
       (supabase.from('market_coverage_zones' as any) as any).select('*').order('demand_score', { ascending: false }),
       (supabase.from('photographer_scorecards' as any) as any).select('*'),
+      (supabase.from('photographer_payouts' as any) as any).select('*').order('created_at', { ascending: false }),
+      (supabase.from('photographer_payout_items' as any) as any).select('*'),
+      (supabase.from('photographer_payout_accounts' as any) as any).select('*'),
+      (supabase.from('photographer_payout_audit_log' as any) as any).select('*').order('created_at', { ascending: false }).limit(200),
     ]);
     if (r1.data) setRequests(r1.data as any);
     if (r2.data) setPhotographers(r2.data as any);
@@ -210,6 +219,10 @@ export default function UTVirtualTours() {
     if (r7.data) setTerritories(r7.data as any);
     if (r8.data) setCoverageZones(r8.data as any);
     if (r9.data) setScorecards(r9.data as any);
+    if (r10.data) setPayouts(r10.data as any);
+    if (r11.data) setPayoutItems(r11.data as any);
+    if (r12.data) setPayoutAccounts(r12.data as any);
+    if (r13.data) setPayoutAuditLog(r13.data as any);
     setLoading(false);
   };
 
