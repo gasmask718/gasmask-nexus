@@ -49455,6 +49455,76 @@ export type Database = {
           },
         ]
       }
+      locked_shoot_bookings: {
+        Row: {
+          admin_confirmed_at: string | null
+          booking_status: string
+          created_at: string
+          id: string
+          locked_date: string
+          locked_end_time: string | null
+          locked_start_time: string | null
+          photographer_confirmed_at: string | null
+          photographer_id: string
+          quote_id: string | null
+          request_id: string | null
+          updated_at: string
+          venue_confirmed_at: string | null
+        }
+        Insert: {
+          admin_confirmed_at?: string | null
+          booking_status?: string
+          created_at?: string
+          id?: string
+          locked_date: string
+          locked_end_time?: string | null
+          locked_start_time?: string | null
+          photographer_confirmed_at?: string | null
+          photographer_id: string
+          quote_id?: string | null
+          request_id?: string | null
+          updated_at?: string
+          venue_confirmed_at?: string | null
+        }
+        Update: {
+          admin_confirmed_at?: string | null
+          booking_status?: string
+          created_at?: string
+          id?: string
+          locked_date?: string
+          locked_end_time?: string | null
+          locked_start_time?: string | null
+          photographer_confirmed_at?: string | null
+          photographer_id?: string
+          quote_id?: string | null
+          request_id?: string | null
+          updated_at?: string
+          venue_confirmed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locked_shoot_bookings_photographer_id_fkey"
+            columns: ["photographer_id"]
+            isOneToOne: false
+            referencedRelation: "photographers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locked_shoot_bookings_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_tour_quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locked_shoot_bookings_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_tour_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       machine_service_logs: {
         Row: {
           created_at: string | null
@@ -58198,6 +58268,7 @@ export type Database = {
           admin_verification_status: string | null
           assignment_score: number | null
           bonus_amount: number | null
+          booking_locked_at: string | null
           commission_amount: number | null
           completed_at: string | null
           completed_upload_type: string | null
@@ -58221,9 +58292,13 @@ export type Database = {
           quote_id: string | null
           rejection_reason: string | null
           request_id: string
+          reschedule_status: string | null
           scheduled_date: string | null
+          scheduled_end_time: string | null
+          scheduled_start_time: string | null
           status: string
           tour_url: string | null
+          venue_approved_quote_id: string | null
         }
         Insert: {
           accepted_at?: string | null
@@ -58231,6 +58306,7 @@ export type Database = {
           admin_verification_status?: string | null
           assignment_score?: number | null
           bonus_amount?: number | null
+          booking_locked_at?: string | null
           commission_amount?: number | null
           completed_at?: string | null
           completed_upload_type?: string | null
@@ -58254,9 +58330,13 @@ export type Database = {
           quote_id?: string | null
           rejection_reason?: string | null
           request_id: string
+          reschedule_status?: string | null
           scheduled_date?: string | null
+          scheduled_end_time?: string | null
+          scheduled_start_time?: string | null
           status?: string
           tour_url?: string | null
+          venue_approved_quote_id?: string | null
         }
         Update: {
           accepted_at?: string | null
@@ -58264,6 +58344,7 @@ export type Database = {
           admin_verification_status?: string | null
           assignment_score?: number | null
           bonus_amount?: number | null
+          booking_locked_at?: string | null
           commission_amount?: number | null
           completed_at?: string | null
           completed_upload_type?: string | null
@@ -58287,9 +58368,13 @@ export type Database = {
           quote_id?: string | null
           rejection_reason?: string | null
           request_id?: string
+          reschedule_status?: string | null
           scheduled_date?: string | null
+          scheduled_end_time?: string | null
+          scheduled_start_time?: string | null
           status?: string
           tour_url?: string | null
+          venue_approved_quote_id?: string | null
         }
         Relationships: [
           {
@@ -74018,6 +74103,64 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shoot_date_options: {
+        Row: {
+          created_at: string
+          id: string
+          option_date: string
+          option_end_time: string | null
+          option_start_time: string | null
+          option_status: string
+          photographer_id: string | null
+          quote_id: string | null
+          request_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_date: string
+          option_end_time?: string | null
+          option_start_time?: string | null
+          option_status?: string
+          photographer_id?: string | null
+          quote_id?: string | null
+          request_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_date?: string
+          option_end_time?: string | null
+          option_start_time?: string | null
+          option_status?: string
+          photographer_id?: string | null
+          quote_id?: string | null
+          request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shoot_date_options_photographer_id_fkey"
+            columns: ["photographer_id"]
+            isOneToOne: false
+            referencedRelation: "photographers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shoot_date_options_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_tour_quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shoot_date_options_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_tour_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -93563,6 +93706,102 @@ export type Database = {
           },
         ]
       }
+      venue_quote_actions: {
+        Row: {
+          action_notes: string | null
+          action_type: string
+          actor_type: string
+          created_at: string
+          id: string
+          quote_id: string | null
+          request_id: string | null
+        }
+        Insert: {
+          action_notes?: string | null
+          action_type: string
+          actor_type?: string
+          created_at?: string
+          id?: string
+          quote_id?: string | null
+          request_id?: string | null
+        }
+        Update: {
+          action_notes?: string | null
+          action_type?: string
+          actor_type?: string
+          created_at?: string
+          id?: string
+          quote_id?: string | null
+          request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_quote_actions_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_tour_quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_quote_actions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_tour_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_quote_revisions: {
+        Row: {
+          admin_response: string | null
+          created_at: string
+          id: string
+          quote_id: string | null
+          request_id: string | null
+          requested_changes: string | null
+          responded_at: string | null
+          revision_status: string
+          revision_type: string | null
+        }
+        Insert: {
+          admin_response?: string | null
+          created_at?: string
+          id?: string
+          quote_id?: string | null
+          request_id?: string | null
+          requested_changes?: string | null
+          responded_at?: string | null
+          revision_status?: string
+          revision_type?: string | null
+        }
+        Update: {
+          admin_response?: string | null
+          created_at?: string
+          id?: string
+          quote_id?: string | null
+          request_id?: string | null
+          requested_changes?: string | null
+          responded_at?: string | null
+          revision_status?: string
+          revision_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_quote_revisions_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_tour_quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_quote_revisions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_tour_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_virtual_tours: {
         Row: {
           created_at: string
@@ -93813,6 +94052,7 @@ export type Database = {
         Row: {
           adjustment_amount: number | null
           approved_at: string | null
+          approved_package_snapshot: Json | null
           base_price: number
           created_at: string
           demand_fee: number | null
@@ -93820,21 +94060,29 @@ export type Database = {
           final_price_max: number | null
           final_price_min: number | null
           id: string
+          locked_booking_id: string | null
           package_type: string
           photographer_payout: number | null
           platform_fee: number | null
           pricing_confidence_score: number | null
           pricing_version: string | null
+          quote_expires_at: string | null
           quote_notes: string | null
           quote_status: string
           request_id: string | null
           rush_fee: number | null
+          schedule_status: string | null
           sent_at: string | null
           travel_fee: number | null
+          venue_approved_at: string | null
+          venue_declined_at: string | null
+          venue_revision_requested_at: string | null
+          venue_viewed_at: string | null
         }
         Insert: {
           adjustment_amount?: number | null
           approved_at?: string | null
+          approved_package_snapshot?: Json | null
           base_price?: number
           created_at?: string
           demand_fee?: number | null
@@ -93842,21 +94090,29 @@ export type Database = {
           final_price_max?: number | null
           final_price_min?: number | null
           id?: string
+          locked_booking_id?: string | null
           package_type?: string
           photographer_payout?: number | null
           platform_fee?: number | null
           pricing_confidence_score?: number | null
           pricing_version?: string | null
+          quote_expires_at?: string | null
           quote_notes?: string | null
           quote_status?: string
           request_id?: string | null
           rush_fee?: number | null
+          schedule_status?: string | null
           sent_at?: string | null
           travel_fee?: number | null
+          venue_approved_at?: string | null
+          venue_declined_at?: string | null
+          venue_revision_requested_at?: string | null
+          venue_viewed_at?: string | null
         }
         Update: {
           adjustment_amount?: number | null
           approved_at?: string | null
+          approved_package_snapshot?: Json | null
           base_price?: number
           created_at?: string
           demand_fee?: number | null
@@ -93864,17 +94120,24 @@ export type Database = {
           final_price_max?: number | null
           final_price_min?: number | null
           id?: string
+          locked_booking_id?: string | null
           package_type?: string
           photographer_payout?: number | null
           platform_fee?: number | null
           pricing_confidence_score?: number | null
           pricing_version?: string | null
+          quote_expires_at?: string | null
           quote_notes?: string | null
           quote_status?: string
           request_id?: string | null
           rush_fee?: number | null
+          schedule_status?: string | null
           sent_at?: string | null
           travel_fee?: number | null
+          venue_approved_at?: string | null
+          venue_declined_at?: string | null
+          venue_revision_requested_at?: string | null
+          venue_viewed_at?: string | null
         }
         Relationships: [
           {
@@ -93890,6 +94153,8 @@ export type Database = {
         Row: {
           address: string | null
           assigned_photographer_id: string | null
+          assigned_quote_id: string | null
+          booking_conversion_stage: string | null
           budget_range: string | null
           contact_name: string | null
           created_at: string
@@ -93905,6 +94170,9 @@ export type Database = {
           parking_difficulty: string | null
           phone: string | null
           preferred_date: string | null
+          preferred_shoot_date_1: string | null
+          preferred_shoot_date_2: string | null
+          preferred_shoot_date_3: string | null
           pricing_snapshot: Json | null
           pricing_status: string | null
           room_count: number | null
@@ -93914,6 +94182,7 @@ export type Database = {
           status: string
           updated_at: string
           venue_category: string | null
+          venue_decision_status: string | null
           venue_id: string | null
           venue_name: string
           venue_size: string | null
@@ -93925,6 +94194,8 @@ export type Database = {
         Insert: {
           address?: string | null
           assigned_photographer_id?: string | null
+          assigned_quote_id?: string | null
+          booking_conversion_stage?: string | null
           budget_range?: string | null
           contact_name?: string | null
           created_at?: string
@@ -93940,6 +94211,9 @@ export type Database = {
           parking_difficulty?: string | null
           phone?: string | null
           preferred_date?: string | null
+          preferred_shoot_date_1?: string | null
+          preferred_shoot_date_2?: string | null
+          preferred_shoot_date_3?: string | null
           pricing_snapshot?: Json | null
           pricing_status?: string | null
           room_count?: number | null
@@ -93949,6 +94223,7 @@ export type Database = {
           status?: string
           updated_at?: string
           venue_category?: string | null
+          venue_decision_status?: string | null
           venue_id?: string | null
           venue_name: string
           venue_size?: string | null
@@ -93960,6 +94235,8 @@ export type Database = {
         Update: {
           address?: string | null
           assigned_photographer_id?: string | null
+          assigned_quote_id?: string | null
+          booking_conversion_stage?: string | null
           budget_range?: string | null
           contact_name?: string | null
           created_at?: string
@@ -93975,6 +94252,9 @@ export type Database = {
           parking_difficulty?: string | null
           phone?: string | null
           preferred_date?: string | null
+          preferred_shoot_date_1?: string | null
+          preferred_shoot_date_2?: string | null
+          preferred_shoot_date_3?: string | null
           pricing_snapshot?: Json | null
           pricing_status?: string | null
           room_count?: number | null
@@ -93984,6 +94264,7 @@ export type Database = {
           status?: string
           updated_at?: string
           venue_category?: string | null
+          venue_decision_status?: string | null
           venue_id?: string | null
           venue_name?: string
           venue_size?: string | null
