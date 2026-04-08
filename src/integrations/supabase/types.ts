@@ -58194,14 +58194,23 @@ export type Database = {
       photographer_jobs: {
         Row: {
           accepted_at: string | null
+          adjustment_amount: number | null
+          admin_verification_status: string | null
           assignment_score: number | null
+          bonus_amount: number | null
           commission_amount: number | null
           completed_at: string | null
           completed_upload_type: string | null
           created_at: string
+          dispute_status: string | null
           distance_miles: number | null
           en_route_at: string | null
           id: string
+          payout_eligible: boolean | null
+          payout_eligible_at: string | null
+          payout_hold_reason: string | null
+          payout_id: string | null
+          payout_release_date: string | null
           payout_status: string
           photographer_id: string
           photographer_payout: number | null
@@ -58218,14 +58227,23 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          adjustment_amount?: number | null
+          admin_verification_status?: string | null
           assignment_score?: number | null
+          bonus_amount?: number | null
           commission_amount?: number | null
           completed_at?: string | null
           completed_upload_type?: string | null
           created_at?: string
+          dispute_status?: string | null
           distance_miles?: number | null
           en_route_at?: string | null
           id?: string
+          payout_eligible?: boolean | null
+          payout_eligible_at?: string | null
+          payout_hold_reason?: string | null
+          payout_id?: string | null
+          payout_release_date?: string | null
           payout_status?: string
           photographer_id: string
           photographer_payout?: number | null
@@ -58242,14 +58260,23 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          adjustment_amount?: number | null
+          admin_verification_status?: string | null
           assignment_score?: number | null
+          bonus_amount?: number | null
           commission_amount?: number | null
           completed_at?: string | null
           completed_upload_type?: string | null
           created_at?: string
+          dispute_status?: string | null
           distance_miles?: number | null
           en_route_at?: string | null
           id?: string
+          payout_eligible?: boolean | null
+          payout_eligible_at?: string | null
+          payout_hold_reason?: string | null
+          payout_id?: string | null
+          payout_release_date?: string | null
           payout_status?: string
           photographer_id?: string
           photographer_payout?: number | null
@@ -58265,6 +58292,13 @@ export type Database = {
           tour_url?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "photographer_jobs_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "photographer_payouts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "photographer_jobs_photographer_id_fkey"
             columns: ["photographer_id"]
@@ -58284,6 +58318,236 @@ export type Database = {
             columns: ["request_id"]
             isOneToOne: false
             referencedRelation: "virtual_tour_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photographer_payout_accounts: {
+        Row: {
+          charges_enabled: boolean | null
+          created_at: string
+          default_currency: string | null
+          id: string
+          identity_status: string | null
+          onboarding_status: string | null
+          payouts_enabled: boolean | null
+          photographer_id: string
+          provider: string
+          provider_account_id: string | null
+          tax_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          charges_enabled?: boolean | null
+          created_at?: string
+          default_currency?: string | null
+          id?: string
+          identity_status?: string | null
+          onboarding_status?: string | null
+          payouts_enabled?: boolean | null
+          photographer_id: string
+          provider?: string
+          provider_account_id?: string | null
+          tax_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          charges_enabled?: boolean | null
+          created_at?: string
+          default_currency?: string | null
+          id?: string
+          identity_status?: string | null
+          onboarding_status?: string | null
+          payouts_enabled?: boolean | null
+          photographer_id?: string
+          provider?: string
+          provider_account_id?: string | null
+          tax_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photographer_payout_accounts_photographer_id_fkey"
+            columns: ["photographer_id"]
+            isOneToOne: false
+            referencedRelation: "photographers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photographer_payout_audit_log: {
+        Row: {
+          action_type: string
+          actor_user_id: string | null
+          created_at: string
+          id: string
+          new_status: string | null
+          notes: string | null
+          old_status: string | null
+          payout_id: string | null
+          photographer_id: string
+        }
+        Insert: {
+          action_type: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          notes?: string | null
+          old_status?: string | null
+          payout_id?: string | null
+          photographer_id: string
+        }
+        Update: {
+          action_type?: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          notes?: string | null
+          old_status?: string | null
+          payout_id?: string | null
+          photographer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photographer_payout_audit_log_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "photographer_payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photographer_payout_audit_log_photographer_id_fkey"
+            columns: ["photographer_id"]
+            isOneToOne: false
+            referencedRelation: "photographers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photographer_payout_items: {
+        Row: {
+          created_at: string
+          gross_job_amount: number
+          id: string
+          included_at: string | null
+          payout_id: string
+          photographer_job_id: string
+          photographer_payout_amount: number
+          platform_fee: number
+        }
+        Insert: {
+          created_at?: string
+          gross_job_amount?: number
+          id?: string
+          included_at?: string | null
+          payout_id: string
+          photographer_job_id: string
+          photographer_payout_amount?: number
+          platform_fee?: number
+        }
+        Update: {
+          created_at?: string
+          gross_job_amount?: number
+          id?: string
+          included_at?: string | null
+          payout_id?: string
+          photographer_job_id?: string
+          photographer_payout_amount?: number
+          platform_fee?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photographer_payout_items_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "photographer_payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photographer_payout_items_photographer_job_id_fkey"
+            columns: ["photographer_job_id"]
+            isOneToOne: true
+            referencedRelation: "photographer_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photographer_payouts: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          created_by: string | null
+          currency: string | null
+          failure_reason: string | null
+          id: string
+          notes: string | null
+          paid_at: string | null
+          payout_account_id: string | null
+          payout_status: string
+          payout_type: string
+          photographer_id: string
+          processed_at: string | null
+          provider_payout_id: string | null
+          reference_code: string | null
+          requested_at: string | null
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          failure_reason?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payout_account_id?: string | null
+          payout_status?: string
+          payout_type?: string
+          photographer_id: string
+          processed_at?: string | null
+          provider_payout_id?: string | null
+          reference_code?: string | null
+          requested_at?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          failure_reason?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payout_account_id?: string | null
+          payout_status?: string
+          payout_type?: string
+          photographer_id?: string
+          processed_at?: string | null
+          provider_payout_id?: string | null
+          reference_code?: string | null
+          requested_at?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photographer_payouts_payout_account_id_fkey"
+            columns: ["payout_account_id"]
+            isOneToOne: false
+            referencedRelation: "photographer_payout_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photographer_payouts_photographer_id_fkey"
+            columns: ["photographer_id"]
+            isOneToOne: false
+            referencedRelation: "photographers"
             referencedColumns: ["id"]
           },
         ]
@@ -58402,6 +58666,7 @@ export type Database = {
           application_source: string | null
           average_turnaround_hours: number | null
           commission_rate: number
+          compliance_hold: boolean | null
           created_at: string
           email: string | null
           equipment_type: string
@@ -58409,12 +58674,16 @@ export type Database = {
           internal_notes: string | null
           is_active: boolean
           jobs_completed: number
+          last_payout_at: string | null
           lat: number | null
+          lifetime_paid_out: number | null
           lng: number | null
           minimum_job_price: number | null
+          minimum_payout_threshold: number | null
           name: string
           onboarding_completed: boolean | null
           payout_method_status: string | null
+          payout_schedule: string | null
           phone: string | null
           photographer_tier: string | null
           portfolio_url: string | null
@@ -58422,6 +58691,7 @@ export type Database = {
           rating: number
           rush_fee_percent: number | null
           service_area: string | null
+          tax_profile_status: string | null
           travel_fee_base: number | null
           verification_status: string | null
         }
@@ -58429,6 +58699,7 @@ export type Database = {
           application_source?: string | null
           average_turnaround_hours?: number | null
           commission_rate?: number
+          compliance_hold?: boolean | null
           created_at?: string
           email?: string | null
           equipment_type?: string
@@ -58436,12 +58707,16 @@ export type Database = {
           internal_notes?: string | null
           is_active?: boolean
           jobs_completed?: number
+          last_payout_at?: string | null
           lat?: number | null
+          lifetime_paid_out?: number | null
           lng?: number | null
           minimum_job_price?: number | null
+          minimum_payout_threshold?: number | null
           name: string
           onboarding_completed?: boolean | null
           payout_method_status?: string | null
+          payout_schedule?: string | null
           phone?: string | null
           photographer_tier?: string | null
           portfolio_url?: string | null
@@ -58449,6 +58724,7 @@ export type Database = {
           rating?: number
           rush_fee_percent?: number | null
           service_area?: string | null
+          tax_profile_status?: string | null
           travel_fee_base?: number | null
           verification_status?: string | null
         }
@@ -58456,6 +58732,7 @@ export type Database = {
           application_source?: string | null
           average_turnaround_hours?: number | null
           commission_rate?: number
+          compliance_hold?: boolean | null
           created_at?: string
           email?: string | null
           equipment_type?: string
@@ -58463,12 +58740,16 @@ export type Database = {
           internal_notes?: string | null
           is_active?: boolean
           jobs_completed?: number
+          last_payout_at?: string | null
           lat?: number | null
+          lifetime_paid_out?: number | null
           lng?: number | null
           minimum_job_price?: number | null
+          minimum_payout_threshold?: number | null
           name?: string
           onboarding_completed?: boolean | null
           payout_method_status?: string | null
+          payout_schedule?: string | null
           phone?: string | null
           photographer_tier?: string | null
           portfolio_url?: string | null
@@ -58476,6 +58757,7 @@ export type Database = {
           rating?: number
           rush_fee_percent?: number | null
           service_area?: string | null
+          tax_profile_status?: string | null
           travel_fee_base?: number | null
           verification_status?: string | null
         }
@@ -103543,6 +103825,7 @@ export type Database = {
       }
       void_payout_batch: { Args: { p_batch_id: string }; Returns: undefined }
       vt_calculate_quote: { Args: { p_request_id: string }; Returns: Json }
+      vt_check_payout_eligibility: { Args: { p_job_id: string }; Returns: Json }
       vt_refresh_coverage_zones: { Args: never; Returns: number }
       vt_score_assignment: {
         Args: { p_request_id: string }
