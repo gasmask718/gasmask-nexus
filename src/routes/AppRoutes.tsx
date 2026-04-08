@@ -889,6 +889,7 @@ const FundingMachineSettings = lazy(() => import('@/pages/funding-machine/Fundin
 const FundingClientPortal = lazy(() => import('@/pages/funding-machine/ClientPortalPage'));
 const FundingMachineApplications = lazy(() => import('@/pages/funding-machine/ApplicationsPage'));
 const UbenHQ = lazy(() => import('@/pages/os/uben/UbenHQ'));
+const DynastyEarn = lazy(() => import('@/pages/os/dynasty-earn/DynastyEarn'));
 const BettingDashboard = lazy(() => import('@/pages/os/betting/BettingDashboard'));
 const LineIntake = lazy(() => import('@/pages/os/betting/LineIntake'));
 const SimulationPage = lazy(() => import('@/pages/os/betting/SimulationPage'));
@@ -1772,6 +1773,7 @@ export default function AppRoutes() {
         <Route path="/funding-machine/settings" element={<FundingMachineSettings />} />
         {/* UBEN HQ — Non-Profit Operations Tracker */}
         <Route path="/os/uben" element={<UbenHQ />} />
+        <Route path="/os/dynasty-earn" element={<DynastyEarn />} />
         <Route path="/os/sports-betting" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/analytics" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/dashboard" element={<BettingDashboard />} />

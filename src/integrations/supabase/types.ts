@@ -37117,6 +37117,299 @@ export type Database = {
         }
         Relationships: []
       }
+      dynasty_earn_affiliates: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          business_units: string[] | null
+          created_at: string
+          email: string
+          id: string
+          lifetime_earnings: number | null
+          name: string
+          phone: string | null
+          referral_code: string | null
+          role: string
+          status: string
+          total_clicks: number | null
+          total_conversions: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          business_units?: string[] | null
+          created_at?: string
+          email: string
+          id?: string
+          lifetime_earnings?: number | null
+          name: string
+          phone?: string | null
+          referral_code?: string | null
+          role?: string
+          status?: string
+          total_clicks?: number | null
+          total_conversions?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          business_units?: string[] | null
+          created_at?: string
+          email?: string
+          id?: string
+          lifetime_earnings?: number | null
+          name?: string
+          phone?: string | null
+          referral_code?: string | null
+          role?: string
+          status?: string
+          total_clicks?: number | null
+          total_conversions?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      dynasty_earn_commissions: {
+        Row: {
+          affiliate_id: string
+          amount: number
+          approved_at: string | null
+          created_at: string
+          id: string
+          link_id: string | null
+          paid_at: string | null
+          program_id: string
+          source_description: string | null
+          status: string
+        }
+        Insert: {
+          affiliate_id: string
+          amount?: number
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          link_id?: string | null
+          paid_at?: string | null
+          program_id: string
+          source_description?: string | null
+          status?: string
+        }
+        Update: {
+          affiliate_id?: string
+          amount?: number
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          link_id?: string | null
+          paid_at?: string | null
+          program_id?: string
+          source_description?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dynasty_earn_commissions_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "dynasty_earn_affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dynasty_earn_commissions_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "dynasty_earn_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dynasty_earn_commissions_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "dynasty_earn_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dynasty_earn_links: {
+        Row: {
+          affiliate_id: string
+          clicks: number | null
+          conversions: number | null
+          created_at: string
+          destination_url: string | null
+          id: string
+          program_id: string
+          unique_code: string
+        }
+        Insert: {
+          affiliate_id: string
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string
+          destination_url?: string | null
+          id?: string
+          program_id: string
+          unique_code: string
+        }
+        Update: {
+          affiliate_id?: string
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string
+          destination_url?: string | null
+          id?: string
+          program_id?: string
+          unique_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dynasty_earn_links_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "dynasty_earn_affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dynasty_earn_links_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "dynasty_earn_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dynasty_earn_notifications: {
+        Row: {
+          affiliate_id: string
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          notification_type: string | null
+          title: string
+        }
+        Insert: {
+          affiliate_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          notification_type?: string | null
+          title: string
+        }
+        Update: {
+          affiliate_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          notification_type?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dynasty_earn_notifications_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "dynasty_earn_affiliates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dynasty_earn_payouts: {
+        Row: {
+          affiliate_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          payout_method: string | null
+          processed_at: string | null
+          status: string
+          total_amount: number
+        }
+        Insert: {
+          affiliate_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payout_method?: string | null
+          processed_at?: string | null
+          status?: string
+          total_amount?: number
+        }
+        Update: {
+          affiliate_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payout_method?: string | null
+          processed_at?: string | null
+          status?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dynasty_earn_payouts_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "dynasty_earn_affiliates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dynasty_earn_programs: {
+        Row: {
+          business_name: string
+          commission_type: string
+          commission_value: number
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          max_affiliates: number | null
+          program_name: string
+          recurring: boolean | null
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          business_name: string
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          max_affiliates?: number | null
+          program_name: string
+          recurring?: boolean | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          business_name?: string
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          max_affiliates?: number | null
+          program_name?: string
+          recurring?: boolean | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       elevenlabs_agents: {
         Row: {
           agent_description: string | null
