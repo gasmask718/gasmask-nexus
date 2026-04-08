@@ -411,7 +411,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/uben', label: '💛 UBEN Dashboard', icon: Heart },
       { path: '/os/dynasty-earn', label: '💰 Monetization Engine', icon: DollarSign },
       { path: '/os/brand-acquisition', label: '👑 Brand Acquisition', icon: Crown },
-      { path: '/os/dynasty-sales', label: '🎯 Sales Network', icon: Target },
+      { path: '/os/dynasty-sales', label: '🔥 Sales Domination', icon: Target },
     ],
   },
   financeAcquisition: {
