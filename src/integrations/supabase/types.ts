@@ -49693,6 +49693,60 @@ export type Database = {
           },
         ]
       }
+      market_coverage_zones: {
+        Row: {
+          active_photographers_count: number | null
+          active_requests_count: number | null
+          average_quote_value: number | null
+          avg_time_to_assign: number | null
+          city: string
+          completed_jobs_count: number | null
+          coverage_gap_score: number | null
+          created_at: string
+          demand_score: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          recruitment_priority: string | null
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          active_photographers_count?: number | null
+          active_requests_count?: number | null
+          average_quote_value?: number | null
+          avg_time_to_assign?: number | null
+          city: string
+          completed_jobs_count?: number | null
+          coverage_gap_score?: number | null
+          created_at?: string
+          demand_score?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          recruitment_priority?: string | null
+          state: string
+          updated_at?: string
+        }
+        Update: {
+          active_photographers_count?: number | null
+          active_requests_count?: number | null
+          average_quote_value?: number | null
+          avg_time_to_assign?: number | null
+          city?: string
+          completed_jobs_count?: number | null
+          coverage_gap_score?: number | null
+          created_at?: string
+          demand_score?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          recruitment_priority?: string | null
+          state?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       market_lines: {
         Row: {
           created_at: string | null
@@ -58027,16 +58081,135 @@ export type Database = {
           },
         ]
       }
+      photographer_applications: {
+        Row: {
+          application_status: string
+          approved_photographer_id: string | null
+          business_name: string | null
+          capabilities: Json | null
+          city: string | null
+          created_at: string
+          email: string | null
+          equipment_types: Json | null
+          full_name: string
+          id: string
+          instagram_url: string | null
+          insurance_status: string | null
+          lat: number | null
+          lng: number | null
+          minimum_job_price: number | null
+          phone: string | null
+          preferred_price_range: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          rush_available: boolean | null
+          rush_fee_expectation: number | null
+          sample_work_links: Json | null
+          service_radius_miles: number | null
+          state: string | null
+          travel_fee_expectation: number | null
+          travel_mode: string | null
+          turnaround_speed: string | null
+          website_url: string | null
+          weekend_available: boolean | null
+          zip: string | null
+        }
+        Insert: {
+          application_status?: string
+          approved_photographer_id?: string | null
+          business_name?: string | null
+          capabilities?: Json | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          equipment_types?: Json | null
+          full_name: string
+          id?: string
+          instagram_url?: string | null
+          insurance_status?: string | null
+          lat?: number | null
+          lng?: number | null
+          minimum_job_price?: number | null
+          phone?: string | null
+          preferred_price_range?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rush_available?: boolean | null
+          rush_fee_expectation?: number | null
+          sample_work_links?: Json | null
+          service_radius_miles?: number | null
+          state?: string | null
+          travel_fee_expectation?: number | null
+          travel_mode?: string | null
+          turnaround_speed?: string | null
+          website_url?: string | null
+          weekend_available?: boolean | null
+          zip?: string | null
+        }
+        Update: {
+          application_status?: string
+          approved_photographer_id?: string | null
+          business_name?: string | null
+          capabilities?: Json | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          equipment_types?: Json | null
+          full_name?: string
+          id?: string
+          instagram_url?: string | null
+          insurance_status?: string | null
+          lat?: number | null
+          lng?: number | null
+          minimum_job_price?: number | null
+          phone?: string | null
+          preferred_price_range?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rush_available?: boolean | null
+          rush_fee_expectation?: number | null
+          sample_work_links?: Json | null
+          service_radius_miles?: number | null
+          state?: string | null
+          travel_fee_expectation?: number | null
+          travel_mode?: string | null
+          turnaround_speed?: string | null
+          website_url?: string | null
+          weekend_available?: boolean | null
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photographer_applications_approved_photographer_id_fkey"
+            columns: ["approved_photographer_id"]
+            isOneToOne: false
+            referencedRelation: "photographers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       photographer_jobs: {
         Row: {
+          accepted_at: string | null
+          assignment_score: number | null
           commission_amount: number | null
           completed_at: string | null
+          completed_upload_type: string | null
           created_at: string
+          distance_miles: number | null
+          en_route_at: string | null
           id: string
           payout_status: string
           photographer_id: string
           photographer_payout: number | null
           price: number | null
+          pricing_snapshot: Json | null
+          qa_notes: string | null
+          qa_status: string | null
+          quote_id: string | null
           rejection_reason: string | null
           request_id: string
           scheduled_date: string | null
@@ -58044,14 +58217,23 @@ export type Database = {
           tour_url: string | null
         }
         Insert: {
+          accepted_at?: string | null
+          assignment_score?: number | null
           commission_amount?: number | null
           completed_at?: string | null
+          completed_upload_type?: string | null
           created_at?: string
+          distance_miles?: number | null
+          en_route_at?: string | null
           id?: string
           payout_status?: string
           photographer_id: string
           photographer_payout?: number | null
           price?: number | null
+          pricing_snapshot?: Json | null
+          qa_notes?: string | null
+          qa_status?: string | null
+          quote_id?: string | null
           rejection_reason?: string | null
           request_id: string
           scheduled_date?: string | null
@@ -58059,14 +58241,23 @@ export type Database = {
           tour_url?: string | null
         }
         Update: {
+          accepted_at?: string | null
+          assignment_score?: number | null
           commission_amount?: number | null
           completed_at?: string | null
+          completed_upload_type?: string | null
           created_at?: string
+          distance_miles?: number | null
+          en_route_at?: string | null
           id?: string
           payout_status?: string
           photographer_id?: string
           photographer_payout?: number | null
           price?: number | null
+          pricing_snapshot?: Json | null
+          qa_notes?: string | null
+          qa_status?: string | null
+          quote_id?: string | null
           rejection_reason?: string | null
           request_id?: string
           scheduled_date?: string | null
@@ -58082,6 +58273,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "photographer_jobs_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_tour_quotes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "photographer_jobs_request_id_fkey"
             columns: ["request_id"]
             isOneToOne: false
@@ -58090,54 +58288,196 @@ export type Database = {
           },
         ]
       }
+      photographer_scorecards: {
+        Row: {
+          acceptance_rate: number | null
+          avg_rating: number | null
+          avg_turnaround_hours: number | null
+          cancellation_rate: number | null
+          completion_rate: number | null
+          dispute_rate: number | null
+          id: string
+          jobs_completed: number | null
+          last_calculated_at: string | null
+          on_time_rate: number | null
+          photographer_id: string
+          quality_score: number | null
+          repeat_assignment_score: number | null
+        }
+        Insert: {
+          acceptance_rate?: number | null
+          avg_rating?: number | null
+          avg_turnaround_hours?: number | null
+          cancellation_rate?: number | null
+          completion_rate?: number | null
+          dispute_rate?: number | null
+          id?: string
+          jobs_completed?: number | null
+          last_calculated_at?: string | null
+          on_time_rate?: number | null
+          photographer_id: string
+          quality_score?: number | null
+          repeat_assignment_score?: number | null
+        }
+        Update: {
+          acceptance_rate?: number | null
+          avg_rating?: number | null
+          avg_turnaround_hours?: number | null
+          cancellation_rate?: number | null
+          completion_rate?: number | null
+          dispute_rate?: number | null
+          id?: string
+          jobs_completed?: number | null
+          last_calculated_at?: string | null
+          on_time_rate?: number | null
+          photographer_id?: string
+          quality_score?: number | null
+          repeat_assignment_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photographer_scorecards_photographer_id_fkey"
+            columns: ["photographer_id"]
+            isOneToOne: true
+            referencedRelation: "photographers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photographer_territories: {
+        Row: {
+          city: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          is_primary: boolean | null
+          lat: number | null
+          lng: number | null
+          photographer_id: string
+          priority_weight: number | null
+          radius_miles: number | null
+          state: string | null
+          zip: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          photographer_id: string
+          priority_weight?: number | null
+          radius_miles?: number | null
+          state?: string | null
+          zip?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          photographer_id?: string
+          priority_weight?: number | null
+          radius_miles?: number | null
+          state?: string | null
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photographer_territories_photographer_id_fkey"
+            columns: ["photographer_id"]
+            isOneToOne: false
+            referencedRelation: "photographers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       photographers: {
         Row: {
+          application_source: string | null
+          average_turnaround_hours: number | null
           commission_rate: number
           created_at: string
           email: string | null
           equipment_type: string
           id: string
+          internal_notes: string | null
           is_active: boolean
           jobs_completed: number
           lat: number | null
           lng: number | null
+          minimum_job_price: number | null
           name: string
+          onboarding_completed: boolean | null
+          payout_method_status: string | null
           phone: string | null
+          photographer_tier: string | null
+          portfolio_url: string | null
           radius_miles: number
           rating: number
+          rush_fee_percent: number | null
           service_area: string | null
+          travel_fee_base: number | null
+          verification_status: string | null
         }
         Insert: {
+          application_source?: string | null
+          average_turnaround_hours?: number | null
           commission_rate?: number
           created_at?: string
           email?: string | null
           equipment_type?: string
           id?: string
+          internal_notes?: string | null
           is_active?: boolean
           jobs_completed?: number
           lat?: number | null
           lng?: number | null
+          minimum_job_price?: number | null
           name: string
+          onboarding_completed?: boolean | null
+          payout_method_status?: string | null
           phone?: string | null
+          photographer_tier?: string | null
+          portfolio_url?: string | null
           radius_miles?: number
           rating?: number
+          rush_fee_percent?: number | null
           service_area?: string | null
+          travel_fee_base?: number | null
+          verification_status?: string | null
         }
         Update: {
+          application_source?: string | null
+          average_turnaround_hours?: number | null
           commission_rate?: number
           created_at?: string
           email?: string | null
           equipment_type?: string
           id?: string
+          internal_notes?: string | null
           is_active?: boolean
           jobs_completed?: number
           lat?: number | null
           lng?: number | null
+          minimum_job_price?: number | null
           name?: string
+          onboarding_completed?: boolean | null
+          payout_method_status?: string | null
           phone?: string | null
+          photographer_tier?: string | null
+          portfolio_url?: string | null
           radius_miles?: number
           rating?: number
+          rush_fee_percent?: number | null
           service_area?: string | null
+          travel_fee_base?: number | null
+          verification_status?: string | null
         }
         Relationships: []
       }
@@ -92946,8 +93286,13 @@ export type Database = {
           created_at: string
           id: string
           is_verified: boolean
+          media_quality_score: number | null
+          package_type: string | null
+          source_job_id: string | null
+          tour_format: string | null
           tour_type: string
           tour_url: string
+          uploaded_by_photographer_id: string | null
           venue_id: string | null
           verified_at: string | null
           verified_by: string | null
@@ -92956,8 +93301,13 @@ export type Database = {
           created_at?: string
           id?: string
           is_verified?: boolean
+          media_quality_score?: number | null
+          package_type?: string | null
+          source_job_id?: string | null
+          tour_format?: string | null
           tour_type?: string
           tour_url: string
+          uploaded_by_photographer_id?: string | null
           venue_id?: string | null
           verified_at?: string | null
           verified_by?: string | null
@@ -92966,13 +93316,33 @@ export type Database = {
           created_at?: string
           id?: string
           is_verified?: boolean
+          media_quality_score?: number | null
+          package_type?: string | null
+          source_job_id?: string | null
+          tour_format?: string | null
           tour_type?: string
           tour_url?: string
+          uploaded_by_photographer_id?: string | null
           venue_id?: string | null
           verified_at?: string | null
           verified_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "venue_virtual_tours_source_job_id_fkey"
+            columns: ["source_job_id"]
+            isOneToOne: false
+            referencedRelation: "photographer_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_virtual_tours_uploaded_by_photographer_id_fkey"
+            columns: ["uploaded_by_photographer_id"]
+            isOneToOne: false
+            referencedRelation: "photographers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vertical_brands: {
         Row: {
@@ -93085,6 +93455,155 @@ export type Database = {
           },
         ]
       }
+      virtual_tour_pricing_rules: {
+        Row: {
+          active: boolean
+          base_price: number
+          city: string | null
+          created_at: string
+          demand_multiplier: number
+          guest_capacity_max: number | null
+          guest_capacity_min: number | null
+          id: string
+          luxury_multiplier: number
+          mixed_space_multiplier: number
+          outdoor_multiplier: number
+          package_type: string
+          rush_multiplier: number
+          square_footage_max: number | null
+          square_footage_min: number | null
+          stairs_multiplier: number
+          state: string | null
+          travel_fee_base: number
+          travel_fee_per_mile: number
+          updated_at: string
+          venue_type: string | null
+        }
+        Insert: {
+          active?: boolean
+          base_price?: number
+          city?: string | null
+          created_at?: string
+          demand_multiplier?: number
+          guest_capacity_max?: number | null
+          guest_capacity_min?: number | null
+          id?: string
+          luxury_multiplier?: number
+          mixed_space_multiplier?: number
+          outdoor_multiplier?: number
+          package_type?: string
+          rush_multiplier?: number
+          square_footage_max?: number | null
+          square_footage_min?: number | null
+          stairs_multiplier?: number
+          state?: string | null
+          travel_fee_base?: number
+          travel_fee_per_mile?: number
+          updated_at?: string
+          venue_type?: string | null
+        }
+        Update: {
+          active?: boolean
+          base_price?: number
+          city?: string | null
+          created_at?: string
+          demand_multiplier?: number
+          guest_capacity_max?: number | null
+          guest_capacity_min?: number | null
+          id?: string
+          luxury_multiplier?: number
+          mixed_space_multiplier?: number
+          outdoor_multiplier?: number
+          package_type?: string
+          rush_multiplier?: number
+          square_footage_max?: number | null
+          square_footage_min?: number | null
+          stairs_multiplier?: number
+          state?: string | null
+          travel_fee_base?: number
+          travel_fee_per_mile?: number
+          updated_at?: string
+          venue_type?: string | null
+        }
+        Relationships: []
+      }
+      virtual_tour_quotes: {
+        Row: {
+          adjustment_amount: number | null
+          approved_at: string | null
+          base_price: number
+          created_at: string
+          demand_fee: number | null
+          final_price_exact: number | null
+          final_price_max: number | null
+          final_price_min: number | null
+          id: string
+          package_type: string
+          photographer_payout: number | null
+          platform_fee: number | null
+          pricing_confidence_score: number | null
+          pricing_version: string | null
+          quote_notes: string | null
+          quote_status: string
+          request_id: string | null
+          rush_fee: number | null
+          sent_at: string | null
+          travel_fee: number | null
+        }
+        Insert: {
+          adjustment_amount?: number | null
+          approved_at?: string | null
+          base_price?: number
+          created_at?: string
+          demand_fee?: number | null
+          final_price_exact?: number | null
+          final_price_max?: number | null
+          final_price_min?: number | null
+          id?: string
+          package_type?: string
+          photographer_payout?: number | null
+          platform_fee?: number | null
+          pricing_confidence_score?: number | null
+          pricing_version?: string | null
+          quote_notes?: string | null
+          quote_status?: string
+          request_id?: string | null
+          rush_fee?: number | null
+          sent_at?: string | null
+          travel_fee?: number | null
+        }
+        Update: {
+          adjustment_amount?: number | null
+          approved_at?: string | null
+          base_price?: number
+          created_at?: string
+          demand_fee?: number | null
+          final_price_exact?: number | null
+          final_price_max?: number | null
+          final_price_min?: number | null
+          id?: string
+          package_type?: string
+          photographer_payout?: number | null
+          platform_fee?: number | null
+          pricing_confidence_score?: number | null
+          pricing_version?: string | null
+          quote_notes?: string | null
+          quote_status?: string
+          request_id?: string | null
+          rush_fee?: number | null
+          sent_at?: string | null
+          travel_fee?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "virtual_tour_quotes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_tour_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       virtual_tour_requests: {
         Row: {
           address: string | null
@@ -93092,19 +93611,34 @@ export type Database = {
           budget_range: string | null
           contact_name: string | null
           created_at: string
+          decorated_state: string | null
+          demand_snapshot: Json | null
           email: string | null
+          guest_capacity: number | null
           id: string
           lat: number | null
           lng: number | null
           notes: string | null
+          package_type: string | null
+          parking_difficulty: string | null
           phone: string | null
           preferred_date: string | null
+          pricing_snapshot: Json | null
+          pricing_status: string | null
+          room_count: number | null
+          rush_requested: boolean | null
+          source_channel: string | null
+          stairs_access: string | null
           status: string
           updated_at: string
+          venue_category: string | null
           venue_id: string | null
           venue_name: string
           venue_size: string | null
           venue_type: string | null
+          wants_360: boolean | null
+          wants_matterport: boolean | null
+          wants_video: boolean | null
         }
         Insert: {
           address?: string | null
@@ -93112,19 +93646,34 @@ export type Database = {
           budget_range?: string | null
           contact_name?: string | null
           created_at?: string
+          decorated_state?: string | null
+          demand_snapshot?: Json | null
           email?: string | null
+          guest_capacity?: number | null
           id?: string
           lat?: number | null
           lng?: number | null
           notes?: string | null
+          package_type?: string | null
+          parking_difficulty?: string | null
           phone?: string | null
           preferred_date?: string | null
+          pricing_snapshot?: Json | null
+          pricing_status?: string | null
+          room_count?: number | null
+          rush_requested?: boolean | null
+          source_channel?: string | null
+          stairs_access?: string | null
           status?: string
           updated_at?: string
+          venue_category?: string | null
           venue_id?: string | null
           venue_name: string
           venue_size?: string | null
           venue_type?: string | null
+          wants_360?: boolean | null
+          wants_matterport?: boolean | null
+          wants_video?: boolean | null
         }
         Update: {
           address?: string | null
@@ -93132,19 +93681,34 @@ export type Database = {
           budget_range?: string | null
           contact_name?: string | null
           created_at?: string
+          decorated_state?: string | null
+          demand_snapshot?: Json | null
           email?: string | null
+          guest_capacity?: number | null
           id?: string
           lat?: number | null
           lng?: number | null
           notes?: string | null
+          package_type?: string | null
+          parking_difficulty?: string | null
           phone?: string | null
           preferred_date?: string | null
+          pricing_snapshot?: Json | null
+          pricing_status?: string | null
+          room_count?: number | null
+          rush_requested?: boolean | null
+          source_channel?: string | null
+          stairs_access?: string | null
           status?: string
           updated_at?: string
+          venue_category?: string | null
           venue_id?: string | null
           venue_name?: string
           venue_size?: string | null
           venue_type?: string | null
+          wants_360?: boolean | null
+          wants_matterport?: boolean | null
+          wants_video?: boolean | null
         }
         Relationships: [
           {
@@ -102978,6 +103542,21 @@ export type Database = {
         Returns: Json
       }
       void_payout_batch: { Args: { p_batch_id: string }; Returns: undefined }
+      vt_calculate_quote: { Args: { p_request_id: string }; Returns: Json }
+      vt_refresh_coverage_zones: { Args: never; Returns: number }
+      vt_score_assignment: {
+        Args: { p_request_id: string }
+        Returns: {
+          acceptance_rate: number
+          assignment_score: number
+          completion_rate: number
+          distance_miles: number
+          photographer_id: string
+          photographer_name: string
+          rating: number
+          tier: string
+        }[]
+      }
     }
     Enums: {
       acquisition_status:
