@@ -191,11 +191,16 @@ export default function UTVirtualTours() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [payoutSubTab, setPayoutSubTab] = useState('overview');
+  const [quoteActions, setQuoteActions] = useState<any[]>([]);
+  const [quoteRevisions, setQuoteRevisions] = useState<any[]>([]);
+  const [shootDateOptions, setShootDateOptions] = useState<any[]>([]);
+  const [lockedBookings, setLockedBookings] = useState<any[]>([]);
+  const [bookingSubTab, setBookingSubTab] = useState('drafts');
 
   // ─── Data Fetching ─────────────────────────────────────────────────
   const fetchAll = async () => {
     setLoading(true);
-    const [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13] = await Promise.all([
+    const [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17] = await Promise.all([
       supabase.from('virtual_tour_requests').select('*').order('created_at', { ascending: false }).limit(500),
       supabase.from('photographers').select('*').order('rating', { ascending: false }),
       supabase.from('photographer_jobs').select('*').order('created_at', { ascending: false }).limit(500),
@@ -209,6 +214,10 @@ export default function UTVirtualTours() {
       (supabase.from('photographer_payout_items' as any) as any).select('*'),
       (supabase.from('photographer_payout_accounts' as any) as any).select('*'),
       (supabase.from('photographer_payout_audit_log' as any) as any).select('*').order('created_at', { ascending: false }).limit(200),
+      (supabase.from('venue_quote_actions' as any) as any).select('*').order('created_at', { ascending: false }),
+      (supabase.from('venue_quote_revisions' as any) as any).select('*').order('created_at', { ascending: false }),
+      (supabase.from('shoot_date_options' as any) as any).select('*').order('created_at', { ascending: false }),
+      (supabase.from('locked_shoot_bookings' as any) as any).select('*').order('created_at', { ascending: false }),
     ]);
     if (r1.data) setRequests(r1.data as any);
     if (r2.data) setPhotographers(r2.data as any);
@@ -223,6 +232,10 @@ export default function UTVirtualTours() {
     if (r11.data) setPayoutItems(r11.data as any);
     if (r12.data) setPayoutAccounts(r12.data as any);
     if (r13.data) setPayoutAuditLog(r13.data as any);
+    if (r14.data) setQuoteActions(r14.data as any);
+    if (r15.data) setQuoteRevisions(r15.data as any);
+    if (r16.data) setShootDateOptions(r16.data as any);
+    if (r17.data) setLockedBookings(r17.data as any);
     setLoading(false);
   };
 
@@ -528,7 +541,7 @@ export default function UTVirtualTours() {
                { v: 'dashboard', l: 'Dashboard' }, { v: 'requests', l: 'Requests' }, { v: 'quotes', l: 'Quotes' },
                { v: 'photographers', l: 'Photographers' }, { v: 'applications', l: `Applications${pendingApps ? ` (${pendingApps})` : ''}` },
                { v: 'territories', l: 'Territories' }, { v: 'jobs', l: 'Jobs' }, { v: 'tours', l: 'Tours' },
-               { v: 'commissions', l: 'Commissions' }, { v: 'payouts', l: 'Payouts' }, { v: 'recruitment', l: 'Recruitment Intel' }, { v: 'qa', l: 'QA' },
+               { v: 'commissions', l: 'Commissions' }, { v: 'payouts', l: 'Payouts' }, { v: 'booking', l: 'Booking Conversion' }, { v: 'recruitment', l: 'Recruitment Intel' }, { v: 'qa', l: 'QA' },
             ].map(t => (
               <TabsTrigger key={t.v} value={t.v} className="data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400 text-xs">{t.l}</TabsTrigger>
             ))}
@@ -1464,6 +1477,364 @@ export default function UTVirtualTours() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* ═══ TAB: Booking Conversion ═══ */}
+        <TabsContent value="booking" className="space-y-6">
+          {/* Sub-tabs */}
+          <div className="flex gap-2 flex-wrap">
+            {['drafts', 'sent', 'awaiting', 'revisions', 'approved', 'locked', 'expired'].map(st => (
+              <Button key={st} size="sm" variant={bookingSubTab === st ? 'default' : 'outline'}
+                className={bookingSubTab === st ? 'bg-amber-500 text-black' : 'border-[#1e293b] text-muted-foreground'}
+                onClick={() => setBookingSubTab(st)}>
+                {st === 'drafts' ? 'Draft Quotes' : st === 'sent' ? 'Sent Quotes' : st === 'awaiting' ? 'Awaiting Response' : st === 'revisions' ? 'Revision Requests' : st === 'approved' ? 'Approved / Date Lock' : st === 'locked' ? 'Locked / Scheduled' : 'Expired / Lost'}
+              </Button>
+            ))}
+          </div>
+
+          {/* KPIs */}
+          {(() => {
+            const sentQ = quotes.filter(q => ['sent', 'viewed'].includes(q.quote_status));
+            const approvedQ = quotes.filter(q => q.quote_status === 'approved' || (q as any).venue_approved_at);
+            const revisionQ = quoteRevisions.filter((r: any) => r.revision_status === 'pending');
+            const lockedB = lockedBookings.filter((b: any) => ['locked', 'scheduled'].includes(b.booking_status));
+            const expiredQ = quotes.filter(q => q.quote_status === 'expired' || q.quote_status === 'declined');
+            const avgApprovalDays = approvedQ.length ? (approvedQ.reduce((s, q) => {
+              const created = new Date(q.created_at).getTime();
+              const approved = new Date((q as any).venue_approved_at || q.approved_at || q.created_at).getTime();
+              return s + (approved - created) / (1000 * 60 * 60 * 24);
+            }, 0) / approvedQ.length).toFixed(1) : '—';
+            const lostValue = expiredQ.reduce((s, q) => s + (q.final_price_exact || q.final_price_max || 0), 0);
+            const approvalRate = quotes.length ? ((approvedQ.length / quotes.length) * 100).toFixed(0) : '0';
+            const lockRate = approvedQ.length ? ((lockedB.length / approvedQ.length) * 100).toFixed(0) : '0';
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                <KPICard icon={Send} label="Quotes Sent" value={sentQ.length} color="text-blue-400" />
+                <KPICard icon={TrendingUp} label="Approval Rate" value={`${approvalRate}%`} color="text-emerald-400" />
+                <KPICard icon={RefreshCw} label="Pending Revisions" value={revisionQ.length} color="text-amber-400" />
+                <KPICard icon={Clock} label="Avg Days to Approve" value={avgApprovalDays} color="text-cyan-400" />
+                <KPICard icon={Target} label="Date-Lock Rate" value={`${lockRate}%`} color="text-purple-400" />
+                <KPICard icon={AlertTriangle} label="Lost Value" value={`$${lostValue.toLocaleString()}`} color="text-red-400" />
+                <KPICard icon={DollarSign} label="Avg Approved Size" value={`$${approvedQ.length ? (approvedQ.reduce((s, q) => s + (q.final_price_exact || q.final_price_max || 0), 0) / approvedQ.length).toFixed(0) : '0'}`} color="text-emerald-400" />
+              </div>
+            );
+          })()}
+
+          {/* Draft Quotes */}
+          {bookingSubTab === 'drafts' && (() => {
+            const draftQuotes = quotes.filter(q => q.quote_status === 'draft' || q.quote_status === 'estimated');
+            const sendQuote = async (quoteId: string) => {
+              await (supabase.from('virtual_tour_quotes' as any) as any).update({ quote_status: 'sent', sent_at: new Date().toISOString(), quote_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() }).eq('id', quoteId);
+              await (supabase.from('venue_quote_actions' as any) as any).insert({ quote_id: quoteId, action_type: 'sent', actor_type: 'admin' });
+              toast.success('Quote sent to venue'); fetchAll();
+            };
+            return (
+              <Card className="bg-[#0a0f1a]/80 border-[#1e293b]">
+                <CardHeader><CardTitle className="text-amber-400 text-lg">Draft & Estimated Quotes</CardTitle></CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader><TableRow className="border-[#1e293b]">
+                      <TableHead>Package</TableHead><TableHead>Price Range</TableHead><TableHead>Platform Fee</TableHead><TableHead>Confidence</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {draftQuotes.map(q => (
+                        <TableRow key={q.id} className="border-[#1e293b]">
+                          <TableCell><Badge variant="outline" className="text-xs">{q.package_type}</Badge></TableCell>
+                          <TableCell>${q.final_price_min?.toFixed(0)} — ${q.final_price_max?.toFixed(0)}</TableCell>
+                          <TableCell className="text-emerald-400">${q.platform_fee.toFixed(0)}</TableCell>
+                          <TableCell><Progress value={q.pricing_confidence_score} className="w-16 h-2" /><span className="text-xs ml-1">{q.pricing_confidence_score}%</span></TableCell>
+                          <TableCell><StatusBadge status={q.quote_status} /></TableCell>
+                          <TableCell><Button size="sm" variant="ghost" className="text-blue-400 text-xs h-7" onClick={() => sendQuote(q.id)}><Send className="h-3 w-3 mr-1" /> Send</Button></TableCell>
+                        </TableRow>
+                      ))}
+                      {draftQuotes.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No draft quotes</TableCell></TableRow>}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* Sent / Awaiting */}
+          {(bookingSubTab === 'sent' || bookingSubTab === 'awaiting') && (() => {
+            const statusFilter = bookingSubTab === 'sent' ? ['sent'] : ['sent', 'viewed'];
+            const filtered = quotes.filter(q => statusFilter.includes(q.quote_status) || (bookingSubTab === 'awaiting' && q.quote_status === 'sent' && !(q as any).venue_viewed_at));
+            const markViewed = async (quoteId: string) => {
+              await (supabase.from('virtual_tour_quotes' as any) as any).update({ quote_status: 'viewed' as any, venue_viewed_at: new Date().toISOString() } as any).eq('id', quoteId);
+              await (supabase.from('venue_quote_actions' as any) as any).insert({ quote_id: quoteId, action_type: 'viewed', actor_type: 'venue' });
+              toast.success('Marked as viewed'); fetchAll();
+            };
+            return (
+              <Card className="bg-[#0a0f1a]/80 border-[#1e293b]">
+                <CardHeader><CardTitle className="text-amber-400 text-lg">{bookingSubTab === 'sent' ? 'Sent Quotes' : 'Awaiting Venue Response'}</CardTitle></CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader><TableRow className="border-[#1e293b]">
+                      <TableHead>Package</TableHead><TableHead>Price</TableHead><TableHead>Sent</TableHead><TableHead>Expires</TableHead><TableHead>Viewed</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {filtered.map(q => (
+                        <TableRow key={q.id} className="border-[#1e293b]">
+                          <TableCell><Badge variant="outline" className="text-xs">{q.package_type}</Badge></TableCell>
+                          <TableCell className="text-emerald-400">${(q.final_price_exact || q.final_price_max || 0).toLocaleString()}</TableCell>
+                          <TableCell className="text-xs">{q.sent_at ? new Date(q.sent_at).toLocaleDateString() : '—'}</TableCell>
+                          <TableCell className="text-xs">{(q as any).quote_expires_at ? new Date((q as any).quote_expires_at).toLocaleDateString() : '—'}</TableCell>
+                          <TableCell>{(q as any).venue_viewed_at ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : <Clock className="h-4 w-4 text-muted-foreground" />}</TableCell>
+                          <TableCell><StatusBadge status={q.quote_status} /></TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              {!(q as any).venue_viewed_at && <Button size="sm" variant="ghost" className="text-cyan-400 text-xs h-7" onClick={() => markViewed(q.id)}><Eye className="h-3 w-3 mr-1" /> Mark Viewed</Button>}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No quotes in this status</TableCell></TableRow>}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* Revision Requests */}
+          {bookingSubTab === 'revisions' && (() => {
+            const pendingRevisions = quoteRevisions.filter((r: any) => r.revision_status === 'pending' || r.revision_status === 'reviewed');
+            const respondRevision = async (revId: string, response: string, status: string) => {
+              await (supabase.from('venue_quote_revisions' as any) as any).update({ admin_response: response, revision_status: status, responded_at: new Date().toISOString() }).eq('id', revId);
+              toast.success('Revision responded'); fetchAll();
+            };
+            return (
+              <Card className="bg-[#0a0f1a]/80 border-[#1e293b]">
+                <CardHeader><CardTitle className="text-amber-400 text-lg">Revision Requests</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {pendingRevisions.map((rev: any) => {
+                      const q = quotes.find(x => x.id === rev.quote_id);
+                      return (
+                        <div key={rev.id} className="p-4 rounded-lg border border-[#1e293b] bg-[#0f172a]/50 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-sm">Quote: {q?.package_type || 'Unknown'} — ${(q?.final_price_exact || q?.final_price_max || 0).toLocaleString()}</p>
+                              <p className="text-xs text-muted-foreground">Requested: {new Date(rev.created_at).toLocaleDateString()}</p>
+                            </div>
+                            <StatusBadge status={rev.revision_status} />
+                          </div>
+                          <p className="text-sm bg-[#0a0f1a] p-2 rounded border border-[#1e293b]/50">{rev.requested_changes || 'No details'}</p>
+                          {rev.revision_status === 'pending' && (
+                            <div className="flex gap-2">
+                              <Button size="sm" className="bg-emerald-500 text-black text-xs" onClick={() => {
+                                const resp = prompt('Your response:');
+                                if (resp) respondRevision(rev.id, resp, 'updated');
+                              }}>Respond & Update</Button>
+                              <Button size="sm" variant="outline" className="text-red-400 border-red-500/30 text-xs" onClick={() => respondRevision(rev.id, 'Declined', 'declined')}>Decline</Button>
+                            </div>
+                          )}
+                          {rev.admin_response && <p className="text-xs text-emerald-400">Response: {rev.admin_response}</p>}
+                        </div>
+                      );
+                    })}
+                    {pendingRevisions.length === 0 && <p className="text-center text-muted-foreground py-8">No revision requests</p>}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* Approved / Awaiting Date Lock */}
+          {bookingSubTab === 'approved' && (() => {
+            const approvedQuotes = quotes.filter(q => q.quote_status === 'approved' && !(q as any).locked_booking_id);
+            const approveQuote = async (quoteId: string, requestId: string | null) => {
+              const q = quotes.find(x => x.id === quoteId);
+              await (supabase.from('virtual_tour_quotes' as any) as any).update({
+                quote_status: 'approved', venue_approved_at: new Date().toISOString(),
+                approved_package_snapshot: { package_type: q?.package_type, price: q?.final_price_exact || q?.final_price_max, payout: q?.photographer_payout, platform_fee: q?.platform_fee },
+                schedule_status: 'awaiting_date_lock'
+              }).eq('id', quoteId);
+              if (requestId) {
+                await (supabase.from('virtual_tour_requests' as any) as any).update({ venue_decision_status: 'approved', booking_conversion_stage: 'approved_awaiting_schedule', assigned_quote_id: quoteId }).eq('id', requestId);
+              }
+              await (supabase.from('venue_quote_actions' as any) as any).insert({ quote_id: quoteId, request_id: requestId, action_type: 'approved', actor_type: 'admin' });
+              toast.success('Quote approved — ready for date lock'); fetchAll();
+            };
+            const proposeDateOption = async (quoteId: string, requestId: string | null, photographerId: string | null) => {
+              const dateStr = prompt('Proposed date (YYYY-MM-DD):');
+              if (!dateStr) return;
+              const startTime = prompt('Start time (HH:MM):') || '09:00';
+              const endTime = prompt('End time (HH:MM):') || '12:00';
+              await (supabase.from('shoot_date_options' as any) as any).insert({
+                request_id: requestId, quote_id: quoteId, photographer_id: photographerId,
+                option_date: dateStr, option_start_time: startTime, option_end_time: endTime, option_status: 'proposed'
+              });
+              toast.success('Date option proposed'); fetchAll();
+            };
+            const lockDate = async (optionId: string, option: any) => {
+              const { data: booking } = await (supabase.from('locked_shoot_bookings' as any) as any).insert({
+                request_id: option.request_id, quote_id: option.quote_id, photographer_id: option.photographer_id,
+                locked_date: option.option_date, locked_start_time: option.option_start_time, locked_end_time: option.option_end_time,
+                booking_status: 'locked', admin_confirmed_at: new Date().toISOString()
+              }).select().single();
+              if (booking) {
+                await (supabase.from('shoot_date_options' as any) as any).update({ option_status: 'selected' }).eq('id', optionId);
+                await (supabase.from('virtual_tour_quotes' as any) as any).update({ schedule_status: 'locked', locked_booking_id: booking.id }).eq('id', option.quote_id);
+                if (option.request_id) {
+                  await (supabase.from('virtual_tour_requests' as any) as any).update({ booking_conversion_stage: 'date_locked' }).eq('id', option.request_id);
+                }
+                await (supabase.from('venue_quote_actions' as any) as any).insert({ quote_id: option.quote_id, request_id: option.request_id, action_type: 'locked', actor_type: 'admin' });
+              }
+              toast.success('Date locked!'); fetchAll();
+            };
+            return (
+              <div className="space-y-4">
+                {/* Quotes awaiting date lock */}
+                <Card className="bg-[#0a0f1a]/80 border-[#1e293b]">
+                  <CardHeader><CardTitle className="text-emerald-400 text-lg">Approved — Awaiting Date Lock</CardTitle></CardHeader>
+                  <CardContent className="space-y-3">
+                    {approvedQuotes.map(q => {
+                      const req = requests.find(r => r.id === q.request_id);
+                      const dateOpts = shootDateOptions.filter((d: any) => d.quote_id === q.id);
+                      return (
+                        <div key={q.id} className="p-4 rounded-lg border border-emerald-500/20 bg-[#0f172a]/50 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{req?.venue_name || 'Unknown Venue'} — {q.package_type}</p>
+                              <p className="text-xs text-muted-foreground">Approved: {(q as any).venue_approved_at ? new Date((q as any).venue_approved_at).toLocaleDateString() : '—'}</p>
+                              <p className="text-emerald-400 font-semibold">${(q.final_price_exact || q.final_price_max || 0).toLocaleString()}</p>
+                            </div>
+                            <Button size="sm" className="bg-blue-500 text-white text-xs" onClick={() => proposeDateOption(q.id, q.request_id, req?.assigned_photographer_id || null)}>
+                              <Plus className="h-3 w-3 mr-1" /> Propose Date
+                            </Button>
+                          </div>
+                          {/* Preferred dates from venue */}
+                          {(req as any)?.preferred_shoot_date_1 && (
+                            <div className="text-xs text-muted-foreground">
+                              Venue preferred: {(req as any).preferred_shoot_date_1}{(req as any)?.preferred_shoot_date_2 && `, ${(req as any).preferred_shoot_date_2}`}{(req as any)?.preferred_shoot_date_3 && `, ${(req as any).preferred_shoot_date_3}`}
+                            </div>
+                          )}
+                          {/* Date options */}
+                          {dateOpts.length > 0 && (
+                            <div className="space-y-1">
+                              {dateOpts.map((opt: any) => (
+                                <div key={opt.id} className="flex items-center justify-between text-xs p-2 rounded bg-[#0a0f1a] border border-[#1e293b]/50">
+                                  <span>{opt.option_date} {opt.option_start_time}–{opt.option_end_time}</span>
+                                  <StatusBadge status={opt.option_status} />
+                                  {opt.option_status === 'proposed' && (
+                                    <Button size="sm" variant="ghost" className="text-emerald-400 text-xs h-6" onClick={() => lockDate(opt.id, opt)}>
+                                      Lock Date
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {/* Sent quotes that need approval first */}
+                    {quotes.filter(q => q.quote_status === 'sent' || q.quote_status === 'viewed').map(q => (
+                      <div key={q.id} className="flex items-center justify-between p-3 rounded-lg border border-[#1e293b] bg-[#0f172a]/30">
+                        <div>
+                          <p className="text-sm font-medium">{q.package_type} — ${(q.final_price_exact || q.final_price_max || 0).toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">Status: {q.quote_status}</p>
+                        </div>
+                        <Button size="sm" className="bg-emerald-500 text-black text-xs" onClick={() => approveQuote(q.id, q.request_id)}>
+                          <ThumbsUp className="h-3 w-3 mr-1" /> Approve Quote
+                        </Button>
+                      </div>
+                    ))}
+                    {approvedQuotes.length === 0 && quotes.filter(q => ['sent', 'viewed'].includes(q.quote_status)).length === 0 && (
+                      <p className="text-center text-muted-foreground py-8">No quotes awaiting approval or date lock</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })()}
+
+          {/* Locked / Scheduled */}
+          {bookingSubTab === 'locked' && (() => {
+            const activeBookings = lockedBookings.filter((b: any) => ['locked', 'scheduled', 'pending_confirmation'].includes(b.booking_status));
+            const updateBooking = async (bookingId: string, status: string) => {
+              const updates: any = { booking_status: status, updated_at: new Date().toISOString() };
+              if (status === 'scheduled') updates.photographer_confirmed_at = new Date().toISOString();
+              await (supabase.from('locked_shoot_bookings' as any) as any).update(updates).eq('id', bookingId);
+              toast.success(`Booking ${status}`); fetchAll();
+            };
+            return (
+              <Card className="bg-[#0a0f1a]/80 border-[#1e293b]">
+                <CardHeader><CardTitle className="text-emerald-400 text-lg">Locked & Scheduled Bookings</CardTitle></CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader><TableRow className="border-[#1e293b]">
+                      <TableHead>Date</TableHead><TableHead>Time</TableHead><TableHead>Photographer</TableHead><TableHead>Status</TableHead><TableHead>Confirmations</TableHead><TableHead>Actions</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {activeBookings.map((b: any) => {
+                        const ph = photographers.find(p => p.id === b.photographer_id);
+                        return (
+                          <TableRow key={b.id} className="border-[#1e293b]">
+                            <TableCell className="font-medium">{b.locked_date}</TableCell>
+                            <TableCell className="text-sm">{b.locked_start_time}–{b.locked_end_time}</TableCell>
+                            <TableCell>{ph?.name || 'Unknown'}</TableCell>
+                            <TableCell><StatusBadge status={b.booking_status} /></TableCell>
+                            <TableCell>
+                              <div className="flex gap-2 text-xs">
+                                {b.venue_confirmed_at ? <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 text-[10px]">Venue ✓</Badge> : <Badge variant="outline" className="text-muted-foreground text-[10px]">Venue ✗</Badge>}
+                                {b.admin_confirmed_at ? <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 text-[10px]">Admin ✓</Badge> : <Badge variant="outline" className="text-muted-foreground text-[10px]">Admin ✗</Badge>}
+                                {b.photographer_confirmed_at ? <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 text-[10px]">Photo ✓</Badge> : <Badge variant="outline" className="text-muted-foreground text-[10px]">Photo ✗</Badge>}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                {b.booking_status === 'locked' && <Button size="sm" variant="ghost" className="text-emerald-400 text-xs h-7" onClick={() => updateBooking(b.id, 'scheduled')}>Confirm Schedule</Button>}
+                                {b.booking_status === 'pending_confirmation' && <Button size="sm" variant="ghost" className="text-blue-400 text-xs h-7" onClick={() => updateBooking(b.id, 'locked')}>Lock</Button>}
+                                <Button size="sm" variant="ghost" className="text-amber-400 text-xs h-7" onClick={() => updateBooking(b.id, 'reschedule_requested')}>Reschedule</Button>
+                                <Button size="sm" variant="ghost" className="text-red-400 text-xs h-7" onClick={() => updateBooking(b.id, 'cancelled')}>Cancel</Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      {activeBookings.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No locked bookings</TableCell></TableRow>}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* Expired / Lost */}
+          {bookingSubTab === 'expired' && (() => {
+            const lostQuotes = quotes.filter(q => q.quote_status === 'expired' || q.quote_status === 'declined');
+            const reopenQuote = async (quoteId: string) => {
+              await (supabase.from('virtual_tour_quotes' as any) as any).update({ quote_status: 'estimated', quote_expires_at: null }).eq('id', quoteId);
+              await (supabase.from('venue_quote_actions' as any) as any).insert({ quote_id: quoteId, action_type: 'reopened', actor_type: 'admin' });
+              toast.success('Quote reopened'); fetchAll();
+            };
+            return (
+              <Card className="bg-[#0a0f1a]/80 border-[#1e293b]">
+                <CardHeader><CardTitle className="text-red-400 text-lg">Expired & Lost Quotes</CardTitle></CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader><TableRow className="border-[#1e293b]">
+                      <TableHead>Package</TableHead><TableHead>Price</TableHead><TableHead>Status</TableHead><TableHead>Created</TableHead><TableHead>Actions</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {lostQuotes.map(q => (
+                        <TableRow key={q.id} className="border-[#1e293b]">
+                          <TableCell><Badge variant="outline" className="text-xs">{q.package_type}</Badge></TableCell>
+                          <TableCell className="text-muted-foreground">${(q.final_price_exact || q.final_price_max || 0).toLocaleString()}</TableCell>
+                          <TableCell><StatusBadge status={q.quote_status} /></TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{new Date(q.created_at).toLocaleDateString()}</TableCell>
+                          <TableCell><Button size="sm" variant="ghost" className="text-blue-400 text-xs h-7" onClick={() => reopenQuote(q.id)}><RefreshCw className="h-3 w-3 mr-1" /> Reopen</Button></TableCell>
+                        </TableRow>
+                      ))}
+                      {lostQuotes.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No expired or lost quotes</TableCell></TableRow>}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            );
+          })()}
         </TabsContent>
       </Tabs>
 
