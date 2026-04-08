@@ -1768,6 +1768,8 @@ export default function AppRoutes() {
         <Route path="/funding-machine/tasks" element={<FundingMachineTaskCards />} />
         <Route path="/funding-machine/morning-briefing" element={<FundingMachineMorningBriefing />} />
         <Route path="/funding-machine/settings" element={<FundingMachineSettings />} />
+        {/* UBEN HQ — Non-Profit Operations Tracker */}
+        <Route path="/os/uben" element={<UbenHQ />} />
         <Route path="/os/sports-betting" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/analytics" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/dashboard" element={<BettingDashboard />} />
