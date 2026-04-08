@@ -12,3 +12,4 @@ export { default as PenthouseVehicleDecor } from './PenthouseVehicleDecor';
 export { default as PenthouseFleet } from './PenthouseFleet';
 export { default as PenthouseAddons } from './PenthouseAddons';
 export { default as PenthouseGiftExperiences } from './PenthouseGiftExperiences';
+export { default as PenthousePrivateJetDispatch } from './PenthousePrivateJetDispatch';

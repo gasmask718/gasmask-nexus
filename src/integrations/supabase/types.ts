@@ -24897,7 +24897,11 @@ export type Database = {
       }
       cb_booking_requests: {
         Row: {
+          aircraft_preference: string | null
+          arrival_airport: string | null
           bus_type_preference: string | null
+          category: string
+          catering_requests: string | null
           created_at: string
           created_by: string | null
           customer_approved_at: string | null
@@ -24906,13 +24910,18 @@ export type Database = {
           customer_offer_price: number | null
           customer_offer_sent_at: string | null
           customer_phone: string | null
+          departure_airport: string | null
           dropoff_address: string | null
           dropoff_city: string
           dropoff_state: string | null
           expires_at: string | null
+          flight_type: string | null
           id: string
+          luggage_estimate: string | null
           notes: string | null
+          num_legs: number | null
           passenger_count: number
+          pet_friendly: boolean | null
           pickup_address: string | null
           pickup_city: string
           pickup_state: string | null
@@ -24930,7 +24939,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aircraft_preference?: string | null
+          arrival_airport?: string | null
           bus_type_preference?: string | null
+          category?: string
+          catering_requests?: string | null
           created_at?: string
           created_by?: string | null
           customer_approved_at?: string | null
@@ -24939,13 +24952,18 @@ export type Database = {
           customer_offer_price?: number | null
           customer_offer_sent_at?: string | null
           customer_phone?: string | null
+          departure_airport?: string | null
           dropoff_address?: string | null
           dropoff_city: string
           dropoff_state?: string | null
           expires_at?: string | null
+          flight_type?: string | null
           id?: string
+          luggage_estimate?: string | null
           notes?: string | null
+          num_legs?: number | null
           passenger_count?: number
+          pet_friendly?: boolean | null
           pickup_address?: string | null
           pickup_city: string
           pickup_state?: string | null
@@ -24963,7 +24981,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aircraft_preference?: string | null
+          arrival_airport?: string | null
           bus_type_preference?: string | null
+          category?: string
+          catering_requests?: string | null
           created_at?: string
           created_by?: string | null
           customer_approved_at?: string | null
@@ -24972,13 +24994,18 @@ export type Database = {
           customer_offer_price?: number | null
           customer_offer_sent_at?: string | null
           customer_phone?: string | null
+          departure_airport?: string | null
           dropoff_address?: string | null
           dropoff_city?: string
           dropoff_state?: string | null
           expires_at?: string | null
+          flight_type?: string | null
           id?: string
+          luggage_estimate?: string | null
           notes?: string | null
+          num_legs?: number | null
           passenger_count?: number
+          pet_friendly?: boolean | null
           pickup_address?: string | null
           pickup_city?: string
           pickup_state?: string | null
@@ -25106,68 +25133,89 @@ export type Database = {
       }
       cb_partner_quotes: {
         Row: {
+          aircraft_type: string | null
           alternate_offer_notes: string | null
           amenities: string[] | null
           availability_status: string
           booking_request_id: string
           capacity: number | null
           created_at: string
+          crew_overnight: number | null
           currency: string | null
           deposit_required: number | null
           dispatch_id: string | null
           expiration_at: string | null
+          flight_time_hours: number | null
+          fuel_surcharge: number | null
           id: string
           is_selected: boolean | null
+          landing_fees: number | null
           partner_id: string
           quote_notes: string | null
           quoted_price: number
           raw_response_payload: Json | null
+          reposition_cost: number | null
           response_method: string | null
           response_time_seconds: number | null
+          segment_details: Json | null
           updated_at: string
           vehicle_type: string | null
         }
         Insert: {
+          aircraft_type?: string | null
           alternate_offer_notes?: string | null
           amenities?: string[] | null
           availability_status?: string
           booking_request_id: string
           capacity?: number | null
           created_at?: string
+          crew_overnight?: number | null
           currency?: string | null
           deposit_required?: number | null
           dispatch_id?: string | null
           expiration_at?: string | null
+          flight_time_hours?: number | null
+          fuel_surcharge?: number | null
           id?: string
           is_selected?: boolean | null
+          landing_fees?: number | null
           partner_id: string
           quote_notes?: string | null
           quoted_price: number
           raw_response_payload?: Json | null
+          reposition_cost?: number | null
           response_method?: string | null
           response_time_seconds?: number | null
+          segment_details?: Json | null
           updated_at?: string
           vehicle_type?: string | null
         }
         Update: {
+          aircraft_type?: string | null
           alternate_offer_notes?: string | null
           amenities?: string[] | null
           availability_status?: string
           booking_request_id?: string
           capacity?: number | null
           created_at?: string
+          crew_overnight?: number | null
           currency?: string | null
           deposit_required?: number | null
           dispatch_id?: string | null
           expiration_at?: string | null
+          flight_time_hours?: number | null
+          fuel_surcharge?: number | null
           id?: string
           is_selected?: boolean | null
+          landing_fees?: number | null
           partner_id?: string
           quote_notes?: string | null
           quoted_price?: number
           raw_response_payload?: Json | null
+          reposition_cost?: number | null
           response_method?: string | null
           response_time_seconds?: number | null
+          segment_details?: Json | null
           updated_at?: string
           vehicle_type?: string | null
         }
@@ -82541,6 +82589,7 @@ export type Database = {
           business_name: string | null
           city: string | null
           commission_rate: number | null
+          country: string | null
           created_at: string
           email: string | null
           id: string
@@ -82565,6 +82614,7 @@ export type Database = {
           business_name?: string | null
           city?: string | null
           commission_rate?: number | null
+          country?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -82589,6 +82639,7 @@ export type Database = {
           business_name?: string | null
           city?: string | null
           commission_rate?: number | null
+          country?: string | null
           created_at?: string
           email?: string | null
           id?: string

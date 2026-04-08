@@ -64,8 +64,20 @@ async function logComm(
   });
 }
 
-// ── SMS template ────────────────────────────────────────────────────────
+// ── SMS templates ───────────────────────────────────────────────────────
 function buildDispatchSMS(req: any, responseUrl: string) {
+  if (req.category === "private_jet") {
+    return [
+      `✈️ New Private Jet Request:`,
+      `${req.departure_airport || req.pickup_city || "TBD"} → ${req.arrival_airport || req.dropoff_city || "TBD"}`,
+      `${req.trip_date || "TBD"} ${req.trip_time || ""}`,
+      `Passengers: ${req.passenger_count || "TBD"}`,
+      `Type: ${req.flight_type || "one_way"}`,
+      req.aircraft_preference ? `Preference: ${req.aircraft_preference}` : "",
+      ``,
+      `Submit quote: ${responseUrl}`,
+    ].filter(Boolean).join("\n");
+  }
   return [
     `🚌 New Coach Bus Request:`,
     `${req.pickup_city || "TBD"} → ${req.dropoff_city || "TBD"}`,
@@ -78,18 +90,40 @@ function buildDispatchSMS(req: any, responseUrl: string) {
   ].filter(Boolean).join("\n");
 }
 
-// ── Email template ──────────────────────────────────────────────────────
+// ── Email templates ─────────────────────────────────────────────────────
 function buildDispatchEmail(req: any, responseUrl: string) {
+  const isJet = req.category === "private_jet";
+  const icon = isJet ? "✈️" : "🚌";
+  const title = isJet ? "Private Jet Charter Request" : "Coach Bus Quote Request";
+  const subtitle = isJet
+    ? "An exclusive charter request — submit your best quote!"
+    : "A customer needs transportation — submit your best quote!";
+  const gradient = isJet
+    ? "linear-gradient(135deg,#1a1a2e,#16213e)"
+    : "linear-gradient(135deg,#1e3a5f,#2d5a8e)";
+  const fromCity = isJet ? (req.departure_airport || req.pickup_city || "TBD") : (req.pickup_city || "TBD");
+  const toCity = isJet ? (req.arrival_airport || req.dropoff_city || "TBD") : (req.dropoff_city || "TBD");
+
   const amenities = req.requested_amenities?.length
     ? req.requested_amenities.map((a: string) => `<li>${a}</li>`).join("")
     : "<li>None specified</li>";
+
+  const extraCells = isJet ? `
+    ${req.aircraft_preference ? `<div class="cell"><div class="label">✈️ Aircraft Preference</div><div class="value">${req.aircraft_preference}</div></div>` : ""}
+    ${req.luggage_estimate ? `<div class="cell"><div class="label">🧳 Luggage</div><div class="value">${req.luggage_estimate}</div></div>` : ""}
+    ${req.catering_requests ? `<div class="cell"><div class="label">🍽️ Catering</div><div class="value">${req.catering_requests}</div></div>` : ""}
+    ${req.pet_friendly ? `<div class="cell"><div class="label">🐾 Pets</div><div class="value">Yes</div></div>` : ""}
+  ` : `
+    ${req.return_date ? `<div class="cell"><div class="label">📅 Return Date</div><div class="value">${req.return_date}</div></div>` : ""}
+    ${req.bus_type_preference ? `<div class="cell"><div class="label">🚌 Bus Preference</div><div class="value">${req.bus_type_preference}</div></div>` : ""}
+  `;
 
   return `<!DOCTYPE html><html><head><style>
   body{font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;margin:0}
   .card{background:#fff;border-radius:12px;padding:30px;max-width:640px;margin:0 auto}
   h1{color:#1a1a1a;font-size:22px;margin-bottom:4px}
   .subtitle{color:#666;font-size:14px;margin-bottom:20px}
-  .route{background:linear-gradient(135deg,#1e3a5f,#2d5a8e);color:#fff;border-radius:10px;padding:20px;text-align:center;margin:16px 0}
+  .route{background:${gradient};color:#fff;border-radius:10px;padding:20px;text-align:center;margin:16px 0}
   .route h2{margin:0;font-size:22px;letter-spacing:1px}
   .route .arrow{font-size:28px;margin:6px 0}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
@@ -106,28 +140,24 @@ function buildDispatchEmail(req: any, responseUrl: string) {
   .btn{display:inline-block;padding:14px 40px;background:#10b981;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px}
   .footer{text-align:center;color:#999;font-size:11px;margin-top:20px}
 </style></head><body><div class="card">
-  <h1>🚌 Coach Bus Quote Request</h1>
-  <p class="subtitle">A customer needs transportation — submit your best quote!</p>
+  <h1>${icon} ${title}</h1>
+  <p class="subtitle">${subtitle}</p>
 
   <div class="route">
-    <h2>${req.pickup_city || "TBD"}${req.pickup_state ? `, ${req.pickup_state}` : ""}</h2>
+    <h2>${fromCity}</h2>
     <div class="arrow">↓</div>
-    <h2>${req.dropoff_city || "TBD"}${req.dropoff_state ? `, ${req.dropoff_state}` : ""}</h2>
+    <h2>${toCity}</h2>
   </div>
 
   <div class="grid">
-    <div class="cell"><div class="label">📅 Trip Date</div><div class="value">${req.trip_date || "TBD"}</div></div>
+    <div class="cell"><div class="label">📅 ${isJet ? "Departure" : "Trip"} Date</div><div class="value">${req.trip_date || "TBD"}</div></div>
     <div class="cell"><div class="label">🕐 Time</div><div class="value">${req.trip_time || "TBD"}</div></div>
     <div class="cell"><div class="label">👥 Passengers</div><div class="value">${req.passenger_count || "TBD"}</div></div>
-    <div class="cell"><div class="label">🔄 Trip Type</div><div class="value">${req.trip_type || "One Way"}</div></div>
-    ${req.return_date ? `<div class="cell"><div class="label">📅 Return Date</div><div class="value">${req.return_date}</div></div>` : ""}
-    ${req.bus_type_preference ? `<div class="cell"><div class="label">🚌 Bus Preference</div><div class="value">${req.bus_type_preference}</div></div>` : ""}
+    <div class="cell"><div class="label">🔄 ${isJet ? "Flight" : "Trip"} Type</div><div class="value">${isJet ? (req.flight_type || "One Way") : (req.trip_type || "One Way")}</div></div>
+    ${extraCells}
   </div>
 
-  <div class="amenities">
-    <h3>✅ Requested Amenities</h3>
-    <ul>${amenities}</ul>
-  </div>
+  ${!isJet ? `<div class="amenities"><h3>✅ Requested Amenities</h3><ul>${amenities}</ul></div>` : ""}
 
   ${req.special_requests ? `<div class="notes"><h3>📝 Special Requests</h3><p>${req.special_requests}</p></div>` : ""}
   ${req.notes ? `<div class="notes"><h3>💬 Additional Notes</h3><p>${req.notes}</p></div>` : ""}
@@ -136,19 +166,35 @@ function buildDispatchEmail(req: any, responseUrl: string) {
     <a href="${responseUrl}" class="btn">📋 Submit Your Quote</a>
   </div>
 
-  <p class="footer">You're receiving this as a verified TopTier transportation partner.<br/>Please respond within 24 hours for priority consideration.</p>
+  <p class="footer">You're receiving this as a verified TopTier ${isJet ? "aviation" : "transportation"} partner.<br/>Please respond within 24 hours for priority consideration.</p>
 </div></body></html>`;
 }
 
 // ── Customer offer email ────────────────────────────────────────────────
 function buildCustomerOfferEmail(req: any, quote: any, margin: any, approveUrl: string) {
+  const isJet = req.category === "private_jet";
+  const icon = isJet ? "✈️" : "🚌";
+  const title = isJet ? "Your Private Jet Charter Is Ready!" : "Your Coach Bus Is Available!";
+  const gradient = isJet ? "linear-gradient(135deg,#1a1a2e,#c9a84c)" : "linear-gradient(135deg,#7c3aed,#a855f7)";
+  const fromCity = isJet ? (req.departure_airport || req.pickup_city) : req.pickup_city;
+  const toCity = isJet ? (req.arrival_airport || req.dropoff_city) : req.dropoff_city;
+
+  const jetDetails = isJet ? `
+    ${quote.aircraft_type ? `<p><strong>✈️ Aircraft:</strong> ${quote.aircraft_type}</p>` : ""}
+    ${quote.flight_time_hours ? `<p><strong>🕐 Flight Time:</strong> ${quote.flight_time_hours}h</p>` : ""}
+    ${quote.reposition_cost > 0 ? `<p><strong>📍 Reposition:</strong> Included</p>` : ""}
+  ` : `
+    ${quote.vehicle_type ? `<p><strong>🚌 Vehicle:</strong> ${quote.vehicle_type}</p>` : ""}
+    ${quote.capacity ? `<p><strong>💺 Capacity:</strong> ${quote.capacity} seats</p>` : ""}
+    ${quote.amenities?.length ? `<p><strong>✅ Amenities:</strong> ${quote.amenities.join(", ")}</p>` : ""}
+  `;
+
   return `<!DOCTYPE html><html><head><style>
   body{font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;margin:0}
   .card{background:#fff;border-radius:12px;padding:30px;max-width:600px;margin:0 auto}
   h1{color:#1a1a1a;font-size:24px}
-  .route{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border-radius:10px;padding:20px;text-align:center;margin:16px 0}
+  .route{background:${gradient};color:#fff;border-radius:10px;padding:20px;text-align:center;margin:16px 0}
   .route h2{margin:0;font-size:20px}
-  .route .arrow{font-size:24px;margin:6px 0}
   .detail{background:#f9f9f9;border-radius:8px;padding:16px;margin:16px 0}
   .detail p{margin:6px 0;color:#333;font-size:14px}
   .price{text-align:center;margin:20px 0}
@@ -157,18 +203,16 @@ function buildCustomerOfferEmail(req: any, quote: any, margin: any, approveUrl: 
   .btn{display:inline-block;padding:14px 40px;background:#10b981;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px}
   .footer{text-align:center;color:#999;font-size:11px;margin-top:20px}
 </style></head><body><div class="card">
-  <h1>🚌 Your Coach Bus Is Available!</h1>
+  <h1>${icon} ${title}</h1>
 
   <div class="route">
-    <h2>${req.pickup_city} → ${req.dropoff_city}</h2>
+    <h2>${fromCity} → ${toCity}</h2>
   </div>
 
   <div class="detail">
     <p><strong>📅 Date:</strong> ${req.trip_date || "TBD"}</p>
     <p><strong>👥 Passengers:</strong> ${req.passenger_count}</p>
-    ${quote.vehicle_type ? `<p><strong>🚌 Vehicle:</strong> ${quote.vehicle_type}</p>` : ""}
-    ${quote.capacity ? `<p><strong>💺 Capacity:</strong> ${quote.capacity} seats</p>` : ""}
-    ${quote.amenities?.length ? `<p><strong>✅ Amenities:</strong> ${quote.amenities.join(", ")}</p>` : ""}
+    ${jetDetails}
   </div>
 
   <div class="price">
@@ -178,10 +222,10 @@ function buildCustomerOfferEmail(req: any, quote: any, margin: any, approveUrl: 
   </div>
 
   <div style="text-align:center">
-    <a href="${approveUrl}" class="btn">✅ Confirm Booking</a>
+    <a href="${approveUrl}" class="btn">✅ Confirm ${isJet ? "Charter" : "Booking"}</a>
   </div>
 
-  <p class="footer">This quote is valid for 48 hours. TopTier Lifestyle Transportation.</p>
+  <p class="footer">This quote is valid for 48 hours. TopTier Lifestyle ${isJet ? "Aviation" : "Transportation"}.</p>
 </div></body></html>`;
 }
 
@@ -209,36 +253,53 @@ serve(async (req) => {
         .from("cb_booking_requests").select("*").eq("id", request_id).single();
       if (rErr || !request) throw new Error("Request not found: " + rErr?.message);
 
-      // Load config
+      // Load config based on request category
+      const category = request.category || "coach_bus";
       const { data: config } = await supabase
-        .from("cb_dispatch_config").select("*").eq("category", "coach_bus").single();
+        .from("cb_dispatch_config").select("*").eq("category", category).single();
       const maxPartners = config?.max_partners_per_request || 20;
 
-      // Match partners: exact city → same state → all approved coach_bus
-      const { data: cityPartners } = await supabase
-        .from("tt_partners").select("*")
-        .eq("service_category", "coach_bus").eq("status", "approved")
-        .or(`city.ilike.%${request.pickup_city}%,city.ilike.%${request.dropoff_city}%`)
-        .order("trust_score", { ascending: false }).limit(maxPartners);
+      // Match partners by category
+      let partnerSources: any[][] = [];
 
-      const { data: statePartners } = await supabase
-        .from("tt_partners").select("*")
-        .eq("service_category", "coach_bus").eq("status", "approved")
-        .or(`state.ilike.%${request.pickup_state || ""}%,state.ilike.%${request.dropoff_state || ""}%`)
-        .order("trust_score", { ascending: false }).limit(maxPartners);
+      if (category === "private_jet") {
+        // Private jet: global matching — all approved aviation partners
+        const { data: allJetPartners } = await supabase
+          .from("tt_partners").select("*")
+          .eq("service_category", "private_jet").eq("status", "approved")
+          .order("trust_score", { ascending: false }).limit(maxPartners);
+        partnerSources = [allJetPartners || []];
+      } else {
+        // Coach bus: geographic matching (city → state → all)
+        const { data: cityPartners } = await supabase
+          .from("tt_partners").select("*")
+          .eq("service_category", category).eq("status", "approved")
+          .or(`city.ilike.%${request.pickup_city}%,city.ilike.%${request.dropoff_city}%`)
+          .order("trust_score", { ascending: false }).limit(maxPartners);
 
-      const { data: allPartners } = await supabase
-        .from("tt_partners").select("*")
-        .eq("service_category", "coach_bus").eq("status", "approved")
-        .order("trust_score", { ascending: false }).limit(maxPartners);
+        const { data: statePartners } = await supabase
+          .from("tt_partners").select("*")
+          .eq("service_category", category).eq("status", "approved")
+          .or(`state.ilike.%${request.pickup_state || ""}%,state.ilike.%${request.dropoff_state || ""}%`)
+          .order("trust_score", { ascending: false }).limit(maxPartners);
+
+        const { data: allPartners } = await supabase
+          .from("tt_partners").select("*")
+          .eq("service_category", category).eq("status", "approved")
+          .order("trust_score", { ascending: false }).limit(maxPartners);
+
+        partnerSources = [cityPartners || [], statePartners || [], allPartners || []];
+      }
 
       // Merge & deduplicate (local priority)
       const seen = new Set<string>();
       const partners: any[] = [];
-      for (const p of [...(cityPartners || []), ...(statePartners || []), ...(allPartners || [])]) {
-        if (!seen.has(p.id) && partners.length < maxPartners) {
-          seen.add(p.id);
-          partners.push(p);
+      for (const source of partnerSources) {
+        for (const p of source) {
+          if (!seen.has(p.id) && partners.length < maxPartners) {
+            seen.add(p.id);
+            partners.push(p);
+          }
         }
       }
 
