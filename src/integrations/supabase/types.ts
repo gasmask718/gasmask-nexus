@@ -37153,6 +37153,337 @@ export type Database = {
         }
         Relationships: []
       }
+      dsn_appointments: {
+        Row: {
+          agent_id: string
+          created_at: string | null
+          duration_minutes: number | null
+          id: string
+          lead_id: string
+          notes: string | null
+          scheduled_time: string
+          status: string | null
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          lead_id: string
+          notes?: string | null
+          scheduled_time: string
+          status?: string | null
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          lead_id?: string
+          notes?: string | null
+          scheduled_time?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dsn_appointments_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_sales_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dsn_appointments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dsn_commissions: {
+        Row: {
+          affiliate_id: string | null
+          affiliate_payout: number | null
+          closer_id: string | null
+          closer_payout: number | null
+          created_at: string | null
+          deal_id: string
+          deal_value: number | null
+          id: string
+          platform_fee: number | null
+          setter_id: string | null
+          setter_payout: number | null
+          status: string | null
+        }
+        Insert: {
+          affiliate_id?: string | null
+          affiliate_payout?: number | null
+          closer_id?: string | null
+          closer_payout?: number | null
+          created_at?: string | null
+          deal_id: string
+          deal_value?: number | null
+          id?: string
+          platform_fee?: number | null
+          setter_id?: string | null
+          setter_payout?: number | null
+          status?: string | null
+        }
+        Update: {
+          affiliate_id?: string | null
+          affiliate_payout?: number | null
+          closer_id?: string | null
+          closer_payout?: number | null
+          created_at?: string | null
+          deal_id?: string
+          deal_value?: number | null
+          id?: string
+          platform_fee?: number | null
+          setter_id?: string | null
+          setter_payout?: number | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dsn_commissions_closer_id_fkey"
+            columns: ["closer_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_sales_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dsn_commissions_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dsn_commissions_setter_id_fkey"
+            columns: ["setter_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_sales_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dsn_deals: {
+        Row: {
+          category: string | null
+          closed_at: string | null
+          closer_id: string | null
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          platform_fee_pct: number | null
+          setter_id: string | null
+          status: string | null
+          value: number
+        }
+        Insert: {
+          category?: string | null
+          closed_at?: string | null
+          closer_id?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          platform_fee_pct?: number | null
+          setter_id?: string | null
+          status?: string | null
+          value?: number
+        }
+        Update: {
+          category?: string | null
+          closed_at?: string | null
+          closer_id?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          platform_fee_pct?: number | null
+          setter_id?: string | null
+          status?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dsn_deals_closer_id_fkey"
+            columns: ["closer_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_sales_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dsn_deals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dsn_deals_setter_id_fkey"
+            columns: ["setter_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_sales_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dsn_leads: {
+        Row: {
+          assigned_closer_id: string | null
+          assigned_setter_id: string | null
+          category: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          lead_score: number | null
+          name: string
+          notes: string | null
+          phone: string | null
+          source: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_closer_id?: string | null
+          assigned_setter_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          lead_score?: number | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_closer_id?: string | null
+          assigned_setter_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          lead_score?: number | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dsn_leads_assigned_closer_id_fkey"
+            columns: ["assigned_closer_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_sales_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dsn_leads_assigned_setter_id_fkey"
+            columns: ["assigned_setter_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_sales_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dsn_notifications: {
+        Row: {
+          agent_id: string | null
+          created_at: string | null
+          id: string
+          message: string | null
+          read: boolean | null
+          title: string
+          type: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          read?: boolean | null
+          title: string
+          type?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          read?: boolean | null
+          title?: string
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dsn_notifications_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "dsn_sales_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dsn_sales_agents: {
+        Row: {
+          category: string
+          close_rate: number | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          performance_score: number | null
+          phone: string | null
+          role: string
+          status: string
+          total_deals: number | null
+          total_earnings: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category?: string
+          close_rate?: number | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          performance_score?: number | null
+          phone?: string | null
+          role?: string
+          status?: string
+          total_deals?: number | null
+          total_earnings?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          close_rate?: number | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          performance_score?: number | null
+          phone?: string | null
+          role?: string
+          status?: string
+          total_deals?: number | null
+          total_earnings?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       dynamic_pricing_engine: {
         Row: {
           base_price: number
