@@ -239,28 +239,43 @@ serve(async (req) => {
         .from("cb_booking_requests").select("*").eq("id", request_id).single();
       if (rErr || !request) throw new Error("Request not found: " + rErr?.message);
 
-      // Load config
+      // Load config based on request category
+      const category = request.category || "coach_bus";
       const { data: config } = await supabase
-        .from("cb_dispatch_config").select("*").eq("category", "coach_bus").single();
+        .from("cb_dispatch_config").select("*").eq("category", category).single();
       const maxPartners = config?.max_partners_per_request || 20;
 
-      // Match partners: exact city → same state → all approved coach_bus
-      const { data: cityPartners } = await supabase
-        .from("tt_partners").select("*")
-        .eq("service_category", "coach_bus").eq("status", "approved")
-        .or(`city.ilike.%${request.pickup_city}%,city.ilike.%${request.dropoff_city}%`)
-        .order("trust_score", { ascending: false }).limit(maxPartners);
+      // Match partners by category
+      let partnerSources: any[][] = [];
 
-      const { data: statePartners } = await supabase
-        .from("tt_partners").select("*")
-        .eq("service_category", "coach_bus").eq("status", "approved")
-        .or(`state.ilike.%${request.pickup_state || ""}%,state.ilike.%${request.dropoff_state || ""}%`)
-        .order("trust_score", { ascending: false }).limit(maxPartners);
+      if (category === "private_jet") {
+        // Private jet: global matching — all approved aviation partners
+        const { data: allJetPartners } = await supabase
+          .from("tt_partners").select("*")
+          .eq("service_category", "private_jet").eq("status", "approved")
+          .order("trust_score", { ascending: false }).limit(maxPartners);
+        partnerSources = [allJetPartners || []];
+      } else {
+        // Coach bus: geographic matching (city → state → all)
+        const { data: cityPartners } = await supabase
+          .from("tt_partners").select("*")
+          .eq("service_category", category).eq("status", "approved")
+          .or(`city.ilike.%${request.pickup_city}%,city.ilike.%${request.dropoff_city}%`)
+          .order("trust_score", { ascending: false }).limit(maxPartners);
 
-      const { data: allPartners } = await supabase
-        .from("tt_partners").select("*")
-        .eq("service_category", "coach_bus").eq("status", "approved")
-        .order("trust_score", { ascending: false }).limit(maxPartners);
+        const { data: statePartners } = await supabase
+          .from("tt_partners").select("*")
+          .eq("service_category", category).eq("status", "approved")
+          .or(`state.ilike.%${request.pickup_state || ""}%,state.ilike.%${request.dropoff_state || ""}%`)
+          .order("trust_score", { ascending: false }).limit(maxPartners);
+
+        const { data: allPartners } = await supabase
+          .from("tt_partners").select("*")
+          .eq("service_category", category).eq("status", "approved")
+          .order("trust_score", { ascending: false }).limit(maxPartners);
+
+        partnerSources = [cityPartners || [], statePartners || [], allPartners || []];
+      }
 
       // Merge & deduplicate (local priority)
       const seen = new Set<string>();
