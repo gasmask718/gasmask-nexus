@@ -409,7 +409,7 @@ const DYNASTY_NAVIGATION = {
     name: '💛 UBEN HQ',
     items: [
       { path: '/os/uben', label: '💛 UBEN Dashboard', icon: Heart },
-      { path: '/os/dynasty-earn', label: '💰 Dynasty Earn', icon: DollarSign },
+      { path: '/os/dynasty-earn', label: '💰 Monetization Engine', icon: DollarSign },
     ],
   },
   financeAcquisition: {
