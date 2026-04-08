@@ -402,6 +402,13 @@ const DYNASTY_NAVIGATION = {
       { path: '/funding-machine/settings', label: '⚙️ Settings', icon: Settings },
     ],
   },
+  ubenHq: {
+    id: 'uben-hq',
+    name: '💛 UBEN HQ',
+    items: [
+      { path: '/os/uben', label: '💛 UBEN Dashboard', icon: Heart },
+    ],
+  },
   financeAcquisition: {
     id: 'finance-acquisition',
     name: '💰 Finance & Acquisition',
@@ -635,7 +642,7 @@ const Layout = ({ children }: LayoutProps) => {
   const [openSections, setOpenSections] = useState<string[]>([
     'penthouse', 'sbo-ai-engine', 'security-governance',
     'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9',
-    'surplus-funds-os', 'dynasty-funding-hub', 'real-estate-os', 'solar-os',
+    'surplus-funds-os', 'dynasty-funding-hub', 'uben-hq', 'real-estate-os', 'solar-os',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
     'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
     'brandaro-hub', 'dynasty-connect', 'voice-ops', 'global-dashboard', 'portals'
@@ -899,6 +906,18 @@ const Layout = ({ children }: LayoutProps) => {
           DYNASTY_NAVIGATION.dynastyFundingHub.id,
           DYNASTY_NAVIGATION.dynastyFundingHub.name,
           DYNASTY_NAVIGATION.dynastyFundingHub.items
+        )}
+      </div>
+
+      {/* 💛 UBEN HQ — NON-PROFIT OPS */}
+      <div className="pt-2 border-t border-yellow-600/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-yellow-500/80 tracking-wider">
+          💛 UBEN HQ
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.ubenHq.id,
+          DYNASTY_NAVIGATION.ubenHq.name,
+          DYNASTY_NAVIGATION.ubenHq.items
         )}
       </div>
 
