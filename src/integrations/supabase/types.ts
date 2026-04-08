@@ -37421,6 +37421,182 @@ export type Database = {
         }
         Relationships: []
       }
+      dynasty_brand_applications: {
+        Row: {
+          brand_name: string
+          budget: number | null
+          contact_email: string | null
+          contact_name: string | null
+          created_at: string
+          goals: string | null
+          id: string
+          industry: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          brand_name: string
+          budget?: number | null
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          goals?: string | null
+          id?: string
+          industry?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          brand_name?: string
+          budget?: number | null
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          goals?: string | null
+          id?: string
+          industry?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dynasty_brand_campaigns: {
+        Row: {
+          brand_id: string
+          budget: number | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          min_creator_tier: string | null
+          platform_fee_pct: number | null
+          start_date: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          brand_id: string
+          budget?: number | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          min_creator_tier?: string | null
+          platform_fee_pct?: number | null
+          start_date?: string | null
+          status?: string
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          brand_id?: string
+          budget?: number | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          min_creator_tier?: string | null
+          platform_fee_pct?: number | null
+          start_date?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dynasty_brand_campaigns_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "dynasty_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dynasty_brand_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string | null
+          recipient_id: string
+          recipient_type: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string | null
+          recipient_id: string
+          recipient_type?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string | null
+          recipient_id?: string
+          recipient_type?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      dynasty_brands: {
+        Row: {
+          contact_email: string | null
+          contact_name: string | null
+          created_at: string
+          id: string
+          industry: string | null
+          logo_url: string | null
+          monthly_spend: number | null
+          name: string
+          notes: string | null
+          status: string
+          subscription_tier: string
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          monthly_spend?: number | null
+          name: string
+          notes?: string | null
+          status?: string
+          subscription_tier?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          monthly_spend?: number | null
+          name?: string
+          notes?: string | null
+          status?: string
+          subscription_tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dynasty_checkpoints: {
         Row: {
           created_at: string
@@ -37445,6 +37621,51 @@ export type Database = {
           notes?: string | null
           owner_id?: string
           payload?: Json
+        }
+        Relationships: []
+      }
+      dynasty_creator_tiers: {
+        Row: {
+          campaigns_completed: number | null
+          created_at: string
+          email: string | null
+          id: string
+          is_flagged_elite: boolean | null
+          name: string | null
+          performance_score: number | null
+          specialties: string[] | null
+          tier: string
+          total_earnings: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaigns_completed?: number | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_flagged_elite?: boolean | null
+          name?: string | null
+          performance_score?: number | null
+          specialties?: string[] | null
+          tier?: string
+          total_earnings?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaigns_completed?: number | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_flagged_elite?: boolean | null
+          name?: string | null
+          performance_score?: number | null
+          specialties?: string[] | null
+          tier?: string
+          total_earnings?: number | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -37740,6 +37961,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      dynasty_subscriptions: {
+        Row: {
+          brand_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          monthly_fee: number
+          plan: string
+          started_at: string | null
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          monthly_fee?: number
+          plan?: string
+          started_at?: string | null
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          monthly_fee?: number
+          plan?: string
+          started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dynasty_subscriptions_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "dynasty_brands"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       elevenlabs_agents: {
         Row: {
