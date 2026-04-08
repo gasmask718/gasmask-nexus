@@ -909,6 +909,18 @@ const Layout = ({ children }: LayoutProps) => {
         )}
       </div>
 
+      {/* 💛 UBEN HQ — NON-PROFIT OPS */}
+      <div className="pt-2 border-t border-yellow-600/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-yellow-500/80 tracking-wider">
+          💛 UBEN HQ
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.ubenHq.id,
+          DYNASTY_NAVIGATION.ubenHq.name,
+          DYNASTY_NAVIGATION.ubenHq.items
+        )}
+      </div>
+
       {/* 🏠 REAL ESTATE OS — STANDALONE HUB */}
       <div className="pt-2 border-t border-green-600/30">
         <div className="px-3 py-1 text-[10px] font-semibold uppercase text-green-600/80 tracking-wider">
