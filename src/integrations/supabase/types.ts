@@ -35999,6 +35999,337 @@ export type Database = {
           },
         ]
       }
+      dme_brand_campaigns: {
+        Row: {
+          brand_id: string
+          budget: number
+          created_at: string
+          description: string | null
+          duration_days: number | null
+          end_date: string | null
+          id: string
+          min_audience: number | null
+          niche_tags: string[] | null
+          payout_type: string
+          platform_fee_pct: number | null
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          brand_id: string
+          budget?: number
+          created_at?: string
+          description?: string | null
+          duration_days?: number | null
+          end_date?: string | null
+          id?: string
+          min_audience?: number | null
+          niche_tags?: string[] | null
+          payout_type?: string
+          platform_fee_pct?: number | null
+          start_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          brand_id?: string
+          budget?: number
+          created_at?: string
+          description?: string | null
+          duration_days?: number | null
+          end_date?: string | null
+          id?: string
+          min_audience?: number | null
+          niche_tags?: string[] | null
+          payout_type?: string
+          platform_fee_pct?: number | null
+          start_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dme_brand_campaigns_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "dme_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dme_brands: {
+        Row: {
+          budget: number | null
+          company_name: string
+          contact_email: string | null
+          contact_name: string | null
+          created_at: string
+          id: string
+          industry: string | null
+          logo_url: string | null
+          status: string
+          subscription_status: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          budget?: number | null
+          company_name: string
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          status?: string
+          subscription_status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          budget?: number | null
+          company_name?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          status?: string
+          subscription_status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      dme_campaign_applications: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          pitch: string | null
+          proposed_rate: number | null
+          status: string
+          talent_id: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          pitch?: string | null
+          proposed_rate?: number | null
+          status?: string
+          talent_id: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          pitch?: string | null
+          proposed_rate?: number | null
+          status?: string
+          talent_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dme_campaign_applications_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "dme_brand_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dme_campaign_applications_talent_id_fkey"
+            columns: ["talent_id"]
+            isOneToOne: false
+            referencedRelation: "dme_talent_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dme_campaign_assignments: {
+        Row: {
+          agreed_rate: number
+          campaign_id: string
+          completed_at: string | null
+          contract_end: string | null
+          contract_start: string | null
+          created_at: string
+          deliverables: string | null
+          id: string
+          net_payout: number | null
+          platform_fee: number | null
+          status: string
+          talent_id: string
+          updated_at: string
+        }
+        Insert: {
+          agreed_rate?: number
+          campaign_id: string
+          completed_at?: string | null
+          contract_end?: string | null
+          contract_start?: string | null
+          created_at?: string
+          deliverables?: string | null
+          id?: string
+          net_payout?: number | null
+          platform_fee?: number | null
+          status?: string
+          talent_id: string
+          updated_at?: string
+        }
+        Update: {
+          agreed_rate?: number
+          campaign_id?: string
+          completed_at?: string | null
+          contract_end?: string | null
+          contract_start?: string | null
+          created_at?: string
+          deliverables?: string | null
+          id?: string
+          net_payout?: number | null
+          platform_fee?: number | null
+          status?: string
+          talent_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dme_campaign_assignments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "dme_brand_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dme_campaign_assignments_talent_id_fkey"
+            columns: ["talent_id"]
+            isOneToOne: false
+            referencedRelation: "dme_talent_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dme_disputes: {
+        Row: {
+          assignment_id: string
+          created_at: string
+          filed_by: string | null
+          id: string
+          reason: string
+          resolution: string | null
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string
+          filed_by?: string | null
+          id?: string
+          reason: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string
+          filed_by?: string | null
+          id?: string
+          reason?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dme_disputes_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "dme_campaign_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dme_platform_config: {
+        Row: {
+          config_key: string
+          config_value: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          config_key: string
+          config_value: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          config_key?: string
+          config_value?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dme_talent_profiles: {
+        Row: {
+          audience_size: number | null
+          bio: string | null
+          created_at: string
+          email: string
+          engagement_rate: number | null
+          id: string
+          name: string
+          niche: string | null
+          phone: string | null
+          portfolio_url: string | null
+          pricing: number | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          audience_size?: number | null
+          bio?: string | null
+          created_at?: string
+          email: string
+          engagement_rate?: number | null
+          id?: string
+          name: string
+          niche?: string | null
+          phone?: string | null
+          portfolio_url?: string | null
+          pricing?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          audience_size?: number | null
+          bio?: string | null
+          created_at?: string
+          email?: string
+          engagement_rate?: number | null
+          id?: string
+          name?: string
+          niche?: string | null
+          phone?: string | null
+          portfolio_url?: string | null
+          pricing?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       dnc_list: {
         Row: {
           added_at: string | null
