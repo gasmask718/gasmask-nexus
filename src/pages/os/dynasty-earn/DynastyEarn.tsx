@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,18 @@ import {
   DollarSign, Users, Link2, TrendingUp, Trophy, Bell,
   Plus, Search, Copy, ExternalLink, CheckCircle, Clock,
   BarChart3, Sparkles, Eye, MousePointer, ArrowUpRight, ArrowDownRight,
-  Zap, Star, Award, Target
+  Zap, Star, Award, Target, Building2, UserCog, Shield
 } from 'lucide-react';
+import {
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, PieChart, Pie, Cell
+} from 'recharts';
+
+const TalentManagementTab = lazy(() => import('./TalentManagementTab'));
+const BrandDealExchangeTab = lazy(() => import('./BrandDealExchangeTab'));
+const AdminControlTab = lazy(() => import('./AdminControlTab'));
+
+const TabLoader = () => <div className="flex items-center justify-center py-12"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell
