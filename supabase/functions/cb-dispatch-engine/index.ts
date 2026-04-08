@@ -172,13 +172,29 @@ function buildDispatchEmail(req: any, responseUrl: string) {
 
 // ── Customer offer email ────────────────────────────────────────────────
 function buildCustomerOfferEmail(req: any, quote: any, margin: any, approveUrl: string) {
+  const isJet = req.category === "private_jet";
+  const icon = isJet ? "✈️" : "🚌";
+  const title = isJet ? "Your Private Jet Charter Is Ready!" : "Your Coach Bus Is Available!";
+  const gradient = isJet ? "linear-gradient(135deg,#1a1a2e,#c9a84c)" : "linear-gradient(135deg,#7c3aed,#a855f7)";
+  const fromCity = isJet ? (req.departure_airport || req.pickup_city) : req.pickup_city;
+  const toCity = isJet ? (req.arrival_airport || req.dropoff_city) : req.dropoff_city;
+
+  const jetDetails = isJet ? `
+    ${quote.aircraft_type ? `<p><strong>✈️ Aircraft:</strong> ${quote.aircraft_type}</p>` : ""}
+    ${quote.flight_time_hours ? `<p><strong>🕐 Flight Time:</strong> ${quote.flight_time_hours}h</p>` : ""}
+    ${quote.reposition_cost > 0 ? `<p><strong>📍 Reposition:</strong> Included</p>` : ""}
+  ` : `
+    ${quote.vehicle_type ? `<p><strong>🚌 Vehicle:</strong> ${quote.vehicle_type}</p>` : ""}
+    ${quote.capacity ? `<p><strong>💺 Capacity:</strong> ${quote.capacity} seats</p>` : ""}
+    ${quote.amenities?.length ? `<p><strong>✅ Amenities:</strong> ${quote.amenities.join(", ")}</p>` : ""}
+  `;
+
   return `<!DOCTYPE html><html><head><style>
   body{font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;margin:0}
   .card{background:#fff;border-radius:12px;padding:30px;max-width:600px;margin:0 auto}
   h1{color:#1a1a1a;font-size:24px}
-  .route{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border-radius:10px;padding:20px;text-align:center;margin:16px 0}
+  .route{background:${gradient};color:#fff;border-radius:10px;padding:20px;text-align:center;margin:16px 0}
   .route h2{margin:0;font-size:20px}
-  .route .arrow{font-size:24px;margin:6px 0}
   .detail{background:#f9f9f9;border-radius:8px;padding:16px;margin:16px 0}
   .detail p{margin:6px 0;color:#333;font-size:14px}
   .price{text-align:center;margin:20px 0}
@@ -187,18 +203,16 @@ function buildCustomerOfferEmail(req: any, quote: any, margin: any, approveUrl: 
   .btn{display:inline-block;padding:14px 40px;background:#10b981;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px}
   .footer{text-align:center;color:#999;font-size:11px;margin-top:20px}
 </style></head><body><div class="card">
-  <h1>🚌 Your Coach Bus Is Available!</h1>
+  <h1>${icon} ${title}</h1>
 
   <div class="route">
-    <h2>${req.pickup_city} → ${req.dropoff_city}</h2>
+    <h2>${fromCity} → ${toCity}</h2>
   </div>
 
   <div class="detail">
     <p><strong>📅 Date:</strong> ${req.trip_date || "TBD"}</p>
     <p><strong>👥 Passengers:</strong> ${req.passenger_count}</p>
-    ${quote.vehicle_type ? `<p><strong>🚌 Vehicle:</strong> ${quote.vehicle_type}</p>` : ""}
-    ${quote.capacity ? `<p><strong>💺 Capacity:</strong> ${quote.capacity} seats</p>` : ""}
-    ${quote.amenities?.length ? `<p><strong>✅ Amenities:</strong> ${quote.amenities.join(", ")}</p>` : ""}
+    ${jetDetails}
   </div>
 
   <div class="price">
@@ -208,10 +222,10 @@ function buildCustomerOfferEmail(req: any, quote: any, margin: any, approveUrl: 
   </div>
 
   <div style="text-align:center">
-    <a href="${approveUrl}" class="btn">✅ Confirm Booking</a>
+    <a href="${approveUrl}" class="btn">✅ Confirm ${isJet ? "Charter" : "Booking"}</a>
   </div>
 
-  <p class="footer">This quote is valid for 48 hours. TopTier Lifestyle Transportation.</p>
+  <p class="footer">This quote is valid for 48 hours. TopTier Lifestyle ${isJet ? "Aviation" : "Transportation"}.</p>
 </div></body></html>`;
 }
 
