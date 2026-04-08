@@ -45,7 +45,7 @@ interface PhotographerJob {
   id: string; request_id: string; photographer_id: string; status: string;
   price: number | null; commission_amount: number | null; photographer_payout?: number | null;
   payout_status?: string; scheduled_date: string | null; completed_at: string | null;
-  tour_url?: string | null; created_at: string; assignment_score?: number;
+  tour_url?: string | null; created_at: string; assignment_score?: number; completed_upload_type?: string;
   distance_miles?: number; qa_status?: string; qa_notes?: string;
   quote_id?: string;
 }
