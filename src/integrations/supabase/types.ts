@@ -84087,6 +84087,116 @@ export type Database = {
           },
         ]
       }
+      uben_activity_log: {
+        Row: {
+          action_type: string
+          actor_name: string | null
+          created_at: string
+          description: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+        }
+        Insert: {
+          action_type: string
+          actor_name?: string | null
+          created_at?: string
+          description: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+        }
+        Update: {
+          action_type?: string
+          actor_name?: string | null
+          created_at?: string
+          description?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      uben_ambassador_sales: {
+        Row: {
+          ambassador_id: string
+          commission_amount: number
+          created_at: string
+          description: string | null
+          id: string
+          sale_amount: number
+          sale_date: string
+        }
+        Insert: {
+          ambassador_id: string
+          commission_amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          sale_amount?: number
+          sale_date?: string
+        }
+        Update: {
+          ambassador_id?: string
+          commission_amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          sale_amount?: number
+          sale_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uben_ambassador_sales_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "uben_ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      uben_ambassadors: {
+        Row: {
+          business_unit: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          joined_at: string
+          phone: string | null
+          referral_code: string | null
+          status: string
+          total_earnings: number
+          total_sales: number
+        }
+        Insert: {
+          business_unit?: string | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          joined_at?: string
+          phone?: string | null
+          referral_code?: string | null
+          status?: string
+          total_earnings?: number
+          total_sales?: number
+        }
+        Update: {
+          business_unit?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          joined_at?: string
+          phone?: string | null
+          referral_code?: string | null
+          status?: string
+          total_earnings?: number
+          total_sales?: number
+        }
+        Relationships: []
+      }
       uben_compliance_calendar: {
         Row: {
           category: string
