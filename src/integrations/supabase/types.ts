@@ -83208,6 +83208,170 @@ export type Database = {
           },
         ]
       }
+      uben_compliance_calendar: {
+        Row: {
+          category: string
+          created_at: string
+          due_date: string
+          id: string
+          notes: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          due_date: string
+          id?: string
+          notes?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      uben_documents: {
+        Row: {
+          category: string
+          created_at: string
+          file_size: number | null
+          file_url: string
+          id: string
+          name: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          name: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          name?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      uben_impact_log: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          logged_by: string | null
+          outcome_notes: string | null
+          participants: number
+          program_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          logged_by?: string | null
+          outcome_notes?: string | null
+          participants?: number
+          program_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          logged_by?: string | null
+          outcome_notes?: string | null
+          participants?: number
+          program_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uben_impact_log_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "uben_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      uben_partner_activity: {
+        Row: {
+          activity_type: string
+          company_name: string
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          people_count: number | null
+          value: number | null
+        }
+        Insert: {
+          activity_type: string
+          company_name: string
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          people_count?: number | null
+          value?: number | null
+        }
+        Update: {
+          activity_type?: string
+          company_name?: string
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          people_count?: number | null
+          value?: number | null
+        }
+        Relationships: []
+      }
+      uben_programs: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          participant_count: number | null
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          participant_count?: number | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          participant_count?: number | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       unforgettable_ambassadors: {
         Row: {
           active_referral_link: string | null
