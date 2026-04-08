@@ -84117,6 +84117,56 @@ export type Database = {
         }
         Relationships: []
       }
+      uben_ambassador_applications: {
+        Row: {
+          application_status: string
+          assigned_staff_id: string | null
+          business_unit_interest: string | null
+          created_at: string
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          notes: string | null
+          phone: string | null
+          referred_by: string | null
+        }
+        Insert: {
+          application_status?: string
+          assigned_staff_id?: string | null
+          business_unit_interest?: string | null
+          created_at?: string
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          notes?: string | null
+          phone?: string | null
+          referred_by?: string | null
+        }
+        Update: {
+          application_status?: string
+          assigned_staff_id?: string | null
+          business_unit_interest?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          referred_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uben_ambassador_applications_assigned_staff_id_fkey"
+            columns: ["assigned_staff_id"]
+            isOneToOne: false
+            referencedRelation: "uben_staff_recruiters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       uben_ambassador_sales: {
         Row: {
           ambassador_id: string
@@ -84163,9 +84213,12 @@ export type Database = {
           full_name: string
           id: string
           joined_at: string
+          last_active_at: string | null
           phone: string | null
+          recruited_by_staff_id: string | null
           referral_code: string | null
           status: string
+          tier: string
           total_earnings: number
           total_sales: number
         }
@@ -84176,9 +84229,12 @@ export type Database = {
           full_name: string
           id?: string
           joined_at?: string
+          last_active_at?: string | null
           phone?: string | null
+          recruited_by_staff_id?: string | null
           referral_code?: string | null
           status?: string
+          tier?: string
           total_earnings?: number
           total_sales?: number
         }
@@ -84189,13 +84245,105 @@ export type Database = {
           full_name?: string
           id?: string
           joined_at?: string
+          last_active_at?: string | null
           phone?: string | null
+          recruited_by_staff_id?: string | null
           referral_code?: string | null
           status?: string
+          tier?: string
           total_earnings?: number
           total_sales?: number
         }
+        Relationships: [
+          {
+            foreignKeyName: "uben_ambassadors_recruited_by_fkey"
+            columns: ["recruited_by_staff_id"]
+            isOneToOne: false
+            referencedRelation: "uben_staff_recruiters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      uben_commission_config: {
+        Row: {
+          ambassador_commission_rate: number
+          business_unit: string
+          id: string
+          staff_override_rate: number
+          updated_at: string
+        }
+        Insert: {
+          ambassador_commission_rate?: number
+          business_unit: string
+          id?: string
+          staff_override_rate?: number
+          updated_at?: string
+        }
+        Update: {
+          ambassador_commission_rate?: number
+          business_unit?: string
+          id?: string
+          staff_override_rate?: number
+          updated_at?: string
+        }
         Relationships: []
+      }
+      uben_commission_ledger: {
+        Row: {
+          ambassador_commission: number
+          ambassador_id: string
+          business_unit: string
+          created_at: string
+          id: string
+          sale_amount: number
+          sale_date: string
+          sale_type: string
+          staff_override_amount: number
+          staff_recruiter_id: string | null
+          status: string
+        }
+        Insert: {
+          ambassador_commission?: number
+          ambassador_id: string
+          business_unit: string
+          created_at?: string
+          id?: string
+          sale_amount?: number
+          sale_date?: string
+          sale_type?: string
+          staff_override_amount?: number
+          staff_recruiter_id?: string | null
+          status?: string
+        }
+        Update: {
+          ambassador_commission?: number
+          ambassador_id?: string
+          business_unit?: string
+          created_at?: string
+          id?: string
+          sale_amount?: number
+          sale_date?: string
+          sale_type?: string
+          staff_override_amount?: number
+          staff_recruiter_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uben_commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "uben_ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "uben_commission_ledger_staff_recruiter_id_fkey"
+            columns: ["staff_recruiter_id"]
+            isOneToOne: false
+            referencedRelation: "uben_staff_recruiters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       uben_compliance_calendar: {
         Row: {
@@ -84358,6 +84506,36 @@ export type Database = {
           start_date?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      uben_staff_recruiters: {
+        Row: {
+          business_unit: string
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          override_rate: number
+          status: string
+        }
+        Insert: {
+          business_unit: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          override_rate?: number
+          status?: string
+        }
+        Update: {
+          business_unit?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          override_rate?: number
+          status?: string
         }
         Relationships: []
       }

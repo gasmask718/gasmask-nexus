@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+const AmbassadorNetworkTab = lazy(() => import('./AmbassadorNetworkTab'));
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -1176,6 +1177,7 @@ export default function UbenHQ() {
       <Tabs defaultValue="dashboard" className="space-y-4">
         <TabsList className="bg-muted/50 p-1 flex-wrap h-auto">
           <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
+          <TabsTrigger value="ambassadors" className="text-xs">Ambassador Network</TabsTrigger>
           <TabsTrigger value="programs" className="text-xs">Programs & Impact</TabsTrigger>
           <TabsTrigger value="partners" className="text-xs">Partner Activity</TabsTrigger>
           <TabsTrigger value="documents" className="text-xs">Document Vault</TabsTrigger>
@@ -1184,6 +1186,7 @@ export default function UbenHQ() {
         </TabsList>
 
         <TabsContent value="dashboard"><DashboardTab /></TabsContent>
+        <TabsContent value="ambassadors"><Suspense fallback={<div className="py-8 text-center text-muted-foreground">Loading...</div>}><AmbassadorNetworkTab /></Suspense></TabsContent>
         <TabsContent value="programs"><ProgramsTab /></TabsContent>
         <TabsContent value="partners"><PartnerActivityTab /></TabsContent>
         <TabsContent value="documents"><DocumentVaultTab /></TabsContent>
