@@ -376,6 +376,17 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/unforgettable/virtual-tours', label: '📸 Floor 10 — Virtual Tours', icon: Camera },
     ],
   },
+  uftPlatform: {
+    id: 'uft-platform',
+    name: '🎊 UFT Platform Command',
+    items: [
+      { path: '/uft/dashboard', label: '🎯 Command Center', icon: PartyPopper },
+      { path: '/uft/revenue', label: '💰 Revenue', icon: DollarSign },
+      { path: '/uft/vendors', label: '🏪 Vendors', icon: Store },
+      { path: '/uft/ambassadors', label: '🎖️ Ambassadors', icon: Award },
+      { path: '/uft/launch', label: '🚀 Launch Checklist', icon: Target },
+    ],
+  },
   dynastyBusiness: {
     id: 'dynasty-business',
     name: '🌐 Dynasty Business Units',
