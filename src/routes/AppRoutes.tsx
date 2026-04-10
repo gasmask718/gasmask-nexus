@@ -895,6 +895,8 @@ const FundingMachineBillGuardian = lazy(() => import('@/pages/funding-machine/Bi
 const FundingMachineDeletionLetterEngine = lazy(() => import('@/pages/funding-machine/DeletionLetterEnginePage'));
 const FundingMachineSecureIntake = lazy(() => import('@/pages/funding-machine/SecureClientIntakePage'));
 const FundingMachineCreditUnionIntel = lazy(() => import('@/pages/funding-machine/CreditUnionIntelPage'));
+const FundingMachineAutoFinancing = lazy(() => import('@/pages/funding-machine/AutoFinancingPage'));
+const FundingMachineShelfCorp = lazy(() => import('@/pages/funding-machine/ShelfCorpPage'));
 const UbenHQ = lazy(() => import('@/pages/os/uben/UbenHQ'));
 const DynastyEarn = lazy(() => import('@/pages/os/dynasty-earn/DynastyEarn'));
 const BrandAcquisitionSystem = lazy(() => import('@/pages/os/brand-acquisition/BrandAcquisitionSystem'));
@@ -1785,6 +1787,8 @@ export default function AppRoutes() {
         <Route path="/funding-machine/deletion-letters" element={<FundingMachineDeletionLetterEngine />} />
         <Route path="/funding-machine/secure-intake" element={<FundingMachineSecureIntake />} />
         <Route path="/funding-machine/credit-union-intel" element={<FundingMachineCreditUnionIntel />} />
+        <Route path="/funding-machine/auto-financing" element={<FundingMachineAutoFinancing />} />
+        <Route path="/funding-machine/shelf-corp" element={<FundingMachineShelfCorp />} />
         <Route path="/funding-machine/settings" element={<FundingMachineSettings />} />
         {/* UBEN HQ — Non-Profit Operations Tracker */}
         <Route path="/os/uben" element={<UbenHQ />} />

@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_notes: {
+        Row: {
+          ai_action_items: string[] | null
+          ai_risk_flags: string[] | null
+          ai_summary: string | null
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          note_body: string
+          note_type: string
+          updated_at: string
+        }
+        Insert: {
+          ai_action_items?: string[] | null
+          ai_risk_flags?: string[] | null
+          ai_summary?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          note_body: string
+          note_type?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_action_items?: string[] | null
+          ai_risk_flags?: string[] | null
+          ai_summary?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          note_body?: string
+          note_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       accounting_ledger: {
         Row: {
           amount: number
@@ -7556,6 +7598,105 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      auto_lenders: {
+        Row: {
+          active: boolean | null
+          application_steps: string | null
+          application_url: string | null
+          created_at: string
+          dealer_required: boolean | null
+          funding_timeline_days: number | null
+          id: string
+          ideal_credit_score: number | null
+          lender_type: string
+          max_apr: number | null
+          max_loan_amount: number | null
+          max_ltv_percent: number | null
+          max_vehicle_age_years: number | null
+          max_vehicle_mileage: number | null
+          membership_cost: number | null
+          membership_org: string | null
+          membership_required: boolean | null
+          min_apr: number | null
+          min_credit_score: number | null
+          min_loan_amount: number | null
+          name: string
+          new_used_both: string | null
+          notes: string | null
+          payment_method: string | null
+          phone: string | null
+          preapproval_available: boolean | null
+          private_party_ok: boolean | null
+          pro_tips: string | null
+          same_day_funding: boolean | null
+          states_available: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          application_steps?: string | null
+          application_url?: string | null
+          created_at?: string
+          dealer_required?: boolean | null
+          funding_timeline_days?: number | null
+          id?: string
+          ideal_credit_score?: number | null
+          lender_type?: string
+          max_apr?: number | null
+          max_loan_amount?: number | null
+          max_ltv_percent?: number | null
+          max_vehicle_age_years?: number | null
+          max_vehicle_mileage?: number | null
+          membership_cost?: number | null
+          membership_org?: string | null
+          membership_required?: boolean | null
+          min_apr?: number | null
+          min_credit_score?: number | null
+          min_loan_amount?: number | null
+          name: string
+          new_used_both?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          phone?: string | null
+          preapproval_available?: boolean | null
+          private_party_ok?: boolean | null
+          pro_tips?: string | null
+          same_day_funding?: boolean | null
+          states_available?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          application_steps?: string | null
+          application_url?: string | null
+          created_at?: string
+          dealer_required?: boolean | null
+          funding_timeline_days?: number | null
+          id?: string
+          ideal_credit_score?: number | null
+          lender_type?: string
+          max_apr?: number | null
+          max_loan_amount?: number | null
+          max_ltv_percent?: number | null
+          max_vehicle_age_years?: number | null
+          max_vehicle_mileage?: number | null
+          membership_cost?: number | null
+          membership_org?: string | null
+          membership_required?: boolean | null
+          min_apr?: number | null
+          min_credit_score?: number | null
+          min_loan_amount?: number | null
+          name?: string
+          new_used_both?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          phone?: string | null
+          preapproval_available?: boolean | null
+          private_party_ok?: boolean | null
+          pro_tips?: string | null
+          same_day_funding?: boolean | null
+          states_available?: string | null
+        }
+        Relationships: []
       }
       automated_notifications: {
         Row: {
@@ -77141,6 +77282,120 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shelf_corp_tracker: {
+        Row: {
+          activation_step_current: number | null
+          annual_reports_current: boolean | null
+          bank_account_opened: boolean | null
+          bank_name: string | null
+          business_credit_cards_count: number | null
+          client_id: string | null
+          corp_age_at_purchase: number | null
+          created_at: string
+          duns_number: string | null
+          ein: string | null
+          id: string
+          purchase_date: string | null
+          state_of_formation: string | null
+          step_notes: string | null
+          trade_lines_count: number | null
+          vendor_purchased_from: string | null
+        }
+        Insert: {
+          activation_step_current?: number | null
+          annual_reports_current?: boolean | null
+          bank_account_opened?: boolean | null
+          bank_name?: string | null
+          business_credit_cards_count?: number | null
+          client_id?: string | null
+          corp_age_at_purchase?: number | null
+          created_at?: string
+          duns_number?: string | null
+          ein?: string | null
+          id?: string
+          purchase_date?: string | null
+          state_of_formation?: string | null
+          step_notes?: string | null
+          trade_lines_count?: number | null
+          vendor_purchased_from?: string | null
+        }
+        Update: {
+          activation_step_current?: number | null
+          annual_reports_current?: boolean | null
+          bank_account_opened?: boolean | null
+          bank_name?: string | null
+          business_credit_cards_count?: number | null
+          client_id?: string | null
+          corp_age_at_purchase?: number | null
+          created_at?: string
+          duns_number?: string | null
+          ein?: string | null
+          id?: string
+          purchase_date?: string | null
+          state_of_formation?: string | null
+          step_notes?: string | null
+          trade_lines_count?: number | null
+          vendor_purchased_from?: string | null
+        }
+        Relationships: []
+      }
+      shelf_corp_vendors: {
+        Row: {
+          corp_age_years_available: string | null
+          cost_efficiency_score: number | null
+          created_at: string
+          id: string
+          includes_bank_account: boolean | null
+          includes_credit_history: boolean | null
+          includes_ein: boolean | null
+          notes: string | null
+          price_range_max: number | null
+          price_range_min: number | null
+          states_offered: string[] | null
+          trust_score: number | null
+          turn_around_days: number | null
+          vendor_name: string
+          verified: boolean | null
+          website_url: string | null
+        }
+        Insert: {
+          corp_age_years_available?: string | null
+          cost_efficiency_score?: number | null
+          created_at?: string
+          id?: string
+          includes_bank_account?: boolean | null
+          includes_credit_history?: boolean | null
+          includes_ein?: boolean | null
+          notes?: string | null
+          price_range_max?: number | null
+          price_range_min?: number | null
+          states_offered?: string[] | null
+          trust_score?: number | null
+          turn_around_days?: number | null
+          vendor_name: string
+          verified?: boolean | null
+          website_url?: string | null
+        }
+        Update: {
+          corp_age_years_available?: string | null
+          cost_efficiency_score?: number | null
+          created_at?: string
+          id?: string
+          includes_bank_account?: boolean | null
+          includes_credit_history?: boolean | null
+          includes_ein?: boolean | null
+          notes?: string | null
+          price_range_max?: number | null
+          price_range_min?: number | null
+          states_offered?: string[] | null
+          trust_score?: number | null
+          turn_around_days?: number | null
+          vendor_name?: string
+          verified?: boolean | null
+          website_url?: string | null
+        }
+        Relationships: []
       }
       shipping_label_events: {
         Row: {

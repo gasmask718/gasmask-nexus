@@ -506,6 +506,8 @@ export default function AppSidebar() {
                 { path: '/funding-machine/deletion-letters', label: 'Floor 12 — Deletion Letters', emoji: '✉️' },
                 { path: '/funding-machine/secure-intake', label: 'Floor 13 — Client Intake', emoji: '🔐' },
                 { path: '/funding-machine/credit-union-intel', label: 'Floor 14 — Credit Union Intel', emoji: '🏦' },
+                { path: '/funding-machine/auto-financing', label: 'Floor 15 — Auto Financing', emoji: '🚗' },
+                { path: '/funding-machine/shelf-corp', label: 'Floor 16 — Shelf Corp Center', emoji: '🏢' },
                 { path: '/funding-machine/settings', label: 'Settings', emoji: '⚙️' },
               ], "text-blue-400 hover:bg-blue-500/10")}
             </div>
