@@ -38979,6 +38979,33 @@ export type Database = {
         }
         Relationships: []
       }
+      dynasty_os_api_logs: {
+        Row: {
+          caller_ip: string | null
+          created_at: string | null
+          endpoint: string
+          id: string
+          method: string | null
+          response_status: number | null
+        }
+        Insert: {
+          caller_ip?: string | null
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          method?: string | null
+          response_status?: number | null
+        }
+        Update: {
+          caller_ip?: string | null
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          method?: string | null
+          response_status?: number | null
+        }
+        Relationships: []
+      }
       dynasty_subscriptions: {
         Row: {
           brand_id: string
@@ -89484,6 +89511,75 @@ export type Database = {
         }
         Relationships: []
       }
+      ut_bookings: {
+        Row: {
+          cancellation_reason: string | null
+          created_at: string | null
+          customer_id: string
+          event_date: string | null
+          event_id: string | null
+          guest_count: number | null
+          id: string
+          platform_fee: number | null
+          refund_amount: number | null
+          status: string | null
+          stripe_payment_intent_id: string | null
+          stripe_transfer_id: string | null
+          total_amount: number | null
+          vendor_id: string
+          vendor_payout: number | null
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          created_at?: string | null
+          customer_id: string
+          event_date?: string | null
+          event_id?: string | null
+          guest_count?: number | null
+          id?: string
+          platform_fee?: number | null
+          refund_amount?: number | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_transfer_id?: string | null
+          total_amount?: number | null
+          vendor_id: string
+          vendor_payout?: number | null
+        }
+        Update: {
+          cancellation_reason?: string | null
+          created_at?: string | null
+          customer_id?: string
+          event_date?: string | null
+          event_id?: string | null
+          guest_count?: number | null
+          id?: string
+          platform_fee?: number | null
+          refund_amount?: number | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_transfer_id?: string | null
+          total_amount?: number | null
+          vendor_id?: string
+          vendor_payout?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_bookings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "ut_pub_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_bookings_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "ut_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_brand_kits: {
         Row: {
           accent_color_hex: string | null
@@ -90410,6 +90506,48 @@ export type Database = {
           stripe_payment_intent_id?: string | null
           updated_at?: string | null
           vendor_cost?: number | null
+        }
+        Relationships: []
+      }
+      ut_event_builds: {
+        Row: {
+          budget: number | null
+          city: string | null
+          created_at: string | null
+          event_date: string | null
+          event_type: string | null
+          guest_count: number | null
+          id: string
+          selected_items: Json | null
+          session_id: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          budget?: number | null
+          city?: string | null
+          created_at?: string | null
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          id?: string
+          selected_items?: Json | null
+          session_id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          budget?: number | null
+          city?: string | null
+          created_at?: string | null
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          id?: string
+          selected_items?: Json | null
+          session_id?: string | null
+          status?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -94137,6 +94275,232 @@ export type Database = {
           },
         ]
       }
+      ut_profiles: {
+        Row: {
+          avatar_url: string | null
+          city: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          state: string | null
+          user_type: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          state?: string | null
+          user_type?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          state?: string | null
+          user_type?: string | null
+        }
+        Relationships: []
+      }
+      ut_promotions: {
+        Row: {
+          created_at: string | null
+          discount_percent: number | null
+          end_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          promo_code: string | null
+          start_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          discount_percent?: number | null
+          end_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          promo_code?: string | null
+          start_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          discount_percent?: number | null
+          end_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          promo_code?: string | null
+          start_at?: string | null
+        }
+        Relationships: []
+      }
+      ut_pub_ambassadors: {
+        Row: {
+          created_at: string | null
+          id: string
+          payout_email: string | null
+          ref_code: string
+          stripe_connect_id: string | null
+          tier: string | null
+          total_earned: number | null
+          total_sales: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          payout_email?: string | null
+          ref_code: string
+          stripe_connect_id?: string | null
+          tier?: string | null
+          total_earned?: number | null
+          total_sales?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          payout_email?: string | null
+          ref_code?: string
+          stripe_connect_id?: string | null
+          tier?: string | null
+          total_earned?: number | null
+          total_sales?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ut_pub_events: {
+        Row: {
+          budget: number | null
+          city: string | null
+          created_at: string | null
+          customer_id: string
+          event_date: string | null
+          event_type: string | null
+          guest_count: number | null
+          id: string
+          state: string | null
+          status: string | null
+        }
+        Insert: {
+          budget?: number | null
+          city?: string | null
+          created_at?: string | null
+          customer_id: string
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          id?: string
+          state?: string | null
+          status?: string | null
+        }
+        Update: {
+          budget?: number | null
+          city?: string | null
+          created_at?: string | null
+          customer_id?: string
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          id?: string
+          state?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      ut_pub_messages: {
+        Row: {
+          body: string
+          booking_id: string | null
+          created_at: string | null
+          id: string
+          read: boolean | null
+          recipient_id: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          read?: boolean | null
+          recipient_id: string
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          read?: boolean | null
+          recipient_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_pub_messages_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "ut_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_pub_referrals: {
+        Row: {
+          ambassador_id: string
+          booking_id: string | null
+          commission_amount: number | null
+          commission_rate: number | null
+          created_at: string | null
+          id: string
+          order_id: string | null
+          ref_code: string | null
+          status: string | null
+        }
+        Insert: {
+          ambassador_id: string
+          booking_id?: string | null
+          commission_amount?: number | null
+          commission_rate?: number | null
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          ref_code?: string | null
+          status?: string | null
+        }
+        Update: {
+          ambassador_id?: string
+          booking_id?: string | null
+          commission_amount?: number | null
+          commission_rate?: number | null
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          ref_code?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_pub_referrals_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "ut_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_quiz_results: {
         Row: {
           budget_range: string | null
@@ -94178,6 +94542,62 @@ export type Database = {
           wants_branding?: string | null
         }
         Relationships: []
+      }
+      ut_quote_requests: {
+        Row: {
+          budget: number | null
+          created_at: string | null
+          customer_email: string | null
+          customer_id: string
+          customer_name: string | null
+          customer_phone: string | null
+          event_date: string | null
+          event_type: string | null
+          guest_count: number | null
+          id: string
+          message: string | null
+          status: string | null
+          vendor_id: string
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_id: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          id?: string
+          message?: string | null
+          status?: string | null
+          vendor_id: string
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_id?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          id?: string
+          message?: string | null
+          status?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_quote_requests_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "ut_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ut_quotes: {
         Row: {
@@ -94482,6 +94902,54 @@ export type Database = {
           vendor_payouts?: number | null
         }
         Relationships: []
+      }
+      ut_reviews: {
+        Row: {
+          body: string | null
+          booking_id: string | null
+          created_at: string | null
+          customer_id: string
+          id: string
+          rating: number
+          response: string | null
+          vendor_id: string
+        }
+        Insert: {
+          body?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          rating: number
+          response?: string | null
+          vendor_id: string
+        }
+        Update: {
+          body?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          rating?: number
+          response?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "ut_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_reviews_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "ut_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ut_rfq_requests: {
         Row: {
@@ -96031,6 +96499,67 @@ export type Database = {
         }
         Relationships: []
       }
+      ut_user_favorites: {
+        Row: {
+          created_at: string | null
+          id: string
+          user_id: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          user_id: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          user_id?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_user_favorites_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "ut_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_vendor_blocked_dates: {
+        Row: {
+          blocked_date: string
+          created_at: string | null
+          id: string
+          reason: string | null
+          vendor_id: string
+        }
+        Insert: {
+          blocked_date: string
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+          vendor_id: string
+        }
+        Update: {
+          blocked_date?: string
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_vendor_blocked_dates_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "ut_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_vendor_payments: {
         Row: {
           amount_owed: number
@@ -96130,6 +96659,93 @@ export type Database = {
           vendor_id?: string | null
           vendor_name?: string
           vendor_type?: string
+        }
+        Relationships: []
+      }
+      ut_vendors: {
+        Row: {
+          amenities: string[] | null
+          bookings_count: number | null
+          business_name: string
+          capacity_max: number | null
+          capacity_min: number | null
+          city: string | null
+          cover_photo: string | null
+          created_at: string | null
+          description: string | null
+          featured: boolean | null
+          id: string
+          lat: number | null
+          lng: number | null
+          owner_id: string
+          photos: string[] | null
+          price_flat_rate: number | null
+          price_per_day: number | null
+          price_per_hour: number | null
+          rating: number | null
+          review_count: number | null
+          state: string | null
+          status: string | null
+          stripe_connect_id: string | null
+          tagline: string | null
+          vendor_type: string
+          verified: boolean | null
+        }
+        Insert: {
+          amenities?: string[] | null
+          bookings_count?: number | null
+          business_name: string
+          capacity_max?: number | null
+          capacity_min?: number | null
+          city?: string | null
+          cover_photo?: string | null
+          created_at?: string | null
+          description?: string | null
+          featured?: boolean | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          owner_id: string
+          photos?: string[] | null
+          price_flat_rate?: number | null
+          price_per_day?: number | null
+          price_per_hour?: number | null
+          rating?: number | null
+          review_count?: number | null
+          state?: string | null
+          status?: string | null
+          stripe_connect_id?: string | null
+          tagline?: string | null
+          vendor_type: string
+          verified?: boolean | null
+        }
+        Update: {
+          amenities?: string[] | null
+          bookings_count?: number | null
+          business_name?: string
+          capacity_max?: number | null
+          capacity_min?: number | null
+          city?: string | null
+          cover_photo?: string | null
+          created_at?: string | null
+          description?: string | null
+          featured?: boolean | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          owner_id?: string
+          photos?: string[] | null
+          price_flat_rate?: number | null
+          price_per_day?: number | null
+          price_per_hour?: number | null
+          rating?: number | null
+          review_count?: number | null
+          state?: string | null
+          status?: string | null
+          stripe_connect_id?: string | null
+          tagline?: string | null
+          vendor_type?: string
+          verified?: boolean | null
         }
         Relationships: []
       }
@@ -96234,6 +96850,38 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_virtual_tour_requests_pub: {
+        Row: {
+          created_at: string | null
+          id: string
+          requester_id: string
+          status: string | null
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          requester_id: string
+          status?: string | null
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          requester_id?: string
+          status?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_virtual_tour_requests_pub_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "ut_vendors"
             referencedColumns: ["id"]
           },
         ]
