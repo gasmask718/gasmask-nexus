@@ -504,6 +504,8 @@ export default function AppSidebar() {
                 { path: '/funding-machine/tasks', label: 'Floor 10 — Task Cards', emoji: '✅' },
                 { path: '/funding-machine/bill-guardian', label: 'Floor 11 — Bill Guardian', emoji: '🛡️' },
                 { path: '/funding-machine/deletion-letters', label: 'Floor 12 — Deletion Letters', emoji: '✉️' },
+                { path: '/funding-machine/secure-intake', label: 'Floor 13 — Client Intake', emoji: '🔐' },
+                { path: '/funding-machine/credit-union-intel', label: 'Floor 14 — Credit Union Intel', emoji: '🏦' },
                 { path: '/funding-machine/settings', label: 'Settings', emoji: '⚙️' },
               ], "text-blue-400 hover:bg-blue-500/10")}
             </div>
