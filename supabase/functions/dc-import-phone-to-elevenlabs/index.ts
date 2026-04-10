@@ -52,13 +52,12 @@ Deno.serve(async (req) => {
     // Step 1: Import phone number into ElevenLabs via Twilio integration
     console.log(`📞 Importing ${PHONE_NUMBER} into ElevenLabs...`);
 
+    // ElevenLabs Twilio import requires sid/token at top level
     const importPayload: Record<string, unknown> = {
       phone_number: PHONE_NUMBER,
       provider: "twilio",
-      twilio_config: {
-        account_sid: accountSid,
-        auth_token: TWILIO_TOKEN,
-      },
+      sid: accountSid,
+      token: TWILIO_TOKEN,
       label: "Dynasty Connect — Main Line",
     };
 
@@ -75,7 +74,7 @@ Deno.serve(async (req) => {
 
     if (!importResp.ok) {
       // If number already exists, try to get existing
-      if (importResp.status === 409 || importData?.detail?.includes("already")) {
+      if (importResp.status === 409 || JSON.stringify(importData).includes("already")) {
         console.log("📞 Phone number already imported, fetching existing...");
       } else {
         console.error("❌ ElevenLabs import failed:", importData);
