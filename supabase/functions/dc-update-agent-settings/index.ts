@@ -12,7 +12,7 @@ const corsHeaders = {
  */
 
 const OPTIMAL_VOICE = "pNInz6obpgDQGcFmaJgB"; // Adam
-const OPTIMAL_MODEL = "eleven_turbo_v2_5";
+const OPTIMAL_MODEL = "eleven_turbo_v2";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
