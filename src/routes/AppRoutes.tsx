@@ -3263,6 +3263,18 @@ export default function AppRoutes() {
       </Route>
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* UFT PLATFORM COMMAND CENTER                                                */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/uft" element={<Navigate to="/uft/dashboard" replace />} />
+        <Route path="/uft/dashboard" element={<UFTDashboard />} />
+        <Route path="/uft/revenue" element={<UFTRevenue />} />
+        <Route path="/uft/vendors" element={<UFTVendors />} />
+        <Route path="/uft/ambassadors" element={<UFTAmbassadors />} />
+        <Route path="/uft/launch" element={<UFTLaunchChecklist />} />
+      </Route>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* UNFORGETTABLE TIMES HUB                                                    */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
