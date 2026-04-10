@@ -40214,6 +40214,465 @@ export type Database = {
           },
         ]
       }
+      exotic_car_curated_use_cases: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_featured: boolean | null
+          suggested_vehicle_tags: string[] | null
+          title: string
+          updated_at: string
+          use_case_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_featured?: boolean | null
+          suggested_vehicle_tags?: string[] | null
+          title: string
+          updated_at?: string
+          use_case_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_featured?: boolean | null
+          suggested_vehicle_tags?: string[] | null
+          title?: string
+          updated_at?: string
+          use_case_type?: string | null
+        }
+        Relationships: []
+      }
+      exotic_car_delivery_options: {
+        Row: {
+          created_at: string
+          delivery_address: string | null
+          delivery_fee: number | null
+          delivery_type: string | null
+          id: string
+          notes: string | null
+          pickup_fee: number | null
+          quote_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          delivery_address?: string | null
+          delivery_fee?: number | null
+          delivery_type?: string | null
+          id?: string
+          notes?: string | null
+          pickup_fee?: number | null
+          quote_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          delivery_address?: string | null
+          delivery_fee?: number | null
+          delivery_type?: string | null
+          id?: string
+          notes?: string | null
+          pickup_fee?: number | null
+          quote_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exotic_car_delivery_options_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exotic_car_inventory: {
+        Row: {
+          availability_mode: string | null
+          city: string | null
+          created_at: string
+          daily_price: number | null
+          drive_mode: string | null
+          features: string[] | null
+          hourly_price: number | null
+          id: string
+          image_urls: string[] | null
+          is_active: boolean | null
+          make: string
+          minimum_hours: number | null
+          model: string
+          partner_id: string | null
+          seats: number | null
+          state: string | null
+          tags: string[] | null
+          updated_at: string
+          vehicle_type: string | null
+          year: number | null
+        }
+        Insert: {
+          availability_mode?: string | null
+          city?: string | null
+          created_at?: string
+          daily_price?: number | null
+          drive_mode?: string | null
+          features?: string[] | null
+          hourly_price?: number | null
+          id?: string
+          image_urls?: string[] | null
+          is_active?: boolean | null
+          make: string
+          minimum_hours?: number | null
+          model: string
+          partner_id?: string | null
+          seats?: number | null
+          state?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          vehicle_type?: string | null
+          year?: number | null
+        }
+        Update: {
+          availability_mode?: string | null
+          city?: string | null
+          created_at?: string
+          daily_price?: number | null
+          drive_mode?: string | null
+          features?: string[] | null
+          hourly_price?: number | null
+          id?: string
+          image_urls?: string[] | null
+          is_active?: boolean | null
+          make?: string
+          minimum_hours?: number | null
+          model?: string
+          partner_id?: string | null
+          seats?: number | null
+          state?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          vehicle_type?: string | null
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exotic_car_inventory_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exotic_car_market_rules: {
+        Row: {
+          city: string
+          created_at: string
+          id: string
+          same_day_markup: number | null
+          service_fee: number | null
+          state: string | null
+          updated_at: string
+          weekend_markup: number | null
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          id?: string
+          same_day_markup?: number | null
+          service_fee?: number | null
+          state?: string | null
+          updated_at?: string
+          weekend_markup?: number | null
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          id?: string
+          same_day_markup?: number | null
+          service_fee?: number | null
+          state?: string | null
+          updated_at?: string
+          weekend_markup?: number | null
+        }
+        Relationships: []
+      }
+      exotic_car_partner_requests: {
+        Row: {
+          created_at: string
+          exotic_car_request_id: string | null
+          id: string
+          inventory_id: string | null
+          partner_id: string | null
+          requested_date: string | null
+          requested_time: string | null
+          responded_at: string | null
+          response_notes: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          exotic_car_request_id?: string | null
+          id?: string
+          inventory_id?: string | null
+          partner_id?: string | null
+          requested_date?: string | null
+          requested_time?: string | null
+          responded_at?: string | null
+          response_notes?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          exotic_car_request_id?: string | null
+          id?: string
+          inventory_id?: string | null
+          partner_id?: string | null
+          requested_date?: string | null
+          requested_time?: string | null
+          responded_at?: string | null
+          response_notes?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exotic_car_partner_requests_exotic_car_request_id_fkey"
+            columns: ["exotic_car_request_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exotic_car_partner_requests_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exotic_car_partner_requests_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exotic_car_partners: {
+        Row: {
+          avg_response_minutes: number | null
+          city: string | null
+          contact_name: string | null
+          country: string | null
+          created_at: string
+          email: string | null
+          id: string
+          partner_name: string
+          phone: string | null
+          service_areas: string[] | null
+          state: string | null
+          status: string | null
+          supports_chauffeur: boolean | null
+          supports_same_day: boolean | null
+          supports_self_drive: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          avg_response_minutes?: number | null
+          city?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          partner_name: string
+          phone?: string | null
+          service_areas?: string[] | null
+          state?: string | null
+          status?: string | null
+          supports_chauffeur?: boolean | null
+          supports_same_day?: boolean | null
+          supports_self_drive?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          avg_response_minutes?: number | null
+          city?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          partner_name?: string
+          phone?: string | null
+          service_areas?: string[] | null
+          state?: string | null
+          status?: string | null
+          supports_chauffeur?: boolean | null
+          supports_same_day?: boolean | null
+          supports_self_drive?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      exotic_car_quotes: {
+        Row: {
+          chauffeur_fee: number | null
+          created_at: string
+          daily_price: number | null
+          delivery_fee: number | null
+          exotic_car_request_id: string | null
+          expires_at: string | null
+          hourly_price: number | null
+          id: string
+          internal_margin: number | null
+          inventory_id: string | null
+          is_recommended: boolean | null
+          partner_id: string | null
+          quote_notes: string | null
+          quote_status: string | null
+          service_fee: number | null
+          total_price: number | null
+          updated_at: string
+        }
+        Insert: {
+          chauffeur_fee?: number | null
+          created_at?: string
+          daily_price?: number | null
+          delivery_fee?: number | null
+          exotic_car_request_id?: string | null
+          expires_at?: string | null
+          hourly_price?: number | null
+          id?: string
+          internal_margin?: number | null
+          inventory_id?: string | null
+          is_recommended?: boolean | null
+          partner_id?: string | null
+          quote_notes?: string | null
+          quote_status?: string | null
+          service_fee?: number | null
+          total_price?: number | null
+          updated_at?: string
+        }
+        Update: {
+          chauffeur_fee?: number | null
+          created_at?: string
+          daily_price?: number | null
+          delivery_fee?: number | null
+          exotic_car_request_id?: string | null
+          expires_at?: string | null
+          hourly_price?: number | null
+          id?: string
+          internal_margin?: number | null
+          inventory_id?: string | null
+          is_recommended?: boolean | null
+          partner_id?: string | null
+          quote_notes?: string | null
+          quote_status?: string | null
+          service_fee?: number | null
+          total_price?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exotic_car_quotes_exotic_car_request_id_fkey"
+            columns: ["exotic_car_request_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exotic_car_quotes_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exotic_car_quotes_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exotic_car_requests: {
+        Row: {
+          assigned_staff_user_id: string | null
+          city: string | null
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          delivery_location: string | null
+          drive_mode: string | null
+          duration_hours: number | null
+          estimated_value: number | null
+          id: string
+          occasion_type: string | null
+          request_status: string | null
+          requested_date: string | null
+          requested_make: string | null
+          requested_model: string | null
+          requested_time: string | null
+          special_requests: string | null
+          state: string | null
+          updated_at: string
+          urgency_level: string | null
+          user_id: string | null
+        }
+        Insert: {
+          assigned_staff_user_id?: string | null
+          city?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_location?: string | null
+          drive_mode?: string | null
+          duration_hours?: number | null
+          estimated_value?: number | null
+          id?: string
+          occasion_type?: string | null
+          request_status?: string | null
+          requested_date?: string | null
+          requested_make?: string | null
+          requested_model?: string | null
+          requested_time?: string | null
+          special_requests?: string | null
+          state?: string | null
+          updated_at?: string
+          urgency_level?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          assigned_staff_user_id?: string | null
+          city?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_location?: string | null
+          drive_mode?: string | null
+          duration_hours?: number | null
+          estimated_value?: number | null
+          id?: string
+          occasion_type?: string | null
+          request_status?: string | null
+          requested_date?: string | null
+          requested_make?: string | null
+          requested_model?: string | null
+          requested_time?: string | null
+          special_requests?: string | null
+          state?: string | null
+          updated_at?: string
+          urgency_level?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       expansion_cities: {
         Row: {
           affordability_score: number | null
@@ -44207,6 +44666,83 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      helicopter_partner_requests: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          partner_id: string | null
+          requested_time: string | null
+          response_time: string | null
+          status: string | null
+          suggested_time: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          partner_id?: string | null
+          requested_time?: string | null
+          response_time?: string | null
+          status?: string | null
+          suggested_time?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          partner_id?: string | null
+          requested_time?: string | null
+          response_time?: string | null
+          status?: string | null
+          suggested_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helicopter_partner_requests_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "helicopter_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      helicopter_partners: {
+        Row: {
+          availability_notes: string | null
+          city: string | null
+          contact_method: string | null
+          created_at: string
+          id: string
+          name: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          availability_notes?: string | null
+          city?: string | null
+          contact_method?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          availability_notes?: string | null
+          city?: string | null
+          contact_method?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       historical_invoice_line_repairs: {
         Row: {
@@ -68295,6 +68831,36 @@ export type Database = {
           notes?: string | null
           revenue_group?: string
           sort_order?: number | null
+        }
+        Relationships: []
+      }
+      revenue_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          lead_id: string | null
+          metadata: Json | null
+          source_system: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          lead_id?: string | null
+          metadata?: Json | null
+          source_system: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          lead_id?: string | null
+          metadata?: Json | null
+          source_system?: string
         }
         Relationships: []
       }
@@ -99672,6 +100238,1087 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yacht_booking_requests: {
+        Row: {
+          assigned_staff_user_id: string | null
+          budget_range: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          duration_hours: number | null
+          estimated_value: number | null
+          experience_type: string | null
+          flexibility_mode: string | null
+          guest_count: number | null
+          id: string
+          internal_priority: number | null
+          latest_status_at: string | null
+          occasion_type: string | null
+          preferred_date: string | null
+          preferred_time: string | null
+          request_status: string | null
+          source_channel: string | null
+          special_requests: string | null
+          updated_at: string
+          urgency_level: string | null
+          user_id: string | null
+          vessel_preference: string | null
+        }
+        Insert: {
+          assigned_staff_user_id?: string | null
+          budget_range?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          duration_hours?: number | null
+          estimated_value?: number | null
+          experience_type?: string | null
+          flexibility_mode?: string | null
+          guest_count?: number | null
+          id?: string
+          internal_priority?: number | null
+          latest_status_at?: string | null
+          occasion_type?: string | null
+          preferred_date?: string | null
+          preferred_time?: string | null
+          request_status?: string | null
+          source_channel?: string | null
+          special_requests?: string | null
+          updated_at?: string
+          urgency_level?: string | null
+          user_id?: string | null
+          vessel_preference?: string | null
+        }
+        Update: {
+          assigned_staff_user_id?: string | null
+          budget_range?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          duration_hours?: number | null
+          estimated_value?: number | null
+          experience_type?: string | null
+          flexibility_mode?: string | null
+          guest_count?: number | null
+          id?: string
+          internal_priority?: number | null
+          latest_status_at?: string | null
+          occasion_type?: string | null
+          preferred_date?: string | null
+          preferred_time?: string | null
+          request_status?: string | null
+          source_channel?: string | null
+          special_requests?: string | null
+          updated_at?: string
+          urgency_level?: string | null
+          user_id?: string | null
+          vessel_preference?: string | null
+        }
+        Relationships: []
+      }
+      yacht_confirmed_bookings: {
+        Row: {
+          booking_request_id: string | null
+          booking_status: string | null
+          confirmation_notes: string | null
+          confirmed_date: string | null
+          confirmed_duration: number | null
+          confirmed_time: string | null
+          created_at: string
+          guest_count: number | null
+          id: string
+          inventory_id: string | null
+          partner_id: string | null
+          payment_status: string | null
+          selected_quote_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          booking_request_id?: string | null
+          booking_status?: string | null
+          confirmation_notes?: string | null
+          confirmed_date?: string | null
+          confirmed_duration?: number | null
+          confirmed_time?: string | null
+          created_at?: string
+          guest_count?: number | null
+          id?: string
+          inventory_id?: string | null
+          partner_id?: string | null
+          payment_status?: string | null
+          selected_quote_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          booking_request_id?: string | null
+          booking_status?: string | null
+          confirmation_notes?: string | null
+          confirmed_date?: string | null
+          confirmed_duration?: number | null
+          confirmed_time?: string | null
+          created_at?: string
+          guest_count?: number | null
+          id?: string
+          inventory_id?: string | null
+          partner_id?: string | null
+          payment_status?: string | null
+          selected_quote_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yacht_confirmed_bookings_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_booking_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yacht_confirmed_bookings_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yacht_confirmed_bookings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yacht_confirmed_bookings_selected_quote_id_fkey"
+            columns: ["selected_quote_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yacht_curated_packages: {
+        Row: {
+          base_starting_price: number | null
+          city: string | null
+          created_at: string
+          description: string | null
+          id: string
+          included_items: string[] | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          package_type: string | null
+          suggested_addons: string[] | null
+          target_occasion: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          base_starting_price?: number | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          included_items?: string[] | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          package_type?: string | null
+          suggested_addons?: string[] | null
+          target_occasion?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          base_starting_price?: number | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          included_items?: string[] | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          package_type?: string | null
+          suggested_addons?: string[] | null
+          target_occasion?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      yacht_inventory: {
+        Row: {
+          add_ons_supported: string[] | null
+          amenities: string[] | null
+          bathrooms: number | null
+          bedrooms: number | null
+          created_at: string
+          crew_capacity: number | null
+          description: string | null
+          duration_max_hours: number | null
+          duration_min_hours: number | null
+          guest_capacity: number | null
+          id: string
+          image_urls: string[] | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          marina_location: string | null
+          market_city: string | null
+          market_country: string | null
+          partner_id: string | null
+          pricing_model: string | null
+          starting_price: number | null
+          updated_at: string
+          vessel_name: string
+          vessel_type: string | null
+        }
+        Insert: {
+          add_ons_supported?: string[] | null
+          amenities?: string[] | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          created_at?: string
+          crew_capacity?: number | null
+          description?: string | null
+          duration_max_hours?: number | null
+          duration_min_hours?: number | null
+          guest_capacity?: number | null
+          id?: string
+          image_urls?: string[] | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          marina_location?: string | null
+          market_city?: string | null
+          market_country?: string | null
+          partner_id?: string | null
+          pricing_model?: string | null
+          starting_price?: number | null
+          updated_at?: string
+          vessel_name: string
+          vessel_type?: string | null
+        }
+        Update: {
+          add_ons_supported?: string[] | null
+          amenities?: string[] | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          created_at?: string
+          crew_capacity?: number | null
+          description?: string | null
+          duration_max_hours?: number | null
+          duration_min_hours?: number | null
+          guest_capacity?: number | null
+          id?: string
+          image_urls?: string[] | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          marina_location?: string | null
+          market_city?: string | null
+          market_country?: string | null
+          partner_id?: string | null
+          pricing_model?: string | null
+          starting_price?: number | null
+          updated_at?: string
+          vessel_name?: string
+          vessel_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yacht_inventory_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yacht_market_rules: {
+        Row: {
+          base_markup_percentage: number | null
+          city: string
+          country: string | null
+          created_at: string
+          id: string
+          minimum_booking_hours: number | null
+          peak_season_multiplier: number | null
+          rush_markup_percentage: number | null
+          service_fee: number | null
+          updated_at: string
+          weekend_markup_percentage: number | null
+        }
+        Insert: {
+          base_markup_percentage?: number | null
+          city: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          minimum_booking_hours?: number | null
+          peak_season_multiplier?: number | null
+          rush_markup_percentage?: number | null
+          service_fee?: number | null
+          updated_at?: string
+          weekend_markup_percentage?: number | null
+        }
+        Update: {
+          base_markup_percentage?: number | null
+          city?: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          minimum_booking_hours?: number | null
+          peak_season_multiplier?: number | null
+          rush_markup_percentage?: number | null
+          service_fee?: number | null
+          updated_at?: string
+          weekend_markup_percentage?: number | null
+        }
+        Relationships: []
+      }
+      yacht_ops_metrics_daily: {
+        Row: {
+          avg_booking_value: number | null
+          avg_partner_response_minutes: number | null
+          cancellations: number | null
+          city: string | null
+          confirmed_bookings: number | null
+          created_at: string
+          id: string
+          metric_date: string
+          quotes_sent: number | null
+          total_requests: number | null
+          upsell_revenue: number | null
+        }
+        Insert: {
+          avg_booking_value?: number | null
+          avg_partner_response_minutes?: number | null
+          cancellations?: number | null
+          city?: string | null
+          confirmed_bookings?: number | null
+          created_at?: string
+          id?: string
+          metric_date: string
+          quotes_sent?: number | null
+          total_requests?: number | null
+          upsell_revenue?: number | null
+        }
+        Update: {
+          avg_booking_value?: number | null
+          avg_partner_response_minutes?: number | null
+          cancellations?: number | null
+          city?: string | null
+          confirmed_bookings?: number | null
+          created_at?: string
+          id?: string
+          metric_date?: string
+          quotes_sent?: number | null
+          total_requests?: number | null
+          upsell_revenue?: number | null
+        }
+        Relationships: []
+      }
+      yacht_partner_availability_cache: {
+        Row: {
+          available_date: string | null
+          available_time_end: string | null
+          available_time_start: string | null
+          created_at: string
+          id: string
+          inventory_id: string | null
+          notes: string | null
+          partner_id: string | null
+          source_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          available_date?: string | null
+          available_time_end?: string | null
+          available_time_start?: string | null
+          created_at?: string
+          id?: string
+          inventory_id?: string | null
+          notes?: string | null
+          partner_id?: string | null
+          source_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          available_date?: string | null
+          available_time_end?: string | null
+          available_time_start?: string | null
+          created_at?: string
+          id?: string
+          inventory_id?: string | null
+          notes?: string | null
+          partner_id?: string | null
+          source_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yacht_partner_availability_cache_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yacht_partner_availability_cache_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yacht_partner_performance: {
+        Row: {
+          alternate_time_rate: number | null
+          avg_response_minutes: number | null
+          booking_conversion_rate: number | null
+          confirmed_requests: number | null
+          id: string
+          last_updated: string | null
+          partner_id: string | null
+          rejected_requests: number | null
+          total_requests: number | null
+        }
+        Insert: {
+          alternate_time_rate?: number | null
+          avg_response_minutes?: number | null
+          booking_conversion_rate?: number | null
+          confirmed_requests?: number | null
+          id?: string
+          last_updated?: string | null
+          partner_id?: string | null
+          rejected_requests?: number | null
+          total_requests?: number | null
+        }
+        Update: {
+          alternate_time_rate?: number | null
+          avg_response_minutes?: number | null
+          booking_conversion_rate?: number | null
+          confirmed_requests?: number | null
+          id?: string
+          last_updated?: string | null
+          partner_id?: string | null
+          rejected_requests?: number | null
+          total_requests?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yacht_partner_performance_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yacht_partner_requests: {
+        Row: {
+          booking_request_id: string | null
+          created_at: string
+          id: string
+          internal_rank: number | null
+          inventory_id: string | null
+          last_followup_at: string | null
+          outreach_channel: string | null
+          partner_id: string | null
+          partner_response_notes: string | null
+          requested_date: string | null
+          requested_duration: number | null
+          requested_time: string | null
+          responded_at: string | null
+          response_deadline_at: string | null
+          sent_by_user_id: string | null
+          status: string | null
+        }
+        Insert: {
+          booking_request_id?: string | null
+          created_at?: string
+          id?: string
+          internal_rank?: number | null
+          inventory_id?: string | null
+          last_followup_at?: string | null
+          outreach_channel?: string | null
+          partner_id?: string | null
+          partner_response_notes?: string | null
+          requested_date?: string | null
+          requested_duration?: number | null
+          requested_time?: string | null
+          responded_at?: string | null
+          response_deadline_at?: string | null
+          sent_by_user_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          booking_request_id?: string | null
+          created_at?: string
+          id?: string
+          internal_rank?: number | null
+          inventory_id?: string | null
+          last_followup_at?: string | null
+          outreach_channel?: string | null
+          partner_id?: string | null
+          partner_response_notes?: string | null
+          requested_date?: string | null
+          requested_duration?: number | null
+          requested_time?: string | null
+          responded_at?: string | null
+          response_deadline_at?: string | null
+          sent_by_user_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yacht_partner_requests_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_booking_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yacht_partner_requests_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yacht_partner_requests_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yacht_partner_time_options: {
+        Row: {
+          created_at: string
+          id: string
+          is_best_match: boolean | null
+          is_fastest_confirmed: boolean | null
+          is_lowest_price: boolean | null
+          offered_date: string | null
+          offered_duration: number | null
+          offered_price: number | null
+          offered_time: string | null
+          option_status: string | null
+          partner_request_id: string | null
+          price_notes: string | null
+          recommendation_score: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_best_match?: boolean | null
+          is_fastest_confirmed?: boolean | null
+          is_lowest_price?: boolean | null
+          offered_date?: string | null
+          offered_duration?: number | null
+          offered_price?: number | null
+          offered_time?: string | null
+          option_status?: string | null
+          partner_request_id?: string | null
+          price_notes?: string | null
+          recommendation_score?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_best_match?: boolean | null
+          is_fastest_confirmed?: boolean | null
+          is_lowest_price?: boolean | null
+          offered_date?: string | null
+          offered_duration?: number | null
+          offered_price?: number | null
+          offered_time?: string | null
+          option_status?: string | null
+          partner_request_id?: string | null
+          price_notes?: string | null
+          recommendation_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yacht_partner_time_options_partner_request_id_fkey"
+            columns: ["partner_request_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_partner_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yacht_partners: {
+        Row: {
+          accepts_api_requests: boolean | null
+          accepts_manual_requests: boolean | null
+          average_response_minutes: number | null
+          city: string | null
+          contact_name: string | null
+          country: string | null
+          created_at: string
+          email: string | null
+          id: string
+          marina_name: string | null
+          notes: string | null
+          partner_name: string
+          partner_type: string | null
+          phone: string | null
+          service_areas: string[] | null
+          state: string | null
+          status: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          accepts_api_requests?: boolean | null
+          accepts_manual_requests?: boolean | null
+          average_response_minutes?: number | null
+          city?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          marina_name?: string | null
+          notes?: string | null
+          partner_name: string
+          partner_type?: string | null
+          phone?: string | null
+          service_areas?: string[] | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          accepts_api_requests?: boolean | null
+          accepts_manual_requests?: boolean | null
+          average_response_minutes?: number | null
+          city?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          marina_name?: string | null
+          notes?: string | null
+          partner_name?: string
+          partner_type?: string | null
+          phone?: string | null
+          service_areas?: string[] | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      yacht_payment_tracking: {
+        Row: {
+          booking_request_id: string | null
+          created_at: string
+          id: string
+          payment_amount: number | null
+          payment_due_at: string | null
+          payment_method: string | null
+          payment_received_at: string | null
+          payment_reference: string | null
+          payment_status: string | null
+          quote_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          booking_request_id?: string | null
+          created_at?: string
+          id?: string
+          payment_amount?: number | null
+          payment_due_at?: string | null
+          payment_method?: string | null
+          payment_received_at?: string | null
+          payment_reference?: string | null
+          payment_status?: string | null
+          quote_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          booking_request_id?: string | null
+          created_at?: string
+          id?: string
+          payment_amount?: number | null
+          payment_due_at?: string | null
+          payment_method?: string | null
+          payment_received_at?: string | null
+          payment_reference?: string | null
+          payment_status?: string | null
+          quote_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yacht_payment_tracking_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_booking_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yacht_payment_tracking_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yacht_quote_line_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          label: string
+          line_type: string | null
+          quantity: number | null
+          quote_id: string | null
+          total_price: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          label: string
+          line_type?: string | null
+          quantity?: number | null
+          quote_id?: string | null
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          label?: string
+          line_type?: string | null
+          quantity?: number | null
+          quote_id?: string | null
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yacht_quote_line_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yacht_quotes: {
+        Row: {
+          accepted_by_customer_at: string | null
+          add_on_amount: number | null
+          base_price: number | null
+          booking_request_id: string | null
+          created_at: string
+          declined_by_customer_at: string | null
+          expires_at: string | null
+          id: string
+          internal_margin_amount: number | null
+          inventory_id: string | null
+          is_recommended: boolean | null
+          markup_amount: number | null
+          partner_id: string | null
+          quote_notes: string | null
+          quote_status: string | null
+          recommended_by_user_id: string | null
+          sent_to_customer_at: string | null
+          service_fee: number | null
+          total_price: number | null
+          updated_at: string
+          upsell_amount: number | null
+          viewed_by_customer_at: string | null
+        }
+        Insert: {
+          accepted_by_customer_at?: string | null
+          add_on_amount?: number | null
+          base_price?: number | null
+          booking_request_id?: string | null
+          created_at?: string
+          declined_by_customer_at?: string | null
+          expires_at?: string | null
+          id?: string
+          internal_margin_amount?: number | null
+          inventory_id?: string | null
+          is_recommended?: boolean | null
+          markup_amount?: number | null
+          partner_id?: string | null
+          quote_notes?: string | null
+          quote_status?: string | null
+          recommended_by_user_id?: string | null
+          sent_to_customer_at?: string | null
+          service_fee?: number | null
+          total_price?: number | null
+          updated_at?: string
+          upsell_amount?: number | null
+          viewed_by_customer_at?: string | null
+        }
+        Update: {
+          accepted_by_customer_at?: string | null
+          add_on_amount?: number | null
+          base_price?: number | null
+          booking_request_id?: string | null
+          created_at?: string
+          declined_by_customer_at?: string | null
+          expires_at?: string | null
+          id?: string
+          internal_margin_amount?: number | null
+          inventory_id?: string | null
+          is_recommended?: boolean | null
+          markup_amount?: number | null
+          partner_id?: string | null
+          quote_notes?: string | null
+          quote_status?: string | null
+          recommended_by_user_id?: string | null
+          sent_to_customer_at?: string | null
+          service_fee?: number | null
+          total_price?: number | null
+          updated_at?: string
+          upsell_amount?: number | null
+          viewed_by_customer_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yacht_quotes_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_booking_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yacht_quotes_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yacht_quotes_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yacht_request_activity_log: {
+        Row: {
+          activity_label: string | null
+          activity_type: string
+          actor_user_id: string | null
+          booking_request_id: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          notes: string | null
+        }
+        Insert: {
+          activity_label?: string | null
+          activity_type: string
+          actor_user_id?: string | null
+          booking_request_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+        }
+        Update: {
+          activity_label?: string | null
+          activity_type?: string
+          actor_user_id?: string | null
+          booking_request_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yacht_request_activity_log_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_booking_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yacht_request_addons: {
+        Row: {
+          addon_code: string | null
+          addon_name: string
+          addon_price: number | null
+          booking_request_id: string | null
+          created_at: string
+          id: string
+          quantity: number | null
+        }
+        Insert: {
+          addon_code?: string | null
+          addon_name: string
+          addon_price?: number | null
+          booking_request_id?: string | null
+          created_at?: string
+          id?: string
+          quantity?: number | null
+        }
+        Update: {
+          addon_code?: string | null
+          addon_name?: string
+          addon_price?: number | null
+          booking_request_id?: string | null
+          created_at?: string
+          id?: string
+          quantity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yacht_request_addons_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_booking_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yacht_request_internal_notes: {
+        Row: {
+          author_user_id: string | null
+          booking_request_id: string | null
+          created_at: string
+          id: string
+          is_pinned: boolean | null
+          note_text: string
+          updated_at: string
+        }
+        Insert: {
+          author_user_id?: string | null
+          booking_request_id?: string | null
+          created_at?: string
+          id?: string
+          is_pinned?: boolean | null
+          note_text: string
+          updated_at?: string
+        }
+        Update: {
+          author_user_id?: string | null
+          booking_request_id?: string | null
+          created_at?: string
+          id?: string
+          is_pinned?: boolean | null
+          note_text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yacht_request_internal_notes_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_booking_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yacht_request_tasks: {
+        Row: {
+          assigned_user_id: string | null
+          booking_request_id: string | null
+          created_at: string
+          due_at: string | null
+          id: string
+          priority: string | null
+          task_description: string | null
+          task_status: string | null
+          task_title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_user_id?: string | null
+          booking_request_id?: string | null
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          priority?: string | null
+          task_description?: string | null
+          task_status?: string | null
+          task_title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_user_id?: string | null
+          booking_request_id?: string | null
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          priority?: string | null
+          task_description?: string | null
+          task_status?: string | null
+          task_title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yacht_request_tasks_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_booking_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yacht_user_engagement: {
+        Row: {
+          city: string | null
+          created_at: string
+          id: string
+          interaction_type: string
+          inventory_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          id?: string
+          interaction_type: string
+          inventory_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          id?: string
+          interaction_type?: string
+          inventory_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yacht_user_engagement_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "yacht_inventory"
             referencedColumns: ["id"]
           },
         ]
