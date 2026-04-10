@@ -30856,6 +30856,155 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_union_products: {
+        Row: {
+          active: boolean | null
+          application_steps: string | null
+          approval_difficulty: string | null
+          collateral_required: boolean | null
+          collateral_type: string | null
+          created_at: string | null
+          credit_union_id: string
+          dti_max_percent: number | null
+          funding_timeline_days: number | null
+          how_to_apply: string | null
+          id: string
+          ideal_credit_score: number | null
+          income_requirement: string | null
+          is_credit_builder: boolean | null
+          max_apr: number | null
+          max_loan_amount: number | null
+          min_apr: number | null
+          min_credit_score: number | null
+          min_loan_amount: number | null
+          min_membership_months: number | null
+          pro_tips: string | null
+          product_name: string
+          product_type: string
+          reports_to_bureaus: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          application_steps?: string | null
+          approval_difficulty?: string | null
+          collateral_required?: boolean | null
+          collateral_type?: string | null
+          created_at?: string | null
+          credit_union_id: string
+          dti_max_percent?: number | null
+          funding_timeline_days?: number | null
+          how_to_apply?: string | null
+          id?: string
+          ideal_credit_score?: number | null
+          income_requirement?: string | null
+          is_credit_builder?: boolean | null
+          max_apr?: number | null
+          max_loan_amount?: number | null
+          min_apr?: number | null
+          min_credit_score?: number | null
+          min_loan_amount?: number | null
+          min_membership_months?: number | null
+          pro_tips?: string | null
+          product_name: string
+          product_type: string
+          reports_to_bureaus?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          application_steps?: string | null
+          approval_difficulty?: string | null
+          collateral_required?: boolean | null
+          collateral_type?: string | null
+          created_at?: string | null
+          credit_union_id?: string
+          dti_max_percent?: number | null
+          funding_timeline_days?: number | null
+          how_to_apply?: string | null
+          id?: string
+          ideal_credit_score?: number | null
+          income_requirement?: string | null
+          is_credit_builder?: boolean | null
+          max_apr?: number | null
+          max_loan_amount?: number | null
+          min_apr?: number | null
+          min_credit_score?: number | null
+          min_loan_amount?: number | null
+          min_membership_months?: number | null
+          pro_tips?: string | null
+          product_name?: string
+          product_type?: string
+          reports_to_bureaus?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_union_products_credit_union_id_fkey"
+            columns: ["credit_union_id"]
+            isOneToOne: false
+            referencedRelation: "credit_unions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_unions: {
+        Row: {
+          abbreviation: string | null
+          application_url: string | null
+          created_at: string | null
+          headquarters_state: string | null
+          id: string
+          membership_requirement: string | null
+          name: string
+          national_membership_available: boolean | null
+          notes: string | null
+          overall_fundability_rank: number | null
+          phone: string | null
+          third_party_membership_cost: number | null
+          third_party_membership_org: string | null
+          third_party_membership_url: string | null
+          updated_at: string | null
+          website_url: string | null
+        }
+        Insert: {
+          abbreviation?: string | null
+          application_url?: string | null
+          created_at?: string | null
+          headquarters_state?: string | null
+          id?: string
+          membership_requirement?: string | null
+          name: string
+          national_membership_available?: boolean | null
+          notes?: string | null
+          overall_fundability_rank?: number | null
+          phone?: string | null
+          third_party_membership_cost?: number | null
+          third_party_membership_org?: string | null
+          third_party_membership_url?: string | null
+          updated_at?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          abbreviation?: string | null
+          application_url?: string | null
+          created_at?: string | null
+          headquarters_state?: string | null
+          id?: string
+          membership_requirement?: string | null
+          name?: string
+          national_membership_available?: boolean | null
+          notes?: string | null
+          overall_fundability_rank?: number | null
+          phone?: string | null
+          third_party_membership_cost?: number | null
+          third_party_membership_org?: string | null
+          third_party_membership_url?: string | null
+          updated_at?: string | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       crm_backup_settings: {
         Row: {
           auto_export_enabled: boolean | null
@@ -43780,28 +43929,40 @@ export type Database = {
       funding_clients: {
         Row: {
           address: string | null
+          assigned_advisor: string | null
           assigned_operator: string | null
           business_name: string | null
+          business_start_date: string | null
           business_state: string | null
+          business_state_of_formation: string | null
           business_type: string | null
           city: string | null
+          consent_signed: boolean | null
+          consent_signed_at: string | null
           created_at: string
+          credit_score_estimate: number | null
           current_dfs_score: number | null
           current_funding_ceiling: number | null
           date_of_birth: string | null
           duns_number: string | null
           ein: string | null
           email: string | null
+          email_access_method: string | null
+          employment_status: string | null
           first_name: string
+          full_name: string | null
           funding_goal: string | null
           id: string
+          intake_status: string | null
           last_name: string
+          monthly_income: number | null
           monthly_revenue: number | null
           notes: string | null
           phone: string | null
           portal_invite_sent_at: string | null
           portal_user_id: string | null
           projected_funding_ceiling: number | null
+          ssn_encrypted: string | null
           ssn_last4: string | null
           state: string | null
           status: string
@@ -43813,28 +43974,40 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          assigned_advisor?: string | null
           assigned_operator?: string | null
           business_name?: string | null
+          business_start_date?: string | null
           business_state?: string | null
+          business_state_of_formation?: string | null
           business_type?: string | null
           city?: string | null
+          consent_signed?: boolean | null
+          consent_signed_at?: string | null
           created_at?: string
+          credit_score_estimate?: number | null
           current_dfs_score?: number | null
           current_funding_ceiling?: number | null
           date_of_birth?: string | null
           duns_number?: string | null
           ein?: string | null
           email?: string | null
+          email_access_method?: string | null
+          employment_status?: string | null
           first_name: string
+          full_name?: string | null
           funding_goal?: string | null
           id?: string
+          intake_status?: string | null
           last_name: string
+          monthly_income?: number | null
           monthly_revenue?: number | null
           notes?: string | null
           phone?: string | null
           portal_invite_sent_at?: string | null
           portal_user_id?: string | null
           projected_funding_ceiling?: number | null
+          ssn_encrypted?: string | null
           ssn_last4?: string | null
           state?: string | null
           status?: string
@@ -43846,28 +44019,40 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          assigned_advisor?: string | null
           assigned_operator?: string | null
           business_name?: string | null
+          business_start_date?: string | null
           business_state?: string | null
+          business_state_of_formation?: string | null
           business_type?: string | null
           city?: string | null
+          consent_signed?: boolean | null
+          consent_signed_at?: string | null
           created_at?: string
+          credit_score_estimate?: number | null
           current_dfs_score?: number | null
           current_funding_ceiling?: number | null
           date_of_birth?: string | null
           duns_number?: string | null
           ein?: string | null
           email?: string | null
+          email_access_method?: string | null
+          employment_status?: string | null
           first_name?: string
+          full_name?: string | null
           funding_goal?: string | null
           id?: string
+          intake_status?: string | null
           last_name?: string
+          monthly_income?: number | null
           monthly_revenue?: number | null
           notes?: string | null
           phone?: string | null
           portal_invite_sent_at?: string | null
           portal_user_id?: string | null
           projected_funding_ceiling?: number | null
+          ssn_encrypted?: string | null
           ssn_last4?: string | null
           state?: string | null
           status?: string
