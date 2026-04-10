@@ -44,6 +44,7 @@ Deno.serve(async (req) => {
 
     // Ensure AC prefix
     const accountSid = TWILIO_SID.startsWith("AC") ? TWILIO_SID : `AC${TWILIO_SID.substring(2)}`;
+    console.log(`DEBUG SID prefix: ${accountSid.substring(0, 4)}... len=${accountSid.length}, token len=${TWILIO_TOKEN.length}, phone=${PHONE_NUMBER}`);
 
     let body: Record<string, string> = {};
     try { body = await req.json(); } catch { /* no body is fine */ }
