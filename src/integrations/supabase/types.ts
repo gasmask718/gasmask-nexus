@@ -40214,6 +40214,63 @@ export type Database = {
           },
         ]
       }
+      exotic_car_chauffeur_assignments: {
+        Row: {
+          assignment_status: string | null
+          chauffeur_name: string | null
+          chauffeur_phone: string | null
+          created_at: string | null
+          end_time: string | null
+          exotic_car_request_id: string
+          id: string
+          notes: string | null
+          quote_id: string | null
+          start_time: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assignment_status?: string | null
+          chauffeur_name?: string | null
+          chauffeur_phone?: string | null
+          created_at?: string | null
+          end_time?: string | null
+          exotic_car_request_id: string
+          id?: string
+          notes?: string | null
+          quote_id?: string | null
+          start_time?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assignment_status?: string | null
+          chauffeur_name?: string | null
+          chauffeur_phone?: string | null
+          created_at?: string | null
+          end_time?: string | null
+          exotic_car_request_id?: string
+          id?: string
+          notes?: string | null
+          quote_id?: string | null
+          start_time?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exotic_car_chauffeur_assignments_exotic_car_request_id_fkey"
+            columns: ["exotic_car_request_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exotic_car_chauffeur_assignments_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exotic_car_curated_use_cases: {
         Row: {
           created_at: string
@@ -40288,68 +40345,167 @@ export type Database = {
           },
         ]
       }
+      exotic_car_delivery_tracking: {
+        Row: {
+          created_at: string | null
+          delivery_address: string | null
+          delivery_time: string | null
+          delivery_type: string | null
+          exotic_car_request_id: string
+          fulfillment_status: string | null
+          id: string
+          notes: string | null
+          pickup_time: string | null
+          quote_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_address?: string | null
+          delivery_time?: string | null
+          delivery_type?: string | null
+          exotic_car_request_id: string
+          fulfillment_status?: string | null
+          id?: string
+          notes?: string | null
+          pickup_time?: string | null
+          quote_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          delivery_address?: string | null
+          delivery_time?: string | null
+          delivery_type?: string | null
+          exotic_car_request_id?: string
+          fulfillment_status?: string | null
+          id?: string
+          notes?: string | null
+          pickup_time?: string | null
+          quote_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exotic_car_delivery_tracking_exotic_car_request_id_fkey"
+            columns: ["exotic_car_request_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exotic_car_delivery_tracking_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exotic_car_inventory: {
         Row: {
+          airport_delivery_available: boolean | null
           availability_mode: string | null
+          chauffeur_available: boolean | null
+          chauffeur_hourly_rate: number | null
           city: string | null
           created_at: string
           daily_price: number | null
+          delivery_available: boolean | null
+          delivery_fee_base: number | null
           drive_mode: string | null
           features: string[] | null
+          hotel_delivery_available: boolean | null
           hourly_price: number | null
           id: string
           image_urls: string[] | null
           is_active: boolean | null
           make: string
+          minimum_chauffeur_hours: number | null
           minimum_hours: number | null
+          minimum_rental_days: number | null
           model: string
           partner_id: string | null
+          pickup_required: boolean | null
+          request_to_source: boolean | null
+          residence_delivery_available: boolean | null
           seats: number | null
+          self_drive_daily_rate: number | null
           state: string | null
+          supports_chauffeur: boolean | null
+          supports_self_drive: boolean | null
           tags: string[] | null
           updated_at: string
           vehicle_type: string | null
           year: number | null
         }
         Insert: {
+          airport_delivery_available?: boolean | null
           availability_mode?: string | null
+          chauffeur_available?: boolean | null
+          chauffeur_hourly_rate?: number | null
           city?: string | null
           created_at?: string
           daily_price?: number | null
+          delivery_available?: boolean | null
+          delivery_fee_base?: number | null
           drive_mode?: string | null
           features?: string[] | null
+          hotel_delivery_available?: boolean | null
           hourly_price?: number | null
           id?: string
           image_urls?: string[] | null
           is_active?: boolean | null
           make: string
+          minimum_chauffeur_hours?: number | null
           minimum_hours?: number | null
+          minimum_rental_days?: number | null
           model: string
           partner_id?: string | null
+          pickup_required?: boolean | null
+          request_to_source?: boolean | null
+          residence_delivery_available?: boolean | null
           seats?: number | null
+          self_drive_daily_rate?: number | null
           state?: string | null
+          supports_chauffeur?: boolean | null
+          supports_self_drive?: boolean | null
           tags?: string[] | null
           updated_at?: string
           vehicle_type?: string | null
           year?: number | null
         }
         Update: {
+          airport_delivery_available?: boolean | null
           availability_mode?: string | null
+          chauffeur_available?: boolean | null
+          chauffeur_hourly_rate?: number | null
           city?: string | null
           created_at?: string
           daily_price?: number | null
+          delivery_available?: boolean | null
+          delivery_fee_base?: number | null
           drive_mode?: string | null
           features?: string[] | null
+          hotel_delivery_available?: boolean | null
           hourly_price?: number | null
           id?: string
           image_urls?: string[] | null
           is_active?: boolean | null
           make?: string
+          minimum_chauffeur_hours?: number | null
           minimum_hours?: number | null
+          minimum_rental_days?: number | null
           model?: string
           partner_id?: string | null
+          pickup_required?: boolean | null
+          request_to_source?: boolean | null
+          residence_delivery_available?: boolean | null
           seats?: number | null
+          self_drive_daily_rate?: number | null
           state?: string | null
+          supports_chauffeur?: boolean | null
+          supports_self_drive?: boolean | null
           tags?: string[] | null
           updated_at?: string
           vehicle_type?: string | null
@@ -40398,41 +40554,168 @@ export type Database = {
         }
         Relationships: []
       }
+      exotic_car_ops_metrics_daily: {
+        Row: {
+          avg_booking_value: number | null
+          avg_partner_response_minutes: number | null
+          cancellations: number | null
+          city: string | null
+          confirmed_bookings: number | null
+          created_at: string | null
+          id: string
+          metric_date: string
+          quotes_sent: number | null
+          total_requests: number | null
+          upsell_revenue: number | null
+        }
+        Insert: {
+          avg_booking_value?: number | null
+          avg_partner_response_minutes?: number | null
+          cancellations?: number | null
+          city?: string | null
+          confirmed_bookings?: number | null
+          created_at?: string | null
+          id?: string
+          metric_date: string
+          quotes_sent?: number | null
+          total_requests?: number | null
+          upsell_revenue?: number | null
+        }
+        Update: {
+          avg_booking_value?: number | null
+          avg_partner_response_minutes?: number | null
+          cancellations?: number | null
+          city?: string | null
+          confirmed_bookings?: number | null
+          created_at?: string | null
+          id?: string
+          metric_date?: string
+          quotes_sent?: number | null
+          total_requests?: number | null
+          upsell_revenue?: number | null
+        }
+        Relationships: []
+      }
+      exotic_car_partner_offers: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          delivery_supported: boolean | null
+          drive_mode: string | null
+          exotic_car_request_id: string
+          id: string
+          inventory_id: string | null
+          offer_status: string | null
+          offered_make: string | null
+          offered_model: string | null
+          partner_id: string | null
+          responded_at: string | null
+          response_notes: string | null
+          same_day_supported: boolean | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          delivery_supported?: boolean | null
+          drive_mode?: string | null
+          exotic_car_request_id: string
+          id?: string
+          inventory_id?: string | null
+          offer_status?: string | null
+          offered_make?: string | null
+          offered_model?: string | null
+          partner_id?: string | null
+          responded_at?: string | null
+          response_notes?: string | null
+          same_day_supported?: boolean | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          delivery_supported?: boolean | null
+          drive_mode?: string | null
+          exotic_car_request_id?: string
+          id?: string
+          inventory_id?: string | null
+          offer_status?: string | null
+          offered_make?: string | null
+          offered_model?: string | null
+          partner_id?: string | null
+          responded_at?: string | null
+          response_notes?: string | null
+          same_day_supported?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exotic_car_partner_offers_exotic_car_request_id_fkey"
+            columns: ["exotic_car_request_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exotic_car_partner_offers_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exotic_car_partner_offers_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exotic_car_partner_requests: {
         Row: {
           created_at: string
           exotic_car_request_id: string | null
           id: string
+          internal_rank: number | null
           inventory_id: string | null
+          last_followup_at: string | null
+          outreach_channel: string | null
           partner_id: string | null
           requested_date: string | null
           requested_time: string | null
           responded_at: string | null
           response_notes: string | null
+          sent_by_user_id: string | null
           status: string | null
         }
         Insert: {
           created_at?: string
           exotic_car_request_id?: string | null
           id?: string
+          internal_rank?: number | null
           inventory_id?: string | null
+          last_followup_at?: string | null
+          outreach_channel?: string | null
           partner_id?: string | null
           requested_date?: string | null
           requested_time?: string | null
           responded_at?: string | null
           response_notes?: string | null
+          sent_by_user_id?: string | null
           status?: string | null
         }
         Update: {
           created_at?: string
           exotic_car_request_id?: string | null
           id?: string
+          internal_rank?: number | null
           inventory_id?: string | null
+          last_followup_at?: string | null
+          outreach_channel?: string | null
           partner_id?: string | null
           requested_date?: string | null
           requested_time?: string | null
           responded_at?: string | null
           response_notes?: string | null
+          sent_by_user_id?: string | null
           status?: string | null
         }
         Relationships: [
@@ -40516,63 +40799,209 @@ export type Database = {
         }
         Relationships: []
       }
+      exotic_car_payment_tracking: {
+        Row: {
+          created_at: string | null
+          exotic_car_request_id: string
+          id: string
+          payment_amount: number | null
+          payment_due_at: string | null
+          payment_method: string | null
+          payment_received_at: string | null
+          payment_reference: string | null
+          payment_status: string | null
+          quote_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          exotic_car_request_id: string
+          id?: string
+          payment_amount?: number | null
+          payment_due_at?: string | null
+          payment_method?: string | null
+          payment_received_at?: string | null
+          payment_reference?: string | null
+          payment_status?: string | null
+          quote_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          exotic_car_request_id?: string
+          id?: string
+          payment_amount?: number | null
+          payment_due_at?: string | null
+          payment_method?: string | null
+          payment_received_at?: string | null
+          payment_reference?: string | null
+          payment_status?: string | null
+          quote_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exotic_car_payment_tracking_exotic_car_request_id_fkey"
+            columns: ["exotic_car_request_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exotic_car_payment_tracking_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exotic_car_quote_line_items: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          label: string
+          line_type: string
+          quantity: number | null
+          quote_id: string
+          total_price: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          label: string
+          line_type: string
+          quantity?: number | null
+          quote_id: string
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          label?: string
+          line_type?: string
+          quantity?: number | null
+          quote_id?: string
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exotic_car_quote_line_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exotic_car_quotes: {
         Row: {
+          accepted_by_customer_at: string | null
+          add_on_amount: number | null
+          base_rental_amount: number | null
+          chauffeur_amount: number | null
           chauffeur_fee: number | null
+          chauffeur_required: boolean | null
           created_at: string
           daily_price: number | null
+          declined_by_customer_at: string | null
           delivery_fee: number | null
+          delivery_required: boolean | null
           exotic_car_request_id: string | null
           expires_at: string | null
           hourly_price: number | null
           id: string
+          insurance_fee_amount: number | null
           internal_margin: number | null
+          internal_margin_amount: number | null
           inventory_id: string | null
           is_recommended: boolean | null
           partner_id: string | null
+          pickup_required: boolean | null
           quote_notes: string | null
           quote_status: string | null
+          recommended_by_user_id: string | null
+          sent_to_customer_at: string | null
           service_fee: number | null
+          total_amount: number | null
           total_price: number | null
           updated_at: string
+          upsell_amount: number | null
+          viewed_by_customer_at: string | null
         }
         Insert: {
+          accepted_by_customer_at?: string | null
+          add_on_amount?: number | null
+          base_rental_amount?: number | null
+          chauffeur_amount?: number | null
           chauffeur_fee?: number | null
+          chauffeur_required?: boolean | null
           created_at?: string
           daily_price?: number | null
+          declined_by_customer_at?: string | null
           delivery_fee?: number | null
+          delivery_required?: boolean | null
           exotic_car_request_id?: string | null
           expires_at?: string | null
           hourly_price?: number | null
           id?: string
+          insurance_fee_amount?: number | null
           internal_margin?: number | null
+          internal_margin_amount?: number | null
           inventory_id?: string | null
           is_recommended?: boolean | null
           partner_id?: string | null
+          pickup_required?: boolean | null
           quote_notes?: string | null
           quote_status?: string | null
+          recommended_by_user_id?: string | null
+          sent_to_customer_at?: string | null
           service_fee?: number | null
+          total_amount?: number | null
           total_price?: number | null
           updated_at?: string
+          upsell_amount?: number | null
+          viewed_by_customer_at?: string | null
         }
         Update: {
+          accepted_by_customer_at?: string | null
+          add_on_amount?: number | null
+          base_rental_amount?: number | null
+          chauffeur_amount?: number | null
           chauffeur_fee?: number | null
+          chauffeur_required?: boolean | null
           created_at?: string
           daily_price?: number | null
+          declined_by_customer_at?: string | null
           delivery_fee?: number | null
+          delivery_required?: boolean | null
           exotic_car_request_id?: string | null
           expires_at?: string | null
           hourly_price?: number | null
           id?: string
+          insurance_fee_amount?: number | null
           internal_margin?: number | null
+          internal_margin_amount?: number | null
           inventory_id?: string | null
           is_recommended?: boolean | null
           partner_id?: string | null
+          pickup_required?: boolean | null
           quote_notes?: string | null
           quote_status?: string | null
+          recommended_by_user_id?: string | null
+          sent_to_customer_at?: string | null
           service_fee?: number | null
+          total_amount?: number | null
           total_price?: number | null
           updated_at?: string
+          upsell_amount?: number | null
+          viewed_by_customer_at?: string | null
         }
         Relationships: [
           {
@@ -40598,25 +41027,195 @@ export type Database = {
           },
         ]
       }
+      exotic_car_request_activity_log: {
+        Row: {
+          activity_label: string
+          activity_type: string
+          actor_user_id: string | null
+          created_at: string | null
+          exotic_car_request_id: string
+          id: string
+          metadata: Json | null
+          notes: string | null
+        }
+        Insert: {
+          activity_label: string
+          activity_type: string
+          actor_user_id?: string | null
+          created_at?: string | null
+          exotic_car_request_id: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+        }
+        Update: {
+          activity_label?: string
+          activity_type?: string
+          actor_user_id?: string | null
+          created_at?: string | null
+          exotic_car_request_id?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exotic_car_request_activity_log_exotic_car_request_id_fkey"
+            columns: ["exotic_car_request_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exotic_car_request_internal_notes: {
+        Row: {
+          author_user_id: string | null
+          created_at: string | null
+          exotic_car_request_id: string
+          id: string
+          is_pinned: boolean | null
+          note_text: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_user_id?: string | null
+          created_at?: string | null
+          exotic_car_request_id: string
+          id?: string
+          is_pinned?: boolean | null
+          note_text: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_user_id?: string | null
+          created_at?: string | null
+          exotic_car_request_id?: string
+          id?: string
+          is_pinned?: boolean | null
+          note_text?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exotic_car_request_internal_notes_exotic_car_request_id_fkey"
+            columns: ["exotic_car_request_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exotic_car_request_tasks: {
+        Row: {
+          assigned_user_id: string | null
+          created_at: string | null
+          due_at: string | null
+          exotic_car_request_id: string
+          id: string
+          priority: string | null
+          task_description: string | null
+          task_status: string | null
+          task_title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_user_id?: string | null
+          created_at?: string | null
+          due_at?: string | null
+          exotic_car_request_id: string
+          id?: string
+          priority?: string | null
+          task_description?: string | null
+          task_status?: string | null
+          task_title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_user_id?: string | null
+          created_at?: string | null
+          due_at?: string | null
+          exotic_car_request_id?: string
+          id?: string
+          priority?: string | null
+          task_description?: string | null
+          task_status?: string | null
+          task_title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exotic_car_request_tasks_exotic_car_request_id_fkey"
+            columns: ["exotic_car_request_id"]
+            isOneToOne: false
+            referencedRelation: "exotic_car_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exotic_car_requests: {
         Row: {
+          acceptable_alternatives: string[] | null
           assigned_staff_user_id: string | null
+          billing_address: string | null
+          booking_type: string | null
+          car_decor_package: string | null
+          chauffeur_end_time: string | null
+          chauffeur_hours: number | null
+          chauffeur_start_time: string | null
           city: string | null
+          coordination_notes: string | null
           created_at: string
           customer_email: string | null
           customer_name: string | null
           customer_phone: string | null
+          delivery_address: string | null
+          delivery_fee_estimate: number | null
           delivery_location: string | null
+          delivery_requested: boolean | null
+          delivery_type: string | null
+          deposit_amount: number | null
+          deposit_authorization_status: string | null
+          deposit_required: boolean | null
           drive_mode: string | null
+          driver_date_of_birth: string | null
+          driver_full_name: string | null
+          drivers_license_upload_url: string | null
+          dropoff_location: string | null
           duration_hours: number | null
           estimated_value: number | null
+          extra_stops: Json | null
+          favorite_color: string | null
+          favorite_song: string | null
+          flower_package: string | null
+          fulfillment_mode: string | null
+          has_customer_insurance: boolean | null
+          hotel_address: string | null
+          hotel_decor_package: string | null
+          hotel_name: string | null
+          hotel_room_number: string | null
           id: string
+          insurance_fee: number | null
+          insurance_option_selected: string | null
+          insurance_upload_url: string | null
+          internal_priority: number | null
+          is_same_day: boolean | null
+          latest_status_at: string | null
           occasion_type: string | null
+          payment_method_token: string | null
+          pickup_instructions: string | null
+          pickup_location: string | null
+          rental_days: number | null
+          rental_end_date: string | null
+          rental_start_date: string | null
           request_status: string | null
           requested_date: string | null
           requested_make: string | null
           requested_model: string | null
           requested_time: string | null
+          selected_city: string | null
+          source_channel: string | null
+          source_vehicle_id: string | null
           special_requests: string | null
           state: string | null
           updated_at: string
@@ -40624,23 +41223,67 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          acceptable_alternatives?: string[] | null
           assigned_staff_user_id?: string | null
+          billing_address?: string | null
+          booking_type?: string | null
+          car_decor_package?: string | null
+          chauffeur_end_time?: string | null
+          chauffeur_hours?: number | null
+          chauffeur_start_time?: string | null
           city?: string | null
+          coordination_notes?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          delivery_address?: string | null
+          delivery_fee_estimate?: number | null
           delivery_location?: string | null
+          delivery_requested?: boolean | null
+          delivery_type?: string | null
+          deposit_amount?: number | null
+          deposit_authorization_status?: string | null
+          deposit_required?: boolean | null
           drive_mode?: string | null
+          driver_date_of_birth?: string | null
+          driver_full_name?: string | null
+          drivers_license_upload_url?: string | null
+          dropoff_location?: string | null
           duration_hours?: number | null
           estimated_value?: number | null
+          extra_stops?: Json | null
+          favorite_color?: string | null
+          favorite_song?: string | null
+          flower_package?: string | null
+          fulfillment_mode?: string | null
+          has_customer_insurance?: boolean | null
+          hotel_address?: string | null
+          hotel_decor_package?: string | null
+          hotel_name?: string | null
+          hotel_room_number?: string | null
           id?: string
+          insurance_fee?: number | null
+          insurance_option_selected?: string | null
+          insurance_upload_url?: string | null
+          internal_priority?: number | null
+          is_same_day?: boolean | null
+          latest_status_at?: string | null
           occasion_type?: string | null
+          payment_method_token?: string | null
+          pickup_instructions?: string | null
+          pickup_location?: string | null
+          rental_days?: number | null
+          rental_end_date?: string | null
+          rental_start_date?: string | null
           request_status?: string | null
           requested_date?: string | null
           requested_make?: string | null
           requested_model?: string | null
           requested_time?: string | null
+          selected_city?: string | null
+          source_channel?: string | null
+          source_vehicle_id?: string | null
           special_requests?: string | null
           state?: string | null
           updated_at?: string
@@ -40648,23 +41291,67 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          acceptable_alternatives?: string[] | null
           assigned_staff_user_id?: string | null
+          billing_address?: string | null
+          booking_type?: string | null
+          car_decor_package?: string | null
+          chauffeur_end_time?: string | null
+          chauffeur_hours?: number | null
+          chauffeur_start_time?: string | null
           city?: string | null
+          coordination_notes?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          delivery_address?: string | null
+          delivery_fee_estimate?: number | null
           delivery_location?: string | null
+          delivery_requested?: boolean | null
+          delivery_type?: string | null
+          deposit_amount?: number | null
+          deposit_authorization_status?: string | null
+          deposit_required?: boolean | null
           drive_mode?: string | null
+          driver_date_of_birth?: string | null
+          driver_full_name?: string | null
+          drivers_license_upload_url?: string | null
+          dropoff_location?: string | null
           duration_hours?: number | null
           estimated_value?: number | null
+          extra_stops?: Json | null
+          favorite_color?: string | null
+          favorite_song?: string | null
+          flower_package?: string | null
+          fulfillment_mode?: string | null
+          has_customer_insurance?: boolean | null
+          hotel_address?: string | null
+          hotel_decor_package?: string | null
+          hotel_name?: string | null
+          hotel_room_number?: string | null
           id?: string
+          insurance_fee?: number | null
+          insurance_option_selected?: string | null
+          insurance_upload_url?: string | null
+          internal_priority?: number | null
+          is_same_day?: boolean | null
+          latest_status_at?: string | null
           occasion_type?: string | null
+          payment_method_token?: string | null
+          pickup_instructions?: string | null
+          pickup_location?: string | null
+          rental_days?: number | null
+          rental_end_date?: string | null
+          rental_start_date?: string | null
           request_status?: string | null
           requested_date?: string | null
           requested_make?: string | null
           requested_model?: string | null
           requested_time?: string | null
+          selected_city?: string | null
+          source_channel?: string | null
+          source_vehicle_id?: string | null
           special_requests?: string | null
           state?: string | null
           updated_at?: string
