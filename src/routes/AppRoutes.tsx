@@ -759,6 +759,13 @@ const KidsFamilyPerformance = lazy(() => import('@/pages/os/toptier/KidsFamilyPe
 const KidsFamilyApiPanel = lazy(() => import('@/pages/os/toptier/KidsFamilyApiPanel'));
 const KidsFamilyVendorLeads = lazy(() => import('@/pages/os/toptier/KidsFamilyVendorLeads'));
 
+// UFT Platform Command Center
+const UFTDashboard = lazy(() => import('@/pages/uft/UFTDashboard'));
+const UFTRevenue = lazy(() => import('@/pages/uft/UFTRevenue'));
+const UFTVendors = lazy(() => import('@/pages/uft/UFTVendors'));
+const UFTAmbassadors = lazy(() => import('@/pages/uft/UFTAmbassadors'));
+const UFTLaunchChecklist = lazy(() => import('@/pages/uft/UFTLaunchChecklist'));
+
 // Unforgettable
 const UnforgettableDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDashboard })));
 const UnforgettableStaff = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableStaff })));
