@@ -1741,6 +1741,8 @@ export default function AppRoutes() {
           <Route path="beauty-providers" element={<PenthouseBeautyProviders />} />
           <Route path="coach-bus-dispatch" element={<PenthouseCoachBusDispatch />} />
           <Route path="private-jet-dispatch" element={<PenthousePrivateJetDispatch />} />
+          <Route path="yacht-ops" element={<PenthouseYachtOps />} />
+          <Route path="exotic-car-ops" element={<PenthouseExoticCarOps />} />
           <Route path="finance" element={<PenthouseFinance />} />
           <Route path="roles" element={<PenthouseRoles />} />
           <Route path="system" element={<PenthouseSystem />} />
@@ -1781,6 +1783,7 @@ export default function AppRoutes() {
         <Route path="/os/dynasty-earn" element={<DynastyEarn />} />
         <Route path="/os/brand-acquisition" element={<BrandAcquisitionSystem />} />
         <Route path="/os/dynasty-sales" element={<DynastySalesNetwork />} />
+        <Route path="/os/revenue-orchestrator" element={<DynastyRevenueOrchestrator />} />
         <Route path="/os/sports-betting" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/analytics" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/dashboard" element={<BettingDashboard />} />
