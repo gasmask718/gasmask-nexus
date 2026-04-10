@@ -741,6 +741,9 @@ const PenthouseGiftExperiences = lazy(() => import('@/pages/os/toptier/penthouse
 const PenthouseBeautyProviders = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseBeautyProviders'));
 const PenthouseCoachBusDispatch = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseCoachBusDispatch'));
 const PenthousePrivateJetDispatch = lazy(() => import('@/pages/os/toptier/penthouse/PenthousePrivateJetDispatch'));
+const PenthouseYachtOps = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseYachtOps'));
+const PenthouseExoticCarOps = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseExoticCarOps'));
+const DynastyRevenueOrchestrator = lazy(() => import('@/pages/os/dynasty-sales/DynastyRevenueOrchestrator'));
 const PartnerRespond = lazy(() => import('@/pages/partner/PartnerRespond'));
 const BeautyProviderSignup = lazy(() => import('@/pages/public/BeautyProviderSignup'));
 const ThingsToDoExperiences = lazy(() => import('@/pages/os/toptier/ThingsToDoExperiences'));
