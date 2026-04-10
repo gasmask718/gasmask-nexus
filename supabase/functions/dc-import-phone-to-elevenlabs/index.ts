@@ -23,7 +23,11 @@ Deno.serve(async (req) => {
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     const TWILIO_SID = Deno.env.get("TWILIO_ACCOUNT_SID") || "";
     const TWILIO_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN") || "";
-    const PHONE_NUMBER = Deno.env.get("GASMASK_PHONE_NUMBER") || "";
+    let PHONE_NUMBER = Deno.env.get("GASMASK_PHONE_NUMBER") || "";
+    // Ensure E.164 format with + prefix
+    if (PHONE_NUMBER && !PHONE_NUMBER.startsWith("+")) {
+      PHONE_NUMBER = `+${PHONE_NUMBER}`;
+    }
     const DEFAULT_AGENT = Deno.env.get("DC_INBOUND_AGENT_ID") || "";
 
     if (!ELEVENLABS_API_KEY) {
@@ -44,6 +48,7 @@ Deno.serve(async (req) => {
 
     // Ensure AC prefix
     const accountSid = TWILIO_SID.startsWith("AC") ? TWILIO_SID : `AC${TWILIO_SID.substring(2)}`;
+    console.log(`DEBUG SID prefix: ${accountSid.substring(0, 4)}... len=${accountSid.length}, token len=${TWILIO_TOKEN.length}, phone=${PHONE_NUMBER}`);
 
     let body: Record<string, string> = {};
     try { body = await req.json(); } catch { /* no body is fine */ }
