@@ -996,6 +996,16 @@ const Layout = ({ children }: LayoutProps) => {
         )}
       </div>
 
+      {/* 🎊 UFT PLATFORM COMMAND */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-border/50">
+        {renderSection(
+          DYNASTY_NAVIGATION.uftPlatform.id,
+          DYNASTY_NAVIGATION.uftPlatform.name,
+          DYNASTY_NAVIGATION.uftPlatform.items
+        )}
+      </div>
+
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 🌐 DYNASTY BUSINESS UNITS */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
