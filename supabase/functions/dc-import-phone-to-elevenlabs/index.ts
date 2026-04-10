@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
 
     if (!importResp.ok) {
       // If number already exists, try to get existing
-      if (importResp.status === 409 || importData?.detail?.includes("already")) {
+      if (importResp.status === 409 || JSON.stringify(importData).includes("already")) {
         console.log("📞 Phone number already imported, fetching existing...");
       } else {
         console.error("❌ ElevenLabs import failed:", importData);
