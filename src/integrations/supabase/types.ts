@@ -26309,6 +26309,44 @@ export type Database = {
           },
         ]
       }
+      chexsystems_upload_documents: {
+        Row: {
+          created_at: string
+          document_name: string
+          document_type: string
+          id: string
+          recipient_id: string
+          storage_path: string
+          uploaded_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_name: string
+          document_type?: string
+          id?: string
+          recipient_id: string
+          storage_path: string
+          uploaded_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_name?: string
+          document_type?: string
+          id?: string
+          recipient_id?: string
+          storage_path?: string
+          uploaded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chexsystems_upload_documents_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "deletion_letter_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       closing_partners: {
         Row: {
           address: string | null
@@ -33777,6 +33815,102 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      deletion_letter_recipients: {
+        Row: {
+          account_number: string | null
+          address: string | null
+          bureau: string | null
+          chexsystems_amount_owed: number | null
+          chexsystems_dispute_type: string | null
+          chexsystems_file_number: string | null
+          chexsystems_item_description: string | null
+          chexsystems_letter_type: string | null
+          chexsystems_report_date: string | null
+          chexsystems_reporting_bank: string | null
+          city: string | null
+          created_at: string
+          creditor_name: string | null
+          date_of_birth: string | null
+          dispute_reason: string | null
+          email: string | null
+          full_name: string
+          generated_at: string | null
+          generated_letter: string | null
+          id: string
+          is_chexsystems: boolean | null
+          letter_status: string
+          letter_type: string
+          phone: string | null
+          sent_at: string | null
+          ssn_last4: string | null
+          state: string | null
+          updated_at: string
+          zip: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          address?: string | null
+          bureau?: string | null
+          chexsystems_amount_owed?: number | null
+          chexsystems_dispute_type?: string | null
+          chexsystems_file_number?: string | null
+          chexsystems_item_description?: string | null
+          chexsystems_letter_type?: string | null
+          chexsystems_report_date?: string | null
+          chexsystems_reporting_bank?: string | null
+          city?: string | null
+          created_at?: string
+          creditor_name?: string | null
+          date_of_birth?: string | null
+          dispute_reason?: string | null
+          email?: string | null
+          full_name: string
+          generated_at?: string | null
+          generated_letter?: string | null
+          id?: string
+          is_chexsystems?: boolean | null
+          letter_status?: string
+          letter_type?: string
+          phone?: string | null
+          sent_at?: string | null
+          ssn_last4?: string | null
+          state?: string | null
+          updated_at?: string
+          zip?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          address?: string | null
+          bureau?: string | null
+          chexsystems_amount_owed?: number | null
+          chexsystems_dispute_type?: string | null
+          chexsystems_file_number?: string | null
+          chexsystems_item_description?: string | null
+          chexsystems_letter_type?: string | null
+          chexsystems_report_date?: string | null
+          chexsystems_reporting_bank?: string | null
+          city?: string | null
+          created_at?: string
+          creditor_name?: string | null
+          date_of_birth?: string | null
+          dispute_reason?: string | null
+          email?: string | null
+          full_name?: string
+          generated_at?: string | null
+          generated_letter?: string | null
+          id?: string
+          is_chexsystems?: boolean | null
+          letter_status?: string
+          letter_type?: string
+          phone?: string | null
+          sent_at?: string | null
+          ssn_last4?: string | null
+          state?: string | null
+          updated_at?: string
+          zip?: string | null
+        }
+        Relationships: []
       }
       deletion_recovery_log: {
         Row: {
@@ -43444,6 +43578,74 @@ export type Database = {
           },
         ]
       }
+      funding_bills: {
+        Row: {
+          amount: number
+          auto_pay_enabled: boolean | null
+          bill_name: string
+          card_sufficient: boolean | null
+          confirmation_number: string | null
+          created_at: string
+          due_date: string
+          frequency: string
+          id: string
+          notes: string | null
+          paid_at: string | null
+          payment_card_brand: string | null
+          payment_card_id: string | null
+          payment_card_last4: string | null
+          status: string
+          updated_at: string
+          vendor: string | null
+        }
+        Insert: {
+          amount?: number
+          auto_pay_enabled?: boolean | null
+          bill_name: string
+          card_sufficient?: boolean | null
+          confirmation_number?: string | null
+          created_at?: string
+          due_date: string
+          frequency?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_card_brand?: string | null
+          payment_card_id?: string | null
+          payment_card_last4?: string | null
+          status?: string
+          updated_at?: string
+          vendor?: string | null
+        }
+        Update: {
+          amount?: number
+          auto_pay_enabled?: boolean | null
+          bill_name?: string
+          card_sufficient?: boolean | null
+          confirmation_number?: string | null
+          created_at?: string
+          due_date?: string
+          frequency?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_card_brand?: string | null
+          payment_card_id?: string | null
+          payment_card_last4?: string | null
+          status?: string
+          updated_at?: string
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_bills_payment_card_id_fkey"
+            columns: ["payment_card_id"]
+            isOneToOne: false
+            referencedRelation: "funding_payment_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funding_card_database: {
         Row: {
           annual_fee: number | null
@@ -44272,6 +44474,45 @@ export type Database = {
           id?: string
           operator_actions?: Json | null
           total_active_clients?: number | null
+        }
+        Relationships: []
+      }
+      funding_payment_cards: {
+        Row: {
+          available_balance: number
+          billing_threshold: number | null
+          card_brand: string
+          card_nickname: string
+          connected_at: string | null
+          created_at: string
+          id: string
+          is_primary: boolean | null
+          last4: string
+          updated_at: string
+        }
+        Insert: {
+          available_balance?: number
+          billing_threshold?: number | null
+          card_brand?: string
+          card_nickname: string
+          connected_at?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          last4: string
+          updated_at?: string
+        }
+        Update: {
+          available_balance?: number
+          billing_threshold?: number | null
+          card_brand?: string
+          card_nickname?: string
+          connected_at?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          last4?: string
+          updated_at?: string
         }
         Relationships: []
       }
