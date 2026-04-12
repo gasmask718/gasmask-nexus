@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetchTopTierMetrics } from '@/lib/empireApi';
-import { Car, CalendarCheck, Users, AlertTriangle, ArrowRight, CircleDot } from 'lucide-react';
+import { Car, CalendarCheck, Users, AlertTriangle, ArrowRight, CircleDot, Star, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function TopTierEmpireCard() {
@@ -36,7 +36,8 @@ export function TopTierEmpireCard() {
     );
   }
 
-  const pendingCount = data?.pending_confirmations ?? 0;
+  const tt = data?.toptier;
+  const pendingCount = tt?.pending_assignments ?? data?.pending_confirmations ?? 0;
   const pendingColor = pendingCount > 0 ? 'text-amber-400' : 'text-emerald-400';
 
   return (
@@ -68,32 +69,30 @@ export function TopTierEmpireCard() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <MetricBlock
               label="Revenue Today"
-              value={`$${(data?.revenue_today ?? 0).toLocaleString()}`}
+              value={`$${(tt?.revenue_today ?? data?.revenue_today ?? 0).toLocaleString()}`}
               className="text-[#C9A84C] font-bold text-lg"
             />
             <MetricBlock
-              label="Active Bookings"
-              value={data?.active_bookings ?? 0}
+              label="Bookings Today"
+              value={tt?.bookings_today ?? data?.active_bookings ?? 0}
               icon={<CalendarCheck className="h-3.5 w-3.5 text-blue-400" />}
             />
             <MetricBlock
-              label="Pending Confirms"
+              label="Pending Assigns"
               value={pendingCount}
               icon={<AlertTriangle className={cn('h-3.5 w-3.5', pendingColor)} />}
               valueClass={pendingColor}
             />
             <MetricBlock
-              label="Active Partners"
-              value={data?.active_partners ?? 0}
+              label="Active Drivers"
+              value={tt?.active_drivers ?? data?.active_partners ?? 0}
               icon={<Users className="h-3.5 w-3.5 text-emerald-400" />}
             />
-            <div className="p-2.5 rounded-lg border border-border/30 bg-card/50">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Top Service</p>
-              <p className="text-xs font-medium truncate">{data?.top_service ?? '—'}</p>
-              {data?.top_alert && (
-                <p className="text-[10px] text-amber-400 mt-1 truncate">{data.top_alert}</p>
-              )}
-            </div>
+            <MetricBlock
+              label="Avg Rating"
+              value={tt?.avg_rating ? `⭐ ${tt.avg_rating}` : '—'}
+              icon={<Star className="h-3.5 w-3.5 text-[#C9A84C]" />}
+            />
           </div>
         )}
       </CardContent>
