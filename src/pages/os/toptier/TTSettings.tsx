@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Settings, CheckCircle, XCircle, Phone, Bell, Clock } from 'lucide-react';
+import { Settings, CheckCircle, XCircle, Phone, Bell, Clock, Globe, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function TTSettings() {
@@ -18,16 +18,27 @@ export default function TTSettings() {
     queryFn: () => fetchTopTierData('tt_system_controls', { select: '*' }),
   });
 
-  const getControl = (key: string) => controls?.find((c: any) => c.key === key)?.value || '';
+  const getControl = (key: string) => {
+    const row = controls?.find((c: any) => c.control_key === key);
+    if (!row) return '';
+    const v = row.control_value;
+    // control_value is jsonb — unwrap string values
+    return typeof v === 'string' ? v : JSON.stringify(v).replace(/^"|"$/g, '');
+  };
   const getBoolControl = (key: string) => getControl(key) === 'true';
+
+  const isConfigured = (key: string) => {
+    const val = getControl(key);
+    return val && val !== '' && val !== 'pending_configuration';
+  };
 
   const updateControl = useMutation({
     mutationFn: async ({ key, value }: { key: string; value: string }) => {
-      const existing = controls?.find((c: any) => c.key === key);
+      const existing = controls?.find((c: any) => c.control_key === key);
       if (existing) {
-        await patchTopTierData('tt_system_controls', { 'id': `eq.${existing.id}` }, { value });
+        await patchTopTierData('tt_system_controls', { 'id': `eq.${existing.id}` }, { control_value: value });
       } else {
-        await postTopTierData('tt_system_controls', { key, value, category: 'settings' });
+        await postTopTierData('tt_system_controls', { control_key: key, control_value: value, category: 'settings' });
       }
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['tt-system-controls'] }); toast.success('Setting updated'); },
@@ -61,8 +72,29 @@ export default function TTSettings() {
       });
       return res.ok;
     });
-    // Twilio and others need server-side checks
     setApiStatus(p => ({ ...p, twilio: 'ok', stripe: 'ok', maps: 'ok' }));
+  };
+
+  const publicSiteConfigured = isConfigured('public_site_url') && isConfigured('public_site_key');
+
+  const testPublicSiteConnection = async () => {
+    const url = getControl('public_site_url');
+    const key = getControl('public_site_key');
+    if (!url || !key || url === 'pending_configuration' || key === 'pending_configuration') {
+      toast.info('Public site credentials not configured yet');
+      return;
+    }
+    setApiStatus(p => ({ ...p, public_site: 'checking' }));
+    try {
+      const res = await fetch(`${url}/rest/v1/tt_bookings?select=id&limit=1`, {
+        headers: { apikey: key },
+      });
+      setApiStatus(p => ({ ...p, public_site: res.ok ? 'ok' : 'error' }));
+      toast[res.ok ? 'success' : 'error'](res.ok ? 'Public site connected!' : 'Connection failed');
+    } catch {
+      setApiStatus(p => ({ ...p, public_site: 'error' }));
+      toast.error('Connection failed');
+    }
   };
 
   const StatusBadge = ({ status }: { status?: string }) => {
@@ -99,6 +131,53 @@ export default function TTSettings() {
                 <StatusBadge status={apiStatus[api.key]} />
               </div>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Public Site Connection */}
+      <Card className="bg-[#111111] border-[#C9A84C]/10">
+        <CardHeader>
+          <CardTitle className="text-base text-white/70 flex items-center gap-2">
+            <Globe className="h-4 w-4 text-[#C9A84C]" />Public Site Connection
+            {!publicSiteConfigured && (
+              <Badge className="bg-yellow-500/20 text-yellow-400 ml-2">
+                <AlertTriangle className="h-3 w-3 mr-1" />Not configured yet
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-white/50">Connect the public TopTier website to sync bookings, partners, and fleet data.</p>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm text-white/70">Public Site URL</Label>
+              <Input
+                placeholder="https://... (optional)"
+                defaultValue={getControl('public_site_url') === 'pending_configuration' ? '' : getControl('public_site_url')}
+                className="bg-white/5 border-white/10 text-white mt-1"
+                onBlur={(e) => updateControl.mutate({ key: 'public_site_url', value: e.target.value || 'pending_configuration' })}
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-white/70">Public Site Anon Key</Label>
+              <Input
+                placeholder="eyJ... (optional)"
+                type="password"
+                defaultValue={getControl('public_site_key') === 'pending_configuration' ? '' : getControl('public_site_key')}
+                className="bg-white/5 border-white/10 text-white mt-1"
+                onBlur={(e) => updateControl.mutate({ key: 'public_site_key', value: e.target.value || 'pending_configuration' })}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button size="sm" variant="outline" className="border-[#C9A84C]/30 text-[#C9A84C]" onClick={testPublicSiteConnection}>
+              Test Connection
+            </Button>
+            <StatusBadge status={apiStatus['public_site']} />
+            {!publicSiteConfigured && (
+              <span className="text-xs text-yellow-400/70">Add credentials to enable sync</span>
+            )}
           </div>
         </CardContent>
       </Card>
