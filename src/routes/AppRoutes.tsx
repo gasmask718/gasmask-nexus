@@ -723,6 +723,13 @@ const TTPayments = lazy(() => import('@/pages/os/toptier/TTPayments'));
 const TTReviews = lazy(() => import('@/pages/os/toptier/TTReviews'));
 const TTSettings = lazy(() => import('@/pages/os/toptier/TTSettings'));
 const TTCorporate = lazy(() => import('@/pages/os/toptier/TTCorporate'));
+const TTPartnersMgmt = lazy(() => import('@/pages/os/toptier/TTPartnersMgmt'));
+const TTFleet = lazy(() => import('@/pages/os/toptier/TTFleet'));
+const TTPayouts = lazy(() => import('@/pages/os/toptier/TTPayouts'));
+const TTCommissions = lazy(() => import('@/pages/os/toptier/TTCommissions'));
+const TTAffiliates = lazy(() => import('@/pages/os/toptier/TTAffiliates'));
+const TTPackages = lazy(() => import('@/pages/os/toptier/TTPackages'));
+const TTPromoCodes = lazy(() => import('@/pages/os/toptier/TTPromoCodes'));
 const PenthouseLayout = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseLayout'));
 const PenthouseDashboard = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseDashboard'));
 const PenthousePartners = lazy(() => import('@/pages/os/toptier/penthouse/PenthousePartners'));
@@ -1738,6 +1745,13 @@ export default function AppRoutes() {
           <Route path="kids-family/performance" element={<KidsFamilyPerformance />} />
           <Route path="kids-family/api" element={<KidsFamilyApiPanel />} />
           <Route path="kids-family/leads" element={<KidsFamilyVendorLeads />} />
+          <Route path="partners-mgmt" element={<TTPartnersMgmt />} />
+          <Route path="fleet" element={<TTFleet />} />
+          <Route path="payouts" element={<TTPayouts />} />
+          <Route path="commissions" element={<TTCommissions />} />
+          <Route path="affiliates" element={<TTAffiliates />} />
+          <Route path="packages" element={<TTPackages />} />
+          <Route path="promo-codes" element={<TTPromoCodes />} />
         </Route>
 
         {/* Penthouse Control System — Admin/Owner Only */}
