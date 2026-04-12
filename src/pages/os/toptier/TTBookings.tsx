@@ -37,7 +37,7 @@ export default function TTBookings() {
       if (statusFilter !== 'all') filters['status'] = `eq.${statusFilter}`;
       if (serviceFilter !== 'all') filters['service_type'] = `eq.${serviceFilter}`;
       
-      return fetchTopTierData('bookings', {
+      return fetchTopTierData('tt_bookings', {
         select: '*',
         filters,
         order: `${sortCol}.${sortDir}`,

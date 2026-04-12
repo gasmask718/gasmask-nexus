@@ -36,10 +36,10 @@ export default function TTAIBrain() {
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
       const [revenueData, activePartnerCount, pendingConfCount, topServiceData] = await Promise.all([
-        fetchTopTierData('bookings', { select: 'total_price', filters: { 'created_at': `gte.${today}` } }),
-        fetchTopTierCount('partners', { 'status': 'eq.active' }),
-        fetchTopTierCount('confirmation_requests', { 'status': 'eq.pending' }),
-        fetchTopTierData('bookings', { select: 'service_type', filters: { 'created_at': `gte.${weekAgo}` } }),
+        fetchTopTierData('tt_bookings', { select: 'total_price', filters: { 'created_at': `gte.${today}` } }),
+        fetchTopTierCount('tt_partners', { 'status': 'eq.active' }),
+        fetchTopTierCount('tt_confirmation_requests', { 'status': 'eq.pending' }),
+        fetchTopTierData('tt_bookings', { select: 'service_type', filters: { 'created_at': `gte.${weekAgo}` } }),
       ]);
 
       const revenue = revenueData.reduce((s: number, b: any) => s + Number(b.total_price || 0), 0);
