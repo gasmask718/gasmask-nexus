@@ -3,7 +3,8 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, CalendarCheck, Users, Map, TrendingUp, 
   Star, Settings2, Brain, Bell, RefreshCw, Settings, Crown, Palette,
-  Sparkles, BarChart3, Percent, Package, DollarSign, Baby, Store, Plug, Globe
+  Sparkles, BarChart3, Percent, Package, DollarSign, Baby, Store, Plug, Globe,
+  Users2, Car, Tag, Wallet, Share2, Grid3X3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,16 @@ const navItems = [
   { path: '/os/toptier/kids-family/leads', label: 'KF Expansion', icon: Globe },
   { path: '/os/toptier/settings', label: 'Settings', icon: Settings },
   { path: '/os/toptier/penthouse', label: 'Penthouse Control', icon: Crown },
+];
+
+const platformItems = [
+  { path: '/os/toptier/partners-mgmt', label: 'Partners', icon: Users2 },
+  { path: '/os/toptier/fleet', label: 'Fleet & Vehicles', icon: Car },
+  { path: '/os/toptier/packages', label: 'Service Packages', icon: Grid3X3 },
+  { path: '/os/toptier/promo-codes', label: 'Promo Codes', icon: Tag },
+  { path: '/os/toptier/payouts', label: 'Payouts', icon: Wallet },
+  { path: '/os/toptier/commissions', label: 'Commissions', icon: Percent },
+  { path: '/os/toptier/affiliates', label: 'Affiliates', icon: Share2 },
 ];
 
 function LiveClock() {
