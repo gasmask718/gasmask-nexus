@@ -26,17 +26,27 @@ export default function TTDispatch() {
   const [assignModal, setAssignModal] = useState<any>(null);
   const [availableDrivers, setAvailableDrivers] = useState<any[]>([]);
   const [driversLoading, setDriversLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(0);
+
+  // Tick counter every second
+  useEffect(() => {
+    const t = setInterval(() => setLastUpdated(prev => prev + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   // Live bookings queue
-  const { data: bookings, isLoading } = useQuery({
+  const { data: bookings, isLoading, dataUpdatedAt } = useQuery({
     queryKey: ['tt-dispatch-bookings'],
     queryFn: () => fetchTopTierData('tt_bookings', {
       select: '*',
       filters: { 'status': 'in.(pending,confirmed,driver_assigned,en_route,arrived,in_progress)' },
       order: 'scheduled_at.asc',
     }),
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
+
+  // Reset counter on refetch
+  useEffect(() => { setLastUpdated(0); }, [dataUpdatedAt]);
 
   // Available drivers
   const { data: drivers } = useQuery({
@@ -46,7 +56,7 @@ export default function TTDispatch() {
       filters: { 'status': 'in.(available,off_duty)' },
       order: 'rating.desc',
     }),
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
 
   // Realtime subscription
@@ -66,10 +76,12 @@ export default function TTDispatch() {
   const urgentBookings = useMemo(() => {
     if (!bookings) return [];
     const twoHoursFromNow = new Date(Date.now() + 2 * 60 * 60 * 1000);
-    return bookings.filter((b: any) => 
+    return bookings.filter((b: any) =>
       !b.driver_id && b.scheduled_at && new Date(b.scheduled_at) < twoHoursFromNow
     );
   }, [bookings]);
+
+  const isUrgent = (b: any) => urgentBookings.some((u: any) => u.id === b.id);
 
   const openAssignModal = async (booking: any) => {
     setAssignModal(booking);
@@ -120,8 +132,6 @@ export default function TTDispatch() {
     },
   });
 
-  const isUrgent = (b: any) => urgentBookings.some((u: any) => u.id === b.id);
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -132,14 +142,34 @@ export default function TTDispatch() {
           </h1>
           <p className="text-sm text-white/40">Live booking queue with real-time updates</p>
         </div>
-        <Badge className="bg-emerald-500/20 text-emerald-400 animate-pulse">LIVE</Badge>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-white/30">Last updated {lastUpdated}s ago</span>
+          <Badge className="bg-emerald-500/20 text-emerald-400 animate-pulse">LIVE</Badge>
+        </div>
       </div>
 
+      {/* Urgency Banner */}
       {urgentBookings.length > 0 && (
-        <Card className="border-red-500/30 bg-red-500/5">
-          <CardContent className="p-4 flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-400 animate-pulse" />
-            <span className="text-sm text-red-400 font-medium">{urgentBookings.length} booking(s) within 2 hours with NO DRIVER assigned!</span>
+        <Card className="border-amber-500/40 bg-amber-500/5 animate-pulse">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-400" />
+              <span className="text-sm text-amber-400 font-semibold">
+                ⚠ {urgentBookings.length} booking(s) pickup within 2 hours — NO DRIVER ASSIGNED
+              </span>
+            </div>
+            {urgentBookings.map((b: any) => (
+              <div key={b.id} className="flex items-center justify-between bg-amber-500/10 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="font-mono text-amber-400">{b.booking_reference || b.id?.slice(0, 8)}</span>
+                  <span className="text-white/70">{b.client_name}</span>
+                  <span className="text-white/50">{b.scheduled_at ? format(new Date(b.scheduled_at), 'h:mm a') : '—'}</span>
+                </div>
+                <Button size="sm" className="h-6 text-[10px] bg-amber-500 text-black hover:bg-amber-400" onClick={() => openAssignModal(b)}>
+                  Assign Now
+                </Button>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}
@@ -163,8 +193,11 @@ export default function TTDispatch() {
                   {isLoading ? Array(5).fill(0).map((_, i) => <tr key={i}><td colSpan={8} className="p-3"><Skeleton className="h-8 bg-white/5" /></td></tr>) :
                     !bookings?.length ? <tr><td colSpan={8} className="p-8 text-center text-white/30">No active bookings</td></tr> :
                     bookings.map((b: any) => (
-                      <tr key={b.id} className={`hover:bg-white/[0.02] ${isUrgent(b) ? 'bg-red-500/5 animate-pulse' : ''}`}>
-                        <td className="px-3 py-3 text-xs font-mono text-[#C9A84C]">{b.booking_reference || b.id?.slice(0, 8)}</td>
+                      <tr key={b.id} className={`hover:bg-white/[0.02] ${isUrgent(b) ? 'bg-red-500/5 border-l-4 border-l-red-500' : ''}`}>
+                        <td className="px-3 py-3 text-xs font-mono text-[#C9A84C] flex items-center gap-1.5">
+                          {isUrgent(b) && <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse inline-block" />}
+                          {b.booking_reference || b.id?.slice(0, 8)}
+                        </td>
                         <td className="px-3 py-3 text-sm text-white/80">{b.client_name}</td>
                         <td className="px-3 py-3 text-xs text-white/60 max-w-[120px] truncate">{b.pickup_location || b.pickup_city || '—'}</td>
                         <td className="px-3 py-3 text-xs text-white/60 max-w-[120px] truncate">{b.dropoff_location || b.dropoff_city || '—'}</td>

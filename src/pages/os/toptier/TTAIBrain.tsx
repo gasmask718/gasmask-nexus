@@ -6,9 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Brain, Send, Loader2, Sparkles, TrendingUp, AlertTriangle, Target } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Brain, Send, Loader2, Sparkles, TrendingUp, AlertTriangle, Target, Phone, Clock, PhoneIncoming } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
@@ -34,22 +38,18 @@ export default function TTAIBrain() {
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0];
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
       const [revenueData, activePartnerCount, pendingConfCount, topServiceData] = await Promise.all([
         fetchTopTierData('tt_bookings', { select: 'total_price', filters: { 'created_at': `gte.${today}` } }),
         fetchTopTierCount('tt_partners', { 'status': 'eq.active' }),
         fetchTopTierCount('tt_confirmation_requests', { 'status': 'eq.pending' }),
         fetchTopTierData('tt_bookings', { select: 'service_type', filters: { 'created_at': `gte.${weekAgo}` } }),
       ]);
-
       const revenue = revenueData.reduce((s: number, b: any) => s + Number(b.total_price || 0), 0);
-      const activeBookings = revenueData.length;
       const serviceCounts = topServiceData.reduce((acc: Record<string, number>, b: any) => { acc[b.service_type || 'unknown'] = (acc[b.service_type || 'unknown'] || 0) + 1; return acc; }, {} as Record<string, number>);
       const topService = Object.entries(serviceCounts).sort((a, b) => (b[1] as number) - (a[1] as number))[0];
-
       return {
         revenueToday: revenue,
-        activeBookings,
+        activeBookings: revenueData.length,
         pendingConfirmations: pendingConfCount,
         activePartners: activePartnerCount,
         topServiceThisWeek: topService ? `${topService[0]} (${topService[1]} bookings)` : 'N/A',
@@ -57,6 +57,36 @@ export default function TTAIBrain() {
     },
     refetchInterval: 30000,
   });
+
+  // Call Logs
+  const { data: callLogs, isLoading: callLogsLoading, isError: callLogsError } = useQuery({
+    queryKey: ['tt-call-logs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ai_call_logs')
+        .select('*')
+        .or('platform.eq.toptier,tone_used.eq.toptier')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data || [];
+    },
+    retry: 1,
+  });
+
+  // Call log KPIs
+  const callLogKPIs = callLogs ? {
+    totalCalls: callLogs.length,
+    avgDuration: callLogs.length > 0
+      ? Math.round(callLogs.reduce((s: number, c: any) => s + (c.duration_seconds || 0), 0) / callLogs.length)
+      : 0,
+    answeredRate: callLogs.length > 0
+      ? Math.round((callLogs.filter((c: any) => c.outcome === 'answered' || c.outcome === 'completed').length / callLogs.length) * 100)
+      : 0,
+    bookingIntents: callLogs.filter((c: any) =>
+      c.ai_summary?.toLowerCase().includes('booking') || c.ai_summary?.toLowerCase().includes('ride')
+    ).length,
+  } : null;
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -78,21 +108,12 @@ export default function TTAIBrain() {
 Give me exactly 3 brief insights (1-2 sentences each), formatted as JSON array:
 [{"title":"Performance","content":"..."},{"title":"Anomalies","content":"..."},{"title":"Top Action","content":"..."}]
 Only return the JSON array, nothing else.`;
-
         const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tt-ai-brain`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            messages: [{ role: 'user', content: prompt }],
-            systemPrompt: 'You are a business analytics AI. Return only valid JSON arrays. Be concise.',
-          }),
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], systemPrompt: 'You are a business analytics AI. Return only valid JSON arrays. Be concise.' }),
         });
-
         if (!resp.ok || !resp.body) throw new Error('Failed');
-
         const reader = resp.body.getReader();
         const decoder = new TextDecoder();
         let full = '';
@@ -104,23 +125,16 @@ Only return the JSON array, nothing else.`;
             if (!line.startsWith('data: ')) continue;
             const json = line.slice(6).trim();
             if (json === '[DONE]') continue;
-            try {
-              const parsed = JSON.parse(json);
-              const c = parsed.choices?.[0]?.delta?.content;
-              if (c) full += c;
-            } catch {}
+            try { const parsed = JSON.parse(json); const c = parsed.choices?.[0]?.delta?.content; if (c) full += c; } catch {}
           }
         }
-
-        // Extract JSON from response
         const match = full.match(/\[[\s\S]*\]/);
         if (match) {
           const parsed = JSON.parse(match[0]);
           const icons = [TrendingUp, AlertTriangle, Target];
           setInsights(parsed.map((p: any, i: number) => ({ ...p, icon: icons[i] || Sparkles })));
         }
-      } catch (e) {
-        console.error('Insight generation error:', e);
+      } catch {
         setInsights([
           { title: 'Performance', content: `Revenue today: $${liveContext.revenueToday.toLocaleString()} with ${liveContext.activeBookings} active bookings.`, icon: TrendingUp },
           { title: 'Attention', content: `${liveContext.pendingConfirmations} pending confirmations need review.`, icon: AlertTriangle },
@@ -135,13 +149,11 @@ Only return the JSON array, nothing else.`;
   const buildSystemPrompt = () => {
     const ctx = liveContext || { revenueToday: 0, activeBookings: 0, pendingConfirmations: 0, activePartners: 0, topServiceThisWeek: 'N/A' };
     return `You are the Dynasty OS AI Command Brain for TopTier Experience — a luxury concierge marketplace in NYC. Live business data right now:
-
 - Revenue Today: $${ctx.revenueToday.toLocaleString()}
 - Active Bookings: ${ctx.activeBookings}
 - Pending Confirmations: ${ctx.pendingConfirmations}
 - Active Partners: ${ctx.activePartners}
 - Top Service This Week: ${ctx.topServiceThisWeek}
-
 Answer questions about the business concisely and directly. Identify problems. Suggest actions. Analyze performance. Use bullet points and numbers. Format responses in markdown.`;
   };
 
@@ -152,45 +164,31 @@ Answer questions about the business concisely and directly. Identify problems. S
     setMessages(allMessages);
     setInput('');
     setIsLoading(true);
-
     let assistantSoFar = '';
     const upsertAssistant = (chunk: string) => {
       assistantSoFar += chunk;
       setMessages(prev => {
         const last = prev[prev.length - 1];
-        if (last?.role === 'assistant') {
-          return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
-        }
+        if (last?.role === 'assistant') return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
         return [...prev, { role: 'assistant', content: assistantSoFar }];
       });
     };
-
     try {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tt-ai-brain`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: allMessages.map(m => ({ role: m.role, content: m.content })),
-          systemPrompt: buildSystemPrompt(),
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({ messages: allMessages.map(m => ({ role: m.role, content: m.content })), systemPrompt: buildSystemPrompt() }),
       });
-
       if (resp.status === 429) { toast.error('Rate limited — try again shortly'); setIsLoading(false); return; }
       if (resp.status === 402) { toast.error('Credits needed — add funds in Settings'); setIsLoading(false); return; }
       if (!resp.ok || !resp.body) throw new Error('Stream failed');
-
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-
         let newlineIdx: number;
         while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
           let line = buffer.slice(0, newlineIdx);
@@ -200,18 +198,17 @@ Answer questions about the business concisely and directly. Identify problems. S
           if (!line.startsWith('data: ')) continue;
           const jsonStr = line.slice(6).trim();
           if (jsonStr === '[DONE]') break;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) upsertAssistant(content);
-          } catch { buffer = line + '\n' + buffer; break; }
+          try { const parsed = JSON.parse(jsonStr); const content = parsed.choices?.[0]?.delta?.content; if (content) upsertAssistant(content); } catch { buffer = line + '\n' + buffer; break; }
         }
       }
-    } catch (e) {
-      console.error('AI Brain error:', e);
-      upsertAssistant('Sorry, I encountered an error. Please try again.');
-    }
+    } catch (e) { console.error('AI Brain error:', e); upsertAssistant('Sorry, I encountered an error. Please try again.'); }
     setIsLoading(false);
+  };
+
+  const formatDuration = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}m ${sec}s`;
   };
 
   return (
@@ -221,114 +218,179 @@ Answer questions about the business concisely and directly. Identify problems. S
         <p className="text-white/40 text-sm">Real-time intelligence for TopTier operations</p>
       </div>
 
-      {/* Live Context Bar */}
-      {liveContext && (
-        <div className="flex gap-3 mb-4 flex-wrap">
-          {[
-            { label: 'Revenue Today', value: `$${liveContext.revenueToday.toLocaleString()}` },
-            { label: 'Active Bookings', value: liveContext.activeBookings },
-            { label: 'Pending', value: liveContext.pendingConfirmations },
-            { label: 'Partners', value: liveContext.activePartners },
-          ].map(m => (
-            <div key={m.label} className="bg-white/5 rounded-lg px-3 py-1.5 text-xs">
-              <span className="text-white/40">{m.label}: </span>
-              <span className="text-[#C9A84C] font-semibold">{m.value}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      <Tabs defaultValue="brain" className="flex-1 flex flex-col">
+        <TabsList className="bg-white/5 border border-white/10 self-start mb-4">
+          <TabsTrigger value="brain" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]">
+            <Brain className="h-4 w-4 mr-1.5" /> AI Brain
+          </TabsTrigger>
+          <TabsTrigger value="calls" className="data-[state=active]:bg-[#C9A84C]/20 data-[state=active]:text-[#C9A84C]">
+            <Phone className="h-4 w-4 mr-1.5" /> Call Logs
+          </TabsTrigger>
+        </TabsList>
 
-      {/* AI Insight Cards */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        {insightsLoading ? (
-          Array(3).fill(0).map((_, i) => (
-            <Card key={i} className="bg-[#111111] border-[#C9A84C]/20">
-              <CardContent className="p-4"><Skeleton className="h-12 bg-white/5" /></CardContent>
-            </Card>
-          ))
-        ) : insights.map((insight, i) => (
-          <Card key={i} className="bg-[#111111] border-[#C9A84C]/20 hover:border-[#C9A84C]/40 transition-colors">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-2">
-                <insight.icon className="h-4 w-4 text-[#C9A84C] mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs font-semibold text-[#C9A84C] mb-1">{insight.title}</p>
-                  <p className="text-xs text-white/60 leading-relaxed">{insight.content}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Chat Area */}
-      <Card className="flex-1 bg-[#0D0D0D]/80 backdrop-blur border-[#C9A84C]/10 flex flex-col overflow-hidden">
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-16">
-              <div className="w-16 h-16 rounded-full bg-[#C9A84C]/10 flex items-center justify-center mb-4">
-                <Sparkles className="h-8 w-8 text-[#C9A84C]" />
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-1">Dynasty AI Command Brain</h3>
-              <p className="text-white/40 text-sm max-w-md">Ask about business performance, identify issues, or get actionable insights from real-time data.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                    msg.role === 'user'
-                      ? 'bg-[#C9A84C] text-black rounded-br-md'
-                      : 'bg-[#1A1A1A] text-white border border-white/5 rounded-bl-md'
-                  }`}>
-                    {msg.role === 'assistant' ? (
-                      <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0.5">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
-                      </div>
-                    ) : (
-                      <p className="text-sm">{msg.content}</p>
-                    )}
-                  </div>
+        <TabsContent value="brain" className="flex-1 flex flex-col mt-0">
+          {/* Live Context Bar */}
+          {liveContext && (
+            <div className="flex gap-3 mb-4 flex-wrap">
+              {[
+                { label: 'Revenue Today', value: `$${liveContext.revenueToday.toLocaleString()}` },
+                { label: 'Active Bookings', value: liveContext.activeBookings },
+                { label: 'Pending', value: liveContext.pendingConfirmations },
+                { label: 'Partners', value: liveContext.activePartners },
+              ].map(m => (
+                <div key={m.label} className="bg-white/5 rounded-lg px-3 py-1.5 text-xs">
+                  <span className="text-white/40">{m.label}: </span>
+                  <span className="text-[#C9A84C] font-semibold">{m.value}</span>
                 </div>
               ))}
-              {isLoading && messages[messages.length - 1]?.role === 'user' && (
-                <div className="flex justify-start">
-                  <div className="bg-[#1A1A1A] border border-white/5 rounded-2xl rounded-bl-md px-4 py-3 flex gap-1.5">
-                    <div className="w-2 h-2 rounded-full bg-[#C9A84C] animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-2 h-2 rounded-full bg-[#C9A84C] animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 rounded-full bg-[#C9A84C] animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                </div>
-              )}
             </div>
           )}
-        </ScrollArea>
 
-        <CardContent className="border-t border-white/5 p-4 space-y-3">
-          {/* Quick Actions */}
-          <div className="flex gap-2 flex-wrap">
-            {QUICK_ACTIONS.map(q => (
-              <Button key={q} size="sm" variant="outline" className="border-[#C9A84C]/20 text-[#C9A84C] hover:bg-[#C9A84C]/10 text-xs h-7" onClick={() => sendMessage(q)}>
-                {q}
-              </Button>
+          {/* AI Insight Cards */}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            {insightsLoading ? Array(3).fill(0).map((_, i) => (
+              <Card key={i} className="bg-[#111111] border-[#C9A84C]/20"><CardContent className="p-4"><Skeleton className="h-12 bg-white/5" /></CardContent></Card>
+            )) : insights.map((insight, i) => (
+              <Card key={i} className="bg-[#111111] border-[#C9A84C]/20 hover:border-[#C9A84C]/40 transition-colors">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-2">
+                    <insight.icon className="h-4 w-4 text-[#C9A84C] mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-[#C9A84C] mb-1">{insight.title}</p>
+                      <p className="text-xs text-white/60 leading-relaxed">{insight.content}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
 
-          {/* Input */}
-          <div className="flex gap-2">
-            <Input
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage(input)}
-              placeholder="Ask the AI Brain..."
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
-            />
-            <Button onClick={() => sendMessage(input)} disabled={!input.trim() || isLoading} className="bg-[#C9A84C] hover:bg-[#B8973F] text-black px-4">
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          {/* Chat Area */}
+          <Card className="flex-1 bg-[#0D0D0D]/80 backdrop-blur border-[#C9A84C]/10 flex flex-col overflow-hidden">
+            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+              {messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center py-16">
+                  <div className="w-16 h-16 rounded-full bg-[#C9A84C]/10 flex items-center justify-center mb-4">
+                    <Sparkles className="h-8 w-8 text-[#C9A84C]" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white mb-1">Dynasty AI Command Brain</h3>
+                  <p className="text-white/40 text-sm max-w-md">Ask about business performance, identify issues, or get actionable insights from real-time data.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${msg.role === 'user' ? 'bg-[#C9A84C] text-black rounded-br-md' : 'bg-[#1A1A1A] text-white border border-white/5 rounded-bl-md'}`}>
+                        {msg.role === 'assistant' ? (
+                          <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0.5">
+                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          </div>
+                        ) : <p className="text-sm">{msg.content}</p>}
+                      </div>
+                    </div>
+                  ))}
+                  {isLoading && messages[messages.length - 1]?.role === 'user' && (
+                    <div className="flex justify-start">
+                      <div className="bg-[#1A1A1A] border border-white/5 rounded-2xl rounded-bl-md px-4 py-3 flex gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-[#C9A84C] animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-2 h-2 rounded-full bg-[#C9A84C] animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-2 h-2 rounded-full bg-[#C9A84C] animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </ScrollArea>
+            <CardContent className="border-t border-white/5 p-4 space-y-3">
+              <div className="flex gap-2 flex-wrap">
+                {QUICK_ACTIONS.map(q => (
+                  <Button key={q} size="sm" variant="outline" className="border-[#C9A84C]/20 text-[#C9A84C] hover:bg-[#C9A84C]/10 text-xs h-7" onClick={() => sendMessage(q)}>
+                    {q}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage(input)} placeholder="Ask the AI Brain..." className="bg-white/5 border-white/10 text-white placeholder:text-white/30" />
+                <Button onClick={() => sendMessage(input)} disabled={!input.trim() || isLoading} className="bg-[#C9A84C] hover:bg-[#B8973F] text-black px-4">
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="calls" className="flex-1 flex flex-col mt-0 space-y-4">
+          {/* Call Log KPIs */}
+          {callLogKPIs && (
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { label: 'Total Calls', value: callLogKPIs.totalCalls, icon: Phone },
+                { label: 'Avg Duration', value: formatDuration(callLogKPIs.avgDuration), icon: Clock },
+                { label: 'Answered Rate', value: `${callLogKPIs.answeredRate}%`, icon: PhoneIncoming },
+                { label: 'Booking Intents', value: callLogKPIs.bookingIntents, icon: Target },
+              ].map(k => (
+                <Card key={k.label} className="bg-[#111111] border-[#C9A84C]/10">
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-[#C9A84C]/10">
+                      <k.icon className="h-4 w-4 text-[#C9A84C]" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-white/40 uppercase">{k.label}</p>
+                      <p className="text-xl font-bold text-[#C9A84C]">{k.value}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Call Logs Table */}
+          <Card className="bg-[#111111] border-[#C9A84C]/10 flex-1 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b border-white/5">
+                  <tr>
+                    {['Date', 'Caller', 'Duration', 'Outcome', 'Transcript', ''].map(h => (
+                      <th key={h} className="px-3 py-2 text-left text-xs font-medium text-white/40 uppercase">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {callLogsLoading ? Array(5).fill(0).map((_, i) => (
+                    <tr key={i}><td colSpan={6} className="p-3"><Skeleton className="h-8 bg-white/5" /></td></tr>
+                  )) : callLogsError ? (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center">
+                        <p className="text-white/40 text-sm">Call logs are managed in Dynasty Connect.</p>
+                        <a href="/voice-ops" className="text-[#C9A84C] text-sm hover:underline">Click here to view →</a>
+                      </td>
+                    </tr>
+                  ) : !callLogs?.length ? (
+                    <tr><td colSpan={6} className="p-8 text-center text-white/30">No call logs found for TopTier</td></tr>
+                  ) : callLogs.map((c: any) => (
+                    <tr key={c.id} className="hover:bg-white/[0.02]">
+                      <td className="px-3 py-2.5 text-xs text-white/60">{c.created_at ? format(new Date(c.created_at), 'MMM d, h:mm a') : '—'}</td>
+                      <td className="px-3 py-2.5 text-sm text-white/80">{c.phone_number || '—'}</td>
+                      <td className="px-3 py-2.5 text-xs text-white/60">{c.duration_seconds ? formatDuration(c.duration_seconds) : '—'}</td>
+                      <td className="px-3 py-2.5">
+                        <Badge className={`text-[10px] ${c.outcome === 'answered' || c.outcome === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : c.outcome === 'voicemail' ? 'bg-amber-500/20 text-amber-400' : 'bg-white/10 text-white/50'}`}>
+                          {c.outcome || 'unknown'}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-2.5 text-xs text-white/50 max-w-[200px] truncate">{c.ai_summary?.slice(0, 100) || c.full_transcript?.slice(0, 100) || '—'}</td>
+                      <td className="px-3 py-2.5">
+                        {(c.full_transcript || c.ai_summary) && (
+                          <Button size="sm" variant="outline" className="h-6 text-[10px] border-white/10 text-white/50">View Full</Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
