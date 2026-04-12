@@ -730,6 +730,7 @@ const TTCommissions = lazy(() => import('@/pages/os/toptier/TTCommissions'));
 const TTAffiliates = lazy(() => import('@/pages/os/toptier/TTAffiliates'));
 const TTPackages = lazy(() => import('@/pages/os/toptier/TTPackages'));
 const TTPromoCodes = lazy(() => import('@/pages/os/toptier/TTPromoCodes'));
+const TTDispatchRequests = lazy(() => import('@/pages/os/toptier/TTDispatchRequests'));
 const PenthouseLayout = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseLayout'));
 const PenthouseDashboard = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseDashboard'));
 const PenthousePartners = lazy(() => import('@/pages/os/toptier/penthouse/PenthousePartners'));
@@ -1752,6 +1753,7 @@ export default function AppRoutes() {
           <Route path="affiliates" element={<TTAffiliates />} />
           <Route path="packages" element={<TTPackages />} />
           <Route path="promo-codes" element={<TTPromoCodes />} />
+          <Route path="dispatch-requests" element={<TTDispatchRequests />} />
         </Route>
 
         {/* Penthouse Control System — Admin/Owner Only */}

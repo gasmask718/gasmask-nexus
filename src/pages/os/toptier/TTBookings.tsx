@@ -8,8 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { CalendarCheck, DollarSign, TrendingUp, XCircle, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarCheck, DollarSign, TrendingUp, XCircle, Search, ArrowUpDown, ChevronLeft, ChevronRight, Send, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow, format } from 'date-fns';
+import { toast } from 'sonner';
 import { ExportButton } from '@/components/crud/ExportButton';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -176,8 +179,13 @@ export default function TTBookings() {
                   <td className="px-4 py-3 text-sm text-white/60">{b.scheduled_at ? format(new Date(b.scheduled_at), 'MMM d, yyyy h:mm a') : '—'}</td>
                   <td className="px-4 py-3 text-sm font-semibold text-[#C9A84C]">${Number(b.total_price).toLocaleString()}</td>
                   <td className="px-4 py-3"><Badge className={`text-[10px] ${STATUS_COLORS[b.status] || ''}`}>{b.status}</Badge></td>
-                  <td className="px-4 py-3 text-sm text-white/60">{b.partner_name || '—'}</td>
-                  <td className="px-4 py-3"><Button variant="ghost" size="sm" className="text-xs text-white/40 hover:text-[#C9A84C]">View</Button></td>
+                   <td className="px-4 py-3 text-sm text-white/60">{b.partner_name || '—'}</td>
+                   <td className="px-4 py-3">
+                     <div className="flex gap-1">
+                       <Button variant="ghost" size="sm" className="text-xs text-white/40 hover:text-[#C9A84C]">View</Button>
+                       {['pending', 'confirmed'].includes(b.status) && <DispatchButton bookingId={b.id} />}
+                     </div>
+                   </td>
                 </tr>
               ))}
             </tbody>
@@ -229,6 +237,27 @@ export default function TTBookings() {
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+function DispatchButton({ bookingId }: { bookingId: string }) {
+  const [loading, setLoading] = useState(false);
+  const qc = useQueryClient();
+  const handleDispatch = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('tt-smart-dispatch', { body: { booking_id: bookingId } });
+      if (error) throw error;
+      toast.success(data?.message || 'Dispatched successfully');
+      qc.invalidateQueries({ queryKey: ['tt-all-bookings'] });
+    } catch (err: any) { toast.error(err.message || 'Dispatch failed'); }
+    finally { setLoading(false); }
+  };
+  return (
+    <Button variant="ghost" size="sm" className="text-xs text-[#C9A84C] hover:text-[#C9A84C]/80" onClick={handleDispatch} disabled={loading}>
+      {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Send className="h-3 w-3 mr-1" />Dispatch</>}
+    </Button>
   );
 }
 

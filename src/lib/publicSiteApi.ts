@@ -1,12 +1,16 @@
 /**
  * Public Site API Client
- * Connects Dynasty OS to the TopTier public website's Supabase project.
+ * Routes read requests through proxy-public-data edge function
+ * to bypass RLS on the public site. Writes go direct.
  */
 
 const PUBLIC_URL = 'https://hruhkyvwtfpfviwnvhne.supabase.co';
 const PUBLIC_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhydWhreXZ3dGZwZnZpd252aG5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMTM3MzAsImV4cCI6MjA3NzY4OTczMH0.XqD-w-e-tOYnF87rpxvspwdyhk63hBm4WNErwpXq5iE';
 
-const headers: Record<string, string> = {
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+const directHeaders: Record<string, string> = {
   apikey: PUBLIC_KEY,
   Authorization: `Bearer ${PUBLIC_KEY}`,
   'Content-Type': 'application/json',
@@ -23,15 +27,26 @@ export async function pubFetch<T = any>(
   }
 ): Promise<T[]> {
   try {
-    let url = `${PUBLIC_URL}/rest/v1/${table}?select=${params?.select || '*'}`;
-    if (params?.filters) {
-      Object.entries(params.filters).forEach(([k, v]) => (url += `&${k}=${v}`));
-    }
-    if (params?.order) url += `&order=${params.order}`;
-    if (params?.limit) url += `&limit=${params.limit}`;
-    const res = await fetch(url, { headers });
-    if (!res.ok) return [];
-    return await res.json();
+    const res = await fetch(
+      `${SUPABASE_URL}/functions/v1/proxy-public-data`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
+        },
+        body: JSON.stringify({
+          table,
+          select: params?.select || '*',
+          filters: params?.filters,
+          order: params?.order,
+          limit: params?.limit,
+        }),
+      }
+    );
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   } catch {
     return [];
   }
@@ -45,7 +60,7 @@ export async function pubPatch(
   try {
     const res = await fetch(`${PUBLIC_URL}/rest/v1/${table}?id=eq.${id}`, {
       method: 'PATCH',
-      headers,
+      headers: directHeaders,
       body: JSON.stringify(data),
     });
     return res.ok;
@@ -61,7 +76,7 @@ export async function pubPost(
   try {
     const res = await fetch(`${PUBLIC_URL}/rest/v1/${table}`, {
       method: 'POST',
-      headers,
+      headers: directHeaders,
       body: JSON.stringify(data),
     });
     if (!res.ok) return null;
@@ -79,7 +94,7 @@ export async function pubDelete(
   try {
     const res = await fetch(`${PUBLIC_URL}/rest/v1/${table}?id=eq.${id}`, {
       method: 'DELETE',
-      headers,
+      headers: directHeaders,
     });
     return res.ok;
   } catch {
