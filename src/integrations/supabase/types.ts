@@ -86421,6 +86421,89 @@ export type Database = {
           },
         ]
       }
+      tt_dispatch_requests: {
+        Row: {
+          accepted_at: string | null
+          accepted_partner_id: string | null
+          accepted_partner_name: string | null
+          auto_matched: boolean | null
+          booking_id: string | null
+          booking_reference: string | null
+          created_at: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          dropoff_location: string | null
+          expires_at: string | null
+          id: string
+          match_score: number | null
+          matched_partners: Json | null
+          pickup_location: string | null
+          scheduled_at: string | null
+          sent_at: string | null
+          service_category: string
+          service_type: string
+          special_requests: string | null
+          status: string | null
+          total_price: number | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_partner_id?: string | null
+          accepted_partner_name?: string | null
+          auto_matched?: boolean | null
+          booking_id?: string | null
+          booking_reference?: string | null
+          created_at?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          dropoff_location?: string | null
+          expires_at?: string | null
+          id?: string
+          match_score?: number | null
+          matched_partners?: Json | null
+          pickup_location?: string | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          service_category: string
+          service_type: string
+          special_requests?: string | null
+          status?: string | null
+          total_price?: number | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_partner_id?: string | null
+          accepted_partner_name?: string | null
+          auto_matched?: boolean | null
+          booking_id?: string | null
+          booking_reference?: string | null
+          created_at?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          dropoff_location?: string | null
+          expires_at?: string | null
+          id?: string
+          match_score?: number | null
+          matched_partners?: Json | null
+          pickup_location?: string | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          service_category?: string
+          service_type?: string
+          special_requests?: string | null
+          status?: string | null
+          total_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_dispatch_requests_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "tt_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tt_dispatches: {
         Row: {
           assigned_at: string | null
@@ -87167,6 +87250,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tt_partner_assets: {
+        Row: {
+          asset_category: string
+          asset_description: string | null
+          asset_id: string | null
+          asset_name: string
+          asset_type: string
+          base_rate: number | null
+          capacity: number | null
+          coverage_radius_miles: number | null
+          created_at: string | null
+          daily_rate: number | null
+          hourly_rate: number | null
+          id: string
+          is_available: boolean | null
+          markets: string[] | null
+          partner_id: string
+          partner_name: string
+          partner_type: string
+          photos: string[] | null
+          rating: number | null
+          response_time_minutes: number | null
+          total_jobs: number | null
+        }
+        Insert: {
+          asset_category: string
+          asset_description?: string | null
+          asset_id?: string | null
+          asset_name: string
+          asset_type: string
+          base_rate?: number | null
+          capacity?: number | null
+          coverage_radius_miles?: number | null
+          created_at?: string | null
+          daily_rate?: number | null
+          hourly_rate?: number | null
+          id?: string
+          is_available?: boolean | null
+          markets?: string[] | null
+          partner_id: string
+          partner_name: string
+          partner_type: string
+          photos?: string[] | null
+          rating?: number | null
+          response_time_minutes?: number | null
+          total_jobs?: number | null
+        }
+        Update: {
+          asset_category?: string
+          asset_description?: string | null
+          asset_id?: string | null
+          asset_name?: string
+          asset_type?: string
+          base_rate?: number | null
+          capacity?: number | null
+          coverage_radius_miles?: number | null
+          created_at?: string | null
+          daily_rate?: number | null
+          hourly_rate?: number | null
+          id?: string
+          is_available?: boolean | null
+          markets?: string[] | null
+          partner_id?: string
+          partner_name?: string
+          partner_type?: string
+          photos?: string[] | null
+          rating?: number | null
+          response_time_minutes?: number | null
+          total_jobs?: number | null
+        }
+        Relationships: []
       }
       tt_partner_earnings: {
         Row: {
