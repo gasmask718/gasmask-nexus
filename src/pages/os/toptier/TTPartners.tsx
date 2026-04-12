@@ -62,7 +62,7 @@ export default function TTPartners() {
 
   const { data: partners, isLoading } = useQuery({
     queryKey: ['tt-partners'],
-    queryFn: () => fetchTopTierData('partners', {
+    queryFn: () => fetchTopTierData('tt_partners', {
       select: '*',
       order: 'created_at.desc',
     }),
@@ -71,7 +71,7 @@ export default function TTPartners() {
   const { data: partnerBookings } = useQuery({
     queryKey: ['tt-partner-bookings', selectedPartner?.id],
     enabled: !!selectedPartner,
-    queryFn: () => fetchTopTierData('bookings', {
+    queryFn: () => fetchTopTierData('tt_bookings', {
       select: '*',
       filters: { 'partner_id': `eq.${selectedPartner.id}` },
       order: 'created_at.desc',
@@ -82,7 +82,7 @@ export default function TTPartners() {
   const { data: partnerEarnings } = useQuery({
     queryKey: ['tt-partner-earnings', selectedPartner?.id],
     enabled: !!selectedPartner,
-    queryFn: () => fetchTopTierData('partner_earnings', {
+    queryFn: () => fetchTopTierData('tt_partner_earnings', {
       select: '*',
       filters: { 'partner_id': `eq.${selectedPartner.id}` },
       order: 'created_at.desc',
@@ -91,7 +91,7 @@ export default function TTPartners() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      await patchTopTierData('partners', { 'id': `eq.${id}` }, { status });
+      await patchTopTierData('tt_partners', { 'id': `eq.${id}` }, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tt-partners'] });

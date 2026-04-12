@@ -85986,11 +85986,16 @@ export type Database = {
       }
       tt_bookings: {
         Row: {
+          booking_reference: string | null
           client_email: string | null
           client_name: string
           client_phone: string | null
           created_at: string
+          driver_id: string | null
           dropoff_city: string | null
+          dropoff_lat: number | null
+          dropoff_lng: number | null
+          dropoff_location: string | null
           fulfillment_model: string | null
           id: string
           notes: string | null
@@ -85998,7 +86003,11 @@ export type Database = {
           partner_name: string | null
           passenger_count: number | null
           payment_hold_status: string | null
+          payment_status: string | null
           pickup_city: string | null
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_location: string | null
           scheduled_at: string | null
           service_name: string
           service_type: string
@@ -86009,11 +86018,16 @@ export type Database = {
           vehicle_id: string | null
         }
         Insert: {
+          booking_reference?: string | null
           client_email?: string | null
           client_name: string
           client_phone?: string | null
           created_at?: string
+          driver_id?: string | null
           dropoff_city?: string | null
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
+          dropoff_location?: string | null
           fulfillment_model?: string | null
           id?: string
           notes?: string | null
@@ -86021,7 +86035,11 @@ export type Database = {
           partner_name?: string | null
           passenger_count?: number | null
           payment_hold_status?: string | null
+          payment_status?: string | null
           pickup_city?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          pickup_location?: string | null
           scheduled_at?: string | null
           service_name: string
           service_type?: string
@@ -86032,11 +86050,16 @@ export type Database = {
           vehicle_id?: string | null
         }
         Update: {
+          booking_reference?: string | null
           client_email?: string | null
           client_name?: string
           client_phone?: string | null
           created_at?: string
+          driver_id?: string | null
           dropoff_city?: string | null
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
+          dropoff_location?: string | null
           fulfillment_model?: string | null
           id?: string
           notes?: string | null
@@ -86044,7 +86067,11 @@ export type Database = {
           partner_name?: string | null
           passenger_count?: number | null
           payment_hold_status?: string | null
+          payment_status?: string | null
           pickup_city?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          pickup_location?: string | null
           scheduled_at?: string | null
           service_name?: string
           service_type?: string
@@ -86055,6 +86082,13 @@ export type Database = {
           vehicle_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tt_bookings_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "tt_drivers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tt_bookings_partner_id_fkey"
             columns: ["partner_id"]
@@ -86259,6 +86293,238 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "tt_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tt_corporate_accounts: {
+        Row: {
+          account_status: string | null
+          billing_email: string | null
+          company_name: string
+          contact_email: string
+          contact_name: string
+          contact_phone: string | null
+          contract_start_date: string | null
+          created_at: string | null
+          credit_limit: number | null
+          current_balance: number | null
+          id: string
+          notes: string | null
+          payment_terms: string | null
+        }
+        Insert: {
+          account_status?: string | null
+          billing_email?: string | null
+          company_name: string
+          contact_email: string
+          contact_name: string
+          contact_phone?: string | null
+          contract_start_date?: string | null
+          created_at?: string | null
+          credit_limit?: number | null
+          current_balance?: number | null
+          id?: string
+          notes?: string | null
+          payment_terms?: string | null
+        }
+        Update: {
+          account_status?: string | null
+          billing_email?: string | null
+          company_name?: string
+          contact_email?: string
+          contact_name?: string
+          contact_phone?: string | null
+          contract_start_date?: string | null
+          created_at?: string | null
+          credit_limit?: number | null
+          current_balance?: number | null
+          id?: string
+          notes?: string | null
+          payment_terms?: string | null
+        }
+        Relationships: []
+      }
+      tt_customer_reviews: {
+        Row: {
+          booking_id: string | null
+          created_at: string | null
+          customer_email: string | null
+          customer_name: string
+          driver_id: string | null
+          id: string
+          is_featured: boolean | null
+          rating: number | null
+          responded_at: string | null
+          response_text: string | null
+          review_text: string | null
+          service_type: string | null
+          vehicle_id: string | null
+          verified: boolean | null
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name: string
+          driver_id?: string | null
+          id?: string
+          is_featured?: boolean | null
+          rating?: number | null
+          responded_at?: string | null
+          response_text?: string | null
+          review_text?: string | null
+          service_type?: string | null
+          vehicle_id?: string | null
+          verified?: boolean | null
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name?: string
+          driver_id?: string | null
+          id?: string
+          is_featured?: boolean | null
+          rating?: number | null
+          responded_at?: string | null
+          response_text?: string | null
+          review_text?: string | null
+          service_type?: string | null
+          vehicle_id?: string | null
+          verified?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_customer_reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "tt_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tt_customer_reviews_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "tt_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tt_customer_reviews_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "tt_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tt_dispatches: {
+        Row: {
+          assigned_at: string | null
+          booking_id: string | null
+          created_at: string | null
+          dispatch_notes: string | null
+          driver_arrived_at: string | null
+          driver_en_route_at: string | null
+          driver_id: string | null
+          id: string
+          pickup_eta_minutes: number | null
+          ride_completed_at: string | null
+          ride_started_at: string | null
+          status: string | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          dispatch_notes?: string | null
+          driver_arrived_at?: string | null
+          driver_en_route_at?: string | null
+          driver_id?: string | null
+          id?: string
+          pickup_eta_minutes?: number | null
+          ride_completed_at?: string | null
+          ride_started_at?: string | null
+          status?: string | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          dispatch_notes?: string | null
+          driver_arrived_at?: string | null
+          driver_en_route_at?: string | null
+          driver_id?: string | null
+          id?: string
+          pickup_eta_minutes?: number | null
+          ride_completed_at?: string | null
+          ride_started_at?: string | null
+          status?: string | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_dispatches_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "tt_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tt_dispatches_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "tt_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tt_dispatches_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "tt_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tt_driver_availability: {
+        Row: {
+          available_date: string
+          created_at: string | null
+          driver_id: string | null
+          end_time: string
+          id: string
+          is_available: boolean | null
+          notes: string | null
+          start_time: string
+        }
+        Insert: {
+          available_date: string
+          created_at?: string | null
+          driver_id?: string | null
+          end_time: string
+          id?: string
+          is_available?: boolean | null
+          notes?: string | null
+          start_time: string
+        }
+        Update: {
+          available_date?: string
+          created_at?: string | null
+          driver_id?: string | null
+          end_time?: string
+          id?: string
+          is_available?: boolean | null
+          notes?: string | null
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_driver_availability_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "tt_drivers"
             referencedColumns: ["id"]
           },
         ]
@@ -86855,6 +87121,50 @@ export type Database = {
           },
         ]
       }
+      tt_notifications_log: {
+        Row: {
+          booking_id: string | null
+          channel: string
+          error_message: string | null
+          id: string
+          message: string
+          recipient: string
+          sent_at: string | null
+          status: string | null
+          type: string
+        }
+        Insert: {
+          booking_id?: string | null
+          channel: string
+          error_message?: string | null
+          id?: string
+          message: string
+          recipient: string
+          sent_at?: string | null
+          status?: string | null
+          type: string
+        }
+        Update: {
+          booking_id?: string | null
+          channel?: string
+          error_message?: string | null
+          id?: string
+          message?: string
+          recipient?: string
+          sent_at?: string | null
+          status?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_notifications_log_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "tt_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tt_partner_earnings: {
         Row: {
           amount: number
@@ -86977,6 +87287,53 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      tt_pricing_rules: {
+        Row: {
+          base_rate: number
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          minimum_fare: number
+          per_hour_rate: number | null
+          per_mile_rate: number
+          surge_multiplier: number | null
+          vehicle_category: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          base_rate: number
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          minimum_fare: number
+          per_hour_rate?: number | null
+          per_mile_rate: number
+          surge_multiplier?: number | null
+          vehicle_category: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          base_rate?: number
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          minimum_fare?: number
+          per_hour_rate?: number | null
+          per_mile_rate?: number
+          surge_multiplier?: number | null
+          vehicle_category?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_pricing_rules_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "tt_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tt_private_jets: {
         Row: {
@@ -87120,6 +87477,56 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      tt_vehicle_maintenance: {
+        Row: {
+          cost: number | null
+          created_at: string | null
+          id: string
+          mileage_at_service: number | null
+          next_service_date: string | null
+          notes: string | null
+          service_date: string
+          service_type: string
+          status: string | null
+          vehicle_id: string | null
+          vendor: string | null
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string | null
+          id?: string
+          mileage_at_service?: number | null
+          next_service_date?: string | null
+          notes?: string | null
+          service_date: string
+          service_type: string
+          status?: string | null
+          vehicle_id?: string | null
+          vendor?: string | null
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string | null
+          id?: string
+          mileage_at_service?: number | null
+          next_service_date?: string | null
+          notes?: string | null
+          service_date?: string
+          service_type?: string
+          status?: string | null
+          vehicle_id?: string | null
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_vehicle_maintenance_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "tt_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tt_vehicles: {
         Row: {

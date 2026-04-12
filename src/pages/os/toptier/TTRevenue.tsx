@@ -35,7 +35,7 @@ export default function TTRevenue() {
 
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['tt-revenue-bookings', range],
-    queryFn: () => fetchTopTierData('bookings', {
+    queryFn: () => fetchTopTierData('tt_bookings', {
       select: 'id,service_type,service_name,total_price,status,created_at,partner_name',
       filters: {
         'status': 'neq.cancelled',
@@ -86,7 +86,7 @@ export default function TTRevenue() {
 
   const { data: payouts, isLoading: payoutsLoading } = useQuery({
     queryKey: ['tt-payout-queue'],
-    queryFn: () => fetchTopTierData('partner_earnings', {
+    queryFn: () => fetchTopTierData('tt_partner_earnings', {
       select: '*,partners(name)',
       filters: { 'status': 'eq.pending' },
       order: 'created_at.desc',

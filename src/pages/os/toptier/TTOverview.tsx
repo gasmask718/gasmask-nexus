@@ -40,7 +40,7 @@ function LiveBookingFeed() {
   
   const { data, isLoading } = useQuery({
     queryKey: ['tt-live-bookings'],
-    queryFn: () => fetchTopTierData('bookings', {
+    queryFn: () => fetchTopTierData('tt_bookings', {
       select: '*',
       order: 'created_at.desc',
       limit: 10,
@@ -104,7 +104,7 @@ function RevenueChart() {
     queryFn: async () => {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const bookings = await fetchTopTierData('bookings', {
+      const bookings = await fetchTopTierData('tt_bookings', {
         select: 'created_at,total_price',
         filters: {
           'status': 'neq.cancelled',
@@ -155,7 +155,7 @@ function StatusCards() {
     queryKey: ['tt-partner-response-rate'],
     queryFn: async () => {
       const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-      const data = await fetchTopTierData('confirmation_requests', {
+      const data = await fetchTopTierData('tt_confirmation_requests', {
         select: 'status',
         filters: { 'created_at': `gte.${weekAgo.toISOString()}` },
       });
@@ -170,7 +170,7 @@ function StatusCards() {
     queryKey: ['tt-top-service'],
     queryFn: async () => {
       const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-      const data = await fetchTopTierData('bookings', {
+      const data = await fetchTopTierData('tt_bookings', {
         select: 'service_type,total_price',
         filters: { 'created_at': `gte.${weekAgo.toISOString()}` },
       });
@@ -225,7 +225,7 @@ function OperationsAlerts() {
       const items: any[] = [];
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
       
-      const stuck = await fetchTopTierData('bookings', {
+      const stuck = await fetchTopTierData('tt_bookings', {
         select: 'id,service_name,created_at',
         filters: {
           'status': 'eq.pending',
@@ -235,7 +235,7 @@ function OperationsAlerts() {
       });
       stuck.forEach((b: any) => items.push({ type: 'stuck_booking', id: b.id, desc: `Booking "${b.service_name}" pending for over 2 hours`, severity: 'high' }));
       
-      const lowTrust = await fetchTopTierData('partners', {
+      const lowTrust = await fetchTopTierData('tt_partners', {
         select: 'id,name,trust_score',
         filters: {
           'trust_score': 'lt.3',
@@ -284,12 +284,12 @@ export default function TTOverview() {
       const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
       const [rev, revYest, activeCount, pendingCount, partnersCount, pendingConfCount] = await Promise.all([
-        fetchTopTierData('bookings', { select: 'total_price', filters: { 'status': 'neq.cancelled', 'created_at': `gte.${today}` } }),
-        fetchTopTierData('bookings', { select: 'total_price', filters: { 'status': 'neq.cancelled', 'created_at': `gte.${yesterday}`, 'created_at@1': `lt.${today}` } }).catch(() => []),
-        fetchTopTierCount('bookings', { 'status': 'in.(confirmed,pending)' }),
-        fetchTopTierCount('bookings', { 'status': 'eq.pending' }),
-        fetchTopTierCount('partners', { 'status': 'eq.active' }),
-        fetchTopTierCount('confirmation_requests', { 'status': 'eq.pending' }),
+        fetchTopTierData('tt_bookings', { select: 'total_price', filters: { 'status': 'neq.cancelled', 'created_at': `gte.${today}` } }),
+        fetchTopTierData('tt_bookings', { select: 'total_price', filters: { 'status': 'neq.cancelled', 'created_at': `gte.${yesterday}`, 'created_at@1': `lt.${today}` } }).catch(() => []),
+        fetchTopTierCount('tt_bookings', { 'status': 'in.(confirmed,pending)' }),
+        fetchTopTierCount('tt_bookings', { 'status': 'eq.pending' }),
+        fetchTopTierCount('tt_partners', { 'status': 'eq.active' }),
+        fetchTopTierCount('tt_confirmation_requests', { 'status': 'eq.pending' }),
       ]);
 
       const todayRev = rev.reduce((s: number, b: any) => s + Number(b.total_price), 0);

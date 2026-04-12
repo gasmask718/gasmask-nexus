@@ -12,9 +12,14 @@ import { Badge } from '@/components/ui/badge';
 const navItems = [
   { path: '/os/toptier', label: 'Overview', icon: LayoutDashboard, end: true },
   { path: '/os/toptier/bookings', label: 'Bookings', icon: CalendarCheck },
+  { path: '/os/toptier/dispatch', label: 'Dispatch Center', icon: Map },
   { path: '/os/toptier/partners', label: 'Partners', icon: Users },
+  { path: '/os/toptier/pricing', label: 'Pricing Engine', icon: DollarSign },
+  { path: '/os/toptier/payments', label: 'Payments & Revenue', icon: TrendingUp },
+  { path: '/os/toptier/reviews', label: 'Reviews', icon: Star },
+  { path: '/os/toptier/corporate', label: 'Corporate Accounts', icon: Store },
   { path: '/os/toptier/itinerary', label: 'Itinerary Monitor', icon: Map },
-  { path: '/os/toptier/revenue', label: 'Revenue', icon: TrendingUp },
+  { path: '/os/toptier/revenue', label: 'Revenue (Legacy)', icon: TrendingUp },
   { path: '/os/toptier/ambassadors', label: 'Ambassadors', icon: Star },
   { path: '/os/toptier/operations', label: 'Operations', icon: Settings2 },
   { path: '/os/toptier/decor-experience', label: 'Decor Experience', icon: Palette },
@@ -31,6 +36,7 @@ const navItems = [
   { path: '/os/toptier/kids-family/performance', label: 'KF Performance', icon: BarChart3 },
   { path: '/os/toptier/kids-family/api', label: 'KF API Panel', icon: Plug },
   { path: '/os/toptier/kids-family/leads', label: 'KF Expansion', icon: Globe },
+  { path: '/os/toptier/settings', label: 'Settings', icon: Settings },
   { path: '/os/toptier/penthouse', label: 'Penthouse Control', icon: Crown },
 ];
 

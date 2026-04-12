@@ -717,6 +717,12 @@ const TTItinerary = lazy(() => import('@/pages/os/toptier/TTItinerary'));
 const TTAmbassadors = lazy(() => import('@/pages/os/toptier/TTAmbassadors'));
 const TTOperations = lazy(() => import('@/pages/os/toptier/TTOperations'));
 const TTAIBrain = lazy(() => import('@/pages/os/toptier/TTAIBrain'));
+const TTPricing = lazy(() => import('@/pages/os/toptier/TTPricing'));
+const TTDispatch = lazy(() => import('@/pages/os/toptier/TTDispatch'));
+const TTPayments = lazy(() => import('@/pages/os/toptier/TTPayments'));
+const TTReviews = lazy(() => import('@/pages/os/toptier/TTReviews'));
+const TTSettings = lazy(() => import('@/pages/os/toptier/TTSettings'));
+const TTCorporate = lazy(() => import('@/pages/os/toptier/TTCorporate'));
 const PenthouseLayout = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseLayout'));
 const PenthouseDashboard = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseDashboard'));
 const PenthousePartners = lazy(() => import('@/pages/os/toptier/penthouse/PenthousePartners'));
@@ -1713,7 +1719,12 @@ export default function AppRoutes() {
           <Route path="ambassadors" element={<TTAmbassadors />} />
           <Route path="operations" element={<TTOperations />} />
           <Route path="ai" element={<TTAIBrain />} />
-          <Route path="settings" element={<TTPlaceholder />} />
+          <Route path="settings" element={<TTSettings />} />
+          <Route path="pricing" element={<TTPricing />} />
+          <Route path="dispatch" element={<TTDispatch />} />
+          <Route path="payments" element={<TTPayments />} />
+          <Route path="reviews" element={<TTReviews />} />
+          <Route path="corporate" element={<TTCorporate />} />
           <Route path="decor-experience" element={<DecorExperienceWizard />} />
           <Route path="things-to-do" element={<ThingsToDoExperiences />} />
           <Route path="things-to-do/bookings" element={<ThingsToDoBookings />} />
