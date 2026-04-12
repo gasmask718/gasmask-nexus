@@ -82,6 +82,17 @@ serve(async (req) => {
       status: 'sent',
     })
 
+    // Auto-trigger smart dispatch
+    try {
+      const dispatchRes = await supabase.functions.invoke(
+        'tt-smart-dispatch',
+        { body: { booking_id: osBooking.id } }
+      )
+      console.log('Auto-dispatch result:', dispatchRes.data)
+    } catch (dispatchErr) {
+      console.error('Auto-dispatch failed (non-critical):', dispatchErr)
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

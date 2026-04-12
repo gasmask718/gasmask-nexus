@@ -4,7 +4,7 @@ import {
   LayoutDashboard, CalendarCheck, Users, Map, TrendingUp, 
   Star, Settings2, Brain, Bell, RefreshCw, Settings, Crown, Palette,
   Sparkles, BarChart3, Percent, Package, DollarSign, Baby, Store, Plug, Globe,
-  Users2, Car, Tag, Wallet, Share2, Grid3X3
+  Users2, Car, Tag, Wallet, Share2, Grid3X3, Send
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,7 @@ const navItems = [
 ];
 
 const platformItems = [
+  { path: '/os/toptier/dispatch-requests', label: 'Dispatch Requests', icon: Send },
   { path: '/os/toptier/partners-mgmt', label: 'Partners', icon: Users2 },
   { path: '/os/toptier/fleet', label: 'Fleet & Vehicles', icon: Car },
   { path: '/os/toptier/packages', label: 'Service Packages', icon: Grid3X3 },
