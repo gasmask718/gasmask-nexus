@@ -86011,6 +86011,7 @@ export type Database = {
           scheduled_at: string | null
           service_name: string
           service_type: string
+          source: string | null
           special_requests: string | null
           status: string
           total_price: number
@@ -86043,6 +86044,7 @@ export type Database = {
           scheduled_at?: string | null
           service_name: string
           service_type?: string
+          source?: string | null
           special_requests?: string | null
           status?: string
           total_price?: number
@@ -86075,6 +86077,7 @@ export type Database = {
           scheduled_at?: string | null
           service_name?: string
           service_type?: string
+          source?: string | null
           special_requests?: string | null
           status?: string
           total_price?: number
