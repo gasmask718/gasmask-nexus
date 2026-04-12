@@ -1,0 +1,78 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { corsHeaders } from 'https://esm.sh/@supabase/supabase-js@2/cors'
+
+function generateBookingRef(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let ref = 'TT-';
+  for (let i = 0; i < 8; i++) ref += chars[Math.floor(Math.random() * chars.length)];
+  return ref;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const body = await req.json();
+    const { customer_name, customer_email, customer_phone, pickup_address, pickup_lat, pickup_lng, dropoff_address, dropoff_lat, dropoff_lng, pickup_datetime, vehicle_id, passenger_count, add_ons, special_requests, stripe_payment_intent_id, total_price } = body;
+
+    if (!customer_name || !pickup_address || !pickup_datetime || !total_price) {
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    const booking_reference = generateBookingRef();
+
+    // Insert booking
+    const { data: booking, error: bookingErr } = await supabase.from('tt_bookings').insert({
+      client_name: customer_name,
+      client_email: customer_email,
+      client_phone: customer_phone,
+      service_type: 'luxury_transport',
+      service_name: 'Black Car Service',
+      total_price,
+      status: 'confirmed',
+      payment_status: 'paid',
+      booking_reference,
+      pickup_location: pickup_address,
+      dropoff_location: dropoff_address,
+      pickup_lat, pickup_lng, dropoff_lat, dropoff_lng,
+      scheduled_at: pickup_datetime,
+      vehicle_id,
+      passenger_count,
+      special_requests,
+      notes: add_ons ? JSON.stringify(add_ons) : null,
+    }).select().single();
+
+    if (bookingErr) throw bookingErr;
+
+    // Create dispatch record
+    await supabase.from('tt_dispatches').insert({
+      booking_id: booking.id,
+      vehicle_id,
+      status: 'pending',
+    });
+
+    // Log notification
+    if (customer_phone) {
+      await supabase.from('tt_notifications_log').insert({
+        booking_id: booking.id,
+        type: 'booking_confirmation',
+        channel: 'sms',
+        recipient: customer_phone,
+        message: `Your TopTier booking ${booking_reference} is confirmed for ${pickup_datetime}. Total: $${total_price}`,
+        status: 'pending',
+      });
+    }
+
+    return new Response(JSON.stringify({ booking_id: booking.id, booking_reference, status: 'confirmed' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (err) {
+    console.error('create-tt-booking error:', err);
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+});
