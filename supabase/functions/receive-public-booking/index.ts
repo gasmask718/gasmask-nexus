@@ -58,6 +58,7 @@ serve(async (req) => {
         status: 'pending',
         payment_status: 'unpaid',
         booking_reference: booking_reference,
+        fulfillment_model: 'quote_broadcast',
         special_requests: special_requests || null,
         source: 'public_website',
         notes: metadata ? JSON.stringify(metadata) : null,

@@ -1,0 +1,1 @@
+ALTER TABLE tt_bookings ADD COLUMN IF NOT EXISTS source text DEFAULT 'direct';
