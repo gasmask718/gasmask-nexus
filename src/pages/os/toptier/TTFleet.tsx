@@ -135,7 +135,7 @@ export default function TTFleet() {
                 {editingRate === v.id ? (
                   <Input className="w-20 h-7 bg-[#0A0A0A] border-[#C9A84C]/30 text-[#C9A84C] text-sm" value={rateValue} onChange={e => setRateValue(e.target.value)} onBlur={() => handleRateSave(v, isPublic)} onKeyDown={e => e.key === 'Enter' && handleRateSave(v, isPublic)} autoFocus />
                 ) : (
-                  <span className="text-[#C9A84C] font-bold cursor-pointer hover:underline" onClick={() => { setEditingRate(v.id); setRateValue(String(v.base_rate || v.hourly_rate || v.price || v.rate || '')); }}>${Number(v.base_rate || v.hourly_rate || v.price || v.rate || 0).toLocaleString()}/hr</span>
+                  <span className="text-[#C9A84C] font-bold cursor-pointer hover:underline" onClick={() => { setEditingRate(v.id); setRateValue(String(v.base_rate || v.price_per_hour || v.hourly_rate || v.price || v.rate || '')); }}>${Number(v.base_rate || v.price_per_hour || v.hourly_rate || v.price || v.rate || 0).toLocaleString()}/hr</span>
                 )}
               </TableCell>
               <TableCell><StatusBadge status={v.status || 'unknown'} /></TableCell>
@@ -218,7 +218,7 @@ export default function TTFleet() {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div><p className="text-white/40">Category</p><p className="text-white">{selectedVehicle.category || '—'}</p></div>
                   <div><p className="text-white/40">Capacity</p><p className="text-white">{selectedVehicle.capacity || '—'} pax</p></div>
-                  <div><p className="text-white/40">Base Rate</p><p className="text-[#C9A84C] font-bold">${Number(selectedVehicle.base_rate || selectedVehicle.hourly_rate || selectedVehicle.price || selectedVehicle.rate || 0).toLocaleString()}/hr</p></div>
+                  <div><p className="text-white/40">Base Rate</p><p className="text-[#C9A84C] font-bold">${Number(selectedVehicle.base_rate || selectedVehicle.price_per_hour || selectedVehicle.hourly_rate || selectedVehicle.price || selectedVehicle.rate || 0).toLocaleString()}/hr</p></div>
                   <div><p className="text-white/40">Status</p><StatusBadge status={selectedVehicle.status || ''} /></div>
                 </div>
                 {selectedVehicle.amenities && (
