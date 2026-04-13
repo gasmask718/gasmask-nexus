@@ -121,7 +121,7 @@ export default function TTFleet() {
         {vehicles.length === 0 ? (
           <TableRow><TableCell colSpan={6} className="text-center text-white/40 py-12">No vehicles found. Click + Add Vehicle to add one.</TableCell></TableRow>
         ) : vehicles.map((v: any) => {
-          const amenities = Array.isArray(v.amenities) ? v.amenities : typeof v.amenities === 'string' ? v.amenities.split(',') : [];
+          const amenities = Array.isArray(v.amenities) ? v.amenities : Array.isArray(v.features) ? v.features : typeof v.amenities === 'string' ? v.amenities.split(',') : [];
           return (
             <TableRow key={v.id} className="border-white/5">
               <TableCell>
