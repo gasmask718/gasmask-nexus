@@ -85991,6 +85991,8 @@ export type Database = {
           client_name: string
           client_phone: string | null
           created_at: string
+          dispatch_method: string | null
+          dispatched_to: string | null
           driver_id: string | null
           dropoff_city: string | null
           dropoff_lat: number | null
@@ -86017,6 +86019,7 @@ export type Database = {
           total_price: number
           updated_at: string
           vehicle_id: string | null
+          vehicle_name: string | null
         }
         Insert: {
           booking_reference?: string | null
@@ -86024,6 +86027,8 @@ export type Database = {
           client_name: string
           client_phone?: string | null
           created_at?: string
+          dispatch_method?: string | null
+          dispatched_to?: string | null
           driver_id?: string | null
           dropoff_city?: string | null
           dropoff_lat?: number | null
@@ -86050,6 +86055,7 @@ export type Database = {
           total_price?: number
           updated_at?: string
           vehicle_id?: string | null
+          vehicle_name?: string | null
         }
         Update: {
           booking_reference?: string | null
@@ -86057,6 +86063,8 @@ export type Database = {
           client_name?: string
           client_phone?: string | null
           created_at?: string
+          dispatch_method?: string | null
+          dispatched_to?: string | null
           driver_id?: string | null
           dropoff_city?: string | null
           dropoff_lat?: number | null
@@ -86083,6 +86091,7 @@ export type Database = {
           total_price?: number
           updated_at?: string
           vehicle_id?: string | null
+          vehicle_name?: string | null
         }
         Relationships: [
           {
