@@ -87259,6 +87259,7 @@ export type Database = {
           asset_name: string
           asset_type: string
           base_rate: number | null
+          capabilities: Json | null
           capacity: number | null
           coverage_radius_miles: number | null
           created_at: string | null
@@ -87269,10 +87270,12 @@ export type Database = {
           markets: string[] | null
           partner_id: string
           partner_name: string
+          partner_phone: string | null
           partner_type: string
           photos: string[] | null
           rating: number | null
           response_time_minutes: number | null
+          service_types: string[] | null
           total_jobs: number | null
         }
         Insert: {
@@ -87282,6 +87285,7 @@ export type Database = {
           asset_name: string
           asset_type: string
           base_rate?: number | null
+          capabilities?: Json | null
           capacity?: number | null
           coverage_radius_miles?: number | null
           created_at?: string | null
@@ -87292,10 +87296,12 @@ export type Database = {
           markets?: string[] | null
           partner_id: string
           partner_name: string
+          partner_phone?: string | null
           partner_type: string
           photos?: string[] | null
           rating?: number | null
           response_time_minutes?: number | null
+          service_types?: string[] | null
           total_jobs?: number | null
         }
         Update: {
@@ -87305,6 +87311,7 @@ export type Database = {
           asset_name?: string
           asset_type?: string
           base_rate?: number | null
+          capabilities?: Json | null
           capacity?: number | null
           coverage_radius_miles?: number | null
           created_at?: string | null
@@ -87315,10 +87322,12 @@ export type Database = {
           markets?: string[] | null
           partner_id?: string
           partner_name?: string
+          partner_phone?: string | null
           partner_type?: string
           photos?: string[] | null
           rating?: number | null
           response_time_minutes?: number | null
+          service_types?: string[] | null
           total_jobs?: number | null
         }
         Relationships: []
