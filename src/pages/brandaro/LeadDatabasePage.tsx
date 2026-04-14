@@ -327,6 +327,7 @@ export default function LeadDatabasePage() {
         if (filterHasPhone) query = query.not("phone_number", "is", null);
         if (filterNoDemo) query = query.is("demo_url", null);
         if (filterScout) query = query.not("discovery_job_id", "is", null);
+        if (filterNoWebsite) query = query.or("has_website.is.null,has_website.eq.false");
         if (debouncedSearch) {
           query = query.or(
             `business_name.ilike.%${debouncedSearch}%,phone_number.ilike.%${debouncedSearch}%,city.ilike.%${debouncedSearch}%,state.ilike.%${debouncedSearch}%,industry.ilike.%${debouncedSearch}%`
