@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExportButton } from "@/components/crud/ExportButton";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,6 +124,7 @@ export default function LeadDatabasePage() {
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [demoLead, setDemoLead] = useState<any>(null);
   const [colDropdownOpen, setColDropdownOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const lastShiftIdx = useRef<number | null>(null);
 
   // Debounced search
@@ -262,6 +263,75 @@ export default function LeadDatabasePage() {
   };
 
   const allOnPageSelected = leads.length > 0 && leads.every((l) => selectedIds.has(l.id));
+
+  const EXPORT_COLUMNS = [
+    { key: "business_name", label: "Business Name" },
+    { key: "phone_number", label: "Phone" },
+    { key: "email", label: "Email" },
+    { key: "city", label: "City" },
+    { key: "state", label: "State" },
+    { key: "industry", label: "Industry" },
+    { key: "pipeline_stage", label: "Pipeline Stage" },
+    { key: "priority_score", label: "Priority Score" },
+    { key: "priority_tier", label: "Priority Tier" },
+    { key: "rating", label: "Rating" },
+    { key: "review_count", label: "Review Count" },
+    { key: "call_attempts", label: "Call Attempts" },
+    { key: "last_call_at", label: "Last Contact" },
+    { key: "website_status", label: "Website Status" },
+    { key: "demo_url", label: "Demo URL" },
+    { key: "google_maps_url", label: "Google Maps" },
+    { key: "created_at", label: "Date Added" },
+  ];
+
+
+  const handleExportAll = async (format: 'csv' | 'excel' | 'json') => {
+    // If rows are selected, export only those from current page
+    if (selectedIds.size > 0) {
+      const selectedLeads = leads.filter((l) => selectedIds.has(l.id));
+      exportData({ filename: "brandaro-leads", format, data: selectedLeads as Record<string, unknown>[], columns: EXPORT_COLUMNS });
+      return;
+    }
+    // Otherwise fetch ALL leads from database
+    setExporting(true);
+    try {
+      const allLeads: Record<string, unknown>[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      while (true) {
+        let query = supabase
+          .from("brandaro_qualified_leads")
+          .select("*")
+          .order("priority_score", { ascending: false })
+          .range(from, from + batchSize - 1);
+        if (filterStages.length > 0) query = query.in("pipeline_stage", filterStages);
+        if (filterHasPhone) query = query.not("phone_number", "is", null);
+        if (filterNoDemo) query = query.is("demo_url", null);
+        if (filterScout) query = query.not("discovery_job_id", "is", null);
+        if (debouncedSearch) {
+          query = query.or(
+            `business_name.ilike.%${debouncedSearch}%,phone_number.ilike.%${debouncedSearch}%,city.ilike.%${debouncedSearch}%,state.ilike.%${debouncedSearch}%,industry.ilike.%${debouncedSearch}%`
+          );
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allLeads.push(...(data as Record<string, unknown>[]));
+        if (data.length < batchSize) break;
+        from += batchSize;
+      }
+      if (allLeads.length === 0) {
+        toast.warning("No leads to export");
+        return;
+      }
+      exportData({ filename: "brandaro-leads", format, data: allLeads, columns: EXPORT_COLUMNS });
+      toast.success(`Exported ${allLeads.length.toLocaleString()} leads`);
+    } catch (err: any) {
+      toast.error(`Export failed: ${err.message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // ── Sort handler ──
   const handleSort = (col: string) => {
@@ -501,29 +571,19 @@ export default function LeadDatabasePage() {
             <Button variant="outline" size="sm" onClick={() => navigate("/brandaro/scout-agent")}>
               <Bot className="h-4 w-4 mr-1" /> Run Scout
             </Button>
-            <ExportButton
-              data={(selectedIds.size ? selectedLeads : leads) as Record<string, unknown>[]}
-              filename="brandaro-leads"
-              columns={[
-                { key: "business_name", label: "Business Name" },
-                { key: "phone_number", label: "Phone" },
-                { key: "email", label: "Email" },
-                { key: "city", label: "City" },
-                { key: "state", label: "State" },
-                { key: "industry", label: "Industry" },
-                { key: "pipeline_stage", label: "Pipeline Stage" },
-                { key: "priority_score", label: "Priority Score" },
-                { key: "priority_tier", label: "Priority Tier" },
-                { key: "rating", label: "Rating" },
-                { key: "review_count", label: "Review Count" },
-                { key: "call_attempts", label: "Call Attempts" },
-                { key: "last_call_at", label: "Last Contact" },
-                { key: "website_status", label: "Website Status" },
-                { key: "demo_url", label: "Demo URL" },
-                { key: "google_maps_url", label: "Google Maps" },
-                { key: "created_at", label: "Date Added" },
-              ]}
-            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={exporting}>
+                  {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                  Export {selectedIds.size > 0 ? `(${selectedIds.size})` : "All"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExportAll('csv')}>Export as CSV</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportAll('excel')}>Export as Excel</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportAll('json')}>Export as JSON</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {selectedIds.size > 0 && (
               <Button variant="destructive" size="sm" onClick={handleBulkLost}>
                 <Trash2 className="h-4 w-4 mr-1" /> Mark {selectedIds.size} Lost
@@ -615,22 +675,19 @@ export default function LeadDatabasePage() {
                   <Button size="sm" variant="outline" disabled={!selectedIds.size} onClick={() => handleBulkStageMove("interested")}>
                     🌟 Interested {selectedIds.size ? `(${selectedIds.size})` : ""}
                   </Button>
-                  <ExportButton
-                    data={(selectedIds.size ? selectedLeads : leads) as Record<string, unknown>[]}
-                    filename="brandaro-leads"
-                    columns={[
-                      { key: "business_name", label: "Business Name" },
-                      { key: "phone_number", label: "Phone" },
-                      { key: "email", label: "Email" },
-                      { key: "city", label: "City" },
-                      { key: "state", label: "State" },
-                      { key: "industry", label: "Industry" },
-                      { key: "pipeline_stage", label: "Pipeline Stage" },
-                      { key: "priority_score", label: "Priority Score" },
-                      { key: "rating", label: "Rating" },
-                      { key: "demo_url", label: "Demo URL" },
-                    ]}
-                  />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" disabled={exporting}>
+                        {exporting ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Download className="h-3 w-3 mr-1" />}
+                        Export {selectedIds.size > 0 ? `(${selectedIds.size})` : "All"}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleExportAll('csv')}>CSV</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleExportAll('excel')}>Excel</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleExportAll('json')}>JSON</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {/* Execution Log */}
