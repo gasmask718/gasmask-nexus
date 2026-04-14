@@ -119,6 +119,7 @@ export default function LeadDatabasePage() {
   const [filterHasPhone, setFilterHasPhone] = useState(false);
   const [filterNoDemo, setFilterNoDemo] = useState(false);
   const [filterScout, setFilterScout] = useState(false);
+  const [filterNoWebsite, setFilterNoWebsite] = useState(false);
   const [fromNumber, setFromNumber] = useState<string>("");
   const [executionLog, setExecutionLog] = useState<string[]>([]);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
@@ -150,6 +151,21 @@ export default function LeadDatabasePage() {
   };
 
   // ── Queries ──
+  // ── Live Feed: last auto-import timestamp ──
+  const { data: lastImportTime } = useQuery({
+    queryKey: ["brandaro-last-import"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("brandaro_qualified_leads")
+        .select("created_at")
+        .eq("query_source", "outscraper")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      return data?.[0]?.created_at || null;
+    },
+    refetchInterval: 60000,
+  });
+
   const { data: statsData } = useQuery({
     queryKey: ["brandaro-lead-stats"],
     queryFn: async () => {
@@ -166,6 +182,8 @@ export default function LeadDatabasePage() {
       results.hasDemo = hasDemo || 0;
       const { count: scout } = await supabase.from("brandaro_qualified_leads").select("*", { count: "exact", head: true }).not("discovery_job_id", "is", null);
       results.scout = scout || 0;
+      const { count: noWeb } = await supabase.from("brandaro_qualified_leads").select("*", { count: "exact", head: true }).or("has_website.is.null,has_website.eq.false");
+      results.noWebsite = noWeb || 0;
       results.csv = (results.total || 0) - (results.scout || 0);
       return results;
     },
