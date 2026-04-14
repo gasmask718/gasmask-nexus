@@ -501,9 +501,29 @@ export default function LeadDatabasePage() {
             <Button variant="outline" size="sm" onClick={() => navigate("/brandaro/scout-agent")}>
               <Bot className="h-4 w-4 mr-1" /> Run Scout
             </Button>
-            <Button variant="outline" size="sm" onClick={handleExportSelected}>
-              <Download className="h-4 w-4 mr-1" /> {selectedIds.size ? `Export ${selectedIds.size}` : "Export All"}
-            </Button>
+            <ExportButton
+              data={(selectedIds.size ? selectedLeads : leads) as Record<string, unknown>[]}
+              filename="brandaro-leads"
+              columns={[
+                { key: "business_name", label: "Business Name" },
+                { key: "phone_number", label: "Phone" },
+                { key: "email", label: "Email" },
+                { key: "city", label: "City" },
+                { key: "state", label: "State" },
+                { key: "industry", label: "Industry" },
+                { key: "pipeline_stage", label: "Pipeline Stage" },
+                { key: "priority_score", label: "Priority Score" },
+                { key: "priority_tier", label: "Priority Tier" },
+                { key: "rating", label: "Rating" },
+                { key: "review_count", label: "Review Count" },
+                { key: "call_attempts", label: "Call Attempts" },
+                { key: "last_call_at", label: "Last Contact" },
+                { key: "website_status", label: "Website Status" },
+                { key: "demo_url", label: "Demo URL" },
+                { key: "google_maps_url", label: "Google Maps" },
+                { key: "created_at", label: "Date Added" },
+              ]}
+            />
             {selectedIds.size > 0 && (
               <Button variant="destructive" size="sm" onClick={handleBulkLost}>
                 <Trash2 className="h-4 w-4 mr-1" /> Mark {selectedIds.size} Lost
@@ -595,9 +615,22 @@ export default function LeadDatabasePage() {
                   <Button size="sm" variant="outline" disabled={!selectedIds.size} onClick={() => handleBulkStageMove("interested")}>
                     🌟 Interested {selectedIds.size ? `(${selectedIds.size})` : ""}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={handleExportSelected}>
-                    <Download className="h-3 w-3 mr-1" /> Export CSV
-                  </Button>
+                  <ExportButton
+                    data={(selectedIds.size ? selectedLeads : leads) as Record<string, unknown>[]}
+                    filename="brandaro-leads"
+                    columns={[
+                      { key: "business_name", label: "Business Name" },
+                      { key: "phone_number", label: "Phone" },
+                      { key: "email", label: "Email" },
+                      { key: "city", label: "City" },
+                      { key: "state", label: "State" },
+                      { key: "industry", label: "Industry" },
+                      { key: "pipeline_stage", label: "Pipeline Stage" },
+                      { key: "priority_score", label: "Priority Score" },
+                      { key: "rating", label: "Rating" },
+                      { key: "demo_url", label: "Demo URL" },
+                    ]}
+                  />
                 </div>
 
                 {/* Execution Log */}
