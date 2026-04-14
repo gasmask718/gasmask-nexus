@@ -263,6 +263,76 @@ export default function LeadDatabasePage() {
 
   const allOnPageSelected = leads.length > 0 && leads.every((l) => selectedIds.has(l.id));
 
+  const EXPORT_COLUMNS = [
+    { key: "business_name", label: "Business Name" },
+    { key: "phone_number", label: "Phone" },
+    { key: "email", label: "Email" },
+    { key: "city", label: "City" },
+    { key: "state", label: "State" },
+    { key: "industry", label: "Industry" },
+    { key: "pipeline_stage", label: "Pipeline Stage" },
+    { key: "priority_score", label: "Priority Score" },
+    { key: "priority_tier", label: "Priority Tier" },
+    { key: "rating", label: "Rating" },
+    { key: "review_count", label: "Review Count" },
+    { key: "call_attempts", label: "Call Attempts" },
+    { key: "last_call_at", label: "Last Contact" },
+    { key: "website_status", label: "Website Status" },
+    { key: "demo_url", label: "Demo URL" },
+    { key: "google_maps_url", label: "Google Maps" },
+    { key: "created_at", label: "Date Added" },
+  ];
+
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportAll = async (format: 'csv' | 'excel' | 'json') => {
+    // If rows are selected, export only those from current page
+    if (selectedIds.size > 0) {
+      const selectedLeads = leads.filter((l) => selectedIds.has(l.id));
+      exportData({ filename: "brandaro-leads", format, data: selectedLeads as Record<string, unknown>[], columns: EXPORT_COLUMNS });
+      return;
+    }
+    // Otherwise fetch ALL leads from database
+    setExporting(true);
+    try {
+      const allLeads: Record<string, unknown>[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      while (true) {
+        let query = supabase
+          .from("brandaro_qualified_leads")
+          .select("*")
+          .order("priority_score", { ascending: false })
+          .range(from, from + batchSize - 1);
+        if (filterStages.length > 0) query = query.in("pipeline_stage", filterStages);
+        if (filterHasPhone) query = query.not("phone_number", "is", null);
+        if (filterNoDemo) query = query.is("demo_url", null);
+        if (filterScout) query = query.not("discovery_job_id", "is", null);
+        if (debouncedSearch) {
+          query = query.or(
+            `business_name.ilike.%${debouncedSearch}%,phone_number.ilike.%${debouncedSearch}%,city.ilike.%${debouncedSearch}%,state.ilike.%${debouncedSearch}%,industry.ilike.%${debouncedSearch}%`
+          );
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allLeads.push(...(data as Record<string, unknown>[]));
+        if (data.length < batchSize) break;
+        from += batchSize;
+      }
+      if (allLeads.length === 0) {
+        toast.warning("No leads to export");
+        return;
+      }
+      exportData({ filename: "brandaro-leads", format, data: allLeads, columns: EXPORT_COLUMNS });
+      toast.success(`Exported ${allLeads.length.toLocaleString()} leads`);
+    } catch (err: any) {
+      toast.error(`Export failed: ${err.message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // ── Sort handler ──
   const handleSort = (col: string) => {
     if (sortCol === col) setSortAsc(!sortAsc);
