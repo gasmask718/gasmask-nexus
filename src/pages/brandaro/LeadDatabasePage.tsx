@@ -762,8 +762,11 @@ export default function LeadDatabasePage() {
           <Button variant={filterScout ? "default" : "outline"} size="sm" className="h-9" onClick={() => { setFilterScout(!filterScout); setPage(0); }}>
             <Bot className="h-3 w-3 mr-1" /> Scout
           </Button>
+          <Button variant={filterNoWebsite ? "default" : "outline"} size="sm" className="h-9" onClick={() => { setFilterNoWebsite(!filterNoWebsite); setPage(0); }}>
+            🎯 No Website
+          </Button>
           {activeFilters.length > 0 && (
-            <Button variant="ghost" size="sm" className="h-9" onClick={() => { setFilterStages([]); setFilterHasPhone(false); setFilterNoDemo(false); setFilterScout(false); }}>
+            <Button variant="ghost" size="sm" className="h-9" onClick={() => { setFilterStages([]); setFilterHasPhone(false); setFilterNoDemo(false); setFilterScout(false); setFilterNoWebsite(false); }}>
               <X className="h-3 w-3 mr-1" /> Clear
             </Button>
           )}
@@ -825,6 +828,7 @@ export default function LeadDatabasePage() {
                     <TableHead className="cursor-pointer" onClick={() => handleSort("priority_score")}>
                       <span className="flex items-center gap-1">Priority <SortIcon col="priority_score" /></span>
                     </TableHead>
+                    <TableHead>Tier</TableHead>
                     <TableHead className="cursor-pointer" onClick={() => handleSort("rating")}>
                       <span className="flex items-center gap-1">Rating <SortIcon col="rating" /></span>
                     </TableHead>
@@ -913,6 +917,17 @@ export default function LeadDatabasePage() {
                                 ) : null}
                                 <span className="font-mono">{lead.priority_score ?? "—"}</span>
                               </span>
+                            </TableCell>
+                            <TableCell>
+                              {lead.priority_tier === "HOT" ? (
+                                <Badge className="bg-red-500/15 text-red-400 border-transparent text-[10px]">🔥 HOT</Badge>
+                              ) : lead.priority_tier === "WARM" ? (
+                                <Badge className="bg-orange-500/15 text-orange-400 border-transparent text-[10px]">WARM</Badge>
+                              ) : lead.priority_tier === "COLD" ? (
+                                <Badge className="bg-blue-500/15 text-blue-400 border-transparent text-[10px]">COLD</Badge>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">—</span>
+                              )}
                             </TableCell>
                             <TableCell className="text-sm">
                               {lead.rating ? (
