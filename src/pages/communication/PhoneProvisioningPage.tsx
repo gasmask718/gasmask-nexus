@@ -533,7 +533,7 @@ export default function PhoneProvisioningPage() {
                       </tr>
                       {editingNumberId === row.id ? (
                         <tr key={`${row.id}-editor`} className="border-b border-border/60 bg-muted/20">
-                          <td colSpan={5} className="py-4">
+                          <td colSpan={6} className="py-4">
                             <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] items-end">
                               <div>
                                 <label className="text-xs text-muted-foreground">Business</label>
