@@ -119,6 +119,7 @@ export default function LeadDatabasePage() {
   const [filterHasPhone, setFilterHasPhone] = useState(false);
   const [filterNoDemo, setFilterNoDemo] = useState(false);
   const [filterScout, setFilterScout] = useState(false);
+  const [filterNoWebsite, setFilterNoWebsite] = useState(false);
   const [fromNumber, setFromNumber] = useState<string>("");
   const [executionLog, setExecutionLog] = useState<string[]>([]);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
@@ -150,6 +151,21 @@ export default function LeadDatabasePage() {
   };
 
   // ── Queries ──
+  // ── Live Feed: last auto-import timestamp ──
+  const { data: lastImportTime } = useQuery({
+    queryKey: ["brandaro-last-import"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("brandaro_qualified_leads")
+        .select("created_at")
+        .eq("query_source", "outscraper")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      return data?.[0]?.created_at || null;
+    },
+    refetchInterval: 60000,
+  });
+
   const { data: statsData } = useQuery({
     queryKey: ["brandaro-lead-stats"],
     queryFn: async () => {
@@ -166,6 +182,8 @@ export default function LeadDatabasePage() {
       results.hasDemo = hasDemo || 0;
       const { count: scout } = await supabase.from("brandaro_qualified_leads").select("*", { count: "exact", head: true }).not("discovery_job_id", "is", null);
       results.scout = scout || 0;
+      const { count: noWeb } = await supabase.from("brandaro_qualified_leads").select("*", { count: "exact", head: true }).or("has_website.is.null,has_website.eq.false");
+      results.noWebsite = noWeb || 0;
       results.csv = (results.total || 0) - (results.scout || 0);
       return results;
     },
@@ -194,7 +212,7 @@ export default function LeadDatabasePage() {
   }, [phoneNumbers, fromNumber]);
 
   const { data: leadsResult, isLoading } = useQuery({
-    queryKey: ["brandaro-leads-table", debouncedSearch, page, pageSize, sortCol, sortAsc, filterStages, filterHasPhone, filterNoDemo, filterScout],
+    queryKey: ["brandaro-leads-table", debouncedSearch, page, pageSize, sortCol, sortAsc, filterStages, filterHasPhone, filterNoDemo, filterScout, filterNoWebsite],
     queryFn: async () => {
       let query = supabase
         .from("brandaro_qualified_leads")
@@ -213,6 +231,7 @@ export default function LeadDatabasePage() {
       if (filterHasPhone) query = query.not("phone_number", "is", null);
       if (filterNoDemo) query = query.is("demo_url", null);
       if (filterScout) query = query.not("discovery_job_id", "is", null);
+      if (filterNoWebsite) query = query.or("has_website.is.null,has_website.eq.false");
 
       const { data, count } = await query;
       return { rows: (data || []) as Lead[], total: count || 0 };
@@ -308,6 +327,7 @@ export default function LeadDatabasePage() {
         if (filterHasPhone) query = query.not("phone_number", "is", null);
         if (filterNoDemo) query = query.is("demo_url", null);
         if (filterScout) query = query.not("discovery_job_id", "is", null);
+        if (filterNoWebsite) query = query.or("has_website.is.null,has_website.eq.false");
         if (debouncedSearch) {
           query = query.or(
             `business_name.ilike.%${debouncedSearch}%,phone_number.ilike.%${debouncedSearch}%,city.ilike.%${debouncedSearch}%,state.ilike.%${debouncedSearch}%,industry.ilike.%${debouncedSearch}%`
@@ -510,6 +530,7 @@ export default function LeadDatabasePage() {
   if (filterHasPhone) activeFilters.push({ label: "Has Phone", clear: () => setFilterHasPhone(false) });
   if (filterNoDemo) activeFilters.push({ label: "No Demo", clear: () => setFilterNoDemo(false) });
   if (filterScout) activeFilters.push({ label: "Scout Leads", clear: () => setFilterScout(false) });
+  if (filterNoWebsite) activeFilters.push({ label: "🎯 No Website", clear: () => setFilterNoWebsite(false) });
 
   // ── Priority border helper ──
   const getRowClass = (lead: Lead) => {
@@ -565,6 +586,12 @@ export default function LeadDatabasePage() {
               <Database className="h-5 w-5 text-primary" /> Lead Database
             </h1>
             <p className="text-sm text-muted-foreground">Master data table & autonomous execution center</p>
+            {lastImportTime && (
+              <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                Last auto-import: {new Date(lastImportTime).toLocaleString()}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <CsvLeadImporter onComplete={() => queryClient.invalidateQueries({ queryKey: ["brandaro-leads-table"] })} />
@@ -605,6 +632,7 @@ export default function LeadDatabasePage() {
             { label: "Has Demo", value: statsData?.hasDemo, filter: () => { setFilterNoDemo(false); setFilterStages([]); } },
             { label: "Scout", value: statsData?.scout, filter: () => { setFilterScout(true); setFilterStages([]); } },
             { label: "CSV", value: statsData?.csv, filter: () => { setFilterScout(false); setFilterStages([]); } },
+            { label: "🎯 No Website", value: statsData?.noWebsite, filter: () => { setFilterNoWebsite(true); setFilterStages([]); } },
           ].map((stat) => (
             <button
               key={stat.label}
@@ -735,8 +763,11 @@ export default function LeadDatabasePage() {
           <Button variant={filterScout ? "default" : "outline"} size="sm" className="h-9" onClick={() => { setFilterScout(!filterScout); setPage(0); }}>
             <Bot className="h-3 w-3 mr-1" /> Scout
           </Button>
+          <Button variant={filterNoWebsite ? "default" : "outline"} size="sm" className="h-9" onClick={() => { setFilterNoWebsite(!filterNoWebsite); setPage(0); }}>
+            🎯 No Website
+          </Button>
           {activeFilters.length > 0 && (
-            <Button variant="ghost" size="sm" className="h-9" onClick={() => { setFilterStages([]); setFilterHasPhone(false); setFilterNoDemo(false); setFilterScout(false); }}>
+            <Button variant="ghost" size="sm" className="h-9" onClick={() => { setFilterStages([]); setFilterHasPhone(false); setFilterNoDemo(false); setFilterScout(false); setFilterNoWebsite(false); }}>
               <X className="h-3 w-3 mr-1" /> Clear
             </Button>
           )}
@@ -798,6 +829,7 @@ export default function LeadDatabasePage() {
                     <TableHead className="cursor-pointer" onClick={() => handleSort("priority_score")}>
                       <span className="flex items-center gap-1">Priority <SortIcon col="priority_score" /></span>
                     </TableHead>
+                    <TableHead>Tier</TableHead>
                     <TableHead className="cursor-pointer" onClick={() => handleSort("rating")}>
                       <span className="flex items-center gap-1">Rating <SortIcon col="rating" /></span>
                     </TableHead>
@@ -886,6 +918,17 @@ export default function LeadDatabasePage() {
                                 ) : null}
                                 <span className="font-mono">{lead.priority_score ?? "—"}</span>
                               </span>
+                            </TableCell>
+                            <TableCell>
+                              {lead.priority_tier === "HOT" ? (
+                                <Badge className="bg-red-500/15 text-red-400 border-transparent text-[10px]">🔥 HOT</Badge>
+                              ) : lead.priority_tier === "WARM" ? (
+                                <Badge className="bg-orange-500/15 text-orange-400 border-transparent text-[10px]">WARM</Badge>
+                              ) : lead.priority_tier === "COLD" ? (
+                                <Badge className="bg-blue-500/15 text-blue-400 border-transparent text-[10px]">COLD</Badge>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">—</span>
+                              )}
                             </TableCell>
                             <TableCell className="text-sm">
                               {lead.rating ? (

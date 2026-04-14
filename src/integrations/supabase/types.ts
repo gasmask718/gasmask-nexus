@@ -15038,6 +15038,54 @@ export type Database = {
           },
         ]
       }
+      brandaro_leads_intake: {
+        Row: {
+          area_code: string | null
+          business_name: string | null
+          category: string | null
+          city: string | null
+          created_at: string | null
+          full_address: string | null
+          id: string
+          phone: string | null
+          rating: number | null
+          reviews_count: number | null
+          source: string | null
+          state: string | null
+          website: string | null
+        }
+        Insert: {
+          area_code?: string | null
+          business_name?: string | null
+          category?: string | null
+          city?: string | null
+          created_at?: string | null
+          full_address?: string | null
+          id?: string
+          phone?: string | null
+          rating?: number | null
+          reviews_count?: number | null
+          source?: string | null
+          state?: string | null
+          website?: string | null
+        }
+        Update: {
+          area_code?: string | null
+          business_name?: string | null
+          category?: string | null
+          city?: string | null
+          created_at?: string | null
+          full_address?: string | null
+          id?: string
+          phone?: string | null
+          rating?: number | null
+          reviews_count?: number | null
+          source?: string | null
+          state?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       brandaro_leads_master: {
         Row: {
           assigned_locked_until: string | null
