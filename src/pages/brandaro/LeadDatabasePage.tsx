@@ -124,6 +124,7 @@ export default function LeadDatabasePage() {
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [demoLead, setDemoLead] = useState<any>(null);
   const [colDropdownOpen, setColDropdownOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const lastShiftIdx = useRef<number | null>(null);
 
   // Debounced search
