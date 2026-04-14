@@ -33,6 +33,19 @@ const STATE_AREA_CODES: Record<string, { label: string; emoji: string; codes: st
 
 const TOLL_FREE_PREFIXES = ["800", "888", "877", "866", "855", "844", "833"];
 
+const FILTER_MODES = ["state", "business", "agent", "all"] as const;
+type FilterMode = typeof FILTER_MODES[number];
+
+function getStateForNumber(phone: string): string {
+  const digits = (phone || "").replace(/\D/g, "");
+  const areaCode = digits.length === 11 && digits[0] === "1" ? digits.slice(1, 4) : digits.slice(0, 3);
+  for (const [state, info] of Object.entries(STATE_AREA_CODES)) {
+    if (info.codes.includes(areaCode)) return state;
+  }
+  if (TOLL_FREE_PREFIXES.includes(areaCode)) return "Toll-Free";
+  return "Other";
+}
+
 type SearchResult = {
   phoneNumber: string;
   friendlyName: string;
