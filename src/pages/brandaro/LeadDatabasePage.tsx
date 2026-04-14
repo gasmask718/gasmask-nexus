@@ -212,7 +212,7 @@ export default function LeadDatabasePage() {
   }, [phoneNumbers, fromNumber]);
 
   const { data: leadsResult, isLoading } = useQuery({
-    queryKey: ["brandaro-leads-table", debouncedSearch, page, pageSize, sortCol, sortAsc, filterStages, filterHasPhone, filterNoDemo, filterScout],
+    queryKey: ["brandaro-leads-table", debouncedSearch, page, pageSize, sortCol, sortAsc, filterStages, filterHasPhone, filterNoDemo, filterScout, filterNoWebsite],
     queryFn: async () => {
       let query = supabase
         .from("brandaro_qualified_leads")
@@ -231,6 +231,7 @@ export default function LeadDatabasePage() {
       if (filterHasPhone) query = query.not("phone_number", "is", null);
       if (filterNoDemo) query = query.is("demo_url", null);
       if (filterScout) query = query.not("discovery_job_id", "is", null);
+      if (filterNoWebsite) query = query.or("has_website.is.null,has_website.eq.false");
 
       const { data, count } = await query;
       return { rows: (data || []) as Lead[], total: count || 0 };
@@ -528,6 +529,7 @@ export default function LeadDatabasePage() {
   if (filterHasPhone) activeFilters.push({ label: "Has Phone", clear: () => setFilterHasPhone(false) });
   if (filterNoDemo) activeFilters.push({ label: "No Demo", clear: () => setFilterNoDemo(false) });
   if (filterScout) activeFilters.push({ label: "Scout Leads", clear: () => setFilterScout(false) });
+  if (filterNoWebsite) activeFilters.push({ label: "🎯 No Website", clear: () => setFilterNoWebsite(false) });
 
   // ── Priority border helper ──
   const getRowClass = (lead: Lead) => {
