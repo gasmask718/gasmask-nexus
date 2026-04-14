@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Check, Loader2, MapPin, Phone, RefreshCw, Search, ShoppingCart } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, MapPin, Phone, RefreshCw, Search, ShoppingCart, Filter } from "lucide-react";
 
 const BUSINESSES = [
   { key: "gasmask", label: "GasMask Approved" },
