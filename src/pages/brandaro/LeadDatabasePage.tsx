@@ -585,6 +585,12 @@ export default function LeadDatabasePage() {
               <Database className="h-5 w-5 text-primary" /> Lead Database
             </h1>
             <p className="text-sm text-muted-foreground">Master data table & autonomous execution center</p>
+            {lastImportTime && (
+              <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                Last auto-import: {new Date(lastImportTime).toLocaleString()}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <CsvLeadImporter onComplete={() => queryClient.invalidateQueries({ queryKey: ["brandaro-leads-table"] })} />
@@ -625,6 +631,7 @@ export default function LeadDatabasePage() {
             { label: "Has Demo", value: statsData?.hasDemo, filter: () => { setFilterNoDemo(false); setFilterStages([]); } },
             { label: "Scout", value: statsData?.scout, filter: () => { setFilterScout(true); setFilterStages([]); } },
             { label: "CSV", value: statsData?.csv, filter: () => { setFilterScout(false); setFilterStages([]); } },
+            { label: "🎯 No Website", value: statsData?.noWebsite, filter: () => { setFilterNoWebsite(true); setFilterStages([]); } },
           ].map((stat) => (
             <button
               key={stat.label}
