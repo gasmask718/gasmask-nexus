@@ -284,7 +284,6 @@ export default function LeadDatabasePage() {
     { key: "created_at", label: "Date Added" },
   ];
 
-  const [exporting, setExporting] = useState(false);
 
   const handleExportAll = async (format: 'csv' | 'excel' | 'json') => {
     // If rows are selected, export only those from current page
