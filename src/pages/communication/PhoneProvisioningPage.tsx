@@ -397,8 +397,97 @@ export default function PhoneProvisioningPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Purchased Numbers</CardTitle>
-          <CardDescription>All rows from dc_phone_numbers</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Purchased Numbers</CardTitle>
+              <CardDescription>
+                {filteredNumbers.length === existingNumbers.length
+                  ? `${existingNumbers.length} numbers`
+                  : `${filteredNumbers.length} of ${existingNumbers.length} numbers`}
+              </CardDescription>
+            </div>
+          </div>
+          {/* Filter bar */}
+          {existingNumbers.length > 0 && (
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground mr-1">Filter by:</span>
+                {(["state", "business", "agent", "all"] as FilterMode[]).map((mode) => (
+                  <Button
+                    key={mode}
+                    size="sm"
+                    variant={filterMode === mode ? "default" : "outline"}
+                    className="text-xs h-7 capitalize"
+                    onClick={() => { setFilterMode(mode); setFilterValue(""); }}
+                  >
+                    {mode === "all" ? "Show All" : mode}
+                  </Button>
+                ))}
+              </div>
+
+              {filterMode === "state" && (
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(stateGroups)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([state, count]) => {
+                      const info = STATE_AREA_CODES[state];
+                      return (
+                        <Button
+                          key={state}
+                          size="sm"
+                          variant={filterValue === state ? "default" : "outline"}
+                          className="text-xs h-7"
+                          onClick={() => setFilterValue(filterValue === state ? "" : state)}
+                        >
+                          {info?.emoji || "📍"} {state} ({count})
+                        </Button>
+                      );
+                    })}
+                </div>
+              )}
+
+              {filterMode === "business" && (
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(businessGroups)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([biz, count]) => {
+                      const label = BUSINESSES.find((b) => b.key === biz)?.label || biz;
+                      return (
+                        <Button
+                          key={biz}
+                          size="sm"
+                          variant={filterValue === biz ? "default" : "outline"}
+                          className="text-xs h-7"
+                          onClick={() => setFilterValue(filterValue === biz ? "" : biz)}
+                        >
+                          {label} ({count})
+                        </Button>
+                      );
+                    })}
+                </div>
+              )}
+
+              {filterMode === "agent" && (
+                <div className="flex flex-wrap gap-1.5">
+                  <Button
+                    size="sm"
+                    variant={filterValue === "unassigned" ? "default" : "outline"}
+                    className="text-xs h-7"
+                    onClick={() => setFilterValue(filterValue === "unassigned" ? "" : "unassigned")}
+                  >
+                    Unassigned
+                  </Button>
+                  <Input
+                    placeholder="Search agent name..."
+                    value={filterValue === "unassigned" ? "" : filterValue}
+                    onChange={(e) => setFilterValue(e.target.value)}
+                    className="h-7 text-xs max-w-[200px]"
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           {numbersLoading || (syncing && existingNumbers.length === 0) ? (
