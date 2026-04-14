@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Check, Loader2, MapPin, Phone, RefreshCw, Search, ShoppingCart } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, MapPin, Phone, RefreshCw, Search, ShoppingCart, Filter } from "lucide-react";
 
 const BUSINESSES = [
   { key: "gasmask", label: "GasMask Approved" },
@@ -32,6 +32,19 @@ const STATE_AREA_CODES: Record<string, { label: string; emoji: string; codes: st
 };
 
 const TOLL_FREE_PREFIXES = ["800", "888", "877", "866", "855", "844", "833"];
+
+const FILTER_MODES = ["state", "business", "agent", "all"] as const;
+type FilterMode = typeof FILTER_MODES[number];
+
+function getStateForNumber(phone: string): string {
+  const digits = (phone || "").replace(/\D/g, "");
+  const areaCode = digits.length === 11 && digits[0] === "1" ? digits.slice(1, 4) : digits.slice(0, 3);
+  for (const [state, info] of Object.entries(STATE_AREA_CODES)) {
+    if (info.codes.includes(areaCode)) return state;
+  }
+  if (TOLL_FREE_PREFIXES.includes(areaCode)) return "Toll-Free";
+  return "Other";
+}
 
 type SearchResult = {
   phoneNumber: string;
@@ -88,6 +101,9 @@ export default function PhoneProvisioningPage() {
   const [purchaseProgress, setPurchaseProgress] = useState<string[]>([]);
   const [purchaseComplete, setPurchaseComplete] = useState(false);
 
+  const [filterMode, setFilterMode] = useState<FilterMode>("state");
+  const [filterValue, setFilterValue] = useState("");
+
   const { data: existingNumbers = [], isLoading: numbersLoading, refetch: refetchNumbers } = useQuery({
     queryKey: ["dc-phone-numbers"],
     queryFn: async () => {
@@ -111,6 +127,37 @@ export default function PhoneProvisioningPage() {
       return data || [];
     },
   });
+
+  const stateGroups = useMemo(() => {
+    const groups: Record<string, number> = {};
+    existingNumbers.forEach((n) => {
+      const state = getStateForNumber(n.phone_number);
+      groups[state] = (groups[state] || 0) + 1;
+    });
+    return groups;
+  }, [existingNumbers]);
+
+  const businessGroups = useMemo(() => {
+    const groups: Record<string, number> = {};
+    existingNumbers.forEach((n) => {
+      const biz = n.business || "unassigned";
+      groups[biz] = (groups[biz] || 0) + 1;
+    });
+    return groups;
+  }, [existingNumbers]);
+
+  const filteredNumbers = useMemo(() => {
+    if (filterMode === "all" || !filterValue) return existingNumbers;
+    return existingNumbers.filter((n) => {
+      if (filterMode === "state") return getStateForNumber(n.phone_number) === filterValue;
+      if (filterMode === "business") return (n.business || "unassigned") === filterValue;
+      if (filterMode === "agent") {
+        if (filterValue === "unassigned") return !n.assigned_agent_id;
+        return n.assigned_agent_name?.toLowerCase().includes(filterValue.toLowerCase());
+      }
+      return true;
+    });
+  }, [existingNumbers, filterMode, filterValue]);
 
   const filteredAssignAgents = useMemo(
     () => agents.filter((agent: any) => !assignBusiness || agent.business === assignBusiness),
@@ -350,8 +397,97 @@ export default function PhoneProvisioningPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Purchased Numbers</CardTitle>
-          <CardDescription>All rows from dc_phone_numbers</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Purchased Numbers</CardTitle>
+              <CardDescription>
+                {filteredNumbers.length === existingNumbers.length
+                  ? `${existingNumbers.length} numbers`
+                  : `${filteredNumbers.length} of ${existingNumbers.length} numbers`}
+              </CardDescription>
+            </div>
+          </div>
+          {/* Filter bar */}
+          {existingNumbers.length > 0 && (
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground mr-1">Filter by:</span>
+                {(["state", "business", "agent", "all"] as FilterMode[]).map((mode) => (
+                  <Button
+                    key={mode}
+                    size="sm"
+                    variant={filterMode === mode ? "default" : "outline"}
+                    className="text-xs h-7 capitalize"
+                    onClick={() => { setFilterMode(mode); setFilterValue(""); }}
+                  >
+                    {mode === "all" ? "Show All" : mode}
+                  </Button>
+                ))}
+              </div>
+
+              {filterMode === "state" && (
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(stateGroups)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([state, count]) => {
+                      const info = STATE_AREA_CODES[state];
+                      return (
+                        <Button
+                          key={state}
+                          size="sm"
+                          variant={filterValue === state ? "default" : "outline"}
+                          className="text-xs h-7"
+                          onClick={() => setFilterValue(filterValue === state ? "" : state)}
+                        >
+                          {info?.emoji || "📍"} {state} ({count})
+                        </Button>
+                      );
+                    })}
+                </div>
+              )}
+
+              {filterMode === "business" && (
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(businessGroups)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([biz, count]) => {
+                      const label = BUSINESSES.find((b) => b.key === biz)?.label || biz;
+                      return (
+                        <Button
+                          key={biz}
+                          size="sm"
+                          variant={filterValue === biz ? "default" : "outline"}
+                          className="text-xs h-7"
+                          onClick={() => setFilterValue(filterValue === biz ? "" : biz)}
+                        >
+                          {label} ({count})
+                        </Button>
+                      );
+                    })}
+                </div>
+              )}
+
+              {filterMode === "agent" && (
+                <div className="flex flex-wrap gap-1.5">
+                  <Button
+                    size="sm"
+                    variant={filterValue === "unassigned" ? "default" : "outline"}
+                    className="text-xs h-7"
+                    onClick={() => setFilterValue(filterValue === "unassigned" ? "" : "unassigned")}
+                  >
+                    Unassigned
+                  </Button>
+                  <Input
+                    placeholder="Search agent name..."
+                    value={filterValue === "unassigned" ? "" : filterValue}
+                    onChange={(e) => setFilterValue(e.target.value)}
+                    className="h-7 text-xs max-w-[200px]"
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           {numbersLoading || (syncing && existingNumbers.length === 0) ? (
@@ -364,6 +500,7 @@ export default function PhoneProvisioningPage() {
                 <thead>
                   <tr className="border-b border-border text-left">
                     <th className="pb-3 pr-4">Number</th>
+                    <th className="pb-3 pr-4">State</th>
                     <th className="pb-3 pr-4">Label</th>
                     <th className="pb-3 pr-4">Business</th>
                     <th className="pb-3 pr-4">Agent</th>
@@ -371,10 +508,17 @@ export default function PhoneProvisioningPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {existingNumbers.map((row) => (
+                  {filteredNumbers.map((row) => (
                     <>
                       <tr key={row.id} className="border-b border-border/60 align-top">
                         <td className="py-3 pr-4 font-mono">{formatPhone(row.phone_number)}</td>
+                        <td className="py-3 pr-4 text-xs">
+                          {(() => {
+                            const state = getStateForNumber(row.phone_number);
+                            const info = STATE_AREA_CODES[state];
+                            return <span>{info?.emoji || "📍"} {state}</span>;
+                          })()}
+                        </td>
                         <td className="py-3 pr-4">{row.friendly_name || "—"}</td>
                         <td className="py-3 pr-4">{BUSINESSES.find((item) => item.key === row.business)?.label || row.business || "Unassigned"}</td>
                         <td className="py-3 pr-4">{row.assigned_agent_name || "Not assigned"}</td>
@@ -389,7 +533,7 @@ export default function PhoneProvisioningPage() {
                       </tr>
                       {editingNumberId === row.id ? (
                         <tr key={`${row.id}-editor`} className="border-b border-border/60 bg-muted/20">
-                          <td colSpan={5} className="py-4">
+                          <td colSpan={6} className="py-4">
                             <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] items-end">
                               <div>
                                 <label className="text-xs text-muted-foreground">Business</label>
