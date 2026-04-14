@@ -101,6 +101,9 @@ export default function PhoneProvisioningPage() {
   const [purchaseProgress, setPurchaseProgress] = useState<string[]>([]);
   const [purchaseComplete, setPurchaseComplete] = useState(false);
 
+  const [filterMode, setFilterMode] = useState<FilterMode>("state");
+  const [filterValue, setFilterValue] = useState("");
+
   const { data: existingNumbers = [], isLoading: numbersLoading, refetch: refetchNumbers } = useQuery({
     queryKey: ["dc-phone-numbers"],
     queryFn: async () => {
@@ -124,6 +127,37 @@ export default function PhoneProvisioningPage() {
       return data || [];
     },
   });
+
+  const stateGroups = useMemo(() => {
+    const groups: Record<string, number> = {};
+    existingNumbers.forEach((n) => {
+      const state = getStateForNumber(n.phone_number);
+      groups[state] = (groups[state] || 0) + 1;
+    });
+    return groups;
+  }, [existingNumbers]);
+
+  const businessGroups = useMemo(() => {
+    const groups: Record<string, number> = {};
+    existingNumbers.forEach((n) => {
+      const biz = n.business || "unassigned";
+      groups[biz] = (groups[biz] || 0) + 1;
+    });
+    return groups;
+  }, [existingNumbers]);
+
+  const filteredNumbers = useMemo(() => {
+    if (filterMode === "all" || !filterValue) return existingNumbers;
+    return existingNumbers.filter((n) => {
+      if (filterMode === "state") return getStateForNumber(n.phone_number) === filterValue;
+      if (filterMode === "business") return (n.business || "unassigned") === filterValue;
+      if (filterMode === "agent") {
+        if (filterValue === "unassigned") return !n.assigned_agent_id;
+        return n.assigned_agent_name?.toLowerCase().includes(filterValue.toLowerCase());
+      }
+      return true;
+    });
+  }, [existingNumbers, filterMode, filterValue]);
 
   const filteredAssignAgents = useMemo(
     () => agents.filter((agent: any) => !assignBusiness || agent.business === assignBusiness),
