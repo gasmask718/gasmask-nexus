@@ -500,6 +500,7 @@ export default function PhoneProvisioningPage() {
                 <thead>
                   <tr className="border-b border-border text-left">
                     <th className="pb-3 pr-4">Number</th>
+                    <th className="pb-3 pr-4">State</th>
                     <th className="pb-3 pr-4">Label</th>
                     <th className="pb-3 pr-4">Business</th>
                     <th className="pb-3 pr-4">Agent</th>
@@ -507,10 +508,17 @@ export default function PhoneProvisioningPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {existingNumbers.map((row) => (
+                  {filteredNumbers.map((row) => (
                     <>
                       <tr key={row.id} className="border-b border-border/60 align-top">
                         <td className="py-3 pr-4 font-mono">{formatPhone(row.phone_number)}</td>
+                        <td className="py-3 pr-4 text-xs">
+                          {(() => {
+                            const state = getStateForNumber(row.phone_number);
+                            const info = STATE_AREA_CODES[state];
+                            return <span>{info?.emoji || "📍"} {state}</span>;
+                          })()}
+                        </td>
                         <td className="py-3 pr-4">{row.friendly_name || "—"}</td>
                         <td className="py-3 pr-4">{BUSINESSES.find((item) => item.key === row.business)?.label || row.business || "Unassigned"}</td>
                         <td className="py-3 pr-4">{row.assigned_agent_name || "Not assigned"}</td>
