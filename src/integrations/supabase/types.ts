@@ -38486,6 +38486,87 @@ export type Database = {
         }
         Relationships: []
       }
+      dynasty_ai_calls: {
+        Row: {
+          agent_id: string
+          agent_name: string | null
+          assigned_at: string | null
+          assigned_closer_id: string | null
+          business_unit: string
+          call_ended_at: string | null
+          call_id: string
+          call_started_at: string | null
+          company_name: string | null
+          contact_name: string | null
+          cost_cents: number | null
+          created_at: string | null
+          direction: string | null
+          duration_seconds: number | null
+          estimated_deal_value_cents: number | null
+          from_number: string | null
+          id: string
+          lead_quality: string | null
+          next_action: string | null
+          outcome: string | null
+          recording_url: string | null
+          to_number: string | null
+          transcript: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          agent_id: string
+          agent_name?: string | null
+          assigned_at?: string | null
+          assigned_closer_id?: string | null
+          business_unit: string
+          call_ended_at?: string | null
+          call_id: string
+          call_started_at?: string | null
+          company_name?: string | null
+          contact_name?: string | null
+          cost_cents?: number | null
+          created_at?: string | null
+          direction?: string | null
+          duration_seconds?: number | null
+          estimated_deal_value_cents?: number | null
+          from_number?: string | null
+          id?: string
+          lead_quality?: string | null
+          next_action?: string | null
+          outcome?: string | null
+          recording_url?: string | null
+          to_number?: string | null
+          transcript?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          agent_id?: string
+          agent_name?: string | null
+          assigned_at?: string | null
+          assigned_closer_id?: string | null
+          business_unit?: string
+          call_ended_at?: string | null
+          call_id?: string
+          call_started_at?: string | null
+          company_name?: string | null
+          contact_name?: string | null
+          cost_cents?: number | null
+          created_at?: string | null
+          direction?: string | null
+          duration_seconds?: number | null
+          estimated_deal_value_cents?: number | null
+          from_number?: string | null
+          id?: string
+          lead_quality?: string | null
+          next_action?: string | null
+          outcome?: string | null
+          recording_url?: string | null
+          to_number?: string | null
+          transcript?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       dynasty_brand_applications: {
         Row: {
           brand_name: string
@@ -38659,6 +38740,224 @@ export type Database = {
           status?: string
           subscription_tier?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      dynasty_call_analysis: {
+        Row: {
+          analysis_cost_cents: number | null
+          analysis_version: string | null
+          analyzed_at: string | null
+          best_moment: string | null
+          call_id: string | null
+          callback_timing: string | null
+          claude_model: string | null
+          closing_score: number | null
+          customer_sentiment: string | null
+          energy_score: number | null
+          id: string
+          key_moments: Json | null
+          missed_opportunities: string[] | null
+          objection_handling_grade: string | null
+          objection_handling_notes: string | null
+          objection_handling_score: number | null
+          objections_raised: string[] | null
+          overall_score: number | null
+          qualification_score: number | null
+          rapport_score: number | null
+          recommended_followup: string | null
+          rep_sentiment: string | null
+          script_adherence_percentage: number | null
+          specific_coaching: string | null
+          suggested_talking_points: string[] | null
+          talk_to_listen_ratio: number | null
+          what_to_improve: string[] | null
+          what_went_well: string[] | null
+          worst_moment: string | null
+        }
+        Insert: {
+          analysis_cost_cents?: number | null
+          analysis_version?: string | null
+          analyzed_at?: string | null
+          best_moment?: string | null
+          call_id?: string | null
+          callback_timing?: string | null
+          claude_model?: string | null
+          closing_score?: number | null
+          customer_sentiment?: string | null
+          energy_score?: number | null
+          id?: string
+          key_moments?: Json | null
+          missed_opportunities?: string[] | null
+          objection_handling_grade?: string | null
+          objection_handling_notes?: string | null
+          objection_handling_score?: number | null
+          objections_raised?: string[] | null
+          overall_score?: number | null
+          qualification_score?: number | null
+          rapport_score?: number | null
+          recommended_followup?: string | null
+          rep_sentiment?: string | null
+          script_adherence_percentage?: number | null
+          specific_coaching?: string | null
+          suggested_talking_points?: string[] | null
+          talk_to_listen_ratio?: number | null
+          what_to_improve?: string[] | null
+          what_went_well?: string[] | null
+          worst_moment?: string | null
+        }
+        Update: {
+          analysis_cost_cents?: number | null
+          analysis_version?: string | null
+          analyzed_at?: string | null
+          best_moment?: string | null
+          call_id?: string | null
+          callback_timing?: string | null
+          claude_model?: string | null
+          closing_score?: number | null
+          customer_sentiment?: string | null
+          energy_score?: number | null
+          id?: string
+          key_moments?: Json | null
+          missed_opportunities?: string[] | null
+          objection_handling_grade?: string | null
+          objection_handling_notes?: string | null
+          objection_handling_score?: number | null
+          objections_raised?: string[] | null
+          overall_score?: number | null
+          qualification_score?: number | null
+          rapport_score?: number | null
+          recommended_followup?: string | null
+          rep_sentiment?: string | null
+          script_adherence_percentage?: number | null
+          specific_coaching?: string | null
+          suggested_talking_points?: string[] | null
+          talk_to_listen_ratio?: number | null
+          what_to_improve?: string[] | null
+          what_went_well?: string[] | null
+          worst_moment?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dynasty_call_analysis_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: true
+            referencedRelation: "dynasty_ai_calls"
+            referencedColumns: ["call_id"]
+          },
+        ]
+      }
+      dynasty_call_campaigns: {
+        Row: {
+          agent_id: string
+          business_unit: string
+          callbacks_scheduled: number | null
+          calls_made: number | null
+          campaign_name: string
+          completed_at: string | null
+          cost_per_qualified_lead_cents: number | null
+          created_at: string | null
+          id: string
+          lead_source: string | null
+          leads_remaining: number | null
+          qualified_leads: number | null
+          started_at: string | null
+          status: string | null
+          total_cost_cents: number | null
+          total_leads: number | null
+        }
+        Insert: {
+          agent_id: string
+          business_unit: string
+          callbacks_scheduled?: number | null
+          calls_made?: number | null
+          campaign_name: string
+          completed_at?: string | null
+          cost_per_qualified_lead_cents?: number | null
+          created_at?: string | null
+          id?: string
+          lead_source?: string | null
+          leads_remaining?: number | null
+          qualified_leads?: number | null
+          started_at?: string | null
+          status?: string | null
+          total_cost_cents?: number | null
+          total_leads?: number | null
+        }
+        Update: {
+          agent_id?: string
+          business_unit?: string
+          callbacks_scheduled?: number | null
+          calls_made?: number | null
+          campaign_name?: string
+          completed_at?: string | null
+          cost_per_qualified_lead_cents?: number | null
+          created_at?: string | null
+          id?: string
+          lead_source?: string | null
+          leads_remaining?: number | null
+          qualified_leads?: number | null
+          started_at?: string | null
+          status?: string | null
+          total_cost_cents?: number | null
+          total_leads?: number | null
+        }
+        Relationships: []
+      }
+      dynasty_call_performers: {
+        Row: {
+          average_call_score: number | null
+          business_units: string[] | null
+          close_rate: number | null
+          created_at: string | null
+          full_name: string
+          hired_date: string | null
+          id: string
+          is_active: boolean | null
+          pending_commissions_cents: number | null
+          qualification_rate: number | null
+          role: string
+          total_calls: number | null
+          total_commissions_cents: number | null
+          total_talk_time_seconds: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          average_call_score?: number | null
+          business_units?: string[] | null
+          close_rate?: number | null
+          created_at?: string | null
+          full_name: string
+          hired_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          pending_commissions_cents?: number | null
+          qualification_rate?: number | null
+          role: string
+          total_calls?: number | null
+          total_commissions_cents?: number | null
+          total_talk_time_seconds?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          average_call_score?: number | null
+          business_units?: string[] | null
+          close_rate?: number | null
+          created_at?: string | null
+          full_name?: string
+          hired_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          pending_commissions_cents?: number | null
+          qualification_rate?: number | null
+          role?: string
+          total_calls?: number | null
+          total_commissions_cents?: number | null
+          total_talk_time_seconds?: number | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -39024,6 +39323,144 @@ export type Database = {
           start_date?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      dynasty_lead_pipeline: {
+        Row: {
+          actual_price_cents: number | null
+          assigned_at: string | null
+          assigned_closer_id: string | null
+          budget_range: string | null
+          business_unit: string
+          call_id: string | null
+          company_name: string | null
+          contact_name: string | null
+          created_at: string | null
+          decision_maker: boolean | null
+          email: string | null
+          id: string
+          last_contact_at: string | null
+          lost_at: string | null
+          lost_reason: string | null
+          next_followup_at: string | null
+          pain_points: string[] | null
+          phone_number: string | null
+          quoted_price_cents: number | null
+          stage: string | null
+          timeline: string | null
+          updated_at: string | null
+          won_at: string | null
+        }
+        Insert: {
+          actual_price_cents?: number | null
+          assigned_at?: string | null
+          assigned_closer_id?: string | null
+          budget_range?: string | null
+          business_unit: string
+          call_id?: string | null
+          company_name?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          decision_maker?: boolean | null
+          email?: string | null
+          id?: string
+          last_contact_at?: string | null
+          lost_at?: string | null
+          lost_reason?: string | null
+          next_followup_at?: string | null
+          pain_points?: string[] | null
+          phone_number?: string | null
+          quoted_price_cents?: number | null
+          stage?: string | null
+          timeline?: string | null
+          updated_at?: string | null
+          won_at?: string | null
+        }
+        Update: {
+          actual_price_cents?: number | null
+          assigned_at?: string | null
+          assigned_closer_id?: string | null
+          budget_range?: string | null
+          business_unit?: string
+          call_id?: string | null
+          company_name?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          decision_maker?: boolean | null
+          email?: string | null
+          id?: string
+          last_contact_at?: string | null
+          lost_at?: string | null
+          lost_reason?: string | null
+          next_followup_at?: string | null
+          pain_points?: string[] | null
+          phone_number?: string | null
+          quoted_price_cents?: number | null
+          stage?: string | null
+          timeline?: string | null
+          updated_at?: string | null
+          won_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dynasty_lead_pipeline_assigned_closer_id_fkey"
+            columns: ["assigned_closer_id"]
+            isOneToOne: false
+            referencedRelation: "dynasty_call_performers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dynasty_lead_pipeline_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "dynasty_ai_calls"
+            referencedColumns: ["call_id"]
+          },
+        ]
+      }
+      dynasty_objection_library: {
+        Row: {
+          business_unit: string
+          first_seen_at: string | null
+          id: string
+          last_seen_at: string | null
+          objection_category: string | null
+          objection_text: string
+          recommended_response: string | null
+          success_rate: number | null
+          successful_responses: string[] | null
+          times_encountered: number | null
+          times_overcome: number | null
+          unsuccessful_responses: string[] | null
+        }
+        Insert: {
+          business_unit: string
+          first_seen_at?: string | null
+          id?: string
+          last_seen_at?: string | null
+          objection_category?: string | null
+          objection_text: string
+          recommended_response?: string | null
+          success_rate?: number | null
+          successful_responses?: string[] | null
+          times_encountered?: number | null
+          times_overcome?: number | null
+          unsuccessful_responses?: string[] | null
+        }
+        Update: {
+          business_unit?: string
+          first_seen_at?: string | null
+          id?: string
+          last_seen_at?: string | null
+          objection_category?: string | null
+          objection_text?: string
+          recommended_response?: string | null
+          success_rate?: number | null
+          successful_responses?: string[] | null
+          times_encountered?: number | null
+          times_overcome?: number | null
+          unsuccessful_responses?: string[] | null
         }
         Relationships: []
       }
