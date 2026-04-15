@@ -178,12 +178,25 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
       setCallLogId(data?.callLogId || null);
 
       // Step 2: Initiate the call from the browser using Twilio Voice SDK
-      // This calls our TwiML App which returns <Dial><Number>phone</Number></Dial>
-      const call = await voice.makeCall(phone, { Record: "true" });
+      // Pass callLogId so TwiML endpoint can track it
+      const call = await voice.makeCall(phone, { 
+        Record: "true",
+        callLogId: data?.callLogId || "",
+      });
 
       if (call) {
-        setCallSid(call.parameters?.CallSid || null);
+        const sid = call.parameters?.CallSid || null;
+        setCallSid(sid);
         setCallStatus('ringing');
+        
+        // Save call_sid to DB immediately
+        if (sid && data?.callLogId) {
+          (supabase as any).from('va_call_logs')
+            .update({ call_sid: sid })
+            .eq('id', data.callLogId)
+            .then(() => {});
+        }
+        
         // Set global VA call metadata so the widget works across routes
         setVACallMetadata({
           isVACall: true,
