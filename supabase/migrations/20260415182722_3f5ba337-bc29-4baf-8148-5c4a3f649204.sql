@@ -1,0 +1,1 @@
+ALTER TABLE public.va_call_logs ADD COLUMN IF NOT EXISTS recording_sid text;
