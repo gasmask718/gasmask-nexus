@@ -24,9 +24,13 @@ serve(async (req) => {
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Dial callerId="${callerIdParam}" record="record-from-answer-dual" timeout="20"
-    action="${SUPABASE_URL}/functions/v1/va-dialer-status?callLogId=${callLogId}&event=dial-complete"
+    recordingStatusCallback="${SUPABASE_URL}/functions/v1/brandaro-call-status?callLogId=${callLogId}&event=recording"
+    recordingStatusCallbackMethod="POST"
+    action="${SUPABASE_URL}/functions/v1/brandaro-call-status?callLogId=${callLogId}&event=dial-complete"
     method="POST">
-    <Number>${leadPhoneParam}</Number>
+    <Number statusCallback="${SUPABASE_URL}/functions/v1/brandaro-call-status?callLogId=${callLogId}&event=number-status"
+      statusCallbackEvent="initiated ringing answered completed"
+      statusCallbackMethod="POST">${leadPhoneParam}</Number>
   </Dial>
 </Response>`;
 
