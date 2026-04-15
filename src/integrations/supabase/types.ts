@@ -98018,6 +98018,7 @@ export type Database = {
           excitement_level: string | null
           id: string
           lead_id: string | null
+          recording_sid: string | null
           recording_url: string | null
           transcript: string | null
           trend_analysis: Json | null
@@ -98038,6 +98039,7 @@ export type Database = {
           excitement_level?: string | null
           id?: string
           lead_id?: string | null
+          recording_sid?: string | null
           recording_url?: string | null
           transcript?: string | null
           trend_analysis?: Json | null
@@ -98058,6 +98060,7 @@ export type Database = {
           excitement_level?: string | null
           id?: string
           lead_id?: string | null
+          recording_sid?: string | null
           recording_url?: string | null
           transcript?: string | null
           trend_analysis?: Json | null
