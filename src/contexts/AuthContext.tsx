@@ -118,8 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .then(({ data: profile }) => {
             if (!isMounted) return;
             if (profile) setUserRole(profile.role);
-          })
-          .catch(() => {});
+          });
       }, 0);
     };
 
