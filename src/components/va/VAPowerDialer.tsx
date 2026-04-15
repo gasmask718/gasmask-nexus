@@ -1,24 +1,23 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useVASession } from '@/contexts/VASessionContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useVoiceDevice } from '@/contexts/VoiceDeviceProvider';
 import { useCall } from '@/components/communication/CallProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  Phone, PhoneOff, Mic, MicOff, Pause, Play, X, FileText,
-  Send, Flame, Sun, Snowflake, SkipForward, Voicemail,
-  MessageSquare, Target, PhoneCall, Wifi, WifiOff,
+  Phone, PhoneOff, Mic, MicOff, Pause, Play, X,
+  SkipForward, PhoneCall, Wifi, WifiOff, Target, Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { VAInvoiceModal } from './VAInvoiceModal';
 import { VACoachingReport } from './VACoachingReport';
+import { VAInCallModal } from './VAInCallModal';
 import { useQuery } from '@tanstack/react-query';
+import { Device, Call } from '@twilio/voice-sdk';
 
 interface Lead {
   id: string;
@@ -39,8 +38,13 @@ interface VAPowerDialerProps {
 export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
   const { t, twilioNumber } = useVASession();
   const { user } = useAuth();
-  const voice = useVoiceDevice();
-  const { setVACallMetadata, activeCall: globalActiveCall, endActiveCall } = useCall();
+  const { setVACallMetadata, endActiveCall } = useCall();
+
+  // Brandaro-specific Twilio Device
+  const brandaroDeviceRef = useRef<Device | null>(null);
+  const brandaroCallRef = useRef<Call | null>(null);
+  const [brandaroDeviceState, setBrandaroDeviceState] = useState<'idle' | 'fetching' | 'ready' | 'error'>('idle');
+  const [brandaroMuted, setBrandaroMuted] = useState(false);
 
   const [isDialing, setIsDialing] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -49,37 +53,72 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
   const [seconds, setSeconds] = useState(0);
   const [callLogId, setCallLogId] = useState<string | null>(null);
   const [callSid, setCallSid] = useState<string | null>(null);
-  const [excitementLevel, setExcitementLevel] = useState<ExcitementLevel | null>(null);
-  const [disposition, setDisposition] = useState<Disposition | null>(null);
-  const [notes, setNotes] = useState('');
-  const [callbackDate, setCallbackDate] = useState('');
   const [showCoaching, setShowCoaching] = useState(false);
   const [coachingData, setCoachingData] = useState<any>(null);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
-  const [needsDisposition, setNeedsDisposition] = useState(false);
   const [customNumber, setCustomNumber] = useState('');
   const [customName, setCustomName] = useState('');
   const [isCustomCall, setIsCustomCall] = useState(false);
+  const [callModalOpen, setCallModalOpen] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const notesTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const initRef = useRef(false);
 
   const currentLead = leads[currentIndex] || null;
   const nextLead = leads[currentIndex + 1] || null;
 
-  // Sync Twilio Device call state → local state
-  useEffect(() => {
-    const vs = voice.callStatus;
-    if (vs === 'ringing' && (callStatus === 'dialing' || callStatus === 'ringing')) {
-      setCallStatus('ringing');
-    } else if (vs === 'in-progress' && (callStatus === 'dialing' || callStatus === 'ringing')) {
-      setCallStatus('connected');
-    } else if ((vs === 'completed' || vs === 'cancelled' || vs === 'failed') && callStatus === 'connected') {
-      if (timerRef.current) clearInterval(timerRef.current);
-      setCallStatus('ended');
-      setNeedsDisposition(true);
+  // ── Initialize Brandaro Twilio Device ──
+  const initBrandaroDevice = useCallback(async () => {
+    if (initRef.current || brandaroDeviceRef.current) return;
+    initRef.current = true;
+    setBrandaroDeviceState('fetching');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('brandaro-voice-token');
+      if (error || !data?.token) {
+        console.warn('[Brandaro] Token fetch failed:', error?.message || data?.error);
+        setBrandaroDeviceState('error');
+        initRef.current = false;
+        return;
+      }
+
+      const device = new Device(data.token, {
+        codecPreferences: [Call.Codec.Opus, Call.Codec.PCMU],
+        logLevel: 1,
+      });
+
+      device.on('registered', () => {
+        setBrandaroDeviceState('ready');
+        console.log('[Brandaro] Device registered');
+      });
+      device.on('error', (err) => {
+        console.warn('[Brandaro] Device error:', err.message);
+        setBrandaroDeviceState('error');
+      });
+      device.on('tokenWillExpire', async () => {
+        const { data: refreshData } = await supabase.functions.invoke('brandaro-voice-token');
+        if (refreshData?.token) device.updateToken(refreshData.token);
+      });
+
+      await device.register();
+      brandaroDeviceRef.current = device;
+    } catch (err) {
+      console.error('[Brandaro] Init error:', err);
+      setBrandaroDeviceState('error');
+    } finally {
+      initRef.current = false;
     }
-  }, [voice.callStatus, callStatus]);
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (brandaroDeviceRef.current) {
+        brandaroDeviceRef.current.destroy();
+        brandaroDeviceRef.current = null;
+      }
+    };
+  }, []);
 
   // Daily goals
   const { data: goals } = useQuery({
@@ -122,45 +161,34 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [callStatus]);
 
-  // Auto-save notes
-  useEffect(() => {
-    if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
-    if (notes && callLogId) {
-      notesTimerRef.current = setTimeout(async () => {
-        await (supabase as any).from('va_call_logs').update({ va_notes: notes }).eq('id', callLogId);
-      }, 10000);
-    }
-    return () => { if (notesTimerRef.current) clearTimeout(notesTimerRef.current); };
-  }, [notes, callLogId]);
-
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
     return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
-  /**
-   * Dial a phone number using Browser Twilio SDK (primary) with server-side logging.
-   * Flow: 1) Server: DNC check + create call log  2) Browser: voice.makeCall(phone) → TwiML App → PSTN
-   */
+  // ── Dial using Brandaro Device ──
   const dialNumber = useCallback(async (phone: string, leadId: string | null, leadName: string) => {
-    if (!twilioNumber || !user) return;
+    if (!user) return;
+
+    // Init device if needed
+    if (!brandaroDeviceRef.current) {
+      await initBrandaroDevice();
+      // Wait a moment for registration
+      await new Promise(r => setTimeout(r, 1500));
+    }
 
     setCallStatus('dialing');
     setSeconds(0);
-    setExcitementLevel(null);
-    setDisposition(null);
-    setNotes('');
-    setCallbackDate('');
-    setNeedsDisposition(false);
-    setCoachingData(null);
+    setBrandaroMuted(false);
+    setCallModalOpen(true);
 
     try {
       // Step 1: Server-side DNC check + call log creation
       const { data, error } = await supabase.functions.invoke('va-power-dialer', {
         body: {
           vaId: user.id,
-          twilioNumber,
+          twilioNumber: '+19292623850',
           leadId,
           leadPhone: phone,
           leadName,
@@ -172,59 +200,69 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
 
       if (data?.skipped) {
         toast.info(`${leadName} skipped (DNC)`);
+        setCallModalOpen(false);
         return 'skipped';
       }
 
       setCallLogId(data?.callLogId || null);
 
-      // Step 2: Initiate the call from the browser using Twilio Voice SDK
-      // Pass callLogId so TwiML endpoint can track it
-      const call = await voice.makeCall(phone, { 
-        Record: "true",
-        callLogId: data?.callLogId || "",
-      });
+      // Step 2: Dial using Brandaro Twilio Device
+      if (brandaroDeviceRef.current) {
+        const call = await brandaroDeviceRef.current.connect({
+          params: {
+            To: phone,
+            callLogId: data?.callLogId || '',
+          },
+        });
 
-      if (call) {
+        brandaroCallRef.current = call;
         const sid = call.parameters?.CallSid || null;
         setCallSid(sid);
         setCallStatus('ringing');
-        
-        // Save call_sid to DB immediately
+
+        // Save call_sid immediately
         if (sid && data?.callLogId) {
           (supabase as any).from('va_call_logs')
             .update({ call_sid: sid })
             .eq('id', data.callLogId)
             .then(() => {});
         }
-        
-        // Set global VA call metadata so the widget works across routes
+
+        // Set global metadata
         setVACallMetadata({
           isVACall: true,
-          leadId: leadId,
-          leadName: leadName,
-          twilioNumber,
+          leadId,
+          leadName,
+          twilioNumber: '+19292623850',
           callLogId: data?.callLogId || null,
           direction: 'outbound',
         });
+
+        // Listen for call events
+        call.on('accept', () => setCallStatus('connected'));
+        call.on('ringing', () => setCallStatus('ringing'));
+        call.on('disconnect', () => {
+          if (timerRef.current) clearInterval(timerRef.current);
+          setCallStatus('ended');
+          brandaroCallRef.current = null;
+          // Trigger recording sync after a delay
+          syncRecordingForCall(sid);
+        });
+        call.on('cancel', () => {
+          setCallStatus('ended');
+          brandaroCallRef.current = null;
+        });
+        call.on('error', (err) => {
+          console.error('[Brandaro] Call error:', err);
+          setCallStatus('ended');
+          brandaroCallRef.current = null;
+        });
       } else {
-        // Voice SDK not available — call was initiated server-side as fallback
-        if (data?.callSid) {
-          setCallSid(data.callSid);
-          setCallStatus('ringing');
-          setVACallMetadata({
-            isVACall: true,
-            leadId: leadId,
-            leadName: leadName,
-            twilioNumber,
-            callLogId: data?.callLogId || null,
-            direction: 'outbound',
-          });
-          setTimeout(() => setCallStatus(prev => prev === 'ringing' ? 'connected' : prev), 4000);
-        } else {
-          toast.error('Could not place call — check microphone permissions');
-          setCallStatus('idle');
-          return 'failed';
-        }
+        toast.error('Brandaro voice device not ready. Retrying...');
+        await initBrandaroDevice();
+        setCallStatus('idle');
+        setCallModalOpen(false);
+        return 'failed';
       }
 
       refetchStats();
@@ -232,9 +270,26 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
     } catch (err: any) {
       toast.error('Call failed: ' + (err.message || 'Unknown error'));
       setCallStatus('idle');
+      setCallModalOpen(false);
       return 'failed';
     }
-  }, [twilioNumber, user, voice, refetchStats]);
+  }, [user, initBrandaroDevice, refetchStats, setVACallMetadata]);
+
+  // Sync recording after call ends
+  const syncRecordingForCall = useCallback(async (sid: string | null) => {
+    if (!sid) return;
+    // Wait for Twilio to process the recording (10 seconds)
+    setTimeout(async () => {
+      try {
+        await supabase.functions.invoke('brandaro-sync-recordings', {
+          body: { call_sid: sid },
+        });
+        console.log('[Brandaro] Recording sync triggered for', sid);
+      } catch (err) {
+        console.warn('[Brandaro] Recording sync failed:', err);
+      }
+    }, 10000);
+  }, []);
 
   const dialCurrent = useCallback(async () => {
     if (!currentLead) return;
@@ -244,27 +299,44 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
     }
   }, [currentLead, dialNumber]);
 
-  const endCall = async () => {
+  const endCall = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    setCallStatus('ended');
-    setNeedsDisposition(true);
-
-    // Hang up via global provider (disconnects browser audio + clears global state)
-    endActiveCall();
-
-    // Update call log with duration
-    if (callLogId) {
-      await (supabase as any).from('va_call_logs')
-        .update({ call_status: 'completed', duration_seconds: seconds })
-        .eq('id', callLogId);
+    
+    // Hang up Brandaro call
+    if (brandaroCallRef.current) {
+      brandaroCallRef.current.disconnect();
+      brandaroCallRef.current = null;
     }
+
+    setCallStatus('ended');
+
+    // Update call log
+    if (callLogId) {
+      (supabase as any).from('va_call_logs')
+        .update({ call_status: 'completed', duration_seconds: seconds })
+        .eq('id', callLogId)
+        .then(() => {});
+    }
+
+    // Trigger recording sync
+    syncRecordingForCall(callSid);
     refetchStats();
   };
 
-  const submitDisposition = async (disp: Disposition) => {
-    setDisposition(disp);
-    setNeedsDisposition(false);
+  const toggleMute = () => {
+    if (brandaroCallRef.current) {
+      const newMuted = !brandaroMuted;
+      brandaroCallRef.current.mute(newMuted);
+      setBrandaroMuted(newMuted);
+    }
+  };
 
+  const handleDisposition = async (
+    disp: Disposition,
+    excitement: ExcitementLevel | null,
+    notes: string,
+    callbackDate: string,
+  ) => {
     if (callLogId && user) {
       await supabase.functions.invoke('va-power-dialer', {
         body: {
@@ -272,7 +344,7 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
           action: 'disposition',
           callLogId,
           disposition: disp,
-          excitementLevel,
+          excitementLevel: excitement,
           notes,
           callbackAt: disp === 'callback' ? callbackDate : null,
           leadId: isCustomCall ? null : currentLead?.id,
@@ -281,12 +353,13 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
     }
 
     refetchStats();
+    setCallModalOpen(false);
+    setCallStatus('idle');
 
     if (isCustomCall) {
       setIsCustomCall(false);
-      setCallStatus('idle');
     } else if (isDialing && !isPaused) {
-      setTimeout(() => moveToNext(), 1500);
+      setTimeout(() => moveToNext(), 1000);
     }
   };
 
@@ -304,15 +377,31 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
     }
   };
 
-  const startSession = () => {
-    // Request mic permission before starting
-    if (voice.micPermission !== 'granted') {
-      voice.requestMicPermission();
+  const startSession = async () => {
+    // Init Brandaro device first
+    if (!brandaroDeviceRef.current) {
+      toast.info('Initializing Brandaro softphone...');
+      await initBrandaroDevice();
+      await new Promise(r => setTimeout(r, 2000));
     }
+
+    // Request mic
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+    } catch {
+      toast.error('Microphone permission required');
+      return;
+    }
+
     setIsDialing(true);
     setIsPaused(false);
     setCurrentIndex(0);
-    dialCurrent();
+    // dialCurrent will be called via the effect or directly
+    if (leads.length > 0) {
+      const result = await dialNumber(leads[0].phone, leads[0].id, leads[0].business_name);
+      if (result === 'skipped') moveToNext();
+    }
   };
 
   const pauseSession = () => setIsPaused(true);
@@ -328,56 +417,45 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
       toast.error('Please enter a valid phone number');
       return;
     }
-    // Ensure E.164 format
     const e164 = cleanNumber.startsWith('+') ? cleanNumber : `+1${cleanNumber}`;
-
     setIsCustomCall(true);
     const result = await dialNumber(e164, null, customName || 'Manual Call');
-    if (result === 'failed') {
-      setIsCustomCall(false);
-    }
+    if (result === 'failed') setIsCustomCall(false);
   }, [customNumber, customName, dialNumber]);
-
-  const handleSendSMS = async () => {
-    if (!currentLead || !user) return;
-    toast.success('Follow-up SMS sent!');
-  };
 
   const callsDialed = todayStats?.calls_dialed || 0;
   const callsTarget = goals?.calls_target || 100;
   const dialProgress = Math.min((callsDialed / callsTarget) * 100, 100);
-  const effectiveMuted = voice.activeCall ? voice.isMuted : false;
+
+  const activeLeadName = isCustomCall ? (customName || 'Manual Call') : (currentLead?.business_name || 'Unknown');
+  const activeLeadPhone = isCustomCall ? customNumber : (currentLead?.phone || '');
 
   return (
     <div className="space-y-4">
-      {/* Voice Device Status */}
+      {/* Brandaro Device Status */}
       <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700">
-        {voice.deviceState === 'registered' ? (
+        {brandaroDeviceState === 'ready' ? (
           <>
             <Wifi className="h-3.5 w-3.5 text-emerald-400" />
-            <span className="text-xs text-emerald-400">Softphone Ready</span>
+            <span className="text-xs text-emerald-400">Brandaro Softphone Ready</span>
           </>
-        ) : voice.deviceState === 'not_configured' ? (
+        ) : brandaroDeviceState === 'fetching' ? (
           <>
-            <WifiOff className="h-3.5 w-3.5 text-amber-400" />
-            <span className="text-xs text-amber-400">Configuring Twilio...</span>
+            <Wifi className="h-3.5 w-3.5 text-slate-400 animate-pulse" />
+            <span className="text-xs text-slate-400">Connecting to Brandaro...</span>
           </>
-        ) : voice.deviceState === 'error' ? (
+        ) : brandaroDeviceState === 'error' ? (
           <>
             <WifiOff className="h-3.5 w-3.5 text-red-400" />
             <span className="text-xs text-red-400">Connection Error</span>
-            <Button size="sm" variant="ghost" className="text-xs h-6 px-2" onClick={() => voice.reinitialize()}>Retry</Button>
+            <Button size="sm" variant="ghost" className="text-xs h-6 px-2" onClick={initBrandaroDevice}>Retry</Button>
           </>
         ) : (
           <>
-            <Wifi className="h-3.5 w-3.5 text-slate-400 animate-pulse" />
-            <span className="text-xs text-slate-400">Connecting...</span>
+            <WifiOff className="h-3.5 w-3.5 text-slate-500" />
+            <span className="text-xs text-slate-500">Not connected</span>
+            <Button size="sm" variant="ghost" className="text-xs h-6 px-2 text-cyan-400" onClick={initBrandaroDevice}>Connect</Button>
           </>
-        )}
-        {voice.micPermission !== 'granted' && (
-          <Button size="sm" variant="ghost" className="text-xs h-6 px-2 text-amber-400" onClick={() => voice.requestMicPermission()}>
-            <Mic className="h-3 w-3 mr-1" /> Allow Mic
-          </Button>
         )}
       </div>
 
@@ -452,160 +530,33 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
         </CardContent>
       </Card>
 
-      {/* Current Lead Card */}
-      {(currentLead || isCustomCall) && (
-        <Card className="bg-slate-800 border-slate-700">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="font-bold text-white text-lg">
-                  {isCustomCall ? (customName || 'Manual Call') : (currentLead?.business_name || 'Unknown')}
-                </h3>
-                <p className="text-sm text-slate-400 font-mono">
-                  {isCustomCall ? customNumber : currentLead?.phone}
-                </p>
-              </div>
-              <Badge className={
-                callStatus === 'dialing' ? 'bg-blue-500/20 text-blue-400' :
-                callStatus === 'ringing' ? 'bg-yellow-500/20 text-yellow-400 animate-pulse' :
-                callStatus === 'connected' ? 'bg-emerald-500/20 text-emerald-400 animate-pulse' :
-                callStatus === 'ended' ? 'bg-red-500/20 text-red-400' :
-                callStatus === 'machine_detected' ? 'bg-purple-500/20 text-purple-400' :
-                'bg-slate-600 text-slate-300'
-              }>
-                {callStatus === 'dialing' ? '📞 Dialing...' :
-                 callStatus === 'ringing' ? '📞 Ringing...' :
-                 callStatus === 'connected' ? '🟢 Connected' :
-                 callStatus === 'ended' ? '🔴 Ended' :
-                 callStatus === 'machine_detected' ? '🤖 Voicemail' :
-                 '⏸ Ready'}
-              </Badge>
+      {/* Current Lead Preview (when not in call) */}
+      {currentLead && callStatus === 'idle' && (
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-white">{currentLead.business_name}</h3>
+              <p className="text-sm text-slate-400 font-mono">{currentLead.phone}</p>
             </div>
+            <Button onClick={dialCurrent} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+              <Phone className="h-4 w-4" /> Call
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
-            {/* Timer */}
-            {callStatus !== 'idle' && (
-              <div className="text-center mb-3">
-                <span className="text-3xl font-mono text-white tabular-nums">{formatTime(seconds)}</span>
-              </div>
-            )}
-
-            {/* Call Action Buttons */}
-            <div className="flex gap-2 justify-center flex-wrap mb-3">
-              {callStatus === 'idle' && !needsDisposition && (
-                <Button onClick={dialCurrent} className="bg-emerald-600 hover:bg-emerald-700 gap-2 px-8">
-                  <Phone className="h-4 w-4" /> Call
-                </Button>
-              )}
-              {callStatus === 'connected' && (
-                <>
-                  <Button size="lg" variant={effectiveMuted ? 'destructive' : 'secondary'} onClick={() => voice.toggleMute()}>
-                    {effectiveMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                  </Button>
-                  <Button size="lg" variant="destructive" onClick={endCall} className="px-8 gap-2">
-                    <PhoneOff className="h-5 w-5" /> End
-                  </Button>
-                </>
-              )}
-              {callStatus === 'machine_detected' && (
-                <div className="flex gap-2">
-                  <Button className="bg-purple-600 hover:bg-purple-700 gap-2" onClick={() => {
-                    toast.success('Voicemail dropped!');
-                    voice.hangUp();
-                    setCallStatus('ended');
-                    setNeedsDisposition(true);
-                  }}>
-                    <Voicemail className="h-4 w-4" /> Drop Voicemail
-                  </Button>
-                  <Button variant="secondary" onClick={() => { voice.hangUp(); moveToNext(); }} className="gap-2">
-                    <SkipForward className="h-4 w-4" /> Skip
-                  </Button>
-                </div>
-              )}
+      {/* Active call indicator (when call is active but modal might be interacted with) */}
+      {callStatus !== 'idle' && !callModalOpen && (
+        <Card className="bg-emerald-900/30 border-emerald-500/30 cursor-pointer" onClick={() => setCallModalOpen(true)}>
+          <CardContent className="p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-sm text-emerald-400 font-medium">
+                {callStatus === 'connected' ? 'Active Call' : callStatus === 'ended' ? 'Call Ended — Disposition Needed' : 'Calling...'}
+              </span>
+              <span className="text-sm text-white font-mono">{formatTime(seconds)}</span>
             </div>
-
-            {/* Excitement Level Buttons */}
-            {(callStatus === 'connected' || callStatus === 'ended') && (
-              <div className="flex gap-2 justify-center mb-3">
-                <Button
-                  size="lg"
-                  className={`gap-2 px-6 ${excitementLevel === 'hot' ? 'bg-red-600 ring-2 ring-red-400' : 'bg-red-600/30 hover:bg-red-600/50 text-red-300'}`}
-                  onClick={() => setExcitementLevel('hot')}
-                >
-                  <Flame className="h-5 w-5" /> HOT
-                </Button>
-                <Button
-                  size="lg"
-                  className={`gap-2 px-6 ${excitementLevel === 'warm' ? 'bg-amber-600 ring-2 ring-amber-400' : 'bg-amber-600/30 hover:bg-amber-600/50 text-amber-300'}`}
-                  onClick={() => setExcitementLevel('warm')}
-                >
-                  <Sun className="h-5 w-5" /> WARM
-                </Button>
-                <Button
-                  size="lg"
-                  className={`gap-2 px-6 ${excitementLevel === 'cold' ? 'bg-blue-600 ring-2 ring-blue-400' : 'bg-blue-600/30 hover:bg-blue-600/50 text-blue-300'}`}
-                  onClick={() => setExcitementLevel('cold')}
-                >
-                  <Snowflake className="h-5 w-5" /> COLD
-                </Button>
-              </div>
-            )}
-
-            {/* Disposition Buttons */}
-            {needsDisposition && (
-              <div className="space-y-2 border-t border-slate-700 pt-3">
-                <p className="text-xs text-slate-400 font-medium text-center">Select disposition before next call:</p>
-                <div className="flex gap-1 flex-wrap justify-center">
-                  {[
-                    { key: 'closed' as Disposition, label: '✅ Closed', cls: 'bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300' },
-                    { key: 'not_interested' as Disposition, label: '❌ Not Interested', cls: 'bg-red-600/30 hover:bg-red-600/50 text-red-300' },
-                    { key: 'callback' as Disposition, label: '📅 Call Back', cls: 'bg-orange-600/30 hover:bg-orange-600/50 text-orange-300' },
-                    { key: 'no_answer' as Disposition, label: '📵 No Answer', cls: 'bg-slate-600/30 hover:bg-slate-600/50 text-slate-300' },
-                    { key: 'voicemail' as Disposition, label: '📧 Left VM', cls: 'bg-purple-600/30 hover:bg-purple-600/50 text-purple-300' },
-                  ].map(d => (
-                    <Button key={d.key} size="sm" className={`text-xs ${d.cls}`} onClick={() => submitDisposition(d.key)}>
-                      {d.label}
-                    </Button>
-                  ))}
-                </div>
-                {disposition === null && (
-                  <div className="mt-2">
-                    <input
-                      type="datetime-local"
-                      value={callbackDate}
-                      onChange={e => setCallbackDate(e.target.value)}
-                      className="bg-slate-700 text-white text-xs rounded px-2 py-1 border border-slate-600 w-full"
-                      placeholder="Callback date/time"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Notes */}
-            {(callStatus === 'connected' || callStatus === 'ended') && (
-              <div className="mt-3">
-                <Textarea
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  placeholder="Call notes (auto-saves)..."
-                  className="bg-slate-700/50 border-slate-600 text-white text-sm resize-none h-20"
-                />
-              </div>
-            )}
-
-            {/* Post-call actions */}
-            {callStatus === 'ended' && (
-              <div className="flex gap-2 justify-center mt-3 pt-3 border-t border-slate-700">
-                <Button size="sm" variant="outline" className="text-emerald-400 border-emerald-500/30 gap-1"
-                  onClick={() => setInvoiceOpen(true)}>
-                  <FileText className="h-3.5 w-3.5" /> Create Invoice
-                </Button>
-                <Button size="sm" variant="outline" className="text-cyan-400 border-cyan-500/30 gap-1"
-                  onClick={handleSendSMS}>
-                  <MessageSquare className="h-3.5 w-3.5" /> Send Follow-Up SMS
-                </Button>
-              </div>
-            )}
+            <span className="text-xs text-slate-400">Click to open</span>
           </CardContent>
         </Card>
       )}
@@ -618,6 +569,42 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
           <p className="text-xs text-slate-400 font-mono">{nextLead.phone}</p>
         </div>
       )}
+
+      {/* In-Call Modal */}
+      <VAInCallModal
+        open={callModalOpen && callStatus !== 'idle'}
+        leadName={activeLeadName}
+        leadPhone={activeLeadPhone}
+        callLogId={callLogId}
+        callStatus={callStatus as any}
+        seconds={seconds}
+        isMuted={brandaroMuted}
+        onToggleMute={toggleMute}
+        onEndCall={endCall}
+        onDropVoicemail={() => {
+          toast.success('Voicemail dropped!');
+          if (brandaroCallRef.current) {
+            brandaroCallRef.current.disconnect();
+            brandaroCallRef.current = null;
+          }
+          setCallStatus('ended');
+        }}
+        onSkip={() => {
+          if (brandaroCallRef.current) {
+            brandaroCallRef.current.disconnect();
+            brandaroCallRef.current = null;
+          }
+          setCallModalOpen(false);
+          moveToNext();
+        }}
+        onDisposition={handleDisposition}
+        onClose={() => {
+          setCallModalOpen(false);
+          setCallStatus('idle');
+        }}
+        onCreateInvoice={() => setInvoiceOpen(true)}
+        onSendSMS={() => toast.success('Follow-up SMS sent!')}
+      />
 
       {/* Coaching Report Modal */}
       {showCoaching && coachingData && (
