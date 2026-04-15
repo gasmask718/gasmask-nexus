@@ -46,6 +46,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let isMounted = true;
 
+    // ⏱️ Timeout fallback — stop loading after 8s even if auth hangs
+    const authTimeout = setTimeout(() => {
+      if (isMounted && loading) {
+        console.warn("[AUTH TIMEOUT] Auth initialization timed out after 8s — showing login page");
+        setLoading(false);
+      }
+    }, 8000);
+
     // Helper to fetch user role
     const fetchUserRole = (userId: string) => {
       setTimeout(() => {
@@ -61,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setUserRole(profile.role);
             }
             setLoading(false);
+            clearTimeout(authTimeout);
           });
       }, 0);
     };
@@ -74,6 +83,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchUserRole(data.session.user.id);
       } else {
         setLoading(false);
+        clearTimeout(authTimeout);
+      }
+    }).catch((err) => {
+      console.error("[AUTH] getSession failed:", err);
+      if (isMounted) {
+        setLoading(false);
+        clearTimeout(authTimeout);
       }
     });
 
