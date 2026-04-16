@@ -218,6 +218,9 @@ serve(async (req) => {
             from_number: fromNumber, to_number: lead.phone_number,
             contact_name: lead.contact_name, company_name: lead.business_name,
             direction: 'outbound', outcome: 'in_progress',
+            source_table: lead.source_table || null,
+            source_lead_id: lead.source_lead_id || null,
+            call_type: 'ai_outbound',
           });
 
           results.push({ id: lead.id, call_id: blandData.call_id, status: 'dispatched' });
