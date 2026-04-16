@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Upload, Play, Pause, Phone, Clock, CheckCircle, XCircle, AlertCircle, Loader2, MessageSquare, StopCircle, RotateCw, Trash2, Download, FileText } from 'lucide-react';
+import { Upload, Play, Pause, Phone, Clock, CheckCircle, XCircle, AlertCircle, AlertTriangle, Loader2, MessageSquare, StopCircle, RotateCw, RefreshCw, Trash2, Download, FileText } from 'lucide-react';
 
 interface TranscriptSegment {
   id: string;
