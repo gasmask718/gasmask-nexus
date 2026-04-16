@@ -82,6 +82,25 @@ All colors MUST be HSL.
     --neon-cyan: 0 0 20px hsla(180, 100%, 50%, 0.6);
     --neon-green: 0 0 20px hsla(142, 100%, 50%, 0.6);
     --neon-amber: 0 0 20px hsla(38, 100%, 50%, 0.6);
+
+    /* ═══ Developer Portal Tokens — Terminal-meets-modern-SaaS ═══ */
+    --dev-bg:        228 13% 5%;     /* #0A0B0D */
+    --dev-bg-elev:   223 17% 8%;     /* #111318 */
+    --dev-surface:   220 22% 12%;    /* #161B25 */
+    --dev-border:    220 15% 18%;
+    --dev-text:      220 10% 85%;
+    --dev-text-dim:  220 8% 55%;
+    --dev-accent:    217 91% 60%;    /* #3B82F6 electric blue */
+    --dev-accent-2:  239 84% 67%;    /* #6366F1 indigo */
+    --dev-success:   142 76% 45%;
+    --dev-warning:   38 92% 55%;
+    --dev-danger:    0 84% 60%;
+  }
+}
+
+@layer utilities {
+  .font-mono-dev {
+    font-family: 'JetBrains Mono', 'IBM Plex Mono', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 }
 
