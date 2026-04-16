@@ -2,7 +2,7 @@
  * Developer Portal - DAW-Inspired QA Dashboard
  * Restricted to admin123@gmail.com and dev@gmail.com
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { DevKillSwitch } from './components/DevKillSwitch';
@@ -11,6 +11,7 @@ import { DevAuditLog } from './components/DevAuditLog';
 import { DevSystemMonitor } from './components/DevSystemMonitor';
 import { DevCommandPalette } from './components/DevCommandPalette';
 import { DevRowDrawer } from './components/DevRowDrawer';
+import { DevFunnelSidebar, FunnelGroup } from './components/DevFunnelSidebar';
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -20,16 +21,90 @@ import { Activity, Terminal, Command, Rows3, AlignJustify, X } from 'lucide-reac
 
 const ALLOWED_EMAILS = ['admin123@gmail.com', 'dev@gmail.com'];
 
-const FUNNELS = [
-  { key: 'brandaro', label: 'BRANDARO', table: 'brandaro_qualified_leads' },
-  { key: 'stores', label: 'STORES', table: 'store_master' },
-  { key: 'ambassadors', label: 'AMBASSADORS', table: 'ambassador_leads' },
-  { key: 'solar', label: 'SOLAR', table: 'solar_leads' },
-  { key: 'funding', label: 'FUNDING', table: 'leads_raw' },
-  { key: 'surplus', label: 'SURPLUS', table: 'surplus_funds_leads' },
-  { key: 'brandaro_ads', label: 'AD LEADS', table: 'brandaro_ad_leads' },
-  { key: 'brandaro_clean', label: 'CLEAN LEADS', table: 'brandaro_clean_leads' },
+const FUNNEL_GROUPS: FunnelGroup[] = [
+  {
+    key: 'brandaro',
+    label: 'Brandaro',
+    icon: '🅱️',
+    funnels: [
+      { key: 'brandaro', label: 'Qualified Leads', table: 'brandaro_qualified_leads' },
+      { key: 'brandaro_ads', label: 'Ad Leads', table: 'brandaro_ad_leads' },
+      { key: 'brandaro_clean', label: 'Clean Leads', table: 'brandaro_clean_leads' },
+    ],
+  },
+  {
+    key: 'dynasty_connect',
+    label: 'Dynasty Connect',
+    icon: '📞',
+    funnels: [
+      { key: 'dc_queue', label: 'Call Queue', table: 'dynasty_call_queue' },
+      { key: 'dc_calls', label: 'AI Calls', table: 'dynasty_ai_calls' },
+    ],
+  },
+  {
+    key: 'distribution',
+    label: 'Distribution',
+    icon: '🏪',
+    funnels: [
+      { key: 'stores', label: 'Store Master', table: 'store_master' },
+      { key: 'businesses', label: 'Businesses', table: 'businesses' },
+    ],
+  },
+  {
+    key: 'network',
+    label: 'Network',
+    icon: '🤝',
+    funnels: [
+      { key: 'ambassadors', label: 'Ambassador Leads', table: 'ambassador_leads' },
+      { key: 'ambassador_master', label: 'Ambassadors', table: 'ambassadors' },
+    ],
+  },
+  {
+    key: 'capital',
+    label: 'Capital & Funding',
+    icon: '💰',
+    funnels: [
+      { key: 'funding', label: 'Funding (Leads Raw)', table: 'leads_raw' },
+      { key: 'surplus', label: 'Surplus Funds', table: 'surplus_funds_leads' },
+    ],
+  },
+  {
+    key: 'energy',
+    label: 'Energy',
+    icon: '☀️',
+    funnels: [
+      { key: 'solar', label: 'Solar Leads', table: 'solar_leads' },
+    ],
+  },
+  {
+    key: 'realestate',
+    label: 'Real Estate',
+    icon: '🏠',
+    funnels: [
+      { key: 'acquisitions', label: 'Acquisitions Pipeline', table: 'acquisitions_pipeline' },
+    ],
+  },
+  {
+    key: 'commerce',
+    label: 'Commerce',
+    icon: '🛒',
+    funnels: [
+      { key: 'orders', label: 'Marketplace Orders', table: 'marketplace_orders' },
+    ],
+  },
+  {
+    key: 'system',
+    label: 'System & Audit',
+    icon: '🛡️',
+    funnels: [
+      { key: 'audit', label: 'Admin Audit Log', table: 'admin_audit_log' },
+      { key: 'ai_audit', label: 'AI Audit Events', table: 'ai_audit_events' },
+      { key: 'profiles', label: 'Profiles', table: 'profiles' },
+    ],
+  },
 ];
+
+const ALL_FUNNELS = FUNNEL_GROUPS.flatMap(g => g.funnels);
 
 type Density = 'comfortable' | 'compact';
 
@@ -42,6 +117,7 @@ const DeveloperPortal = () => {
   const [drawerTable, setDrawerTable] = useState('');
   const [drawerFunnelKey, setDrawerFunnelKey] = useState('');
   const [rightPanelTab, setRightPanelTab] = useState<'monitor' | 'audit'>('monitor');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Cmd+K shortcut
   useEffect(() => {
@@ -49,6 +125,11 @@ const DeveloperPortal = () => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setCmdOpen(true);
+      }
+      // Cmd+B to toggle sidebar
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault();
+        setSidebarCollapsed(v => !v);
       }
     };
     window.addEventListener('keydown', handler);
@@ -58,15 +139,16 @@ const DeveloperPortal = () => {
   const toggleFunnel = (key: string) => {
     setActiveFunnels(prev =>
       prev.includes(key)
-        ? prev.length > 1 ? prev.filter(f => f !== key) : prev
+        ? prev.filter(f => f !== key)
         : [...prev, key]
     );
   };
 
+  const soloFunnel = (key: string) => setActiveFunnels([key]);
+  const clearAll = () => setActiveFunnels([]);
+
   const removeFunnel = (key: string) => {
-    if (activeFunnels.length > 1) {
-      setActiveFunnels(prev => prev.filter(f => f !== key));
-    }
+    setActiveFunnels(prev => prev.filter(f => f !== key));
   };
 
   const openDrawer = (row: any, table: string, funnelKey: string) => {
@@ -89,7 +171,7 @@ const DeveloperPortal = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  const activeFunnelConfigs = FUNNELS.filter(f => activeFunnels.includes(f.key));
+  const activeFunnelConfigs = ALL_FUNNELS.filter(f => activeFunnels.includes(f.key));
 
   return (
     <div className="h-screen bg-[#0a0a0f] text-[#c8c8d0] font-mono flex flex-col overflow-hidden">
@@ -101,11 +183,10 @@ const DeveloperPortal = () => {
             Developer Console
           </span>
           <span className="text-[10px] text-[#555] ml-2">
-            v2.1.0 | {user.email}
+            v2.2.0 | {user.email}
           </span>
         </div>
         <div className="flex items-center gap-3">
-          {/* Cmd+K trigger */}
           <button
             onClick={() => setCmdOpen(true)}
             className="flex items-center gap-2 px-3 py-1.5 bg-[#1a1a2e] rounded border border-[#2a2a3e] text-[10px] text-[#555] hover:text-[#888] hover:border-[#3a3a4e] transition-colors"
@@ -114,7 +195,6 @@ const DeveloperPortal = () => {
             <span>Search</span>
             <kbd className="ml-2 px-1.5 py-0.5 bg-[#0a0a0f] rounded text-[9px] border border-[#2a2a3e]">⌘K</kbd>
           </button>
-          {/* Density toggle */}
           <div className="flex bg-[#1a1a2e] rounded border border-[#2a2a3e] overflow-hidden">
             <button
               onClick={() => setDensity('comfortable')}
@@ -135,38 +215,19 @@ const DeveloperPortal = () => {
         </div>
       </header>
 
-      {/* ═══ Faceted Filter Pills ═══ */}
-      <div className="border-b border-[#1a1a2e] bg-[#0d0d15]/80 px-4 py-2 flex items-center gap-2 shrink-0">
-        <span className="text-[9px] uppercase tracking-widest text-[#444] mr-2">Funnels</span>
-        <div className="flex gap-1.5 flex-wrap">
-          {FUNNELS.map(f => (
-            <button
-              key={f.key}
-              onClick={() => toggleFunnel(f.key)}
-              className={`px-3 py-1 text-[10px] uppercase tracking-widest rounded-full transition-all whitespace-nowrap ${
-                activeFunnels.includes(f.key)
-                  ? 'bg-[#00ff88]/10 text-[#00ff88] border border-[#00ff88]/30 shadow-[0_0_8px_rgba(0,255,136,0.08)]'
-                  : 'text-[#555] hover:text-[#888] hover:bg-[#1a1a2e]/50 border border-[#1a1a2e]'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* ═══ Active Filters Tags ═══ */}
-      {activeFunnels.length > 1 && (
-        <div className="border-b border-[#1a1a2e] bg-[#0b0b14] px-4 py-1.5 flex items-center gap-1.5 shrink-0">
-          <span className="text-[9px] text-[#444] mr-1">Active:</span>
+      {activeFunnels.length > 0 && (
+        <div className="border-b border-[#1a1a2e] bg-[#0b0b14] px-4 py-1.5 flex items-center gap-1.5 shrink-0 overflow-x-auto">
+          <span className="text-[9px] text-[#444] mr-1 shrink-0 uppercase tracking-widest">Active</span>
           {activeFunnels.map(key => {
-            const f = FUNNELS.find(fn => fn.key === key);
+            const f = ALL_FUNNELS.find(fn => fn.key === key);
+            if (!f) return null;
             return (
               <span
                 key={key}
-                className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#00ff88]/5 border border-[#00ff88]/20 rounded text-[9px] text-[#00ff88]"
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#00ff88]/5 border border-[#00ff88]/20 rounded text-[9px] text-[#00ff88] shrink-0"
               >
-                {f?.label}
+                {f.label}
                 <button onClick={() => removeFunnel(key)} className="hover:text-white transition-colors">
                   <X className="w-2.5 h-2.5" />
                 </button>
@@ -176,70 +237,97 @@ const DeveloperPortal = () => {
         </div>
       )}
 
-      {/* ═══ Main Resizable Layout ═══ */}
-      <div className="flex-1 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          {/* Center - Data Grid */}
-          <ResizablePanel defaultSize={75} minSize={50}>
-            <div className="h-full overflow-auto p-3 space-y-3">
-              {activeFunnelConfigs.map(f => (
-                <div key={f.key} className="flex flex-col" style={{ minHeight: activeFunnelConfigs.length > 1 ? '45%' : '100%' }}>
-                  {activeFunnelConfigs.length > 1 && (
-                    <div className="text-[9px] uppercase tracking-widest text-[#00ff88]/50 mb-1.5 px-1">
-                      ▸ {f.label} <span className="text-[#333]">— {f.table}</span>
+      {/* ═══ Main Layout: Sidebar + Workspace ═══ */}
+      <div className="flex-1 overflow-hidden flex">
+        <DevFunnelSidebar
+          groups={FUNNEL_GROUPS}
+          activeFunnels={activeFunnels}
+          onToggle={toggleFunnel}
+          onSolo={soloFunnel}
+          onClearAll={clearAll}
+          collapsed={sidebarCollapsed}
+          onCollapsedChange={setSidebarCollapsed}
+        />
+
+        <div className="flex-1 overflow-hidden">
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            {/* Center - Data Grid */}
+            <ResizablePanel defaultSize={75} minSize={50}>
+              <div className="h-full overflow-auto p-3 space-y-3">
+                {activeFunnelConfigs.length === 0 && (
+                  <div className="h-full flex items-center justify-center text-center">
+                    <div>
+                      <div className="text-[#333] text-xs uppercase tracking-widest mb-2">
+                        No funnel selected
+                      </div>
+                      <div className="text-[10px] text-[#555]">
+                        Pick one or more funnels from the sidebar to begin
+                      </div>
                     </div>
-                  )}
-                  <div className="flex-1">
-                    <DevLeadTable
-                      funnel={f}
-                      userEmail={user.email || ''}
-                      density={density}
-                      onRowInspect={(row) => openDrawer(row, f.table, f.key)}
-                    />
                   </div>
+                )}
+                {activeFunnelConfigs.map(f => (
+                  <div
+                    key={f.key}
+                    className="flex flex-col"
+                    style={{ minHeight: activeFunnelConfigs.length > 1 ? '45%' : '100%' }}
+                  >
+                    {activeFunnelConfigs.length > 1 && (
+                      <div className="text-[9px] uppercase tracking-widest text-[#00ff88]/50 mb-1.5 px-1">
+                        ▸ {f.label} <span className="text-[#333]">— {f.table}</span>
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <DevLeadTable
+                        funnel={f}
+                        userEmail={user.email || ''}
+                        density={density}
+                        onRowInspect={(row) => openDrawer(row, f.table, f.key)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
+
+            {/* Right Panel - Monitor / Audit */}
+            <ResizablePanel defaultSize={25} minSize={18} maxSize={40}>
+              <div className="h-full bg-[#0b0b14] flex flex-col border-l border-[#1a1a2e]">
+                <div className="flex border-b border-[#1a1a2e] shrink-0">
+                  <button
+                    onClick={() => setRightPanelTab('monitor')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] uppercase tracking-widest transition-colors ${
+                      rightPanelTab === 'monitor'
+                        ? 'bg-[#1a1a2e] text-[#00ff88] border-b-2 border-[#00ff88]'
+                        : 'text-[#555] hover:text-[#888]'
+                    }`}
+                  >
+                    <Activity className="w-3 h-3" /> SYS
+                  </button>
+                  <button
+                    onClick={() => setRightPanelTab('audit')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] uppercase tracking-widest transition-colors ${
+                      rightPanelTab === 'audit'
+                        ? 'bg-[#1a1a2e] text-[#00ff88] border-b-2 border-[#00ff88]'
+                        : 'text-[#555] hover:text-[#888]'
+                    }`}
+                  >
+                    <Terminal className="w-3 h-3" /> LOG
+                  </button>
                 </div>
-              ))}
-            </div>
-          </ResizablePanel>
-
-          <ResizableHandle withHandle />
-
-          {/* Right Panel - Monitor / Audit */}
-          <ResizablePanel defaultSize={25} minSize={18} maxSize={40}>
-            <div className="h-full bg-[#0b0b14] flex flex-col border-l border-[#1a1a2e]">
-              {/* Tab Headers */}
-              <div className="flex border-b border-[#1a1a2e] shrink-0">
-                <button
-                  onClick={() => setRightPanelTab('monitor')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] uppercase tracking-widest transition-colors ${
-                    rightPanelTab === 'monitor'
-                      ? 'bg-[#1a1a2e] text-[#00ff88] border-b-2 border-[#00ff88]'
-                      : 'text-[#555] hover:text-[#888]'
-                  }`}
-                >
-                  <Activity className="w-3 h-3" /> SYS
-                </button>
-                <button
-                  onClick={() => setRightPanelTab('audit')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] uppercase tracking-widest transition-colors ${
-                    rightPanelTab === 'audit'
-                      ? 'bg-[#1a1a2e] text-[#00ff88] border-b-2 border-[#00ff88]'
-                      : 'text-[#555] hover:text-[#888]'
-                  }`}
-                >
-                  <Terminal className="w-3 h-3" /> LOG
-                </button>
+                <div className="flex-1 overflow-auto">
+                  {rightPanelTab === 'monitor' ? <DevSystemMonitor /> : <DevAuditLog />}
+                </div>
               </div>
-              <div className="flex-1 overflow-auto">
-                {rightPanelTab === 'monitor' ? <DevSystemMonitor /> : <DevAuditLog />}
-              </div>
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </div>
       </div>
 
       {/* ═══ Command Palette ═══ */}
-      {cmdOpen && <DevCommandPalette onClose={() => setCmdOpen(false)} funnels={FUNNELS} />}
+      {cmdOpen && <DevCommandPalette onClose={() => setCmdOpen(false)} funnels={ALL_FUNNELS} />}
 
       {/* ═══ Row Drawer ═══ */}
       {drawerRow && (
