@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
@@ -25,7 +26,20 @@ export default function DCCallDispatch() {
   const [businessType, setBusinessType] = useState('brandaro');
   const [concurrency, setConcurrency] = useState([5]);
   const [autoMatch, setAutoMatch] = useState(true);
+  const [manualNumberOverride, setManualNumberOverride] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+
+  const { data: availableNumbers = [] } = useQuery({
+    queryKey: ['dc-available-phone-numbers'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('dynasty_phone_numbers')
+        .select('*')
+        .eq('is_active', true)
+        .order('state', { ascending: true });
+      return data || [];
+    },
+  });
 
   // Queue data with realtime
   const { data: queue = [], isLoading } = useQuery({
@@ -73,7 +87,7 @@ export default function DCCallDispatch() {
   const startCampaign = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('dc-bland-dispatch', {
-        body: { action: 'start-campaign', businessType, concurrency: concurrency[0] },
+        body: { action: 'start-campaign', businessType, concurrency: concurrency[0], manualNumberOverride, autoMatch },
       });
       if (error) throw error;
       return data;
@@ -141,11 +155,44 @@ export default function DCCallDispatch() {
               <Slider value={concurrency} onValueChange={setConcurrency} min={1} max={20} step={1} className="mt-2" />
             </div>
           </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Switch checked={autoMatch} onCheckedChange={setAutoMatch} />
-              <Label>Auto-match Caller ID to state</Label>
-            </div>
+          <div className="flex items-center gap-2">
+            <Switch checked={autoMatch} onCheckedChange={setAutoMatch} disabled={!!manualNumberOverride} />
+            <Label>Auto-match Caller ID to state</Label>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="number-select">Caller ID Number</Label>
+            <Select
+              value={manualNumberOverride || 'auto'}
+              onValueChange={(value) => setManualNumberOverride(value === 'auto' ? null : value)}
+            >
+              <SelectTrigger id="number-select">
+                <SelectValue placeholder="Select caller ID..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">
+                  🎯 Auto-match by state {autoMatch ? '(Active)' : '(Inactive)'}
+                </SelectItem>
+                <SelectSeparator />
+                {availableNumbers.map((num: any) => (
+                  <SelectItem key={num.phone_number} value={num.phone_number}>
+                    {num.friendly_name || num.phone_number} ({num.phone_number}){num.state ? ` - ${num.state}` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {manualNumberOverride && (
+              <Alert className="mt-2 border-yellow-500/40 bg-yellow-500/10">
+                <AlertCircle className="h-4 w-4 text-yellow-500" />
+                <AlertDescription className="text-yellow-700 dark:text-yellow-400">
+                  Manual override: All calls will use{' '}
+                  {availableNumbers.find((n: any) => n.phone_number === manualNumberOverride)?.friendly_name || manualNumberOverride}
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end">
             <div className="flex gap-2">
               <Button onClick={() => startCampaign.mutate()} disabled={pending === 0 || startCampaign.isPending} size="lg" className="bg-green-600 hover:bg-green-700">
                 <Play className="h-4 w-4 mr-2" /> Start Campaign ({pending} pending)

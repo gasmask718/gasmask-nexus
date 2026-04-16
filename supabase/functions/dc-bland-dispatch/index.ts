@@ -154,7 +154,7 @@ serve(async (req) => {
       const BLAND_API_KEY = Deno.env.get('BLAND_API_KEY');
       if (!BLAND_API_KEY) throw new Error('BLAND_API_KEY not configured');
 
-      const { businessType, concurrency = 5 } = params;
+      const { businessType, concurrency = 5, manualNumberOverride = null, autoMatch = true } = params;
 
       const { data: leads } = await supabase
         .from('dynasty_call_queue')
@@ -172,16 +172,26 @@ serve(async (req) => {
       const results = [];
       for (const lead of leads) {
         try {
+          let fromNumber: string;
           const prospectState = getStateFromPhone(lead.phone_number);
-          const { data: phoneMatch } = await supabase
-            .from('dynasty_phone_numbers')
-            .select('phone_number')
-            .eq('state', prospectState)
-            .eq('is_active', true)
-            .limit(1)
-            .single();
 
-          const fromNumber = phoneMatch?.phone_number || '+12142394316';
+          if (manualNumberOverride) {
+            fromNumber = manualNumberOverride;
+            console.log(`[NUMBER SELECTION] Manual override: ${fromNumber}`);
+          } else if (autoMatch) {
+            const { data: phoneMatch } = await supabase
+              .from('dynasty_phone_numbers')
+              .select('phone_number')
+              .eq('state', prospectState)
+              .eq('is_active', true)
+              .limit(1)
+              .single();
+            fromNumber = phoneMatch?.phone_number || '+12142394316';
+            console.log(`[NUMBER SELECTION] Auto-matched ${prospectState} → ${fromNumber}`);
+          } else {
+            fromNumber = '+12142394316';
+            console.log(`[NUMBER SELECTION] Fallback: ${fromNumber}`);
+          }
 
           const pathwayMap: Record<string, string> = {
             brandaro: Deno.env.get('BRANDARO_SALES_AGENT_ID') || 'PLACEHOLDER',
