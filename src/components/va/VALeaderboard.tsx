@@ -1,20 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Medal, Award } from 'lucide-react';
+import { Trophy, Medal, Award, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-
-interface LeaderboardEntry {
-  va_id: string;
-  session_date: string;
-  calls_dialed: number;
-  calls_answered: number;
-  calls_closed: number;
-  total_talk_time_seconds: number;
-  va_name?: string;
-}
+import { useEffect } from 'react';
 
 interface VALeaderboardProps {
   dateFilter?: string;
@@ -22,32 +14,45 @@ interface VALeaderboardProps {
 
 export function VALeaderboard({ dateFilter }: VALeaderboardProps) {
   const { user } = useAuth();
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const targetDate = dateFilter || new Date().toISOString().split('T')[0];
 
-  const fetchLeaderboard = async () => {
-    const targetDate = dateFilter || new Date().toISOString().split('T')[0];
-    const { data } = await (supabase as any)
-      .from('va_leaderboard_stats')
-      .select('*, profiles!va_leaderboard_stats_va_id_fkey(name)')
-      .eq('session_date', targetDate)
-      .order('calls_closed', { ascending: false });
+  const { data: entries = [], refetch } = useQuery({
+    queryKey: ['va-leaderboard', targetDate],
+    queryFn: async () => {
+      // Fetch leaderboard stats joined with profiles for names
+      const { data, error } = await supabase
+        .from('va_leaderboard_stats')
+        .select('*, profiles(name)')
+        .eq('session_date', targetDate)
+        .order('calls_closed', { ascending: false });
 
-    if (data) {
-      setEntries(data.map((d: any) => ({
-        ...d,
+      if (error) {
+        console.error('Leaderboard fetch error:', error);
+        return [];
+      }
+
+      return (data || []).map((d: any) => ({
+        va_id: d.va_id,
         va_name: d.profiles?.name || 'VA',
-      })));
-    }
-  };
+        calls_dialed: d.calls_dialed || 0,
+        calls_answered: d.calls_answered || 0,
+        calls_closed: d.calls_closed || 0,
+        total_talk_time_seconds: d.total_talk_time_seconds || 0,
+      }));
+    },
+    refetchInterval: 30000,
+  });
 
+  // Realtime subscription for live updates
   useEffect(() => {
-    fetchLeaderboard();
     const channel = supabase
-      .channel('leaderboard-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'va_leaderboard_stats' }, () => fetchLeaderboard())
+      .channel('leaderboard-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'va_leaderboard_stats' }, () => {
+        refetch();
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [dateFilter]);
+  }, [refetch]);
 
   const formatDuration = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -63,19 +68,24 @@ export function VALeaderboard({ dateFilter }: VALeaderboardProps) {
 
   return (
     <Card className="glass-card border-border/50 overflow-hidden">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-foreground text-sm flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-yellow-400/10 flex items-center justify-center">
             <Trophy className="h-4 w-4 text-yellow-400" />
           </div>
           Live Leaderboard
+          <Badge variant="outline" className="text-[10px] ml-2">{targetDate}</Badge>
         </CardTitle>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => refetch()}>
+          <RefreshCw className="h-3.5 w-3.5" />
+        </Button>
       </CardHeader>
       <CardContent className="p-0">
         {entries.length === 0 ? (
           <div className="text-center py-12 space-y-2">
             <Trophy className="h-8 w-8 text-muted-foreground/30 mx-auto" />
-            <p className="text-sm text-muted-foreground">No data yet for today</p>
+            <p className="text-sm text-muted-foreground">No call data yet for today</p>
+            <p className="text-xs text-muted-foreground/60">Stats update automatically as VAs make calls</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -93,7 +103,7 @@ export function VALeaderboard({ dateFilter }: VALeaderboardProps) {
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry, idx) => {
+                {entries.map((entry: any, idx: number) => {
                   const answerRate = entry.calls_dialed > 0 ? Math.round((entry.calls_answered / entry.calls_dialed) * 100) : 0;
                   const closeRate = entry.calls_answered > 0 ? Math.round((entry.calls_closed / entry.calls_answered) * 100) : 0;
                   const isMe = entry.va_id === user?.id;
@@ -130,9 +140,7 @@ export function VALeaderboard({ dateFilter }: VALeaderboardProps) {
                       </td>
                       <td className="text-center p-3 text-muted-foreground tabular-nums">{entry.calls_dialed}</td>
                       <td className="text-center p-3 text-muted-foreground tabular-nums">{entry.calls_answered}</td>
-                      <td className="text-center p-3 font-bold tabular-nums" style={{ color: "hsl(var(--success))" }}>
-                        {entry.calls_closed}
-                      </td>
+                      <td className="text-center p-3 font-bold tabular-nums text-green-400">{entry.calls_closed}</td>
                       <td className="text-center p-3 text-muted-foreground tabular-nums">{answerRate}%</td>
                       <td className="text-center p-3 text-muted-foreground tabular-nums">{closeRate}%</td>
                       <td className="text-center p-3 pr-5 text-muted-foreground tabular-nums">{formatDuration(entry.total_talk_time_seconds)}</td>
