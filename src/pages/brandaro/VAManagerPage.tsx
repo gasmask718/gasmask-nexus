@@ -103,6 +103,111 @@ export default function VAManagerPage() {
   const [ingestMode, setIngestMode] = useState<"manual" | "transcript" | "description">("manual");
   const [ingestText, setIngestText] = useState("");
   const [ingestName, setIngestName] = useState("");
+  const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
+  const [recordingsFilter, setRecordingsFilter] = useState<string | undefined>();
+  const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
+
+  // Fetch all call recordings from DB + Twilio
+  const { data: allCallRecordings = [], refetch: refetchRecordings, isLoading: loadingRecordings } = useQuery({
+    queryKey: ["brandaro-all-recordings", recordingsFilter],
+    queryFn: async () => {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const params = new URLSearchParams({ action: "list", limit: "200" });
+      if (recordingsFilter) params.set("va_id", recordingsFilter);
+      
+      const { data, error } = await supabase.functions.invoke("brandaro-fetch-recordings", {
+        body: null,
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Fallback: query directly from DB if edge function fails
+      if (error || !data?.calls) {
+        const { data: vaLogs } = await supabase
+          .from("va_call_logs")
+          .select("id, va_id, call_sid, recording_url, recording_sid, transcript, duration_seconds, call_status, disposition, called_at, direction, excitement_level, va_notes, lead_id")
+          .eq("twilio_number", "+19292623850")
+          .order("called_at", { ascending: false })
+          .limit(200);
+
+        const { data: brandLogs } = await supabase
+          .from("brandaro_call_logs")
+          .select("id, called_by_user_id, call_outcome, call_notes, call_timestamp, call_duration_seconds, recording_url, lead_id")
+          .order("call_timestamp", { ascending: false })
+          .limit(200);
+
+        const { data: profiles } = await supabase.from("profiles").select("id, name");
+        const nameMap: Record<string, string> = {};
+        (profiles || []).forEach((p: any) => { nameMap[p.id] = p.name || "VA"; });
+
+        const unified: any[] = [];
+        (vaLogs || []).forEach((l: any) => unified.push({
+          id: l.id, source: "va_call_logs", va_id: l.va_id, va_name: nameMap[l.va_id] || "Unknown",
+          call_sid: l.call_sid, recording_url: l.recording_url, transcript: l.transcript,
+          duration_seconds: l.duration_seconds, call_status: l.call_status, disposition: l.disposition,
+          called_at: l.called_at, direction: l.direction, notes: l.va_notes, lead_id: l.lead_id,
+        }));
+        (brandLogs || []).forEach((l: any) => unified.push({
+          id: l.id, source: "brandaro_call_logs", va_id: l.called_by_user_id, va_name: nameMap[l.called_by_user_id] || "Unknown",
+          call_sid: null, recording_url: l.recording_url, transcript: null,
+          duration_seconds: l.call_duration_seconds, call_status: l.call_outcome, disposition: l.call_outcome,
+          called_at: l.call_timestamp, direction: "outbound", notes: l.call_notes, lead_id: l.lead_id,
+        }));
+        unified.sort((a, b) => new Date(b.called_at || 0).getTime() - new Date(a.called_at || 0).getTime());
+        return unified;
+      }
+
+      return data.calls;
+    },
+    refetchInterval: 60000,
+  });
+
+  // VA leaderboard from DB
+  const { data: dbLeaderboard = [], refetch: refetchLeaderboard } = useQuery({
+    queryKey: ["brandaro-db-leaderboard"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("va_leaderboard_stats")
+        .select("*, profiles(name)")
+        .eq("session_date", new Date().toISOString().split("T")[0])
+        .order("calls_closed", { ascending: false });
+      if (error) return [];
+      return (data || []).map((d: any) => ({
+        va_id: d.va_id,
+        va_name: d.profiles?.name || "VA",
+        calls_dialed: d.calls_dialed || 0,
+        calls_answered: d.calls_answered || 0,
+        calls_closed: d.calls_closed || 0,
+        total_talk_time: d.total_talk_time_seconds || 0,
+      }));
+    },
+    refetchInterval: 30000,
+  });
+
+  // Sync recordings from Twilio
+  const handleSyncRecordings = async () => {
+    try {
+      await supabase.functions.invoke("brandaro-sync-recordings", { body: {} });
+      refetchRecordings();
+      toast.success("Recordings synced from Twilio");
+    } catch {
+      toast.error("Sync failed");
+    }
+  };
+
+  const formatDuration = (seconds: number | null) => {
+    if (!seconds) return "0:00";
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  // Get unique VAs for filter
+  const uniqueVAs = Array.from(new Map(
+    allCallRecordings.map((c: any) => [c.va_id, { id: c.va_id, name: c.va_name }])
+  ).values());
+
+  const recordingsWithAudio = allCallRecordings.filter((c: any) => c.recording_url);
+  const recordingsWithTranscripts = allCallRecordings.filter((c: any) => c.transcript);
 
   const totalCalls = allPerf.reduce((s: number, p: any) => s + (p.calls_made || 0), 0);
   const totalConversations = allPerf.reduce((s: number, p: any) => s + (p.conversations || 0), 0);
