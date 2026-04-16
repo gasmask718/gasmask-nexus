@@ -12,7 +12,15 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Upload, Play, Pause, Phone, Clock, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, Play, Pause, Phone, Clock, CheckCircle, XCircle, AlertCircle, Loader2, MessageSquare } from 'lucide-react';
+
+interface TranscriptSegment {
+  id: string;
+  call_id: string;
+  timestamp: number;
+  speaker: 'ai' | 'prospect';
+  text: string;
+}
 
 const BUSINESS_OPTIONS = [
   { value: 'brandaro', label: 'Brandaro' },
@@ -29,6 +37,7 @@ export default function DCCallDispatch() {
   const [manualNumberOverride, setManualNumberOverride] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [liveTranscripts, setLiveTranscripts] = useState<Record<string, TranscriptSegment[]>>({});
 
   // Tick every second so active-call durations update live
   useEffect(() => {
@@ -263,6 +272,36 @@ export default function DCCallDispatch() {
                     </div>
                   </div>
                   <Badge variant="outline" className="mt-2 bg-primary/10 text-primary">In Progress</Badge>
+
+                  {q.bland_call_id && liveTranscripts[q.bland_call_id]?.length > 0 && (
+                    <div className="border-t border-border/60 pt-3 mt-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <MessageSquare className="h-4 w-4 text-primary" />
+                        <span className="text-xs font-medium">Live Transcript</span>
+                      </div>
+                      <div className="bg-background border border-border rounded p-2 max-h-48 overflow-y-auto space-y-2 flex flex-col-reverse">
+                        <div className="space-y-2">
+                          {liveTranscripts[q.bland_call_id].map((seg) => (
+                            <div
+                              key={seg.id}
+                              className={`flex ${seg.speaker === 'ai' ? 'justify-start' : 'justify-end'}`}
+                            >
+                              <div className={`px-2.5 py-1.5 rounded-lg max-w-[85%] ${
+                                seg.speaker === 'ai'
+                                  ? 'bg-primary/10 text-foreground'
+                                  : 'bg-green-500/10 text-foreground'
+                              }`}>
+                                <p className="text-[10px] font-semibold mb-0.5 opacity-70">
+                                  {seg.speaker === 'ai' ? '🤖 AI' : '👤 Prospect'}
+                                </p>
+                                <p className="text-xs leading-snug">{seg.text}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
