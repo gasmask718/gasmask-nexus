@@ -42,7 +42,7 @@ export const DevLeadTable = ({ funnel, userEmail, density = 'comfortable', onRow
         .from(funnel.table as any)
         .select('*')
         .order(sortCol, { ascending: sortDir === 'asc' })
-        .limit(200);
+        .limit(1000);
       if (error) throw error;
       if (data && data.length > 0) {
         const cols = Object.keys(data[0]).filter(c => c !== 'id');
