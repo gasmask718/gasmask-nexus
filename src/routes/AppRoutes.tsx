@@ -1148,6 +1148,9 @@ export default function AppRoutes() {
       </Route>
 
       {/* Standalone public routes (own layouts) */}
+      {/* Developer Portal - standalone, self-authenticated */}
+      <Route path="/developer" element={<DeveloperPortal />} />
+
       <Route path="/install" element={<InstallPwa />} />
       <Route path="/twl-landing" element={<TWLLanding />} />
       <Route path="/partner/respond/:token" element={<PartnerRespond />} />
