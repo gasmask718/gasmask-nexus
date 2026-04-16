@@ -55,6 +55,7 @@ const App = () => (
                           <MaintenanceGuard>
                             <AppRoutes />
                           </MaintenanceGuard>
+                          </MaintenanceGuard>
                         </MessageProvider>
                       </CallProvider>
                     </VoiceDeviceProvider>
