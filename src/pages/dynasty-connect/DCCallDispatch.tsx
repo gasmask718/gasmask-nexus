@@ -381,16 +381,23 @@ export default function DCCallDispatch() {
 
       {/* Queue Table */}
       <Card>
-        <CardHeader><CardTitle className="text-base">Lead Queue ({queue.length})</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-base">Lead Queue ({queue.length})</CardTitle>
+          {pending > 0 && (
+            <Button size="sm" variant="outline" onClick={clearQueue}>
+              <Trash2 className="h-4 w-4 mr-2" /> Clear Pending
+            </Button>
+          )}
+        </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="border-b border-border text-left text-muted-foreground">
-                <th className="p-3">Name</th><th className="p-3">Business</th><th className="p-3">Phone</th><th className="p-3">State</th><th className="p-3">Source</th><th className="p-3">Status</th><th className="p-3">Called At</th>
+                <th className="p-3">Name</th><th className="p-3">Business</th><th className="p-3">Phone</th><th className="p-3">State</th><th className="p-3">Source</th><th className="p-3">Status</th><th className="p-3">Called At</th><th className="p-3 text-right">Actions</th>
               </tr></thead>
               <tbody>
                 {queue.length === 0 ? (
-                  <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No leads uploaded. Upload a CSV to get started.</td></tr>
+                  <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">No leads uploaded. Upload a CSV to get started.</td></tr>
                 ) : queue.map((q: any) => (
                   <tr key={q.id} className="border-b border-border/50 hover:bg-accent/50">
                     <td className="p-3 font-medium">{q.contact_name || '-'}</td>
@@ -410,8 +417,27 @@ export default function DCCallDispatch() {
                         <span className="text-xs text-muted-foreground">Direct</span>
                       )}
                     </td>
-                    <td className="p-3 flex items-center gap-1">{statusIcon(q.status)} {statusBadge(q.status)}</td>
+                    <td className="p-3"><div className="flex items-center gap-1">{statusIcon(q.status)} {statusBadge(q.status)}</div></td>
                     <td className="p-3 text-xs text-muted-foreground">{q.called_at ? new Date(q.called_at).toLocaleString() : '-'}</td>
+                    <td className="p-3 text-right">
+                      <div className="flex justify-end gap-1">
+                        {q.status === 'failed' && (
+                          <Button size="sm" variant="ghost" onClick={() => retryCall(q.id)} title="Retry">
+                            <RotateCw className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {q.status === 'calling' && (
+                          <>
+                            <Button size="sm" variant="ghost" onClick={() => cancelCall(q.id, q.bland_call_id)} title="Cancel">
+                              <StopCircle className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => markAsFailed(q.id)} title="Mark Failed">
+                              <XCircle className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
