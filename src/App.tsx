@@ -52,7 +52,9 @@ const App = () => (
                           <ViewAsBanner />
                           <SimulationModeBanner />
                           <VACallWidget />
-                          <AppRoutes />
+                          <MaintenanceGuard>
+                            <AppRoutes />
+                          </MaintenanceGuard>
                         </MessageProvider>
                       </CallProvider>
                     </VoiceDeviceProvider>
