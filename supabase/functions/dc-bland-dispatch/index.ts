@@ -150,6 +150,21 @@ serve(async (req) => {
       });
     }
 
+    if (action === 'cancel-call') {
+      const BLAND_API_KEY = Deno.env.get('BLAND_API_KEY');
+      if (!BLAND_API_KEY) throw new Error('BLAND_API_KEY not configured');
+      const { callId } = params;
+      if (!callId) throw new Error('callId required');
+
+      const res = await fetch(`https://api.bland.ai/v1/calls/${callId}/stop`, {
+        method: 'POST',
+        headers: { 'Authorization': BLAND_API_KEY },
+      });
+      const text = await res.text();
+      return new Response(JSON.stringify({ success: res.ok, status: res.status, body: text }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
     if (action === 'start-campaign') {
       const BLAND_API_KEY = Deno.env.get('BLAND_API_KEY');
       if (!BLAND_API_KEY) throw new Error('BLAND_API_KEY not configured');
