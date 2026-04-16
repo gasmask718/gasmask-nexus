@@ -370,6 +370,8 @@ const DeveloperPortal = () => {
           </ResizablePanelGroup>
         </div>
       </div>
+      </>
+      )}
 
       {/* ═══ Command Palette ═══ */}
       {cmdOpen && <DevCommandPalette onClose={() => setCmdOpen(false)} funnels={ALL_FUNNELS} />}
