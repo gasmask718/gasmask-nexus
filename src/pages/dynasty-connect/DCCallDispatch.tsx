@@ -12,7 +12,7 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Upload, Play, Pause, Phone, Clock, CheckCircle, XCircle, AlertCircle, Loader2, MessageSquare } from 'lucide-react';
+import { Upload, Play, Pause, Phone, Clock, CheckCircle, XCircle, AlertCircle, Loader2, MessageSquare, StopCircle, RotateCw, Trash2 } from 'lucide-react';
 
 interface TranscriptSegment {
   id: string;
