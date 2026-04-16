@@ -16,6 +16,7 @@ import { BackendFingerprint, BackendMismatchGuard } from "./components/dev/Backe
 import { SchemaSanityChecker } from "./components/dev/SchemaSanityChecker";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { MaintenanceGuard } from "./components/MaintenanceGuard";
+import { DevOnlyGuard } from "./components/security/DevOnlyGuard";
 import { VACallWidget } from "./components/va/VACallWidget";
 
 import './modules';
@@ -53,7 +54,9 @@ const App = () => (
                           <SimulationModeBanner />
                           <VACallWidget />
                           <MaintenanceGuard>
-                            <AppRoutes />
+                            <DevOnlyGuard>
+                              <AppRoutes />
+                            </DevOnlyGuard>
                           </MaintenanceGuard>
                         </MessageProvider>
                       </CallProvider>

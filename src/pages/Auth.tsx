@@ -27,6 +27,14 @@ const Auth = () => {
 
   useEffect(() => {
     if (!user) return;
+
+    // Developer-only accounts go straight to /developer
+    const DEV_ONLY_EMAILS = ['dev@gmail.com'];
+    if (user.email && DEV_ONLY_EMAILS.includes(user.email)) {
+      navigate('/developer', { replace: true });
+      return;
+    }
+
     if (profileLoading) return;
 
     // If user has a profile with a role, redirect to their portal
