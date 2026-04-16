@@ -12,7 +12,8 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Upload, Play, Pause, Phone, Clock, CheckCircle, XCircle, AlertCircle, Loader2, MessageSquare, StopCircle, RotateCw, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Upload, Play, Pause, Phone, Clock, CheckCircle, XCircle, AlertCircle, Loader2, MessageSquare, StopCircle, RotateCw, Trash2, Download, FileText } from 'lucide-react';
 
 interface TranscriptSegment {
   id: string;
@@ -38,6 +39,7 @@ export default function DCCallDispatch() {
   const [isRunning, setIsRunning] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [liveTranscripts, setLiveTranscripts] = useState<Record<string, TranscriptSegment[]>>({});
+  const [transcriptModal, setTranscriptModal] = useState<{ callId: string; segments: TranscriptSegment[] } | null>(null);
 
   // Tick every second so active-call durations update live
   useEffect(() => {
@@ -75,6 +77,44 @@ export default function DCCallDispatch() {
     },
     refetchInterval: isRunning ? 5000 : 30000,
   });
+
+  const { data: completedCalls = [] } = useQuery({
+    queryKey: ['dynasty-completed-calls'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('dynasty_call_history')
+        .select('*')
+        .eq('status', 'completed')
+        .order('ended_at', { ascending: false })
+        .limit(20);
+      return data || [];
+    },
+    refetchInterval: 15000,
+  });
+
+  const formatSeconds = (s?: number | null) => {
+    if (!s) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  const downloadRecording = (url: string, callId: string) => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `call-${callId}.mp3`;
+    a.target = '_blank';
+    a.click();
+  };
+
+  const viewFullTranscript = async (callId: string) => {
+    const { data } = await (supabase as any)
+      .from('dynasty_call_transcripts')
+      .select('*')
+      .eq('call_id', callId)
+      .order('timestamp', { ascending: true });
+    setTranscriptModal({ callId, segments: (data || []) as TranscriptSegment[] });
+  };
 
   // Realtime subscription
   useEffect(() => {
@@ -445,6 +485,96 @@ export default function DCCallDispatch() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Completed Calls with Recordings */}
+      {completedCalls.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500" /> Completed Calls ({completedCalls.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {completedCalls.map((call: any) => (
+              <div key={call.id} className="border border-border rounded-lg p-4">
+                <div className="flex justify-between items-start mb-3 gap-4">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm truncate">{call.contact_name || 'Unknown'}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{call.phone_number}</p>
+                  </div>
+                  <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30 shrink-0">
+                    Completed
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Duration</p>
+                    <p className="text-sm font-semibold tabular-nums">{formatSeconds(call.duration)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">From</p>
+                    <p className="text-xs font-mono truncate">{call.from_number || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Ended</p>
+                    <p className="text-xs">{call.ended_at ? new Date(call.ended_at).toLocaleString() : '-'}</p>
+                  </div>
+                </div>
+
+                {call.call_summary && (
+                  <div className="border border-primary/20 rounded p-3 bg-primary/5 mb-3">
+                    <p className="text-xs font-semibold mb-1">📊 Call Summary</p>
+                    <p className="text-xs leading-relaxed text-muted-foreground">{call.call_summary}</p>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  {call.recording_url && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => window.open(call.recording_url, '_blank')}>
+                        <Play className="h-4 w-4 mr-2" /> Play Recording
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => downloadRecording(call.recording_url, call.call_id)}>
+                        <Download className="h-4 w-4 mr-2" /> Download
+                      </Button>
+                    </>
+                  )}
+                  <Button size="sm" variant="outline" onClick={() => viewFullTranscript(call.call_id)}>
+                    <FileText className="h-4 w-4 mr-2" /> View Transcript
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      <Dialog open={!!transcriptModal} onOpenChange={(open) => !open && setTranscriptModal(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Full Transcript</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto space-y-2 pr-2">
+            {transcriptModal?.segments.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No transcript available for this call.</p>
+            ) : (
+              transcriptModal?.segments.map((seg) => (
+                <div key={seg.id} className={`flex ${seg.speaker === 'ai' ? 'justify-start' : 'justify-end'}`}>
+                  <div className={`px-3 py-2 rounded-lg max-w-[85%] ${
+                    seg.speaker === 'ai' ? 'bg-primary/10' : 'bg-green-500/10'
+                  }`}>
+                    <p className="text-[10px] font-semibold mb-0.5 opacity-70">
+                      {seg.speaker === 'ai' ? '🤖 AI' : '👤 Prospect'}
+                    </p>
+                    <p className="text-sm leading-snug">{seg.text}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
