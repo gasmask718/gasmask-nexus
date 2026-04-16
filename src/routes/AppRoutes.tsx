@@ -388,6 +388,11 @@ const DCLiveCalls = lazy(() => import('@/pages/dynasty-connect/DCLiveCalls'));
 const DCClients = lazy(() => import('@/pages/dynasty-connect/DCClients'));
 const DCPhoneSetup = lazy(() => import('@/pages/dynasty-connect/DCPhoneSetup'));
 const DCPhoneNumbers = lazy(() => import('@/pages/dynasty-connect/DCPhoneNumbers'));
+const DCPhoneNumbersManager = lazy(() => import('@/pages/dynasty-connect/DCPhoneNumbersManager'));
+const DCCallDispatch = lazy(() => import('@/pages/dynasty-connect/DCCallDispatch'));
+const DCCallResults = lazy(() => import('@/pages/dynasty-connect/DCCallResults'));
+const DCAnalyticsDashboard = lazy(() => import('@/pages/dynasty-connect/DCAnalyticsDashboard'));
+const DCLeadPipeline = lazy(() => import('@/pages/dynasty-connect/DCLeadPipeline'));
 // Pipeline sub-pages
 const SurplusFundsPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/SurplusFundsPipeline'));
 const DCRealEstatePipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/RealEstatePipeline'));
@@ -1383,6 +1388,11 @@ export default function AppRoutes() {
           <Route path="infrastructure/numbers" element={<DCInfrastructure />} />
           <Route path="infrastructure/phone-setup" element={<DCPhoneSetup />} />
           <Route path="phone-numbers" element={<DCPhoneNumbers />} />
+          <Route path="phone-manager" element={<DCPhoneNumbersManager />} />
+          <Route path="dispatch" element={<DCCallDispatch />} />
+          <Route path="results" element={<DCCallResults />} />
+          <Route path="analytics-dashboard" element={<DCAnalyticsDashboard />} />
+          <Route path="lead-pipeline" element={<DCLeadPipeline />} />
           <Route path="clients" element={<DCClients />} />
         </Route>
 

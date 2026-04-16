@@ -16,6 +16,16 @@ const dcNavSections = [
     ],
   },
   {
+    title: '📞 Call Center',
+    items: [
+      { path: '/dynasty-connect/phone-manager', label: 'Phone Numbers', icon: Phone },
+      { path: '/dynasty-connect/dispatch', label: 'Call Dispatch', icon: Zap },
+      { path: '/dynasty-connect/results', label: 'Call Results', icon: FileText },
+      { path: '/dynasty-connect/analytics-dashboard', label: 'Analytics', icon: BarChart3 },
+      { path: '/dynasty-connect/lead-pipeline', label: 'Lead Pipeline', icon: Target },
+    ],
+  },
+  {
     title: '📋 Campaigns',
     items: [
       { path: '/dynasty-connect/campaigns', label: 'All Campaigns', icon: Target },
@@ -65,7 +75,6 @@ const dcNavSections = [
     ],
   },
 ];
-
 export default function DCLayout() {
   const location = useLocation();
   const isActive = (path: string) => {
