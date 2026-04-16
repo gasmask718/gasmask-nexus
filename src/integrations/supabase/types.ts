@@ -38961,6 +38961,48 @@ export type Database = {
         }
         Relationships: []
       }
+      dynasty_call_queue: {
+        Row: {
+          bland_call_id: string | null
+          business_name: string | null
+          business_type: string
+          called_at: string | null
+          completed_at: string | null
+          contact_name: string | null
+          created_at: string | null
+          id: string
+          phone_number: string
+          state: string | null
+          status: string | null
+        }
+        Insert: {
+          bland_call_id?: string | null
+          business_name?: string | null
+          business_type: string
+          called_at?: string | null
+          completed_at?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          id?: string
+          phone_number: string
+          state?: string | null
+          status?: string | null
+        }
+        Update: {
+          bland_call_id?: string | null
+          business_name?: string | null
+          business_type?: string
+          called_at?: string | null
+          completed_at?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          id?: string
+          phone_number?: string
+          state?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       dynasty_checkpoints: {
         Row: {
           created_at: string
@@ -39488,6 +39530,36 @@ export type Database = {
           id?: string
           method?: string | null
           response_status?: number | null
+        }
+        Relationships: []
+      }
+      dynasty_phone_numbers: {
+        Row: {
+          created_at: string | null
+          friendly_name: string | null
+          id: string
+          is_active: boolean | null
+          phone_number: string
+          state: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          friendly_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          phone_number: string
+          state: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          friendly_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          phone_number?: string
+          state?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
