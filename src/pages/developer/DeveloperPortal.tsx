@@ -12,12 +12,13 @@ import { DevSystemMonitor } from './components/DevSystemMonitor';
 import { DevCommandPalette } from './components/DevCommandPalette';
 import { DevRowDrawer } from './components/DevRowDrawer';
 import { DevFunnelSidebar, FunnelGroup } from './components/DevFunnelSidebar';
+import { DevWorkspace } from './components/DevWorkspace';
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from '@/components/ui/resizable';
-import { Activity, Terminal, Command, Rows3, AlignJustify, X } from 'lucide-react';
+import { Activity, Terminal, Command, Rows3, AlignJustify, X, Database, LayoutDashboard } from 'lucide-react';
 
 const ALLOWED_EMAILS = ['admin123@gmail.com', 'dev@gmail.com'];
 
