@@ -39205,6 +39205,77 @@ export type Database = {
         }
         Relationships: []
       }
+      dynasty_call_history: {
+        Row: {
+          answered_at: string | null
+          call_id: string
+          call_summary: string | null
+          created_at: string
+          duration: number | null
+          ended_at: string | null
+          error_message: string | null
+          from_number: string | null
+          id: string
+          metadata: Json | null
+          phone_number: string | null
+          queue_id: string | null
+          rang_at: string | null
+          recording_url: string | null
+          started_at: string | null
+          status: string
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          answered_at?: string | null
+          call_id: string
+          call_summary?: string | null
+          created_at?: string
+          duration?: number | null
+          ended_at?: string | null
+          error_message?: string | null
+          from_number?: string | null
+          id?: string
+          metadata?: Json | null
+          phone_number?: string | null
+          queue_id?: string | null
+          rang_at?: string | null
+          recording_url?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          answered_at?: string | null
+          call_id?: string
+          call_summary?: string | null
+          created_at?: string
+          duration?: number | null
+          ended_at?: string | null
+          error_message?: string | null
+          from_number?: string | null
+          id?: string
+          metadata?: Json | null
+          phone_number?: string | null
+          queue_id?: string | null
+          rang_at?: string | null
+          recording_url?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dynasty_call_history_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "dynasty_call_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dynasty_call_performers: {
         Row: {
           average_call_score: number | null
@@ -39273,6 +39344,7 @@ export type Database = {
           completed_at: string | null
           contact_name: string | null
           created_at: string | null
+          error_message: string | null
           id: string
           phone_number: string
           source_lead_id: string | null
@@ -39290,6 +39362,7 @@ export type Database = {
           completed_at?: string | null
           contact_name?: string | null
           created_at?: string | null
+          error_message?: string | null
           id?: string
           phone_number: string
           source_lead_id?: string | null
@@ -39307,12 +39380,40 @@ export type Database = {
           completed_at?: string | null
           contact_name?: string | null
           created_at?: string | null
+          error_message?: string | null
           id?: string
           phone_number?: string
           source_lead_id?: string | null
           source_table?: string | null
           state?: string | null
           status?: string | null
+        }
+        Relationships: []
+      }
+      dynasty_call_transcripts: {
+        Row: {
+          call_id: string
+          created_at: string
+          id: string
+          speaker: string
+          text: string
+          timestamp: number
+        }
+        Insert: {
+          call_id: string
+          created_at?: string
+          id?: string
+          speaker: string
+          text: string
+          timestamp: number
+        }
+        Update: {
+          call_id?: string
+          created_at?: string
+          id?: string
+          speaker?: string
+          text?: string
+          timestamp?: number
         }
         Relationships: []
       }
