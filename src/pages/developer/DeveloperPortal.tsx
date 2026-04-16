@@ -18,7 +18,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from '@/components/ui/resizable';
-import { Activity, Terminal, Command, Rows3, AlignJustify, X, Database, LayoutDashboard } from 'lucide-react';
+import { Activity, Terminal, Command, Rows3, AlignJustify, X, Database, LayoutDashboard, LogOut } from 'lucide-react';
 
 const ALLOWED_EMAILS = ['admin123@gmail.com', 'dev@gmail.com'];
 
