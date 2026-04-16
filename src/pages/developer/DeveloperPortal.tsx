@@ -120,7 +120,7 @@ const ALL_FUNNELS = FUNNEL_GROUPS.flatMap(g => g.funnels);
 type Density = 'comfortable' | 'compact';
 
 const DeveloperPortal = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const [activeFunnels, setActiveFunnels] = useState<string[]>(['brandaro']);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [density, setDensity] = useState<Density>('comfortable');
