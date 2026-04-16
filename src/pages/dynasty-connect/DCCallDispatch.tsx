@@ -28,6 +28,21 @@ export default function DCCallDispatch() {
   const [autoMatch, setAutoMatch] = useState(true);
   const [manualNumberOverride, setManualNumberOverride] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+
+  // Tick every second so active-call durations update live
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const formatDuration = (startIso?: string | null) => {
+    if (!startIso) return '0:00';
+    const secs = Math.max(0, Math.floor((now - new Date(startIso).getTime()) / 1000));
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
 
   const { data: availableNumbers = [] } = useQuery({
     queryKey: ['dc-available-phone-numbers'],
