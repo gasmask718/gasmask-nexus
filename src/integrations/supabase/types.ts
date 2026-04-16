@@ -32275,6 +32275,56 @@ export type Database = {
           },
         ]
       }
+      customer_change_requests: {
+        Row: {
+          assigned_dev_email: string | null
+          created_at: string
+          customer_site_id: string
+          description: string | null
+          id: string
+          priority: string
+          requested_by_email: string | null
+          resolved_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_dev_email?: string | null
+          created_at?: string
+          customer_site_id: string
+          description?: string | null
+          id?: string
+          priority?: string
+          requested_by_email?: string | null
+          resolved_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_dev_email?: string | null
+          created_at?: string
+          customer_site_id?: string
+          description?: string | null
+          id?: string
+          priority?: string
+          requested_by_email?: string | null
+          resolved_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_change_requests_customer_site_id_fkey"
+            columns: ["customer_site_id"]
+            isOneToOne: false
+            referencedRelation: "customer_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_files: {
         Row: {
           created_at: string | null
@@ -32306,6 +32356,59 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "crm_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_intake_forms: {
+        Row: {
+          attachments: Json | null
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_site_id: string | null
+          form_data: Json
+          form_type: string
+          id: string
+          source_brand: string | null
+          source_id: string | null
+          source_table: string | null
+          submitted_at: string
+        }
+        Insert: {
+          attachments?: Json | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_site_id?: string | null
+          form_data?: Json
+          form_type?: string
+          id?: string
+          source_brand?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          submitted_at?: string
+        }
+        Update: {
+          attachments?: Json | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_site_id?: string | null
+          form_data?: Json
+          form_type?: string
+          id?: string
+          source_brand?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_intake_forms_customer_site_id_fkey"
+            columns: ["customer_site_id"]
+            isOneToOne: false
+            referencedRelation: "customer_sites"
             referencedColumns: ["id"]
           },
         ]
@@ -32627,6 +32730,66 @@ export type Database = {
           created_at?: string
           id?: string
           role_name?: string
+        }
+        Relationships: []
+      }
+      customer_sites: {
+        Row: {
+          assigned_dev_email: string | null
+          business_name: string | null
+          created_at: string
+          created_by: string | null
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string | null
+          id: string
+          notes: string | null
+          preview_url: string | null
+          repo_url: string | null
+          site_url: string
+          source_brand: string | null
+          source_id: string | null
+          source_table: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_dev_email?: string | null
+          business_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_email?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          id?: string
+          notes?: string | null
+          preview_url?: string | null
+          repo_url?: string | null
+          site_url: string
+          source_brand?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_dev_email?: string | null
+          business_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          id?: string
+          notes?: string | null
+          preview_url?: string | null
+          repo_url?: string | null
+          site_url?: string
+          source_brand?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -110247,6 +110410,7 @@ export type Database = {
         Returns: boolean
       }
       is_developer: { Args: { _user_id: string }; Returns: boolean }
+      is_developer_or_admin: { Args: never; Returns: boolean }
       is_elevated_admin: { Args: { _user_id: string }; Returns: boolean }
       is_elevated_user:
         | { Args: never; Returns: boolean }
