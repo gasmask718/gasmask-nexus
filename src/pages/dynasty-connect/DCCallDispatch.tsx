@@ -471,6 +471,33 @@ export default function DCCallDispatch() {
         </Card>
       )}
 
+      {/* Failed Calls */}
+      {failed > 0 && (
+        <Card className="border-destructive/40">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-base text-destructive flex items-center gap-2">
+              <XCircle className="h-4 w-4" /> Failed Calls ({failed})
+            </CardTitle>
+            <Button size="sm" variant="outline" onClick={retryAllFailed}>
+              <RefreshCw className="h-4 w-4 mr-2" /> Retry All
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {queue.filter((q: any) => q.status === 'failed').map((q: any) => (
+              <div key={q.id} className="border border-destructive/20 rounded p-3 bg-destructive/5 flex justify-between items-start gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">{q.contact_name || 'Unknown'} <span className="text-muted-foreground font-mono text-xs ml-2">{q.phone_number}</span></p>
+                  <p className="text-xs text-destructive mt-1">{q.error_message || 'Unknown error'}</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => retryCall(q.id)} className="shrink-0">
+                  <RefreshCw className="h-3.5 w-3.5 mr-1" /> Retry
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Queue Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
