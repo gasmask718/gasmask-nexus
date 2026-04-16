@@ -1023,6 +1023,13 @@ export default function LeadDatabasePage() {
                                 >
                                   <Globe className="h-3 w-3" />
                                 </Button>
+                                <Button
+                                  size="icon" variant="ghost" className="h-7 w-7"
+                                  onClick={() => setDetailLead(lead)}
+                                  title="View Details"
+                                >
+                                  <Eye className="h-3 w-3" />
+                                </Button>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button size="icon" variant="ghost" className="h-7 w-7">
