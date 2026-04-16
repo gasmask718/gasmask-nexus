@@ -17069,19 +17069,24 @@ export type Database = {
           address: string | null
           ai_paused: boolean | null
           assigned_va: string | null
+          best_call_source: string | null
           business_name: string
           business_status: string | null
           call_attempts: number | null
           call_notes: string | null
+          call_source: string | null
           callback_scheduled_at: string | null
           campaign_id: string | null
           category: string | null
           city: string | null
+          claude_analysis_summary: Json | null
           clean_lead_id: string | null
           contact_title: string | null
           conversion_date: string | null
           converted: boolean | null
           created_at: string | null
+          dc_call_id: string | null
+          dc_queue_id: string | null
           demo_created_at: string | null
           demo_link: string | null
           demo_sent_at: string | null
@@ -17100,6 +17105,7 @@ export type Database = {
           industry: string | null
           last_call_at: string | null
           last_called_at: string | null
+          last_dc_call_date: string | null
           last_name: string | null
           last_reply_at: string | null
           last_reply_text: string | null
@@ -17126,6 +17132,8 @@ export type Database = {
           street: string | null
           stripe_payment_link: string | null
           subtypes: string | null
+          total_dc_calls: number | null
+          total_va_calls: number | null
           updated_at: string | null
           va_notes: string | null
           website_status: string | null
@@ -17134,19 +17142,24 @@ export type Database = {
           address?: string | null
           ai_paused?: boolean | null
           assigned_va?: string | null
+          best_call_source?: string | null
           business_name: string
           business_status?: string | null
           call_attempts?: number | null
           call_notes?: string | null
+          call_source?: string | null
           callback_scheduled_at?: string | null
           campaign_id?: string | null
           category?: string | null
           city?: string | null
+          claude_analysis_summary?: Json | null
           clean_lead_id?: string | null
           contact_title?: string | null
           conversion_date?: string | null
           converted?: boolean | null
           created_at?: string | null
+          dc_call_id?: string | null
+          dc_queue_id?: string | null
           demo_created_at?: string | null
           demo_link?: string | null
           demo_sent_at?: string | null
@@ -17165,6 +17178,7 @@ export type Database = {
           industry?: string | null
           last_call_at?: string | null
           last_called_at?: string | null
+          last_dc_call_date?: string | null
           last_name?: string | null
           last_reply_at?: string | null
           last_reply_text?: string | null
@@ -17191,6 +17205,8 @@ export type Database = {
           street?: string | null
           stripe_payment_link?: string | null
           subtypes?: string | null
+          total_dc_calls?: number | null
+          total_va_calls?: number | null
           updated_at?: string | null
           va_notes?: string | null
           website_status?: string | null
@@ -17199,19 +17215,24 @@ export type Database = {
           address?: string | null
           ai_paused?: boolean | null
           assigned_va?: string | null
+          best_call_source?: string | null
           business_name?: string
           business_status?: string | null
           call_attempts?: number | null
           call_notes?: string | null
+          call_source?: string | null
           callback_scheduled_at?: string | null
           campaign_id?: string | null
           category?: string | null
           city?: string | null
+          claude_analysis_summary?: Json | null
           clean_lead_id?: string | null
           contact_title?: string | null
           conversion_date?: string | null
           converted?: boolean | null
           created_at?: string | null
+          dc_call_id?: string | null
+          dc_queue_id?: string | null
           demo_created_at?: string | null
           demo_link?: string | null
           demo_sent_at?: string | null
@@ -17230,6 +17251,7 @@ export type Database = {
           industry?: string | null
           last_call_at?: string | null
           last_called_at?: string | null
+          last_dc_call_date?: string | null
           last_name?: string | null
           last_reply_at?: string | null
           last_reply_text?: string | null
@@ -17256,6 +17278,8 @@ export type Database = {
           street?: string | null
           stripe_payment_link?: string | null
           subtypes?: string | null
+          total_dc_calls?: number | null
+          total_va_calls?: number | null
           updated_at?: string | null
           va_notes?: string | null
           website_status?: string | null
@@ -38592,6 +38616,7 @@ export type Database = {
           call_ended_at: string | null
           call_id: string
           call_started_at: string | null
+          call_type: string | null
           company_name: string | null
           contact_name: string | null
           cost_cents: number | null
@@ -38605,6 +38630,8 @@ export type Database = {
           next_action: string | null
           outcome: string | null
           recording_url: string | null
+          source_lead_id: string | null
+          source_table: string | null
           to_number: string | null
           transcript: string | null
           updated_at: string | null
@@ -38618,6 +38645,7 @@ export type Database = {
           call_ended_at?: string | null
           call_id: string
           call_started_at?: string | null
+          call_type?: string | null
           company_name?: string | null
           contact_name?: string | null
           cost_cents?: number | null
@@ -38631,6 +38659,8 @@ export type Database = {
           next_action?: string | null
           outcome?: string | null
           recording_url?: string | null
+          source_lead_id?: string | null
+          source_table?: string | null
           to_number?: string | null
           transcript?: string | null
           updated_at?: string | null
@@ -38644,6 +38674,7 @@ export type Database = {
           call_ended_at?: string | null
           call_id?: string
           call_started_at?: string | null
+          call_type?: string | null
           company_name?: string | null
           contact_name?: string | null
           cost_cents?: number | null
@@ -38657,6 +38688,8 @@ export type Database = {
           next_action?: string | null
           outcome?: string | null
           recording_url?: string | null
+          source_lead_id?: string | null
+          source_table?: string | null
           to_number?: string | null
           transcript?: string | null
           updated_at?: string | null
@@ -39059,6 +39092,8 @@ export type Database = {
       }
       dynasty_call_queue: {
         Row: {
+          assigned_by: string | null
+          assignment_notes: string | null
           bland_call_id: string | null
           business_name: string | null
           business_type: string
@@ -39068,10 +39103,14 @@ export type Database = {
           created_at: string | null
           id: string
           phone_number: string
+          source_lead_id: string | null
+          source_table: string | null
           state: string | null
           status: string | null
         }
         Insert: {
+          assigned_by?: string | null
+          assignment_notes?: string | null
           bland_call_id?: string | null
           business_name?: string | null
           business_type: string
@@ -39081,10 +39120,14 @@ export type Database = {
           created_at?: string | null
           id?: string
           phone_number: string
+          source_lead_id?: string | null
+          source_table?: string | null
           state?: string | null
           status?: string | null
         }
         Update: {
+          assigned_by?: string | null
+          assignment_notes?: string | null
           bland_call_id?: string | null
           business_name?: string | null
           business_type?: string
@@ -39094,6 +39137,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           phone_number?: string
+          source_lead_id?: string | null
+          source_table?: string | null
           state?: string | null
           status?: string | null
         }
@@ -105200,6 +105245,22 @@ export type Database = {
             referencedColumns: ["ambassador_id"]
           },
         ]
+      }
+      brandaro_unified_call_history: {
+        Row: {
+          call_date: string | null
+          call_id: string | null
+          call_system: string | null
+          claude_analysis_text: string | null
+          duration_seconds: number | null
+          lead_quality: string | null
+          outcome: string | null
+          recording_url: string | null
+          sentiment_score: string | null
+          source_lead_id: string | null
+          transcript: string | null
+        }
+        Relationships: []
       }
       dispute_kpis: {
         Row: {
