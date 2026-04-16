@@ -12,8 +12,127 @@ serve(async (req) => {
     );
 
     const payload = await req.json();
-    const callId = payload.call_id;
+    const callId = payload.call_id || payload.callId || payload.id;
     if (!callId) throw new Error('No call_id in webhook');
+
+    const event = payload.event || payload.type || null;
+    console.log('[BLAND WEBHOOK]', event || 'completion', callId);
+
+    // === LIVE EVENTS (Phase 3): ringing / answered / transcript / failed ===
+    // These short-circuit BEFORE the existing end-of-call analysis flow.
+    if (event) {
+      const liveEvents = new Set([
+        'call_started', 'call.ringing', 'queue_status',
+        'call_answered', 'call.answered',
+        'transcript', 'call.transcript', 'transcript_partial',
+        'call_failed', 'call.failed', 'call_error',
+      ]);
+
+      if (liveEvents.has(event)) {
+        const upsertHistory = async (patch: Record<string, unknown>) => {
+          const { data: existing } = await supabase
+            .from('dynasty_call_history')
+            .select('id')
+            .eq('call_id', callId)
+            .maybeSingle();
+
+          if (existing) {
+            await supabase.from('dynasty_call_history').update(patch).eq('call_id', callId);
+          } else {
+            await supabase.from('dynasty_call_history').insert({
+              call_id: callId,
+              phone_number: payload.to,
+              from_number: payload.from,
+              status: (patch.status as string) || 'initiated',
+              started_at: new Date().toISOString(),
+              ...patch,
+            });
+          }
+        };
+
+        switch (event) {
+          case 'call_started':
+          case 'call.ringing':
+          case 'queue_status':
+            await upsertHistory({ status: 'ringing', rang_at: new Date().toISOString() });
+            await supabase.from('dynasty_call_queue')
+              .update({ status: 'calling', called_at: new Date().toISOString() })
+              .eq('bland_call_id', callId);
+            break;
+
+          case 'call_answered':
+          case 'call.answered':
+            await upsertHistory({ status: 'in-progress', answered_at: new Date().toISOString() });
+            await supabase.from('dynasty_call_queue')
+              .update({ status: 'in-progress' })
+              .eq('bland_call_id', callId);
+            break;
+
+          case 'transcript':
+          case 'call.transcript':
+          case 'transcript_partial':
+            await supabase.from('dynasty_call_transcripts').insert({
+              call_id: callId,
+              timestamp: payload.timestamp || Date.now(),
+              speaker: (payload.speaker === 'user' || payload.user === 'user') ? 'prospect' : 'ai',
+              text: payload.text || payload.transcript || '',
+            });
+            break;
+
+          case 'call_failed':
+          case 'call.failed':
+          case 'call_error':
+            await upsertHistory({
+              status: 'failed',
+              ended_at: new Date().toISOString(),
+              error_message: payload.error_message || payload.error || 'unknown',
+            });
+            await supabase.from('dynasty_call_queue')
+              .update({
+                status: 'failed',
+                error_message: payload.error_message || payload.error || 'unknown',
+              })
+              .eq('bland_call_id', callId);
+            break;
+        }
+
+        return new Response(JSON.stringify({ success: true, event }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // === END-OF-CALL COMPLETION (existing flow) ===
+    // Also mirror completion into dynasty_call_history for the live monitoring UI.
+    try {
+      const { data: existing } = await supabase
+        .from('dynasty_call_history')
+        .select('id')
+        .eq('call_id', callId)
+        .maybeSingle();
+
+      const completionPatch = {
+        status: 'completed',
+        ended_at: new Date().toISOString(),
+        duration: payload.call_length || payload.duration || null,
+        recording_url: payload.recording_url || null,
+        call_summary: payload.summary || payload.concatenated_transcript || null,
+      };
+
+      if (existing) {
+        await supabase.from('dynasty_call_history').update(completionPatch).eq('call_id', callId);
+      } else {
+        await supabase.from('dynasty_call_history').insert({
+          call_id: callId,
+          phone_number: payload.to,
+          from_number: payload.from,
+          started_at: new Date().toISOString(),
+          ...completionPatch,
+        });
+      }
+    } catch (e) {
+      console.error('[history mirror failed]', e);
+    }
 
     // Update call record
     const updateData: any = {
