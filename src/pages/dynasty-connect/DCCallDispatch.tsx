@@ -78,6 +78,44 @@ export default function DCCallDispatch() {
     refetchInterval: isRunning ? 5000 : 30000,
   });
 
+  const { data: completedCalls = [] } = useQuery({
+    queryKey: ['dynasty-completed-calls'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('dynasty_call_history')
+        .select('*')
+        .eq('status', 'completed')
+        .order('ended_at', { ascending: false })
+        .limit(20);
+      return data || [];
+    },
+    refetchInterval: 15000,
+  });
+
+  const formatSeconds = (s?: number | null) => {
+    if (!s) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  const downloadRecording = (url: string, callId: string) => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `call-${callId}.mp3`;
+    a.target = '_blank';
+    a.click();
+  };
+
+  const viewFullTranscript = async (callId: string) => {
+    const { data } = await (supabase as any)
+      .from('dynasty_call_transcripts')
+      .select('*')
+      .eq('call_id', callId)
+      .order('timestamp', { ascending: true });
+    setTranscriptModal({ callId, segments: (data || []) as TranscriptSegment[] });
+  };
+
   // Realtime subscription
   useEffect(() => {
     const channel = supabase.channel('dc-queue-changes')
