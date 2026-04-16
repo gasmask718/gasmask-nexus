@@ -107,8 +107,22 @@ serve(async (req) => {
       const blandData = await blandRes.json();
       if (!blandRes.ok) throw new Error(`Bland API error: ${JSON.stringify(blandData)}`);
 
-      // Update queue status
+      // Fetch source tracking from queue record if available
+      let sourceTable: string | null = null;
+      let sourceLeadId: string | null = null;
+
       if (queueId) {
+        const { data: queueRecord } = await supabase
+          .from('dynasty_call_queue')
+          .select('source_table, source_lead_id')
+          .eq('id', queueId)
+          .single();
+
+        if (queueRecord) {
+          sourceTable = queueRecord.source_table || null;
+          sourceLeadId = queueRecord.source_lead_id || null;
+        }
+
         await supabase.from('dynasty_call_queue').update({
           status: 'calling',
           bland_call_id: blandData.call_id,
@@ -116,7 +130,7 @@ serve(async (req) => {
         }).eq('id', queueId);
       }
 
-      // Create call record
+      // Create call record WITH source tracking
       await supabase.from('dynasty_ai_calls').insert({
         call_id: blandData.call_id,
         business_unit: businessType,
@@ -126,9 +140,12 @@ serve(async (req) => {
         company_name: businessName,
         direction: 'outbound',
         outcome: 'in_progress',
+        source_table: sourceTable,
+        source_lead_id: sourceLeadId,
+        call_type: 'ai_outbound',
       });
 
-      return new Response(JSON.stringify({ success: true, call_id: blandData.call_id, from: fromNumber, state: prospectState }), {
+      return new Response(JSON.stringify({ success: true, call_id: blandData.call_id, from: fromNumber, state: prospectState, source_table: sourceTable }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
