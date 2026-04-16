@@ -35114,6 +35114,102 @@ export type Database = {
           },
         ]
       }
+      developer_audit_log: {
+        Row: {
+          action: string
+          actor_email: string
+          created_at: string
+          details: Json | null
+          id: string
+          target_id: string | null
+          target_table: string | null
+        }
+        Insert: {
+          action: string
+          actor_email: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Relationships: []
+      }
+      developer_portal_config: {
+        Row: {
+          config_key: string
+          config_value: Json
+          created_at: string
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config_key: string
+          config_value?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      developer_qa_tags: {
+        Row: {
+          created_at: string
+          funnel_source: string
+          id: string
+          lead_id: string
+          metadata: Json | null
+          qa_status: string
+          tested_at: string | null
+          tester_email: string | null
+          testing_notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          funnel_source: string
+          id?: string
+          lead_id: string
+          metadata?: Json | null
+          qa_status?: string
+          tested_at?: string | null
+          tester_email?: string | null
+          testing_notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          funnel_source?: string
+          id?: string
+          lead_id?: string
+          metadata?: Json | null
+          qa_status?: string
+          tested_at?: string | null
+          tester_email?: string | null
+          testing_notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dialer_agent_availability: {
         Row: {
           active_calls_count: number | null
