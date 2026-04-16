@@ -12,7 +12,7 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Upload, Play, Pause, Phone, Clock, CheckCircle, XCircle, AlertCircle, Loader2, MessageSquare } from 'lucide-react';
+import { Upload, Play, Pause, Phone, Clock, CheckCircle, XCircle, AlertCircle, Loader2, MessageSquare, StopCircle, RotateCw, Trash2 } from 'lucide-react';
 
 interface TranscriptSegment {
   id: string;
@@ -123,6 +123,62 @@ export default function DCCallDispatch() {
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const refreshQueue = () => qc.invalidateQueries({ queryKey: ['dynasty-call-queue'] });
+
+  const cancelCall = async (leadId: string, callId?: string | null) => {
+    try {
+      if (callId) {
+        await supabase.functions.invoke('dc-bland-dispatch', {
+          body: { action: 'cancel-call', callId },
+        });
+      }
+      await (supabase as any)
+        .from('dynasty_call_queue')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', leadId);
+      toast.success('Call cancelled');
+      refreshQueue();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to cancel call');
+    }
+  };
+
+  const cancelAllCalls = async () => {
+    const active = queue.filter((q: any) => q.status === 'calling');
+    if (!active.length) return;
+    if (!confirm(`Cancel all ${active.length} active calls?`)) return;
+    for (const c of active) await cancelCall(c.id, c.bland_call_id);
+  };
+
+  const markAsFailed = async (leadId: string) => {
+    await (supabase as any)
+      .from('dynasty_call_queue')
+      .update({ status: 'failed', error_message: 'Manually marked as failed', updated_at: new Date().toISOString() })
+      .eq('id', leadId);
+    toast.success('Marked as failed');
+    refreshQueue();
+  };
+
+  const retryCall = async (leadId: string) => {
+    await (supabase as any)
+      .from('dynasty_call_queue')
+      .update({ status: 'pending', error_message: null, called_at: null, bland_call_id: null, updated_at: new Date().toISOString() })
+      .eq('id', leadId);
+    toast.success('Moved back to queue');
+    refreshQueue();
+  };
+
+  const clearQueue = async () => {
+    if (!confirm('Delete all pending calls in this queue?')) return;
+    await (supabase as any)
+      .from('dynasty_call_queue')
+      .delete()
+      .eq('business_type', businessType)
+      .in('status', ['pending']);
+    toast.success('Pending queue cleared');
+    refreshQueue();
+  };
 
   const pending = queue.filter((q: any) => q.status === 'pending').length;
   const calling = queue.filter((q: any) => q.status === 'calling').length;
@@ -253,7 +309,12 @@ export default function DCCallDispatch() {
       {/* Active Calls */}
       {calling > 0 && (
         <Card className="border-primary/30">
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><Phone className="h-4 w-4 text-primary animate-pulse" /> Active Calls ({calling})</CardTitle></CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-base flex items-center gap-2"><Phone className="h-4 w-4 text-primary animate-pulse" /> Active Calls ({calling})</CardTitle>
+            <Button size="sm" variant="destructive" onClick={cancelAllCalls}>
+              <XCircle className="h-4 w-4 mr-2" /> Cancel All
+            </Button>
+          </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {queue.filter((q: any) => q.status === 'calling').map((q: any) => (
@@ -302,6 +363,15 @@ export default function DCCallDispatch() {
                       </div>
                     </div>
                   )}
+
+                  <div className="flex gap-2 mt-3 border-t border-border/60 pt-3">
+                    <Button size="sm" variant="outline" className="flex-1" onClick={() => cancelCall(q.id, q.bland_call_id)}>
+                      <StopCircle className="h-4 w-4 mr-1" /> Cancel
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex-1" onClick={() => markAsFailed(q.id)}>
+                      <XCircle className="h-4 w-4 mr-1" /> Mark Failed
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -311,16 +381,23 @@ export default function DCCallDispatch() {
 
       {/* Queue Table */}
       <Card>
-        <CardHeader><CardTitle className="text-base">Lead Queue ({queue.length})</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-base">Lead Queue ({queue.length})</CardTitle>
+          {pending > 0 && (
+            <Button size="sm" variant="outline" onClick={clearQueue}>
+              <Trash2 className="h-4 w-4 mr-2" /> Clear Pending
+            </Button>
+          )}
+        </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="border-b border-border text-left text-muted-foreground">
-                <th className="p-3">Name</th><th className="p-3">Business</th><th className="p-3">Phone</th><th className="p-3">State</th><th className="p-3">Source</th><th className="p-3">Status</th><th className="p-3">Called At</th>
+                <th className="p-3">Name</th><th className="p-3">Business</th><th className="p-3">Phone</th><th className="p-3">State</th><th className="p-3">Source</th><th className="p-3">Status</th><th className="p-3">Called At</th><th className="p-3 text-right">Actions</th>
               </tr></thead>
               <tbody>
                 {queue.length === 0 ? (
-                  <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No leads uploaded. Upload a CSV to get started.</td></tr>
+                  <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">No leads uploaded. Upload a CSV to get started.</td></tr>
                 ) : queue.map((q: any) => (
                   <tr key={q.id} className="border-b border-border/50 hover:bg-accent/50">
                     <td className="p-3 font-medium">{q.contact_name || '-'}</td>
@@ -340,8 +417,27 @@ export default function DCCallDispatch() {
                         <span className="text-xs text-muted-foreground">Direct</span>
                       )}
                     </td>
-                    <td className="p-3 flex items-center gap-1">{statusIcon(q.status)} {statusBadge(q.status)}</td>
+                    <td className="p-3"><div className="flex items-center gap-1">{statusIcon(q.status)} {statusBadge(q.status)}</div></td>
                     <td className="p-3 text-xs text-muted-foreground">{q.called_at ? new Date(q.called_at).toLocaleString() : '-'}</td>
+                    <td className="p-3 text-right">
+                      <div className="flex justify-end gap-1">
+                        {q.status === 'failed' && (
+                          <Button size="sm" variant="ghost" onClick={() => retryCall(q.id)} title="Retry">
+                            <RotateCw className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {q.status === 'calling' && (
+                          <>
+                            <Button size="sm" variant="ghost" onClick={() => cancelCall(q.id, q.bland_call_id)} title="Cancel">
+                              <StopCircle className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => markAsFailed(q.id)} title="Mark Failed">
+                              <XCircle className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
