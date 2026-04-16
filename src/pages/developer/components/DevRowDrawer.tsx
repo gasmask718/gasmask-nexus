@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { X, Save, CheckCircle, XCircle, Clock, MessageSquare, FileJson } from 'lucide-react';
+import { X, Save, CheckCircle, XCircle, Clock, MessageSquare, FileJson, ExternalLink, Globe } from 'lucide-react';
+import { CustomerSitePanel } from './CustomerSitePanel';
 
 interface Props {
   row: any;
@@ -19,11 +20,12 @@ const QA_STATUSES = [
 ];
 
 export const DevRowDrawer = ({ row, table, funnelKey, userEmail, onClose, onSaved }: Props) => {
+  const isCustomerSite = table === 'customer_sites';
   const [formData, setFormData] = useState<Record<string, any>>({ ...row });
   const [saving, setSaving] = useState(false);
   const [qaStatus, setQaStatus] = useState('pending');
   const [qaNote, setQaNote] = useState('');
-  const [activeTab, setActiveTab] = useState<'fields' | 'json' | 'qa'>('fields');
+  const [activeTab, setActiveTab] = useState<'fields' | 'json' | 'qa' | 'workspace'>(isCustomerSite ? 'workspace' : 'fields');
 
   useEffect(() => {
     // Fetch QA tag
