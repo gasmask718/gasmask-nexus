@@ -17086,6 +17086,8 @@ export type Database = {
           converted: boolean | null
           created_at: string | null
           dc_call_id: string | null
+          dc_lead_quality: string | null
+          dc_overall_score: number | null
           dc_queue_id: string | null
           demo_created_at: string | null
           demo_link: string | null
@@ -17105,6 +17107,7 @@ export type Database = {
           industry: string | null
           last_call_at: string | null
           last_called_at: string | null
+          last_dc_call_at: string | null
           last_dc_call_date: string | null
           last_name: string | null
           last_reply_at: string | null
@@ -17159,6 +17162,8 @@ export type Database = {
           converted?: boolean | null
           created_at?: string | null
           dc_call_id?: string | null
+          dc_lead_quality?: string | null
+          dc_overall_score?: number | null
           dc_queue_id?: string | null
           demo_created_at?: string | null
           demo_link?: string | null
@@ -17178,6 +17183,7 @@ export type Database = {
           industry?: string | null
           last_call_at?: string | null
           last_called_at?: string | null
+          last_dc_call_at?: string | null
           last_dc_call_date?: string | null
           last_name?: string | null
           last_reply_at?: string | null
@@ -17232,6 +17238,8 @@ export type Database = {
           converted?: boolean | null
           created_at?: string | null
           dc_call_id?: string | null
+          dc_lead_quality?: string | null
+          dc_overall_score?: number | null
           dc_queue_id?: string | null
           demo_created_at?: string | null
           demo_link?: string | null
@@ -17251,6 +17259,7 @@ export type Database = {
           industry?: string | null
           last_call_at?: string | null
           last_called_at?: string | null
+          last_dc_call_at?: string | null
           last_dc_call_date?: string | null
           last_name?: string | null
           last_reply_at?: string | null
