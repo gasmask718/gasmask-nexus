@@ -119,6 +119,7 @@ export const DevRowDrawer = ({ row, table, funnelKey, userEmail, onClose, onSave
         {/* Drawer Tabs */}
         <div className="flex border-b border-[#1a1a2e] shrink-0">
           {[
+            ...(isCustomerSite ? [{ key: 'workspace' as const, label: 'Workspace', icon: Globe }] : []),
             { key: 'fields' as const, label: 'Fields', icon: MessageSquare },
             { key: 'json' as const, label: 'JSON', icon: FileJson },
             { key: 'qa' as const, label: 'QA', icon: CheckCircle },
@@ -139,6 +140,9 @@ export const DevRowDrawer = ({ row, table, funnelKey, userEmail, onClose, onSave
 
         {/* Content */}
         <div className="flex-1 overflow-auto">
+          {activeTab === 'workspace' && isCustomerSite && (
+            <CustomerSitePanel customerSiteId={row.id} customerName={row.customer_name || ''} userEmail={userEmail} />
+          )}
           {activeTab === 'fields' && (
             <div className="p-4 space-y-3">
               <div>
