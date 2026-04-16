@@ -92,6 +92,44 @@ export default function DCCallDispatch() {
     refetchInterval: 15000,
   });
 
+  // Auto-fail calls stuck > 5 minutes
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const { data: stuckCalls } = await (supabase as any)
+        .from('dynasty_call_queue')
+        .select('id')
+        .in('status', ['calling', 'in-progress'])
+        .lt('called_at', fiveMinutesAgo);
+
+      if (stuckCalls && stuckCalls.length > 0) {
+        await (supabase as any)
+          .from('dynasty_call_queue')
+          .update({
+            status: 'failed',
+            error_message: 'Auto-failed: No response after 5 minutes',
+            updated_at: new Date().toISOString(),
+          })
+          .in('id', stuckCalls.map((c: any) => c.id));
+        toast.warning(`${stuckCalls.length} stuck call${stuckCalls.length > 1 ? 's' : ''} auto-failed`);
+        qc.invalidateQueries({ queryKey: ['dynasty-call-queue'] });
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [qc]);
+
+  const retryAllFailed = async () => {
+    const failedItems = queue.filter((q: any) => q.status === 'failed');
+    if (!failedItems.length) return;
+    if (!confirm(`Retry all ${failedItems.length} failed calls?`)) return;
+    await (supabase as any)
+      .from('dynasty_call_queue')
+      .update({ status: 'pending', error_message: null, called_at: null, bland_call_id: null, updated_at: new Date().toISOString() })
+      .in('id', failedItems.map((f: any) => f.id));
+    toast.success(`${failedItems.length} call${failedItems.length > 1 ? 's' : ''} moved back to queue`);
+    qc.invalidateQueries({ queryKey: ['dynasty-call-queue'] });
+  };
+
   const formatSeconds = (s?: number | null) => {
     if (!s) return '0:00';
     const m = Math.floor(s / 60);
