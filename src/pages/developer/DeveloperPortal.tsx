@@ -249,6 +249,13 @@ const DeveloperPortal = () => {
             </>
           )}
           <DevKillSwitch userEmail={user.email || ''} />
+          <button
+            onClick={() => signOut()}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#1a1a2e] rounded border border-[#2a2a3e] text-[10px] uppercase tracking-widest text-[#888] hover:text-[#ff5566] hover:border-[#ff5566]/40 transition-colors"
+            title="Sign out"
+          >
+            <LogOut className="w-3 h-3" /> Logout
+          </button>
         </div>
       </header>
 
