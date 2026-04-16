@@ -88,7 +88,7 @@ export const DevRowDrawer = ({ row, table, funnelKey, userEmail, onClose, onSave
   return (
     <div className="fixed inset-0 z-[90] flex items-stretch justify-end">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-[520px] bg-[#0b0b14] border-l border-[#1a1a2e] flex flex-col shadow-2xl shadow-black/60">
+      <div className={`relative ${isCustomerSite ? 'w-[760px]' : 'w-[520px]'} bg-[#0b0b14] border-l border-[#1a1a2e] flex flex-col shadow-2xl shadow-black/60`}>
         {/* Header */}
         <div className="border-b border-[#1a1a2e] px-4 py-3 flex items-center justify-between shrink-0 bg-[#0d0d15]">
           <div>
