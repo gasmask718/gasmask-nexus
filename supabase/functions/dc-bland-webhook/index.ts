@@ -107,15 +107,44 @@ ${transcript}`
                 lead_quality: analysis.lead_quality,
               }).eq('call_id', callId);
 
+              // Fetch call record to check source tracking
+              const { data: callData } = await supabase
+                .from('dynasty_ai_calls')
+                .select('*')
+                .eq('call_id', callId)
+                .single();
+
+              // Sync back to Brandaro source lead if applicable
+              if (callData?.source_table === 'brandaro_qualified_leads' && callData?.source_lead_id) {
+                const analysisSummary = {
+                  overall_score: analysis.overall_score,
+                  lead_quality: analysis.lead_quality,
+                  what_went_well: analysis.what_went_well,
+                  what_to_improve: analysis.what_to_improve,
+                  specific_coaching: analysis.specific_coaching,
+                  recommended_followup: analysis.recommended_followup,
+                  customer_sentiment: analysis.customer_sentiment,
+                };
+
+                await supabase
+                  .from('brandaro_qualified_leads')
+                  .update({
+                    dc_call_id: callId,
+                    last_dc_call_date: new Date().toISOString(),
+                    total_dc_calls: undefined, // trigger handles increment
+                    call_source: 'dynasty_connect',
+                    claude_analysis_summary: analysisSummary,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', callData.source_lead_id);
+
+                console.log(`Synced DC call ${callId} back to Brandaro lead ${callData.source_lead_id}`);
+              }
+
               // Auto-create pipeline entry for hot/warm leads
               if (['hot', 'warm'].includes(analysis.lead_quality)) {
-                const { data: callData } = await supabase
-                  .from('dynasty_ai_calls')
-                  .select('*')
-                  .eq('call_id', callId)
-                  .single();
-
                 if (callData) {
+                  // Dynasty pipeline
                   await supabase.from('dynasty_lead_pipeline').insert({
                     call_id: callId,
                     business_unit: callData.business_unit,
@@ -124,6 +153,16 @@ ${transcript}`
                     phone_number: callData.to_number,
                     stage: analysis.lead_quality === 'hot' ? 'hot' : 'warm',
                   });
+
+                  // Brandaro close pipeline (if from Brandaro)
+                  if (callData.source_table === 'brandaro_qualified_leads' && callData.source_lead_id) {
+                    await supabase.from('brandaro_close_pipeline').upsert({
+                      lead_id: callData.source_lead_id,
+                      stage: analysis.lead_quality,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString(),
+                    }, { onConflict: 'lead_id' });
+                  }
                 }
               }
 
