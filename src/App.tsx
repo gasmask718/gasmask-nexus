@@ -15,6 +15,7 @@ import { ViewAsBanner } from "./components/admin/ViewAsBanner";
 import { BackendFingerprint, BackendMismatchGuard } from "./components/dev/BackendFingerprint";
 import { SchemaSanityChecker } from "./components/dev/SchemaSanityChecker";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { MaintenanceGuard } from "./components/MaintenanceGuard";
 import { VACallWidget } from "./components/va/VACallWidget";
 
 import './modules';
@@ -51,7 +52,9 @@ const App = () => (
                           <ViewAsBanner />
                           <SimulationModeBanner />
                           <VACallWidget />
-                          <AppRoutes />
+                          <MaintenanceGuard>
+                            <AppRoutes />
+                          </MaintenanceGuard>
                         </MessageProvider>
                       </CallProvider>
                     </VoiceDeviceProvider>

@@ -47,6 +47,7 @@ const InviteSignup = lazy(() => import('@/pages/auth/InviteSignup'));
 const UserInvitations = lazy(() => import('@/pages/security/UserInvitations'));
 const InviteLanding = lazy(() => import('@/pages/portal/InviteLanding'));
 const InstallPwa = lazy(() => import('@/pages/InstallPwa'));
+const DeveloperPortal = lazy(() => import('@/pages/developer/DeveloperPortal'));
 
 // Protected pages
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
@@ -1147,6 +1148,9 @@ export default function AppRoutes() {
       </Route>
 
       {/* Standalone public routes (own layouts) */}
+      {/* Developer Portal - standalone, self-authenticated */}
+      <Route path="/developer" element={<DeveloperPortal />} />
+
       <Route path="/install" element={<InstallPwa />} />
       <Route path="/twl-landing" element={<TWLLanding />} />
       <Route path="/partner/respond/:token" element={<PartnerRespond />} />
