@@ -21,8 +21,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { CsvLeadImporter } from "@/components/brandaro/CsvLeadImporter";
 import { BuildDemoModal } from "@/components/brandaro/BuildDemoModal";
+import { BrandaroLeadAssignmentButtons } from "@/components/brandaro/BrandaroLeadAssignmentButtons";
+import { BrandaroUnifiedCallHistory } from "@/components/brandaro/BrandaroUnifiedCallHistory";
 import { exportData } from "@/utils/exportUtils";
 import { useNavigate } from "react-router-dom";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   Database, Phone, Star, MapPin, Filter, MessageSquare, Loader2,
   ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronRight,
@@ -126,6 +129,7 @@ export default function LeadDatabasePage() {
   const [demoLead, setDemoLead] = useState<any>(null);
   const [colDropdownOpen, setColDropdownOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const lastShiftIdx = useRef<number | null>(null);
 
   // Debounced search
@@ -496,6 +500,22 @@ export default function LeadDatabasePage() {
     setLoadingAction(null);
   };
 
+  const handleBulkAssignDC = async () => {
+    const targets = selectedLeads.filter((l) => l.phone_number);
+    if (!targets.length) { toast.error("No selected leads with phone numbers"); return; }
+    setLoadingAction("bulk-dc");
+    let count = 0;
+    for (const lead of targets) {
+      try {
+        await supabase.functions.invoke("assign-lead-to-dc", { body: { lead_id: lead.id } });
+        count++;
+      } catch {}
+    }
+    toast.success(`${count} leads queued in Dynasty Connect`);
+    addLog(`${count} leads assigned to Dynasty Connect`);
+    setLoadingAction(null);
+  };
+
   const handleBulkLost = async () => {
     if (!selectedIds.size) return;
     if (!confirm(`Mark ${selectedIds.size} leads as Lost? This cannot be undone.`)) return;
@@ -696,13 +716,22 @@ export default function LeadDatabasePage() {
                   >
                     {loadingAction === "bulk-call" ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Phone className="h-3 w-3 mr-1" />}
                     AI Call {selectedIds.size ? `(${selectedIds.size})` : ""}
-                  </Button>
-                  <Button size="sm" variant="outline" disabled={!selectedIds.size} onClick={() => handleBulkStageMove("contacted")}>
-                    ⬆️ Move to Contacted {selectedIds.size ? `(${selectedIds.size})` : ""}
-                  </Button>
-                  <Button size="sm" variant="outline" disabled={!selectedIds.size} onClick={() => handleBulkStageMove("interested")}>
-                    🌟 Interested {selectedIds.size ? `(${selectedIds.size})` : ""}
-                  </Button>
+                   </Button>
+                   <Button
+                     size="sm" variant="outline"
+                     disabled={!selectedIds.size || loadingAction === "bulk-dc"}
+                     onClick={handleBulkAssignDC}
+                     className="border-purple-500/30 hover:bg-purple-500/10"
+                   >
+                     {loadingAction === "bulk-dc" ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Bot className="h-3 w-3 mr-1" />}
+                     DC AI {selectedIds.size ? `(${selectedIds.size})` : ""}
+                   </Button>
+                   <Button size="sm" variant="outline" disabled={!selectedIds.size} onClick={() => handleBulkStageMove("contacted")}>
+                     ⬆️ Move to Contacted {selectedIds.size ? `(${selectedIds.size})` : ""}
+                   </Button>
+                   <Button size="sm" variant="outline" disabled={!selectedIds.size} onClick={() => handleBulkStageMove("interested")}>
+                     🌟 Interested {selectedIds.size ? `(${selectedIds.size})` : ""}
+                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" disabled={exporting}>
@@ -994,6 +1023,13 @@ export default function LeadDatabasePage() {
                                 >
                                   <Globe className="h-3 w-3" />
                                 </Button>
+                                <Button
+                                  size="icon" variant="ghost" className="h-7 w-7"
+                                  onClick={() => setDetailLead(lead)}
+                                  title="View Details"
+                                >
+                                  <Eye className="h-3 w-3" />
+                                </Button>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button size="icon" variant="ghost" className="h-7 w-7">
@@ -1090,6 +1126,56 @@ export default function LeadDatabasePage() {
 
         {/* ── Build Demo Modal ── */}
         <BuildDemoModal lead={demoLead} open={!!demoLead} onClose={() => setDemoLead(null)} />
+
+        {/* ── Lead Detail Sheet ── */}
+        <Sheet open={!!detailLead} onOpenChange={(open) => { if (!open) setDetailLead(null); }}>
+          <SheetContent className="w-[420px] sm:w-[480px] overflow-y-auto">
+            {detailLead && (
+              <>
+                <SheetHeader>
+                  <SheetTitle className="text-lg">{detailLead.business_name}</SheetTitle>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className={`text-[10px] ${STAGE_COLORS[detailLead.pipeline_stage] || ""}`}>
+                      {detailLead.pipeline_stage}
+                    </Badge>
+                    {detailLead.priority_score && (
+                      <Badge variant="outline" className="text-[10px]">
+                        Priority: {detailLead.priority_score}/10
+                      </Badge>
+                    )}
+                  </div>
+                </SheetHeader>
+
+                <div className="mt-4 space-y-5">
+                  {/* Lead Info */}
+                  <div className="space-y-1.5 text-sm">
+                    {detailLead.phone_number && <p><span className="text-muted-foreground">Phone:</span> {formatPhone(detailLead.phone_number)}</p>}
+                    {detailLead.email && <p><span className="text-muted-foreground">Email:</span> {detailLead.email}</p>}
+                    {(detailLead.city || detailLead.state) && <p><span className="text-muted-foreground">Location:</span> {[detailLead.city, detailLead.state].filter(Boolean).join(", ")}</p>}
+                    {detailLead.industry && <p><span className="text-muted-foreground">Industry:</span> {detailLead.industry}</p>}
+                  </div>
+
+                  {/* Assignment Buttons */}
+                  <BrandaroLeadAssignmentButtons
+                    leadId={detailLead.id}
+                    leadName={detailLead.business_name}
+                    phoneNumber={detailLead.phone_number}
+                    fromNumber={fromNumber}
+                    onAssigned={() => queryClient.invalidateQueries({ queryKey: ["brandaro-leads-table"] })}
+                  />
+
+                  {/* Unified Call History */}
+                  <div>
+                    <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" /> Call History
+                    </h3>
+                    <BrandaroUnifiedCallHistory leadId={detailLead.id} />
+                  </div>
+                </div>
+              </>
+            )}
+          </SheetContent>
+        </Sheet>
       </div>
     </TooltipProvider>
   );
