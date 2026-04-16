@@ -129,6 +129,7 @@ const DeveloperPortal = () => {
   const [drawerFunnelKey, setDrawerFunnelKey] = useState('');
   const [rightPanelTab, setRightPanelTab] = useState<'monitor' | 'audit'>('monitor');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [view, setView] = useState<'tables' | 'workspace'>('workspace');
 
   // Cmd+K shortcut
   useEffect(() => {
