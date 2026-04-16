@@ -124,6 +124,62 @@ export default function DCCallDispatch() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const refreshQueue = () => qc.invalidateQueries({ queryKey: ['dynasty-call-queue'] });
+
+  const cancelCall = async (leadId: string, callId?: string | null) => {
+    try {
+      if (callId) {
+        await supabase.functions.invoke('dc-bland-dispatch', {
+          body: { action: 'cancel-call', callId },
+        });
+      }
+      await (supabase as any)
+        .from('dynasty_call_queue')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', leadId);
+      toast.success('Call cancelled');
+      refreshQueue();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to cancel call');
+    }
+  };
+
+  const cancelAllCalls = async () => {
+    const active = queue.filter((q: any) => q.status === 'calling');
+    if (!active.length) return;
+    if (!confirm(`Cancel all ${active.length} active calls?`)) return;
+    for (const c of active) await cancelCall(c.id, c.bland_call_id);
+  };
+
+  const markAsFailed = async (leadId: string) => {
+    await (supabase as any)
+      .from('dynasty_call_queue')
+      .update({ status: 'failed', error_message: 'Manually marked as failed', updated_at: new Date().toISOString() })
+      .eq('id', leadId);
+    toast.success('Marked as failed');
+    refreshQueue();
+  };
+
+  const retryCall = async (leadId: string) => {
+    await (supabase as any)
+      .from('dynasty_call_queue')
+      .update({ status: 'pending', error_message: null, called_at: null, bland_call_id: null, updated_at: new Date().toISOString() })
+      .eq('id', leadId);
+    toast.success('Moved back to queue');
+    refreshQueue();
+  };
+
+  const clearQueue = async () => {
+    if (!confirm('Delete all pending calls in this queue?')) return;
+    await (supabase as any)
+      .from('dynasty_call_queue')
+      .delete()
+      .eq('business_type', businessType)
+      .in('status', ['pending']);
+    toast.success('Pending queue cleared');
+    refreshQueue();
+  };
+
   const pending = queue.filter((q: any) => q.status === 'pending').length;
   const calling = queue.filter((q: any) => q.status === 'calling').length;
   const completed = queue.filter((q: any) => q.status === 'completed').length;
