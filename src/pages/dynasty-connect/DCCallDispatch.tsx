@@ -28,6 +28,21 @@ export default function DCCallDispatch() {
   const [autoMatch, setAutoMatch] = useState(true);
   const [manualNumberOverride, setManualNumberOverride] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+
+  // Tick every second so active-call durations update live
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const formatDuration = (startIso?: string | null) => {
+    if (!startIso) return '0:00';
+    const secs = Math.max(0, Math.floor((now - new Date(startIso).getTime()) / 1000));
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
 
   const { data: availableNumbers = [] } = useQuery({
     queryKey: ['dc-available-phone-numbers'],
@@ -234,9 +249,19 @@ export default function DCCallDispatch() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {queue.filter((q: any) => q.status === 'calling').map((q: any) => (
                 <div key={q.id} className="p-3 rounded-lg border border-primary/20 bg-primary/5">
-                  <p className="font-medium text-sm">{q.contact_name || 'Unknown'}</p>
-                  <p className="text-xs text-muted-foreground">{q.business_name}</p>
-                  <p className="font-mono text-xs mt-1">{q.phone_number}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{q.contact_name || 'Unknown'}</p>
+                      <p className="text-xs text-muted-foreground truncate">{q.business_name}</p>
+                      <p className="font-mono text-xs mt-1">{q.phone_number}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="font-mono text-base font-semibold text-primary tabular-nums">
+                        {formatDuration(q.called_at)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Live</div>
+                    </div>
+                  </div>
                   <Badge variant="outline" className="mt-2 bg-primary/10 text-primary">In Progress</Badge>
                 </div>
               ))}
