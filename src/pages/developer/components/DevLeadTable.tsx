@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Search, RefreshCw, ChevronDown, Edit2, Trash2, CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
+import { Search, RefreshCw, ChevronDown, Trash2, CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
+import { DataTablePagination } from '@/components/crud/DataTablePagination';
 
 interface FunnelConfig {
   key: string;
@@ -24,12 +25,15 @@ const QA_BADGES: Record<string, { color: string; icon: any }> = {
 
 export const DevLeadTable = ({ funnel, userEmail, density = 'comfortable', onRowInspect }: Props) => {
   const [rows, setRows] = useState<any[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sortCol, setSortCol] = useState('created_at');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [qaMap, setQaMap] = useState<Record<string, any>>({});
   const [columns, setColumns] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
   const isCompact = density === 'compact';
   const rowPy = isCompact ? 'py-0.5' : 'py-1.5';
@@ -38,17 +42,22 @@ export const DevLeadTable = ({ funnel, userEmail, density = 'comfortable', onRow
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      const { data, error, count } = await supabase
         .from(funnel.table as any)
-        .select('*')
+        .select('*', { count: 'exact' })
         .order(sortCol, { ascending: sortDir === 'asc' })
-        .limit(1000);
+        .range(from, to);
       if (error) throw error;
       if (data && data.length > 0) {
         const cols = Object.keys(data[0]).filter(c => c !== 'id');
         setColumns(['id', ...cols.slice(0, 12)]);
+      } else {
+        setColumns([]);
       }
       setRows(data || []);
+      setTotalCount(count || 0);
 
       if (data && data.length > 0) {
         const ids = data.map((r: any) => r.id);
@@ -67,9 +76,12 @@ export const DevLeadTable = ({ funnel, userEmail, density = 'comfortable', onRow
       toast.error(`Fetch error: ${e.message}`);
     }
     setLoading(false);
-  }, [funnel.table, funnel.key, sortCol, sortDir]);
+  }, [funnel.table, funnel.key, sortCol, sortDir, page, pageSize]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Reset page when funnel changes
+  useEffect(() => { setPage(1); }, [funnel.key]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Permanently delete this record?')) return;
@@ -116,7 +128,8 @@ export const DevLeadTable = ({ funnel, userEmail, density = 'comfortable', onRow
     return s.length > max ? s.slice(0, max) + '…' : s;
   };
 
-  // Skeleton loader
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
   if (loading && rows.length === 0) {
     return (
       <div className="h-full flex flex-col">
@@ -147,7 +160,7 @@ export const DevLeadTable = ({ funnel, userEmail, density = 'comfortable', onRow
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Filter records..."
+            placeholder="Filter current page..."
             className="w-full bg-[#0d0d15] border border-[#1a1a2e] rounded pl-7 pr-3 py-1.5 text-[11px] text-[#c8c8d0] placeholder:text-[#333] focus:border-[#00ff88]/30 focus:outline-none"
           />
         </div>
@@ -155,7 +168,7 @@ export const DevLeadTable = ({ funnel, userEmail, density = 'comfortable', onRow
           <RefreshCw className={`w-3.5 h-3.5 text-[#555] ${loading ? 'animate-spin' : ''}`} />
         </button>
         <div className="ml-auto text-[10px] text-[#444] font-mono">
-          {filteredRows.length} / {rows.length} records
+          {filteredRows.length} shown · {totalCount.toLocaleString()} total
         </div>
       </div>
 
@@ -184,8 +197,6 @@ export const DevLeadTable = ({ funnel, userEmail, density = 'comfortable', onRow
             {filteredRows.map((row, i) => {
               const qa = qaMap[row.id];
               const qaStatus = qa?.qa_status || 'pending';
-              const badge = QA_BADGES[qaStatus] || QA_BADGES.pending;
-              const BadgeIcon = badge.icon;
               return (
                 <tr
                   key={row.id || i}
@@ -239,6 +250,19 @@ export const DevLeadTable = ({ funnel, userEmail, density = 'comfortable', onRow
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Pagination */}
+      <div className="border-t border-[#1a1a2e] mt-2 -mx-1 px-1 [&_button]:!h-7 [&_button]:!w-7 [&_*]:!text-[10px]">
+        <DataTablePagination
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={totalCount}
+          onPageChange={setPage}
+          onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+          pageSizeOptions={[25, 50, 100, 250]}
+        />
       </div>
     </div>
   );

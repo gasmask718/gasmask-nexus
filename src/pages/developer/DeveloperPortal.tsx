@@ -93,6 +93,16 @@ const FUNNEL_GROUPS: FunnelGroup[] = [
     ],
   },
   {
+    key: 'customer_delivery',
+    label: 'Customer Delivery',
+    icon: '🌐',
+    funnels: [
+      { key: 'customer_sites', label: 'Customer Sites', table: 'customer_sites' },
+      { key: 'customer_intake', label: 'Intake Forms', table: 'customer_intake_forms' },
+      { key: 'customer_change_requests', label: 'Change Requests', table: 'customer_change_requests' },
+    ],
+  },
+  {
     key: 'system',
     label: 'System & Audit',
     icon: '🛡️',

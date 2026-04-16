@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { X, Save, CheckCircle, XCircle, Clock, MessageSquare, FileJson } from 'lucide-react';
+import { X, Save, CheckCircle, XCircle, Clock, MessageSquare, FileJson, ExternalLink, Globe } from 'lucide-react';
+import { CustomerSitePanel } from './CustomerSitePanel';
 
 interface Props {
   row: any;
@@ -19,11 +20,12 @@ const QA_STATUSES = [
 ];
 
 export const DevRowDrawer = ({ row, table, funnelKey, userEmail, onClose, onSaved }: Props) => {
+  const isCustomerSite = table === 'customer_sites';
   const [formData, setFormData] = useState<Record<string, any>>({ ...row });
   const [saving, setSaving] = useState(false);
   const [qaStatus, setQaStatus] = useState('pending');
   const [qaNote, setQaNote] = useState('');
-  const [activeTab, setActiveTab] = useState<'fields' | 'json' | 'qa'>('fields');
+  const [activeTab, setActiveTab] = useState<'fields' | 'json' | 'qa' | 'workspace'>(isCustomerSite ? 'workspace' : 'fields');
 
   useEffect(() => {
     // Fetch QA tag
@@ -86,14 +88,21 @@ export const DevRowDrawer = ({ row, table, funnelKey, userEmail, onClose, onSave
   return (
     <div className="fixed inset-0 z-[90] flex items-stretch justify-end">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-[520px] bg-[#0b0b14] border-l border-[#1a1a2e] flex flex-col shadow-2xl shadow-black/60">
+      <div className={`relative ${isCustomerSite ? 'w-[760px]' : 'w-[520px]'} bg-[#0b0b14] border-l border-[#1a1a2e] flex flex-col shadow-2xl shadow-black/60`}>
         {/* Header */}
         <div className="border-b border-[#1a1a2e] px-4 py-3 flex items-center justify-between shrink-0 bg-[#0d0d15]">
           <div>
-            <div className="text-[10px] uppercase tracking-widest text-[#00ff88]">Record Inspector</div>
+            <div className="text-[10px] uppercase tracking-widest text-[#00ff88]">
+              {isCustomerSite ? `${row.customer_name || 'Customer'} · ${row.business_name || ''}` : 'Record Inspector'}
+            </div>
             <div className="text-[10px] text-[#444] mt-0.5 font-mono">{table} / {row.id?.slice(0, 12)}</div>
           </div>
           <div className="flex items-center gap-2">
+            {isCustomerSite && row.site_url && (
+              <a href={row.site_url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a1a2e] text-[#00ff88] border border-[#00ff88]/30 rounded text-[10px] uppercase tracking-widest hover:bg-[#00ff88]/20 transition-colors">
+                <ExternalLink className="w-3 h-3" /> Open Site
+              </a>
+            )}
             <button
               onClick={handleSave}
               disabled={saving}
@@ -110,6 +119,7 @@ export const DevRowDrawer = ({ row, table, funnelKey, userEmail, onClose, onSave
         {/* Drawer Tabs */}
         <div className="flex border-b border-[#1a1a2e] shrink-0">
           {[
+            ...(isCustomerSite ? [{ key: 'workspace' as const, label: 'Workspace', icon: Globe }] : []),
             { key: 'fields' as const, label: 'Fields', icon: MessageSquare },
             { key: 'json' as const, label: 'JSON', icon: FileJson },
             { key: 'qa' as const, label: 'QA', icon: CheckCircle },
@@ -130,6 +140,9 @@ export const DevRowDrawer = ({ row, table, funnelKey, userEmail, onClose, onSave
 
         {/* Content */}
         <div className="flex-1 overflow-auto">
+          {activeTab === 'workspace' && isCustomerSite && (
+            <CustomerSitePanel customerSiteId={row.id} customerName={row.customer_name || ''} userEmail={userEmail} />
+          )}
           {activeTab === 'fields' && (
             <div className="p-4 space-y-3">
               <div>
