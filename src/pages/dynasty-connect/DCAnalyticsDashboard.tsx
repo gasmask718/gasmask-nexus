@@ -56,6 +56,15 @@ export default function DCAnalytics() {
     return acc;
   }, {});
 
+  // Calls by source (Brandaro vs Direct vs other)
+  const bySource = calls.reduce((acc: any, c: any) => {
+    const src = c.source_table === 'brandaro_qualified_leads' ? '🅱️ Brandaro'
+      : c.source_table ? c.source_table.replace(/_/g, ' ')
+      : 'Direct Upload';
+    acc[src] = (acc[src] || 0) + 1;
+    return acc;
+  }, {});
+
   // Calls by date
   const byDate = calls.reduce((acc: any, c: any) => {
     const d = new Date(c.created_at).toLocaleDateString();
@@ -150,6 +159,24 @@ export default function DCAnalytics() {
                 </div>
               ))}
               {Object.keys(byBusiness).length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No data</p>}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* By Source */}
+        <Card>
+          <CardHeader><CardTitle className="text-base">Calls by Source</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {Object.entries(bySource).sort((a, b) => (b[1] as number) - (a[1] as number)).map(([src, count]) => (
+                <div key={src} className="flex items-center justify-between p-2 rounded bg-muted/50">
+                  <Badge variant="outline" className={src.includes('Brandaro') ? 'bg-orange-500/10 text-orange-400 border-orange-500/30' : ''}>
+                    {src}
+                  </Badge>
+                  <span className="font-bold">{count as number}</span>
+                </div>
+              ))}
+              {Object.keys(bySource).length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No data</p>}
             </div>
           </CardContent>
         </Card>

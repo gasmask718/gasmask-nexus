@@ -116,7 +116,7 @@ export default function DCCallResults() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="border-b border-border text-left text-muted-foreground">
-                <th className="p-3">Time</th><th className="p-3">Business</th><th className="p-3">Contact</th><th className="p-3">Phone</th><th className="p-3">Duration</th><th className="p-3">Quality</th><th className="p-3">Score</th><th className="p-3">Actions</th>
+                <th className="p-3">Time</th><th className="p-3">Source</th><th className="p-3">Business</th><th className="p-3">Contact</th><th className="p-3">Phone</th><th className="p-3">Duration</th><th className="p-3">Quality</th><th className="p-3">Score</th><th className="p-3">Actions</th>
               </tr></thead>
               <tbody>
                 {filtered.map((r: any) => {
@@ -125,6 +125,19 @@ export default function DCCallResults() {
                   return (
                     <tr key={r.id} className="border-b border-border/50 hover:bg-accent/50">
                       <td className="p-3 text-xs">{new Date(r.created_at).toLocaleString()}</td>
+                      <td className="p-3">
+                        {r.source_table ? (
+                          <Badge variant="outline" className={
+                            r.source_table === 'brandaro_qualified_leads'
+                              ? 'bg-orange-500/10 text-orange-400 border-orange-500/30 text-[10px]'
+                              : 'bg-muted text-muted-foreground text-[10px]'
+                          }>
+                            {r.source_table === 'brandaro_qualified_leads' ? '🅱️ Brandaro' : r.source_table.replace(/_/g, ' ')}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Direct</span>
+                        )}
+                      </td>
                       <td className="p-3"><Badge variant="outline">{r.business_unit}</Badge></td>
                       <td className="p-3 font-medium">{r.contact_name || '-'}<br /><span className="text-xs text-muted-foreground">{r.company_name}</span></td>
                       <td className="p-3 font-mono text-xs">{r.to_number}</td>

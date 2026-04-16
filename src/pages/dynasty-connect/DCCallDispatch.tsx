@@ -205,17 +205,30 @@ export default function DCCallDispatch() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="border-b border-border text-left text-muted-foreground">
-                <th className="p-3">Name</th><th className="p-3">Business</th><th className="p-3">Phone</th><th className="p-3">State</th><th className="p-3">Status</th><th className="p-3">Called At</th>
+                <th className="p-3">Name</th><th className="p-3">Business</th><th className="p-3">Phone</th><th className="p-3">State</th><th className="p-3">Source</th><th className="p-3">Status</th><th className="p-3">Called At</th>
               </tr></thead>
               <tbody>
                 {queue.length === 0 ? (
-                  <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No leads uploaded. Upload a CSV to get started.</td></tr>
+                  <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No leads uploaded. Upload a CSV to get started.</td></tr>
                 ) : queue.map((q: any) => (
                   <tr key={q.id} className="border-b border-border/50 hover:bg-accent/50">
                     <td className="p-3 font-medium">{q.contact_name || '-'}</td>
                     <td className="p-3">{q.business_name || '-'}</td>
                     <td className="p-3 font-mono text-xs">{q.phone_number}</td>
                     <td className="p-3">{q.state || '-'}</td>
+                    <td className="p-3">
+                      {q.source_table ? (
+                        <Badge variant="outline" className={
+                          q.source_table === 'brandaro_qualified_leads'
+                            ? 'bg-orange-500/10 text-orange-400 border-orange-500/30 text-[10px]'
+                            : 'bg-muted text-muted-foreground text-[10px]'
+                        }>
+                          {q.source_table === 'brandaro_qualified_leads' ? '🅱️ Brandaro' : q.source_table.replace(/_/g, ' ')}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Direct</span>
+                      )}
+                    </td>
                     <td className="p-3 flex items-center gap-1">{statusIcon(q.status)} {statusBadge(q.status)}</td>
                     <td className="p-3 text-xs text-muted-foreground">{q.called_at ? new Date(q.called_at).toLocaleString() : '-'}</td>
                   </tr>
