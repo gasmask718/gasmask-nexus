@@ -363,6 +363,15 @@ export default function DCCallDispatch() {
                       </div>
                     </div>
                   )}
+
+                  <div className="flex gap-2 mt-3 border-t border-border/60 pt-3">
+                    <Button size="sm" variant="outline" className="flex-1" onClick={() => cancelCall(q.id, q.bland_call_id)}>
+                      <StopCircle className="h-4 w-4 mr-1" /> Cancel
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex-1" onClick={() => markAsFailed(q.id)}>
+                      <XCircle className="h-4 w-4 mr-1" /> Mark Failed
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
