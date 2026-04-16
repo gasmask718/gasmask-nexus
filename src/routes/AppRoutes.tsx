@@ -47,6 +47,7 @@ const InviteSignup = lazy(() => import('@/pages/auth/InviteSignup'));
 const UserInvitations = lazy(() => import('@/pages/security/UserInvitations'));
 const InviteLanding = lazy(() => import('@/pages/portal/InviteLanding'));
 const InstallPwa = lazy(() => import('@/pages/InstallPwa'));
+const DeveloperPortal = lazy(() => import('@/pages/developer/DeveloperPortal'));
 
 // Protected pages
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
