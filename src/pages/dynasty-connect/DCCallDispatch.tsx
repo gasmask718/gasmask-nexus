@@ -309,7 +309,12 @@ export default function DCCallDispatch() {
       {/* Active Calls */}
       {calling > 0 && (
         <Card className="border-primary/30">
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><Phone className="h-4 w-4 text-primary animate-pulse" /> Active Calls ({calling})</CardTitle></CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-base flex items-center gap-2"><Phone className="h-4 w-4 text-primary animate-pulse" /> Active Calls ({calling})</CardTitle>
+            <Button size="sm" variant="destructive" onClick={cancelAllCalls}>
+              <XCircle className="h-4 w-4 mr-2" /> Cancel All
+            </Button>
+          </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {queue.filter((q: any) => q.status === 'calling').map((q: any) => (
