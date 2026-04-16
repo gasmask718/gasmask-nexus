@@ -18,7 +18,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from '@/components/ui/resizable';
-import { Activity, Terminal, Command, Rows3, AlignJustify, X, Database, LayoutDashboard } from 'lucide-react';
+import { Activity, Terminal, Command, Rows3, AlignJustify, X, Database, LayoutDashboard, LogOut } from 'lucide-react';
 
 const ALLOWED_EMAILS = ['admin123@gmail.com', 'dev@gmail.com'];
 
@@ -120,7 +120,7 @@ const ALL_FUNNELS = FUNNEL_GROUPS.flatMap(g => g.funnels);
 type Density = 'comfortable' | 'compact';
 
 const DeveloperPortal = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const [activeFunnels, setActiveFunnels] = useState<string[]>(['brandaro']);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [density, setDensity] = useState<Density>('comfortable');
@@ -249,6 +249,13 @@ const DeveloperPortal = () => {
             </>
           )}
           <DevKillSwitch userEmail={user.email || ''} />
+          <button
+            onClick={() => signOut()}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#1a1a2e] rounded border border-[#2a2a3e] text-[10px] uppercase tracking-widest text-[#888] hover:text-[#ff5566] hover:border-[#ff5566]/40 transition-colors"
+            title="Sign out"
+          >
+            <LogOut className="w-3 h-3" /> Logout
+          </button>
         </div>
       </header>
 
