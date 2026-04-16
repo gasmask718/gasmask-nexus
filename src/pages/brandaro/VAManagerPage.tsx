@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,7 +34,7 @@ import {
   Users, Phone, TrendingUp, Target, Flame, Clock, AlertTriangle,
   Trophy, Shield, Star, Eye, MessageSquare, CheckCircle2, Bell,
   Brain, ArrowUpRight, ThermometerSun, Sparkles, Zap, BookOpen, BarChart3,
-  Crosshair, DollarSign, Swords, Tag, UserCircle,
+  Crosshair, DollarSign, Swords, Tag, UserCircle, Mic, FileText, PlayCircle, RefreshCw,
 } from "lucide-react";
 
 export default function VAManagerPage() {
@@ -101,6 +103,111 @@ export default function VAManagerPage() {
   const [ingestMode, setIngestMode] = useState<"manual" | "transcript" | "description">("manual");
   const [ingestText, setIngestText] = useState("");
   const [ingestName, setIngestName] = useState("");
+  const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
+  const [recordingsFilter, setRecordingsFilter] = useState<string | undefined>();
+  const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
+
+  // Fetch all call recordings from DB + Twilio
+  const { data: allCallRecordings = [], refetch: refetchRecordings, isLoading: loadingRecordings } = useQuery({
+    queryKey: ["brandaro-all-recordings", recordingsFilter],
+    queryFn: async () => {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const params = new URLSearchParams({ action: "list", limit: "200" });
+      if (recordingsFilter) params.set("va_id", recordingsFilter);
+      
+      const { data, error } = await supabase.functions.invoke("brandaro-fetch-recordings", {
+        body: null,
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Fallback: query directly from DB if edge function fails
+      if (error || !data?.calls) {
+        const { data: vaLogs } = await supabase
+          .from("va_call_logs")
+          .select("id, va_id, call_sid, recording_url, recording_sid, transcript, duration_seconds, call_status, disposition, called_at, direction, excitement_level, va_notes, lead_id")
+          .eq("twilio_number", "+19292623850")
+          .order("called_at", { ascending: false })
+          .limit(200);
+
+        const { data: brandLogs } = await supabase
+          .from("brandaro_call_logs")
+          .select("id, called_by_user_id, call_outcome, call_notes, call_timestamp, call_duration_seconds, recording_url, lead_id")
+          .order("call_timestamp", { ascending: false })
+          .limit(200);
+
+        const { data: profiles } = await supabase.from("profiles").select("id, name");
+        const nameMap: Record<string, string> = {};
+        (profiles || []).forEach((p: any) => { nameMap[p.id] = p.name || "VA"; });
+
+        const unified: any[] = [];
+        (vaLogs || []).forEach((l: any) => unified.push({
+          id: l.id, source: "va_call_logs", va_id: l.va_id, va_name: nameMap[l.va_id] || "Unknown",
+          call_sid: l.call_sid, recording_url: l.recording_url, transcript: l.transcript,
+          duration_seconds: l.duration_seconds, call_status: l.call_status, disposition: l.disposition,
+          called_at: l.called_at, direction: l.direction, notes: l.va_notes, lead_id: l.lead_id,
+        }));
+        (brandLogs || []).forEach((l: any) => unified.push({
+          id: l.id, source: "brandaro_call_logs", va_id: l.called_by_user_id, va_name: nameMap[l.called_by_user_id] || "Unknown",
+          call_sid: null, recording_url: l.recording_url, transcript: null,
+          duration_seconds: l.call_duration_seconds, call_status: l.call_outcome, disposition: l.call_outcome,
+          called_at: l.call_timestamp, direction: "outbound", notes: l.call_notes, lead_id: l.lead_id,
+        }));
+        unified.sort((a, b) => new Date(b.called_at || 0).getTime() - new Date(a.called_at || 0).getTime());
+        return unified;
+      }
+
+      return data.calls;
+    },
+    refetchInterval: 60000,
+  });
+
+  // VA leaderboard from DB
+  const { data: dbLeaderboard = [], refetch: refetchLeaderboard } = useQuery({
+    queryKey: ["brandaro-db-leaderboard"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("va_leaderboard_stats")
+        .select("*, profiles(name)")
+        .eq("session_date", new Date().toISOString().split("T")[0])
+        .order("calls_closed", { ascending: false });
+      if (error) return [];
+      return (data || []).map((d: any) => ({
+        va_id: d.va_id,
+        va_name: d.profiles?.name || "VA",
+        calls_dialed: d.calls_dialed || 0,
+        calls_answered: d.calls_answered || 0,
+        calls_closed: d.calls_closed || 0,
+        total_talk_time: d.total_talk_time_seconds || 0,
+      }));
+    },
+    refetchInterval: 30000,
+  });
+
+  // Sync recordings from Twilio
+  const handleSyncRecordings = async () => {
+    try {
+      await supabase.functions.invoke("brandaro-sync-recordings", { body: {} });
+      refetchRecordings();
+      toast.success("Recordings synced from Twilio");
+    } catch {
+      toast.error("Sync failed");
+    }
+  };
+
+  const formatDuration = (seconds: number | null) => {
+    if (!seconds) return "0:00";
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  // Get unique VAs for filter
+  const uniqueVAs = Array.from(new Map(
+    allCallRecordings.map((c: any) => [c.va_id, { id: c.va_id, name: c.va_name }])
+  ).values());
+
+  const recordingsWithAudio = allCallRecordings.filter((c: any) => c.recording_url);
+  const recordingsWithTranscripts = allCallRecordings.filter((c: any) => c.transcript);
 
   const totalCalls = allPerf.reduce((s: number, p: any) => s + (p.calls_made || 0), 0);
   const totalConversations = allPerf.reduce((s: number, p: any) => s + (p.conversations || 0), 0);
@@ -216,6 +323,9 @@ export default function VAManagerPage() {
           <TabsTrigger value="positioning"><Crosshair className="h-3 w-3 mr-1" /> Position</TabsTrigger>
           <TabsTrigger value="decisions"><Eye className="h-3 w-3 mr-1" /> Decisions</TabsTrigger>
           <TabsTrigger value="personalities"><UserCircle className="h-3 w-3 mr-1" /> Personas</TabsTrigger>
+          <TabsTrigger value="recordings"><Mic className="h-3 w-3 mr-1" /> Recordings</TabsTrigger>
+          <TabsTrigger value="transcripts"><FileText className="h-3 w-3 mr-1" /> Transcripts</TabsTrigger>
+          <TabsTrigger value="db-leaderboard"><Trophy className="h-3 w-3 mr-1" /> Live Board</TabsTrigger>
         </TabsList>
 
         {/* ── Escalation Queue ── */}
@@ -1119,6 +1229,193 @@ export default function VAManagerPage() {
                   {frameworks.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No frameworks yet</p>}
                 </div>
               </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Recordings ── */}
+        <TabsContent value="recordings" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Mic className="h-4 w-4 text-primary" /> Call Recordings ({recordingsWithAudio.length})
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Select value={recordingsFilter || "all"} onValueChange={v => setRecordingsFilter(v === "all" ? undefined : v)}>
+                  <SelectTrigger className="w-[180px] h-8 text-xs"><SelectValue placeholder="Filter by VA" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All VAs</SelectItem>
+                    {uniqueVAs.map((va: any) => (
+                      <SelectItem key={va.id} value={va.id}>{va.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleSyncRecordings}>
+                  <RefreshCw className="h-3 w-3 mr-1" /> Sync Twilio
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loadingRecordings ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Loading recordings…</p>
+              ) : (
+                <ScrollArea className="h-[600px]">
+                  <div className="space-y-2">
+                    {recordingsWithAudio.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-8">No recordings found. Click "Sync Twilio" to fetch from Twilio.</p>
+                    )}
+                    {recordingsWithAudio.map((call: any) => (
+                      <div key={call.id} className="p-3 rounded-lg border bg-card space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <PlayCircle className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-medium">{call.va_name}</span>
+                            <Badge variant="outline" className="text-xs">{call.disposition || call.call_status || "N/A"}</Badge>
+                            {call.direction && <Badge variant="secondary" className="text-xs">{call.direction}</Badge>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">{formatDuration(call.duration_seconds)}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {call.called_at ? new Date(call.called_at).toLocaleString() : "—"}
+                            </span>
+                          </div>
+                        </div>
+                        <audio
+                          controls
+                          className="w-full h-8"
+                          src={call.recording_url}
+                          preload="none"
+                        />
+                        {call.notes && <p className="text-xs text-muted-foreground">{call.notes}</p>}
+                        {call.transcript && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs"
+                            onClick={() => setExpandedCallId(expandedCallId === call.id ? null : call.id)}
+                          >
+                            <FileText className="h-3 w-3 mr-1" /> {expandedCallId === call.id ? "Hide" : "Show"} Transcript
+                          </Button>
+                        )}
+                        {expandedCallId === call.id && call.transcript && (
+                          <div className="p-3 rounded bg-muted/50 text-xs whitespace-pre-wrap font-mono max-h-[300px] overflow-auto">
+                            {call.transcript}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Transcripts ── */}
+        <TabsContent value="transcripts" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" /> Call Transcripts ({recordingsWithTranscripts.length})
+              </CardTitle>
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleSyncRecordings}>
+                <RefreshCw className="h-3 w-3 mr-1" /> Sync Transcripts
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[600px]">
+                <div className="space-y-3">
+                  {recordingsWithTranscripts.length === 0 && (
+                    <div className="text-center py-8 space-y-2">
+                      <FileText className="h-8 w-8 text-muted-foreground/30 mx-auto" />
+                      <p className="text-sm text-muted-foreground">No transcripts available yet</p>
+                      <p className="text-xs text-muted-foreground/60">Transcripts are fetched automatically from Twilio after calls complete</p>
+                    </div>
+                  )}
+                  {recordingsWithTranscripts.map((call: any) => (
+                    <div key={call.id} className="p-4 rounded-lg border bg-card space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{call.va_name}</span>
+                          <Badge variant="outline" className="text-xs">{call.disposition || call.call_status}</Badge>
+                          <span className="text-xs text-muted-foreground">{formatDuration(call.duration_seconds)}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {call.called_at ? new Date(call.called_at).toLocaleString() : "—"}
+                        </span>
+                      </div>
+                      <div className="p-3 rounded bg-muted/50 text-xs whitespace-pre-wrap font-mono max-h-[400px] overflow-auto leading-relaxed">
+                        {call.transcript}
+                      </div>
+                      {call.recording_url && (
+                        <audio controls className="w-full h-8" src={call.recording_url} preload="none" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── DB Live Leaderboard ── */}
+        <TabsContent value="db-leaderboard" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-amber-400" /> Live VA Leaderboard — Today
+              </CardTitle>
+              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => refetchLeaderboard()}>
+                <RefreshCw className="h-3.5 w-3.5" />
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {dbLeaderboard.length === 0 ? (
+                <div className="text-center py-12 space-y-2">
+                  <Trophy className="h-8 w-8 text-muted-foreground/30 mx-auto" />
+                  <p className="text-sm text-muted-foreground">No call data yet for today</p>
+                  <p className="text-xs text-muted-foreground/60">Stats update automatically as VAs make calls</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-muted-foreground text-xs border-b border-border/50">
+                        <th className="text-left p-3 font-medium">#</th>
+                        <th className="text-left p-3 font-medium">VA</th>
+                        <th className="text-center p-3 font-medium">Dialed</th>
+                        <th className="text-center p-3 font-medium">Answered</th>
+                        <th className="text-center p-3 font-medium">Closed</th>
+                        <th className="text-center p-3 font-medium">Answer %</th>
+                        <th className="text-center p-3 font-medium">Close %</th>
+                        <th className="text-center p-3 font-medium">Talk Time</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dbLeaderboard.map((entry: any, idx: number) => {
+                        const answerRate = entry.calls_dialed > 0 ? Math.round((entry.calls_answered / entry.calls_dialed) * 100) : 0;
+                        const closeRate = entry.calls_answered > 0 ? Math.round((entry.calls_closed / entry.calls_answered) * 100) : 0;
+                        return (
+                          <tr key={entry.va_id} className={`border-b border-border/30 ${idx < 3 ? "bg-accent/10" : ""}`}>
+                            <td className="p-3">
+                              <span className={`font-bold ${idx === 0 ? "text-amber-400" : idx === 1 ? "text-gray-400" : idx === 2 ? "text-orange-700" : "text-muted-foreground"}`}>
+                                #{idx + 1}
+                              </span>
+                            </td>
+                            <td className="p-3 font-medium">{entry.va_name}</td>
+                            <td className="text-center p-3 tabular-nums text-muted-foreground">{entry.calls_dialed}</td>
+                            <td className="text-center p-3 tabular-nums text-muted-foreground">{entry.calls_answered}</td>
+                            <td className="text-center p-3 tabular-nums font-bold text-green-400">{entry.calls_closed}</td>
+                            <td className="text-center p-3 tabular-nums text-muted-foreground">{answerRate}%</td>
+                            <td className="text-center p-3 tabular-nums text-muted-foreground">{closeRate}%</td>
+                            <td className="text-center p-3 tabular-nums text-muted-foreground">{formatDuration(entry.total_talk_time)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
