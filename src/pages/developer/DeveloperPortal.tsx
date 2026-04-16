@@ -12,12 +12,13 @@ import { DevSystemMonitor } from './components/DevSystemMonitor';
 import { DevCommandPalette } from './components/DevCommandPalette';
 import { DevRowDrawer } from './components/DevRowDrawer';
 import { DevFunnelSidebar, FunnelGroup } from './components/DevFunnelSidebar';
+import { DevWorkspace } from './components/DevWorkspace';
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from '@/components/ui/resizable';
-import { Activity, Terminal, Command, Rows3, AlignJustify, X } from 'lucide-react';
+import { Activity, Terminal, Command, Rows3, AlignJustify, X, Database, LayoutDashboard } from 'lucide-react';
 
 const ALLOWED_EMAILS = ['admin123@gmail.com', 'dev@gmail.com'];
 
@@ -128,6 +129,7 @@ const DeveloperPortal = () => {
   const [drawerFunnelKey, setDrawerFunnelKey] = useState('');
   const [rightPanelTab, setRightPanelTab] = useState<'monitor' | 'audit'>('monitor');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [view, setView] = useState<'tables' | 'workspace'>('workspace');
 
   // Cmd+K shortcut
   useEffect(() => {
@@ -197,33 +199,66 @@ const DeveloperPortal = () => {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setCmdOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-[#1a1a2e] rounded border border-[#2a2a3e] text-[10px] text-[#555] hover:text-[#888] hover:border-[#3a3a4e] transition-colors"
-          >
-            <Command className="w-3 h-3" />
-            <span>Search</span>
-            <kbd className="ml-2 px-1.5 py-0.5 bg-[#0a0a0f] rounded text-[9px] border border-[#2a2a3e]">⌘K</kbd>
-          </button>
+          {/* View Mode Toggle */}
           <div className="flex bg-[#1a1a2e] rounded border border-[#2a2a3e] overflow-hidden">
             <button
-              onClick={() => setDensity('comfortable')}
-              className={`p-1.5 transition-colors ${density === 'comfortable' ? 'bg-[#00ff88]/10 text-[#00ff88]' : 'text-[#555] hover:text-[#888]'}`}
-              title="Comfortable view"
+              onClick={() => setView('workspace')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] uppercase tracking-widest transition-colors ${
+                view === 'workspace' ? 'bg-dev-accent/15 text-dev-accent' : 'text-[#555] hover:text-[#888]'
+              }`}
+              title="Client workspace view"
             >
-              <Rows3 className="w-3.5 h-3.5" />
+              <LayoutDashboard className="w-3 h-3" /> Workspace
             </button>
             <button
-              onClick={() => setDensity('compact')}
-              className={`p-1.5 transition-colors ${density === 'compact' ? 'bg-[#00ff88]/10 text-[#00ff88]' : 'text-[#555] hover:text-[#888]'}`}
-              title="Compact view"
+              onClick={() => setView('tables')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] uppercase tracking-widest transition-colors ${
+                view === 'tables' ? 'bg-[#00ff88]/10 text-[#00ff88]' : 'text-[#555] hover:text-[#888]'
+              }`}
+              title="Raw database tables"
             >
-              <AlignJustify className="w-3.5 h-3.5" />
+              <Database className="w-3 h-3" /> Tables
             </button>
           </div>
+          {view === 'tables' && (
+            <>
+              <button
+                onClick={() => setCmdOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-[#1a1a2e] rounded border border-[#2a2a3e] text-[10px] text-[#555] hover:text-[#888] hover:border-[#3a3a4e] transition-colors"
+              >
+                <Command className="w-3 h-3" />
+                <span>Search</span>
+                <kbd className="ml-2 px-1.5 py-0.5 bg-[#0a0a0f] rounded text-[9px] border border-[#2a2a3e]">⌘K</kbd>
+              </button>
+              <div className="flex bg-[#1a1a2e] rounded border border-[#2a2a3e] overflow-hidden">
+                <button
+                  onClick={() => setDensity('comfortable')}
+                  className={`p-1.5 transition-colors ${density === 'comfortable' ? 'bg-[#00ff88]/10 text-[#00ff88]' : 'text-[#555] hover:text-[#888]'}`}
+                  title="Comfortable view"
+                >
+                  <Rows3 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setDensity('compact')}
+                  className={`p-1.5 transition-colors ${density === 'compact' ? 'bg-[#00ff88]/10 text-[#00ff88]' : 'text-[#555] hover:text-[#888]'}`}
+                  title="Compact view"
+                >
+                  <AlignJustify className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </>
+          )}
           <DevKillSwitch userEmail={user.email || ''} />
         </div>
       </header>
+
+      {view === 'workspace' ? (
+        <div className="flex-1 overflow-hidden">
+          <DevWorkspace userEmail={user.email || ''} />
+        </div>
+      ) : (
+      <>
+
 
       {/* ═══ Active Filters Tags ═══ */}
       {activeFunnels.length > 0 && (
@@ -335,6 +370,8 @@ const DeveloperPortal = () => {
           </ResizablePanelGroup>
         </div>
       </div>
+      </>
+      )}
 
       {/* ═══ Command Palette ═══ */}
       {cmdOpen && <DevCommandPalette onClose={() => setCmdOpen(false)} funnels={ALL_FUNNELS} />}
