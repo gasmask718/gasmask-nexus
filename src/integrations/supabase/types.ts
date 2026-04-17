@@ -39208,6 +39208,7 @@ export type Database = {
       dynasty_call_history: {
         Row: {
           answered_at: string | null
+          business_type: string | null
           call_id: string
           call_summary: string | null
           created_at: string
@@ -39228,6 +39229,7 @@ export type Database = {
         }
         Insert: {
           answered_at?: string | null
+          business_type?: string | null
           call_id: string
           call_summary?: string | null
           created_at?: string
@@ -39248,6 +39250,7 @@ export type Database = {
         }
         Update: {
           answered_at?: string | null
+          business_type?: string | null
           call_id?: string
           call_summary?: string | null
           created_at?: string
