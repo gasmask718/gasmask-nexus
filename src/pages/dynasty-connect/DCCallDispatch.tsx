@@ -41,11 +41,18 @@ export default function DCCallDispatch() {
   const [liveTranscripts, setLiveTranscripts] = useState<Record<string, TranscriptSegment[]>>({});
   const [transcriptModal, setTranscriptModal] = useState<{ callId: string; segments: TranscriptSegment[] } | null>(null);
 
-  // Tick every second so active-call durations update live
+  const updateQueueCache = useCallback((updater: (items: any[]) => any[]) => {
+    qc.setQueryData(['dynasty-call-queue', businessType], (current: any[] | undefined) => updater(current || []));
+  }, [businessType, qc]);
+
+  const activeCalls = queue.filter((q: any) => ['calling', 'in-progress'].includes(q.status));
+
+  // Tick every second only while there are active calls
   useEffect(() => {
+    if (activeCalls.length === 0) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [activeCalls.length]);
 
   const formatDuration = (startIso?: string | null) => {
     if (!startIso) return '0:00';
@@ -206,23 +213,50 @@ export default function DCCallDispatch() {
 
   const cancelCall = async (leadId: string, callId?: string | null) => {
     try {
+      console.log('[UI CANCEL START]', { leadId, callId });
+
+      updateQueueCache((items) => items.map((q: any) => (
+        q.id === leadId
+          ? {
+              ...q,
+              status: 'cancelled',
+              updated_at: new Date().toISOString(),
+              completed_at: new Date().toISOString(),
+            }
+          : q
+      )));
+
       if (callId) {
+        console.log('[CALLING CANCEL API]', callId);
         const { data, error } = await supabase.functions.invoke('dc-bland-dispatch', {
-          body: { action: 'cancel-call', callId },
+          body: { action: 'cancel-call', callId, leadId },
         });
         if (error) {
-          console.error('[CANCEL ERROR]', error);
-          toast.error('Failed to stop call in Bland.ai');
+          console.error('[CANCEL API ERROR]', error);
+          toast.error(`Cancel API error: ${error.message}`);
         } else {
-          console.log('[CANCEL SUCCESS]', data);
+          console.log('[CANCEL API SUCCESS]', data);
         }
       }
-      await (supabase as any)
+
+      console.log('[UPDATING DATABASE]', leadId);
+      const { error: dbError } = await (supabase as any)
         .from('dynasty_call_queue')
-        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .update({
+          status: 'cancelled',
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', leadId);
+
+      if (dbError) {
+        console.error('[DATABASE ERROR]', dbError);
+      }
+
+      console.log('[REFRESHING QUERIES]');
       await qc.invalidateQueries({ queryKey: ['dynasty-call-queue'] });
-      toast.success('Call cancelled');
+      await qc.invalidateQueries({ queryKey: ['dynasty-completed-calls'] });
+      toast.success('Call cancelled - stopped in Bland.ai');
     } catch (e: any) {
       console.error('[CANCEL EXCEPTION]', e);
       toast.error(e.message || 'Failed to cancel call');
@@ -230,10 +264,45 @@ export default function DCCallDispatch() {
   };
 
   const cancelAllCalls = async () => {
-    const active = queue.filter((q: any) => q.status === 'calling');
+    const active = queue.filter((q: any) => ['calling', 'in-progress'].includes(q.status));
     if (!active.length) return;
     if (!confirm(`Cancel all ${active.length} active calls?`)) return;
     for (const c of active) await cancelCall(c.id, c.bland_call_id);
+  };
+
+  const forceDeleteCall = async (leadId: string, callId?: string | null) => {
+    if (!confirm('Force delete this call? This cannot be undone.')) return;
+
+    try {
+      console.log('[FORCE DELETE START]', { leadId, callId });
+
+      updateQueueCache((items) => items.filter((q: any) => q.id !== leadId));
+
+      await (supabase as any)
+        .from('dynasty_call_queue')
+        .delete()
+        .eq('id', leadId);
+
+      if (callId) {
+        await Promise.all([
+          (supabase as any)
+            .from('dynasty_call_history')
+            .delete()
+            .eq('call_id', callId),
+          (supabase as any)
+            .from('dynasty_call_transcripts')
+            .delete()
+            .eq('call_id', callId),
+        ]);
+      }
+
+      await qc.invalidateQueries({ queryKey: ['dynasty-call-queue'] });
+      await qc.invalidateQueries({ queryKey: ['dynasty-completed-calls'] });
+      toast.success('Call forcefully deleted');
+    } catch (e: any) {
+      console.error('[FORCE DELETE ERROR]', e);
+      toast.error(`Delete failed: ${e.message}`);
+    }
   };
 
   const markAsFailed = async (leadId: string) => {
@@ -266,7 +335,7 @@ export default function DCCallDispatch() {
   };
 
   const pending = queue.filter((q: any) => q.status === 'pending').length;
-  const calling = queue.filter((q: any) => q.status === 'calling').length;
+  const calling = activeCalls.length;
   const completed = queue.filter((q: any) => q.status === 'completed').length;
   const failed = queue.filter((q: any) => q.status === 'failed').length;
   const total = queue.length;
@@ -394,17 +463,17 @@ export default function DCCallDispatch() {
       )}
 
       {/* Active Calls */}
-      {calling > 0 && (
+      {activeCalls.length > 0 && (
         <Card className="border-primary/30">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-base flex items-center gap-2"><Phone className="h-4 w-4 text-primary animate-pulse" /> Active Calls ({calling})</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><Phone className="h-4 w-4 text-primary animate-pulse" /> Active Calls ({activeCalls.length})</CardTitle>
             <Button size="sm" variant="destructive" onClick={cancelAllCalls}>
               <XCircle className="h-4 w-4 mr-2" /> Cancel All
             </Button>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {queue.filter((q: any) => q.status === 'calling').map((q: any) => (
+              {activeCalls.map((q: any) => (
                 <div key={q.id} className="p-3 rounded-lg border border-primary/20 bg-primary/5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -419,7 +488,7 @@ export default function DCCallDispatch() {
                       <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Live</div>
                     </div>
                   </div>
-                  <Badge variant="outline" className="mt-2 bg-primary/10 text-primary">In Progress</Badge>
+                  <Badge variant="outline" className="mt-2 bg-primary/10 text-primary">{q.status === 'in-progress' ? 'In Progress' : 'Calling'}</Badge>
 
                   {q.called_at && (() => {
                     const minutesElapsed = Math.floor((now - new Date(q.called_at).getTime()) / 60000);
@@ -471,6 +540,9 @@ export default function DCCallDispatch() {
                     </Button>
                     <Button size="sm" variant="outline" className="flex-1" onClick={() => markAsFailed(q.id)}>
                       <XCircle className="h-4 w-4 mr-1" /> Mark Failed
+                    </Button>
+                    <Button size="sm" variant="destructive" className="flex-1" onClick={() => forceDeleteCall(q.id, q.bland_call_id)}>
+                      <Trash2 className="h-4 w-4 mr-1" /> Force Delete
                     </Button>
                   </div>
                 </div>
@@ -554,13 +626,16 @@ export default function DCCallDispatch() {
                             <RotateCw className="h-3.5 w-3.5" />
                           </Button>
                         )}
-                        {q.status === 'calling' && (
+                        {['calling', 'in-progress'].includes(q.status) && (
                           <>
                             <Button size="sm" variant="ghost" onClick={() => cancelCall(q.id, q.bland_call_id)} title="Cancel">
                               <StopCircle className="h-3.5 w-3.5" />
                             </Button>
                             <Button size="sm" variant="ghost" onClick={() => markAsFailed(q.id)} title="Mark Failed">
                               <XCircle className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => forceDeleteCall(q.id, q.bland_call_id)} title="Force Delete">
+                              <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </>
                         )}
