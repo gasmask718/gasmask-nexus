@@ -15,6 +15,19 @@ serve(async (req) => {
     const callId = payload.call_id || payload.callId || payload.id;
     if (!callId) throw new Error('No call_id in webhook');
 
+    const { data: existingQueueCall } = await supabase
+      .from('dynasty_call_queue')
+      .select('status')
+      .eq('bland_call_id', callId)
+      .maybeSingle();
+
+    if (existingQueueCall?.status === 'cancelled') {
+      console.log('[WEBHOOK IGNORED] Call already cancelled:', callId);
+      return new Response(JSON.stringify({ success: true, skipped: 'already_cancelled' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const event = payload.event || payload.type || null;
     console.log('[BLAND WEBHOOK]', event || 'completion', callId);
 

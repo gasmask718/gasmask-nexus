@@ -62,6 +62,146 @@ serve(async (req) => {
 
     const { action, ...params } = await req.json();
 
+    if (action === 'cancel-call') {
+      const BLAND_API_KEY = Deno.env.get('BLAND_API_KEY');
+      const { callId, leadId } = params;
+
+      console.log('[CANCEL REQUESTED]', { callId, leadId });
+
+      const cancelledAt = new Date().toISOString();
+      const queuePatch = {
+        status: 'cancelled',
+        completed_at: cancelledAt,
+        updated_at: cancelledAt,
+      };
+
+      try {
+        let blandStatus: number | null = null;
+        let blandBody: string | null = null;
+
+        if (callId) {
+          if (!BLAND_API_KEY) throw new Error('BLAND_API_KEY not configured');
+
+          console.log('[CALLING BLAND STOP API]', callId);
+          const res = await fetch(`https://api.bland.ai/v1/calls/${callId}/stop`, {
+            method: 'POST',
+            headers: {
+              'Authorization': BLAND_API_KEY,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          blandStatus = res.status;
+          blandBody = await res.text();
+          console.log('[BLAND STOP RESPONSE]', {
+            callId,
+            status: blandStatus,
+            statusText: res.statusText,
+            body: blandBody,
+          });
+
+          if (!res.ok) {
+            throw new Error(`Bland stop failed (${res.status}): ${blandBody}`);
+          }
+        }
+
+        if (callId) {
+          console.log('[UPDATING QUEUE BY BLAND_CALL_ID]', callId);
+          await supabase
+            .from('dynasty_call_queue')
+            .update(queuePatch)
+            .eq('bland_call_id', callId);
+
+          console.log('[UPDATING HISTORY]', callId);
+          await supabase
+            .from('dynasty_call_history')
+            .update({
+              status: 'cancelled',
+              ended_at: cancelledAt,
+            })
+            .eq('call_id', callId);
+
+          await supabase
+            .from('dynasty_ai_calls')
+            .update({
+              outcome: 'cancelled',
+              call_ended_at: cancelledAt,
+            })
+            .eq('call_id', callId);
+        }
+
+        if (leadId) {
+          console.log('[UPDATING QUEUE BY ID]', leadId);
+          await supabase
+            .from('dynasty_call_queue')
+            .update(queuePatch)
+            .eq('id', leadId);
+        }
+
+        console.log('[CANCEL COMPLETE]', { callId, leadId });
+
+        return new Response(JSON.stringify({
+          success: true,
+          cancelled: true,
+          callId,
+          leadId,
+          blandStatus,
+          blandBody,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('[CANCEL EXCEPTION]', { callId, leadId, error: message });
+
+        const errorPatch = {
+          ...queuePatch,
+          error_message: `Cancel attempted: ${message}`,
+        };
+
+        if (callId) {
+          await supabase
+            .from('dynasty_call_queue')
+            .update(errorPatch)
+            .eq('bland_call_id', callId);
+
+          await supabase
+            .from('dynasty_call_history')
+            .update({
+              status: 'cancelled',
+              ended_at: cancelledAt,
+            })
+            .eq('call_id', callId);
+
+          await supabase
+            .from('dynasty_ai_calls')
+            .update({
+              outcome: 'cancelled',
+              call_ended_at: cancelledAt,
+            })
+            .eq('call_id', callId);
+        }
+
+        if (leadId) {
+          await supabase
+            .from('dynasty_call_queue')
+            .update(errorPatch)
+            .eq('id', leadId);
+        }
+
+        return new Response(JSON.stringify({
+          success: false,
+          cancelled: false,
+          callId,
+          leadId,
+          error: message,
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     if (action === 'make-call') {
       const BLAND_API_KEY = Deno.env.get('BLAND_API_KEY');
       if (!BLAND_API_KEY) throw new Error('BLAND_API_KEY not configured');
@@ -146,33 +286,6 @@ serve(async (req) => {
       });
 
       return new Response(JSON.stringify({ success: true, call_id: blandData.call_id, from: fromNumber, state: prospectState, source_table: sourceTable }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (action === 'cancel-call') {
-      const BLAND_API_KEY = Deno.env.get('BLAND_API_KEY');
-      if (!BLAND_API_KEY) throw new Error('BLAND_API_KEY not configured');
-      const { callId } = params;
-      if (!callId) throw new Error('callId required');
-
-      const res = await fetch(`https://api.bland.ai/v1/calls/${callId}/stop`, {
-        method: 'POST',
-        headers: { 'Authorization': BLAND_API_KEY },
-      });
-      const text = await res.text();
-      console.log('[CANCEL CALL]', callId, res.status, text);
-
-      // Update queue + call records
-      await supabase.from('dynasty_call_queue')
-        .update({ status: 'cancelled', completed_at: new Date().toISOString() })
-        .eq('bland_call_id', callId);
-
-      await supabase.from('dynasty_ai_calls')
-        .update({ outcome: 'cancelled' })
-        .eq('call_id', callId);
-
-      return new Response(JSON.stringify({ success: res.ok, cancelled: res.ok, callId, status: res.status, body: text }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
