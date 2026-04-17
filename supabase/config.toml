@@ -450,3 +450,9 @@ verify_jwt = false
 
 [functions.solar-call-logger]
 verify_jwt = false
+
+[functions.dc-bland-webhook]
+verify_jwt = false
+
+[functions.dc-bland-dispatch]
+verify_jwt = false

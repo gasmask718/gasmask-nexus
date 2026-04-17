@@ -42,6 +42,14 @@ serve(async (req) => {
       ]);
 
       if (liveEvents.has(event)) {
+        // Look up business_type from queue for this call
+        const { data: queueRow } = await supabase
+          .from('dynasty_call_queue')
+          .select('business_type')
+          .eq('bland_call_id', callId)
+          .maybeSingle();
+        const businessType = queueRow?.business_type || null;
+
         const upsertHistory = async (patch: Record<string, unknown>) => {
           const { data: existing } = await supabase
             .from('dynasty_call_history')
@@ -56,6 +64,7 @@ serve(async (req) => {
               call_id: callId,
               phone_number: payload.to,
               from_number: payload.from,
+              business_type: businessType,
               status: (patch.status as string) || 'initiated',
               started_at: new Date().toISOString(),
               ...patch,
@@ -124,6 +133,13 @@ serve(async (req) => {
         .eq('call_id', callId)
         .maybeSingle();
 
+      // Look up business_type from queue
+      const { data: queueRow } = await supabase
+        .from('dynasty_call_queue')
+        .select('business_type')
+        .eq('bland_call_id', callId)
+        .maybeSingle();
+
       const completionPatch: Record<string, unknown> = {
         status: 'completed',
         ended_at: new Date().toISOString(),
@@ -141,6 +157,7 @@ serve(async (req) => {
           call_id: callId,
           phone_number: payload.to,
           from_number: payload.from,
+          business_type: queueRow?.business_type || null,
           started_at: new Date().toISOString(),
           ...completionPatch,
         });
