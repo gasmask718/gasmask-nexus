@@ -45,15 +45,6 @@ export default function DCCallDispatch() {
     qc.setQueryData(['dynasty-call-queue', businessType], (current: any[] | undefined) => updater(current || []));
   }, [businessType, qc]);
 
-  const activeCalls = queue.filter((q: any) => ['calling', 'in-progress'].includes(q.status));
-
-  // Tick every second only while there are active calls
-  useEffect(() => {
-    if (activeCalls.length === 0) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [activeCalls.length]);
-
   const formatDuration = (startIso?: string | null) => {
     if (!startIso) return '0:00';
     const secs = Math.max(0, Math.floor((now - new Date(startIso).getTime()) / 1000));
@@ -98,6 +89,15 @@ export default function DCCallDispatch() {
     },
     refetchInterval: 15000,
   });
+
+  const activeCalls = queue.filter((q: any) => ['calling', 'in-progress'].includes(q.status));
+
+  // Tick every second only while there are active calls
+  useEffect(() => {
+    if (activeCalls.length === 0) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [activeCalls.length]);
 
   // Auto-fail calls stuck > 5 minutes
   useEffect(() => {
