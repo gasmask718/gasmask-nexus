@@ -39340,6 +39340,7 @@ export type Database = {
           bland_call_id: string | null
           business_name: string | null
           business_type: string
+          call_id: string | null
           called_at: string | null
           completed_at: string | null
           contact_name: string | null
@@ -39358,6 +39359,7 @@ export type Database = {
           bland_call_id?: string | null
           business_name?: string | null
           business_type: string
+          call_id?: string | null
           called_at?: string | null
           completed_at?: string | null
           contact_name?: string | null
@@ -39376,6 +39378,7 @@ export type Database = {
           bland_call_id?: string | null
           business_name?: string | null
           business_type?: string
+          call_id?: string | null
           called_at?: string | null
           completed_at?: string | null
           contact_name?: string | null
