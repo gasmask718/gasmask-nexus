@@ -161,6 +161,30 @@ export default function DCCallDispatch() {
     setTranscriptModal({ callId, segments: (data || []) as TranscriptSegment[] });
   };
 
+  const syncCallFromBland = async (callId: string) => {
+    try {
+      toast.info('Syncing from Bland.ai...');
+      const { data, error } = await supabase.functions.invoke('sync-bland-call', {
+        body: { callId },
+      });
+      if (error) throw error;
+      console.log('[SYNC SUCCESS]', data);
+      toast.success('Call data synced');
+      await qc.invalidateQueries({ queryKey: ['dynasty-completed-calls'] });
+    } catch (e: any) {
+      console.error('[SYNC ERROR]', e);
+      toast.error(`Sync failed: ${e.message}`);
+    }
+  };
+
+  const syncAllCompleted = async () => {
+    if (!completedCalls.length) return;
+    toast.info(`Syncing ${completedCalls.length} calls from Bland.ai...`);
+    for (const c of completedCalls as any[]) {
+      if (c.call_id) await syncCallFromBland(c.call_id);
+    }
+  };
+
   // Realtime subscription
   useEffect(() => {
     const channel = supabase.channel('dc-queue-changes')
@@ -652,10 +676,13 @@ export default function DCCallDispatch() {
       {/* Completed Calls with Recordings */}
       {completedCalls.length > 0 && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-base flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-500" /> Completed Calls ({completedCalls.length})
             </CardTitle>
+            <Button size="sm" variant="outline" onClick={syncAllCompleted}>
+              <RefreshCw className="h-4 w-4 mr-2" /> Sync All from Bland
+            </Button>
           </CardHeader>
           <CardContent className="space-y-3">
             {completedCalls.map((call: any) => (
@@ -693,7 +720,7 @@ export default function DCCallDispatch() {
                 )}
 
                 <div className="flex flex-wrap gap-2">
-                  {call.recording_url && (
+                  {call.recording_url ? (
                     <>
                       <Button size="sm" variant="outline" onClick={() => window.open(call.recording_url, '_blank')}>
                         <Play className="h-4 w-4 mr-2" /> Play Recording
@@ -702,10 +729,29 @@ export default function DCCallDispatch() {
                         <Download className="h-4 w-4 mr-2" /> Download
                       </Button>
                     </>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={() => syncCallFromBland(call.call_id)}>
+                      <RefreshCw className="h-4 w-4 mr-2" /> Sync Recording
+                    </Button>
                   )}
                   <Button size="sm" variant="outline" onClick={() => viewFullTranscript(call.call_id)}>
                     <FileText className="h-4 w-4 mr-2" /> View Transcript
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => window.open(`https://app.bland.ai/dashboard/call-logs/${call.call_id}`, '_blank')}
+                  >
+                    Open in Bland
+                  </Button>
+                  {!call.recording_url && !call.call_summary && (
+                    <Alert className="w-full mt-2 border-yellow-500/40 bg-yellow-500/10">
+                      <AlertCircle className="h-4 w-4 text-yellow-500" />
+                      <AlertDescription className="text-xs text-yellow-700 dark:text-yellow-400">
+                        Recording/summary not yet received. Click "Sync Recording" to fetch from Bland.ai.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               </div>
             ))}
