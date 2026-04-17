@@ -220,28 +220,35 @@ serve(async (req) => {
 
       const fromNumber = phoneMatch?.phone_number || '+12142394316';
 
-      const pathwayMap: Record<string, string> = {
-        brandaro: Deno.env.get('BRANDARO_SALES_AGENT_ID') || 'PLACEHOLDER',
-        surplus_funds: Deno.env.get('SF_CLIENT_AGENT_ID') || 'PLACEHOLDER',
-        wholesale_re: Deno.env.get('RE_QUALIFIER_AGENT_ID') || 'PLACEHOLDER',
-        gasmask: Deno.env.get('DC_SALES_AGENT_ID') || 'PLACEHOLDER',
+      const personaMap: Record<string, string> = {
+        brandaro: Deno.env.get('BRANDARO_PERSONA_ID') || '358e79c7-fc23-4494-8c89-21d489253bef',
+        surplus_funds: Deno.env.get('SF_PERSONA_ID') || '358e79c7-fc23-4494-8c89-21d489253bef',
+        wholesale_re: Deno.env.get('RE_PERSONA_ID') || '358e79c7-fc23-4494-8c89-21d489253bef',
+        gasmask: Deno.env.get('DC_PERSONA_ID') || '358e79c7-fc23-4494-8c89-21d489253bef',
       };
+      const personaId = personaMap[businessType] || personaMap.brandaro;
+      console.log('[USING PERSONA]', personaId);
+
+      const blandPayload = {
+        phone_number: phoneNumber,
+        from: fromNumber,
+        persona_id: personaId,
+        record: true,
+        max_duration: 12,
+        webhook: `${Deno.env.get('SUPABASE_URL')}/functions/v1/dc-bland-webhook`,
+        dynamic_data: [{
+          contact_name: contactName || 'there',
+          company_name: businessName || 'your company',
+          contact_phone: phoneNumber,
+          state: prospectState,
+        }],
+      };
+      console.log('[BLAND CALL PAYLOAD]', JSON.stringify(blandPayload));
 
       const blandRes = await fetch('https://api.bland.ai/v1/calls', {
         method: 'POST',
         headers: { 'Authorization': BLAND_API_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone_number: phoneNumber,
-          from: fromNumber,
-          pathway_id: pathwayMap[businessType] || pathwayMap.brandaro,
-          model: 'base',
-          language: 'en',
-          wait_for_greeting: true,
-          record: true,
-          max_duration: 12,
-          variables: { name: contactName, business_name: businessName },
-          webhook: `${Deno.env.get('SUPABASE_URL')}/functions/v1/dc-bland-webhook`,
-        }),
+        body: JSON.stringify(blandPayload),
       });
 
       const blandData = await blandRes.json();
