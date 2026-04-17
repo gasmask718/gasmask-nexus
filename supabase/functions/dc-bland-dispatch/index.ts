@@ -238,9 +238,11 @@ serve(async (req) => {
         webhook: `${Deno.env.get('SUPABASE_URL')}/functions/v1/dc-bland-webhook`,
         dynamic_data: [{
           contact_name: contactName || 'there',
-          company_name: businessName || 'your company',
+          business_name: businessName || 'your business',
+          company_name: businessName || 'your business',
           contact_phone: phoneNumber,
-          state: prospectState,
+          state: prospectState || 'your area',
+          business_type: businessType || 'business',
         }],
       };
       console.log('[BLAND CALL PAYLOAD]', JSON.stringify(blandPayload));
