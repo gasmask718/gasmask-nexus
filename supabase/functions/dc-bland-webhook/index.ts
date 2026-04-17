@@ -124,13 +124,15 @@ serve(async (req) => {
         .eq('call_id', callId)
         .maybeSingle();
 
-      const completionPatch = {
+      const completionPatch: Record<string, unknown> = {
         status: 'completed',
         ended_at: new Date().toISOString(),
-        duration: payload.call_length || payload.duration || null,
-        recording_url: payload.recording_url || null,
-        call_summary: payload.summary || payload.concatenated_transcript || null,
+        duration: payload.call_length || payload.duration || payload.call_duration || payload.corrected_duration || null,
+        recording_url: payload.recording_url || payload.recording || null,
+        call_summary: payload.summary || payload.concatenated_transcript || payload.transcript || null,
+        variables: payload.variables || payload.analysis || null,
       };
+      console.log('[COMPLETION DATA]', completionPatch);
 
       if (existing) {
         await supabase.from('dynasty_call_history').update(completionPatch).eq('call_id', callId);
