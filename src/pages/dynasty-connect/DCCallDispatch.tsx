@@ -278,6 +278,7 @@ export default function DCCallDispatch() {
       case 'calling': return <Loader2 className="h-3 w-3 text-primary animate-spin" />;
       case 'completed': return <CheckCircle className="h-3 w-3 text-green-500" />;
       case 'failed': return <XCircle className="h-3 w-3 text-destructive" />;
+      case 'cancelled': return <StopCircle className="h-3 w-3 text-muted-foreground" />;
       default: return <AlertCircle className="h-3 w-3" />;
     }
   };
@@ -288,6 +289,7 @@ export default function DCCallDispatch() {
       calling: 'bg-primary/10 text-primary',
       completed: 'bg-green-500/10 text-green-500',
       failed: 'bg-destructive/10 text-destructive',
+      cancelled: 'bg-muted text-muted-foreground',
     };
     return <Badge variant="outline" className={colors[s] || ''}>{s}</Badge>;
   };
