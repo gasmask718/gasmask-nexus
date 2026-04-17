@@ -207,17 +207,24 @@ export default function DCCallDispatch() {
   const cancelCall = async (leadId: string, callId?: string | null) => {
     try {
       if (callId) {
-        await supabase.functions.invoke('dc-bland-dispatch', {
+        const { data, error } = await supabase.functions.invoke('dc-bland-dispatch', {
           body: { action: 'cancel-call', callId },
         });
+        if (error) {
+          console.error('[CANCEL ERROR]', error);
+          toast.error('Failed to stop call in Bland.ai');
+        } else {
+          console.log('[CANCEL SUCCESS]', data);
+        }
       }
       await (supabase as any)
         .from('dynasty_call_queue')
         .update({ status: 'cancelled', updated_at: new Date().toISOString() })
         .eq('id', leadId);
+      await qc.invalidateQueries({ queryKey: ['dynasty-call-queue'] });
       toast.success('Call cancelled');
-      refreshQueue();
     } catch (e: any) {
+      console.error('[CANCEL EXCEPTION]', e);
       toast.error(e.message || 'Failed to cancel call');
     }
   };
@@ -271,6 +278,7 @@ export default function DCCallDispatch() {
       case 'calling': return <Loader2 className="h-3 w-3 text-primary animate-spin" />;
       case 'completed': return <CheckCircle className="h-3 w-3 text-green-500" />;
       case 'failed': return <XCircle className="h-3 w-3 text-destructive" />;
+      case 'cancelled': return <StopCircle className="h-3 w-3 text-muted-foreground" />;
       default: return <AlertCircle className="h-3 w-3" />;
     }
   };
@@ -281,6 +289,7 @@ export default function DCCallDispatch() {
       calling: 'bg-primary/10 text-primary',
       completed: 'bg-green-500/10 text-green-500',
       failed: 'bg-destructive/10 text-destructive',
+      cancelled: 'bg-muted text-muted-foreground',
     };
     return <Badge variant="outline" className={colors[s] || ''}>{s}</Badge>;
   };
