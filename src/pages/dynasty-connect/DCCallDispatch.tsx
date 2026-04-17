@@ -676,10 +676,13 @@ export default function DCCallDispatch() {
       {/* Completed Calls with Recordings */}
       {completedCalls.length > 0 && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-base flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-500" /> Completed Calls ({completedCalls.length})
             </CardTitle>
+            <Button size="sm" variant="outline" onClick={syncAllCompleted}>
+              <RefreshCw className="h-4 w-4 mr-2" /> Sync All from Bland
+            </Button>
           </CardHeader>
           <CardContent className="space-y-3">
             {completedCalls.map((call: any) => (
@@ -717,7 +720,7 @@ export default function DCCallDispatch() {
                 )}
 
                 <div className="flex flex-wrap gap-2">
-                  {call.recording_url && (
+                  {call.recording_url ? (
                     <>
                       <Button size="sm" variant="outline" onClick={() => window.open(call.recording_url, '_blank')}>
                         <Play className="h-4 w-4 mr-2" /> Play Recording
@@ -726,10 +729,29 @@ export default function DCCallDispatch() {
                         <Download className="h-4 w-4 mr-2" /> Download
                       </Button>
                     </>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={() => syncCallFromBland(call.call_id)}>
+                      <RefreshCw className="h-4 w-4 mr-2" /> Sync Recording
+                    </Button>
                   )}
                   <Button size="sm" variant="outline" onClick={() => viewFullTranscript(call.call_id)}>
                     <FileText className="h-4 w-4 mr-2" /> View Transcript
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => window.open(`https://app.bland.ai/dashboard/call-logs/${call.call_id}`, '_blank')}
+                  >
+                    Open in Bland
+                  </Button>
+                  {!call.recording_url && !call.call_summary && (
+                    <Alert className="w-full mt-2 border-yellow-500/40 bg-yellow-500/10">
+                      <AlertCircle className="h-4 w-4 text-yellow-500" />
+                      <AlertDescription className="text-xs text-yellow-700 dark:text-yellow-400">
+                        Recording/summary not yet received. Click "Sync Recording" to fetch from Bland.ai.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               </div>
             ))}
