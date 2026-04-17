@@ -161,6 +161,30 @@ export default function DCCallDispatch() {
     setTranscriptModal({ callId, segments: (data || []) as TranscriptSegment[] });
   };
 
+  const syncCallFromBland = async (callId: string) => {
+    try {
+      toast.info('Syncing from Bland.ai...');
+      const { data, error } = await supabase.functions.invoke('sync-bland-call', {
+        body: { callId },
+      });
+      if (error) throw error;
+      console.log('[SYNC SUCCESS]', data);
+      toast.success('Call data synced');
+      await qc.invalidateQueries({ queryKey: ['dynasty-completed-calls'] });
+    } catch (e: any) {
+      console.error('[SYNC ERROR]', e);
+      toast.error(`Sync failed: ${e.message}`);
+    }
+  };
+
+  const syncAllCompleted = async () => {
+    if (!completedCalls.length) return;
+    toast.info(`Syncing ${completedCalls.length} calls from Bland.ai...`);
+    for (const c of completedCalls as any[]) {
+      if (c.call_id) await syncCallFromBland(c.call_id);
+    }
+  };
+
   // Realtime subscription
   useEffect(() => {
     const channel = supabase.channel('dc-queue-changes')

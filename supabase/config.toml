@@ -32,6 +32,9 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
 
+[functions.sync-bland-call]
+verify_jwt = false
+
 [functions.morning-ops-cycle]
 verify_jwt = false
 
