@@ -161,9 +161,21 @@ serve(async (req) => {
         headers: { 'Authorization': BLAND_API_KEY },
       });
       const text = await res.text();
-      return new Response(JSON.stringify({ success: res.ok, status: res.status, body: text }), {
+      console.log('[CANCEL CALL]', callId, res.status, text);
+
+      // Update queue + call records
+      await supabase.from('dynasty_call_queue')
+        .update({ status: 'cancelled', completed_at: new Date().toISOString() })
+        .eq('bland_call_id', callId);
+
+      await supabase.from('dynasty_ai_calls')
+        .update({ outcome: 'cancelled' })
+        .eq('call_id', callId);
+
+      return new Response(JSON.stringify({ success: res.ok, cancelled: res.ok, callId, status: res.status, body: text }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
 
     if (action === 'start-campaign') {
       const BLAND_API_KEY = Deno.env.get('BLAND_API_KEY');
