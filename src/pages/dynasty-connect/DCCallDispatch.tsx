@@ -77,11 +77,12 @@ export default function DCCallDispatch() {
   });
 
   const { data: completedCalls = [] } = useQuery({
-    queryKey: ['dynasty-completed-calls'],
+    queryKey: ['dynasty-completed-calls', businessType],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('dynasty_call_history')
         .select('*')
+        .eq('business_type', businessType)
         .eq('status', 'completed')
         .order('ended_at', { ascending: false })
         .limit(20);
@@ -191,9 +192,42 @@ export default function DCCallDispatch() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'dynasty_call_queue' }, () => {
         qc.invalidateQueries({ queryKey: ['dynasty-call-queue'] });
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dynasty_call_history' }, () => {
+        qc.invalidateQueries({ queryKey: ['dynasty-completed-calls'] });
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [qc]);
+
+  // Realtime live transcripts for active calls
+  useEffect(() => {
+    const activeCallIds = activeCalls.map((c: any) => c.bland_call_id).filter(Boolean);
+    if (activeCallIds.length === 0) return;
+
+    console.log('[REALTIME] Subscribing to transcripts for:', activeCallIds);
+    const channel = supabase.channel(`dc-live-transcripts-${activeCallIds.join('-')}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'dynasty_call_transcripts',
+        filter: `call_id=in.(${activeCallIds.join(',')})`,
+      }, (payload: any) => {
+        const seg = payload.new as TranscriptSegment;
+        console.log('[REALTIME] New transcript segment:', seg);
+        setLiveTranscripts((prev) => {
+          const existing = prev[seg.call_id] || [];
+          return {
+            ...prev,
+            [seg.call_id]: [...existing, seg].sort(
+              (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
+            ),
+          };
+        });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [activeCalls.map((c: any) => c.bland_call_id).join(',')]);
 
   const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
