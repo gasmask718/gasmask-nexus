@@ -207,17 +207,24 @@ export default function DCCallDispatch() {
   const cancelCall = async (leadId: string, callId?: string | null) => {
     try {
       if (callId) {
-        await supabase.functions.invoke('dc-bland-dispatch', {
+        const { data, error } = await supabase.functions.invoke('dc-bland-dispatch', {
           body: { action: 'cancel-call', callId },
         });
+        if (error) {
+          console.error('[CANCEL ERROR]', error);
+          toast.error('Failed to stop call in Bland.ai');
+        } else {
+          console.log('[CANCEL SUCCESS]', data);
+        }
       }
       await (supabase as any)
         .from('dynasty_call_queue')
         .update({ status: 'cancelled', updated_at: new Date().toISOString() })
         .eq('id', leadId);
+      await qc.invalidateQueries({ queryKey: ['dynasty-call-queue'] });
       toast.success('Call cancelled');
-      refreshQueue();
     } catch (e: any) {
+      console.error('[CANCEL EXCEPTION]', e);
       toast.error(e.message || 'Failed to cancel call');
     }
   };
