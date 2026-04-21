@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { VACoachingReport } from '@/components/va/VACoachingReport';
@@ -7,48 +7,92 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Headset, ArrowLeft, Play, Flame, Sun, Snowflake, Star, RefreshCw, Download, FileText, MessageSquare } from 'lucide-react';
+import {
+  Headset, ArrowLeft, Play, Flame, Sun, Snowflake, Star, RefreshCw, Download,
+  FileText, MessageSquare, Search, ChevronLeft, ChevronRight,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+
+const PAGE_SIZE = 10;
 
 export default function AdminCallReview() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
+
+  // Filters
+  const [dateFilter, setDateFilter] = useState<string>(''); // empty = no date filter
   const [excitementFilter, setExcitementFilter] = useState<string>('all');
+  const [recordingFilter, setRecordingFilter] = useState<string>('all'); // all | with | without
+  const [transcriptFilter, setTranscriptFilter] = useState<string>('all'); // all | with | without
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [page, setPage] = useState(0);
   const [selectedCall, setSelectedCall] = useState<any>(null);
 
-  const { data: calls = [], isLoading } = useQuery({
-    queryKey: ['admin-call-review', dateFilter, excitementFilter],
+  // Reset to first page when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [dateFilter, excitementFilter, recordingFilter, transcriptFilter, statusFilter, searchTerm]);
+
+  const { data, isLoading } = useQuery({
+    queryKey: [
+      'admin-call-review', dateFilter, excitementFilter, recordingFilter,
+      transcriptFilter, statusFilter, searchTerm, page,
+    ],
     queryFn: async () => {
       let query = (supabase as any)
         .from('va_call_logs')
-        .select('*, profiles!va_call_logs_va_id_fkey(full_name)')
-        .gte('called_at', `${dateFilter}T00:00:00`)
-        .lte('called_at', `${dateFilter}T23:59:59`)
+        .select('*, profiles!va_call_logs_va_id_fkey(full_name)', { count: 'exact' })
         .order('called_at', { ascending: false });
 
-      if (excitementFilter !== 'all') {
-        query = query.eq('excitement_level', excitementFilter);
+      if (dateFilter) {
+        query = query
+          .gte('called_at', `${dateFilter}T00:00:00`)
+          .lte('called_at', `${dateFilter}T23:59:59`);
+      }
+      if (excitementFilter !== 'all') query = query.eq('excitement_level', excitementFilter);
+      if (recordingFilter === 'with') query = query.not('recording_url', 'is', null);
+      if (recordingFilter === 'without') query = query.is('recording_url', null);
+      if (transcriptFilter === 'with') query = query.not('transcript', 'is', null);
+      if (transcriptFilter === 'without') query = query.is('transcript', null);
+      if (statusFilter !== 'all') query = query.eq('call_status', statusFilter);
+      if (searchTerm.trim()) {
+        const term = searchTerm.trim();
+        query = query.or(`twilio_number.ilike.%${term}%,call_sid.ilike.%${term}%`);
       }
 
-      const { data } = await query;
-      return data || [];
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      query = query.range(from, to);
+
+      const { data, count, error } = await query;
+      if (error) throw error;
+      return { rows: data || [], count: count || 0 };
     },
   });
 
-  // Sync recordings from Twilio
+  const calls = data?.rows ?? [];
+  const totalCount = data?.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  // Sync recordings from Twilio Brandaro (last 10)
   const syncMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('brandaro-sync-recordings', {
-        body: {},
+        body: { page_size: 10, batch: 10, transcript_batch: 10 },
       });
       if (error) throw error;
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`Synced ${data.synced} recordings, ${data.transcribed} transcripts`);
+      const synced = data?.synced ?? 0;
+      const transcribed = data?.transcribed ?? 0;
+      if (synced > 0 || transcribed > 0) {
+        toast.success(`Synced ${synced} recording${synced === 1 ? '' : 's'}, ${transcribed} transcript${transcribed === 1 ? '' : 's'}`);
+      } else {
+        toast.info('No new recordings — all caught up');
+      }
       queryClient.invalidateQueries({ queryKey: ['admin-call-review'] });
     },
     onError: (err: any) => {
@@ -56,7 +100,6 @@ export default function AdminCallReview() {
     },
   });
 
-  // Sync single call recording
   const syncSingleMutation = useMutation({
     mutationFn: async (callSid: string) => {
       const { data, error } = await supabase.functions.invoke('brandaro-sync-recordings', {
@@ -71,6 +114,29 @@ export default function AdminCallReview() {
     },
   });
 
+  // Auto-sync on mount (pulls latest 10 from Twilio Brandaro)
+  useEffect(() => {
+    syncMutation.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Realtime: refresh list when va_call_logs changes (new calls / sync updates)
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-call-review-feed')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'va_call_logs' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['admin-call-review'] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   const excitementIcons: Record<string, JSX.Element> = {
     hot: <Flame className="h-3 w-3 text-red-400" />,
     warm: <Sun className="h-3 w-3 text-amber-400" />,
@@ -79,14 +145,10 @@ export default function AdminCallReview() {
 
   const formatTranscript = (transcript: string) => {
     if (!transcript) return null;
-    
-    // Try to identify speakers and format
     const lines = transcript.split(/\n|(?<=[.!?])\s+/);
     return lines.map((line, i) => {
       const trimmed = line.trim();
       if (!trimmed) return null;
-      
-      // Check for speaker labels
       const speakerMatch = trimmed.match(/^(Agent|VA|Customer|Caller|Rep|Lead|Speaker\s*\d*):\s*/i);
       if (speakerMatch) {
         const speaker = speakerMatch[1];
@@ -101,21 +163,31 @@ export default function AdminCallReview() {
           </div>
         );
       }
-      
-      // Alternate speaker detection by sentence position
-      return (
-        <p key={i} className="text-sm text-slate-300 mb-1">{trimmed}</p>
-      );
+      return <p key={i} className="text-sm text-slate-300 mb-1">{trimmed}</p>;
     });
   };
 
-  // Stats
-  const totalCalls = calls.length;
+  // Stats — over current page only (totals come from server count)
   const withRecording = calls.filter((c: any) => c.recording_url).length;
   const withTranscript = calls.filter((c: any) => c.transcript).length;
-  const avgDuration = totalCalls > 0 
-    ? Math.round(calls.reduce((sum: number, c: any) => sum + (c.duration_seconds || 0), 0) / totalCalls)
+  const avgDuration = calls.length > 0
+    ? Math.round(calls.reduce((sum: number, c: any) => sum + (c.duration_seconds || 0), 0) / calls.length)
     : 0;
+
+  const clearFilters = () => {
+    setDateFilter('');
+    setExcitementFilter('all');
+    setRecordingFilter('all');
+    setTranscriptFilter('all');
+    setStatusFilter('all');
+    setSearchTerm('');
+  };
+
+  const hasActiveFilters = useMemo(
+    () => !!dateFilter || excitementFilter !== 'all' || recordingFilter !== 'all'
+      || transcriptFilter !== 'all' || statusFilter !== 'all' || !!searchTerm.trim(),
+    [dateFilter, excitementFilter, recordingFilter, transcriptFilter, statusFilter, searchTerm],
+  );
 
   return (
     <div className="min-h-screen bg-slate-950 p-6">
@@ -140,38 +212,101 @@ export default function AdminCallReview() {
               <RefreshCw className={`h-3.5 w-3.5 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
               Sync Recordings
             </Button>
-            <Input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)}
-              className="bg-slate-800 border-slate-700 text-white w-40" />
-            <Select value={excitementFilter} onValueChange={setExcitementFilter}>
-              <SelectTrigger className="bg-slate-800 border-slate-700 text-white w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Levels</SelectItem>
-                <SelectItem value="hot">🔥 Hot</SelectItem>
-                <SelectItem value="warm">🌤 Warm</SelectItem>
-                <SelectItem value="cold">❄️ Cold</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
+
+        {/* Filters */}
+        <Card className="bg-slate-800/30 border-slate-700">
+          <CardContent className="p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+                <Input
+                  placeholder="Search number or call SID…"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-7 bg-slate-900 border-slate-700 text-white h-9"
+                />
+              </div>
+              <Input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="bg-slate-900 border-slate-700 text-white w-40 h-9"
+              />
+              <Select value={excitementFilter} onValueChange={setExcitementFilter}>
+                <SelectTrigger className="bg-slate-900 border-slate-700 text-white w-32 h-9">
+                  <SelectValue placeholder="Excitement" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Levels</SelectItem>
+                  <SelectItem value="hot">🔥 Hot</SelectItem>
+                  <SelectItem value="warm">🌤 Warm</SelectItem>
+                  <SelectItem value="cold">❄️ Cold</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={recordingFilter} onValueChange={setRecordingFilter}>
+                <SelectTrigger className="bg-slate-900 border-slate-700 text-white w-36 h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any recording</SelectItem>
+                  <SelectItem value="with">With recording</SelectItem>
+                  <SelectItem value="without">No recording</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={transcriptFilter} onValueChange={setTranscriptFilter}>
+                <SelectTrigger className="bg-slate-900 border-slate-700 text-white w-36 h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any transcript</SelectItem>
+                  <SelectItem value="with">With transcript</SelectItem>
+                  <SelectItem value="without">No transcript</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="bg-slate-900 border-slate-700 text-white w-32 h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All status</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="no-answer">No answer</SelectItem>
+                  <SelectItem value="busy">Busy</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                </SelectContent>
+              </Select>
+              {hasActiveFilters && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-slate-400 h-9"
+                  onClick={clearFilters}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Stats Bar */}
         <div className="grid grid-cols-4 gap-3">
           <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
-            <p className="text-xs text-slate-400">Total Calls</p>
-            <p className="text-xl font-bold text-white">{totalCalls}</p>
+            <p className="text-xs text-slate-400">Total (filtered)</p>
+            <p className="text-xl font-bold text-white">{totalCount}</p>
           </div>
           <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
-            <p className="text-xs text-slate-400">With Recording</p>
+            <p className="text-xs text-slate-400">With Recording (page)</p>
             <p className="text-xl font-bold text-emerald-400">{withRecording}</p>
           </div>
           <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
-            <p className="text-xs text-slate-400">With Transcript</p>
+            <p className="text-xs text-slate-400">With Transcript (page)</p>
             <p className="text-xl font-bold text-cyan-400">{withTranscript}</p>
           </div>
           <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
-            <p className="text-xs text-slate-400">Avg Duration</p>
+            <p className="text-xs text-slate-400">Avg Duration (page)</p>
             <p className="text-xl font-bold text-white">{Math.floor(avgDuration / 60)}m {avgDuration % 60}s</p>
           </div>
         </div>
@@ -179,8 +314,30 @@ export default function AdminCallReview() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Calls List */}
           <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-white text-sm">Calls ({calls.length})</CardTitle>
+            <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-white text-sm">
+                Calls — page {page + 1} of {totalPages}
+              </CardTitle>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-slate-400"
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-slate-400"
+                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-2 max-h-[70vh] overflow-y-auto">
               {isLoading && <p className="text-sm text-slate-400 text-center py-4">Loading...</p>}
@@ -221,12 +378,16 @@ export default function AdminCallReview() {
                       <span className="text-[10px] text-slate-500">{Math.floor(call.duration_seconds / 60)}m {call.duration_seconds % 60}s</span>
                     )}
                     <span className="text-[10px] text-slate-600 ml-auto">
-                      {call.called_at ? new Date(call.called_at).toLocaleTimeString() : ''}
+                      {call.called_at ? new Date(call.called_at).toLocaleString() : ''}
                     </span>
                   </div>
                 </div>
               ))}
-              {!isLoading && calls.length === 0 && <p className="text-sm text-slate-400 text-center py-4">No calls found</p>}
+              {!isLoading && calls.length === 0 && (
+                <p className="text-sm text-slate-400 text-center py-4">
+                  No calls found{hasActiveFilters ? ' — try clearing filters' : ''}
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -234,7 +395,6 @@ export default function AdminCallReview() {
           <div className="space-y-4">
             {selectedCall ? (
               <>
-                {/* Call Info */}
                 <Card className="bg-slate-800/50 border-slate-700">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-white text-sm">Call Details</CardTitle>
@@ -282,7 +442,6 @@ export default function AdminCallReview() {
                   </CardContent>
                 </Card>
 
-                {/* Recording */}
                 {selectedCall.recording_url ? (
                   <Card className="bg-slate-800/50 border-slate-700">
                     <CardHeader className="pb-2">
@@ -320,7 +479,6 @@ export default function AdminCallReview() {
                   </Card>
                 ) : null}
 
-                {/* Transcript */}
                 <Card className="bg-slate-800/50 border-slate-700">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-white text-sm flex items-center gap-2">
@@ -334,18 +492,16 @@ export default function AdminCallReview() {
                       </div>
                     ) : (
                       <p className="text-sm text-slate-500 text-center py-3">
-                        {selectedCall.recording_url ? 'Transcript processing...' : 'No transcript available'}
+                        {selectedCall.recording_url ? 'Transcript processing — try Sync again in a few minutes' : 'No transcript available'}
                       </p>
                     )}
                   </CardContent>
                 </Card>
 
-                {/* AI Coaching */}
                 {selectedCall.ai_analysis && (
                   <VACoachingReport data={selectedCall.ai_analysis} onClose={() => {}} />
                 )}
 
-                {/* VA Notes */}
                 {selectedCall.va_notes && (
                   <Card className="bg-slate-800/50 border-slate-700">
                     <CardHeader className="pb-2">
