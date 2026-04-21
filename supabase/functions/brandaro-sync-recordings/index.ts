@@ -220,6 +220,7 @@ async function processRecording(
   authToken: string,
   rec: any,
   result: SyncResult,
+  pollForTranscript = false,
 ): Promise<void> {
   const recordingSid: string = rec.sid;
   const callSid: string = rec.call_sid;
@@ -243,9 +244,9 @@ async function processRecording(
       }
     }
 
-    // Try to fetch transcript (poll if exists, request if not)
+    // Only poll transcripts when explicitly asked (slow Twilio calls).
     let transcript: string | null = existing?.transcript ?? null;
-    if (!transcript) {
+    if (!transcript && pollForTranscript) {
       transcript = await pollTranscript(accountSid, authToken, recordingSid);
     }
 
