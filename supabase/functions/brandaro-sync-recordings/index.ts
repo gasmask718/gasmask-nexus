@@ -55,9 +55,15 @@ serve(async (req: Request) => {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const specificCallSid: string | undefined = body.call_sid;
     // Tunable batch sizes — keep total wall time well under the 150s edge limit.
-    const recordingBatch: number = Math.min(Number(body.batch) || 15, 25);
-    const transcriptBatch: number = Math.min(Number(body.transcript_batch) || 10, 20);
-    const concurrency: number = Math.min(Number(body.concurrency) || 4, 6);
+    const recordingBatch: number = Math.min(Number(body.batch) || 6, 15);
+    const transcriptBatch: number = Math.min(Number(body.transcript_batch) || 5, 15);
+    const concurrency: number = Math.min(Number(body.concurrency) || 3, 6);
+    const skipTranscripts: boolean = body.skip_transcripts === true;
+
+    // Hard deadline — bail out cleanly before the 150s edge timeout fires.
+    const startedAt = Date.now();
+    const DEADLINE_MS = 120_000;
+    const timeUp = () => Date.now() - startedAt > DEADLINE_MS;
 
     const result: SyncResult & { has_more?: boolean; remaining_no_transcript?: number } = {
       synced: 0,
