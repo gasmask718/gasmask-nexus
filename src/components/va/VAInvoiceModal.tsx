@@ -85,12 +85,12 @@ export function VAInvoiceModal({ open, onClose, lead, sendOnSave }: VAInvoiceMod
       if (sendOnSave && inserted?.id) {
         try {
           const { data: sendData, error: sendErr } = await supabase.functions.invoke('va-send-invoice', {
-            body: { invoice_id: inserted.id, channel: 'email' },
+            body: { invoice_id: inserted.id, channel: 'sms' },
           });
           if (sendErr || (sendData as any)?.error) {
             throw new Error(sendErr?.message || (sendData as any)?.error);
           }
-          toast.success(`Invoice created & sent to ${(sendData as any)?.sent_to || 'customer'}`);
+          toast.success(`Invoice created & texted to ${(sendData as any)?.sent_to || 'customer'}`);
           qc.invalidateQueries({ queryKey: ['va-invoices', user?.id] });
         } catch (e: any) {
           toast.warning(`Invoice saved as draft — send failed: ${e.message}`);
