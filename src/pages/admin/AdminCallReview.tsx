@@ -350,7 +350,7 @@ export default function AdminCallReview() {
                   onClick={() => setSelectedCall(call)}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-white font-medium">{call.profiles?.full_name || 'VA'}</span>
+                    <span className="text-sm text-white font-medium">{call.profiles?.name || 'VA'}</span>
                     <div className="flex items-center gap-1">
                       {call.recording_url && <Play className="h-3 w-3 text-emerald-400" />}
                       {call.transcript && <FileText className="h-3 w-3 text-cyan-400" />}
@@ -402,7 +402,7 @@ export default function AdminCallReview() {
                   <CardContent className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-slate-400">VA:</span>
-                      <span className="text-white">{selectedCall.profiles?.full_name || 'Unknown'}</span>
+                      <span className="text-white">{selectedCall.profiles?.name || 'Unknown'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Number:</span>
