@@ -55,9 +55,15 @@ serve(async (req: Request) => {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const specificCallSid: string | undefined = body.call_sid;
     // Tunable batch sizes — keep total wall time well under the 150s edge limit.
-    const recordingBatch: number = Math.min(Number(body.batch) || 15, 25);
-    const transcriptBatch: number = Math.min(Number(body.transcript_batch) || 10, 20);
-    const concurrency: number = Math.min(Number(body.concurrency) || 4, 6);
+    const recordingBatch: number = Math.min(Number(body.batch) || 6, 15);
+    const transcriptBatch: number = Math.min(Number(body.transcript_batch) || 5, 15);
+    const concurrency: number = Math.min(Number(body.concurrency) || 3, 6);
+    const skipTranscripts: boolean = body.skip_transcripts === true;
+
+    // Hard deadline — bail out cleanly before the 150s edge timeout fires.
+    const startedAt = Date.now();
+    const DEADLINE_MS = 120_000;
+    const timeUp = () => Date.now() - startedAt > DEADLINE_MS;
 
     const result: SyncResult & { has_more?: boolean; remaining_no_transcript?: number } = {
       synced: 0,
@@ -70,6 +76,7 @@ serve(async (req: Request) => {
       let i = 0;
       const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
         while (i < items.length) {
+          if (timeUp()) return;
           const idx = i++;
           try { await worker(items[idx]); } catch (e) {
             result.errors.push(e instanceof Error ? e.message : String(e));
@@ -83,7 +90,7 @@ serve(async (req: Request) => {
       const recs = await fetchRecordingsForCall(accountSid, authToken, specificCallSid);
       console.log(`[sync] specific call ${specificCallSid} -> ${recs.length} recordings`);
       await runWithConcurrency(recs.slice(0, recordingBatch), (rec) =>
-        processRecording(supabase, accountSid, authToken, rec, result),
+        processRecording(supabase, accountSid, authToken, rec, result, true),
       );
     } else {
       // Pull recent account-wide recordings (small page) and process only the
@@ -104,27 +111,32 @@ serve(async (req: Request) => {
       const slice = todo.slice(0, recordingBatch);
       result.has_more = todo.length > slice.length;
 
+      // First pass: just download recordings + create rows. Skip transcript polling
+      // here — it's the slowest part. Transcripts are handled in the dedicated
+      // second pass below (and on subsequent syncs).
       await runWithConcurrency(slice, (rec) =>
-        processRecording(supabase, accountSid, authToken, rec, result),
+        processRecording(supabase, accountSid, authToken, rec, result, false),
       );
 
-      // Re-poll a small batch of rows missing transcripts
-      const { data: pending } = await supabase
-        .from("va_call_logs")
-        .select("id, recording_sid")
-        .not("recording_sid", "is", null)
-        .is("transcript", null)
-        .limit(transcriptBatch);
+      // Re-poll a small batch of rows missing transcripts (skippable via flag)
+      if (!skipTranscripts && !timeUp()) {
+        const { data: pending } = await supabase
+          .from("va_call_logs")
+          .select("id, recording_sid")
+          .not("recording_sid", "is", null)
+          .is("transcript", null)
+          .limit(transcriptBatch);
 
-      if (pending && pending.length) {
-        await runWithConcurrency(pending, async (row: any) => {
-          if (!row.recording_sid) return;
-          const transcript = await pollTranscript(accountSid, authToken, row.recording_sid);
-          if (transcript) {
-            await supabase.from("va_call_logs").update({ transcript }).eq("id", row.id);
-            result.transcribed++;
-          }
-        });
+        if (pending && pending.length) {
+          await runWithConcurrency(pending, async (row: any) => {
+            if (!row.recording_sid || timeUp()) return;
+            const transcript = await pollTranscript(accountSid, authToken, row.recording_sid);
+            if (transcript) {
+              await supabase.from("va_call_logs").update({ transcript }).eq("id", row.id);
+              result.transcribed++;
+            }
+          });
+        }
       }
 
       const { count } = await supabase
@@ -133,7 +145,11 @@ serve(async (req: Request) => {
         .not("recording_sid", "is", null)
         .is("transcript", null);
       result.remaining_no_transcript = count ?? 0;
+      result.has_more = result.has_more || (result.remaining_no_transcript ?? 0) > 0;
     }
+
+    const elapsed = Date.now() - startedAt;
+    console.log(`[sync] done in ${elapsed}ms`, result);
 
     return json({ success: true, ...result }, 200);
   } catch (error: unknown) {
@@ -204,6 +220,7 @@ async function processRecording(
   authToken: string,
   rec: any,
   result: SyncResult,
+  pollForTranscript = false,
 ): Promise<void> {
   const recordingSid: string = rec.sid;
   const callSid: string = rec.call_sid;
@@ -227,9 +244,9 @@ async function processRecording(
       }
     }
 
-    // Try to fetch transcript (poll if exists, request if not)
+    // Only poll transcripts when explicitly asked (slow Twilio calls).
     let transcript: string | null = existing?.transcript ?? null;
-    if (!transcript) {
+    if (!transcript && pollForTranscript) {
       transcript = await pollTranscript(accountSid, authToken, recordingSid);
     }
 
