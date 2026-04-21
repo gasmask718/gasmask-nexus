@@ -43,7 +43,7 @@ export default function AdminCallReview() {
     queryFn: async () => {
       let query = (supabase as any)
         .from('va_call_logs')
-        .select('*, profiles!va_call_logs_va_id_fkey(full_name)', { count: 'exact' })
+        .select('*, profiles!va_call_logs_va_id_fkey(name)', { count: 'exact' })
         .order('called_at', { ascending: false });
 
       if (dateFilter) {
