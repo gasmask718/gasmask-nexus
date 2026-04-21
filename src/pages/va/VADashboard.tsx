@@ -6,6 +6,7 @@ import { VAOnboardingModal } from '@/components/va/VAOnboardingModal';
 import { VALeadsTable } from '@/components/va/VALeadsTable';
 import { VACallPanel } from '@/components/va/VACallPanel';
 import { VAInvoiceModal } from '@/components/va/VAInvoiceModal';
+import { VAInvoicesTable } from '@/components/va/VAInvoicesTable';
 import { VAScripts } from '@/components/va/VAScripts';
 import { VARebuttals } from '@/components/va/VARebuttals';
 import { VAFAQs } from '@/components/va/VAFAQs';
@@ -44,6 +45,7 @@ function VADashboardInner() {
   const [callLead, setCallLead] = useState<any>(null);
   const [invoiceLead, setInvoiceLead] = useState<any>(null);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [invoiceSendMode, setInvoiceSendMode] = useState(false);
   const [dialerLeads, setDialerLeads] = useState<any[]>([]);
   const [showSessionSummary, setShowSessionSummary] = useState(false);
 
@@ -191,8 +193,8 @@ function VADashboardInner() {
                 </div>
                 <VALeadsTable
                   onCall={lead => { setCallLead(lead); setView('call'); }}
-                  onCreateInvoice={lead => { setInvoiceLead(lead); setInvoiceOpen(true); }}
-                  onSendInvoice={lead => { setInvoiceLead(lead); setInvoiceOpen(true); }}
+                  onCreateInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(false); setInvoiceOpen(true); }}
+                  onSendInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(true); setInvoiceOpen(true); }}
                 />
                 
                 {/* Recent Calls */}
@@ -244,13 +246,7 @@ function VADashboardInner() {
               </div>
             )}
             {view === 'faqs' && <div className="max-w-2xl"><VAFAQs /></div>}
-            {view === 'invoices' && (
-              <div className="text-center text-slate-400 py-16">
-                <FileText className="h-12 w-12 mx-auto text-slate-600 mb-3" />
-                <p className="font-medium">{t('va.invoices.comingSoon')}</p>
-                <p className="text-sm">{t('va.invoices.createFromLeads')}</p>
-              </div>
-            )}
+            {view === 'invoices' && <VAInvoicesTable />}
             {view === 'settings' && (
               <div className="text-center text-slate-400 py-16">
                 <Settings className="h-12 w-12 mx-auto text-slate-600 mb-3" />
@@ -260,7 +256,12 @@ function VADashboardInner() {
           </main>
         </div>
 
-        <VAInvoiceModal open={invoiceOpen} onClose={() => setInvoiceOpen(false)} lead={invoiceLead} />
+        <VAInvoiceModal
+          open={invoiceOpen}
+          onClose={() => { setInvoiceOpen(false); setInvoiceSendMode(false); }}
+          lead={invoiceLead}
+          sendOnSave={invoiceSendMode}
+        />
 
         {showSessionSummary && (
           <VASessionSummary

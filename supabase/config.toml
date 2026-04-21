@@ -456,3 +456,18 @@ verify_jwt = false
 
 [functions.dc-bland-dispatch]
 verify_jwt = false
+
+[functions.va-send-invoice]
+verify_jwt = false
+
+[functions.brandaro-call-status]
+verify_jwt = false
+
+[functions.brandaro-sync-recordings]
+verify_jwt = false
+
+[functions.brandaro-voice-token]
+verify_jwt = false
+
+[functions.va-power-dialer]
+verify_jwt = false
