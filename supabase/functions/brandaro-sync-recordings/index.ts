@@ -184,11 +184,8 @@ async function fetchRecentRecordings(
   accountSid: string,
   authToken: string,
   pageSize: number,
-  sinceDate?: string,
 ): Promise<any[]> {
-  const params = new URLSearchParams({ PageSize: String(pageSize) });
-  if (sinceDate) params.set("DateCreated>", sinceDate);
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings.json?${params.toString()}`;
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings.json?PageSize=${pageSize}`;
   const res = await fetch(url, { headers: { Authorization: basicAuth(accountSid, authToken) } });
   if (!res.ok) {
     console.warn(`[sync] list recordings failed: ${res.status} ${await res.text()}`);
