@@ -440,40 +440,93 @@ async function pollTranscript(
   authToken: string,
   recordingSid: string,
 ): Promise<string | null> {
+  // Twilio's built-in transcription is unreliable (≤2min only, must be requested
+  // at recording time). Strategy: try Twilio first, then fall back to AI
+  // transcription via Lovable AI Gateway (Gemini accepts inline audio).
   try {
-    const listRes = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings/${recordingSid}/Transcriptions.json`,
+    // 1. Try existing Twilio transcription if one happens to exist
+    try {
+      const listRes = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings/${recordingSid}/Transcriptions.json`,
+        { headers: { Authorization: basicAuth(accountSid, authToken) } },
+      );
+      if (listRes.ok) {
+        const list = await listRes.json();
+        const completed = (list.transcriptions || []).find(
+          (t: any) => t.status === "completed" && t.transcription_text,
+        );
+        if (completed?.transcription_text) {
+          return formatTranscript(completed.transcription_text);
+        }
+      }
+    } catch { /* fall through to AI */ }
+
+    // 2. Download MP3 from Twilio for AI transcription
+    const mp3Res = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings/${recordingSid}.mp3`,
       { headers: { Authorization: basicAuth(accountSid, authToken) } },
     );
-    if (!listRes.ok) return null;
-    const list = await listRes.json();
-    const transcriptions = list.transcriptions || [];
-
-    if (transcriptions.length === 0) {
-      // Request a new transcription (best-effort — Twilio basic transcription)
-      await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings/${recordingSid}/Transcriptions.json`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: basicAuth(accountSid, authToken),
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        },
-      );
+    if (!mp3Res.ok) {
+      console.warn(`[sync] mp3 fetch for transcript failed: ${mp3Res.status}`);
+      return null;
+    }
+    const audioBuf = new Uint8Array(await mp3Res.arrayBuffer());
+    if (audioBuf.byteLength === 0) return null;
+    if (audioBuf.byteLength > 18 * 1024 * 1024) {
+      console.warn(`[sync] recording ${recordingSid} too large for inline transcription`);
       return null;
     }
 
-    const completed = transcriptions.find((t: any) => t.status === "completed");
-    if (!completed) return null;
+    // 3. base64-encode (chunked to avoid stack overflow)
+    let binary = "";
+    const chunkSize = 0x8000;
+    for (let i = 0; i < audioBuf.length; i += chunkSize) {
+      binary += String.fromCharCode(...audioBuf.subarray(i, i + chunkSize));
+    }
+    const base64Audio = btoa(binary);
 
-    const fullRes = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Transcriptions/${completed.sid}.json`,
-      { headers: { Authorization: basicAuth(accountSid, authToken) } },
-    );
-    if (!fullRes.ok) return null;
-    const full = await fullRes.json();
-    return formatTranscript(full.transcription_text || "");
+    // 4. Lovable AI Gateway — Gemini supports audio input
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!lovableKey) {
+      console.warn("[sync] LOVABLE_API_KEY missing — cannot AI-transcribe");
+      return null;
+    }
+
+    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Transcribe this phone call verbatim. Format each turn as 'Agent: ...' (Brandaro virtual assistant) or 'Caller: ...' (the lead). One turn per line. Output ONLY the transcript — no preamble.",
+              },
+              {
+                type: "input_audio",
+                input_audio: { data: base64Audio, format: "mp3" },
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!aiRes.ok) {
+      const errText = await aiRes.text();
+      console.warn(`[sync] AI transcription failed (${aiRes.status}): ${errText.slice(0, 300)}`);
+      return null;
+    }
+    const aiData = await aiRes.json();
+    const text: string | undefined = aiData?.choices?.[0]?.message?.content?.trim();
+    if (!text || text.length < 4) return null;
+    return text;
   } catch (err) {
     console.warn(`[sync] pollTranscript error for ${recordingSid}:`, err);
     return null;
