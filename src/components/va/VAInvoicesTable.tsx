@@ -45,7 +45,7 @@ export function VAInvoicesTable() {
   const sendMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
       const { data, error } = await supabase.functions.invoke('va-send-invoice', {
-        body: { invoice_id: invoiceId, channel: 'sms' },
+        body: { invoice_id: invoiceId, channel: 'email' },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
