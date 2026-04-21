@@ -239,28 +239,46 @@ async function processRecording(
 
     // No existing row — try to create one. Need a va_id (NOT NULL).
     const callDetails = callSid ? await fetchCallDetails(accountSid, authToken, callSid) : null;
-    const fromNumber = callDetails?.from || null;
-    const toNumber = callDetails?.to || null;
+    const fromNumber: string | null = callDetails?.from || null;
+    const toNumber: string | null = callDetails?.to || null;
 
-    // Most recent VA who used either number on outbound
-    const candidate = fromNumber || toNumber;
     let vaId: string | null = null;
-    if (candidate) {
-      const { data: prior } = await supabase
+
+    // 1. If From is a Twilio Client identity like "client:va_<uuid>", parse va_id directly
+    const fromClientMatch = fromNumber?.match(/^client:(?:va_)?([0-9a-f-]{36})/i);
+    if (fromClientMatch) vaId = fromClientMatch[1];
+
+    // 2. Match by twilio_number (most recent VA who used the same outbound number)
+    if (!vaId) {
+      for (const candidate of [fromNumber, toNumber].filter(Boolean) as string[]) {
+        if (candidate.startsWith("client:")) continue;
+        const { data: prior } = await supabase
+          .from("va_call_logs")
+          .select("va_id")
+          .eq("twilio_number", candidate)
+          .not("va_id", "is", null)
+          .order("called_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (prior?.va_id) { vaId = prior.va_id; break; }
+      }
+    }
+
+    // 3. Final fallback — any active VA in the system (single-tenant Brandaro account)
+    if (!vaId) {
+      const { data: anyVa } = await supabase
         .from("va_call_logs")
         .select("va_id")
-        .eq("twilio_number", candidate)
         .not("va_id", "is", null)
         .order("called_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      vaId = prior?.va_id ?? null;
+      vaId = anyVa?.va_id ?? null;
     }
 
     if (!vaId) {
-      // Skip — never insert with NULL va_id
       result.skipped++;
-      console.log(`[sync] skipped ${recordingSid} (no VA attribution for ${candidate})`);
+      console.log(`[sync] skipped ${recordingSid} (no VA attribution possible)`);
       return;
     }
 
