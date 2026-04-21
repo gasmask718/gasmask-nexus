@@ -111,27 +111,32 @@ serve(async (req: Request) => {
       const slice = todo.slice(0, recordingBatch);
       result.has_more = todo.length > slice.length;
 
+      // First pass: just download recordings + create rows. Skip transcript polling
+      // here — it's the slowest part. Transcripts are handled in the dedicated
+      // second pass below (and on subsequent syncs).
       await runWithConcurrency(slice, (rec) =>
-        processRecording(supabase, accountSid, authToken, rec, result),
+        processRecording(supabase, accountSid, authToken, rec, result, false),
       );
 
-      // Re-poll a small batch of rows missing transcripts
-      const { data: pending } = await supabase
-        .from("va_call_logs")
-        .select("id, recording_sid")
-        .not("recording_sid", "is", null)
-        .is("transcript", null)
-        .limit(transcriptBatch);
+      // Re-poll a small batch of rows missing transcripts (skippable via flag)
+      if (!skipTranscripts && !timeUp()) {
+        const { data: pending } = await supabase
+          .from("va_call_logs")
+          .select("id, recording_sid")
+          .not("recording_sid", "is", null)
+          .is("transcript", null)
+          .limit(transcriptBatch);
 
-      if (pending && pending.length) {
-        await runWithConcurrency(pending, async (row: any) => {
-          if (!row.recording_sid) return;
-          const transcript = await pollTranscript(accountSid, authToken, row.recording_sid);
-          if (transcript) {
-            await supabase.from("va_call_logs").update({ transcript }).eq("id", row.id);
-            result.transcribed++;
-          }
-        });
+        if (pending && pending.length) {
+          await runWithConcurrency(pending, async (row: any) => {
+            if (!row.recording_sid || timeUp()) return;
+            const transcript = await pollTranscript(accountSid, authToken, row.recording_sid);
+            if (transcript) {
+              await supabase.from("va_call_logs").update({ transcript }).eq("id", row.id);
+              result.transcribed++;
+            }
+          });
+        }
       }
 
       const { count } = await supabase
@@ -140,7 +145,11 @@ serve(async (req: Request) => {
         .not("recording_sid", "is", null)
         .is("transcript", null);
       result.remaining_no_transcript = count ?? 0;
+      result.has_more = result.has_more || (result.remaining_no_transcript ?? 0) > 0;
     }
+
+    const elapsed = Date.now() - startedAt;
+    console.log(`[sync] done in ${elapsed}ms`, result);
 
     return json({ success: true, ...result }, 200);
   } catch (error: unknown) {
