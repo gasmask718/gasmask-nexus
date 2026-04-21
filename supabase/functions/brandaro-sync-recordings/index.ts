@@ -93,43 +93,33 @@ serve(async (req: Request) => {
         processRecording(supabase, accountSid, authToken, rec, result, true),
       );
     } else {
-      // Incremental sync: fetch only the most recent 10 recordings from Twilio.
-      // On subsequent runs, only pull recordings created AFTER the newest
-      // recording we already have in the DB — so the table grows as new calls
-      // happen, instead of re-scanning the whole account every time.
-      const pageSize: number = Math.min(Number(body.page_size) || 10, 50);
+      // Incremental sync: pull the most recent N recordings from Twilio.
+      // We DON'T date-filter on Twilio's side — `URLSearchParams` URL-encodes
+      // `>` to `%3E` which Twilio silently ignores, AND a date filter blocks
+      // backfill of older calls. Pull the latest N and dedupe locally.
+      const pageSize: number = Math.min(Number(body.page_size) || 25, 100);
 
-      const { data: newestRow } = await supabase
-        .from("va_call_logs")
-        .select("called_at")
-        .not("recording_sid", "is", null)
-        .order("called_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const recordings = await fetchRecentRecordings(accountSid, authToken, pageSize);
+      console.log(`[sync] fetched ${recordings.length} recording(s) from Twilio (page_size=${pageSize})`);
 
-      // Twilio expects RFC 2822 / YYYY-MM-DD; YYYY-MM-DD works for DateCreated>.
-      const sinceDate: string | undefined = newestRow?.called_at
-        ? new Date(newestRow.called_at).toISOString().slice(0, 10)
-        : undefined;
-
-      const recordings = await fetchRecentRecordings(accountSid, authToken, pageSize, sinceDate);
-      console.log(
-        `[sync] fetched ${recordings.length} recording(s)` +
-          (sinceDate ? ` since ${sinceDate}` : " (initial pull)"),
-      );
-
-      // Pre-filter against DB to skip recordings we already have
+      // Pre-filter: skip only recordings that are FULLY synced (have a public URL).
+      // Rows missing recording_url still need re-download.
       const sids = recordings.map((r: any) => r.sid).filter(Boolean);
       const { data: existingRows } = sids.length
         ? await supabase
             .from("va_call_logs")
-            .select("recording_sid")
+            .select("recording_sid, recording_url")
             .in("recording_sid", sids)
         : { data: [] as any[] };
-      const existingSet = new Set((existingRows || []).map((r: any) => r.recording_sid));
-      const todo = recordings.filter((r: any) => !existingSet.has(r.sid));
+      const fullySyncedSet = new Set(
+        (existingRows || [])
+          .filter((r: any) => r.recording_url)
+          .map((r: any) => r.recording_sid),
+      );
+      const todo = recordings.filter((r: any) => !fullySyncedSet.has(r.sid));
       const slice = todo.slice(0, recordingBatch);
       result.has_more = todo.length > slice.length;
+      console.log(`[sync] ${todo.length} new/incomplete, processing ${slice.length}`);
 
       // First pass: just download recordings + create rows. Skip transcript polling
       // here — it's the slowest part. Transcripts are handled in the dedicated
