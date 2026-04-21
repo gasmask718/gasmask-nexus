@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useVASession } from '@/contexts/VASessionContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ interface VAInvoiceModalProps {
   open: boolean;
   onClose: () => void;
   lead?: { id: string; business_name: string; phone?: string; } | null;
+  sendOnSave?: boolean;
 }
 
 const SERVICE_TYPES = [
@@ -22,9 +24,10 @@ const SERVICE_TYPES = [
   'Social Media Marketing', 'Full Digital Package', 'Consultation', 'Other',
 ];
 
-export function VAInvoiceModal({ open, onClose, lead }: VAInvoiceModalProps) {
+export function VAInvoiceModal({ open, onClose, lead, sendOnSave }: VAInvoiceModalProps) {
   const { t } = useVASession();
   const { user } = useAuth();
+  const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     customerName: '',
@@ -34,7 +37,6 @@ export function VAInvoiceModal({ open, onClose, lead }: VAInvoiceModalProps) {
     lineItems: [{ description: '', price: 0 }] as LineItem[],
   });
 
-  // Auto-fill from lead when modal opens
   useEffect(() => {
     if (open && lead) {
       setForm(f => ({ ...f, customerName: lead.business_name || '' }));
@@ -60,7 +62,7 @@ export function VAInvoiceModal({ open, onClose, lead }: VAInvoiceModalProps) {
     setSaving(true);
     try {
       const paymentLink = `${window.location.origin}/pay/${crypto.randomUUID()}`;
-      const { error } = await (supabase as any)
+      const { data: inserted, error } = await (supabase as any)
         .from('va_invoices')
         .insert({
           lead_id: lead?.id || null,
@@ -73,9 +75,29 @@ export function VAInvoiceModal({ open, onClose, lead }: VAInvoiceModalProps) {
           payment_link: paymentLink,
           due_date: form.dueDate || null,
           notes: form.notes || null,
-        });
+        })
+        .select('id')
+        .single();
       if (error) throw error;
-      toast.success(t('va.invoice.saved'));
+
+      qc.invalidateQueries({ queryKey: ['va-invoices', user?.id] });
+
+      if (sendOnSave && inserted?.id) {
+        try {
+          const { data: sendData, error: sendErr } = await supabase.functions.invoke('va-send-invoice', {
+            body: { invoice_id: inserted.id, channel: 'email' },
+          });
+          if (sendErr || (sendData as any)?.error) {
+            throw new Error(sendErr?.message || (sendData as any)?.error);
+          }
+          toast.success(`Invoice created & sent to ${(sendData as any)?.sent_to || 'customer'}`);
+          qc.invalidateQueries({ queryKey: ['va-invoices', user?.id] });
+        } catch (e: any) {
+          toast.warning(`Invoice saved as draft — send failed: ${e.message}`);
+        }
+      } else {
+        toast.success(t('va.invoice.saved'));
+      }
       onClose();
     } catch (err: any) {
       toast.error(err.message || t('va.invoice.saveFailed'));
@@ -88,7 +110,7 @@ export function VAInvoiceModal({ open, onClose, lead }: VAInvoiceModalProps) {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg bg-slate-900 border-cyan-500/20 text-white">
         <DialogHeader>
-          <DialogTitle>{t('va.invoice.title')}</DialogTitle>
+          <DialogTitle>{sendOnSave ? 'Create & Send Invoice' : t('va.invoice.title')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
@@ -146,7 +168,7 @@ export function VAInvoiceModal({ open, onClose, lead }: VAInvoiceModalProps) {
 
           <Button onClick={handleSave} disabled={saving} className="w-full bg-cyan-600 hover:bg-cyan-700">
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            {t('va.invoice.save')}
+            {sendOnSave ? 'Save & Send' : t('va.invoice.save')}
           </Button>
         </div>
       </DialogContent>
