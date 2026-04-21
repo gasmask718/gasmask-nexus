@@ -93,10 +93,30 @@ serve(async (req: Request) => {
         processRecording(supabase, accountSid, authToken, rec, result, true),
       );
     } else {
-      // Pull recent account-wide recordings (small page) and process only the
-      // first N that aren't already stored. This keeps a single invocation fast.
-      const recordings = await fetchRecentRecordings(accountSid, authToken, 50);
-      console.log(`[sync] account-wide recordings fetched: ${recordings.length}`);
+      // Incremental sync: fetch only the most recent 10 recordings from Twilio.
+      // On subsequent runs, only pull recordings created AFTER the newest
+      // recording we already have in the DB — so the table grows as new calls
+      // happen, instead of re-scanning the whole account every time.
+      const pageSize: number = Math.min(Number(body.page_size) || 10, 50);
+
+      const { data: newestRow } = await supabase
+        .from("va_call_logs")
+        .select("called_at")
+        .not("recording_sid", "is", null)
+        .order("called_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Twilio expects RFC 2822 / YYYY-MM-DD; YYYY-MM-DD works for DateCreated>.
+      const sinceDate: string | undefined = newestRow?.called_at
+        ? new Date(newestRow.called_at).toISOString().slice(0, 10)
+        : undefined;
+
+      const recordings = await fetchRecentRecordings(accountSid, authToken, pageSize, sinceDate);
+      console.log(
+        `[sync] fetched ${recordings.length} recording(s)` +
+          (sinceDate ? ` since ${sinceDate}` : " (initial pull)"),
+      );
 
       // Pre-filter against DB to skip recordings we already have
       const sids = recordings.map((r: any) => r.sid).filter(Boolean);
@@ -174,8 +194,11 @@ async function fetchRecentRecordings(
   accountSid: string,
   authToken: string,
   pageSize: number,
+  sinceDate?: string,
 ): Promise<any[]> {
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings.json?PageSize=${pageSize}`;
+  const params = new URLSearchParams({ PageSize: String(pageSize) });
+  if (sinceDate) params.set("DateCreated>", sinceDate);
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings.json?${params.toString()}`;
   const res = await fetch(url, { headers: { Authorization: basicAuth(accountSid, authToken) } });
   if (!res.ok) {
     console.warn(`[sync] list recordings failed: ${res.status} ${await res.text()}`);
