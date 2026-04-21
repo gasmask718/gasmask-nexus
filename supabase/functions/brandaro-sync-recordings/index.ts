@@ -54,45 +54,85 @@ serve(async (req: Request) => {
 
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const specificCallSid: string | undefined = body.call_sid;
+    // Tunable batch sizes — keep total wall time well under the 150s edge limit.
+    const recordingBatch: number = Math.min(Number(body.batch) || 15, 25);
+    const transcriptBatch: number = Math.min(Number(body.transcript_batch) || 10, 20);
+    const concurrency: number = Math.min(Number(body.concurrency) || 4, 6);
 
-    const result: SyncResult = { synced: 0, transcribed: 0, skipped: 0, errors: [] };
+    const result: SyncResult & { has_more?: boolean; remaining_no_transcript?: number } = {
+      synced: 0,
+      transcribed: 0,
+      skipped: 0,
+      errors: [],
+    };
+
+    const runWithConcurrency = async <T>(items: T[], worker: (item: T) => Promise<void>) => {
+      let i = 0;
+      const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+        while (i < items.length) {
+          const idx = i++;
+          try { await worker(items[idx]); } catch (e) {
+            result.errors.push(e instanceof Error ? e.message : String(e));
+          }
+        }
+      });
+      await Promise.all(runners);
+    };
 
     if (specificCallSid) {
-      // Fetch recordings for one specific call
       const recs = await fetchRecordingsForCall(accountSid, authToken, specificCallSid);
       console.log(`[sync] specific call ${specificCallSid} -> ${recs.length} recordings`);
-      for (const rec of recs) {
-        await processRecording(supabase, accountSid, authToken, rec, result);
-      }
+      await runWithConcurrency(recs.slice(0, recordingBatch), (rec) =>
+        processRecording(supabase, accountSid, authToken, rec, result),
+      );
     } else {
-      // Pull recent account-wide recordings
-      const recordings = await fetchRecentRecordings(accountSid, authToken, 100);
+      // Pull recent account-wide recordings (small page) and process only the
+      // first N that aren't already stored. This keeps a single invocation fast.
+      const recordings = await fetchRecentRecordings(accountSid, authToken, 50);
       console.log(`[sync] account-wide recordings fetched: ${recordings.length}`);
-      for (const rec of recordings) {
-        await processRecording(supabase, accountSid, authToken, rec, result);
-      }
 
-      // Re-poll any DB rows that have a recording but no transcript yet
+      // Pre-filter against DB to skip recordings we already have
+      const sids = recordings.map((r: any) => r.sid).filter(Boolean);
+      const { data: existingRows } = sids.length
+        ? await supabase
+            .from("va_call_logs")
+            .select("recording_sid")
+            .in("recording_sid", sids)
+        : { data: [] as any[] };
+      const existingSet = new Set((existingRows || []).map((r: any) => r.recording_sid));
+      const todo = recordings.filter((r: any) => !existingSet.has(r.sid));
+      const slice = todo.slice(0, recordingBatch);
+      result.has_more = todo.length > slice.length;
+
+      await runWithConcurrency(slice, (rec) =>
+        processRecording(supabase, accountSid, authToken, rec, result),
+      );
+
+      // Re-poll a small batch of rows missing transcripts
       const { data: pending } = await supabase
         .from("va_call_logs")
         .select("id, recording_sid")
         .not("recording_sid", "is", null)
         .is("transcript", null)
-        .limit(50);
+        .limit(transcriptBatch);
 
-      if (pending) {
-        for (const row of pending) {
-          if (!row.recording_sid) continue;
+      if (pending && pending.length) {
+        await runWithConcurrency(pending, async (row: any) => {
+          if (!row.recording_sid) return;
           const transcript = await pollTranscript(accountSid, authToken, row.recording_sid);
           if (transcript) {
-            await supabase
-              .from("va_call_logs")
-              .update({ transcript })
-              .eq("id", row.id);
+            await supabase.from("va_call_logs").update({ transcript }).eq("id", row.id);
             result.transcribed++;
           }
-        }
+        });
       }
+
+      const { count } = await supabase
+        .from("va_call_logs")
+        .select("id", { count: "exact", head: true })
+        .not("recording_sid", "is", null)
+        .is("transcript", null);
+      result.remaining_no_transcript = count ?? 0;
     }
 
     return json({ success: true, ...result }, 200);
