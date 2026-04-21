@@ -76,6 +76,7 @@ serve(async (req: Request) => {
       let i = 0;
       const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
         while (i < items.length) {
+          if (timeUp()) return;
           const idx = i++;
           try { await worker(items[idx]); } catch (e) {
             result.errors.push(e instanceof Error ? e.message : String(e));
@@ -89,7 +90,7 @@ serve(async (req: Request) => {
       const recs = await fetchRecordingsForCall(accountSid, authToken, specificCallSid);
       console.log(`[sync] specific call ${specificCallSid} -> ${recs.length} recordings`);
       await runWithConcurrency(recs.slice(0, recordingBatch), (rec) =>
-        processRecording(supabase, accountSid, authToken, rec, result),
+        processRecording(supabase, accountSid, authToken, rec, result, true),
       );
     } else {
       // Pull recent account-wide recordings (small page) and process only the
