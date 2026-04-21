@@ -98696,10 +98696,13 @@ export type Database = {
           customer_name: string
           due_date: string | null
           id: string
+          invoice_number: string | null
+          last_send_error: string | null
           lead_id: string | null
           line_items: Json
           notes: string | null
           payment_link: string | null
+          sent_at: string | null
           service_type: string | null
           status: string | null
           total: number
@@ -98710,10 +98713,13 @@ export type Database = {
           customer_name: string
           due_date?: string | null
           id?: string
+          invoice_number?: string | null
+          last_send_error?: string | null
           lead_id?: string | null
           line_items?: Json
           notes?: string | null
           payment_link?: string | null
+          sent_at?: string | null
           service_type?: string | null
           status?: string | null
           total?: number
@@ -98724,10 +98730,13 @@ export type Database = {
           customer_name?: string
           due_date?: string | null
           id?: string
+          invoice_number?: string | null
+          last_send_error?: string | null
           lead_id?: string | null
           line_items?: Json
           notes?: string | null
           payment_link?: string | null
+          sent_at?: string | null
           service_type?: string | null
           status?: string | null
           total?: number
