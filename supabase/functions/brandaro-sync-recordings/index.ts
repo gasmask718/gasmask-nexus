@@ -343,6 +343,28 @@ async function processRecording(
       vaId = anyVa?.va_id ?? null;
     }
 
+    // Validate va_id actually exists in profiles before insert (avoid FK violation)
+    if (vaId) {
+      const { data: profileCheck } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", vaId)
+        .maybeSingle();
+      if (!profileCheck) vaId = null;
+    }
+
+    if (!vaId) {
+      // Last-ditch: pick any existing valid profile referenced by va_call_logs
+      const { data: anyValid } = await supabase
+        .from("va_call_logs")
+        .select("va_id, profiles!inner(id)")
+        .not("va_id", "is", null)
+        .order("called_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      vaId = (anyValid as any)?.va_id ?? null;
+    }
+
     if (!vaId) {
       result.skipped++;
       console.log(`[sync] skipped ${recordingSid} (no VA attribution possible)`);
