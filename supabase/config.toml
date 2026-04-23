@@ -471,3 +471,6 @@ verify_jwt = false
 
 [functions.va-power-dialer]
 verify_jwt = false
+
+[functions.relay-sms]
+verify_jwt = false
