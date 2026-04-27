@@ -114,6 +114,54 @@ export default function AdminCallReview() {
     },
   });
 
+  // AI analyzer — runs Lovable AI on the transcript/notes and saves to ai_analysis
+  const analyzeMutation = useMutation({
+    mutationFn: async (callLogId: string) => {
+      const { data, error } = await supabase.functions.invoke('analyze-va-call', {
+        body: { call_log_id: callLogId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return data;
+    },
+    onSuccess: (data: any) => {
+      toast.success('AI analysis complete');
+      // Refresh selected call from server so updated ai_analysis shows immediately
+      if (selectedCall?.id) {
+        supabase
+          .from('va_call_logs')
+          .select('*, profiles!va_call_logs_va_id_fkey(name)')
+          .eq('id', selectedCall.id)
+          .maybeSingle()
+          .then(({ data: fresh }) => {
+            if (fresh) setSelectedCall(fresh);
+          });
+      }
+      queryClient.invalidateQueries({ queryKey: ['admin-call-review'] });
+    },
+    onError: (err: any) => {
+      toast.error('Analysis failed: ' + (err.message || 'Unknown error'));
+    },
+  });
+
+  // Send the coaching report to the VA so it appears on their dashboard
+  const sendToVAMutation = useMutation({
+    mutationFn: async (callLogId: string) => {
+      const { data, error } = await supabase.functions.invoke('send-coaching-to-va', {
+        body: { call_log_id: callLogId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Coaching sent to VA — they will see it on their dashboard');
+    },
+    onError: (err: any) => {
+      toast.error('Send failed: ' + (err.message || 'Unknown error'));
+    },
+  });
+
   // Auto-sync on mount (pulls latest 10 from Twilio Brandaro)
   useEffect(() => {
     syncMutation.mutate();
