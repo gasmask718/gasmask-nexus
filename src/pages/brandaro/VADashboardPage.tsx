@@ -52,6 +52,9 @@ export default function VADashboardPage() {
   const { data: perf } = useMyDailyPerformance();
   const { data: tasks = [] } = useVATaskQueue();
   const { data: leaderboard = [] } = useVALeaderboard(leaderboardPeriod);
+  const { data: todayBoard = [] } = useVALeaderboard("today");
+  const { data: monthBoard = [] } = useVALeaderboard("month");
+  const { data: lastMonthBoard = [] } = useVALeaderboard("last_month");
   const { data: badges = [] } = useVABadges();
   const { data: coaching = [] } = useVACoaching();
   const { data: alerts = [] } = useVAAlerts();
