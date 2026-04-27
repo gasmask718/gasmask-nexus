@@ -87,12 +87,28 @@ function VADashboardInner() {
     setShowSessionSummary(true);
   };
 
+  // Unread coaching count for sidebar badge
+  const { data: unreadCoaching = 0 } = useQuery({
+    queryKey: ['va-coaching-unread', user?.id],
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from('brandaro_va_coaching')
+        .select('id', { count: 'exact', head: true })
+        .eq('va_user_id', user!.id)
+        .is('acknowledged_at', null);
+      return count || 0;
+    },
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+
   const navItems = [
     { key: 'leads' as VAView, label: t('va.nav.leads'), icon: Users },
     { key: 'discovery' as VAView, label: t('va.nav.discovery'), icon: Search },
     { key: 'dialer' as VAView, label: 'Power Dialer', icon: Zap },
     { key: 'leaderboard' as VAView, label: 'Leaderboard', icon: Trophy },
     { key: 'callbacks' as VAView, label: 'Callbacks', icon: Clock },
+    { key: 'coaching' as VAView, label: 'AI Coaching', icon: Sparkles, badge: unreadCoaching },
     { key: 'call' as VAView, label: t('va.nav.activeCall'), icon: Phone },
     { key: 'scripts' as VAView, label: t('va.nav.scripts'), icon: BookOpen },
     { key: 'faqs' as VAView, label: t('va.nav.faqs'), icon: HelpCircle },
@@ -124,6 +140,11 @@ function VADashboardInner() {
                       >
                         <item.icon className="h-4 w-4" />
                         <span>{item.label}</span>
+                        {(item as any).badge ? (
+                          <Badge className="ml-auto bg-cyan-500 text-white text-[10px] px-1.5 py-0 h-4">
+                            {(item as any).badge}
+                          </Badge>
+                        ) : null}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
