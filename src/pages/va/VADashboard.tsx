@@ -18,6 +18,7 @@ import { VACallbacksQueue } from '@/components/va/VACallbacksQueue';
 import { VACallStats } from '@/components/va/VACallStats';
 import { VARecentCalls } from '@/components/va/VARecentCalls';
 import { VASessionSummary } from '@/components/va/VASessionSummary';
+import { VACoachingInbox } from '@/components/va/VACoachingInbox';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
@@ -28,10 +29,10 @@ import {
 } from '@/components/ui/sidebar';
 import {
   Users, Phone, BookOpen, HelpCircle, FileText, Settings, LogOut, Headset, PanelLeft,
-  Search, ArrowLeft, Zap, Trophy, Clock, UserCircle,
+  Search, ArrowLeft, Zap, Trophy, Clock, UserCircle, Sparkles,
 } from 'lucide-react';
 
-type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'leaderboard' | 'callbacks';
+type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'leaderboard' | 'callbacks' | 'coaching';
 
 function VADashboardInner() {
   const navigate = useNavigate();
