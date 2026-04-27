@@ -22,6 +22,8 @@ import {
   Loader2,
   CheckSquare,
   Square,
+  ArrowRightLeft,
+  UserMinus,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -57,6 +59,15 @@ export default function VARosterPage() {
   const [search, setSearch] = useState('');
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [stateFilter, setStateFilter] = useState<string>('all');
+
+  // Transfer panel state
+  const [transferSourceVa, setTransferSourceVa] = useState<string>('');
+  const [transferTargetVa, setTransferTargetVa] = useState<string>(''); // '' = unassign
+  const [transferLeads, setTransferLeads] = useState<UnassignedLead[]>([]);
+  const [transferLoading, setTransferLoading] = useState(false);
+  const [transferSelectedIds, setTransferSelectedIds] = useState<Set<string>>(new Set());
+  const [transferSearch, setTransferSearch] = useState('');
+  const [transferring, setTransferring] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -231,6 +242,108 @@ export default function VARosterPage() {
     if (tier === 'hot') return 'bg-red-500/20 text-red-400 border-red-500/30';
     if (tier === 'warm') return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
     return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+  };
+
+  // ── Transfer: load leads assigned to source VA ──
+  useEffect(() => {
+    if (!transferSourceVa) {
+      setTransferLeads([]);
+      setTransferSelectedIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setTransferLoading(true);
+      const { data, error } = await supabase
+        .from('brandaro_qualified_leads')
+        .select('id, business_name, priority_tier, city, state, phone_number, priority_score')
+        .eq('assigned_va', transferSourceVa)
+        .order('priority_score', { ascending: false })
+        .limit(PAGE_SIZE);
+      if (cancelled) return;
+      if (error) {
+        toast({ title: 'Failed to load VA leads', description: error.message, variant: 'destructive' });
+        setTransferLeads([]);
+      } else {
+        setTransferLeads((data as UnassignedLead[]) || []);
+      }
+      setTransferSelectedIds(new Set());
+      setTransferLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [transferSourceVa]);
+
+  const filteredTransferLeads = useMemo(() => {
+    const q = transferSearch.trim().toLowerCase();
+    if (!q) return transferLeads;
+    return transferLeads.filter(
+      (l) =>
+        (l.business_name || '').toLowerCase().includes(q) ||
+        (l.city || '').toLowerCase().includes(q) ||
+        (l.state || '').toLowerCase().includes(q),
+    );
+  }, [transferLeads, transferSearch]);
+
+  const allTransferSelected =
+    filteredTransferLeads.length > 0 &&
+    filteredTransferLeads.every((l) => transferSelectedIds.has(l.id));
+
+  const toggleTransferLead = (id: string) => {
+    setTransferSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllTransferFiltered = () => {
+    setTransferSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allTransferSelected) filteredTransferLeads.forEach((l) => next.delete(l.id));
+      else filteredTransferLeads.forEach((l) => next.add(l.id));
+      return next;
+    });
+  };
+
+  const handleTransfer = async () => {
+    if (!transferSourceVa || transferSelectedIds.size === 0) return;
+    if (transferTargetVa && transferTargetVa === transferSourceVa) {
+      toast({ title: 'Pick a different target', variant: 'destructive' });
+      return;
+    }
+    setTransferring(true);
+    const ids = Array.from(transferSelectedIds);
+    const newAssignee = transferTargetVa || null;
+    const { error, count } = await supabase
+      .from('brandaro_qualified_leads')
+      .update({ assigned_va: newAssignee } as any, { count: 'exact' })
+      .in('id', ids)
+      .eq('assigned_va', transferSourceVa);
+
+    if (error) {
+      toast({ title: 'Transfer failed', description: error.message, variant: 'destructive' });
+    } else {
+      const sourceName = vas.find((v) => v.user_id === transferSourceVa)?.name || 'source';
+      const targetName = newAssignee
+        ? vas.find((v) => v.user_id === newAssignee)?.name || 'VA'
+        : 'unassigned pool';
+      toast({
+        title: 'Leads transferred',
+        description: `${count ?? ids.length} lead(s) moved from ${sourceName} → ${targetName}.`,
+      });
+      const { data: refreshed } = await supabase
+        .from('brandaro_qualified_leads')
+        .select('id, business_name, priority_tier, city, state, phone_number, priority_score')
+        .eq('assigned_va', transferSourceVa)
+        .order('priority_score', { ascending: false })
+        .limit(PAGE_SIZE);
+      setTransferLeads((refreshed as UnassignedLead[]) || []);
+      setTransferSelectedIds(new Set());
+      await fetchData();
+    }
+    setTransferring(false);
   };
 
   return (
@@ -491,6 +604,184 @@ export default function VARosterPage() {
               </tbody>
             </table>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* ─── Transfer Leads Between VAs ─── */}
+      <Card className="border-amber-500/30">
+        <CardHeader className="space-y-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ArrowRightLeft className="h-4 w-4 text-amber-400" /> Transfer Leads Between VAs
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Move leads from one VA's pipeline to another (or release back to the unassigned pool).
+          </p>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={transferSourceVa} onValueChange={setTransferSourceVa}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="From VA…" />
+              </SelectTrigger>
+              <SelectContent>
+                {vas.map((v) => (
+                  <SelectItem key={v.user_id} value={v.user_id}>
+                    {v.name} ({v.lead_count})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
+
+            <Select
+              value={transferTargetVa || '__unassign__'}
+              onValueChange={(v) => setTransferTargetVa(v === '__unassign__' ? '' : v)}
+            >
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="To VA…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__unassign__">
+                  <span className="inline-flex items-center gap-2">
+                    <UserMinus className="h-3.5 w-3.5" /> Unassign (release pool)
+                  </span>
+                </SelectItem>
+                {vas
+                  .filter((v) => v.user_id !== transferSourceVa)
+                  .map((v) => (
+                    <SelectItem key={v.user_id} value={v.user_id}>
+                      {v.name} ({v.lead_count})
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+
+            <Button
+              onClick={handleTransfer}
+              disabled={!transferSourceVa || transferSelectedIds.size === 0 || transferring}
+              className="gap-2"
+            >
+              {transferring ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ArrowRightLeft className="h-4 w-4" />
+              )}
+              Transfer {transferSelectedIds.size > 0 ? `${transferSelectedIds.size} ` : ''}lead(s)
+            </Button>
+          </div>
+
+          {transferSourceVa && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search this VA's leads…"
+                  value={transferSearch}
+                  onChange={(e) => setTransferSearch(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <Button variant="outline" onClick={toggleAllTransferFiltered} className="gap-2">
+                {allTransferSelected ? (
+                  <CheckSquare className="h-4 w-4" />
+                ) : (
+                  <Square className="h-4 w-4" />
+                )}
+                {allTransferSelected ? 'Unselect all' : 'Select all'}
+              </Button>
+            </div>
+          )}
+        </CardHeader>
+
+        <CardContent>
+          {!transferSourceVa ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Pick a source VA above to view their leads.
+            </p>
+          ) : (
+            <div className="overflow-auto max-h-[450px]">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-background z-10">
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="pb-2 pr-2 w-8">
+                      <Checkbox
+                        checked={allTransferSelected}
+                        onCheckedChange={toggleAllTransferFiltered}
+                        aria-label="Select all"
+                      />
+                    </th>
+                    <th className="pb-2 font-medium">Business</th>
+                    <th className="pb-2 font-medium">Location</th>
+                    <th className="pb-2 font-medium">Priority</th>
+                    <th className="pb-2 font-medium">Score</th>
+                    <th className="pb-2 font-medium">Phone</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transferLoading && (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin inline mr-2" />
+                        Loading leads…
+                      </td>
+                    </tr>
+                  )}
+                  {!transferLoading && filteredTransferLeads.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                        This VA has no leads matching the search.
+                      </td>
+                    </tr>
+                  )}
+                  {filteredTransferLeads.map((lead) => {
+                    const checked = transferSelectedIds.has(lead.id);
+                    return (
+                      <tr
+                        key={lead.id}
+                        className={`border-b border-border/30 hover:bg-accent/30 transition-colors cursor-pointer ${
+                          checked ? 'bg-amber-500/5' : ''
+                        }`}
+                        onClick={() => toggleTransferLead(lead.id)}
+                      >
+                        <td className="py-2 pr-2">
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={() => toggleTransferLead(lead.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label={`Select ${lead.business_name}`}
+                          />
+                        </td>
+                        <td className="py-2 font-medium">{lead.business_name}</td>
+                        <td className="py-2 text-muted-foreground">
+                          {lead.city}
+                          {lead.city && lead.state ? ', ' : ''}
+                          {lead.state}
+                        </td>
+                        <td className="py-2">
+                          <Badge className={`text-[10px] border ${tierColor(lead.priority_tier)}`}>
+                            {lead.priority_tier?.toUpperCase() || 'NEW'}
+                          </Badge>
+                        </td>
+                        <td className="py-2 text-muted-foreground tabular-nums">
+                          {lead.priority_score ?? '—'}
+                        </td>
+                        <td className="py-2 text-muted-foreground">
+                          {lead.phone_number ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {lead.phone_number}
+                            </span>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
