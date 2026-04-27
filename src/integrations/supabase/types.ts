@@ -19363,51 +19363,77 @@ export type Database = {
       }
       brandaro_va_coaching: {
         Row: {
+          acknowledged_at: string | null
+          call_log_id: string | null
           call_quality_score: number | null
           coaching_type: string | null
           created_at: string | null
           followup_quality_score: number | null
+          handling_tips: string[] | null
           id: string
           improvement_target: string | null
           manager_user_id: string
           note_quality_score: number | null
           notes: string | null
           quality_score: number | null
+          rating: number | null
+          recommendations: string[] | null
           strengths: string[] | null
+          summary: string | null
           va_user_id: string
           weak_points: string[] | null
         }
         Insert: {
+          acknowledged_at?: string | null
+          call_log_id?: string | null
           call_quality_score?: number | null
           coaching_type?: string | null
           created_at?: string | null
           followup_quality_score?: number | null
+          handling_tips?: string[] | null
           id?: string
           improvement_target?: string | null
           manager_user_id: string
           note_quality_score?: number | null
           notes?: string | null
           quality_score?: number | null
+          rating?: number | null
+          recommendations?: string[] | null
           strengths?: string[] | null
+          summary?: string | null
           va_user_id: string
           weak_points?: string[] | null
         }
         Update: {
+          acknowledged_at?: string | null
+          call_log_id?: string | null
           call_quality_score?: number | null
           coaching_type?: string | null
           created_at?: string | null
           followup_quality_score?: number | null
+          handling_tips?: string[] | null
           id?: string
           improvement_target?: string | null
           manager_user_id?: string
           note_quality_score?: number | null
           notes?: string | null
           quality_score?: number | null
+          rating?: number | null
+          recommendations?: string[] | null
           strengths?: string[] | null
+          summary?: string | null
           va_user_id?: string
           weak_points?: string[] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_va_coaching_call_log_id_fkey"
+            columns: ["call_log_id"]
+            isOneToOne: false
+            referencedRelation: "va_call_logs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_va_conversion_metrics: {
         Row: {
