@@ -60,6 +60,15 @@ export default function VARosterPage() {
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [stateFilter, setStateFilter] = useState<string>('all');
 
+  // Transfer panel state
+  const [transferSourceVa, setTransferSourceVa] = useState<string>('');
+  const [transferTargetVa, setTransferTargetVa] = useState<string>(''); // '' = unassign
+  const [transferLeads, setTransferLeads] = useState<UnassignedLead[]>([]);
+  const [transferLoading, setTransferLoading] = useState(false);
+  const [transferSelectedIds, setTransferSelectedIds] = useState<Set<string>>(new Set());
+  const [transferSearch, setTransferSearch] = useState('');
+  const [transferring, setTransferring] = useState(false);
+
   const fetchData = async () => {
     setLoading(true);
 
