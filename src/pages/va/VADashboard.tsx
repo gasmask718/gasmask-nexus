@@ -254,6 +254,11 @@ function VADashboardInner() {
                 <VACallbacksQueue onDialLead={lead => { setCallLead(lead); setView('call'); }} />
               </div>
             )}
+            {view === 'coaching' && (
+              <div className="max-w-3xl">
+                <VACoachingInbox />
+              </div>
+            )}
             {view === 'call' && (
               <VACallPanel
                 lead={callLead}
