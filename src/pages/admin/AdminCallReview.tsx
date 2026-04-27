@@ -546,6 +546,49 @@ export default function AdminCallReview() {
                   </CardContent>
                 </Card>
 
+                {/* AI Analyzer toolbar */}
+                <Card className="bg-slate-800/50 border-slate-700">
+                  <CardContent className="p-3 flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-2 mr-auto">
+                      <Sparkles className="h-4 w-4 text-purple-400" />
+                      <div>
+                        <p className="text-sm text-white font-medium">AI Call Analyzer</p>
+                        <p className="text-[11px] text-slate-400">
+                          {selectedCall.ai_analysis
+                            ? 'Analyzed — review the coaching report below'
+                            : selectedCall.transcript || selectedCall.va_notes
+                              ? 'Run AI to score the call and surface coaching tips'
+                              : 'No transcript or notes available to analyze'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 text-purple-300 border-purple-500/40 hover:bg-purple-500/10"
+                      disabled={
+                        analyzeMutation.isPending ||
+                        (!selectedCall.transcript && !selectedCall.va_notes)
+                      }
+                      onClick={() => analyzeMutation.mutate(selectedCall.id)}
+                    >
+                      <Sparkles className={`h-3.5 w-3.5 ${analyzeMutation.isPending ? 'animate-pulse' : ''}`} />
+                      {selectedCall.ai_analysis ? 'Re-analyze' : 'Analyze with AI'}
+                    </Button>
+                    {selectedCall.ai_analysis && (
+                      <Button
+                        size="sm"
+                        className="gap-1.5 bg-cyan-600 hover:bg-cyan-500 text-white"
+                        disabled={sendToVAMutation.isPending || !selectedCall.va_id}
+                        onClick={() => sendToVAMutation.mutate(selectedCall.id)}
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                        Send Results to VA
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+
                 {selectedCall.ai_analysis && (
                   <VACoachingReport data={selectedCall.ai_analysis} onClose={() => {}} />
                 )}
