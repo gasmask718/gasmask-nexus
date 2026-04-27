@@ -606,6 +606,184 @@ export default function VARosterPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ─── Transfer Leads Between VAs ─── */}
+      <Card className="border-amber-500/30">
+        <CardHeader className="space-y-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ArrowRightLeft className="h-4 w-4 text-amber-400" /> Transfer Leads Between VAs
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Move leads from one VA's pipeline to another (or release back to the unassigned pool).
+          </p>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={transferSourceVa} onValueChange={setTransferSourceVa}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="From VA…" />
+              </SelectTrigger>
+              <SelectContent>
+                {vas.map((v) => (
+                  <SelectItem key={v.user_id} value={v.user_id}>
+                    {v.name} ({v.lead_count})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
+
+            <Select
+              value={transferTargetVa || '__unassign__'}
+              onValueChange={(v) => setTransferTargetVa(v === '__unassign__' ? '' : v)}
+            >
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="To VA…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__unassign__">
+                  <span className="inline-flex items-center gap-2">
+                    <UserMinus className="h-3.5 w-3.5" /> Unassign (release pool)
+                  </span>
+                </SelectItem>
+                {vas
+                  .filter((v) => v.user_id !== transferSourceVa)
+                  .map((v) => (
+                    <SelectItem key={v.user_id} value={v.user_id}>
+                      {v.name} ({v.lead_count})
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+
+            <Button
+              onClick={handleTransfer}
+              disabled={!transferSourceVa || transferSelectedIds.size === 0 || transferring}
+              className="gap-2"
+            >
+              {transferring ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ArrowRightLeft className="h-4 w-4" />
+              )}
+              Transfer {transferSelectedIds.size > 0 ? `${transferSelectedIds.size} ` : ''}lead(s)
+            </Button>
+          </div>
+
+          {transferSourceVa && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search this VA's leads…"
+                  value={transferSearch}
+                  onChange={(e) => setTransferSearch(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <Button variant="outline" onClick={toggleAllTransferFiltered} className="gap-2">
+                {allTransferSelected ? (
+                  <CheckSquare className="h-4 w-4" />
+                ) : (
+                  <Square className="h-4 w-4" />
+                )}
+                {allTransferSelected ? 'Unselect all' : 'Select all'}
+              </Button>
+            </div>
+          )}
+        </CardHeader>
+
+        <CardContent>
+          {!transferSourceVa ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Pick a source VA above to view their leads.
+            </p>
+          ) : (
+            <div className="overflow-auto max-h-[450px]">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-background z-10">
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="pb-2 pr-2 w-8">
+                      <Checkbox
+                        checked={allTransferSelected}
+                        onCheckedChange={toggleAllTransferFiltered}
+                        aria-label="Select all"
+                      />
+                    </th>
+                    <th className="pb-2 font-medium">Business</th>
+                    <th className="pb-2 font-medium">Location</th>
+                    <th className="pb-2 font-medium">Priority</th>
+                    <th className="pb-2 font-medium">Score</th>
+                    <th className="pb-2 font-medium">Phone</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transferLoading && (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin inline mr-2" />
+                        Loading leads…
+                      </td>
+                    </tr>
+                  )}
+                  {!transferLoading && filteredTransferLeads.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                        This VA has no leads matching the search.
+                      </td>
+                    </tr>
+                  )}
+                  {filteredTransferLeads.map((lead) => {
+                    const checked = transferSelectedIds.has(lead.id);
+                    return (
+                      <tr
+                        key={lead.id}
+                        className={`border-b border-border/30 hover:bg-accent/30 transition-colors cursor-pointer ${
+                          checked ? 'bg-amber-500/5' : ''
+                        }`}
+                        onClick={() => toggleTransferLead(lead.id)}
+                      >
+                        <td className="py-2 pr-2">
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={() => toggleTransferLead(lead.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label={`Select ${lead.business_name}`}
+                          />
+                        </td>
+                        <td className="py-2 font-medium">{lead.business_name}</td>
+                        <td className="py-2 text-muted-foreground">
+                          {lead.city}
+                          {lead.city && lead.state ? ', ' : ''}
+                          {lead.state}
+                        </td>
+                        <td className="py-2">
+                          <Badge className={`text-[10px] border ${tierColor(lead.priority_tier)}`}>
+                            {lead.priority_tier?.toUpperCase() || 'NEW'}
+                          </Badge>
+                        </td>
+                        <td className="py-2 text-muted-foreground tabular-nums">
+                          {lead.priority_score ?? '—'}
+                        </td>
+                        <td className="py-2 text-muted-foreground">
+                          {lead.phone_number ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {lead.phone_number}
+                            </span>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
