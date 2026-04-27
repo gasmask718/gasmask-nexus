@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Headset, ArrowLeft, Play, Flame, Sun, Snowflake, Star, RefreshCw, Download,
-  FileText, MessageSquare, Search, ChevronLeft, ChevronRight,
+  FileText, MessageSquare, Search, ChevronLeft, ChevronRight, Sparkles, Send,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -111,6 +111,54 @@ export default function AdminCallReview() {
     onSuccess: () => {
       toast.success('Recording synced!');
       queryClient.invalidateQueries({ queryKey: ['admin-call-review'] });
+    },
+  });
+
+  // AI analyzer — runs Lovable AI on the transcript/notes and saves to ai_analysis
+  const analyzeMutation = useMutation({
+    mutationFn: async (callLogId: string) => {
+      const { data, error } = await supabase.functions.invoke('analyze-va-call', {
+        body: { call_log_id: callLogId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return data;
+    },
+    onSuccess: (data: any) => {
+      toast.success('AI analysis complete');
+      // Refresh selected call from server so updated ai_analysis shows immediately
+      if (selectedCall?.id) {
+        supabase
+          .from('va_call_logs')
+          .select('*, profiles!va_call_logs_va_id_fkey(name)')
+          .eq('id', selectedCall.id)
+          .maybeSingle()
+          .then(({ data: fresh }) => {
+            if (fresh) setSelectedCall(fresh);
+          });
+      }
+      queryClient.invalidateQueries({ queryKey: ['admin-call-review'] });
+    },
+    onError: (err: any) => {
+      toast.error('Analysis failed: ' + (err.message || 'Unknown error'));
+    },
+  });
+
+  // Send the coaching report to the VA so it appears on their dashboard
+  const sendToVAMutation = useMutation({
+    mutationFn: async (callLogId: string) => {
+      const { data, error } = await supabase.functions.invoke('send-coaching-to-va', {
+        body: { call_log_id: callLogId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Coaching sent to VA — they will see it on their dashboard');
+    },
+    onError: (err: any) => {
+      toast.error('Send failed: ' + (err.message || 'Unknown error'));
     },
   });
 
@@ -494,6 +542,49 @@ export default function AdminCallReview() {
                       <p className="text-sm text-slate-500 text-center py-3">
                         {selectedCall.recording_url ? 'Transcript processing — try Sync again in a few minutes' : 'No transcript available'}
                       </p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* AI Analyzer toolbar */}
+                <Card className="bg-slate-800/50 border-slate-700">
+                  <CardContent className="p-3 flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-2 mr-auto">
+                      <Sparkles className="h-4 w-4 text-purple-400" />
+                      <div>
+                        <p className="text-sm text-white font-medium">AI Call Analyzer</p>
+                        <p className="text-[11px] text-slate-400">
+                          {selectedCall.ai_analysis
+                            ? 'Analyzed — review the coaching report below'
+                            : selectedCall.transcript || selectedCall.va_notes
+                              ? 'Run AI to score the call and surface coaching tips'
+                              : 'No transcript or notes available to analyze'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 text-purple-300 border-purple-500/40 hover:bg-purple-500/10"
+                      disabled={
+                        analyzeMutation.isPending ||
+                        (!selectedCall.transcript && !selectedCall.va_notes)
+                      }
+                      onClick={() => analyzeMutation.mutate(selectedCall.id)}
+                    >
+                      <Sparkles className={`h-3.5 w-3.5 ${analyzeMutation.isPending ? 'animate-pulse' : ''}`} />
+                      {selectedCall.ai_analysis ? 'Re-analyze' : 'Analyze with AI'}
+                    </Button>
+                    {selectedCall.ai_analysis && (
+                      <Button
+                        size="sm"
+                        className="gap-1.5 bg-cyan-600 hover:bg-cyan-500 text-white"
+                        disabled={sendToVAMutation.isPending || !selectedCall.va_id}
+                        onClick={() => sendToVAMutation.mutate(selectedCall.id)}
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                        Send Results to VA
+                      </Button>
                     )}
                   </CardContent>
                 </Card>
