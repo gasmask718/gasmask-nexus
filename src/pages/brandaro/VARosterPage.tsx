@@ -22,6 +22,8 @@ import {
   Loader2,
   CheckSquare,
   Square,
+  ArrowRightLeft,
+  UserMinus,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
