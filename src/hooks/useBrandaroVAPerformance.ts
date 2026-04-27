@@ -74,37 +74,66 @@ export function useAllVAPerformance() {
 }
 
 // ── Leaderboard ──
-export function useVALeaderboard(period: "today" | "week" | "month" = "today") {
+export type LeaderboardPeriod = "today" | "week" | "month" | "last_month";
+
+function periodRange(period: LeaderboardPeriod): { startISO: string; endISO?: string } {
+  const now = new Date();
+  if (period === "today") {
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return { startISO: start.toISOString() };
+  }
+  if (period === "week") {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 7);
+    return { startISO: d.toISOString() };
+  }
+  if (period === "month") {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { startISO: start.toISOString() };
+  }
+  // last_month
+  const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const end = new Date(now.getFullYear(), now.getMonth(), 1);
+  return { startISO: start.toISOString(), endISO: end.toISOString() };
+}
+
+export function useVALeaderboard(period: LeaderboardPeriod = "today") {
   return useQuery({
     queryKey: ["va-leaderboard", period],
     queryFn: async () => {
-      let startDate: string;
-      const now = new Date();
-      if (period === "today") {
-        startDate = now.toISOString().split("T")[0];
-      } else if (period === "week") {
-        const d = new Date(now);
-        d.setDate(d.getDate() - 7);
-        startDate = d.toISOString().split("T")[0];
-      } else {
-        const d = new Date(now);
-        d.setDate(d.getDate() - 30);
-        startDate = d.toISOString().split("T")[0];
+      const { startISO, endISO } = periodRange(period);
+
+      let q = supabase
+        .from("brandaro_va_score_events" as any)
+        .select("va_user_id, points, event_type")
+        .gte("created_at", startISO);
+      if (endISO) q = q.lt("created_at", endISO);
+
+      const { data, error } = await q;
+      if (error) {
+        console.error("Leaderboard fetch error:", error);
+        return [];
       }
 
-      const { data } = await supabase
-        .from("brandaro_va_score_events" as any)
-        .select("va_user_id, points")
-        .gte("created_at", startDate);
-
       // Aggregate by VA
-      const map = new Map<string, number>();
+      const scoreMap = new Map<string, number>();
+      const callsMap = new Map<string, number>();
+      const convMap = new Map<string, number>();
+      const closeMap = new Map<string, number>();
       (data || []).forEach((e: any) => {
-        map.set(e.va_user_id, (map.get(e.va_user_id) || 0) + e.points);
+        scoreMap.set(e.va_user_id, (scoreMap.get(e.va_user_id) || 0) + (e.points || 0));
+        if (e.event_type === "call_completed") {
+          callsMap.set(e.va_user_id, (callsMap.get(e.va_user_id) || 0) + 1);
+        }
+        if (e.event_type === "conversation") {
+          convMap.set(e.va_user_id, (convMap.get(e.va_user_id) || 0) + 1);
+        }
+        if (e.event_type === "closer_handoff" || e.event_type === "payment_lead") {
+          closeMap.set(e.va_user_id, (closeMap.get(e.va_user_id) || 0) + 1);
+        }
       });
 
-      // Get profiles
-      const vaIds = Array.from(map.keys());
+      const vaIds = Array.from(scoreMap.keys());
       if (vaIds.length === 0) return [];
 
       const { data: profiles } = await supabase
@@ -115,12 +144,16 @@ export function useVALeaderboard(period: "today" | "week" | "month" = "today") {
       return vaIds
         .map(id => ({
           va_user_id: id,
-          score: map.get(id) || 0,
+          score: scoreMap.get(id) || 0,
+          calls: callsMap.get(id) || 0,
+          conversations: convMap.get(id) || 0,
+          closes: closeMap.get(id) || 0,
           name: (profiles || []).find((p: any) => p.id === id)?.name || "VA",
           avatar: (profiles || []).find((p: any) => p.id === id)?.avatar_url,
         }))
         .sort((a, b) => b.score - a.score);
     },
+    refetchInterval: 30000,
   });
 }
 
