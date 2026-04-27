@@ -244,6 +244,108 @@ export default function VARosterPage() {
     return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
   };
 
+  // ── Transfer: load leads assigned to source VA ──
+  useEffect(() => {
+    if (!transferSourceVa) {
+      setTransferLeads([]);
+      setTransferSelectedIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setTransferLoading(true);
+      const { data, error } = await supabase
+        .from('brandaro_qualified_leads')
+        .select('id, business_name, priority_tier, city, state, phone_number, priority_score')
+        .eq('assigned_va', transferSourceVa)
+        .order('priority_score', { ascending: false })
+        .limit(PAGE_SIZE);
+      if (cancelled) return;
+      if (error) {
+        toast({ title: 'Failed to load VA leads', description: error.message, variant: 'destructive' });
+        setTransferLeads([]);
+      } else {
+        setTransferLeads((data as UnassignedLead[]) || []);
+      }
+      setTransferSelectedIds(new Set());
+      setTransferLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [transferSourceVa]);
+
+  const filteredTransferLeads = useMemo(() => {
+    const q = transferSearch.trim().toLowerCase();
+    if (!q) return transferLeads;
+    return transferLeads.filter(
+      (l) =>
+        (l.business_name || '').toLowerCase().includes(q) ||
+        (l.city || '').toLowerCase().includes(q) ||
+        (l.state || '').toLowerCase().includes(q),
+    );
+  }, [transferLeads, transferSearch]);
+
+  const allTransferSelected =
+    filteredTransferLeads.length > 0 &&
+    filteredTransferLeads.every((l) => transferSelectedIds.has(l.id));
+
+  const toggleTransferLead = (id: string) => {
+    setTransferSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllTransferFiltered = () => {
+    setTransferSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allTransferSelected) filteredTransferLeads.forEach((l) => next.delete(l.id));
+      else filteredTransferLeads.forEach((l) => next.add(l.id));
+      return next;
+    });
+  };
+
+  const handleTransfer = async () => {
+    if (!transferSourceVa || transferSelectedIds.size === 0) return;
+    if (transferTargetVa && transferTargetVa === transferSourceVa) {
+      toast({ title: 'Pick a different target', variant: 'destructive' });
+      return;
+    }
+    setTransferring(true);
+    const ids = Array.from(transferSelectedIds);
+    const newAssignee = transferTargetVa || null;
+    const { error, count } = await supabase
+      .from('brandaro_qualified_leads')
+      .update({ assigned_va: newAssignee } as any, { count: 'exact' })
+      .in('id', ids)
+      .eq('assigned_va', transferSourceVa);
+
+    if (error) {
+      toast({ title: 'Transfer failed', description: error.message, variant: 'destructive' });
+    } else {
+      const sourceName = vas.find((v) => v.user_id === transferSourceVa)?.name || 'source';
+      const targetName = newAssignee
+        ? vas.find((v) => v.user_id === newAssignee)?.name || 'VA'
+        : 'unassigned pool';
+      toast({
+        title: 'Leads transferred',
+        description: `${count ?? ids.length} lead(s) moved from ${sourceName} → ${targetName}.`,
+      });
+      const { data: refreshed } = await supabase
+        .from('brandaro_qualified_leads')
+        .select('id, business_name, priority_tier, city, state, phone_number, priority_score')
+        .eq('assigned_va', transferSourceVa)
+        .order('priority_score', { ascending: false })
+        .limit(PAGE_SIZE);
+      setTransferLeads((refreshed as UnassignedLead[]) || []);
+      setTransferSelectedIds(new Set());
+      await fetchData();
+    }
+    setTransferring(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
