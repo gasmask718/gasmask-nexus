@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Headset, ArrowLeft, Play, Flame, Sun, Snowflake, Star, RefreshCw, Download,
-  FileText, MessageSquare, Search, ChevronLeft, ChevronRight,
+  FileText, MessageSquare, Search, ChevronLeft, ChevronRight, Sparkles, Send,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
