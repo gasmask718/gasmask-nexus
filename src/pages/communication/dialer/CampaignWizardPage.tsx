@@ -644,6 +644,8 @@ export default function CampaignWizardPage() {
           initial_script: form.initial_script,
 
           agent_id: form.agent_id,
+          agent_provider: form.dial_mode === "ai" ? "bland" : "elevenlabs",
+          bland_agent_id: form.dial_mode === "ai" ? form.agent_id || null : null,
         } as any)
 
         .select("id")
