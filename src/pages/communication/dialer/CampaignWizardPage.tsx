@@ -1954,7 +1954,7 @@ export default function CampaignWizardPage() {
                       <p className="text-xs text-muted-foreground">AI Agent</p>
                       <p className="font-medium flex items-center gap-1">
                         <Bot className="h-3 w-3" />
-                        {elAgents.find(a => a.elevenlabs_agent_id === form.agent_id)?.agent_name || form.agent_id || "Not selected"}
+                        {blandAgents.find(a => a.id === form.agent_id)?.agent_name || form.agent_id || "Not selected"}
                       </p>
                     </div>
                     <div className="p-3 border rounded bg-muted/20">
