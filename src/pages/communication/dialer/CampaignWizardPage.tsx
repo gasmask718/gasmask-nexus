@@ -1854,32 +1854,28 @@ export default function CampaignWizardPage() {
                   </div>
                   <div className="flex-1 space-y-3">
                     <div>
-                      <h4 className="font-semibold">ElevenLabs AI Agent</h4>
-                      <p className="text-xs text-muted-foreground">Select which AI agent handles the conversation after the TTS opener.</p>
+                      <h4 className="font-semibold">Bland AI Agent</h4>
+                      <p className="text-xs text-muted-foreground">Select which Bland AI agent handles the conversation.</p>
                     </div>
                     <Select value={form.agent_id} onValueChange={(v) => update("agent_id", v)}>
-                      <SelectTrigger><SelectValue placeholder="Select AI Agent..." /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Select Bland AI Agent..." /></SelectTrigger>
                       <SelectContent>
-                        {elAgents.map((a) => (
-                          <SelectItem
-                            key={a.id}
-                            value={a.elevenlabs_agent_id || a.id}
-                            disabled={!a.elevenlabs_agent_id}
-                          >
+                        {blandAgents.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
                             <div className="flex flex-col">
                               <span>{a.agent_name}</span>
-                              <span className="text-xs text-muted-foreground">{a.script_label}</span>
+                              <span className="text-xs text-muted-foreground">{a.agent_type}{a.description ? ` — ${a.description}` : ""}</span>
                             </div>
                           </SelectItem>
                         ))}
-                        {elAgents.length === 0 && (
+                        {blandAgents.length === 0 && (
                           <SelectItem value="__none" disabled>No agents configured</SelectItem>
                         )}
                       </SelectContent>
                     </Select>
                     {form.agent_id && (
                       <p className="text-xs text-muted-foreground font-mono">
-                        Agent ID: {form.agent_id}
+                        Agent: {blandAgents.find(a => a.id === form.agent_id)?.agent_name || form.agent_id}
                       </p>
                     )}
                   </div>
