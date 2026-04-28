@@ -39,11 +39,27 @@ export default function VAAuthPage() {
         });
         if (error) throw error;
 
-        // Create profile with VA role
+        // Provision VA role across all authoritative tables
         if (data.user) {
+          const uid = data.user.id;
+
+          // 1. Legacy profiles table
           await supabase.from('profiles').upsert({
-            id: data.user.id,
+            id: uid,
             name: form.fullName,
+            role: 'va',
+          } as any);
+
+          // 2. user_profiles (canonical primary_role used by UniversalRoleRouter)
+          await supabase.from('user_profiles').upsert({
+            user_id: uid,
+            full_name: form.fullName,
+            primary_role: 'va',
+          } as any, { onConflict: 'user_id' });
+
+          // 3. user_roles (authoritative — used by has_role() and RoleGuard)
+          await supabase.from('user_roles').insert({
+            user_id: uid,
             role: 'va',
           } as any);
         }
