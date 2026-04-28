@@ -1,128 +1,91 @@
+## Goal
+On `/communication/auto-dialer` → **Campaigns** tab, replace the ElevenLabs agent picker and outbound call pipeline with **Bland AI agents**, while preserving identical UX (script templates → agent → call queue → recordings/transcripts). Add an **Agent Webhook Directory** at the bottom of the campaigns view, plus the requested DB tables and Bland edge functions.
 
-
-# Fix VA Dashboard Invoices + Wire VA Calls to Brandaro (with Brandaro Twilio)
-
-## What you'll get
-
-1. **Invoices tab on `/va/dashboard`** — a real table of every invoice you've created, with View / Send / Resend buttons. New invoices appear immediately after saving.
-2. **"Send Invoice" actually sends** — emails the invoice (with payment link) to the lead and records the send event. No more silent "draft" creates.
-3. **Every VA call routes through your dedicated Brandaro Twilio account** and lands on `/brandaro` with recording + transcript fully populated.
+## Note on stack
+This project is **React + Vite + Supabase**, not Next.js. The "API routes" requested will be implemented as **Supabase Edge Functions** (the Lovable equivalent), reachable via `supabase.functions.invoke()`. Functionally identical to the requested Next routes.
 
 ---
 
-## Part 1 — Invoices tab (the broken part)
+## 1. Database changes (migration)
 
-**Why it's broken today**
-- `VADashboard.tsx` line 247-253 renders the Invoices tab as a hardcoded "coming soon" placeholder. The data exists in `va_invoices` (I confirmed your "TEST - David Suth" invoice is in the DB), but nothing reads it.
-- The "Send Invoice" button just re-opens the same Create modal (`VALeadsTable.tsx` and `VACallPanel.tsx` both call the create modal for both actions). It never sends anything or writes to `va_invoice_logs`.
+Three new tables (named with a `bland_` prefix to follow the project's table-isolation rule, while still aliasing the requested logical names):
 
-**Fixes**
+- **`bland_leads`** — `id uuid pk`, `business_id uuid`, `name text`, `phone_number text not null`, `status text` (check: `new|interested|callback|not-interested`), `pain_points text`, `created_at timestamptz default now()`.
+- **`bland_call_logs`** — `id uuid pk`, `lead_id uuid fk → bland_leads(id) on delete cascade`, `agent_type text`, `call_id text` (Bland call id), `transcript text`, `recording_url text`, `call_outcome text`, `raw_payload jsonb`, `created_at timestamptz default now()`.
+- **`bland_agent_webhooks`** — `id uuid pk`, `agent_name text not null`, `agent_type text`, `webhook_url text not null`, `is_active boolean default true`, `created_at timestamptz default now()`.
 
-1. **Build a real `VAInvoicesTable` component** rendered when `view === 'invoices'`:
-   - Table columns: Invoice #, Customer, Service Type, Total, Status (draft/sent/paid), Due Date, Created, Actions
-   - Actions per row: **View** (opens detail dialog with line items + payment link + send history), **Send** (if draft → sends; if sent → "Resend"), **Copy Pay Link**
-   - Filter pills: All / Draft / Sent / Paid
-   - Pulls from `va_invoices` filtered by `va_id = current user`, ordered by `created_at desc`, refetches every 10s
-   - On "Send" success, invalidates the query so the row updates instantly
+RLS: enable on all three. Authenticated users `select/insert/update`. Service role full access (used by edge functions and Bland webhook).
 
-2. **Create edge function `va-send-invoice`** (with `verify_jwt = false` + in-code JWT validation):
-   - Input: `{ invoice_id, channel: 'email' | 'sms', recipient }`
-   - Loads the invoice + lead to resolve customer email / phone
-   - Sends email via Resend (already configured) with the payment link, total, line items, and due date
-   - Optional SMS path uses the **Brandaro Twilio** credentials (`BRANDARO_TWILIO_ACCOUNT_SID` / `BRANDARO_TWILIO_AUTH_TOKEN` / `BRANDARO_TWILIO_NUMBER`)
-   - Inserts a row into `va_invoice_logs` (`sent_via`, `sent_to`, `sent_at`)
-   - Updates `va_invoices.status` from `draft` → `sent`
-   - Returns `{ success, log_id }`
+Seed `bland_agent_webhooks` with the four agents the user listed:
+- Sales-Outreach
+- Follow-up Call
+- Reactivation / Win-back
+- Inventory Check
 
-3. **Wire the buttons**
-   - `VALeadsTable` "Send Invoice" button: if a draft exists for that lead, call `va-send-invoice`; otherwise open create modal first then auto-send on save (via a `sendOnSave` flag on `VAInvoiceModal`).
-   - `VACallPanel` same behavior.
-   - "View" opens a read-only invoice dialog with full details and the send-history list.
+Each row's `webhook_url` is auto-set to the deployed `bland-agent-webhook` edge function URL.
 
-4. **(Optional but recommended) Add `invoice_number` column** to `va_invoices` (auto-generated like `INV-2026-0001`) so the table has a clean human ID. Backfill existing rows.
+Add `bland_agent_id text` and `agent_provider text default 'elevenlabs'` columns to `dialer_campaigns` so Bland-routed campaigns are tagged.
 
----
+## 2. Edge functions (Supabase, replace the requested Next routes)
 
-## Part 2 — Route VA calls through your Brandaro Twilio account
+### `bland-agent-trigger`  (replaces `/api/agent/trigger`)
+- Input: `{ lead_id, agent_type, prompt?, voice? }` (also accepts `phone_number` directly for ad-hoc calls from the queue dispatcher).
+- Reads `BLAND_API_KEY` from secrets; returns 500 with clean error if missing.
+- Looks up phone in `bland_leads` when `lead_id` provided.
+- POSTs to `https://api.bland.ai/v1/calls` with `{ phone_number, task: prompt, voice: voice||'maya', metadata: { lead_id, agent_type } }` and `authorization: <key>` header.
+- Returns the Bland `call_id` to caller.
 
-**Why VA calls aren't fully landing on `/brandaro` today**
-- `VoiceDeviceProvider` calls `twilio-voice-token` (the **generic** Twilio account), not `brandaro-voice-token`. So the browser softphone is registered against the wrong Twilio sub-account, recordings end up on the wrong account, and `brandaro-sync-recordings` (which queries the **Brandaro** account) finds nothing to attach.
-- `va_call_logs` has 5 recent rows, all with `recording_url=null` and `transcript=null` — confirming the disconnect.
-- `VACallPanel.initiateCall` doesn't pass the `callLogId` into the TwiML params, so even when status callbacks fire, they have no `callLogId` to update.
+### `bland-agent-webhook`  (replaces `/api/agent/webhook`)
+- Public endpoint (`verify_jwt = false`) so Bland can hit it.
+- Parses the post-call payload: `call_id`, `variables.phone_number`, `transcript`, `recording_url`, `call_outcome`, `metadata.lead_id`.
+- If `lead_id` (or matched by `phone_number`) → updates `bland_leads.status` based on `call_outcome` (mapping: `interested → interested`, `callback → callback`, `not-interested → not-interested`, default keeps current).
+- Inserts a row into `bland_call_logs` with transcript, recording_url, call_id, agent_type, raw payload.
+- Returns `{ ok: true }`.
 
-**Fixes**
+Secret needed: **`BLAND_API_KEY`** (will be added via add_secret using the value the user supplied).
 
-1. **Switch the VA softphone to Brandaro Twilio**
-   - In `VoiceDeviceProvider.tsx`, when the user is in the VA portal (or always for VA flows), call `brandaro-voice-token` instead of `twilio-voice-token`. Cleanest approach: accept a `tokenFunction` prop / context flag, and have `VADashboard` set it to `brandaro-voice-token`.
-   - This makes the browser SDK register against your Brandaro sub-account, so all recordings live there and all status callbacks come from there.
+## 3. Campaigns tab UI changes (`CampaignWizardPage.tsx`)
 
-2. **Wire the TwiML params correctly**
-   - Update `VACallPanel.initiateCall` to pass `params` into `voice.makeCall`: `{ leadPhone, callLogId, callerId: twilioNumber }`. These flow into the TwiML app webhook → `va-power-dialer?action=twiml`, which already builds the `<Dial>` with `recordingStatusCallback` → `brandaro-call-status?callLogId=...`.
-   - Confirm the Brandaro TwiML App's Voice URL points at `…/functions/v1/va-power-dialer?action=twiml` (the function expects this). I'll add a one-time check in `brandaro-voice-token` that logs the expected URL.
+Inside the existing **Campaigns** tab — no layout/UX rewrite, only the agent layer swapped:
 
-3. **Persist the Twilio CallSid immediately**
-   - In `VACallPanel`, after `voice.makeCall` resolves, capture `call.parameters.CallSid` and `update va_call_logs.call_sid = ...`. This is the link Twilio's status callbacks need.
+- Replace the `elevenlabs_agents` query with a `bland_agent_webhooks` query (active only).
+- Rewrite `SCRIPT_TEMPLATES` so each template maps to a Bland agent **type** (`sales-outreach`, `follow-up`, `reactivation`, `inventory-check`) instead of an ElevenLabs `agentId`.
+- The agent dropdown (Step 4: Script & AI) now lists Bland agents from `bland_agent_webhooks`. Selecting one stores `agent_type` + agent row id into `form.agent_id` and tags the campaign with `agent_provider='bland'`.
+- Queue dispatcher (`processQueue`): when the campaign's `agent_provider='bland'`, invoke the new `bland-agent-trigger` function instead of `twilio-outbound-call`. Existing ElevenLabs/Twilio path stays intact for legacy campaigns (zero-disruption switch).
+- Recordings/transcripts panel keeps reading from `bland_call_logs` joined by `call_id` so they show up the same way.
 
-4. **Harden `brandaro-call-status`**
-   - Already correct schema-wise. Add: also update `va_call_logs` matched by `call_sid` when `callLogId` is missing in the query string (defensive).
-   - Already requests transcription on recording-complete. Good.
+## 4. Agent Webhook Directory (bottom of Campaigns tab)
 
-5. **Brandaro Sync button + auto-sync**
-   - `brandaro-sync-recordings` already exists and pulls from the Brandaro Twilio account. Add a "Sync Recordings & Transcripts" button on `/brandaro` (Conversations / Call History area) that invokes it, plus a scheduled invocation note (cron) for the user.
-   - It already updates `va_call_logs` by `call_sid` — once the softphone is on Brandaro Twilio, this will start filling in `recording_url` and `transcript` for the existing 5 stuck calls and all future ones.
+New section appended **at the very end** of the Campaigns tab (below all existing tables):
 
-6. **Surface the calls on `/brandaro`**
-   - `BrandaroUnifiedCallHistory` already reads from `va_call_logs` via `get-unified-call-history`. Confirm that function selects from `va_call_logs` (audit it; if missing, add the VA-call source). Once recordings + transcripts populate, the existing audio player + transcript viewer light up automatically.
+- Heading "Agent Webhook Directory" with a refresh button.
+- Grid of cards (responsive, 2-up on desktop) — one per row of `bland_agent_webhooks`:
+  - Agent Name
+  - Agent Type pill
+  - Webhook Endpoint URL with copy-to-clipboard button
+  - Active / Inactive badge (green / muted) with toggle
+  - Created date
+- Empty-state message if no rows.
 
----
+## 5. Files
 
-## Part 3 — Database / config touch list
+**Created**
+- `supabase/migrations/<ts>_bland_ai_agents.sql` — 3 tables + RLS + seed + `dialer_campaigns` columns.
+- `supabase/functions/bland-agent-trigger/index.ts`
+- `supabase/functions/bland-agent-webhook/index.ts`
+- `src/components/communication/BlandAgentWebhookDirectory.tsx`
 
-Migration:
-```sql
-ALTER TABLE va_invoices
-  ADD COLUMN IF NOT EXISTS invoice_number TEXT UNIQUE,
-  ADD COLUMN IF NOT EXISTS sent_at TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS last_send_error TEXT;
+**Edited**
+- `src/pages/communication/dialer/CampaignWizardPage.tsx` — swap agents source, rewrite `SCRIPT_TEMPLATES`, update dispatcher branch, mount `<BlandAgentWebhookDirectory />` at the bottom.
+- `supabase/config.toml` — add `[functions.bland-agent-webhook] verify_jwt = false`.
 
--- auto-number trigger: INV-YYYY-NNNN per year
-```
+## 6. Secrets
 
-`supabase/config.toml`:
-```toml
-[functions.va-send-invoice]
-verify_jwt = false
-```
+Add **`BLAND_API_KEY`** (value provided in this message) via the secret tool before deploying functions.
 
-No RLS changes needed — `va_invoices` already has `"VAs can manage own invoices" (va_id = auth.uid())` for all ops.
-
----
-
-## Files I'll touch
-
-**New**
-- `src/components/va/VAInvoicesTable.tsx`
-- `src/components/va/VAInvoiceDetailDialog.tsx`
-- `supabase/functions/va-send-invoice/index.ts`
-- `supabase/migrations/<timestamp>_va_invoice_send_columns.sql`
-
-**Edit**
-- `src/pages/va/VADashboard.tsx` (replace Invoices placeholder, pass `sendOnSave`)
-- `src/components/va/VAInvoiceModal.tsx` (add optional auto-send after save, return invoice id)
-- `src/components/va/VALeadsTable.tsx` + `src/components/va/VACallPanel.tsx` (Send button → call `va-send-invoice` or open modal in send-mode)
-- `src/contexts/VoiceDeviceProvider.tsx` (use `brandaro-voice-token` for VA flows)
-- `src/components/brandaro/BrandaroUnifiedCallHistory.tsx` (add manual "Sync from Twilio" button invoking `brandaro-sync-recordings`)
-- `supabase/functions/brandaro-call-status/index.ts` (fallback match by `call_sid`)
-- `supabase/config.toml` (register `va-send-invoice`)
-
----
-
-## Test plan (after implementation)
-
-1. Create a new invoice from `/va/dashboard` → switch to **Invoices** tab → row appears with status `draft`.
-2. Click **Send** → toast "Invoice sent", row flips to `sent`, `va_invoice_logs` has a new row, you receive the email.
-3. Make a VA call → call ends → within ~30s the row in **Recent Calls** shows duration; within a couple of minutes (Twilio transcription latency) `recording_url` + `transcript` populate.
-4. Open the lead on `/brandaro` → `BrandaroUnifiedCallHistory` shows the audio player + transcript.
-
-Reply **"go"** to apply, or tell me to skip any part (e.g. "skip SMS sending", "no invoice numbering").
-
+## Acceptance
+- Campaigns tab agent dropdown lists the 4 Bland agents.
+- Picking a template auto-selects the corresponding Bland agent and pre-fills script.
+- Launching a Bland-tagged campaign calls `bland-agent-trigger` → Bland places the call.
+- Bland's post-call webhook updates `bland_leads.status` and writes a `bland_call_logs` row.
+- A clear "Agent Webhook Directory" grid is visible at the very bottom of the Campaigns tab listing all 4 agents with their webhook URLs and active status.
