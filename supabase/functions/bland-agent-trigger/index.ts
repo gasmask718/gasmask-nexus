@@ -62,29 +62,44 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Resolve default prompt from agent webhook record if not provided
-    if (!prompt) {
+    // Resolve agent record (bland_agent_id, prompt, voice)
+    let blandAgentId: string | null = null;
+    {
       const { data: agent } = await supabase
         .from("bland_agent_webhooks")
-        .select("default_prompt, default_voice, webhook_url")
+        .select("bland_agent_id, default_prompt, default_voice")
         .eq("agent_type", agent_type)
         .eq("is_active", true)
         .maybeSingle();
       if (agent) {
-        prompt = agent.default_prompt || `You are an AI calling agent for the ${agent_type} workflow.`;
+        blandAgentId = (agent as any).bland_agent_id ?? null;
+        if (!prompt) prompt = agent.default_prompt || `You are an AI calling agent for the ${agent_type} workflow.`;
         voice = voice || agent.default_voice || "maya";
       }
     }
 
     const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/bland-agent-webhook`;
 
-    const blandPayload = {
-      phone_number,
-      task: prompt || "You are a friendly AI agent. Greet the lead and qualify their interest.",
-      voice: voice || "maya",
-      webhook: webhookUrl,
-      metadata: { lead_id: lead_id ?? null, agent_type, queue_item_id: queue_item_id ?? null, campaign_id: campaign_id ?? null },
-    };
+    // If a Bland agent ID is configured, use the agent endpoint (it owns the prompt/voice).
+    // Otherwise fall back to the generic /v1/calls endpoint with task+voice.
+    const useAgent = !!blandAgentId;
+    const blandUrl = useAgent
+      ? `https://api.bland.ai/v1/agents/${blandAgentId}/calls`
+      : "https://api.bland.ai/v1/calls";
+
+    const blandPayload: Record<string, unknown> = useAgent
+      ? {
+          phone_number,
+          webhook: webhookUrl,
+          metadata: { lead_id: lead_id ?? null, agent_type, queue_item_id: queue_item_id ?? null, campaign_id: campaign_id ?? null },
+        }
+      : {
+          phone_number,
+          task: prompt || "You are a friendly AI agent. Greet the lead and qualify their interest.",
+          voice: voice || "maya",
+          webhook: webhookUrl,
+          metadata: { lead_id: lead_id ?? null, agent_type, queue_item_id: queue_item_id ?? null, campaign_id: campaign_id ?? null },
+        };
 
     const blandRes = await fetch("https://api.bland.ai/v1/calls", {
       method: "POST",
