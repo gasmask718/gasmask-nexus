@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
           metadata: { lead_id: lead_id ?? null, agent_type, queue_item_id: queue_item_id ?? null, campaign_id: campaign_id ?? null },
         };
 
-    const blandRes = await fetch("https://api.bland.ai/v1/calls", {
+    const blandRes = await fetch(blandUrl, {
       method: "POST",
       headers: {
         "authorization": BLAND_API_KEY,
