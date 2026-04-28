@@ -1825,8 +1825,9 @@ export default function CampaignWizardPage() {
                         {SCRIPT_TEMPLATES.map((tpl) => (
                           <Button key={tpl.id} variant="outline" size="sm" className="text-xs h-7" onClick={() => {
                             update("initial_script", tpl.script);
-                            // Auto-select the mapped ElevenLabs agent
-                            if (tpl.agentId) update("agent_id", tpl.agentId);
+                            // Auto-select the mapped Bland AI agent
+                            const matched = blandAgents.find(a => a.agent_type === tpl.agentType);
+                            if (matched) update("agent_id", matched.id);
                           }}>
                             {tpl.label}
                           </Button>
