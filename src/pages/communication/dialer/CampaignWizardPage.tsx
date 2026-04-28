@@ -358,13 +358,14 @@ export default function CampaignWizardPage() {
 
   const processQueue = useCallback(
     async (campaignId: string) => {
-      // Check campaign's dial_mode to choose the right function
+      // Check campaign's dial_mode + provider to choose the right function
       const { data: campData } = await supabase
         .from("dialer_campaigns")
-        .select("dial_mode")
+        .select("dial_mode, agent_id, initial_script, bland_agent_id")
         .eq("id", campaignId)
         .single();
       const dialMode = (campData as any)?.dial_mode || "ai";
+      const provider = (campData as any)?.agent_provider || "bland";
 
       const { data: queueItems, error: fetchErr } = await supabase
         .from("outbound_call_queue")
@@ -391,12 +392,35 @@ export default function CampaignWizardPage() {
 
       try {
         toast.info(`Dialing ${queueItem.contact_name || queueItem.phone_number}...`);
-        
-        // Use manual call function for manual mode, AI function for ai mode
-        const fnName = dialMode === "manual" ? "twilio-manual-call" : "twilio-outbound-call";
-        const response = await supabase.functions.invoke(fnName, {
-          body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
-        });
+
+        let response: any;
+        if (dialMode === "manual") {
+          response = await supabase.functions.invoke("twilio-manual-call", {
+            body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
+          });
+        } else {
+          // AI mode → Bland AI
+          // Resolve agent_type from bland_agent_webhooks
+          const blandAgentRowId = (campData as any)?.bland_agent_id || (campData as any)?.agent_id;
+          let agentType = "sales-outreach";
+          if (blandAgentRowId) {
+            const { data: a } = await supabase
+              .from("bland_agent_webhooks" as any)
+              .select("agent_type")
+              .eq("id", blandAgentRowId)
+              .maybeSingle();
+            if (a && (a as any).agent_type) agentType = (a as any).agent_type;
+          }
+          response = await supabase.functions.invoke("bland-agent-trigger", {
+            body: {
+              phone_number: queueItem.phone_number,
+              agent_type: agentType,
+              prompt: (campData as any)?.initial_script || undefined,
+              queue_item_id: queueItem.id,
+              campaign_id: campaignId,
+            },
+          });
+        }
 
         if (response.error || (response.data && response.data.error))
           throw new Error(response.error?.message || response.data?.error);
