@@ -126,30 +126,36 @@ interface CallItem {
   updated_at: string;
 }
 
-// ElevenLabs agents are fetched from DB — see useQuery below
-
-// Script templates mapped to their corresponding ElevenLabs agent IDs
+// Bland AI agents are fetched from DB — see useQuery below
+// Script templates mapped to their corresponding Bland AI agent_type
 const SCRIPT_TEMPLATES = [
   {
     id: "intro_sales",
-    label: "Sales Introduction",
-    agentId: "agent_0301kmdmp16aevv8svr78pbr75n8",
+    label: "Sales-Outreach",
+    agentType: "sales-outreach",
     script:
       "Hi, this is {{agent_name}} calling from {{business_name}}. I'm reaching out because we have some exciting new products that I think would be a great fit for your store. Do you have a quick moment to chat?",
   },
   {
     id: "follow_up",
-    label: "Follow-Up Call",
-    agentId: "agent_3101kmdn5q9tfh7r3padaq6j37r3",
+    label: "Follow-up Call",
+    agentType: "follow-up",
     script:
       "Hi, this is {{agent_name}} from {{business_name}}. I'm following up on our previous conversation. I wanted to check in and see if you had any questions or if you're ready to place an order.",
   },
   {
     id: "reactivation",
-    label: "Reactivation / Win-Back",
-    agentId: "agent_5901kmdnb01sfzs9hp76mz806813",
+    label: "Reactivation / Win-back",
+    agentType: "reactivation",
     script:
       "Hi, this is {{agent_name}} from {{business_name}}. We noticed it's been a while since your last order and wanted to reach out. We have some new offers and would love to get you back on board. Can I share what's new?",
+  },
+  {
+    id: "inventory_check",
+    label: "Inventory Check",
+    agentType: "inventory-check",
+    script:
+      "Hi, this is {{agent_name}} from {{business_name}}. I'm calling to do a quick inventory check on our products. Do you have a moment to confirm your current stock levels?",
   },
 ];
 
