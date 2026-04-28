@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { BlandAgentWebhookDirectory } from "@/components/communication/BlandAgentWebhookDirectory";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ManualCampaignCallModal } from "@/components/communication/ManualCampaignCallModal";
@@ -126,30 +127,36 @@ interface CallItem {
   updated_at: string;
 }
 
-// ElevenLabs agents are fetched from DB — see useQuery below
-
-// Script templates mapped to their corresponding ElevenLabs agent IDs
+// Bland AI agents are fetched from DB — see useQuery below
+// Script templates mapped to their corresponding Bland AI agent_type
 const SCRIPT_TEMPLATES = [
   {
     id: "intro_sales",
-    label: "Sales Introduction",
-    agentId: "agent_0301kmdmp16aevv8svr78pbr75n8",
+    label: "Sales-Outreach",
+    agentType: "sales-outreach",
     script:
       "Hi, this is {{agent_name}} calling from {{business_name}}. I'm reaching out because we have some exciting new products that I think would be a great fit for your store. Do you have a quick moment to chat?",
   },
   {
     id: "follow_up",
-    label: "Follow-Up Call",
-    agentId: "agent_3101kmdn5q9tfh7r3padaq6j37r3",
+    label: "Follow-up Call",
+    agentType: "follow-up",
     script:
       "Hi, this is {{agent_name}} from {{business_name}}. I'm following up on our previous conversation. I wanted to check in and see if you had any questions or if you're ready to place an order.",
   },
   {
     id: "reactivation",
-    label: "Reactivation / Win-Back",
-    agentId: "agent_5901kmdnb01sfzs9hp76mz806813",
+    label: "Reactivation / Win-back",
+    agentType: "reactivation",
     script:
       "Hi, this is {{agent_name}} from {{business_name}}. We noticed it's been a while since your last order and wanted to reach out. We have some new offers and would love to get you back on board. Can I share what's new?",
+  },
+  {
+    id: "inventory_check",
+    label: "Inventory Check",
+    agentType: "inventory-check",
+    script:
+      "Hi, this is {{agent_name}} from {{business_name}}. I'm calling to do a quick inventory check on our products. Do you have a moment to confirm your current stock levels?",
   },
 ];
 
@@ -281,22 +288,22 @@ export default function CampaignWizardPage() {
     enabled: !contextBizId,
   });
 
-  // Fetch ElevenLabs agents from DB for AI agent picker
-  const { data: elAgents = [] } = useQuery({
-    queryKey: ["elevenlabs-agents-campaign"],
+  // Fetch Bland AI agents from DB for AI agent picker
+  const { data: blandAgents = [] } = useQuery({
+    queryKey: ["bland-agents-campaign"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("elevenlabs_agents")
-        .select("id, agent_name, elevenlabs_agent_id, script_label, agent_description, is_active")
+        .from("bland_agent_webhooks" as any)
+        .select("id, agent_name, agent_type, description, is_active, default_voice")
         .eq("is_active", true)
         .order("sort_order");
-      return (data || []) as Array<{
+      return (data || []) as unknown as Array<{
         id: string;
         agent_name: string;
-        elevenlabs_agent_id: string | null;
-        script_label: string;
-        agent_description: string | null;
+        agent_type: string;
+        description: string | null;
         is_active: boolean;
+        default_voice: string | null;
       }>;
     },
   });
@@ -352,13 +359,14 @@ export default function CampaignWizardPage() {
 
   const processQueue = useCallback(
     async (campaignId: string) => {
-      // Check campaign's dial_mode to choose the right function
+      // Check campaign's dial_mode + provider to choose the right function
       const { data: campData } = await supabase
         .from("dialer_campaigns")
-        .select("dial_mode")
+        .select("dial_mode, agent_id, initial_script, bland_agent_id")
         .eq("id", campaignId)
         .single();
       const dialMode = (campData as any)?.dial_mode || "ai";
+      const provider = (campData as any)?.agent_provider || "bland";
 
       const { data: queueItems, error: fetchErr } = await supabase
         .from("outbound_call_queue")
@@ -385,12 +393,35 @@ export default function CampaignWizardPage() {
 
       try {
         toast.info(`Dialing ${queueItem.contact_name || queueItem.phone_number}...`);
-        
-        // Use manual call function for manual mode, AI function for ai mode
-        const fnName = dialMode === "manual" ? "twilio-manual-call" : "twilio-outbound-call";
-        const response = await supabase.functions.invoke(fnName, {
-          body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
-        });
+
+        let response: any;
+        if (dialMode === "manual") {
+          response = await supabase.functions.invoke("twilio-manual-call", {
+            body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
+          });
+        } else {
+          // AI mode → Bland AI
+          // Resolve agent_type from bland_agent_webhooks
+          const blandAgentRowId = (campData as any)?.bland_agent_id || (campData as any)?.agent_id;
+          let agentType = "sales-outreach";
+          if (blandAgentRowId) {
+            const { data: a } = await supabase
+              .from("bland_agent_webhooks" as any)
+              .select("agent_type")
+              .eq("id", blandAgentRowId)
+              .maybeSingle();
+            if (a && (a as any).agent_type) agentType = (a as any).agent_type;
+          }
+          response = await supabase.functions.invoke("bland-agent-trigger", {
+            body: {
+              phone_number: queueItem.phone_number,
+              agent_type: agentType,
+              prompt: (campData as any)?.initial_script || undefined,
+              queue_item_id: queueItem.id,
+              campaign_id: campaignId,
+            },
+          });
+        }
 
         if (response.error || (response.data && response.data.error))
           throw new Error(response.error?.message || response.data?.error);
@@ -638,6 +669,8 @@ export default function CampaignWizardPage() {
           initial_script: form.initial_script,
 
           agent_id: form.agent_id,
+          agent_provider: form.dial_mode === "ai" ? "bland" : "elevenlabs",
+          bland_agent_id: form.dial_mode === "ai" ? form.agent_id || null : null,
         } as any)
 
         .select("id")
@@ -1819,8 +1852,9 @@ export default function CampaignWizardPage() {
                         {SCRIPT_TEMPLATES.map((tpl) => (
                           <Button key={tpl.id} variant="outline" size="sm" className="text-xs h-7" onClick={() => {
                             update("initial_script", tpl.script);
-                            // Auto-select the mapped ElevenLabs agent
-                            if (tpl.agentId) update("agent_id", tpl.agentId);
+                            // Auto-select the mapped Bland AI agent
+                            const matched = blandAgents.find(a => a.agent_type === tpl.agentType);
+                            if (matched) update("agent_id", matched.id);
                           }}>
                             {tpl.label}
                           </Button>
@@ -1847,32 +1881,28 @@ export default function CampaignWizardPage() {
                   </div>
                   <div className="flex-1 space-y-3">
                     <div>
-                      <h4 className="font-semibold">ElevenLabs AI Agent</h4>
-                      <p className="text-xs text-muted-foreground">Select which AI agent handles the conversation after the TTS opener.</p>
+                      <h4 className="font-semibold">Bland AI Agent</h4>
+                      <p className="text-xs text-muted-foreground">Select which Bland AI agent handles the conversation.</p>
                     </div>
                     <Select value={form.agent_id} onValueChange={(v) => update("agent_id", v)}>
-                      <SelectTrigger><SelectValue placeholder="Select AI Agent..." /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Select Bland AI Agent..." /></SelectTrigger>
                       <SelectContent>
-                        {elAgents.map((a) => (
-                          <SelectItem
-                            key={a.id}
-                            value={a.elevenlabs_agent_id || a.id}
-                            disabled={!a.elevenlabs_agent_id}
-                          >
+                        {blandAgents.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
                             <div className="flex flex-col">
                               <span>{a.agent_name}</span>
-                              <span className="text-xs text-muted-foreground">{a.script_label}</span>
+                              <span className="text-xs text-muted-foreground">{a.agent_type}{a.description ? ` — ${a.description}` : ""}</span>
                             </div>
                           </SelectItem>
                         ))}
-                        {elAgents.length === 0 && (
+                        {blandAgents.length === 0 && (
                           <SelectItem value="__none" disabled>No agents configured</SelectItem>
                         )}
                       </SelectContent>
                     </Select>
                     {form.agent_id && (
                       <p className="text-xs text-muted-foreground font-mono">
-                        Agent ID: {form.agent_id}
+                        Agent: {blandAgents.find(a => a.id === form.agent_id)?.agent_name || form.agent_id}
                       </p>
                     )}
                   </div>
@@ -1951,7 +1981,7 @@ export default function CampaignWizardPage() {
                       <p className="text-xs text-muted-foreground">AI Agent</p>
                       <p className="font-medium flex items-center gap-1">
                         <Bot className="h-3 w-3" />
-                        {elAgents.find(a => a.elevenlabs_agent_id === form.agent_id)?.agent_name || form.agent_id || "Not selected"}
+                        {blandAgents.find(a => a.id === form.agent_id)?.agent_name || form.agent_id || "Not selected"}
                       </p>
                     </div>
                     <div className="p-3 border rounded bg-muted/20">
@@ -2001,6 +2031,9 @@ export default function CampaignWizardPage() {
           </Button>
         )}
       </div>
+
+      {/* Bland AI Agent Webhook Directory — appears at very bottom of Campaigns tab */}
+      <BlandAgentWebhookDirectory />
     </div>
   );
 }
