@@ -9906,6 +9906,7 @@ export type Database = {
         Row: {
           agent_name: string
           agent_type: string
+          bland_agent_id: string | null
           created_at: string
           default_prompt: string | null
           default_voice: string | null
@@ -9919,6 +9920,7 @@ export type Database = {
         Insert: {
           agent_name: string
           agent_type: string
+          bland_agent_id?: string | null
           created_at?: string
           default_prompt?: string | null
           default_voice?: string | null
@@ -9932,6 +9934,7 @@ export type Database = {
         Update: {
           agent_name?: string
           agent_type?: string
+          bland_agent_id?: string | null
           created_at?: string
           default_prompt?: string | null
           default_voice?: string | null
