@@ -2030,6 +2030,9 @@ export default function CampaignWizardPage() {
           </Button>
         )}
       </div>
+
+      {/* Bland AI Agent Webhook Directory — appears at very bottom of Campaigns tab */}
+      <BlandAgentWebhookDirectory />
     </div>
   );
 }
