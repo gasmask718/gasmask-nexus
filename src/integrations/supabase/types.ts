@@ -9902,6 +9902,125 @@ export type Database = {
           },
         ]
       }
+      bland_agent_webhooks: {
+        Row: {
+          agent_name: string
+          agent_type: string
+          created_at: string
+          default_prompt: string | null
+          default_voice: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          sort_order: number | null
+          updated_at: string
+          webhook_url: string
+        }
+        Insert: {
+          agent_name: string
+          agent_type: string
+          created_at?: string
+          default_prompt?: string | null
+          default_voice?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number | null
+          updated_at?: string
+          webhook_url: string
+        }
+        Update: {
+          agent_name?: string
+          agent_type?: string
+          created_at?: string
+          default_prompt?: string | null
+          default_voice?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number | null
+          updated_at?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
+      bland_call_logs: {
+        Row: {
+          agent_type: string | null
+          call_id: string | null
+          call_outcome: string | null
+          created_at: string
+          id: string
+          lead_id: string | null
+          raw_payload: Json | null
+          recording_url: string | null
+          transcript: string | null
+        }
+        Insert: {
+          agent_type?: string | null
+          call_id?: string | null
+          call_outcome?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          raw_payload?: Json | null
+          recording_url?: string | null
+          transcript?: string | null
+        }
+        Update: {
+          agent_type?: string | null
+          call_id?: string | null
+          call_outcome?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          raw_payload?: Json | null
+          recording_url?: string | null
+          transcript?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bland_call_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "bland_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bland_leads: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          id: string
+          name: string | null
+          pain_points: string | null
+          phone_number: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string | null
+          pain_points?: string | null
+          phone_number: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string | null
+          pain_points?: string | null
+          phone_number?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       booking_addons: {
         Row: {
           addon_id: string
@@ -35628,6 +35747,7 @@ export type Database = {
       dialer_campaigns: {
         Row: {
           agent_id: string | null
+          agent_provider: string | null
           amd_enabled: boolean | null
           amd_mode: string | null
           amd_timeout_seconds: number | null
@@ -35635,6 +35755,7 @@ export type Database = {
           archived_at: string | null
           auto_pause_reason: string | null
           auto_paused: boolean | null
+          bland_agent_id: string | null
           business_id: string
           campaign_weight: number | null
           completed_calls: number | null
@@ -35658,6 +35779,7 @@ export type Database = {
         }
         Insert: {
           agent_id?: string | null
+          agent_provider?: string | null
           amd_enabled?: boolean | null
           amd_mode?: string | null
           amd_timeout_seconds?: number | null
@@ -35665,6 +35787,7 @@ export type Database = {
           archived_at?: string | null
           auto_pause_reason?: string | null
           auto_paused?: boolean | null
+          bland_agent_id?: string | null
           business_id: string
           campaign_weight?: number | null
           completed_calls?: number | null
@@ -35688,6 +35811,7 @@ export type Database = {
         }
         Update: {
           agent_id?: string | null
+          agent_provider?: string | null
           amd_enabled?: boolean | null
           amd_mode?: string | null
           amd_timeout_seconds?: number | null
@@ -35695,6 +35819,7 @@ export type Database = {
           archived_at?: string | null
           auto_pause_reason?: string | null
           auto_paused?: boolean | null
+          bland_agent_id?: string | null
           business_id?: string
           campaign_weight?: number | null
           completed_calls?: number | null
