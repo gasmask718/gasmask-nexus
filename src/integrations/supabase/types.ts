@@ -85137,6 +85137,10 @@ export type Database = {
       }
       surplus_funds_attorneys: {
         Row: {
+          application_source: string | null
+          application_status: string | null
+          bar_number: string | null
+          bar_verified: boolean | null
           cases_total: number | null
           cases_won: number | null
           created_at: string | null
@@ -85144,13 +85148,25 @@ export type Database = {
           fee_split: number | null
           firm: string | null
           id: string
+          interest_reason: string | null
+          iolta_confirmed: boolean | null
+          malpractice_confirmed: boolean | null
           name: string
           notes: string | null
           phone: string | null
+          practice_areas: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           states: string[] | null
           status: string | null
+          years_practice: number | null
         }
         Insert: {
+          application_source?: string | null
+          application_status?: string | null
+          bar_number?: string | null
+          bar_verified?: boolean | null
           cases_total?: number | null
           cases_won?: number | null
           created_at?: string | null
@@ -85158,13 +85174,25 @@ export type Database = {
           fee_split?: number | null
           firm?: string | null
           id?: string
+          interest_reason?: string | null
+          iolta_confirmed?: boolean | null
+          malpractice_confirmed?: boolean | null
           name: string
           notes?: string | null
           phone?: string | null
+          practice_areas?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           states?: string[] | null
           status?: string | null
+          years_practice?: number | null
         }
         Update: {
+          application_source?: string | null
+          application_status?: string | null
+          bar_number?: string | null
+          bar_verified?: boolean | null
           cases_total?: number | null
           cases_won?: number | null
           created_at?: string | null
@@ -85172,11 +85200,19 @@ export type Database = {
           fee_split?: number | null
           firm?: string | null
           id?: string
+          interest_reason?: string | null
+          iolta_confirmed?: boolean | null
+          malpractice_confirmed?: boolean | null
           name?: string
           notes?: string | null
           phone?: string | null
+          practice_areas?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           states?: string[] | null
           status?: string | null
+          years_practice?: number | null
         }
         Relationships: []
       }
@@ -85272,11 +85308,80 @@ export type Database = {
           },
         ]
       }
+      surplus_funds_inquiries: {
+        Row: {
+          created_at: string | null
+          email: string
+          email_notification_sent: boolean | null
+          email_notification_sent_at: string | null
+          id: string
+          ip_address: string | null
+          message: string
+          name: string
+          phone: string | null
+          replied_at: string | null
+          replied_by: string | null
+          source: string | null
+          status: string | null
+          subject: string | null
+          updated_at: string | null
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          email_notification_sent?: boolean | null
+          email_notification_sent_at?: string | null
+          id?: string
+          ip_address?: string | null
+          message: string
+          name: string
+          phone?: string | null
+          replied_at?: string | null
+          replied_by?: string | null
+          source?: string | null
+          status?: string | null
+          subject?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          email_notification_sent?: boolean | null
+          email_notification_sent_at?: string | null
+          id?: string
+          ip_address?: string | null
+          message?: string
+          name?: string
+          phone?: string | null
+          replied_at?: string | null
+          replied_by?: string | null
+          source?: string | null
+          status?: string | null
+          subject?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
+      }
       surplus_funds_leads: {
         Row: {
           address: string | null
           amount_owed: number | null
           assigned_attorney_id: string | null
+          bland_call_id: string | null
+          bland_call_triggered: boolean | null
+          bland_call_triggered_at: string | null
           call_count: number | null
           call_outcome: string | null
           city: string | null
@@ -85284,27 +85389,49 @@ export type Database = {
           court_case_number: string | null
           created_at: string | null
           email: string | null
+          email_notification_sent: boolean | null
+          email_notification_sent_at: string | null
           first_name: string | null
           foreclosure_date: string | null
           id: string
+          ip_address: string | null
           last_called_at: string | null
           last_name: string | null
           lead_source: string | null
           notes: string | null
           phone: string | null
           property_address: string | null
+          referrer: string | null
           sale_price: number | null
           skip_traced: boolean | null
+          sms_notification_sent: boolean | null
+          sms_notification_sent_at: string | null
           state: string | null
           status: string | null
           surplus_amount: number | null
           updated_at: string | null
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          website_best_time: string | null
+          website_consent_given: boolean | null
+          website_consent_timestamp: string | null
+          website_contact_preference: string | null
+          website_notes: string | null
+          website_ownership_type: string | null
+          website_sale_type: string | null
           zip: string | null
         }
         Insert: {
           address?: string | null
           amount_owed?: number | null
           assigned_attorney_id?: string | null
+          bland_call_id?: string | null
+          bland_call_triggered?: boolean | null
+          bland_call_triggered_at?: string | null
           call_count?: number | null
           call_outcome?: string | null
           city?: string | null
@@ -85312,27 +85439,49 @@ export type Database = {
           court_case_number?: string | null
           created_at?: string | null
           email?: string | null
+          email_notification_sent?: boolean | null
+          email_notification_sent_at?: string | null
           first_name?: string | null
           foreclosure_date?: string | null
           id?: string
+          ip_address?: string | null
           last_called_at?: string | null
           last_name?: string | null
           lead_source?: string | null
           notes?: string | null
           phone?: string | null
           property_address?: string | null
+          referrer?: string | null
           sale_price?: number | null
           skip_traced?: boolean | null
+          sms_notification_sent?: boolean | null
+          sms_notification_sent_at?: string | null
           state?: string | null
           status?: string | null
           surplus_amount?: number | null
           updated_at?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          website_best_time?: string | null
+          website_consent_given?: boolean | null
+          website_consent_timestamp?: string | null
+          website_contact_preference?: string | null
+          website_notes?: string | null
+          website_ownership_type?: string | null
+          website_sale_type?: string | null
           zip?: string | null
         }
         Update: {
           address?: string | null
           amount_owed?: number | null
           assigned_attorney_id?: string | null
+          bland_call_id?: string | null
+          bland_call_triggered?: boolean | null
+          bland_call_triggered_at?: string | null
           call_count?: number | null
           call_outcome?: string | null
           city?: string | null
@@ -85340,21 +85489,40 @@ export type Database = {
           court_case_number?: string | null
           created_at?: string | null
           email?: string | null
+          email_notification_sent?: boolean | null
+          email_notification_sent_at?: string | null
           first_name?: string | null
           foreclosure_date?: string | null
           id?: string
+          ip_address?: string | null
           last_called_at?: string | null
           last_name?: string | null
           lead_source?: string | null
           notes?: string | null
           phone?: string | null
           property_address?: string | null
+          referrer?: string | null
           sale_price?: number | null
           skip_traced?: boolean | null
+          sms_notification_sent?: boolean | null
+          sms_notification_sent_at?: string | null
           state?: string | null
           status?: string | null
           surplus_amount?: number | null
           updated_at?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          website_best_time?: string | null
+          website_consent_given?: boolean | null
+          website_consent_timestamp?: string | null
+          website_contact_preference?: string | null
+          website_notes?: string | null
+          website_ownership_type?: string | null
+          website_sale_type?: string | null
           zip?: string | null
         }
         Relationships: []
