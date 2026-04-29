@@ -53,6 +53,9 @@ verify_jwt = false
 [functions.dialer-call-status]
 verify_jwt = false
 
+[functions.twilio-bridge-fallback]
+verify_jwt = false
+
 [functions.morning-ops-cycle]
 verify_jwt = false
 

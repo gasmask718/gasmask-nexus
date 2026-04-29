@@ -35750,35 +35750,44 @@ export type Database = {
       dialer_call_events: {
         Row: {
           business_id: string | null
+          call_session_id: string | null
           call_sid: string | null
           campaign_id: string | null
           created_at: string
+          dedupe_key: string | null
           event_type: string
           id: string
           payload: Json
           queue_item_id: string | null
+          severity: string
           source: string
         }
         Insert: {
           business_id?: string | null
+          call_session_id?: string | null
           call_sid?: string | null
           campaign_id?: string | null
           created_at?: string
+          dedupe_key?: string | null
           event_type: string
           id?: string
           payload?: Json
           queue_item_id?: string | null
+          severity?: string
           source?: string
         }
         Update: {
           business_id?: string | null
+          call_session_id?: string | null
           call_sid?: string | null
           campaign_id?: string | null
           created_at?: string
+          dedupe_key?: string | null
           event_type?: string
           id?: string
           payload?: Json
           queue_item_id?: string | null
+          severity?: string
           source?: string
         }
         Relationships: []
@@ -35796,20 +35805,24 @@ export type Database = {
           auto_paused: boolean | null
           bland_agent_id: string | null
           bridge_mode: string
+          bridge_timeout_seconds: number
           business_id: string
           campaign_weight: number | null
           completed_calls: number | null
           confirmation_prompt: string | null
           confirmation_retries: number
+          cps_limit: number
           created_at: string
           description: string | null
           dial_mode: string | null
+          dispatch_jitter_ms: number
           failed_calls: number | null
           id: string
           initial_script: string | null
           max_attempts: number | null
           max_concurrent_calls: number | null
           name: string
+          requeue_on_failed_bridge: boolean
           status: string
           total_followups: number | null
           total_negative_outcomes: number | null
@@ -35817,7 +35830,9 @@ export type Database = {
           total_revenue: number | null
           total_targets: number | null
           updated_at: string
+          voicemail_action: string
           voicemail_count: number | null
+          voicemail_message: string | null
         }
         Insert: {
           agent_id?: string | null
@@ -35831,20 +35846,24 @@ export type Database = {
           auto_paused?: boolean | null
           bland_agent_id?: string | null
           bridge_mode?: string
+          bridge_timeout_seconds?: number
           business_id: string
           campaign_weight?: number | null
           completed_calls?: number | null
           confirmation_prompt?: string | null
           confirmation_retries?: number
+          cps_limit?: number
           created_at?: string
           description?: string | null
           dial_mode?: string | null
+          dispatch_jitter_ms?: number
           failed_calls?: number | null
           id?: string
           initial_script?: string | null
           max_attempts?: number | null
           max_concurrent_calls?: number | null
           name: string
+          requeue_on_failed_bridge?: boolean
           status?: string
           total_followups?: number | null
           total_negative_outcomes?: number | null
@@ -35852,7 +35871,9 @@ export type Database = {
           total_revenue?: number | null
           total_targets?: number | null
           updated_at?: string
+          voicemail_action?: string
           voicemail_count?: number | null
+          voicemail_message?: string | null
         }
         Update: {
           agent_id?: string | null
@@ -35866,20 +35887,24 @@ export type Database = {
           auto_paused?: boolean | null
           bland_agent_id?: string | null
           bridge_mode?: string
+          bridge_timeout_seconds?: number
           business_id?: string
           campaign_weight?: number | null
           completed_calls?: number | null
           confirmation_prompt?: string | null
           confirmation_retries?: number
+          cps_limit?: number
           created_at?: string
           description?: string | null
           dial_mode?: string | null
+          dispatch_jitter_ms?: number
           failed_calls?: number | null
           id?: string
           initial_script?: string | null
           max_attempts?: number | null
           max_concurrent_calls?: number | null
           name?: string
+          requeue_on_failed_bridge?: boolean
           status?: string
           total_followups?: number | null
           total_negative_outcomes?: number | null
@@ -35887,7 +35912,9 @@ export type Database = {
           total_revenue?: number | null
           total_targets?: number | null
           updated_at?: string
+          voicemail_action?: string
           voicemail_count?: number | null
+          voicemail_message?: string | null
         }
         Relationships: [
           {
@@ -36618,6 +36645,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dialer_webhook_events: {
+        Row: {
+          bland_call_id: string | null
+          call_session_id: string | null
+          call_sid: string | null
+          event_type: string
+          external_id: string
+          id: string
+          payload: Json
+          processed_at: string
+          provider: string
+        }
+        Insert: {
+          bland_call_id?: string | null
+          call_session_id?: string | null
+          call_sid?: string | null
+          event_type: string
+          external_id: string
+          id?: string
+          payload?: Json
+          processed_at?: string
+          provider: string
+        }
+        Update: {
+          bland_call_id?: string | null
+          call_session_id?: string | null
+          call_sid?: string | null
+          event_type?: string
+          external_id?: string
+          id?: string
+          payload?: Json
+          processed_at?: string
+          provider?: string
+        }
+        Relationships: []
       }
       direct_customers: {
         Row: {
@@ -59613,14 +59676,18 @@ export type Database = {
       outbound_call_queue: {
         Row: {
           answered_at: string | null
+          answered_by: string | null
           assigned_agent_id: string | null
           assigned_campaign_id: string | null
           attempt_count: number | null
           bland_call_id: string | null
           bland_recording_url: string | null
           bland_transcript: string | null
+          bridge_attempted_at: string | null
+          bridge_failed_reason: string | null
           bridged_at: string | null
           business_id: string | null
+          call_session_id: string | null
           campaign_id: string | null
           claim_expires_at: string | null
           claim_token: string | null
@@ -59631,12 +59698,14 @@ export type Database = {
           contact_id: string | null
           contact_name: string | null
           created_at: string
+          dial_status: string | null
           dialing_started_at: string | null
           ended_at: string | null
           entity_id: string | null
           entity_type: string | null
           id: string
           last_attempt_at: string | null
+          last_error_severity: string | null
           next_retry_at: string | null
           notes: string | null
           phone_number: string
@@ -59648,17 +59717,22 @@ export type Database = {
           updated_at: string
           voice_mode: string | null
           voice_provider: string | null
+          voicemail_left: boolean | null
         }
         Insert: {
           answered_at?: string | null
+          answered_by?: string | null
           assigned_agent_id?: string | null
           assigned_campaign_id?: string | null
           attempt_count?: number | null
           bland_call_id?: string | null
           bland_recording_url?: string | null
           bland_transcript?: string | null
+          bridge_attempted_at?: string | null
+          bridge_failed_reason?: string | null
           bridged_at?: string | null
           business_id?: string | null
+          call_session_id?: string | null
           campaign_id?: string | null
           claim_expires_at?: string | null
           claim_token?: string | null
@@ -59669,12 +59743,14 @@ export type Database = {
           contact_id?: string | null
           contact_name?: string | null
           created_at?: string
+          dial_status?: string | null
           dialing_started_at?: string | null
           ended_at?: string | null
           entity_id?: string | null
           entity_type?: string | null
           id?: string
           last_attempt_at?: string | null
+          last_error_severity?: string | null
           next_retry_at?: string | null
           notes?: string | null
           phone_number: string
@@ -59686,17 +59762,22 @@ export type Database = {
           updated_at?: string
           voice_mode?: string | null
           voice_provider?: string | null
+          voicemail_left?: boolean | null
         }
         Update: {
           answered_at?: string | null
+          answered_by?: string | null
           assigned_agent_id?: string | null
           assigned_campaign_id?: string | null
           attempt_count?: number | null
           bland_call_id?: string | null
           bland_recording_url?: string | null
           bland_transcript?: string | null
+          bridge_attempted_at?: string | null
+          bridge_failed_reason?: string | null
           bridged_at?: string | null
           business_id?: string | null
+          call_session_id?: string | null
           campaign_id?: string | null
           claim_expires_at?: string | null
           claim_token?: string | null
@@ -59707,12 +59788,14 @@ export type Database = {
           contact_id?: string | null
           contact_name?: string | null
           created_at?: string
+          dial_status?: string | null
           dialing_started_at?: string | null
           ended_at?: string | null
           entity_id?: string | null
           entity_type?: string | null
           id?: string
           last_attempt_at?: string | null
+          last_error_severity?: string | null
           next_retry_at?: string | null
           notes?: string | null
           phone_number?: string
@@ -59724,6 +59807,7 @@ export type Database = {
           updated_at?: string
           voice_mode?: string | null
           voice_provider?: string | null
+          voicemail_left?: boolean | null
         }
         Relationships: [
           {
@@ -110134,14 +110218,18 @@ export type Database = {
             }
             Returns: {
               answered_at: string | null
+              answered_by: string | null
               assigned_agent_id: string | null
               assigned_campaign_id: string | null
               attempt_count: number | null
               bland_call_id: string | null
               bland_recording_url: string | null
               bland_transcript: string | null
+              bridge_attempted_at: string | null
+              bridge_failed_reason: string | null
               bridged_at: string | null
               business_id: string | null
+              call_session_id: string | null
               campaign_id: string | null
               claim_expires_at: string | null
               claim_token: string | null
@@ -110152,12 +110240,14 @@ export type Database = {
               contact_id: string | null
               contact_name: string | null
               created_at: string
+              dial_status: string | null
               dialing_started_at: string | null
               ended_at: string | null
               entity_id: string | null
               entity_type: string | null
               id: string
               last_attempt_at: string | null
+              last_error_severity: string | null
               next_retry_at: string | null
               notes: string | null
               phone_number: string
@@ -110169,6 +110259,7 @@ export type Database = {
               updated_at: string
               voice_mode: string | null
               voice_provider: string | null
+              voicemail_left: boolean | null
             }[]
             SetofOptions: {
               from: "*"
@@ -110187,14 +110278,18 @@ export type Database = {
             }
             Returns: {
               answered_at: string | null
+              answered_by: string | null
               assigned_agent_id: string | null
               assigned_campaign_id: string | null
               attempt_count: number | null
               bland_call_id: string | null
               bland_recording_url: string | null
               bland_transcript: string | null
+              bridge_attempted_at: string | null
+              bridge_failed_reason: string | null
               bridged_at: string | null
               business_id: string | null
+              call_session_id: string | null
               campaign_id: string | null
               claim_expires_at: string | null
               claim_token: string | null
@@ -110205,12 +110300,14 @@ export type Database = {
               contact_id: string | null
               contact_name: string | null
               created_at: string
+              dial_status: string | null
               dialing_started_at: string | null
               ended_at: string | null
               entity_id: string | null
               entity_type: string | null
               id: string
               last_attempt_at: string | null
+              last_error_severity: string | null
               next_retry_at: string | null
               notes: string | null
               phone_number: string
@@ -110222,6 +110319,7 @@ export type Database = {
               updated_at: string
               voice_mode: string | null
               voice_provider: string | null
+              voicemail_left: boolean | null
             }[]
             SetofOptions: {
               from: "*"

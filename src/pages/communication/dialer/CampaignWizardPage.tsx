@@ -111,20 +111,36 @@ interface CallItem {
   status:
     | "queued"
     | "dialing"
+    | "ringing"
+    | "intro_playing"
+    | "awaiting_input"
+    | "answered"
     | "connected"
-    | "completed"
-    | "failed"
-    | "no_answer"
     | "voicemail"
-    | "transferred"
+    | "voicemail_detected"
+    | "voicemail_left"
+    | "no_answer"
+    | "no_input"
+    | "declined"
+    | "bridging"
     | "bridged"
-    | "bridging";
+    | "in_ai_conversation"
+    | "transferred"
+    | "failed_bridge"
+    | "failed"
+    | "completed";
 
   duration?: number;
 
   transcript?: string;
 
   updated_at: string;
+
+  answered_by?: string | null;
+  confirmation_method?: string | null;
+  dial_status?: string | null;
+  bridge_failed_reason?: string | null;
+  attempt_count?: number | null;
 }
 
 // Bland AI agents are fetched from DB — see useQuery below
@@ -242,17 +258,24 @@ const AUDIENCE_TYPE_CONFIG: Record<
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   queued: { label: "Queued", color: "bg-muted text-muted-foreground", icon: Clock },
   dialing: { label: "Dialing", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400", icon: Phone },
+  ringing: { label: "Ringing", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400", icon: Phone },
+  intro_playing: { label: "Intro", color: "bg-indigo-500/15 text-indigo-600", icon: MessageSquare },
+  awaiting_input: { label: "Awaiting Input", color: "bg-amber-500/15 text-amber-600", icon: Clock },
+  answered: { label: "Answered", color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: Phone },
   connected: { label: "Live", color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: Bot },
+  bridging: { label: "Bridging…", color: "bg-purple-500/15 text-purple-600", icon: PhoneForwarded },
   bridged: { label: "Connected", color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: PhoneForwarded },
-  completed: { label: "Completed", color: "bg-green-500/10 text-green-600 dark:text-green-500", icon: CheckCircle2 },
-
+  in_ai_conversation: { label: "AI Active", color: "bg-emerald-500/15 text-emerald-600", icon: Bot },
   transferred: { label: "Transferred", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400", icon: PhoneForwarded },
-
+  completed: { label: "Completed", color: "bg-green-500/10 text-green-600 dark:text-green-500", icon: CheckCircle2 },
+  declined: { label: "Declined", color: "bg-orange-500/15 text-orange-600", icon: XCircle },
+  no_input: { label: "No Input", color: "bg-amber-500/15 text-amber-600", icon: XCircle },
   no_answer: { label: "No Answer", color: "bg-amber-500/15 text-amber-600", icon: XCircle },
-
-  failed: { label: "Failed", color: "bg-destructive/15 text-destructive", icon: XCircle },
-
   voicemail: { label: "Voicemail", color: "bg-orange-500/15 text-orange-600", icon: Mic },
+  voicemail_detected: { label: "Voicemail (detected)", color: "bg-orange-500/15 text-orange-600", icon: Mic },
+  voicemail_left: { label: "Voicemail Left", color: "bg-orange-500/15 text-orange-600", icon: Mic },
+  failed_bridge: { label: "Bridge Failed", color: "bg-destructive/15 text-destructive", icon: XCircle },
+  failed: { label: "Failed", color: "bg-destructive/15 text-destructive", icon: XCircle },
 };
 
 const STEPS = [
@@ -357,81 +380,131 @@ export default function CampaignWizardPage() {
 
   const dispatchIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Active in-flight calls (used for concurrency cap).
+  const inFlightStates = [
+    "dialing", "ringing", "intro_playing", "awaiting_input",
+    "answered", "connected", "bridging", "bridged", "in_ai_conversation",
+  ];
+
   const processQueue = useCallback(
     async (campaignId: string) => {
-      // Check campaign's dial_mode + provider to choose the right function
+      // Read full dispatcher config in one shot.
       const { data: campData } = await supabase
         .from("dialer_campaigns")
-        .select("dial_mode, agent_id, initial_script, bland_agent_id")
+        .select(
+          "dial_mode, agent_id, initial_script, bland_agent_id, agent_provider, " +
+          "max_concurrent_calls, cps_limit, dispatch_jitter_ms",
+        )
         .eq("id", campaignId)
         .single();
-      const dialMode = (campData as any)?.dial_mode || "ai";
-      const provider = (campData as any)?.agent_provider || "bland";
+      if (!campData) return;
+      const dialMode = (campData as any).dial_mode || "ai";
+      const maxConcurrent = Math.max(1, (campData as any).max_concurrent_calls || 1);
+      const cps = Math.max(1, (campData as any).cps_limit || 2);
+      const jitterMs = Math.max(0, (campData as any).dispatch_jitter_ms || 500);
 
-      const { data: queueItems, error: fetchErr } = await supabase
+      // Concurrency cap: how many calls are currently in-flight?
+      const { count: inFlight } = await supabase
         .from("outbound_call_queue")
-        .select("id, phone_number, contact_name")
+        .select("id", { count: "exact", head: true })
         .eq("campaign_id", campaignId)
-        .eq("status", "queued")
-        .limit(1)
-        .maybeSingle();
+        .in("status", inFlightStates);
+      const slots = Math.max(0, maxConcurrent - (inFlight || 0));
+      if (slots === 0) return;
 
-      if (fetchErr || !queueItems) return;
-      const queueItem = queueItems;
-
-      const { error: updateErr } = await supabase
+      // Throughput cap (CPS): how many calls were dispatched in the last 1s?
+      // We approximate by counting dialing_started_at in the last second.
+      const oneSecAgo = new Date(Date.now() - 1000).toISOString();
+      const { count: lastSec } = await supabase
         .from("outbound_call_queue")
-        .update({
-          status: "dialing",
-          dialing_started_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", queueItem.id)
-        .eq("status", "queued");
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", campaignId)
+        .gte("dialing_started_at", oneSecAgo);
+      const cpsBudget = Math.max(0, cps - (lastSec || 0));
+      const toDispatch = Math.min(slots, cpsBudget);
+      if (toDispatch === 0) return;
 
-      if (updateErr) return toast.error(`Failed to lock call: ${updateErr.message}`);
+      // Pull queued + retry-eligible rows, oldest first.
+      const nowIso = new Date().toISOString();
+      const { data: candidates } = await supabase
+        .from("outbound_call_queue")
+        .select("id, phone_number, contact_name, status, next_retry_at")
+        .eq("campaign_id", campaignId)
+        .in("status", ["queued", "failed_bridge"])
+        .or(`next_retry_at.is.null,next_retry_at.lte.${nowIso}`)
+        .order("priority_score", { ascending: false })
+        .order("created_at", { ascending: true })
+        .limit(toDispatch);
 
-      try {
-        toast.info(`Dialing ${queueItem.contact_name || queueItem.phone_number}...`);
+      if (!candidates || candidates.length === 0) return;
 
-        let response: any;
-        if (dialMode === "manual") {
-          response = await supabase.functions.invoke("twilio-manual-call", {
-            body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
-          });
-        } else {
-          // AI mode → Bland AI
-          // Resolve agent_type from bland_agent_webhooks
-          const blandAgentRowId = (campData as any)?.bland_agent_id || (campData as any)?.agent_id;
-          let agentType = "sales-outreach";
-          if (blandAgentRowId) {
-            const { data: a } = await supabase
-              .from("bland_agent_webhooks" as any)
-              .select("agent_type")
-              .eq("id", blandAgentRowId)
-              .maybeSingle();
-            if (a && (a as any).agent_type) agentType = (a as any).agent_type;
+      // Resolve agent_type once per pass.
+      let agentType = "sales-outreach";
+      if (dialMode !== "manual") {
+        const blandAgentRowId = (campData as any).bland_agent_id || (campData as any).agent_id;
+        if (blandAgentRowId) {
+          const { data: a } = await supabase
+            .from("bland_agent_webhooks" as any)
+            .select("agent_type")
+            .eq("id", blandAgentRowId)
+            .maybeSingle();
+          if (a && (a as any).agent_type) agentType = (a as any).agent_type;
+        }
+      }
+
+      // Dispatch sequentially with jitter so we never burst above CPS.
+      for (const queueItem of candidates) {
+        // Optimistic lock — only succeeds if row is still queued/failed_bridge.
+        const { data: locked, error: updateErr } = await supabase
+          .from("outbound_call_queue")
+          .update({
+            status: "dialing",
+            dialing_started_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", queueItem.id)
+          .in("status", ["queued", "failed_bridge"])
+          .select("id")
+          .maybeSingle();
+        if (updateErr || !locked) continue; // someone else grabbed it
+
+        try {
+          let response: any;
+          if (dialMode === "manual") {
+            response = await supabase.functions.invoke("twilio-manual-call", {
+              body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
+            });
+          } else {
+            response = await supabase.functions.invoke("bland-agent-trigger", {
+              body: {
+                phone_number: queueItem.phone_number,
+                agent_type: agentType,
+                prompt: (campData as any)?.initial_script || undefined,
+                queue_item_id: queueItem.id,
+                campaign_id: campaignId,
+              },
+            });
           }
-          response = await supabase.functions.invoke("bland-agent-trigger", {
-            body: {
-              phone_number: queueItem.phone_number,
-              agent_type: agentType,
-              prompt: (campData as any)?.initial_script || undefined,
-              queue_item_id: queueItem.id,
-              campaign_id: campaignId,
-            },
-          });
+          if (response.error || (response.data && response.data.error)) {
+            throw new Error(response.error?.message || response.data?.error);
+          }
+        } catch (err: any) {
+          console.error("Dispatcher Exception:", err);
+          toast.error(`Call logic failed: ${err.message}`);
+          await supabase
+            .from("outbound_call_queue")
+            .update({
+              status: "failed",
+              last_error_severity: "error",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", queueItem.id);
         }
 
-        if (response.error || (response.data && response.data.error))
-          throw new Error(response.error?.message || response.data?.error);
-      } catch (err: any) {
-        console.error("Dispatcher Exception:", err);
-        toast.error(`Call logic failed: ${err.message}`);
-        await supabase
-          .from("outbound_call_queue")
-          .update({ status: "failed", updated_at: new Date().toISOString() })
-          .eq("id", queueItem.id);
+        // Jitter so we never burst the API.
+        if (jitterMs > 0) {
+          await new Promise((r) => setTimeout(r, jitterMs + Math.random() * jitterMs));
+        }
       }
 
       queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
@@ -443,12 +516,19 @@ export default function CampaignWizardPage() {
   useEffect(() => {
     if (viewMode === "console" && activeCampaignId) {
       const checkAndRun = async () => {
-        const { data } = await supabase.from("dialer_campaigns").select("status, dial_mode").eq("id", activeCampaignId).single();
+        const { data } = await supabase
+          .from("dialer_campaigns")
+          .select("status, dial_mode")
+          .eq("id", activeCampaignId)
+          .single();
         // Only auto-dispatch for AI mode campaigns; manual mode uses the call modal
-        if (data?.status === "active" && (data as any)?.dial_mode !== "manual") processQueue(activeCampaignId);
+        if (data?.status === "active" && (data as any)?.dial_mode !== "manual") {
+          processQueue(activeCampaignId);
+        }
       };
 
-      dispatchIntervalRef.current = setInterval(checkAndRun, 4000);
+      // 2s tick — processQueue itself enforces CPS + concurrency caps.
+      dispatchIntervalRef.current = setInterval(checkAndRun, 2000);
     }
 
     return () => {
@@ -1225,15 +1305,41 @@ export default function CampaignWizardPage() {
                             key={item.id}
                             className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/40 transition-colors"
                           >
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4 min-w-0">
                               <div className={`p-2 rounded-full bg-muted/50 ${config.color}`}>
                                 <Icon className="h-4 w-4" />
                               </div>
 
-                              <div>
-                                <p className="font-medium text-sm text-foreground">{item.contact_name || "Unknown"}</p>
-
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm text-foreground truncate">{item.contact_name || "Unknown"}</p>
                                 <p className="text-xs text-muted-foreground font-mono">{item.phone_number}</p>
+                                <div className="flex flex-wrap items-center gap-1 mt-1">
+                                  {(item as any).answered_by && (
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1">
+                                      AMD: {(item as any).answered_by}
+                                    </Badge>
+                                  )}
+                                  {(item as any).confirmation_method && (
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1">
+                                      via {(item as any).confirmation_method}
+                                    </Badge>
+                                  )}
+                                  {(item as any).dial_status && (
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1">
+                                      bridge: {(item as any).dial_status}
+                                    </Badge>
+                                  )}
+                                  {(item as any).bridge_failed_reason && (
+                                    <Badge variant="destructive" className="text-[10px] h-4 px-1">
+                                      {(item as any).bridge_failed_reason}
+                                    </Badge>
+                                  )}
+                                  {((item as any).attempt_count ?? 0) > 1 && (
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1">
+                                      attempt {(item as any).attempt_count}
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                             </div>
 

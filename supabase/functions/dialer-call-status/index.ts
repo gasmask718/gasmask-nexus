@@ -1,19 +1,26 @@
 // Twilio status callback for the auto-dialer parent call leg.
-// Maps Twilio CallStatus -> outbound_call_queue.status and appends
-// every event to dialer_call_events for the live dashboard timeline.
+// Maps Twilio CallStatus + AsyncAmd events -> outbound_call_queue.status,
+// and appends every event to dialer_call_events for the live dashboard.
+//
+// Hardened (2026-04-29):
+//  - Twilio signature validation
+//  - Webhook idempotency via dialer_webhook_events (CallSid + status)
+//  - Severity-tagged events on errors
+//  - AMD result captured into answered_by
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-};
+import {
+  corsHeaders,
+  svc,
+  verifyTwilio,
+  readForm,
+  logEvent,
+  recordWebhookDelivery,
+} from "../_shared/dialer.ts";
 
 const STATUS_MAP: Record<string, string> = {
   initiated: "dialing",
   queued: "dialing",
-  ringing: "dialing",
+  ringing: "ringing",
   "in-progress": "connected",
   completed: "completed",
   busy: "failed",
@@ -26,29 +33,56 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
-
+    const supabase = svc();
     const url = new URL(req.url);
     const campaign_id = url.searchParams.get("campaign_id");
     const queue_item_id = url.searchParams.get("queue_item_id");
+    const call_session_id = url.searchParams.get("call_session_id");
 
-    const form = await req.formData();
-    const callSid = form.get("CallSid")?.toString() || "";
-    const callStatus = (form.get("CallStatus")?.toString() || "").toLowerCase();
-    const callDuration = form.get("CallDuration")?.toString() || null;
-    const errorCode = form.get("ErrorCode")?.toString() || null;
-    const errorMsg = form.get("ErrorMessage")?.toString() || null;
-    const answeredBy = form.get("AnsweredBy")?.toString() || null;
+    const params = await readForm(req);
+    const auth = verifyTwilio(req, params);
+    if (!auth.ok) {
+      await logEvent({
+        supabase, campaign_id, queue_item_id, call_session_id,
+        call_sid: params["CallSid"] || null,
+        event_type: "status.unauthorized", source: "twilio", severity: "warning",
+        payload: { reason: auth.reason },
+      });
+      return new Response("Unauthorized", { status: 401, headers: corsHeaders });
+    }
 
-    // Always log timeline event
-    await supabase.from("dialer_call_events").insert({
-      campaign_id,
-      queue_item_id,
+    const callSid = params["CallSid"] || "";
+    const callStatus = (params["CallStatus"] || "").toLowerCase();
+    const callDuration = params["CallDuration"] || null;
+    const errorCode = params["ErrorCode"] || null;
+    const errorMsg = params["ErrorMessage"] || null;
+    const answeredBy = params["AnsweredBy"] || null;
+
+    // The Twilio AsyncAmd callback fires WITHOUT a CallStatus — it carries AnsweredBy only.
+    const isAmdCallback = !!answeredBy && !callStatus;
+    const externalId = `${callSid}|${isAmdCallback ? `amd:${answeredBy}` : callStatus || "unknown"}`;
+    const firstDelivery = await recordWebhookDelivery({
+      supabase,
+      provider: "twilio",
+      external_id: externalId,
+      event_type: isAmdCallback ? "twilio.amd" : `twilio.${callStatus || "unknown"}`,
+      call_session_id,
       call_sid: callSid,
-      event_type: `twilio.${callStatus || "unknown"}`,
-      source: "twilio",
+      payload: params,
+    });
+    if (!firstDelivery) {
+      // Already processed — return 200 but skip writes.
+      return new Response("OK", { status: 200, headers: corsHeaders });
+    }
+
+    const severity =
+      callStatus === "failed" || callStatus === "busy" || callStatus === "canceled" ? "error" :
+      callStatus === "no-answer" ? "warning" : "info";
+
+    await logEvent({
+      supabase, campaign_id, queue_item_id, call_session_id, call_sid: callSid,
+      event_type: isAmdCallback ? "twilio.amd_result" : `twilio.${callStatus || "unknown"}`,
+      source: "twilio", severity,
       payload: {
         call_status: callStatus,
         duration: callDuration,
@@ -58,29 +92,34 @@ Deno.serve(async (req) => {
       },
     });
 
-    if (queue_item_id && callStatus) {
-      // Resolve current row to avoid clobbering bridged/declined/no_input states
+    if (queue_item_id) {
       const { data: row } = await supabase
         .from("outbound_call_queue")
         .select("status")
         .eq("id", queue_item_id)
         .maybeSingle();
       const current = (row as any)?.status as string | undefined;
-      const protectedStates = new Set(["bridged", "transferred", "declined", "no_input", "completed", "failed"]);
+      const protectedStates = new Set([
+        "bridging", "bridged", "in_ai_conversation", "transferred",
+        "declined", "no_input", "voicemail_detected", "voicemail_left",
+        "failed_bridge", "completed", "failed",
+      ]);
 
       const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
       const mapped = STATUS_MAP[callStatus];
 
-      if (callStatus === "in-progress") {
+      if (isAmdCallback) {
+        update.answered_by = answeredBy;
+      } else if (callStatus === "in-progress") {
         update.answered_at = new Date().toISOString();
         if (!current || !protectedStates.has(current)) update.status = "connected";
       } else if (callStatus === "completed") {
         update.ended_at = new Date().toISOString();
-        // If it was bridged, mark transferred; otherwise completed
-        if (current === "bridged") update.status = "transferred";
+        if (current === "bridged" || current === "in_ai_conversation") update.status = "transferred";
         else if (!current || !protectedStates.has(current)) update.status = "completed";
       } else if (mapped && (!current || !protectedStates.has(current))) {
         update.status = mapped;
+        if (severity !== "info") update.last_error_severity = severity;
       }
 
       if (Object.keys(update).length > 1) {
@@ -91,6 +130,7 @@ Deno.serve(async (req) => {
     return new Response("OK", { status: 200, headers: corsHeaders });
   } catch (err) {
     console.error("dialer-call-status error:", err);
+    // Always 200 so Twilio doesn't pile up retries — we logged severity above.
     return new Response("OK", { status: 200, headers: corsHeaders });
   }
 });

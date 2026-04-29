@@ -2,30 +2,36 @@
 // Confirmed -> redirects to twilio-bridge-to-bland (Bland AI agent).
 // Negative  -> polite hangup, queue row 'declined'.
 // No input  -> reprompt once, then 'no_input' + hangup.
+//
+// Hardened (2026-04-29):
+//  - Twilio signature validation
+//  - Idempotent event logging via dedupe key (call_sid|event|attempt)
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-};
-const xmlHeaders = { ...corsHeaders, "Content-Type": "text/xml; charset=utf-8" };
+import {
+  corsHeaders,
+  xmlHeaders,
+  escapeXml,
+  svc,
+  verifyTwilio,
+  readForm,
+  logEvent,
+} from "../_shared/dialer.ts";
 
 const POSITIVE = ["yes", "yeah", "yep", "sure", "okay", "ok", "interested", "ready", "please", "go ahead"];
 const NEGATIVE = ["no", "nope", "stop", "remove", "do not", "don't", "not interested", "decline"];
 
-function escapeXml(s: string) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const fail = (msg = "An error occurred. Goodbye.") =>
+    new Response(
+      `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Joanna">${escapeXml(msg)}</Say><Hangup/></Response>`,
+      { headers: xmlHeaders },
+    );
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+    const supabase = svc();
 
     const url = new URL(req.url);
     const campaign_id = url.searchParams.get("campaign_id");
@@ -33,27 +39,37 @@ Deno.serve(async (req) => {
     const lead_id = url.searchParams.get("lead_id");
     const agent_type = url.searchParams.get("agent_type") || "sales-outreach";
     const bland_agent_id = url.searchParams.get("bland_agent_id") || "";
+    const call_session_id = url.searchParams.get("call_session_id");
     const attempt = parseInt(url.searchParams.get("attempt") || "1", 10);
 
-    const form = await req.formData();
-    const digits = (form.get("Digits")?.toString() || "").trim();
-    const speech = (form.get("SpeechResult")?.toString() || "").toLowerCase().trim();
-    const callSid = form.get("CallSid")?.toString() || "";
-    const confidenceStr = form.get("Confidence")?.toString();
-    const confidence = confidenceStr ? parseFloat(confidenceStr) : null;
+    const params = await readForm(req);
+    const auth = verifyTwilio(req, params);
+    if (!auth.ok) {
+      await logEvent({
+        supabase, campaign_id, queue_item_id, call_session_id,
+        call_sid: params["CallSid"] || null,
+        event_type: "confirm.unauthorized", source: "twilio", severity: "warning",
+        payload: { reason: auth.reason },
+      });
+      return fail("Unauthorized request.");
+    }
+
+    const digits = (params["Digits"] || "").trim();
+    const speech = (params["SpeechResult"] || "").toLowerCase().trim();
+    const callSid = params["CallSid"] || "";
+    const confidence = params["Confidence"] ? parseFloat(params["Confidence"]) : null;
 
     const isPositive = digits === "1" || POSITIVE.some((w) => speech.includes(w));
     const isNegative = digits === "2" || NEGATIVE.some((w) => speech.includes(w));
 
-    // Log this confirmation step
-    await supabase.from("dialer_call_events").insert({
-      campaign_id,
-      queue_item_id,
-      call_sid: callSid,
+    await logEvent({
+      supabase, campaign_id, queue_item_id, call_session_id, call_sid: callSid,
       event_type: isPositive ? "confirm.accepted" : isNegative ? "confirm.declined" : "confirm.no_input",
-      source: "twilio",
-      payload: { digits, speech, confidence, attempt },
+      source: "twilio", severity: "info",
+      payload: { digits, speech, confidence, attempt, method: digits ? "dtmf" : "speech" },
+      dedupe_bucket: `attempt-${attempt}`,
     });
+
     if (callSid && (digits || speech)) {
       await supabase.from("live_call_transcripts").insert({
         call_sid: callSid,
@@ -68,6 +84,7 @@ Deno.serve(async (req) => {
         await supabase
           .from("outbound_call_queue")
           .update({
+            status: "bridging",
             confirmation_method: digits ? "dtmf" : "speech",
             confirmation_value: digits || speech,
             updated_at: new Date().toISOString(),
@@ -80,6 +97,7 @@ Deno.serve(async (req) => {
         ...(lead_id ? { lead_id } : {}),
         agent_type,
         ...(bland_agent_id ? { bland_agent_id } : {}),
+        ...(call_session_id ? { call_session_id } : {}),
       });
       const bridgeUrl = `${SUPABASE_URL}/functions/v1/twilio-bridge-to-bland?${ctx.toString()}`;
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -120,6 +138,7 @@ Deno.serve(async (req) => {
         ...(lead_id ? { lead_id } : {}),
         agent_type,
         ...(bland_agent_id ? { bland_agent_id } : {}),
+        ...(call_session_id ? { call_session_id } : {}),
         attempt: String(attempt + 1),
       });
       const action = `${SUPABASE_URL}/functions/v1/twilio-campaign-confirm?${ctx.toString()}`;
@@ -154,7 +173,6 @@ Deno.serve(async (req) => {
     return new Response(twiml.trim(), { headers: xmlHeaders });
   } catch (err) {
     console.error("twilio-campaign-confirm error:", err);
-    const fb = `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Joanna">An error occurred. Goodbye.</Say><Hangup/></Response>`;
-    return new Response(fb, { headers: xmlHeaders });
+    return fail();
   }
 });
