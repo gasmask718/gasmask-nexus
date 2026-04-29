@@ -1437,14 +1437,12 @@ export default function CampaignWizardPage() {
                                   {recording?.recording_url && (
                                     <>
                                       <span className="ml-auto" />
-                                      <a
-                                        href={recording.recording_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-primary underline"
-                                      >
-                                        🎙️ Recording
-                                      </a>
+                                      <audio
+                                        controls
+                                        preload="none"
+                                        src={`https://qalaaroashbggynpvqct.supabase.co/functions/v1/play-twilio-recording?url=${encodeURIComponent(recording.recording_url)}`}
+                                        className="h-7 max-w-[260px]"
+                                      />
                                     </>
                                   )}
                                 </div>
