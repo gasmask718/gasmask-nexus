@@ -1368,7 +1368,7 @@ export default function CampaignWizardPage() {
                             <Badge variant="outline" className={`${config.color} border-0 bg-transparent`}>
                               {config.label}
                             </Badge>
-                          </div>
+                          </button>
                         );
                       })
                     )}
