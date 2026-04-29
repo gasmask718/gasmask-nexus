@@ -71,6 +71,7 @@ export default function SFLeadPipeline() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [stateFilter, setStateFilter] = useState('all');
+  const [sourceFilter, setSourceFilter] = useState('all');
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -103,13 +104,19 @@ export default function SFLeadPipeline() {
     const interested = leads.filter((l: any) => l.status === 'interested').length;
     const agreement = leads.filter((l: any) => l.status === 'agreement_signed').length;
     const totalSurplus = leads.reduce((sum: number, l: any) => sum + (l.surplus_amount || 0), 0);
-    return { total, skipTraced, queued, interested, agreement, totalSurplus };
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const websiteToday = leads.filter((l: any) =>
+      l.lead_source === 'dynasty_recovery_website' &&
+      l.created_at && new Date(l.created_at) >= todayStart
+    ).length;
+    return { total, skipTraced, queued, interested, agreement, totalSurplus, websiteToday };
   }, [leads]);
 
   const filtered = useMemo(() => {
     let result = leads;
     if (statusFilter !== 'all') result = result.filter((l: any) => l.status === statusFilter);
     if (stateFilter !== 'all') result = result.filter((l: any) => l.state === stateFilter);
+    if (sourceFilter !== 'all') result = result.filter((l: any) => (l.lead_source || 'manual_upload') === sourceFilter);
     if (search) {
       const s = search.toLowerCase();
       result = result.filter((l: any) =>
@@ -124,7 +131,7 @@ export default function SFLeadPipeline() {
       return sortDir === 'asc' ? av - bv : bv - av;
     });
     return result;
-  }, [leads, statusFilter, stateFilter, search, sortKey, sortDir]);
+  }, [leads, statusFilter, stateFilter, sourceFilter, search, sortKey, sortDir]);
 
   const toggleSelect = (id: string) => { const s = new Set(selected); s.has(id) ? s.delete(id) : s.add(id); setSelected(s); };
   const toggleAll = () => setSelected(selected.size === filtered.length ? new Set() : new Set(filtered.map((l: any) => l.id)));
@@ -219,6 +226,25 @@ export default function SFLeadPipeline() {
         </div>
       </div>
 
+      {/* Today's Website Leads spotlight */}
+      <Card className="border-2" style={{ borderColor: '#0F6E56', background: 'linear-gradient(90deg, hsl(var(--card)), hsl(var(--card)/0.6))' }}>
+        <CardContent className="p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg p-3" style={{ backgroundColor: '#0F6E56' + '20' }}>
+              <Flame className="h-6 w-6" style={{ color: '#0F6E56' }} />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Today's Website Leads</p>
+              <p className="text-3xl font-bold" style={{ color: '#0F6E56' }}>{stats.websiteToday}</p>
+              <p className="text-xs text-muted-foreground">dynastyrecoverygroup.com — live intake</p>
+            </div>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setSourceFilter('dynasty_recovery_website')}>
+            View Website Leads
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatCard label="Total Leads" value={stats.total} icon={List} color="#9ca3af" />
@@ -249,6 +275,17 @@ export default function SFLeadPipeline() {
           <Select value={stateFilter} onValueChange={setStateFilter}>
             <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue placeholder="State" /></SelectTrigger>
             <SelectContent>{[{ v: 'all', l: 'All States' }, ...states.map(s => ({ v: s, l: s }))].map(o => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={sourceFilter} onValueChange={setSourceFilter}>
+            <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue placeholder="Source" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sources</SelectItem>
+              <SelectItem value="dynasty_recovery_website">⭐ Dynasty Recovery Website</SelectItem>
+              <SelectItem value="scraped">Scraped</SelectItem>
+              <SelectItem value="skip_traced">Skip-traced</SelectItem>
+              <SelectItem value="manual_upload">Manual Upload</SelectItem>
+              <SelectItem value="csv_upload">CSV Upload</SelectItem>
+            </SelectContent>
           </Select>
           <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
             <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue placeholder="Sort by" /></SelectTrigger>
