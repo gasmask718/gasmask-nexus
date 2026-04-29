@@ -56,6 +56,9 @@ verify_jwt = false
 [functions.twilio-bridge-fallback]
 verify_jwt = false
 
+[functions.dispatch-campaign-tick]
+verify_jwt = false
+
 [functions.morning-ops-cycle]
 verify_jwt = false
 
