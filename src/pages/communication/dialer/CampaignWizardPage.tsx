@@ -1321,9 +1321,11 @@ export default function CampaignWizardPage() {
                         const Icon = config.icon;
 
                         return (
-                          <div
+                          <button
+                            type="button"
                             key={item.id}
-                            className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/40 transition-colors"
+                            onClick={() => setTimelineQueueItemId(item.id)}
+                            className="w-full text-left flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/40 transition-colors cursor-pointer"
                           >
                             <div className="flex items-center gap-4 min-w-0">
                               <div className={`p-2 rounded-full bg-muted/50 ${config.color}`}>
