@@ -127,6 +127,30 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Mirror to live_calls so the Live Monitor reflects truth in realtime.
+    try {
+      const liveUpdate: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (callStatus === "ringing") liveUpdate.state = "ringing";
+      else if (callStatus === "in-progress") {
+        liveUpdate.state = "connected";
+        liveUpdate.answered_at = new Date().toISOString();
+      } else if (callStatus === "completed") {
+        liveUpdate.state = "completed";
+        liveUpdate.ended_at = new Date().toISOString();
+      } else if (["busy", "failed", "canceled"].includes(callStatus)) {
+        liveUpdate.state = "failed";
+        liveUpdate.ended_at = new Date().toISOString();
+      } else if (callStatus === "no-answer") {
+        liveUpdate.state = "no_answer";
+        liveUpdate.ended_at = new Date().toISOString();
+      }
+      if (Object.keys(liveUpdate).length > 1 && callSid) {
+        await supabase.from("live_calls").update(liveUpdate).eq("call_sid", callSid);
+      }
+    } catch (e) {
+      console.error("live_calls mirror failed:", e);
+    }
+
     return new Response("OK", { status: 200, headers: corsHeaders });
   } catch (err) {
     console.error("dialer-call-status error:", err);

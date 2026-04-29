@@ -63,6 +63,7 @@ import {
 } from "lucide-react";
 
 import BatchDialerPanel from "@/components/dialer/BatchDialerPanel";
+import { CallTimelineDrawer } from "@/components/dialer/CallTimelineDrawer";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -340,6 +341,26 @@ export default function CampaignWizardPage() {
   const [isManualCallModalOpen, setIsManualCallModalOpen] = useState(false);
   const [selectedCampaignIds, setSelectedCampaignIds] = useState<Set<string>>(new Set());
   const [isArchiving, setIsArchiving] = useState(false);
+  const [timelineQueueItemId, setTimelineQueueItemId] = useState<string | null>(null);
+  const [isRecovering, setIsRecovering] = useState(false);
+
+  const recoverStuckCalls = useCallback(async () => {
+    if (!effectiveBizId) return;
+    setIsRecovering(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("recover-dialer", {
+        body: { business_id: effectiveBizId },
+      });
+      if (error) throw error;
+      const recovered = (data as any)?.queue_recovered || 0;
+      toast.success(`Recovered ${recovered} stuck call${recovered === 1 ? "" : "s"}`);
+      queryClient.invalidateQueries({ queryKey: ["campaign-calls"] });
+    } catch (e: any) {
+      toast.error(`Recover failed: ${e.message}`);
+    } finally {
+      setIsRecovering(false);
+    }
+  }, [effectiveBizId, queryClient]);
 
   const [step, setStep] = useState(0);
 
@@ -513,28 +534,18 @@ export default function CampaignWizardPage() {
     [effectiveBizId, queryClient],
   );
 
+  // NOTE (2026-04-29): The browser-side dispatcher loop has been retired.
+  // Dispatching is now driven server-side by the `dispatch-campaign-tick` edge
+  // function, scheduled via pg_cron. This file keeps a no-op effect so realtime
+  // subscriptions still mount when the console opens.
   useEffect(() => {
     if (viewMode === "console" && activeCampaignId) {
-      const checkAndRun = async () => {
-        const { data } = await supabase
-          .from("dialer_campaigns")
-          .select("status, dial_mode")
-          .eq("id", activeCampaignId)
-          .single();
-        // Only auto-dispatch for AI mode campaigns; manual mode uses the call modal
-        if (data?.status === "active" && (data as any)?.dial_mode !== "manual") {
-          processQueue(activeCampaignId);
-        }
-      };
-
-      // 2s tick — processQueue itself enforces CPS + concurrency caps.
-      dispatchIntervalRef.current = setInterval(checkAndRun, 2000);
+      // No client polling — server handles dispatch.
     }
-
     return () => {
       if (dispatchIntervalRef.current) clearInterval(dispatchIntervalRef.current);
     };
-  }, [viewMode, activeCampaignId, processQueue]);
+  }, [viewMode, activeCampaignId]);
 
   // Realtime: keep the live monitor in sync with Twilio + Bland webhook updates.
   useEffect(() => {
@@ -1239,6 +1250,15 @@ export default function CampaignWizardPage() {
                   </Button>
                 )}
 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={recoverStuckCalls}
+                  disabled={isRecovering}
+                  title="Mark calls stuck > 5 min as failed"
+                >
+                  <Zap className="h-4 w-4 mr-1" /> {isRecovering ? "Recovering…" : "Recover Stuck"}
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries()}>
                   <RotateCcw className="h-4 w-4 mr-1" /> Refresh
                 </Button>
@@ -1301,9 +1321,11 @@ export default function CampaignWizardPage() {
                         const Icon = config.icon;
 
                         return (
-                          <div
+                          <button
+                            type="button"
                             key={item.id}
-                            className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/40 transition-colors"
+                            onClick={() => setTimelineQueueItemId(item.id)}
+                            className="w-full text-left flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/40 transition-colors cursor-pointer"
                           >
                             <div className="flex items-center gap-4 min-w-0">
                               <div className={`p-2 rounded-full bg-muted/50 ${config.color}`}>
@@ -1346,7 +1368,7 @@ export default function CampaignWizardPage() {
                             <Badge variant="outline" className={`${config.color} border-0 bg-transparent`}>
                               {config.label}
                             </Badge>
-                          </div>
+                          </button>
                         );
                       })
                     )}
@@ -2164,6 +2186,11 @@ export default function CampaignWizardPage() {
 
       {/* Bland AI Agent Webhook Directory — appears at very bottom of Campaigns tab */}
       <BlandAgentWebhookDirectory />
+
+      <CallTimelineDrawer
+        queueItemId={timelineQueueItemId}
+        onClose={() => setTimelineQueueItemId(null)}
+      />
     </div>
   );
 }
