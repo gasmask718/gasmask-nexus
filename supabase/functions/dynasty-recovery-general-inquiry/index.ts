@@ -1,28 +1,58 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  drCorsHeaders as corsHeaders,
+  originCheck,
+  isHoneypotTriggered,
+  fakeSuccessResponse,
+  webhookSecretCheck,
+  getClientIp,
+  jsonResponse,
+} from '../_shared/dynastyRecoverySecurity.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-secret',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
+const RATE_LIMIT_PER_IP_PER_HOUR = 5
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    if (req.headers.get('x-webhook-secret') !== Deno.env.get('DYNASTY_RECOVERY_WEBHOOK_SECRET')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+    // Layer 1: Origin
+    const originBlocked = originCheck(req)
+    if (originBlocked) return originBlocked
 
     const formData = await req.json()
+    const ipAddress = getClientIp(req)
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
+
+    // Layer 2: Honeypot
+    if (isHoneypotTriggered(formData)) {
+      console.warn('Bot detected via honeypot from IP:', ipAddress)
+      return fakeSuccessResponse('inquiry')
+    }
+
+    // Layer 3: Rate limit per IP
+    const oneHourAgo = new Date(Date.now() - 3600000).toISOString()
+    const { count: recentCount } = await supabase
+      .from('surplus_funds_inquiries')
+      .select('id', { count: 'exact', head: true })
+      .eq('ip_address', ipAddress)
+      .gte('created_at', oneHourAgo)
+
+    if (recentCount && recentCount >= RATE_LIMIT_PER_IP_PER_HOUR) {
+      console.warn(`Inquiry rate limit exceeded for IP ${ipAddress}: ${recentCount}/hr`)
+      return jsonResponse(
+        { error: 'Too many submissions. Please try again later.' },
+        429,
+      )
+    }
+
+    // Layer 4: Webhook secret
+    const secretBlocked = webhookSecretCheck(req)
+    if (secretBlocked) return secretBlocked
 
     if (!formData.name || !formData.email || !formData.message) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -44,7 +74,7 @@ serve(async (req) => {
         utm_medium: formData.utm_medium,
         utm_campaign: formData.utm_campaign,
         user_agent: req.headers.get('user-agent'),
-        ip_address: req.headers.get('x-forwarded-for')?.split(',')[0],
+        ip_address: ipAddress,
       })
       .select()
       .single()
