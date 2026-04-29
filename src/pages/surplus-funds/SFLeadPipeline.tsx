@@ -226,6 +226,25 @@ export default function SFLeadPipeline() {
         </div>
       </div>
 
+      {/* Today's Website Leads spotlight */}
+      <Card className="border-2" style={{ borderColor: '#0F6E56', background: 'linear-gradient(90deg, hsl(var(--card)), hsl(var(--card)/0.6))' }}>
+        <CardContent className="p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg p-3" style={{ backgroundColor: '#0F6E56' + '20' }}>
+              <Flame className="h-6 w-6" style={{ color: '#0F6E56' }} />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Today's Website Leads</p>
+              <p className="text-3xl font-bold" style={{ color: '#0F6E56' }}>{stats.websiteToday}</p>
+              <p className="text-xs text-muted-foreground">dynastyrecoverygroup.com — live intake</p>
+            </div>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setSourceFilter('dynasty_recovery_website')}>
+            View Website Leads
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatCard label="Total Leads" value={stats.total} icon={List} color="#9ca3af" />
