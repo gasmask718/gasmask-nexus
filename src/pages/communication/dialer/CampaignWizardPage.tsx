@@ -341,6 +341,26 @@ export default function CampaignWizardPage() {
   const [isManualCallModalOpen, setIsManualCallModalOpen] = useState(false);
   const [selectedCampaignIds, setSelectedCampaignIds] = useState<Set<string>>(new Set());
   const [isArchiving, setIsArchiving] = useState(false);
+  const [timelineQueueItemId, setTimelineQueueItemId] = useState<string | null>(null);
+  const [isRecovering, setIsRecovering] = useState(false);
+
+  const recoverStuckCalls = useCallback(async () => {
+    if (!effectiveBizId) return;
+    setIsRecovering(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("recover-dialer", {
+        body: { business_id: effectiveBizId },
+      });
+      if (error) throw error;
+      const recovered = (data as any)?.queue_recovered || 0;
+      toast.success(`Recovered ${recovered} stuck call${recovered === 1 ? "" : "s"}`);
+      queryClient.invalidateQueries({ queryKey: ["campaign-calls"] });
+    } catch (e: any) {
+      toast.error(`Recover failed: ${e.message}`);
+    } finally {
+      setIsRecovering(false);
+    }
+  }, [effectiveBizId, queryClient]);
 
   const [step, setStep] = useState(0);
 
