@@ -276,6 +276,17 @@ export default function SFLeadPipeline() {
             <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue placeholder="State" /></SelectTrigger>
             <SelectContent>{[{ v: 'all', l: 'All States' }, ...states.map(s => ({ v: s, l: s }))].map(o => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}</SelectContent>
           </Select>
+          <Select value={sourceFilter} onValueChange={setSourceFilter}>
+            <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue placeholder="Source" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sources</SelectItem>
+              <SelectItem value="dynasty_recovery_website">⭐ Dynasty Recovery Website</SelectItem>
+              <SelectItem value="scraped">Scraped</SelectItem>
+              <SelectItem value="skip_traced">Skip-traced</SelectItem>
+              <SelectItem value="manual_upload">Manual Upload</SelectItem>
+              <SelectItem value="csv_upload">CSV Upload</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
             <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue placeholder="Sort by" /></SelectTrigger>
             <SelectContent>
