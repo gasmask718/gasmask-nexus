@@ -75,7 +75,18 @@ export function fakeSuccessResponse(messageType: 'lead' | 'application' | 'inqui
 
 export function webhookSecretCheck(req: Request): Response | null {
   const provided = req.headers.get('x-webhook-secret')
-  if (provided !== Deno.env.get('DYNASTY_RECOVERY_WEBHOOK_SECRET')) {
+  const expected = Deno.env.get('DYNASTY_RECOVERY_WEBHOOK_SECRET')
+  // TEMP DEBUG — remove after diagnosis
+  console.log('[DR-DEBUG] Received secret length:', provided?.length)
+  console.log('[DR-DEBUG] Expected secret length:', expected?.length)
+  console.log('[DR-DEBUG] Expected defined:', expected ? 'yes' : 'NO/undefined')
+  console.log('[DR-DEBUG] First 4 received:', provided?.slice(0, 4))
+  console.log('[DR-DEBUG] First 4 expected:', expected?.slice(0, 4))
+  console.log('[DR-DEBUG] Last 4 received:', provided?.slice(-4))
+  console.log('[DR-DEBUG] Last 4 expected:', expected?.slice(-4))
+  console.log('[DR-DEBUG] Match:', provided === expected)
+  console.log('[DR-DEBUG] All header names:', [...req.headers.keys()].join(','))
+  if (provided !== expected) {
     console.warn('Invalid webhook secret')
     return jsonResponse({ error: 'Unauthorized' }, 401)
   }
