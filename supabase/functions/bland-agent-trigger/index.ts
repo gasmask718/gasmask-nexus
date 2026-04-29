@@ -35,9 +35,14 @@ Deno.serve(async (req) => {
     const supabase = svc();
 
     const body = await req.json().catch(() => ({}));
-    let { lead_id, phone_number, agent_type, prompt, voice, queue_item_id, campaign_id } = body ?? {};
+    let {
+      lead_id, phone_number, agent_type, prompt, voice, queue_item_id, campaign_id,
+      bland_agent_row_id, bland_agent_id: explicitBlandAgentId,
+    } = body ?? {};
 
-    if (!agent_type) return json({ error: "agent_type is required" }, 400);
+    if (!agent_type && !bland_agent_row_id && !explicitBlandAgentId) {
+      return json({ error: "agent_type, bland_agent_row_id, or bland_agent_id is required" }, 400);
+    }
 
     if (lead_id && !phone_number) {
       const { data: lead, error } = await supabase
@@ -78,21 +83,42 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Resolve Bland agent record (id + defaults)
-    let blandAgentId: string | null = null;
+    // Resolve Bland agent — PRIORITY ORDER (no silent remapping):
+    //   1. explicit bland_agent_id (string, Bland API id)
+    //   2. bland_agent_row_id (uuid in bland_agent_webhooks) → look up bland_agent_id
+    //   3. agent_type → first active row (legacy fallback only)
+    let blandAgentId: string | null = explicitBlandAgentId || null;
+    let resolvedAgentType: string | null = agent_type || null;
     {
-      const { data: agent } = await supabase
-        .from("bland_agent_webhooks")
-        .select("bland_agent_id, default_prompt, default_voice")
-        .eq("agent_type", agent_type)
-        .eq("is_active", true)
-        .maybeSingle();
-      if (agent) {
-        blandAgentId = (agent as any).bland_agent_id ?? null;
-        if (!prompt) prompt = (agent as any).default_prompt || `You are an AI calling agent for the ${agent_type} workflow.`;
-        voice = voice || (agent as any).default_voice || "maya";
+      if (!blandAgentId && bland_agent_row_id) {
+        const { data: agent } = await supabase
+          .from("bland_agent_webhooks")
+          .select("bland_agent_id, agent_type, default_prompt, default_voice")
+          .eq("id", bland_agent_row_id)
+          .maybeSingle();
+        if (agent) {
+          blandAgentId = (agent as any).bland_agent_id ?? null;
+          resolvedAgentType = (agent as any).agent_type || resolvedAgentType;
+          if (!prompt) prompt = (agent as any).default_prompt || prompt;
+          voice = voice || (agent as any).default_voice || "maya";
+        }
+      }
+      if (!blandAgentId && agent_type) {
+        const { data: agent } = await supabase
+          .from("bland_agent_webhooks")
+          .select("bland_agent_id, agent_type, default_prompt, default_voice")
+          .eq("agent_type", agent_type)
+          .eq("is_active", true)
+          .maybeSingle();
+        if (agent) {
+          blandAgentId = (agent as any).bland_agent_id ?? null;
+          resolvedAgentType = (agent as any).agent_type || resolvedAgentType;
+          if (!prompt) prompt = (agent as any).default_prompt || `You are an AI calling agent for the ${resolvedAgentType} workflow.`;
+          voice = voice || (agent as any).default_voice || "maya";
+        }
       }
     }
+    agent_type = resolvedAgentType || agent_type || "unknown";
 
     // All context propagated to public webhooks (so they can stay stateless).
     const baseUrl = `${SUPABASE_URL}/functions/v1`;
@@ -188,6 +214,39 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString(),
         })
         .eq("id", queue_item_id);
+    }
+
+    // Populate live_calls so the Live Monitor / HUD reflects the call.
+    try {
+      // business_id from queue row when available
+      let businessId: string | null = null;
+      if (queue_item_id) {
+        const { data: q } = await supabase
+          .from("outbound_call_queue")
+          .select("business_id")
+          .eq("id", queue_item_id)
+          .maybeSingle();
+        businessId = (q as any)?.business_id || null;
+      }
+      await supabase.from("live_calls").upsert(
+        {
+          call_sid: callSid,
+          call_session_id,
+          queue_item_id: queue_item_id || null,
+          campaign_id: campaign_id || null,
+          business_id: businessId,
+          phone_number,
+          agent_type,
+          voice_provider: "bland",
+          state: "dialing",
+          source_reason: "campaign",
+          started_at: new Date().toISOString(),
+          metadata: { bland_agent_id: blandAgentId, amd_enabled },
+        },
+        { onConflict: "call_sid" },
+      );
+    } catch (e) {
+      console.error("live_calls upsert failed:", e);
     }
 
     await logEvent({

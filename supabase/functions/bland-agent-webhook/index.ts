@@ -122,12 +122,61 @@ Deno.serve(async (req) => {
     }
 
     if (queue_item_id) {
-      await supabase.from("outbound_call_queue").update({
+      const { error: qErr } = await supabase.from("outbound_call_queue").update({
         bland_call_id: call_id,
         bland_recording_url: recording_url,
         bland_transcript: transcript,
+        ended_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }).eq("id", queue_item_id);
+      if (qErr) {
+        console.error("queue update failed:", qErr);
+        await logEvent({
+          supabase, campaign_id, queue_item_id, call_session_id, call_sid: twilio_call_sid,
+          event_type: "bland.queue_update_error", source: "bland", severity: "error",
+          payload: { message: qErr.message, call_id },
+        });
+      }
+    } else if (twilio_call_sid && call_id) {
+      // Fallback: webhook arrived without metadata.queue_item_id — try to backfill via twilio sid.
+      const { data: q } = await supabase
+        .from("outbound_call_queue")
+        .select("id")
+        .eq("twilio_call_sid", twilio_call_sid)
+        .maybeSingle();
+      if ((q as any)?.id) {
+        await supabase.from("outbound_call_queue").update({
+          bland_call_id: call_id,
+          bland_recording_url: recording_url,
+          bland_transcript: transcript,
+          ended_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq("id", (q as any).id);
+      } else {
+        await logEvent({
+          supabase, call_session_id, call_sid: twilio_call_sid,
+          event_type: "bland.queue_link_missing", source: "bland", severity: "warning",
+          payload: { call_id, reason: "no queue_item_id in metadata, no twilio sid match" },
+        });
+      }
+    }
+
+    // Close the live_calls row so the Live Monitor stops showing it as active.
+    if (twilio_call_sid) {
+      try {
+        await supabase
+          .from("live_calls")
+          .update({
+            state: "completed",
+            ended_at: new Date().toISOString(),
+            recording_url: recording_url || undefined,
+            updated_at: new Date().toISOString(),
+            metadata: { bland_call_id: call_id, has_transcript: !!transcript },
+          })
+          .eq("call_sid", twilio_call_sid);
+      } catch (e) {
+        console.error("live_calls close failed:", e);
+      }
     }
 
     await logEvent({
