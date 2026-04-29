@@ -2186,6 +2186,11 @@ export default function CampaignWizardPage() {
 
       {/* Bland AI Agent Webhook Directory — appears at very bottom of Campaigns tab */}
       <BlandAgentWebhookDirectory />
+
+      <CallTimelineDrawer
+        queueItemId={timelineQueueItemId}
+        onClose={() => setTimelineQueueItemId(null)}
+      />
     </div>
   );
 }
