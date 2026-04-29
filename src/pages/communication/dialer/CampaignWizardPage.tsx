@@ -380,81 +380,131 @@ export default function CampaignWizardPage() {
 
   const dispatchIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Active in-flight calls (used for concurrency cap).
+  const inFlightStates = [
+    "dialing", "ringing", "intro_playing", "awaiting_input",
+    "answered", "connected", "bridging", "bridged", "in_ai_conversation",
+  ];
+
   const processQueue = useCallback(
     async (campaignId: string) => {
-      // Check campaign's dial_mode + provider to choose the right function
+      // Read full dispatcher config in one shot.
       const { data: campData } = await supabase
         .from("dialer_campaigns")
-        .select("dial_mode, agent_id, initial_script, bland_agent_id")
+        .select(
+          "dial_mode, agent_id, initial_script, bland_agent_id, agent_provider, " +
+          "max_concurrent_calls, cps_limit, dispatch_jitter_ms",
+        )
         .eq("id", campaignId)
         .single();
-      const dialMode = (campData as any)?.dial_mode || "ai";
-      const provider = (campData as any)?.agent_provider || "bland";
+      if (!campData) return;
+      const dialMode = (campData as any).dial_mode || "ai";
+      const maxConcurrent = Math.max(1, (campData as any).max_concurrent_calls || 1);
+      const cps = Math.max(1, (campData as any).cps_limit || 2);
+      const jitterMs = Math.max(0, (campData as any).dispatch_jitter_ms || 500);
 
-      const { data: queueItems, error: fetchErr } = await supabase
+      // Concurrency cap: how many calls are currently in-flight?
+      const { count: inFlight } = await supabase
         .from("outbound_call_queue")
-        .select("id, phone_number, contact_name")
+        .select("id", { count: "exact", head: true })
         .eq("campaign_id", campaignId)
-        .eq("status", "queued")
-        .limit(1)
-        .maybeSingle();
+        .in("status", inFlightStates);
+      const slots = Math.max(0, maxConcurrent - (inFlight || 0));
+      if (slots === 0) return;
 
-      if (fetchErr || !queueItems) return;
-      const queueItem = queueItems;
-
-      const { error: updateErr } = await supabase
+      // Throughput cap (CPS): how many calls were dispatched in the last 1s?
+      // We approximate by counting dialing_started_at in the last second.
+      const oneSecAgo = new Date(Date.now() - 1000).toISOString();
+      const { count: lastSec } = await supabase
         .from("outbound_call_queue")
-        .update({
-          status: "dialing",
-          dialing_started_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", queueItem.id)
-        .eq("status", "queued");
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", campaignId)
+        .gte("dialing_started_at", oneSecAgo);
+      const cpsBudget = Math.max(0, cps - (lastSec || 0));
+      const toDispatch = Math.min(slots, cpsBudget);
+      if (toDispatch === 0) return;
 
-      if (updateErr) return toast.error(`Failed to lock call: ${updateErr.message}`);
+      // Pull queued + retry-eligible rows, oldest first.
+      const nowIso = new Date().toISOString();
+      const { data: candidates } = await supabase
+        .from("outbound_call_queue")
+        .select("id, phone_number, contact_name, status, next_retry_at")
+        .eq("campaign_id", campaignId)
+        .in("status", ["queued", "failed_bridge"])
+        .or(`next_retry_at.is.null,next_retry_at.lte.${nowIso}`)
+        .order("priority_score", { ascending: false })
+        .order("created_at", { ascending: true })
+        .limit(toDispatch);
 
-      try {
-        toast.info(`Dialing ${queueItem.contact_name || queueItem.phone_number}...`);
+      if (!candidates || candidates.length === 0) return;
 
-        let response: any;
-        if (dialMode === "manual") {
-          response = await supabase.functions.invoke("twilio-manual-call", {
-            body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
-          });
-        } else {
-          // AI mode → Bland AI
-          // Resolve agent_type from bland_agent_webhooks
-          const blandAgentRowId = (campData as any)?.bland_agent_id || (campData as any)?.agent_id;
-          let agentType = "sales-outreach";
-          if (blandAgentRowId) {
-            const { data: a } = await supabase
-              .from("bland_agent_webhooks" as any)
-              .select("agent_type")
-              .eq("id", blandAgentRowId)
-              .maybeSingle();
-            if (a && (a as any).agent_type) agentType = (a as any).agent_type;
+      // Resolve agent_type once per pass.
+      let agentType = "sales-outreach";
+      if (dialMode !== "manual") {
+        const blandAgentRowId = (campData as any).bland_agent_id || (campData as any).agent_id;
+        if (blandAgentRowId) {
+          const { data: a } = await supabase
+            .from("bland_agent_webhooks" as any)
+            .select("agent_type")
+            .eq("id", blandAgentRowId)
+            .maybeSingle();
+          if (a && (a as any).agent_type) agentType = (a as any).agent_type;
+        }
+      }
+
+      // Dispatch sequentially with jitter so we never burst above CPS.
+      for (const queueItem of candidates) {
+        // Optimistic lock — only succeeds if row is still queued/failed_bridge.
+        const { data: locked, error: updateErr } = await supabase
+          .from("outbound_call_queue")
+          .update({
+            status: "dialing",
+            dialing_started_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", queueItem.id)
+          .in("status", ["queued", "failed_bridge"])
+          .select("id")
+          .maybeSingle();
+        if (updateErr || !locked) continue; // someone else grabbed it
+
+        try {
+          let response: any;
+          if (dialMode === "manual") {
+            response = await supabase.functions.invoke("twilio-manual-call", {
+              body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
+            });
+          } else {
+            response = await supabase.functions.invoke("bland-agent-trigger", {
+              body: {
+                phone_number: queueItem.phone_number,
+                agent_type: agentType,
+                prompt: (campData as any)?.initial_script || undefined,
+                queue_item_id: queueItem.id,
+                campaign_id: campaignId,
+              },
+            });
           }
-          response = await supabase.functions.invoke("bland-agent-trigger", {
-            body: {
-              phone_number: queueItem.phone_number,
-              agent_type: agentType,
-              prompt: (campData as any)?.initial_script || undefined,
-              queue_item_id: queueItem.id,
-              campaign_id: campaignId,
-            },
-          });
+          if (response.error || (response.data && response.data.error)) {
+            throw new Error(response.error?.message || response.data?.error);
+          }
+        } catch (err: any) {
+          console.error("Dispatcher Exception:", err);
+          toast.error(`Call logic failed: ${err.message}`);
+          await supabase
+            .from("outbound_call_queue")
+            .update({
+              status: "failed",
+              last_error_severity: "error",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", queueItem.id);
         }
 
-        if (response.error || (response.data && response.data.error))
-          throw new Error(response.error?.message || response.data?.error);
-      } catch (err: any) {
-        console.error("Dispatcher Exception:", err);
-        toast.error(`Call logic failed: ${err.message}`);
-        await supabase
-          .from("outbound_call_queue")
-          .update({ status: "failed", updated_at: new Date().toISOString() })
-          .eq("id", queueItem.id);
+        // Jitter so we never burst the API.
+        if (jitterMs > 0) {
+          await new Promise((r) => setTimeout(r, jitterMs + Math.random() * jitterMs));
+        }
       }
 
       queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
@@ -466,12 +516,19 @@ export default function CampaignWizardPage() {
   useEffect(() => {
     if (viewMode === "console" && activeCampaignId) {
       const checkAndRun = async () => {
-        const { data } = await supabase.from("dialer_campaigns").select("status, dial_mode").eq("id", activeCampaignId).single();
+        const { data } = await supabase
+          .from("dialer_campaigns")
+          .select("status, dial_mode")
+          .eq("id", activeCampaignId)
+          .single();
         // Only auto-dispatch for AI mode campaigns; manual mode uses the call modal
-        if (data?.status === "active" && (data as any)?.dial_mode !== "manual") processQueue(activeCampaignId);
+        if (data?.status === "active" && (data as any)?.dial_mode !== "manual") {
+          processQueue(activeCampaignId);
+        }
       };
 
-      dispatchIntervalRef.current = setInterval(checkAndRun, 4000);
+      // 2s tick — processQueue itself enforces CPS + concurrency caps.
+      dispatchIntervalRef.current = setInterval(checkAndRun, 2000);
     }
 
     return () => {
