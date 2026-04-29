@@ -269,6 +269,9 @@ verify_jwt = false
 [functions.twilio-call-status]
 verify_jwt = false
 
+[functions.play-twilio-recording]
+verify_jwt = false
+
 [functions.start-call-recording]
 verify_jwt = false
 
