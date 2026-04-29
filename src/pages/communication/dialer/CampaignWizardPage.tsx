@@ -63,6 +63,7 @@ import {
 } from "lucide-react";
 
 import BatchDialerPanel from "@/components/dialer/BatchDialerPanel";
+import { CallTimelineDrawer } from "@/components/dialer/CallTimelineDrawer";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -513,28 +514,18 @@ export default function CampaignWizardPage() {
     [effectiveBizId, queryClient],
   );
 
+  // NOTE (2026-04-29): The browser-side dispatcher loop has been retired.
+  // Dispatching is now driven server-side by the `dispatch-campaign-tick` edge
+  // function, scheduled via pg_cron. This file keeps a no-op effect so realtime
+  // subscriptions still mount when the console opens.
   useEffect(() => {
     if (viewMode === "console" && activeCampaignId) {
-      const checkAndRun = async () => {
-        const { data } = await supabase
-          .from("dialer_campaigns")
-          .select("status, dial_mode")
-          .eq("id", activeCampaignId)
-          .single();
-        // Only auto-dispatch for AI mode campaigns; manual mode uses the call modal
-        if (data?.status === "active" && (data as any)?.dial_mode !== "manual") {
-          processQueue(activeCampaignId);
-        }
-      };
-
-      // 2s tick — processQueue itself enforces CPS + concurrency caps.
-      dispatchIntervalRef.current = setInterval(checkAndRun, 2000);
+      // No client polling — server handles dispatch.
     }
-
     return () => {
       if (dispatchIntervalRef.current) clearInterval(dispatchIntervalRef.current);
     };
-  }, [viewMode, activeCampaignId, processQueue]);
+  }, [viewMode, activeCampaignId]);
 
   // Realtime: keep the live monitor in sync with Twilio + Bland webhook updates.
   useEffect(() => {
