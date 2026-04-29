@@ -151,12 +151,10 @@ Deno.serve(async (req) => {
     form.set("RecordingStatusCallback", recordingUrl);
     form.set("RecordingStatusCallbackMethod", "POST");
 
-    // Answering Machine Detection — non-blocking ("Enable") so the call
-    // proceeds in parallel and the AnsweredBy parameter is delivered in
-    // the status webhook. Blocking AMD ("DetectMessageEnd") would delay
-    // the bridge by 4-6s.
+    // Answering Machine Detection — async (non-blocking) so the dial proceeds
+    // immediately and AnsweredBy is delivered separately to the status webhook.
+    // Blocking modes ("DetectMessageEnd"/"Enable") cannot be combined with AsyncAmd=true.
     if (amd_enabled) {
-      form.set("MachineDetection", "DetectMessageEnd");
       form.set("AsyncAmd", "true");
       form.set("AsyncAmdStatusCallback", statusUrl);
       form.set("AsyncAmdStatusCallbackMethod", "POST");
