@@ -35747,6 +35747,42 @@ export type Database = {
           },
         ]
       }
+      dialer_call_events: {
+        Row: {
+          business_id: string | null
+          call_sid: string | null
+          campaign_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          queue_item_id: string | null
+          source: string
+        }
+        Insert: {
+          business_id?: string | null
+          call_sid?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          queue_item_id?: string | null
+          source?: string
+        }
+        Update: {
+          business_id?: string | null
+          call_sid?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          queue_item_id?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
       dialer_campaigns: {
         Row: {
           agent_id: string | null
@@ -35759,9 +35795,12 @@ export type Database = {
           auto_pause_reason: string | null
           auto_paused: boolean | null
           bland_agent_id: string | null
+          bridge_mode: string
           business_id: string
           campaign_weight: number | null
           completed_calls: number | null
+          confirmation_prompt: string | null
+          confirmation_retries: number
           created_at: string
           description: string | null
           dial_mode: string | null
@@ -35791,9 +35830,12 @@ export type Database = {
           auto_pause_reason?: string | null
           auto_paused?: boolean | null
           bland_agent_id?: string | null
+          bridge_mode?: string
           business_id: string
           campaign_weight?: number | null
           completed_calls?: number | null
+          confirmation_prompt?: string | null
+          confirmation_retries?: number
           created_at?: string
           description?: string | null
           dial_mode?: string | null
@@ -35823,9 +35865,12 @@ export type Database = {
           auto_pause_reason?: string | null
           auto_paused?: boolean | null
           bland_agent_id?: string | null
+          bridge_mode?: string
           business_id?: string
           campaign_weight?: number | null
           completed_calls?: number | null
+          confirmation_prompt?: string | null
+          confirmation_retries?: number
           created_at?: string
           description?: string | null
           dial_mode?: string | null
@@ -59571,16 +59616,23 @@ export type Database = {
           assigned_agent_id: string | null
           assigned_campaign_id: string | null
           attempt_count: number | null
+          bland_call_id: string | null
+          bland_recording_url: string | null
+          bland_transcript: string | null
+          bridged_at: string | null
           business_id: string | null
           campaign_id: string | null
           claim_expires_at: string | null
           claim_token: string | null
           claimed_at: string | null
           claimed_by_user_id: string | null
+          confirmation_method: string | null
+          confirmation_value: string | null
           contact_id: string | null
           contact_name: string | null
           created_at: string
           dialing_started_at: string | null
+          ended_at: string | null
           entity_id: string | null
           entity_type: string | null
           id: string
@@ -59602,16 +59654,23 @@ export type Database = {
           assigned_agent_id?: string | null
           assigned_campaign_id?: string | null
           attempt_count?: number | null
+          bland_call_id?: string | null
+          bland_recording_url?: string | null
+          bland_transcript?: string | null
+          bridged_at?: string | null
           business_id?: string | null
           campaign_id?: string | null
           claim_expires_at?: string | null
           claim_token?: string | null
           claimed_at?: string | null
           claimed_by_user_id?: string | null
+          confirmation_method?: string | null
+          confirmation_value?: string | null
           contact_id?: string | null
           contact_name?: string | null
           created_at?: string
           dialing_started_at?: string | null
+          ended_at?: string | null
           entity_id?: string | null
           entity_type?: string | null
           id?: string
@@ -59633,16 +59692,23 @@ export type Database = {
           assigned_agent_id?: string | null
           assigned_campaign_id?: string | null
           attempt_count?: number | null
+          bland_call_id?: string | null
+          bland_recording_url?: string | null
+          bland_transcript?: string | null
+          bridged_at?: string | null
           business_id?: string | null
           campaign_id?: string | null
           claim_expires_at?: string | null
           claim_token?: string | null
           claimed_at?: string | null
           claimed_by_user_id?: string | null
+          confirmation_method?: string | null
+          confirmation_value?: string | null
           contact_id?: string | null
           contact_name?: string | null
           created_at?: string
           dialing_started_at?: string | null
+          ended_at?: string | null
           entity_id?: string | null
           entity_type?: string | null
           id?: string
@@ -110071,16 +110137,23 @@ export type Database = {
               assigned_agent_id: string | null
               assigned_campaign_id: string | null
               attempt_count: number | null
+              bland_call_id: string | null
+              bland_recording_url: string | null
+              bland_transcript: string | null
+              bridged_at: string | null
               business_id: string | null
               campaign_id: string | null
               claim_expires_at: string | null
               claim_token: string | null
               claimed_at: string | null
               claimed_by_user_id: string | null
+              confirmation_method: string | null
+              confirmation_value: string | null
               contact_id: string | null
               contact_name: string | null
               created_at: string
               dialing_started_at: string | null
+              ended_at: string | null
               entity_id: string | null
               entity_type: string | null
               id: string
@@ -110117,16 +110190,23 @@ export type Database = {
               assigned_agent_id: string | null
               assigned_campaign_id: string | null
               attempt_count: number | null
+              bland_call_id: string | null
+              bland_recording_url: string | null
+              bland_transcript: string | null
+              bridged_at: string | null
               business_id: string | null
               campaign_id: string | null
               claim_expires_at: string | null
               claim_token: string | null
               claimed_at: string | null
               claimed_by_user_id: string | null
+              confirmation_method: string | null
+              confirmation_value: string | null
               contact_id: string | null
               contact_name: string | null
               created_at: string
               dialing_started_at: string | null
+              ended_at: string | null
               entity_id: string | null
               entity_type: string | null
               id: string
