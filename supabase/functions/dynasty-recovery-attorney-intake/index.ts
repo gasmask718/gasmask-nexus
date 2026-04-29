@@ -67,18 +67,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
-      !formData.full_name ||
-      !formData.firm_name ||
-      !formData.bar_admissions ||
-      !formData.bar_number ||
-      !formData.email ||
-      !formData.phone
-    ) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
 
     if (!formData.malpractice_confirmed || !formData.iolta_confirmed) {
       return new Response(
