@@ -1305,15 +1305,41 @@ export default function CampaignWizardPage() {
                             key={item.id}
                             className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/40 transition-colors"
                           >
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4 min-w-0">
                               <div className={`p-2 rounded-full bg-muted/50 ${config.color}`}>
                                 <Icon className="h-4 w-4" />
                               </div>
 
-                              <div>
-                                <p className="font-medium text-sm text-foreground">{item.contact_name || "Unknown"}</p>
-
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm text-foreground truncate">{item.contact_name || "Unknown"}</p>
                                 <p className="text-xs text-muted-foreground font-mono">{item.phone_number}</p>
+                                <div className="flex flex-wrap items-center gap-1 mt-1">
+                                  {(item as any).answered_by && (
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1">
+                                      AMD: {(item as any).answered_by}
+                                    </Badge>
+                                  )}
+                                  {(item as any).confirmation_method && (
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1">
+                                      via {(item as any).confirmation_method}
+                                    </Badge>
+                                  )}
+                                  {(item as any).dial_status && (
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1">
+                                      bridge: {(item as any).dial_status}
+                                    </Badge>
+                                  )}
+                                  {(item as any).bridge_failed_reason && (
+                                    <Badge variant="destructive" className="text-[10px] h-4 px-1">
+                                      {(item as any).bridge_failed_reason}
+                                    </Badge>
+                                  )}
+                                  {((item as any).attempt_count ?? 0) > 1 && (
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1">
+                                      attempt {(item as any).attempt_count}
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                             </div>
 
