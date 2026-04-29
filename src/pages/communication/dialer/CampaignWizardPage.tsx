@@ -456,6 +456,32 @@ export default function CampaignWizardPage() {
     };
   }, [viewMode, activeCampaignId, processQueue]);
 
+  // Realtime: keep the live monitor in sync with Twilio + Bland webhook updates.
+  useEffect(() => {
+    if (viewMode !== "console" || !activeCampaignId) return;
+    const channel = supabase
+      .channel(`campaign-live-${activeCampaignId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "outbound_call_queue", filter: `campaign_id=eq.${activeCampaignId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["campaign-calls", activeCampaignId] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "dialer_call_events", filter: `campaign_id=eq.${activeCampaignId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["campaign-calls", activeCampaignId] });
+          queryClient.invalidateQueries({ queryKey: ["campaign-transcripts", activeCampaignId] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [viewMode, activeCampaignId, queryClient]);
+
   const updateCampaignStatus = async (status: "active" | "paused" | "completed") => {
     if (!activeCampaignId) return;
 
@@ -937,10 +963,10 @@ export default function CampaignWizardPage() {
 
     queued: callItems?.filter((i) => i.status === "queued").length || 0,
 
-    live: callItems?.filter((i) => i.status === "dialing" || i.status === "connected").length || 0,
+    live: callItems?.filter((i) => ["dialing", "connected", "bridged"].includes(i.status)).length || 0,
 
     completed:
-      callItems?.filter((i) => ["completed", "failed", "no_answer", "voicemail"].includes(i.status)).length || 0,
+      callItems?.filter((i) => ["completed", "transferred", "failed", "no_answer", "voicemail", "declined", "no_input"].includes(i.status)).length || 0,
   };
 
   if (viewMode === "console") {

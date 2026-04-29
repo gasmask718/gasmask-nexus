@@ -1,6 +1,17 @@
-// Bland AI outbound call trigger
+// Auto-dialer dispatcher: Twilio-first call with TTS intro + DTMF/speech confirmation.
+// Bland AI is reached via the bridge endpoint after the recipient confirms.
+//
 // POST /functions/v1/bland-agent-trigger
 // Body: { lead_id?, phone_number?, agent_type, prompt?, voice?, queue_item_id?, campaign_id? }
+//
+// Behavior:
+//  1. Resolves phone number from lead_id if needed.
+//  2. Resolves the configured Bland agent_id for the requested agent_type.
+//  3. Places an outbound Twilio call with:
+//       - answer URL  -> /twilio-campaign-twiml  (plays campaign script + Gather)
+//       - status cb   -> /dialer-call-status     (timeline + queue state)
+//       - recording   -> /twilio-recording-callback
+//  4. Persists twilio_call_sid + bland metadata on the queue row immediately.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -11,34 +22,37 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const BLAND_API_KEY = Deno.env.get("BLAND_API_KEY");
-    if (!BLAND_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "BLAND_API_KEY is not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
+    const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
+    const TWILIO_FROM = Deno.env.get("TWILIO_FROM_NUMBER") || Deno.env.get("TWILIO_PHONE_NUMBER");
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM) {
+      return json({ error: "Twilio credentials not configured (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER)" }, 500);
+    }
+    if (!TWILIO_ACCOUNT_SID.startsWith("AC")) {
+      return json({ error: "TWILIO_ACCOUNT_SID must start with 'AC'" }, 500);
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const body = await req.json().catch(() => ({}));
     let { lead_id, phone_number, agent_type, prompt, voice, queue_item_id, campaign_id } = body ?? {};
 
-    if (!agent_type) {
-      return new Response(JSON.stringify({ error: "agent_type is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!agent_type) return json({ error: "agent_type is required" }, 400);
 
-    // Resolve phone & lead from lead_id
+    // Resolve phone number
     if (lead_id && !phone_number) {
       const { data: lead, error } = await supabase
         .from("bland_leads")
@@ -46,23 +60,12 @@ Deno.serve(async (req) => {
         .eq("id", lead_id)
         .maybeSingle();
       if (error) throw error;
-      if (!lead) {
-        return new Response(JSON.stringify({ error: "Lead not found" }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (!lead) return json({ error: "Lead not found" }, 404);
       phone_number = lead.phone_number;
     }
+    if (!phone_number) return json({ error: "phone_number or lead_id required" }, 400);
 
-    if (!phone_number) {
-      return new Response(JSON.stringify({ error: "phone_number or lead_id required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Resolve agent record (bland_agent_id, prompt, voice)
+    // Resolve Bland agent record (id + defaults)
     let blandAgentId: string | null = null;
     {
       const { data: agent } = await supabase
@@ -73,61 +76,92 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (agent) {
         blandAgentId = (agent as any).bland_agent_id ?? null;
-        if (!prompt) prompt = agent.default_prompt || `You are an AI calling agent for the ${agent_type} workflow.`;
-        voice = voice || agent.default_voice || "maya";
+        if (!prompt) prompt = (agent as any).default_prompt || `You are an AI calling agent for the ${agent_type} workflow.`;
+        voice = voice || (agent as any).default_voice || "maya";
       }
     }
 
-    const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/bland-agent-webhook`;
-
-    // If a Bland agent ID is configured, use the agent endpoint (it owns the prompt/voice).
-    // Otherwise fall back to the generic /v1/calls endpoint with task+voice.
-    const useAgent = !!blandAgentId;
-    const blandUrl = useAgent
-      ? `https://api.bland.ai/v1/agents/${blandAgentId}/calls`
-      : "https://api.bland.ai/v1/calls";
-
-    const blandPayload: Record<string, unknown> = useAgent
-      ? {
-          phone_number,
-          webhook: webhookUrl,
-          metadata: { lead_id: lead_id ?? null, agent_type, queue_item_id: queue_item_id ?? null, campaign_id: campaign_id ?? null },
-        }
-      : {
-          phone_number,
-          task: prompt || "You are a friendly AI agent. Greet the lead and qualify their interest.",
-          voice: voice || "maya",
-          webhook: webhookUrl,
-          metadata: { lead_id: lead_id ?? null, agent_type, queue_item_id: queue_item_id ?? null, campaign_id: campaign_id ?? null },
-        };
-
-    const blandRes = await fetch(blandUrl, {
-      method: "POST",
-      headers: {
-        "authorization": BLAND_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(blandPayload),
+    // Build webhook URLs (all public TwiML / status endpoints)
+    const baseUrl = `${SUPABASE_URL}/functions/v1`;
+    const ctxParams = new URLSearchParams({
+      ...(queue_item_id ? { queue_item_id: String(queue_item_id) } : {}),
+      ...(campaign_id ? { campaign_id: String(campaign_id) } : {}),
+      ...(lead_id ? { lead_id: String(lead_id) } : {}),
+      agent_type,
+      ...(blandAgentId ? { bland_agent_id: blandAgentId } : {}),
     });
+    const twimlUrl = `${baseUrl}/twilio-campaign-twiml?${ctxParams.toString()}`;
+    const statusUrl = `${baseUrl}/dialer-call-status?${ctxParams.toString()}`;
+    const recordingUrl = `${baseUrl}/twilio-recording-callback`;
 
-    const blandJson = await blandRes.json().catch(() => ({}));
-    if (!blandRes.ok) {
-      console.error("Bland API error:", blandJson);
-      return new Response(
-        JSON.stringify({ error: "Bland AI call failed", details: blandJson }),
-        { status: blandRes.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    // Place the Twilio outbound call
+    const auth = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
+    const form = new URLSearchParams();
+    form.set("To", phone_number);
+    form.set("From", TWILIO_FROM);
+    form.set("Url", twimlUrl);
+    form.set("Method", "POST");
+    form.set("StatusCallback", statusUrl);
+    form.set("StatusCallbackMethod", "POST");
+    for (const ev of ["initiated", "ringing", "answered", "completed"]) {
+      form.append("StatusCallbackEvent", ev);
+    }
+    form.set("Record", "true");
+    form.set("RecordingChannels", "dual");
+    form.set("RecordingStatusCallback", recordingUrl);
+    form.set("RecordingStatusCallbackMethod", "POST");
+
+    const twilioRes = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${auth}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: form.toString(),
+      },
+    );
+    const twilioJson = await twilioRes.json().catch(() => ({}));
+    if (!twilioRes.ok) {
+      console.error("Twilio call failed:", twilioJson);
+      // surface raw error per zero-silent-failures rule
+      if (queue_item_id) {
+        await supabase
+          .from("outbound_call_queue")
+          .update({ status: "failed", updated_at: new Date().toISOString() })
+          .eq("id", queue_item_id);
+      }
+      return json({ error: "Twilio call failed", details: twilioJson }, twilioRes.status);
     }
 
-    return new Response(
-      JSON.stringify({ ok: true, call_id: blandJson.call_id, status: blandJson.status }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    const callSid: string = twilioJson.sid;
+
+    // Persist call SID on the queue row and log timeline event
+    if (queue_item_id) {
+      await supabase
+        .from("outbound_call_queue")
+        .update({
+          twilio_call_sid: callSid,
+          status: "dialing",
+          dialing_started_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", queue_item_id);
+    }
+
+    await supabase.from("dialer_call_events").insert({
+      campaign_id: campaign_id ?? null,
+      queue_item_id: queue_item_id ?? null,
+      call_sid: callSid,
+      event_type: "dispatch.placed",
+      source: "twilio",
+      payload: { to: phone_number, agent_type, bland_agent_id: blandAgentId, twilio_status: twilioJson.status },
+    });
+
+    return json({ ok: true, twilio_call_sid: callSid, bland_agent_id: blandAgentId });
   } catch (err) {
     console.error("bland-agent-trigger error:", err);
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: (err as Error).message }, 500);
   }
 });
