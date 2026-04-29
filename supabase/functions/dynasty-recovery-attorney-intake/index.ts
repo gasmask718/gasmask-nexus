@@ -1,30 +1,72 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  drCorsHeaders as corsHeaders,
+  originCheck,
+  isHoneypotTriggered,
+  fakeSuccessResponse,
+  webhookSecretCheck,
+  getClientIp,
+  jsonResponse,
+} from '../_shared/dynastyRecoverySecurity.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-secret',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
+const RATE_LIMIT_PER_IP_PER_HOUR = 3
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    if (req.headers.get('x-webhook-secret') !== Deno.env.get('DYNASTY_RECOVERY_WEBHOOK_SECRET')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+    // Layer 1: Origin
+    const originBlocked = originCheck(req)
+    if (originBlocked) return originBlocked
 
     const formData = await req.json()
+    const ipAddress = getClientIp(req)
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // Layer 2: Honeypot
+    if (isHoneypotTriggered(formData)) {
+      console.warn('Bot detected via honeypot from IP:', ipAddress)
+      return fakeSuccessResponse('application')
+    }
+
+    // Layer 3: Rate limit (by website source within 1h, no ip column on attorneys)
+    const oneHourAgo = new Date(Date.now() - 3600000).toISOString()
+    const { count: recentCount } = await supabase
+      .from('surplus_funds_attorneys')
+      .select('id', { count: 'exact', head: true })
+      .eq('application_source', 'dynasty_recovery_website')
+      .gte('created_at', oneHourAgo)
+
+    if (recentCount && recentCount >= RATE_LIMIT_PER_IP_PER_HOUR) {
+      console.warn(`Attorney intake rate limit exceeded: ${recentCount}/hr`)
+      return jsonResponse(
+        { error: 'Too many applications recently. Please try again later.' },
+        429,
+      )
+    }
+
+    // Layer 4: Webhook secret
+    const secretBlocked = webhookSecretCheck(req)
+    if (secretBlocked) return secretBlocked
+
     if (
+      !formData.full_name ||
+      !formData.firm_name ||
+      !formData.bar_admissions ||
+      !formData.bar_number ||
+      !formData.email ||
+      !formData.phone
+    ) {
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
       !formData.full_name ||
       !formData.firm_name ||
       !formData.bar_admissions ||
