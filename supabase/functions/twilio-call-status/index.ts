@@ -181,14 +181,10 @@ const handler = async (req: Request): Promise<Response> => {
               if (logErr) console.error("ai_call_logs insert error:", logErr);
               else console.log(`✅ ai_call_logs created for ${effectiveSid}`);
 
-              // Update call_recordings with transcript flag
+              // Update call_recordings — only columns that exist on the table.
               await supabase
                 .from("call_recordings")
-                .update({
-                  has_transcript: true,
-                  transcript: fullTranscript,
-                  outcome: outcomeRaw,
-                })
+                .update({ has_transcript: true })
                 .eq("provider_call_sid", effectiveSid);
 
               // Sync outcome to dc_leads
