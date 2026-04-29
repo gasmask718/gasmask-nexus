@@ -7,22 +7,32 @@ const corsHeaders = {
 
 /**
  * Manual outbound call for campaign cold calling.
- * No AI, no TTS — just dials the number and connects via Twilio.
- * Records the call and logs transcript via Twilio's recording.
+ * Both sides connect: customer + live agent (PSTN forward).
+ *
+ * Flow:
+ *   1. Build a per-call Conference name.
+ *   2. Dial the CUSTOMER → Twilio joins them into the conference.
+ *   3. Dial the AGENT (forward_phone_e164 from dialer_agent_availability,
+ *      or MANUAL_DIALER_AGENT_PHONE fallback) → joins the same conference.
+ *   4. Conference records both sides with dual channels.
+ *   5. Status callbacks on every leg report into `twilio-call-status`.
  */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
     const body = await req.json();
 
-    const { queue_item_id, business_id } = body;
+    const { queue_item_id, business_id, agent_phone: explicitAgentPhone } = body;
     if (!queue_item_id || !business_id) {
-      return new Response(JSON.stringify({ error: "Missing IDs", hint: "Provide queue_item_id and business_id" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Missing IDs", hint: "Provide queue_item_id and business_id" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const { data: item, error: itemErr } = await supabase
@@ -30,57 +40,154 @@ Deno.serve(async (req) => {
       .select("id, status, phone_number, store_id, contact_name, business_id, campaign_id")
       .eq("id", queue_item_id)
       .single();
-
     if (itemErr || !item) throw new Error("Queue item not found");
 
     const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
     const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const FROM_NUMBER = Deno.env.get("TWILIO_PHONE_NUMBER") || Deno.env.get("TWILIO_FROM_NUMBER") || "+18776818621";
+    const FROM_NUMBER =
+      Deno.env.get("TWILIO_PHONE_NUMBER") ||
+      Deno.env.get("TWILIO_FROM_NUMBER") ||
+      "+18776818621";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
-    const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-call-status`;
+    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
+      throw new Error("Twilio credentials not configured");
+    }
 
-    // Simple TwiML — just connect the call, no gather, no AI
-    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+    // ── Resolve which agent to bridge in ─────────────────────────────
+    let agentPhone: string | null = explicitAgentPhone || null;
+    if (!agentPhone) {
+      const { data: agent } = await supabase
+        .from("dialer_agent_availability")
+        .select("forward_phone_e164, status")
+        .eq("business_id", business_id)
+        .eq("status", "available")
+        .not("forward_phone_e164", "is", null)
+        .order("last_ready_at", { ascending: true, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+      agentPhone = (agent as any)?.forward_phone_e164 || null;
+    }
+    if (!agentPhone) {
+      agentPhone = Deno.env.get("MANUAL_DIALER_AGENT_PHONE") || null;
+    }
+    if (!agentPhone) {
+      await supabase
+        .from("outbound_call_queue")
+        .update({
+          status: "failed",
+          last_error_severity: "error",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", queue_item_id);
+      return new Response(
+        JSON.stringify({
+          error:
+            "No agent available. Set forward_phone_e164 on an available dialer_agent_availability row, or configure MANUAL_DIALER_AGENT_PHONE secret.",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-call-status`;
+    const conferenceName = `dialer_${queue_item_id}`;
+
+    const twilioBaseUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`;
+    const authHeader = "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
+
+    // Helper to launch one leg (returns { sid })
+    const launchLeg = async (params: {
+      to: string;
+      twiml: string;
+      label: string;
+    }) => {
+      const p = new URLSearchParams();
+      p.append("To", params.to);
+      p.append("From", FROM_NUMBER);
+      p.append("Twiml", params.twiml);
+      p.append("StatusCallback", statusCallbackUrl);
+      p.append("StatusCallbackMethod", "POST");
+      p.append("StatusCallbackEvent", "initiated");
+      p.append("StatusCallbackEvent", "ringing");
+      p.append("StatusCallbackEvent", "answered");
+      p.append("StatusCallbackEvent", "completed");
+
+      const res = await fetch(twilioBaseUrl, {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: p.toString(),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(`Twilio ${params.label} leg failed: ${JSON.stringify(data)}`);
+      }
+      return data;
+    };
+
+    // Customer leg: short greeting, then join conference (start when agent joins).
+    const customerTwiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Joanna" language="en-US">Connecting your call now.</Say>
-  <Dial record="record-from-answer-dual" recordingStatusCallback="${supabaseUrl}/functions/v1/twilio-call-status">
-    <Number>${item.phone_number}</Number>
+  <Say voice="Polly.Joanna" language="en-US">Please hold while we connect your call.</Say>
+  <Dial>
+    <Conference startConferenceOnEnter="false"
+                endConferenceOnExit="true"
+                record="record-from-start"
+                recordingStatusCallback="${statusCallbackUrl}"
+                recordingStatusCallbackEvent="completed"
+                waitUrl="">${conferenceName}</Conference>
   </Dial>
 </Response>`;
 
-    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`;
-    const authHeader = "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
-    const params = new URLSearchParams();
+    // Agent leg: short whisper, then join conference (start it).
+    const agentTwiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="Polly.Joanna" language="en-US">Connecting you to ${escapeXml(item.contact_name || item.phone_number || "the prospect")}.</Say>
+  <Dial>
+    <Conference startConferenceOnEnter="true"
+                endConferenceOnExit="true"
+                waitUrl="">${conferenceName}</Conference>
+  </Dial>
+</Response>`;
 
-    params.append("To", item.phone_number);
-    params.append("From", FROM_NUMBER);
-    params.append("Twiml", twiml);
-    params.append("StatusCallback", statusCallbackUrl);
-    params.append("StatusCallbackMethod", "POST");
-    params.append("StatusCallbackEvent", "initiated");
-    params.append("StatusCallbackEvent", "ringing");
-    params.append("StatusCallbackEvent", "answered");
-    params.append("StatusCallbackEvent", "completed");
-    params.append("Record", "true");
-
-    const twilioRes = await fetch(twilioUrl, {
-      method: "POST",
-      headers: { Authorization: authHeader, "Content-Type": "application/x-www-form-urlencoded" },
-      body: params.toString(),
+    // Launch customer first so they're already in the conference when agent picks up.
+    const customerCall = await launchLeg({
+      to: item.phone_number,
+      twiml: customerTwiml,
+      label: "customer",
     });
 
-    const twilioData = await twilioRes.json();
-
-    if (!twilioRes.ok) {
-      await supabase.from("outbound_call_queue").update({ status: "failed" }).eq("id", queue_item_id);
-      return new Response(JSON.stringify({ error: twilioData }), { status: 500, headers: corsHeaders });
+    let agentCall: any = null;
+    try {
+      agentCall = await launchLeg({
+        to: agentPhone,
+        twiml: agentTwiml,
+        label: "agent",
+      });
+    } catch (e) {
+      // If we can't reach the agent, hang up the customer leg gracefully.
+      try {
+        await fetch(
+          `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls/${customerCall.sid}.json`,
+          {
+            method: "POST",
+            headers: { Authorization: authHeader, "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ Status: "completed" }).toString(),
+          },
+        );
+      } catch (_) { /* ignore */ }
+      throw e;
     }
+
+    const customerSid = customerCall.sid.trim();
+    const agentSid = agentCall.sid.trim();
 
     await supabase
       .from("outbound_call_queue")
       .update({
-        twilio_call_sid: twilioData.sid.trim(),
+        twilio_call_sid: customerSid,
         status: "dialing",
         dialing_started_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -89,8 +196,8 @@ Deno.serve(async (req) => {
 
     await supabase.from("call_recordings").upsert(
       {
-        provider_call_sid: twilioData.sid.trim(),
-        business_id: business_id,
+        provider_call_sid: customerSid,
+        business_id,
         direction: "outbound",
         status: "initiated",
         from_number: FROM_NUMBER,
@@ -100,9 +207,32 @@ Deno.serve(async (req) => {
       { onConflict: "provider_call_sid" },
     );
 
-    return new Response(JSON.stringify({ success: true, call_sid: twilioData.sid.trim(), mode: "manual" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        mode: "manual",
+        conference: conferenceName,
+        customer_call_sid: customerSid,
+        agent_call_sid: agentSid,
+        agent_phone: agentPhone,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    return new Response(JSON.stringify({ error: message }), { status: 500, headers: corsHeaders });
+    console.error("[twilio-manual-call] error:", message);
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
+
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
