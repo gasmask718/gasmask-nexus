@@ -111,20 +111,36 @@ interface CallItem {
   status:
     | "queued"
     | "dialing"
+    | "ringing"
+    | "intro_playing"
+    | "awaiting_input"
+    | "answered"
     | "connected"
-    | "completed"
-    | "failed"
-    | "no_answer"
     | "voicemail"
-    | "transferred"
+    | "voicemail_detected"
+    | "voicemail_left"
+    | "no_answer"
+    | "no_input"
+    | "declined"
+    | "bridging"
     | "bridged"
-    | "bridging";
+    | "in_ai_conversation"
+    | "transferred"
+    | "failed_bridge"
+    | "failed"
+    | "completed";
 
   duration?: number;
 
   transcript?: string;
 
   updated_at: string;
+
+  answered_by?: string | null;
+  confirmation_method?: string | null;
+  dial_status?: string | null;
+  bridge_failed_reason?: string | null;
+  attempt_count?: number | null;
 }
 
 // Bland AI agents are fetched from DB — see useQuery below
@@ -242,17 +258,24 @@ const AUDIENCE_TYPE_CONFIG: Record<
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   queued: { label: "Queued", color: "bg-muted text-muted-foreground", icon: Clock },
   dialing: { label: "Dialing", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400", icon: Phone },
+  ringing: { label: "Ringing", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400", icon: Phone },
+  intro_playing: { label: "Intro", color: "bg-indigo-500/15 text-indigo-600", icon: MessageSquare },
+  awaiting_input: { label: "Awaiting Input", color: "bg-amber-500/15 text-amber-600", icon: Clock },
+  answered: { label: "Answered", color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: Phone },
   connected: { label: "Live", color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: Bot },
+  bridging: { label: "Bridging…", color: "bg-purple-500/15 text-purple-600", icon: PhoneForwarded },
   bridged: { label: "Connected", color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: PhoneForwarded },
-  completed: { label: "Completed", color: "bg-green-500/10 text-green-600 dark:text-green-500", icon: CheckCircle2 },
-
+  in_ai_conversation: { label: "AI Active", color: "bg-emerald-500/15 text-emerald-600", icon: Bot },
   transferred: { label: "Transferred", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400", icon: PhoneForwarded },
-
+  completed: { label: "Completed", color: "bg-green-500/10 text-green-600 dark:text-green-500", icon: CheckCircle2 },
+  declined: { label: "Declined", color: "bg-orange-500/15 text-orange-600", icon: XCircle },
+  no_input: { label: "No Input", color: "bg-amber-500/15 text-amber-600", icon: XCircle },
   no_answer: { label: "No Answer", color: "bg-amber-500/15 text-amber-600", icon: XCircle },
-
-  failed: { label: "Failed", color: "bg-destructive/15 text-destructive", icon: XCircle },
-
   voicemail: { label: "Voicemail", color: "bg-orange-500/15 text-orange-600", icon: Mic },
+  voicemail_detected: { label: "Voicemail (detected)", color: "bg-orange-500/15 text-orange-600", icon: Mic },
+  voicemail_left: { label: "Voicemail Left", color: "bg-orange-500/15 text-orange-600", icon: Mic },
+  failed_bridge: { label: "Bridge Failed", color: "bg-destructive/15 text-destructive", icon: XCircle },
+  failed: { label: "Failed", color: "bg-destructive/15 text-destructive", icon: XCircle },
 };
 
 const STEPS = [
