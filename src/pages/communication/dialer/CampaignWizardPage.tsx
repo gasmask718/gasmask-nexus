@@ -937,10 +937,10 @@ export default function CampaignWizardPage() {
 
     queued: callItems?.filter((i) => i.status === "queued").length || 0,
 
-    live: callItems?.filter((i) => i.status === "dialing" || i.status === "connected").length || 0,
+    live: callItems?.filter((i) => ["dialing", "connected", "bridged"].includes(i.status)).length || 0,
 
     completed:
-      callItems?.filter((i) => ["completed", "failed", "no_answer", "voicemail"].includes(i.status)).length || 0,
+      callItems?.filter((i) => ["completed", "transferred", "failed", "no_answer", "voicemail", "declined", "no_input"].includes(i.status)).length || 0,
   };
 
   if (viewMode === "console") {
