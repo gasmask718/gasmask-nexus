@@ -952,7 +952,7 @@ export default function CampaignWizardPage() {
       if (callSids.length === 0) return [];
       const { data } = await supabase
         .from("call_recordings")
-        .select("provider_call_sid, recording_url, recording_duration, status, has_transcript, outcome, transcript, elevenlabs_conversation_id")
+        .select("provider_call_sid, recording_url, recording_duration, status, has_transcript, elevenlabs_conversation_id")
         .in("provider_call_sid", callSids);
       return data || [];
     },
