@@ -1,91 +1,153 @@
-## Goal
-On `/communication/auto-dialer` → **Campaigns** tab, replace the ElevenLabs agent picker and outbound call pipeline with **Bland AI agents**, while preserving identical UX (script templates → agent → call queue → recordings/transcripts). Add an **Agent Webhook Directory** at the bottom of the campaigns view, plus the requested DB tables and Bland edge functions.
+# Auto-Dialer + Bland AI: Production-Grade Call Flow Rebuild
 
-## Note on stack
-This project is **React + Vite + Supabase**, not Next.js. The "API routes" requested will be implemented as **Supabase Edge Functions** (the Lovable equivalent), reachable via `supabase.functions.invoke()`. Functionally identical to the requested Next routes.
+## Current state (verified)
 
----
+- Page `/communication/auto-dialer` → Campaigns tab → `CampaignWizardPage.tsx` dispatcher.
+- Today the dispatcher takes a queue item and **calls Bland AI directly** (`bland-agent-trigger` → `https://api.bland.ai/v1/agents/{id}/calls`). Bland uses its own carrier; Twilio is not invoked first, no TTS intro is played, and no DTMF/speech confirmation gates the AI handoff.
+- Recording / transcript persistence relies only on Bland's post-call webhook (`bland-agent-webhook`) writing to `bland_call_logs`. There is **no Twilio recording leg**, no live status timeline, and the dashboard's "Live Calls" stat just counts queue rows in `dialing`/`connected` states.
+- Existing reusable infra: `twilio-outbound-call`, `twilio-voice-twiml`, `twilio-gather-webhook`, `twilio-status-webhook`, `twilio-recording-callback`, `twilio-transfer-choice-webhook`, `dialer-bridge-agent`, plus tables `outbound_call_queue`, `dialer_campaigns`, `bland_leads`, `bland_call_logs`, `bland_agent_webhooks`, `live_call_transcripts`, `call_recordings`.
 
-## 1. Database changes (migration)
+## Target call lifecycle
 
-Three new tables (named with a `bland_` prefix to follow the project's table-isolation rule, while still aliasing the requested logical names):
+```text
+Campaign launched
+        │
+        ▼
+Dispatcher picks queue row → status=dialing
+        │
+        ▼
+Twilio outbound call placed (record=true, dual_channel)
+   • answer_url → /twilio-campaign-twiml  (TTS the campaign script)
+   • status_callback → /twilio-status-webhook
+   • recording_callback → /twilio-recording-callback
+        │
+        ▼
+Recipient answers → Twilio plays <Say> script
+        │
+        ▼
+<Gather input="dtmf speech" timeout=6 numDigits=1
+        speechTimeout="auto" hints="yes,sure,okay,one">
+   Press 1 (or say "yes") to speak with our specialist…
+        │
+   ┌────┴────┐
+   │         │
+ Confirmed   No / invalid / timeout
+   │         │
+   ▼         ▼
+Transfer    Retry prompt once → polite goodbye → hangup
+to Bland    queue row status=declined / no_input
+   │
+   ▼
+/twilio-bridge-to-bland generates TwiML <Dial><Number>
+that calls a Bland phone or initiates a Bland call_id
+seamlessly (recording continues; statusCallback retained)
+   │
+   ▼
+Bland AI agent takes over the conversation
+   │
+   ▼
+Bland posts post-call webhook → bland-agent-webhook
+   • Writes transcript + recording_url to bland_call_logs
+   • Updates lead status from outcome
+Twilio status webhook → marks queue row completed/failed
+Twilio recording webhook → stores raw audio in call_recordings
+```
 
-- **`bland_leads`** — `id uuid pk`, `business_id uuid`, `name text`, `phone_number text not null`, `status text` (check: `new|interested|callback|not-interested`), `pain_points text`, `created_at timestamptz default now()`.
-- **`bland_call_logs`** — `id uuid pk`, `lead_id uuid fk → bland_leads(id) on delete cascade`, `agent_type text`, `call_id text` (Bland call id), `transcript text`, `recording_url text`, `call_outcome text`, `raw_payload jsonb`, `created_at timestamptz default now()`.
-- **`bland_agent_webhooks`** — `id uuid pk`, `agent_name text not null`, `agent_type text`, `webhook_url text not null`, `is_active boolean default true`, `created_at timestamptz default now()`.
+## Workstreams
 
-RLS: enable on all three. Authenticated users `select/insert/update`. Service role full access (used by edge functions and Bland webhook).
+### 1. New Twilio-first dispatcher
 
-Seed `bland_agent_webhooks` with the four agents the user listed:
-- Sales-Outreach
-- Follow-up Call
-- Reactivation / Win-back
-- Inventory Check
+- **Edit `bland-agent-trigger`** (or add new `campaign-dial-start`): instead of POSTing to Bland, place an outbound Twilio call via the gateway with:
+  - `Url` = `…/twilio-campaign-twiml?queue_item_id=…&campaign_id=…`
+  - `StatusCallback` = `…/twilio-status-webhook` (events: initiated, ringing, answered, completed)
+  - `Record=true`, `RecordingChannels=dual`, `RecordingStatusCallback=…/twilio-recording-callback`
+  - `MachineDetection=Enable` for AMD when campaign opts in
+- Persist `twilio_call_sid` on the queue row immediately for live tracking.
 
-Each row's `webhook_url` is auto-set to the deployed `bland-agent-webhook` edge function URL.
+### 2. New edge function `twilio-campaign-twiml`
 
-Add `bland_agent_id text` and `agent_provider text default 'elevenlabs'` columns to `dialer_campaigns` so Bland-routed campaigns are tagged.
+- Public TwiML endpoint. Loads campaign by id, returns:
+  - `<Say voice="Polly.Joanna">{initial_script}</Say>`
+  - `<Gather input="dtmf speech" numDigits="1" timeout="6" speechTimeout="auto" hints="yes,sure,okay,interested,one" action="…/twilio-campaign-confirm?queue_item_id=…&campaign_id=…" method="POST">`
+    - inner `<Say>` confirmation prompt
+  - Fallback `<Say>` + `<Hangup/>` if no input.
 
-## 2. Edge functions (Supabase, replace the requested Next routes)
+### 3. New edge function `twilio-campaign-confirm`
 
-### `bland-agent-trigger`  (replaces `/api/agent/trigger`)
-- Input: `{ lead_id, agent_type, prompt?, voice? }` (also accepts `phone_number` directly for ad-hoc calls from the queue dispatcher).
-- Reads `BLAND_API_KEY` from secrets; returns 500 with clean error if missing.
-- Looks up phone in `bland_leads` when `lead_id` provided.
-- POSTs to `https://api.bland.ai/v1/calls` with `{ phone_number, task: prompt, voice: voice||'maya', metadata: { lead_id, agent_type } }` and `authorization: <key>` header.
-- Returns the Bland `call_id` to caller.
+- Receives Twilio's Gather POST (`Digits`, `SpeechResult`, `Confidence`).
+- Decision logic:
+  - Digit `1` OR speech intent ∈ {yes, sure, okay, yeah, interested, please} → return TwiML that invokes `twilio-bridge-to-bland`.
+  - Digit `2`/no/negative → polite `<Say>` + `<Hangup/>`, mark queue row `declined`.
+  - Empty / low confidence → re-prompt once via re-`<Gather>`; second miss → `no_input` + hangup.
+- Logs each decision into `live_call_transcripts` (speaker `system`) for the dashboard timeline.
 
-### `bland-agent-webhook`  (replaces `/api/agent/webhook`)
-- Public endpoint (`verify_jwt = false`) so Bland can hit it.
-- Parses the post-call payload: `call_id`, `variables.phone_number`, `transcript`, `recording_url`, `call_outcome`, `metadata.lead_id`.
-- If `lead_id` (or matched by `phone_number`) → updates `bland_leads.status` based on `call_outcome` (mapping: `interested → interested`, `callback → callback`, `not-interested → not-interested`, default keeps current).
-- Inserts a row into `bland_call_logs` with transcript, recording_url, call_id, agent_type, raw payload.
-- Returns `{ ok: true }`.
+### 4. New edge function `twilio-bridge-to-bland`
 
-Secret needed: **`BLAND_API_KEY`** (will be added via add_secret using the value the user supplied).
+Two supported modes (campaign-configurable, default mode A):
 
-## 3. Campaigns tab UI changes (`CampaignWizardPage.tsx`)
+- **Mode A — Bland inbound number (recommended, zero-drop):**
+  - Returns TwiML `<Dial record="record-from-answer-dual" recordingStatusCallback="…/twilio-recording-callback"><Number statusCallbackEvent="answered completed" sendDigits="…">{BLAND_INBOUND_NUMBER}</Number></Dial>`
+  - Bland answers with the configured agent. Continuous recording + same Twilio call leg = no perceptible drop.
+  - Requires one new secret: `BLAND_INBOUND_NUMBER` (Bland-provisioned DID tied to the right agent). We'll request it via `add_secret` before deploying.
+- **Mode B — Bland API outbound (fallback):**
+  - Calls `https://api.bland.ai/v1/agents/{bland_agent_id}/calls` with the **same** recipient number, plays a brief `<Say>"Connecting you now…"</Say>` then `<Hangup/>` on the Twilio leg. Used only if Mode A unavailable. Notes the gap clearly in logs.
 
-Inside the existing **Campaigns** tab — no layout/UX rewrite, only the agent layer swapped:
+### 5. Recording + transcription wiring
 
-- Replace the `elevenlabs_agents` query with a `bland_agent_webhooks` query (active only).
-- Rewrite `SCRIPT_TEMPLATES` so each template maps to a Bland agent **type** (`sales-outreach`, `follow-up`, `reactivation`, `inventory-check`) instead of an ElevenLabs `agentId`.
-- The agent dropdown (Step 4: Script & AI) now lists Bland agents from `bland_agent_webhooks`. Selecting one stores `agent_type` + agent row id into `form.agent_id` and tags the campaign with `agent_provider='bland'`.
-- Queue dispatcher (`processQueue`): when the campaign's `agent_provider='bland'`, invoke the new `bland-agent-trigger` function instead of `twilio-outbound-call`. Existing ElevenLabs/Twilio path stays intact for legacy campaigns (zero-disruption switch).
-- Recordings/transcripts panel keeps reading from `bland_call_logs` joined by `call_id` so they show up the same way.
+- Twilio side: ensure `twilio-recording-callback` upserts into `call_recordings` keyed by `provider_call_sid`, links to the queue row, and stores `recording_url`.
+- Bland side: keep `bland-agent-webhook`. Extend it to:
+  - Look up the queue row by `metadata.queue_item_id` and write `bland_call_id`, `transcript`, `recording_url` to `outbound_call_queue` (new columns) and to `bland_call_logs`.
+  - Write per-utterance lines into `live_call_transcripts` for unified display.
+- Twilio's `<Gather>` speech intent + system events also go into `live_call_transcripts` so the Campaigns tab transcript panel shows the full timeline (intro → confirmation → AI conversation).
 
-## 4. Agent Webhook Directory (bottom of Campaigns tab)
+### 6. Status timeline (real-time dashboard)
 
-New section appended **at the very end** of the Campaigns tab (below all existing tables):
+- `twilio-status-webhook` maps Twilio call events → `outbound_call_queue.status`:
+  - `initiated`/`ringing` → `dialing`
+  - `in-progress` → `connected`
+  - `completed` (post-bridge) → `transferred` if Bland confirmed engagement, else `completed`
+  - `busy`/`failed`/`no-answer` → corresponding queue states
+- Append rows to a new lightweight log table `dialer_call_events` (call_sid, event, payload, ts) so the Live Monitor can render a true status timeline. Table created via migration with RLS scoped to `business_id`.
 
-- Heading "Agent Webhook Directory" with a refresh button.
-- Grid of cards (responsive, 2-up on desktop) — one per row of `bland_agent_webhooks`:
-  - Agent Name
-  - Agent Type pill
-  - Webhook Endpoint URL with copy-to-clipboard button
-  - Active / Inactive badge (green / muted) with toggle
-  - Created date
-- Empty-state message if no rows.
+### 7. Campaigns tab UI fixes
 
-## 5. Files
+In `CampaignWizardPage.tsx`:
 
-**Created**
-- `supabase/migrations/<ts>_bland_ai_agents.sql` — 3 tables + RLS + seed + `dialer_campaigns` columns.
-- `supabase/functions/bland-agent-trigger/index.ts`
-- `supabase/functions/bland-agent-webhook/index.ts`
-- `src/components/communication/BlandAgentWebhookDirectory.tsx`
+- **Live Monitor card**: subscribe via Supabase Realtime to `outbound_call_queue` and `dialer_call_events` filtered by `campaign_id`. Render columns: contact, status badge (animated for `dialing`/`ringing`/`connected`/`bridged`), elapsed timer, current step (Intro / Awaiting confirm / Bridged to AI / Wrap-up).
+- **Active engagement counter** = Twilio sids in `connected` or `bridged` state (not just queue rows).
+- **Logs tab**: render unified timeline per call using `dialer_call_events` + `live_call_transcripts` + Bland transcript. Show DTMF / speech captured, transfer event, and any errors with raw Twilio/Bland error codes (zero silent failures rule).
+- **Recording column**: link Twilio `recording_url` AND Bland `recording_url` separately when both exist.
+- Fix the existing transcript fetch (currently keyed only on Twilio sids) to also union Bland transcripts via `bland_call_logs.lead_id`.
 
-**Edited**
-- `src/pages/communication/dialer/CampaignWizardPage.tsx` — swap agents source, rewrite `SCRIPT_TEMPLATES`, update dispatcher branch, mount `<BlandAgentWebhookDirectory />` at the bottom.
-- `supabase/config.toml` — add `[functions.bland-agent-webhook] verify_jwt = false`.
+### 8. Reliability + fallbacks
 
-## 6. Secrets
+- Retry policy on queue row: `max_attempts` honored on Twilio failure (`failed`, `no-answer`, `busy`) using `next_retry_at = now() + retry_backoff_minutes`.
+- Idempotency: `twilio-campaign-confirm` and webhooks key on `CallSid`; duplicate Twilio retries don't double-bridge.
+- Concurrency cap: dispatcher respects `max_concurrent_calls` per campaign by counting `dialing|connected|bridged` queue rows before placing the next call.
+- Auth: webhooks remain public (Twilio/Bland post unauthenticated) but validate Twilio signatures using `TWILIO_AUTH_TOKEN` and Bland via shared secret in metadata.
 
-Add **`BLAND_API_KEY`** (value provided in this message) via the secret tool before deploying functions.
+### 9. Database changes (single migration)
 
-## Acceptance
-- Campaigns tab agent dropdown lists the 4 Bland agents.
-- Picking a template auto-selects the corresponding Bland agent and pre-fills script.
-- Launching a Bland-tagged campaign calls `bland-agent-trigger` → Bland places the call.
-- Bland's post-call webhook updates `bland_leads.status` and writes a `bland_call_logs` row.
-- A clear "Agent Webhook Directory" grid is visible at the very bottom of the Campaigns tab listing all 4 agents with their webhook URLs and active status.
+- `outbound_call_queue`: add `bland_call_id text`, `bland_recording_url text`, `bland_transcript text`, `confirmation_method text`, `confirmation_value text`, `bridged_at timestamptz`, `ended_at timestamptz`. Extend allowed `status` values via trigger (no CHECK constraint per project rule): `declined`, `no_input`, `bridged`, `transferred`.
+- New table `dialer_call_events` (id, business_id, campaign_id, queue_item_id, call_sid, event_type, payload jsonb, created_at) with RLS by business and a composite index on (campaign_id, created_at desc). Added to `supabase_realtime` publication.
+- `dialer_campaigns`: add `bridge_mode text default 'bland_did'` (`bland_did` | `bland_api`), `confirmation_prompt text`, `confirmation_retries int default 1`.
+
+### 10. Secrets / config
+
+- Already present: `BLAND_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, agent IDs.
+- **Need to add** (will request via `add_secret` before deploying Mode A):
+  - `BLAND_INBOUND_NUMBER` — Bland-provisioned DID that routes to the desired campaign agent.
+- `supabase/config.toml`: declare the new public webhooks (`twilio-campaign-twiml`, `twilio-campaign-confirm`, `twilio-bridge-to-bland`) with `verify_jwt = false` so Twilio can hit them.
+
+### 11. Verification checklist (post-build)
+
+- Place a test call to a real number from the Campaigns tab; confirm: TTS intro plays → DTMF `1` confirmation → audible bridge to Bland agent without drop → recording downloadable → transcript visible in dashboard within ~5s of hangup.
+- Negative path: press `2` → polite goodbye, queue row `declined`, no Bland call started.
+- Timeout path: stay silent → reprompt → silence → `no_input`, hangup, retry scheduled per `max_attempts`.
+- Realtime: open the dashboard in two windows and confirm status badges update live without manual refresh.
+
+## Out of scope
+
+- Replacing ElevenLabs in any other surface (Brandaro VA, DC, etc.).
+- Changing the manual (human) dial mode — that path keeps using `twilio-manual-call` unchanged.
+- Migrating historical Bland calls into the new event timeline.
