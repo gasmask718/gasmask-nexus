@@ -53467,7 +53467,9 @@ export type Database = {
           agent_type: string
           answered_at: string | null
           business_id: string | null
+          call_session_id: string | null
           call_sid: string | null
+          campaign_id: string | null
           created_at: string
           duration_seconds: number | null
           ended_at: string | null
@@ -53475,6 +53477,7 @@ export type Database = {
           id: string
           metadata: Json | null
           phone_number: string | null
+          queue_item_id: string | null
           recording_sid: string | null
           recording_url: string | null
           run_id: string | null
@@ -53489,7 +53492,9 @@ export type Database = {
           agent_type?: string
           answered_at?: string | null
           business_id?: string | null
+          call_session_id?: string | null
           call_sid?: string | null
+          campaign_id?: string | null
           created_at?: string
           duration_seconds?: number | null
           ended_at?: string | null
@@ -53497,6 +53502,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           phone_number?: string | null
+          queue_item_id?: string | null
           recording_sid?: string | null
           recording_url?: string | null
           run_id?: string | null
@@ -53511,7 +53517,9 @@ export type Database = {
           agent_type?: string
           answered_at?: string | null
           business_id?: string | null
+          call_session_id?: string | null
           call_sid?: string | null
+          campaign_id?: string | null
           created_at?: string
           duration_seconds?: number | null
           ended_at?: string | null
@@ -53519,6 +53527,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           phone_number?: string | null
+          queue_item_id?: string | null
           recording_sid?: string | null
           recording_url?: string | null
           run_id?: string | null
@@ -59681,6 +59690,7 @@ export type Database = {
           assigned_campaign_id: string | null
           attempt_count: number | null
           bland_call_id: string | null
+          bland_call_id_missing_logged_at: string | null
           bland_recording_url: string | null
           bland_transcript: string | null
           bridge_attempted_at: string | null
@@ -59726,6 +59736,7 @@ export type Database = {
           assigned_campaign_id?: string | null
           attempt_count?: number | null
           bland_call_id?: string | null
+          bland_call_id_missing_logged_at?: string | null
           bland_recording_url?: string | null
           bland_transcript?: string | null
           bridge_attempted_at?: string | null
@@ -59771,6 +59782,7 @@ export type Database = {
           assigned_campaign_id?: string | null
           attempt_count?: number | null
           bland_call_id?: string | null
+          bland_call_id_missing_logged_at?: string | null
           bland_recording_url?: string | null
           bland_transcript?: string | null
           bridge_attempted_at?: string | null
@@ -110376,6 +110388,61 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_dialer_queue_items: {
+        Args: { p_campaign_id: string; p_limit: number }
+        Returns: {
+          answered_at: string | null
+          answered_by: string | null
+          assigned_agent_id: string | null
+          assigned_campaign_id: string | null
+          attempt_count: number | null
+          bland_call_id: string | null
+          bland_call_id_missing_logged_at: string | null
+          bland_recording_url: string | null
+          bland_transcript: string | null
+          bridge_attempted_at: string | null
+          bridge_failed_reason: string | null
+          bridged_at: string | null
+          business_id: string | null
+          call_session_id: string | null
+          campaign_id: string | null
+          claim_expires_at: string | null
+          claim_token: string | null
+          claimed_at: string | null
+          claimed_by_user_id: string | null
+          confirmation_method: string | null
+          confirmation_value: string | null
+          contact_id: string | null
+          contact_name: string | null
+          created_at: string
+          dial_status: string | null
+          dialing_started_at: string | null
+          ended_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          last_attempt_at: string | null
+          last_error_severity: string | null
+          next_retry_at: string | null
+          notes: string | null
+          phone_number: string
+          priority_score: number | null
+          source_reason: string | null
+          status: string
+          store_id: string | null
+          twilio_call_sid: string | null
+          updated_at: string
+          voice_mode: string | null
+          voice_provider: string | null
+          voicemail_left: boolean | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "outbound_call_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_queue_items:
         | {
             Args: {
@@ -110391,6 +110458,7 @@ export type Database = {
               assigned_campaign_id: string | null
               attempt_count: number | null
               bland_call_id: string | null
+              bland_call_id_missing_logged_at: string | null
               bland_recording_url: string | null
               bland_transcript: string | null
               bridge_attempted_at: string | null
@@ -110451,6 +110519,7 @@ export type Database = {
               assigned_campaign_id: string | null
               attempt_count: number | null
               bland_call_id: string | null
+              bland_call_id_missing_logged_at: string | null
               bland_recording_url: string | null
               bland_transcript: string | null
               bridge_attempted_at: string | null
@@ -110602,6 +110671,12 @@ export type Database = {
       current_ambassador_id: { Args: never; Returns: string }
       detect_intent_conflicts: { Args: { p_intent_id: string }; Returns: Json }
       dialer_claim_watchdog: { Args: { p_business_id: string }; Returns: Json }
+      dialer_stuck_call_sweep: {
+        Args: never
+        Returns: {
+          swept_count: number
+        }[]
+      }
       dialer_watchdog_recover: {
         Args: { p_business_id: string }
         Returns: Json
