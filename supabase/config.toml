@@ -35,6 +35,24 @@ enable_confirmations = false
 [functions.sync-bland-call]
 verify_jwt = false
 
+[functions.bland-agent-trigger]
+verify_jwt = false
+
+[functions.bland-agent-webhook]
+verify_jwt = false
+
+[functions.twilio-campaign-twiml]
+verify_jwt = false
+
+[functions.twilio-campaign-confirm]
+verify_jwt = false
+
+[functions.twilio-bridge-to-bland]
+verify_jwt = false
+
+[functions.dialer-call-status]
+verify_jwt = false
+
 [functions.morning-ops-cycle]
 verify_jwt = false
 
