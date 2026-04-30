@@ -725,9 +725,19 @@ export default function CampaignDialPage() {
                         <div className="p-6 text-center text-xs text-muted-foreground">No calls yet…</div>
                       ) : (
                         <div className="divide-y">
-                          {liveCalls.map((c) => {
+                          {liveCalls.map((c: any) => {
                             const meta = STATUS_META[c.status as string] || STATUS_META.queued;
                             const Icon = meta.icon;
+                            // Build a one-liner hint so the row tells the
+                            // whole story at a glance.
+                            const hint =
+                              c.bridge_failed_reason ? `⚠ ${c.bridge_failed_reason}` :
+                              c.voicemail_left       ? "Voicemail left" :
+                              c.bridged_at && c.bland_call_id ? "→ Bland AI agent live" :
+                              c.bland_call_id        ? "Handing off to Bland…" :
+                              c.answered_at          ? "Picked up" :
+                              c.twilio_call_sid      ? "Twilio dialing…" :
+                              null;
                             return (
                               <button
                                 key={c.id}
@@ -738,6 +748,15 @@ export default function CampaignDialPage() {
                                 <div className="flex-1 min-w-0">
                                   <div className="truncate font-medium">{c.contact_name || c.phone_number}</div>
                                   <div className="text-muted-foreground font-mono truncate">{c.phone_number}</div>
+                                  {hint && (
+                                    <div className={`truncate text-[10px] ${
+                                      c.bridge_failed_reason ? "text-destructive" :
+                                      c.bridged_at ? "text-emerald-600" :
+                                      "text-muted-foreground"
+                                    }`}>
+                                      {hint}
+                                    </div>
+                                  )}
                                 </div>
                                 <Badge className={`${meta.tone} text-[10px] py-0 px-1.5`}>{meta.label}</Badge>
                               </button>
