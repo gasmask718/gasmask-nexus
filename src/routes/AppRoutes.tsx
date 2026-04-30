@@ -1191,7 +1191,7 @@ export default function AppRoutes() {
 
       {/* Penthouse VA Management (admin only) */}
       <Route path="/penthouse/va-management" element={
-        <ProtectedRoute><RequireRole role="admin"><VAManagementPage /></RequireRole></ProtectedRoute>
+        <ProtectedRoute><RequireRole allowedRoles={['admin']}><VAManagementPage /></RequireRole></ProtectedRoute>
       } />
       {/* Legacy admin paths → redirect into Brandaro hub */}
       <Route path="/admin/numbers" element={<Navigate to="/brandaro/admin-numbers" replace />} />
