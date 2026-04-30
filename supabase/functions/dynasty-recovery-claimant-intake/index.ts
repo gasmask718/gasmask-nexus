@@ -195,7 +195,7 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            agent_id: Deno.env.get('SF_CLIENT_AGENT_ID'),
+            bland_agent_id: Deno.env.get('SF_CLIENT_AGENT_ID'),
             phone_number: formData.phone,
             lead_id: lead.id,
             lead_table: 'surplus_funds_leads',
