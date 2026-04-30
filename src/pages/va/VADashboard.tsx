@@ -29,8 +29,9 @@ import {
 } from '@/components/ui/sidebar';
 import {
   Users, Phone, BookOpen, HelpCircle, FileText, Settings, LogOut, Headset, PanelLeft,
-  Search, ArrowLeft, Zap, Trophy, Clock, UserCircle, Sparkles,
+  Search, ArrowLeft, Zap, Trophy, Clock, UserCircle, Sparkles, Building2,
 } from 'lucide-react';
+import { useVAActiveCompany } from '@/hooks/useVAActiveCompany';
 
 type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'leaderboard' | 'callbacks' | 'coaching';
 
@@ -40,6 +41,9 @@ function VADashboardInner() {
   const { signOut } = useAuth();
   const { user } = useAuth();
   const { t, twilioNumber, language, isOnboarded, endSession } = useVASession();
+  const { data: activeCompany } = useVAActiveCompany();
+  const companyName = activeCompany?.company_name ?? 'No company assigned';
+  const companyColor = activeCompany?.brand_color ?? '#06b6d4';
 
   const initialView = location.pathname.includes('lead-discovery') ? 'discovery' : 'leads';
   const [view, setView] = useState<VAView>(initialView);
@@ -152,21 +156,21 @@ function VADashboardInner() {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {/* Brandaro Link */}
+            {/* Company badge */}
             <SidebarGroup>
-              <SidebarGroupLabel className="text-orange-400 font-bold text-xs">Brandaro</SidebarGroupLabel>
+              <SidebarGroupLabel className="font-bold text-xs" style={{ color: companyColor }}>
+                {activeCompany ? 'Your company' : 'No company'}
+              </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => navigate('/brandaro')}
-                      className="text-slate-400 hover:text-orange-300 hover:bg-orange-500/10"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      <span>{t('va.nav.backToBrandaro')}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
+                <div className="px-2 py-2 flex items-center gap-2 text-sm">
+                  <Building2 className="h-4 w-4" style={{ color: companyColor }} />
+                  <span className="text-white font-medium">{companyName}</span>
+                </div>
+                {activeCompany && (
+                  <div className="px-2 text-[10px] text-slate-500 uppercase tracking-wide">
+                    Role: {activeCompany.role}
+                  </div>
+                )}
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
@@ -181,7 +185,9 @@ function VADashboardInner() {
                 <PanelLeft className="h-5 w-5" />
               </SidebarTrigger>
               <h1 className="text-sm font-bold text-white hidden sm:block">VA Portal</h1>
-              <span className="text-xs text-slate-500 hidden md:inline">/ Brandaro</span>
+              <span className="text-xs hidden md:inline" style={{ color: companyColor }}>
+                / {companyName}
+              </span>
             </div>
             <div className="flex items-center gap-3">
               {twilioNumber && (
