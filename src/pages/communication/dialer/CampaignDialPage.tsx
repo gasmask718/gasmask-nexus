@@ -369,7 +369,7 @@ export default function CampaignDialPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("outbound_call_queue")
-        .select("id, phone_number, contact_name, status, attempts, updated_at, twilio_call_sid")
+        .select("id, phone_number, contact_name, status, updated_at, twilio_call_sid")
         .eq("campaign_id", activeCampaignId!)
         .order("updated_at", { ascending: false })
         .limit(150);
@@ -780,7 +780,6 @@ export default function CampaignDialPage() {
 
       <CallTimelineDrawer
         queueItemId={timelineQueueId}
-        open={!!timelineQueueId}
         onClose={() => setTimelineQueueId(null)}
       />
     </div>
