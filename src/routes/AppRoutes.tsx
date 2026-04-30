@@ -201,8 +201,10 @@ const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplica
 
 // VA Portal
 const VAAuthPage = lazy(() => import('@/pages/va/VAAuthPage'));
+const VAAcceptInvitePage = lazy(() => import('@/pages/va/VAAcceptInvitePage'));
 const VADashboard = lazy(() => import('@/pages/va/VADashboard'));
 const VAProfilePage = lazy(() => import('@/pages/va/VAProfilePage'));
+const VAManagementPage = lazy(() => import('@/pages/penthouse/VAManagementPage'));
 const AdminNumbersPage = lazy(() => import('@/pages/va/AdminNumbersPage'));
 const PayInvoicePage = lazy(() => import('@/pages/va/PayInvoicePage'));
 const AdminLeaderboardPage = lazy(() => import('@/pages/admin/AdminLeaderboard'));
@@ -1179,12 +1181,18 @@ export default function AppRoutes() {
 
       {/* VA Portal — Public routes */}
       <Route path="/va/auth" element={<VAAuthPage />} />
+      <Route path="/va/accept-invite/:token" element={<VAAcceptInvitePage />} />
       <Route path="/pay/:invoiceId" element={<PayInvoicePage />} />
 
       {/* VA Portal — Protected routes */}
       <Route path="/va/dashboard" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
       <Route path="/va/profile" element={<ProtectedRoute><VAProfilePage /></ProtectedRoute>} />
       <Route path="/va/lead-discovery" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
+
+      {/* Penthouse VA Management (admin only) */}
+      <Route path="/penthouse/va-management" element={
+        <ProtectedRoute><RequireRole role="admin"><VAManagementPage /></RequireRole></ProtectedRoute>
+      } />
       {/* Legacy admin paths → redirect into Brandaro hub */}
       <Route path="/admin/numbers" element={<Navigate to="/brandaro/admin-numbers" replace />} />
       <Route path="/admin/leaderboard" element={<Navigate to="/brandaro/admin-leaderboard" replace />} />
