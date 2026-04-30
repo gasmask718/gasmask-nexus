@@ -59,7 +59,7 @@ export default function VAManagementPage() {
         .select('*')
         .order('joined_at', { ascending: false });
       if (error) throw error;
-      return (data ?? []) as DirRow[];
+      return ((data ?? []) as unknown) as DirRow[];
     },
   });
 
