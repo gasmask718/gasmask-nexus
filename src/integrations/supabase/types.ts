@@ -99062,6 +99062,87 @@ export type Database = {
           },
         ]
       }
+      va_companies: {
+        Row: {
+          brand_color: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          brand_color?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          brand_color?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      va_company_memberships: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          is_primary: boolean
+          role: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          role?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_company_memberships_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_va_directory"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "va_company_memberships_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "va_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       va_daily_goals: {
         Row: {
           calls_target: number | null
@@ -99138,6 +99219,63 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          company_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          role: string
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          company_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: string
+          status?: string
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          company_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_va_directory"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "va_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "va_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -109969,6 +110107,24 @@ export type Database = {
           source_platform: string | null
           supplier_type: string | null
           trending_count: number | null
+        }
+        Relationships: []
+      }
+      v_va_directory: {
+        Row: {
+          avatar_url: string | null
+          company_id: string | null
+          company_name: string | null
+          company_slug: string | null
+          email: string | null
+          full_name: string | null
+          is_active: boolean | null
+          is_primary: boolean | null
+          joined_at: string | null
+          membership_id: string | null
+          phone: string | null
+          role: string | null
+          user_id: string | null
         }
         Relationships: []
       }

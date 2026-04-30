@@ -29,7 +29,7 @@ export default function VAAuthPage() {
         if (error) throw error;
         navigate('/va/dashboard');
       } else {
-        const { data, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email: form.email,
           password: form.password,
           options: {
@@ -39,32 +39,12 @@ export default function VAAuthPage() {
         });
         if (error) throw error;
 
-        // Provision VA role across all authoritative tables
-        if (data.user) {
-          const uid = data.user.id;
-
-          // 1. Legacy profiles table
-          await supabase.from('profiles').upsert({
-            id: uid,
-            name: form.fullName,
-            role: 'va',
-          } as any);
-
-          // 2. user_profiles (canonical primary_role used by UniversalRoleRouter)
-          await supabase.from('user_profiles').upsert({
-            user_id: uid,
-            full_name: form.fullName,
-            primary_role: 'va',
-          } as any, { onConflict: 'user_id' });
-
-          // 3. user_roles (authoritative — used by has_role() and RoleGuard)
-          await supabase.from('user_roles').insert({
-            user_id: uid,
-            role: 'va',
-          } as any);
-        }
-
-        toast.success('Account created! Please check your email to verify, then sign in.');
+        // NOTE: We no longer auto-provision a "Brandaro" VA role here.
+        // VAs must be invited via /penthouse/va-management → company membership
+        // is created by the accept-va-invite edge function.
+        toast.success(
+          'Account created! Check your email to verify, then click the invite link from your admin to join a company.',
+        );
         setIsLogin(true);
       }
     } catch (err: any) {
@@ -83,7 +63,7 @@ export default function VAAuthPage() {
             <Headset className="h-8 w-8 text-cyan-400" />
           </div>
           <CardTitle className="text-2xl font-bold text-white">VA Portal</CardTitle>
-          <p className="text-sm text-slate-400">Brandaro Virtual Assistant Login</p>
+          <p className="text-sm text-slate-400">Virtual Assistant Portal</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
