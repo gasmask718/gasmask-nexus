@@ -362,6 +362,8 @@ export default function CampaignDialPage() {
   });
 
   // ─── Live monitor for active campaign (with realtime) ──────────────────────
+  // Pull every field needed to render rich per-call hints (transferred to
+  // Bland, picked up, bridge error, voicemail) without an extra round-trip.
   const { data: liveCalls = [] } = useQuery({
     queryKey: ["campaign-dial:live", activeCampaignId],
     enabled: !!activeCampaignId,
@@ -369,7 +371,9 @@ export default function CampaignDialPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("outbound_call_queue")
-        .select("id, phone_number, contact_name, status, updated_at, twilio_call_sid")
+        .select(
+          "id, phone_number, contact_name, status, updated_at, twilio_call_sid, bland_call_id, bridged_at, answered_at, bridge_failed_reason, voicemail_left, attempt_count",
+        )
         .eq("campaign_id", activeCampaignId!)
         .order("updated_at", { ascending: false })
         .limit(150);
