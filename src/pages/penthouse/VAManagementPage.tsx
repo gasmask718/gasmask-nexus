@@ -13,7 +13,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Loader2, Mail, Copy, RefreshCw, UserPlus, Building2, Search } from 'lucide-react';
+import { Loader2, Mail, Copy, RefreshCw, UserPlus, Building2, Search, Trash2 } from 'lucide-react';
 
 interface Company { id: string; slug: string; name: string; brand_color: string | null; }
 interface DirRow {
