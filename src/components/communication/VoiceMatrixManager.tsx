@@ -16,7 +16,7 @@ import {
   Radio, Plus, Settings, Volume2, Activity, Mic, Zap, Shield,
 } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
-import VoicePreviewButton from "@/components/communication/VoicePreviewButton";
+
 
 interface VoiceMatrixRow {
   id: string;
@@ -346,10 +346,6 @@ export function VoiceMatrixManager() {
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <VoicePreviewButton
-                    voiceModelId={p.elevenlabs_voice_id}
-                    sampleText={`Hi, this is ${p.persona_name} from ${p.brand_key}. How can I help you today?`}
-                  />
                   <Button
                     size="sm"
                     variant="outline"

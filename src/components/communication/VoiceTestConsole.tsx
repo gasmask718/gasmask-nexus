@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 export function VoiceTestConsole() {
   const { currentBusiness } = useBusiness();
   const [text, setText] = useState("Hi, this is a voice test from Dynasty OS. How can I help you today?");
-  const [provider, setProvider] = useState<VoiceProvider>("elevenlabs");
+  const [provider, setProvider] = useState<VoiceProvider>("aws_polly");
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,7 +31,7 @@ export function VoiceTestConsole() {
     queryFn: async () => {
       const query = supabase
         .from("voice_matrix")
-        .select("id, brand_key, persona_name, elevenlabs_voice_id, aws_voice_id, active")
+        .select("id, brand_key, persona_name, aws_voice_id, active")
         .eq("active", true)
         .order("brand_key");
       if (currentBusiness?.id) {
@@ -55,9 +55,7 @@ export function VoiceTestConsole() {
     setLastResult(null);
 
     try {
-      const voiceId = provider === "elevenlabs"
-        ? selectedPersona?.elevenlabs_voice_id || undefined
-        : selectedPersona?.aws_voice_id || undefined;
+      const voiceId = selectedPersona?.aws_voice_id || undefined;
 
       const result = await generateVoiceResponse({
         text: text.trim(),
@@ -131,11 +129,6 @@ export function VoiceTestConsole() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="elevenlabs">
-                    <span className="flex items-center gap-2">
-                      <Mic className="h-4 w-4" /> ElevenLabs
-                    </span>
-                  </SelectItem>
                   <SelectItem value="aws_polly">
                     <span className="flex items-center gap-2">
                       <Zap className="h-4 w-4" /> AWS Polly
@@ -206,11 +199,7 @@ export function VoiceTestConsole() {
           <CardContent className="pt-4">
             <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-2">
-                {lastResult.provider === "elevenlabs" ? (
-                  <Mic className="h-5 w-5 text-primary" />
-                ) : (
-                  <Zap className="h-5 w-5 text-amber-500" />
-                )}
+                <Zap className="h-5 w-5 text-amber-500" />
                 <span className="font-medium capitalize">
                   {lastResult.provider.replace("_", " ")}
                 </span>

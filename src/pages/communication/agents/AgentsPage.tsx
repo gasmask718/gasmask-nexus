@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bot, Shield, Mic, Phone } from 'lucide-react';
+import { Bot, Shield, Mic } from 'lucide-react';
 import { AIAgentsTab } from "@/components/communication/AIAgentsTab";
 import AICallAgentDashboardPage from '@/pages/communication/call-intelligence/AICallAgentDashboardPage';
 import { AgentVoiceSettingsTab } from '@/components/communication/AgentVoiceSettingsTab';
-import { ElevenLabsAgentSetup } from '@/components/communication/ElevenLabsAgentSetup';
 
 export default function AgentsPage() {
   const [searchParams] = useSearchParams();
@@ -26,9 +25,6 @@ export default function AgentsPage() {
           <TabsTrigger value="agents" className="gap-1.5 text-xs">
             <Bot className="h-3.5 w-3.5" /> AI Agents
           </TabsTrigger>
-          <TabsTrigger value="elevenlabs-setup" className="gap-1.5 text-xs">
-            <Phone className="h-3.5 w-3.5" /> ElevenLabs Agents
-          </TabsTrigger>
           <TabsTrigger value="ai-call-agent" className="gap-1.5 text-xs">
             <Shield className="h-3.5 w-3.5" /> AI Call Agent
           </TabsTrigger>
@@ -39,9 +35,6 @@ export default function AgentsPage() {
 
         <TabsContent value="agents" className="mt-4">
           <AIAgentsTab />
-        </TabsContent>
-        <TabsContent value="elevenlabs-setup" className="mt-4">
-          <ElevenLabsAgentSetup />
         </TabsContent>
         <TabsContent value="ai-call-agent" className="mt-4">
           <AICallAgentDashboardPage />

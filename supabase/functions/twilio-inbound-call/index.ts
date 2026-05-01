@@ -1,17 +1,28 @@
 /**
- * TWILIO INBOUND CALL HANDLER — Clean ElevenLabs Bridge
- * 
- * Returns ONLY the TwiML needed to connect Twilio → ElevenLabs.
- * No time checks. No forwarding. No after-hours logic. No fallback routing.
- * 
- * Multi-business routing: matches the called number to the correct
- * ElevenLabs agent ID via environment variables.
+ * TWILIO INBOUND CALL HANDLER — Bland AI Bridge
+ *
+ * Returns the TwiML needed to connect a Twilio inbound call to a Bland AI agent.
+ *
+ * Routing:
+ *   1. Look up the called number (To) in a phone → Bland inbound DID map
+ *      (per-business overrides set via env vars).
+ *   2. Fall back to BLAND_INBOUND_NUMBER (the global Bland AI inbound DID).
+ *   3. Dial that DID; on no-answer/failure, play a polite message and hang up.
  */
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -26,77 +37,47 @@ Deno.serve(async (req) => {
 
     console.log(`📞 Inbound: SID=${callSid}, From=${from}, To=${to}`);
 
-    const ELEVENLABS_KEY = Deno.env.get("ELEVENLABS_API_KEY") || "";
-
-    if (!ELEVENLABS_KEY) {
-      console.error("❌ ELEVENLABS_API_KEY not configured");
-      return twiml(`<Say voice="alice">System configuration error. Please try again later.</Say><Hangup/>`);
-    }
-
-    // ── Multi-business phone → agent mapping ──
-    const phoneAgentMap: Record<string, string> = {};
-
+    // ── Multi-business phone → Bland inbound DID mapping ──
+    // Each business can have its own dedicated Bland AI inbound number.
+    // If no business-specific override is set, fall back to BLAND_INBOUND_NUMBER.
+    const phoneMap: Record<string, string> = {};
     const mapping: [string | undefined, string | undefined][] = [
-      [Deno.env.get("GASMASK_PHONE_NUMBER"), Deno.env.get("DC_INBOUND_AGENT_ID")],
-      [Deno.env.get("UT_PHONE_NUMBER"), Deno.env.get("UT_CONCIERGE_AGENT_ID")],
-      [Deno.env.get("RE_PHONE_NUMBER"), Deno.env.get("RE_QUALIFIER_AGENT_ID")],
-      [Deno.env.get("SF_PHONE_NUMBER"), Deno.env.get("SF_CLIENT_AGENT_ID")],
-      [Deno.env.get("TT_PHONE_NUMBER"), Deno.env.get("TT_CONCIERGE_AGENT_ID")],
-      [Deno.env.get("BRANDARO_PHONE_NUMBER"), Deno.env.get("BRANDARO_SALES_AGENT_ID")],
-      [Deno.env.get("ICLEAN_PHONE_NUMBER"), Deno.env.get("ICLEAN_BOOKING_AGENT_ID")],
+      [Deno.env.get("GASMASK_PHONE_NUMBER"), Deno.env.get("GASMASK_BLAND_INBOUND_NUMBER")],
+      [Deno.env.get("UT_PHONE_NUMBER"), Deno.env.get("UT_BLAND_INBOUND_NUMBER")],
+      [Deno.env.get("RE_PHONE_NUMBER"), Deno.env.get("RE_BLAND_INBOUND_NUMBER")],
+      [Deno.env.get("SF_PHONE_NUMBER"), Deno.env.get("SF_BLAND_INBOUND_NUMBER")],
+      [Deno.env.get("TT_PHONE_NUMBER"), Deno.env.get("TT_BLAND_INBOUND_NUMBER")],
+      [Deno.env.get("BRANDARO_PHONE_NUMBER"), Deno.env.get("BRANDARO_BLAND_INBOUND_NUMBER")],
+      [Deno.env.get("ICLEAN_PHONE_NUMBER"), Deno.env.get("ICLEAN_BLAND_INBOUND_NUMBER")],
     ];
-
-    for (const [phone, agent] of mapping) {
-      if (phone && agent) phoneAgentMap[phone] = agent;
+    for (const [phone, did] of mapping) {
+      if (phone && did) phoneMap[phone] = did;
     }
 
-    // Resolve agent: match by full number, then by last 10 digits, then default
     const last10 = to.replace(/\D/g, "").slice(-10);
-    let agentId = phoneAgentMap[to] || "";
-
-    if (!agentId) {
-      for (const [phone, agent] of Object.entries(phoneAgentMap)) {
+    let blandDid = phoneMap[to] || "";
+    if (!blandDid) {
+      for (const [phone, did] of Object.entries(phoneMap)) {
         if (phone.replace(/\D/g, "").slice(-10) === last10) {
-          agentId = agent;
+          blandDid = did;
           break;
         }
       }
     }
-
-    // Final fallback: use DC_INBOUND_AGENT_ID
-    if (!agentId) {
-      agentId = Deno.env.get("DC_INBOUND_AGENT_ID") || "";
+    if (!blandDid) {
+      blandDid = Deno.env.get("BLAND_INBOUND_NUMBER") || "";
     }
 
-    if (!agentId) {
-      console.error(`❌ No agent ID resolved for number: ${to}`);
-      return twiml(`<Say voice="alice">We're sorry, this line is not yet configured. Please try again later.</Say><Hangup/>`);
-    }
-
-    console.log(`🤖 Routing to agent ${agentId}`);
-
-    // ── Fetch signed URL from ElevenLabs (required for private agents; works for public too) ──
-    let streamUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}`;
-    try {
-      const signedRes = await fetch(
-        `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}`,
-        { headers: { "xi-api-key": ELEVENLABS_KEY } }
+    if (!blandDid) {
+      console.error(`❌ No Bland AI inbound DID configured for ${to}`);
+      return twiml(
+        `<Say voice="alice">We're sorry, this line is not yet configured. Please try again later.</Say><Hangup/>`,
       );
-      if (signedRes.ok) {
-        const signed = await signedRes.json();
-        if (signed?.signed_url) {
-          streamUrl = signed.signed_url;
-          console.log(`🔐 Got signed URL for agent ${agentId}`);
-        }
-      } else {
-        const errText = await signedRes.text();
-        console.error(`⚠️ Signed URL fetch failed (${signedRes.status}): ${errText}. Falling back to public URL.`);
-      }
-    } catch (e) {
-      console.error("⚠️ Signed URL error:", e instanceof Error ? e.message : e);
     }
 
-    // Log to dc_call_logs (fire and forget)
+    console.log(`🤖 Bridging inbound to Bland AI DID ${blandDid}`);
+
+    // Fire-and-forget log to dc_call_logs
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (SUPABASE_URL && SUPABASE_KEY) {
@@ -114,20 +95,18 @@ Deno.serve(async (req) => {
           to_number: to,
           direction: "inbound",
           status: "answered",
-          agent_id: agentId,
+          agent_id: blandDid,
         }),
       }).catch((e) => console.error("Call log error:", e));
     }
 
-    // Return clean TwiML — ElevenLabs Conversational AI bridge
-    // Note: Twilio <Stream> cannot send custom HTTP headers, so auth must be in the URL (signed URL).
+    // Bridge the Twilio leg into Bland AI's inbound DID.
     return twiml(`
-  <Connect>
-    <Stream url="${streamUrl}">
-      <Parameter name="call_sid" value="${callSid}"/>
-      <Parameter name="caller_number" value="${from}"/>
-    </Stream>
-  </Connect>`);
+  <Dial answerOnBridge="true" timeout="20">
+    <Number>${escapeXml(blandDid)}</Number>
+  </Dial>
+  <Say voice="alice">We were unable to connect your call. Please try again later.</Say>
+  <Hangup/>`);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Unknown error";
     console.error("❌ Inbound call error:", msg);
@@ -138,6 +117,6 @@ Deno.serve(async (req) => {
 function twiml(body: string): Response {
   return new Response(
     `<?xml version="1.0" encoding="UTF-8"?>\n<Response>${body}\n</Response>`,
-    { headers: { ...corsHeaders, "Content-Type": "text/xml" } }
+    { headers: { ...corsHeaders, "Content-Type": "text/xml" } },
   );
 }

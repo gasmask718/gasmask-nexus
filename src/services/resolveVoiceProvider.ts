@@ -7,7 +7,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export type VoiceProviderChoice = "elevenlabs" | "aws_polly" | "auto";
+export type VoiceProviderChoice = "aws_polly" | "auto";
 export type VoiceMode = "balanced" | "cost_optimized" | "quality_optimized";
 
 export interface ResolvedVoice {
@@ -26,7 +26,7 @@ interface ResolutionInput {
   businessId?: string | null;
 }
 
-const VALID_PROVIDERS = new Set(["elevenlabs", "aws_polly", "auto"]);
+const VALID_PROVIDERS = new Set(["aws_polly", "auto"]);
 const VALID_MODES = new Set(["balanced", "cost_optimized", "quality_optimized"]);
 
 function asProvider(v?: string | null): VoiceProviderChoice | null {
