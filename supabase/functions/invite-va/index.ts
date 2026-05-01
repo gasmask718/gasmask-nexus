@@ -82,9 +82,10 @@ Deno.serve(async (req) => {
       .single();
     if (insErr) throw insErr;
 
-    const origin = req.headers.get('origin') ?? req.headers.get('referer') ?? '';
-    const baseUrl = origin ? new URL(origin).origin : '';
-    const acceptUrl = `${baseUrl}/va/accept-invite/${token}`;
+    // Always send invitees to the production VA auth page so the link works
+    // regardless of which preview/origin generated it.
+    const baseUrl = 'https://gasmask-os-nexus.lovable.app';
+    const acceptUrl = `${baseUrl}/va/auth?invite=${token}`;
 
     // Best-effort email — only attempt if transactional email infra is wired.
     let emailSent = false;
