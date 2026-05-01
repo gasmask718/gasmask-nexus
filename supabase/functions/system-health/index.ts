@@ -83,10 +83,10 @@ Deno.serve(async (req) => {
     let activePass: string | undefined;
     let activeSource: "brandaro_api_key" | "brandaro_auth_token" | "legacy_api_key" | "legacy_auth_token" | "none" = "none";
 
-    if (brandaroSid && brandaroApiSid && brandaroApiSecret) {
-      activeSid = brandaroSid; activeUser = brandaroApiSid; activePass = brandaroApiSecret; activeSource = "brandaro_api_key";
-    } else if (brandaroSid && brandaroAuthToken) {
+    if (brandaroSid && brandaroAuthToken) {
       activeSid = brandaroSid; activeUser = brandaroSid; activePass = brandaroAuthToken; activeSource = "brandaro_auth_token";
+    } else if (brandaroSid && brandaroApiSid && brandaroApiSecret) {
+      activeSid = brandaroSid; activeUser = brandaroApiSid; activePass = brandaroApiSecret; activeSource = "brandaro_api_key";
     } else if (legacySid && legacyApiSid && legacyApiSecret) {
       activeSid = legacySid; activeUser = legacyApiSid; activePass = legacyApiSecret; activeSource = "legacy_api_key";
     } else if (legacySid && legacyAuthToken) {
