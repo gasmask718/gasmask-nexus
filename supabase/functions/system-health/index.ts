@@ -177,6 +177,9 @@ Deno.serve(async (req) => {
       voice: {
         token_authority: tokenAuthority,
         twilio_api: twilioApi,
+        twilio_source: activeSource,
+        twilio_account_status: twilioAccountStatus,
+        twilio_error: twilioError,
         twiml_app_configured: hasTwimlApp,
       },
 
