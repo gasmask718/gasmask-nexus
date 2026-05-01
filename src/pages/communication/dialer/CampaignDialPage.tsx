@@ -156,13 +156,18 @@ export default function CampaignDialPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bland_agent_webhooks" as any)
-        .select("id, agent_name, agent_type, description, default_voice")
+        .select("id, agent_name, agent_type, description, default_voice, default_prompt, bland_agent_id")
         .eq("is_active", true)
         .order("sort_order");
       if (error) throw error;
       return (data || []) as any[];
     },
   });
+
+  const selectedAgent = useMemo(
+    () => agents.find((a) => a.id === agentId),
+    [agents, agentId],
+  );
 
   // Auto-pick first agent once the list arrives.
   useEffect(() => {
