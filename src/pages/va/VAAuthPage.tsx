@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useMarkManualSignIn } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -10,10 +10,54 @@ import { toast } from 'sonner';
 
 export default function VAAuthPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const markManualSignIn = useMarkManualSignIn();
-  const [isLogin, setIsLogin] = useState(true);
+
+  // Pull invite token from query string or sessionStorage (set by VAAcceptInvitePage)
+  const inviteToken =
+    searchParams.get('invite') ||
+    (typeof window !== 'undefined' ? sessionStorage.getItem('va_invite_token') : '') ||
+    '';
+  const hasInvite = !!inviteToken;
+
+  const [isLogin, setIsLogin] = useState(!hasInvite); // invited users default to signup
   const [loading, setLoading] = useState(false);
+  const [lookupLoading, setLookupLoading] = useState(hasInvite);
+  const [companyName, setCompanyName] = useState<string | null>(null);
   const [form, setForm] = useState({ email: '', password: '', fullName: '' });
+
+  // If we have an invite token, look up the email/company so the form is pre-filled
+  useEffect(() => {
+    if (!hasInvite) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('accept-va-invite', {
+          body: { token: inviteToken, action: 'lookup' },
+        });
+        if (cancelled) return;
+        if (error || (data as any)?.error) {
+          toast.error((data as any)?.error ?? error?.message ?? 'Invalid invite');
+        } else {
+          setForm(f => ({ ...f, email: (data as any).email ?? '' }));
+          setCompanyName((data as any).company?.name ?? null);
+        }
+      } finally {
+        if (!cancelled) setLookupLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [hasInvite, inviteToken]);
+
+  const acceptInviteIfNeeded = async () => {
+    if (!hasInvite) return;
+    const { data, error } = await supabase.functions.invoke('accept-va-invite', {
+      body: { token: inviteToken, action: 'accept' },
+    });
+    if (error) throw error;
+    if ((data as any)?.error) throw new Error((data as any).error);
+    try { sessionStorage.removeItem('va_invite_token'); } catch {}
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,9 +71,10 @@ export default function VAAuthPage() {
           password: form.password,
         });
         if (error) throw error;
+        await acceptInviteIfNeeded();
         navigate('/va/dashboard');
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data: signed, error } = await supabase.auth.signUp({
           email: form.email,
           password: form.password,
           options: {
@@ -39,12 +84,32 @@ export default function VAAuthPage() {
         });
         if (error) throw error;
 
-        // NOTE: We no longer auto-provision a "Brandaro" VA role here.
-        // VAs must be invited via /penthouse/va-management → company membership
-        // is created by the accept-va-invite edge function.
-        toast.success(
-          'Account created! Check your email to verify, then click the invite link from your admin to join a company.',
-        );
+        // If we have a session immediately, accept the invite & route to dashboard
+        if (signed.session && hasInvite) {
+          await acceptInviteIfNeeded();
+          toast.success(`Welcome${companyName ? ` to ${companyName}` : ''}!`);
+          navigate('/va/dashboard');
+          return;
+        }
+
+        if (hasInvite) {
+          // Try immediate sign-in (if email confirmation isn't required)
+          const { error: siErr } = await supabase.auth.signInWithPassword({
+            email: form.email,
+            password: form.password,
+          });
+          if (!siErr) {
+            await acceptInviteIfNeeded();
+            toast.success(`Welcome${companyName ? ` to ${companyName}` : ''}!`);
+            navigate('/va/dashboard');
+            return;
+          }
+          toast.success('Account created! Verify your email, then return to the invite link.');
+        } else {
+          toast.success(
+            'Account created! Check your email to verify, then click the invite link from your admin to join a company.',
+          );
+        }
         setIsLogin(true);
       }
     } catch (err: any) {
@@ -64,8 +129,18 @@ export default function VAAuthPage() {
           </div>
           <CardTitle className="text-2xl font-bold text-white">VA Portal</CardTitle>
           <p className="text-sm text-slate-400">Virtual Assistant Portal</p>
+          {hasInvite && companyName && (
+            <div className="mx-auto rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-200">
+              You've been invited to join <strong>{companyName}</strong>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
+          {lookupLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div>
@@ -87,7 +162,8 @@ export default function VAAuthPage() {
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 placeholder="va@brandaro.com"
                 required
-                className="bg-slate-800 border-slate-700 text-white"
+                disabled={hasInvite}
+                className="bg-slate-800 border-slate-700 text-white disabled:opacity-70"
               />
             </div>
             <div>
@@ -104,9 +180,10 @@ export default function VAAuthPage() {
             </div>
             <Button type="submit" disabled={loading} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white">
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {isLogin ? 'Sign In' : 'Create Account'}
+              {isLogin ? 'Sign In' : hasInvite ? 'Create Account & Join' : 'Create Account'}
             </Button>
           </form>
+          )}
           <button
             onClick={() => setIsLogin(!isLogin)}
             className="w-full text-center text-sm text-cyan-400 hover:text-cyan-300 mt-4"
