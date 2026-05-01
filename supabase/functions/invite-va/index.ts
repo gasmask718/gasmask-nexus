@@ -90,10 +90,11 @@ Deno.serve(async (req) => {
     let emailSent = false;
     let emailError: string | null = null;
     try {
-      const { error: mailErr } = await admin.functions.invoke('send-transactional-email', {
+      const { data: mailData, error: mailErr } = await admin.functions.invoke('va-send-email', {
         body: {
           to: email,
           subject: `You're invited to join ${company.name} as a VA`,
+          from_name: company.name,
           html: `
             <div style="font-family:sans-serif;padding:24px;max-width:560px;margin:auto">
               <h2>You've been invited to ${company.name}</h2>
@@ -103,9 +104,11 @@ Deno.serve(async (req) => {
               <p style="color:#64748b;font-size:12px;word-break:break-all">${acceptUrl}</p>
             </div>
           `,
+          text: `You've been invited to ${company.name} as a VA. Accept your invite: ${acceptUrl}`,
         },
       });
       if (mailErr) emailError = mailErr.message ?? String(mailErr);
+      else if ((mailData as any)?.error) emailError = (mailData as any).error;
       else emailSent = true;
     } catch (e) {
       emailError = (e as Error).message;
