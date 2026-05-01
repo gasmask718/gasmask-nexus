@@ -120,10 +120,10 @@ Deno.serve(async (req) => {
     }
 
     // Return clean TwiML — ElevenLabs Conversational AI bridge
+    // Note: Twilio <Stream> cannot send custom HTTP headers, so auth must be in the URL (signed URL).
     return twiml(`
   <Connect>
-    <Stream url="wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}">
-      <Parameter name="xi-api-key" value="${ELEVENLABS_KEY}"/>
+    <Stream url="${streamUrl}">
       <Parameter name="call_sid" value="${callSid}"/>
       <Parameter name="caller_number" value="${from}"/>
     </Stream>
