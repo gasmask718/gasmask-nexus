@@ -6,15 +6,12 @@ const corsHeaders = {
 };
 
 /**
- * TWILIO ↔ ELEVENLABS BRIDGE WEBHOOK
- * 
- * Returns TwiML that:
- * 1. Plays a TTS greeting via Polly.Joanna
- * 2. Pauses 3 seconds
- * 3. Connects to ElevenLabs Conversational AI via <Connect><Stream>
- * 
- * Query params:
- *   - agent_id (optional, falls back to ELEVENLABS_AGENT_ID env var)
+ * TWILIO ↔ BLAND AI BRIDGE WEBHOOK
+ *
+ * Returns TwiML that bridges the Twilio call leg into a Bland AI inbound DID.
+ * Bland AI handles the conversation; ElevenLabs is no longer used.
+ *
+ * Required env: BLAND_INBOUND_NUMBER (E.164 Bland AI inbound number)
  */
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -22,44 +19,32 @@ serve(async (req: Request) => {
   }
 
   try {
-    const url = new URL(req.url);
-    const agentId = url.searchParams.get("agent_id") || Deno.env.get("ELEVENLABS_AGENT_ID") || "";
+    const blandDid = Deno.env.get("BLAND_INBOUND_NUMBER") || "";
 
-    if (!agentId) {
-      console.error("[twilio-bridge] No agent_id provided and ELEVENLABS_AGENT_ID not set");
-      const errorTwiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say voice="Polly.Joanna">An internal configuration error occurred. Please try again later.</Say>
-  <Hangup/>
-</Response>`;
-      return new Response(errorTwiml, {
-        headers: { "Content-Type": "text/xml", ...corsHeaders },
-      });
+    if (!blandDid) {
+      console.error("[twilio-bridge] BLAND_INBOUND_NUMBER not configured");
+      return xml(
+        `<Say voice="Polly.Joanna">An internal configuration error occurred. Please try again later.</Say><Hangup/>`,
+      );
     }
 
-    console.log(`[twilio-bridge] Serving TwiML for agent_id=${agentId}`);
+    console.log(`[twilio-bridge] Bridging to Bland AI DID ${blandDid}`);
 
-    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say voice="Polly.Joanna">Please hold while we connect you to our agent.</Say>
-  <Pause length="3"/>
-  <Connect>
-    <Stream url="wss://api.elevenlabs.io/v1/convai/twiml?agent_id=${agentId}"/>
-  </Connect>
-</Response>`;
-
-    return new Response(twiml, {
-      headers: { "Content-Type": "text/xml", ...corsHeaders },
-    });
+    return xml(
+      `<Say voice="Polly.Joanna">Please hold while we connect you to our agent.</Say>
+  <Dial answerOnBridge="true" timeout="20"><Number>${blandDid}</Number></Dial>
+  <Say voice="Polly.Joanna">We were unable to connect your call. Please try again later.</Say>
+  <Hangup/>`,
+    );
   } catch (error: unknown) {
     console.error("[twilio-bridge] Error:", error);
-    const fallback = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say voice="Polly.Joanna">A connection error occurred. Please try again later.</Say>
-  <Hangup/>
-</Response>`;
-    return new Response(fallback, {
-      headers: { "Content-Type": "text/xml", ...corsHeaders },
-    });
+    return xml(`<Say voice="Polly.Joanna">A connection error occurred. Please try again later.</Say><Hangup/>`);
   }
 });
+
+function xml(body: string): Response {
+  return new Response(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<Response>${body}\n</Response>`,
+    { headers: { "Content-Type": "text/xml", ...corsHeaders } },
+  );
+}
