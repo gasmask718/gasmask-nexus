@@ -75,6 +75,27 @@ Deno.serve(async (req) => {
 
     console.log(`🤖 Routing to agent ${agentId}`);
 
+    // ── Fetch signed URL from ElevenLabs (required for private agents; works for public too) ──
+    let streamUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}`;
+    try {
+      const signedRes = await fetch(
+        `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}`,
+        { headers: { "xi-api-key": ELEVENLABS_KEY } }
+      );
+      if (signedRes.ok) {
+        const signed = await signedRes.json();
+        if (signed?.signed_url) {
+          streamUrl = signed.signed_url;
+          console.log(`🔐 Got signed URL for agent ${agentId}`);
+        }
+      } else {
+        const errText = await signedRes.text();
+        console.error(`⚠️ Signed URL fetch failed (${signedRes.status}): ${errText}. Falling back to public URL.`);
+      }
+    } catch (e) {
+      console.error("⚠️ Signed URL error:", e instanceof Error ? e.message : e);
+    }
+
     // Log to dc_call_logs (fire and forget)
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -99,10 +120,10 @@ Deno.serve(async (req) => {
     }
 
     // Return clean TwiML — ElevenLabs Conversational AI bridge
+    // Note: Twilio <Stream> cannot send custom HTTP headers, so auth must be in the URL (signed URL).
     return twiml(`
   <Connect>
-    <Stream url="wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}">
-      <Parameter name="xi-api-key" value="${ELEVENLABS_KEY}"/>
+    <Stream url="${streamUrl}">
       <Parameter name="call_sid" value="${callSid}"/>
       <Parameter name="caller_number" value="${from}"/>
     </Stream>
