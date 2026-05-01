@@ -80,30 +80,48 @@ Deno.serve(async (req) => {
       return jsonResponse({ success: false, error: "Queue item not found." }, 404);
     }
 
-    const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID") || "";
-    const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN") || "";
-    const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER") || "";
+    // Prefer Brandaro Twilio credentials (real AC... Account SID), fall back to legacy vars.
+    const twilioAccountSid =
+      Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID") ||
+      Deno.env.get("TWILIO_ACCOUNT_SID") ||
+      "";
+    const twilioAuthToken =
+      Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN") ||
+      Deno.env.get("TWILIO_AUTH_TOKEN") ||
+      "";
+    const twilioPhoneNumber =
+      Deno.env.get("TWILIO_FROM_NUMBER") ||
+      Deno.env.get("TWILIO_PHONE_NUMBER") ||
+      "";
 
     if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
       return jsonResponse({
         success: false,
         error:
-          "Twilio is not configured. Required env vars: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER.",
+          "Twilio is not configured. Required env vars: BRANDARO_TWILIO_ACCOUNT_SID, BRANDARO_TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER.",
       });
+    }
+
+    // Twilio Account SIDs MUST start with 'AC'. 'US' values are API Key SIDs and will 401.
+    if (!twilioAccountSid.startsWith("AC")) {
+      console.error(`❌ Invalid Twilio Account SID prefix: ${twilioAccountSid.slice(0, 4)}...`);
+      return jsonResponse({
+        success: false,
+        error:
+          "Invalid Twilio Account SID. Account SIDs must start with 'AC'. The configured value looks like an API Key SID ('US...'). Update BRANDARO_TWILIO_ACCOUNT_SID with the real Account SID from Twilio Console.",
+      }, 401);
     }
 
     const campaign = Array.isArray(item.dialer_campaigns)
       ? item.dialer_campaigns[0]
       : item.dialer_campaigns;
 
-    const resolvedAgentId = campaign?.agent_id || Deno.env.get("ELEVENLABS_AGENT_ID") || "";
-    if (!resolvedAgentId) {
-      return jsonResponse({
-        success: false,
-        error:
-          "No ElevenLabs agent configured. Set campaign agent_id or ELEVENLABS_AGENT_ID in environment.",
-      });
-    }
+    // Bland AI agent — campaign-level override or default sales agent.
+    const resolvedAgentId =
+      campaign?.agent_id ||
+      Deno.env.get("BRANDARO_SALES_AGENT_ID") ||
+      Deno.env.get("DC_SALES_AGENT_ID") ||
+      "";
 
     const toNumber = toE164(item.phone_number || "");
     if (!toNumber) {
@@ -111,8 +129,13 @@ Deno.serve(async (req) => {
     }
 
     const projectId = new URL(supabaseUrl).hostname.split(".")[0];
+    // Bridge through twilio-bridge-to-bland which forwards the campaign script + agent to Bland AI.
+    const bridgeParams = new URLSearchParams();
+    if (resolvedAgentId) bridgeParams.set("bland_agent_id", resolvedAgentId);
+    if (campaign?.id) bridgeParams.set("campaign_id", String(campaign.id));
+    if (queueItemId) bridgeParams.set("queue_item_id", String(queueItemId));
     const twimlWebhookUrl =
-      `https://${projectId}.supabase.co/functions/v1/twilio-bridge?agent_id=${encodeURIComponent(resolvedAgentId)}`;
+      `https://${projectId}.supabase.co/functions/v1/twilio-bridge-to-bland?${bridgeParams.toString()}`;
     const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-call-status`;
 
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Calls.json`;
