@@ -41,8 +41,11 @@ Deno.serve(async (req) => {
     });
   }
 
-  const user = Deno.env.get("VA_GMAIL_USER");
-  const pass = Deno.env.get("VA_GMAIL_APP_PASSWORD");
+  const userRaw = Deno.env.get("VA_GMAIL_USER") ?? "";
+  const passRaw = Deno.env.get("VA_GMAIL_APP_PASSWORD") ?? "";
+  // Strip whitespace; Gmail App Passwords are often shown with spaces
+  const user = userRaw.trim();
+  const pass = passRaw.replace(/\s+/g, "");
 
   if (!user || !pass) {
     console.error("[va-send-email] Missing VA_GMAIL_USER or VA_GMAIL_APP_PASSWORD");
@@ -87,8 +90,17 @@ Deno.serve(async (req) => {
     });
   }
 
-  const fromName = (body.from_name || "VA Notifications").replace(/[<>"\r\n]/g, "");
-  const fromAddr = `${fromName} <${user}>`;
+  if (!isEmail(user)) {
+    console.error(`[va-send-email] VA_GMAIL_USER is not a valid email: "${user}"`);
+    return new Response(
+      JSON.stringify({
+        error: `VA_GMAIL_USER is not a valid email address (got "${user}"). Update the secret to your Gmail address only.`,
+      }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  const fromName = (body.from_name || "VA Notifications").replace(/[<>"\r\n]/g, "").trim();
+  const fromAddr = fromName ? `${fromName} <${user}>` : user;
 
   const client = new SMTPClient({
     connection: {
