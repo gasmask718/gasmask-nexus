@@ -99131,13 +99131,6 @@ export type Database = {
             foreignKeyName: "va_company_memberships_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
-            referencedRelation: "v_va_directory"
-            referencedColumns: ["company_id"]
-          },
-          {
-            foreignKeyName: "va_company_memberships_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
             referencedRelation: "va_companies"
             referencedColumns: ["id"]
           },
@@ -99264,13 +99257,6 @@ export type Database = {
           token?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "va_invites_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "v_va_directory"
-            referencedColumns: ["company_id"]
-          },
           {
             foreignKeyName: "va_invites_company_id_fkey"
             columns: ["company_id"]
