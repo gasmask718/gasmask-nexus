@@ -1,3 +1,9 @@
+/**
+ * Twilio "yes/no" gather webhook — confirms intent, then bridges to Bland AI.
+ *
+ * On positive confirmation, the Twilio call leg is dialed into the Bland AI
+ * inbound DID. ElevenLabs is no longer used.
+ */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -14,12 +20,7 @@ serve(async (req) => {
     const formData = await req.formData();
     const digits = formData.get("Digits")?.toString() || "";
     const speechResult = formData.get("SpeechResult")?.toString().toLowerCase() || "";
-    const callSid = formData.get("CallSid")?.toString() || "";
 
-    const url = new URL(req.url);
-    const agentId = url.searchParams.get("agent_id");
-
-    // Only proceed if they press 1 or say yes
     const isConfirmed =
       digits === "1" ||
       speechResult.includes("yes") ||
@@ -29,19 +30,13 @@ serve(async (req) => {
 
     let twiml = "";
 
-    if (isConfirmed && agentId) {
-      // 🔴 Removed the <Say> wrapper to remove TTS delay, jumping straight to Stream connection.
-      twiml = `<?xml version="1.0" encoding="UTF-8"?>
-        <Response>
-          <Connect>
-            <Stream url="wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}">
-              <Parameter name="twilio_call_sid" value="${callSid}" />
-            </Stream>
-          </Connect>
-        </Response>
-      `;
-    } else if (isConfirmed && !agentId) {
-      twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Joanna">Configuration error. No AI agent ID found.</Say><Hangup/></Response>`;
+    if (isConfirmed) {
+      const blandDid = Deno.env.get("BLAND_INBOUND_NUMBER") || "";
+      if (!blandDid) {
+        twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Joanna">Configuration error. No agent available.</Say><Hangup/></Response>`;
+      } else {
+        twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Dial answerOnBridge="true" timeout="20"><Number>${blandDid}</Number></Dial><Hangup/></Response>`;
+      }
     } else {
       twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Joanna">Okay, we will cancel this request. Have a great day.</Say><Hangup/></Response>`;
     }
@@ -50,7 +45,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "text/xml" },
     });
   } catch (error: any) {
-    console.error("Gather Webhook Error:", error);
+    console.error("twilio-status-webhook error:", error);
     const fallbackTwiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Joanna">An error occurred. Goodbye.</Say><Hangup/></Response>`;
     return new Response(fallbackTwiml, { headers: { ...corsHeaders, "Content-Type": "text/xml" } });
   }
