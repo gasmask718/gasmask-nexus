@@ -115,12 +115,7 @@ export function AIAgentCard({ agent, assignmentCount, onToggle, onPause, isSuper
         )}
 
         <div className="flex gap-2 pt-2">
-          {elevenlabsAgentId && agent.active && (
-            <Button variant="outline" size="sm" onClick={() => setCallOpen(true)} className="flex-1">
-              <Phone className="h-4 w-4 mr-1" />
-              Call
-            </Button>
-          )}
+
           {agent.active && onPause && (
             <Button variant="outline" size="sm" onClick={onPause} className="flex-1">
               <Pause className="h-4 w-4 mr-1" />

@@ -16,7 +16,7 @@ import {
   Radio, Plus, Settings, Volume2, Activity, Mic, Zap, Shield,
 } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
-import VoicePreviewButton from "@/components/communication/VoicePreviewButton";
+
 
 interface VoiceMatrixRow {
   id: string;

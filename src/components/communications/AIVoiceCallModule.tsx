@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import VoiceProfileSelector from '@/components/communication/VoiceProfileSelector';
 import ToneSelector from '@/components/communication/ToneSelector';
 import FounderVoiceToggle from '@/components/communication/FounderVoiceToggle';
-import VoicePreviewButton from '@/components/communication/VoicePreviewButton';
+
 
 interface VoiceProfile {
   id: string;
@@ -107,7 +107,7 @@ export default function AIVoiceCallModule({ brand, brandColor = '#6366f1', busin
                   businessId={businessId}
                 />
               </div>
-              <VoicePreviewButton voiceModelId={selectedVoice?.voice_model_id} />
+              
             </div>
           )}
 
