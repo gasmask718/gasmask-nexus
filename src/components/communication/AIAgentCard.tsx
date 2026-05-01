@@ -1,4 +1,4 @@
-import { useState } from "react";
+// (useState removed — no longer needed after VoiceCallDialog removal)
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -18,7 +18,7 @@ import {
   Phone
 } from "lucide-react";
 import type { AIAgent, AgentRole } from "@/hooks/useAIAgents";
-import { VoiceCallDialog } from "./VoiceCallDialog";
+
 
 interface AIAgentCardProps {
   agent: AIAgent;
@@ -26,7 +26,6 @@ interface AIAgentCardProps {
   onToggle: (active: boolean) => void;
   onPause?: () => void;
   isSupervisor?: boolean;
-  elevenlabsAgentId?: string;
 }
 
 const roleConfig: Record<AgentRole, { icon: React.ElementType; color: string; label: string }> = {
@@ -38,8 +37,7 @@ const roleConfig: Record<AgentRole, { icon: React.ElementType; color: string; la
   supervisor: { icon: Shield, color: "bg-red-500", label: "Supervisor" },
 };
 
-export function AIAgentCard({ agent, assignmentCount, onToggle, onPause, isSupervisor, elevenlabsAgentId }: AIAgentCardProps) {
-  const [callOpen, setCallOpen] = useState(false);
+export function AIAgentCard({ agent, assignmentCount, onToggle, onPause, isSupervisor }: AIAgentCardProps) {
   const config = roleConfig[agent.role];
   const Icon = config.icon;
 
@@ -135,15 +133,6 @@ export function AIAgentCard({ agent, assignmentCount, onToggle, onPause, isSuper
           </Button>
         </div>
       </CardContent>
-
-      {elevenlabsAgentId && (
-        <VoiceCallDialog
-          open={callOpen}
-          onOpenChange={setCallOpen}
-          agentName={agent.name}
-          elevenlabsAgentId={elevenlabsAgentId}
-        />
-      )}
     </Card>
   );
 }
