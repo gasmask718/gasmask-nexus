@@ -151,11 +151,17 @@ Deno.serve(async (req) => {
       ? {
           phone_number: phoneToCall,
           webhook: blandWebhook,
-          metadata: { lead_id, campaign_id, queue_item_id, agent_type, twilio_call_sid: callSid, call_session_id },
+          // Pass the campaign script as variables + first_sentence so the
+          // pre-configured Bland agent opens with the SAME line Twilio's TTS
+          // played. Keeps the conversation continuous after the bridge.
+          ...(campaignScript ? { first_sentence: campaignScript } : {}),
+          request_data: campaignScript ? { campaign_script: campaignScript, agent_type } : { agent_type },
+          metadata: { lead_id, campaign_id, queue_item_id, agent_type, twilio_call_sid: callSid, call_session_id, campaign_script: campaignScript },
         }
       : {
           phone_number: phoneToCall,
-          task: `You are an AI agent for the ${agent_type} workflow. Continue the conversation with the lead.`,
+          task: campaignScript || `You are an AI agent for the ${agent_type} workflow. Continue the conversation with the lead.`,
+          ...(campaignScript ? { first_sentence: campaignScript } : {}),
           voice: "maya",
           webhook: blandWebhook,
           metadata: { lead_id, campaign_id, queue_item_id, agent_type, twilio_call_sid: callSid, call_session_id },
