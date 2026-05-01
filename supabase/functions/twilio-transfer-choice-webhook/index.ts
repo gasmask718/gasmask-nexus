@@ -8,21 +8,18 @@ const corsHeaders = {
 
 /**
  * TRANSFER CHOICE WEBHOOK
- * 
+ *
  * After the initial campaign script plays and the customer confirms interest,
  * this webhook asks: "Press 1 for AI Agent, Press 2 for Human Agent."
- * 
+ *
  * Flow:
  *   twilio-outbound-call -> twilio-gather-webhook (confirms interest)
  *     -> THIS WEBHOOK (asks AI vs Human preference)
- *       -> Press 1: twilio-elevenlabs-bridge (AI agent)
+ *       -> Press 1: dial BLAND_INBOUND_NUMBER (AI agent via Bland AI)
  *       -> Press 2: check human_agent_line_status
- *         -> available: transfer-campaign-call (human)
+ *         -> available: <Dial> the human number
  *         -> busy: TTS "You're in queue, position X" + <Enqueue> or hold music + poll
  */
-
-// Default agent resolved from DB or env — no hardcoded IDs
-const DEFAULT_ELEVENLABS_AGENT_ID = Deno.env.get("ELEVENLABS_AGENT_ID") || "";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -40,7 +37,7 @@ serve(async (req) => {
     const callSid = formData.get("CallSid")?.toString() || "";
 
     const url = new URL(req.url);
-    const agentId = url.searchParams.get("agent_id") || DEFAULT_ELEVENLABS_AGENT_ID;
+    const blandDid = Deno.env.get("BLAND_INBOUND_NUMBER") || "";
     const humanNumber = url.searchParams.get("human_number") || Deno.env.get("LIVE_HANDOFF_NUMBER") || "";
     const queueItemId = url.searchParams.get("queue_item_id") || "";
     const campaignId = url.searchParams.get("campaign_id") || "";
@@ -72,32 +69,41 @@ serve(async (req) => {
       // Log transfer
       supabase.from("live_call_transcripts").insert({
         call_sid: callSid, speaker: "system",
-        text: "[Customer chose AI Agent — transferring to ElevenLabs]", is_final: true,
+        text: "[Customer chose AI Agent — bridging to Bland AI]", is_final: true,
       }).then(() => {});
 
       // Update queue item
       if (queueItemId) {
         supabase.from("outbound_call_queue").update({
           status: "transferred",
-          notes: `[TRANSFER:elevenlabs] AI Agent chosen by customer`,
+          notes: `[TRANSFER:bland_ai] AI Agent chosen by customer`,
           updated_at: new Date().toISOString(),
         }).eq("id", queueItemId).then(() => {});
       }
 
-      const bridgeUrl = `${supabaseUrl}/functions/v1/twilio-elevenlabs-bridge?agent_id=${agentId}`;
-      twiml = `<?xml version="1.0" encoding="UTF-8"?>
+      if (!blandDid) {
+        twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="Polly.Matthew">Sorry, no AI agent is currently configured. Goodbye.</Say>
+  <Hangup/>
+</Response>`;
+      } else {
+        twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Matthew">Connecting you now.</Say>
-  <Redirect method="POST">${bridgeUrl}</Redirect>
+  <Dial answerOnBridge="true" timeout="20"><Number>${blandDid}</Number></Dial>
+  <Hangup/>
 </Response>`;
+      }
 
     } else if (wantsHuman) {
       if (!humanNumber) {
-        twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say voice="Polly.Matthew">Sorry, no human agent is currently configured. Let me connect you to our AI assistant instead.</Say>
-  <Redirect method="POST">${supabaseUrl}/functions/v1/twilio-elevenlabs-bridge?agent_id=${agentId}</Redirect>
-</Response>`;
+        const fallbackTwiml = blandDid
+          ? `<Say voice="Polly.Matthew">Sorry, no human agent is currently configured. Let me connect you to our AI assistant instead.</Say>
+  <Dial answerOnBridge="true" timeout="20"><Number>${blandDid}</Number></Dial>
+  <Hangup/>`
+          : `<Say voice="Polly.Matthew">Sorry, no agent is currently available. Goodbye.</Say><Hangup/>`;
+        twiml = `<?xml version="1.0" encoding="UTF-8"?>\n<Response>${fallbackTwiml}\n</Response>`;
       } else {
         // Check if human agent line is available
         const { data: lineStatus } = await supabase
@@ -173,7 +179,7 @@ serve(async (req) => {
           }).then(() => {});
 
           // Tell the caller they're in queue, then offer AI as alternative
-          const retryUrl = `${supabaseUrl}/functions/v1/twilio-human-queue-hold?phone_number=${encodeURIComponent(humanNumber)}&amp;agent_id=${agentId}&amp;queue_item_id=${encodeURIComponent(queueItemId)}&amp;call_queue_id=pending`;
+          const retryUrl = `${supabaseUrl}/functions/v1/twilio-human-queue-hold?phone_number=${encodeURIComponent(humanNumber)}&amp;queue_item_id=${encodeURIComponent(queueItemId)}&amp;call_queue_id=pending`;
 
           twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
