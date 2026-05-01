@@ -13,7 +13,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Loader2, Mail, Copy, RefreshCw, UserPlus, Building2, Search } from 'lucide-react';
+import { Loader2, Mail, Copy, RefreshCw, UserPlus, Building2, Search, Trash2 } from 'lucide-react';
 
 interface Company { id: string; slug: string; name: string; brand_color: string | null; }
 interface DirRow {
@@ -121,6 +121,18 @@ export default function VAManagementPage() {
       toast.success('Invite revoked');
     },
     onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('va_invites').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['va-invites'] });
+      toast.success('Invite deleted');
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Failed to delete invite'),
   });
 
   // ---- Filters ----
@@ -271,11 +283,24 @@ export default function VAManagementPage() {
                           <Copy className="h-3 w-3 mr-1" /> Link
                         </Button>
                         <Button size="sm" variant="ghost"
-                          className="text-red-400" onClick={() => revokeMut.mutate(i.id)}>
+                          className="text-amber-400" onClick={() => revokeMut.mutate(i.id)}>
                           Revoke
                         </Button>
                       </>
                     )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-400"
+                      disabled={deleteMut.isPending}
+                      onClick={() => {
+                        if (confirm(`Delete invite for ${i.email}? This cannot be undone.`)) {
+                          deleteMut.mutate(i.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" /> Delete
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
