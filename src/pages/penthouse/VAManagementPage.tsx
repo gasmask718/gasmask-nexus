@@ -123,6 +123,18 @@ export default function VAManagementPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const deleteMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('va_invites').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['va-invites'] });
+      toast.success('Invite deleted');
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Failed to delete invite'),
+  });
+
   // ---- Filters ----
   const [filterCompany, setFilterCompany] = useState<string>('all');
   const [filterRole, setFilterRole] = useState<string>('all');
