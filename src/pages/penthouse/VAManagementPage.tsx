@@ -283,11 +283,24 @@ export default function VAManagementPage() {
                           <Copy className="h-3 w-3 mr-1" /> Link
                         </Button>
                         <Button size="sm" variant="ghost"
-                          className="text-red-400" onClick={() => revokeMut.mutate(i.id)}>
+                          className="text-amber-400" onClick={() => revokeMut.mutate(i.id)}>
                           Revoke
                         </Button>
                       </>
                     )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-400"
+                      disabled={deleteMut.isPending}
+                      onClick={() => {
+                        if (confirm(`Delete invite for ${i.email}? This cannot be undone.`)) {
+                          deleteMut.mutate(i.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" /> Delete
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
