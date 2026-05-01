@@ -21,8 +21,14 @@ serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
-    const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID")!;
-    const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN")!;
+    // Prefer Brandaro Twilio creds (the same account used by bland-agent-trigger
+    // to place the call). Falling back to legacy TWILIO_* preserves older flows.
+    const TWILIO_ACCOUNT_SID =
+      Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID") ||
+      Deno.env.get("TWILIO_ACCOUNT_SID")!;
+    const TWILIO_AUTH_TOKEN =
+      Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN") ||
+      Deno.env.get("TWILIO_AUTH_TOKEN")!;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

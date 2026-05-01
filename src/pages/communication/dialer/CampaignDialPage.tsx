@@ -156,13 +156,18 @@ export default function CampaignDialPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bland_agent_webhooks" as any)
-        .select("id, agent_name, agent_type, description, default_voice")
+        .select("id, agent_name, agent_type, description, default_voice, default_prompt, bland_agent_id")
         .eq("is_active", true)
         .order("sort_order");
       if (error) throw error;
       return (data || []) as any[];
     },
   });
+
+  const selectedAgent = useMemo(
+    () => agents.find((a) => a.id === agentId),
+    [agents, agentId],
+  );
 
   // Auto-pick first agent once the list arrives.
   useEffect(() => {
@@ -622,16 +627,34 @@ export default function CampaignDialPage() {
               )}
             </div>
             <div>
-              <Label className="text-xs">Initial Script</Label>
+              <div className="flex items-center justify-between mb-1">
+                <Label className="text-xs">Initial Script <span className="text-muted-foreground">(spoken by Twilio TTS + sent to Bland as opening line)</span></Label>
+                {selectedAgent?.default_prompt && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 text-[10px] px-2"
+                    onClick={() => setScript(selectedAgent.default_prompt)}
+                    title="Replace script with the selected Bland agent's default prompt"
+                  >
+                    <RotateCcw className="h-3 w-3 mr-1" />
+                    Use agent prompt
+                  </Button>
+                )}
+              </div>
               <Textarea
                 value={script}
                 onChange={(e) => setScript(e.target.value)}
                 rows={6}
                 className="font-mono text-sm"
-                placeholder="What the AI says when the call connects…"
+                placeholder="What Twilio TTS says when the call connects, and what Bland uses as its first sentence…"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Tokens: <code>{"{{business_name}}"}</code> <code>{"{{agent_name}}"}</code>
+                {selectedAgent?.bland_agent_id && (
+                  <span className="ml-2 text-emerald-600">· Aligned with Bland agent <code>{selectedAgent.bland_agent_id.slice(0, 8)}…</code></span>
+                )}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2">
