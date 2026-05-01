@@ -20,13 +20,20 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const TWILIO_FROM = Deno.env.get("TWILIO_FROM_NUMBER") || Deno.env.get("TWILIO_PHONE_NUMBER");
+    const TWILIO_ACCOUNT_SID =
+      Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID") ||
+      Deno.env.get("TWILIO_ACCOUNT_SID");
+    const TWILIO_AUTH_TOKEN =
+      Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN") ||
+      Deno.env.get("TWILIO_AUTH_TOKEN");
+    const TWILIO_FROM =
+      Deno.env.get("BRANDARO_TWILIO_NUMBER") ||
+      Deno.env.get("TWILIO_FROM_NUMBER") ||
+      Deno.env.get("TWILIO_PHONE_NUMBER");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 
     if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM) {
-      return json({ error: "Twilio credentials not configured (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER)" }, 500);
+      return json({ error: "Twilio credentials not configured (prefer BRANDARO_TWILIO_ACCOUNT_SID, BRANDARO_TWILIO_AUTH_TOKEN, BRANDARO_TWILIO_NUMBER; fallback to legacy TWILIO_* secrets)" }, 500);
     }
     if (!TWILIO_ACCOUNT_SID.startsWith("AC")) {
       return json({ error: "TWILIO_ACCOUNT_SID must start with 'AC'" }, 500);
