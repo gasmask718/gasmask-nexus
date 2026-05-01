@@ -63,33 +63,76 @@ Deno.serve(async (req) => {
                           queueDepth > 0 ? "ok" : "idle";
 
     // ── VOICE HEALTH ──
-    const hasTwilioSid = !!Deno.env.get("TWILIO_ACCOUNT_SID");
-    const hasTwilioApi = !!Deno.env.get("TWILIO_API_SID") && !!Deno.env.get("TWILIO_API_SECRET");
-    const hasTwimlApp = !!Deno.env.get("TWILIO_TWIML_APP_SID");
+    // Prefer Brandaro-dedicated Twilio (per Brandaro Twilio Voice Integration standard),
+    // then fall back to legacy platform Twilio credentials.
+    const brandaroSid = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID");
+    const brandaroApiSid = Deno.env.get("BRANDARO_TWILIO_API_KEY_SID");
+    const brandaroApiSecret = Deno.env.get("BRANDARO_TWILIO_API_KEY_SECRET");
+    const brandaroAuthToken = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN");
+    const brandaroTwimlApp = Deno.env.get("BRANDARO_TWILIO_TWIML_APP_SID");
+
+    const legacySid = Deno.env.get("TWILIO_ACCOUNT_SID");
+    const legacyApiSid = Deno.env.get("TWILIO_API_SID");
+    const legacyApiSecret = Deno.env.get("TWILIO_API_SECRET");
+    const legacyAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+    const legacyTwimlApp = Deno.env.get("TWILIO_TWIML_APP_SID");
+
+    // Pick the first credential set that has SID + (API Key OR Auth Token)
+    let activeSid: string | undefined;
+    let activeUser: string | undefined;
+    let activePass: string | undefined;
+    let activeSource: "brandaro_api_key" | "brandaro_auth_token" | "legacy_api_key" | "legacy_auth_token" | "none" = "none";
+
+    if (brandaroSid && brandaroApiSid && brandaroApiSecret) {
+      activeSid = brandaroSid; activeUser = brandaroApiSid; activePass = brandaroApiSecret; activeSource = "brandaro_api_key";
+    } else if (brandaroSid && brandaroAuthToken) {
+      activeSid = brandaroSid; activeUser = brandaroSid; activePass = brandaroAuthToken; activeSource = "brandaro_auth_token";
+    } else if (legacySid && legacyApiSid && legacyApiSecret) {
+      activeSid = legacySid; activeUser = legacyApiSid; activePass = legacyApiSecret; activeSource = "legacy_api_key";
+    } else if (legacySid && legacyAuthToken) {
+      activeSid = legacySid; activeUser = legacySid; activePass = legacyAuthToken; activeSource = "legacy_auth_token";
+    }
 
     let twilioApi: "connected" | "error" | "unconfigured" = "unconfigured";
-    if (hasTwilioSid && hasTwilioApi) {
-      try {
-        const sid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
-        const apiSid = Deno.env.get("TWILIO_API_SID")!;
-        const apiSecret = Deno.env.get("TWILIO_API_SECRET")!;
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 2000);
-        const res = await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${sid}.json`,
-          {
-            headers: { Authorization: "Basic " + btoa(`${apiSid}:${apiSecret}`) },
-            signal: controller.signal,
-          },
-        );
-        clearTimeout(timeout);
-        twilioApi = res.ok ? "connected" : "error";
-      } catch {
+    let twilioError: string | undefined;
+    let twilioAccountStatus: string | undefined;
+
+    if (activeSid && activeUser && activePass) {
+      // Validate AC prefix per Twilio SID standard (subaccounts use SA)
+      if (!/^(AC|SA)/.test(activeSid)) {
         twilioApi = "error";
+        twilioError = `Invalid Twilio Account SID prefix (expected AC or SA, got "${activeSid.slice(0, 2)}") on source=${activeSource}`;
+      } else {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 5000);
+          const res = await fetch(
+            `https://api.twilio.com/2010-04-01/Accounts/${activeSid}.json`,
+            {
+              headers: { Authorization: "Basic " + btoa(`${activeUser}:${activePass}`) },
+              signal: controller.signal,
+            },
+          );
+          clearTimeout(timeout);
+          if (res.ok) {
+            const body = await res.json().catch(() => ({}));
+            twilioAccountStatus = body?.status;
+            twilioApi = body?.status === "active" ? "connected" : "error";
+            if (twilioApi === "error") twilioError = `Twilio account status=${body?.status}`;
+          } else {
+            twilioApi = "error";
+            const errText = await res.text().catch(() => "");
+            twilioError = `Twilio HTTP ${res.status}: ${errText.slice(0, 200)}`;
+          }
+        } catch (e) {
+          twilioApi = "error";
+          twilioError = e instanceof Error ? e.message : String(e);
+        }
       }
     }
 
-    const tokenAuthority = (hasTwilioSid && hasTwilioApi && hasTwimlApp) ? "ok" : "invalid";
+    const hasTwimlApp = !!(brandaroTwimlApp || legacyTwimlApp);
+    const tokenAuthority = (activeSid && activeUser && activePass && hasTwimlApp) ? "ok" : "invalid";
 
     // ── PROVIDERS ──
     const hasElevenLabs = !!Deno.env.get("ELEVENLABS_API_KEY");
@@ -134,6 +177,9 @@ Deno.serve(async (req) => {
       voice: {
         token_authority: tokenAuthority,
         twilio_api: twilioApi,
+        twilio_source: activeSource,
+        twilio_account_status: twilioAccountStatus,
+        twilio_error: twilioError,
         twiml_app_configured: hasTwimlApp,
       },
 
