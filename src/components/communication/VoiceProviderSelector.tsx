@@ -2,7 +2,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Mic } from "lucide-react";
 
-export type VoiceProviderOption = "auto" | "elevenlabs" | "aws_polly";
+export type VoiceProviderOption = "auto" | "aws_polly";
 export type VoiceModeOption = "balanced" | "cost_optimized" | "quality_optimized";
 
 interface VoiceProviderSelectorProps {
@@ -17,7 +17,6 @@ interface VoiceProviderSelectorProps {
 
 const providerOptions: { value: VoiceProviderOption; label: string }[] = [
   { value: "auto", label: "Auto (System Decides)" },
-  { value: "elevenlabs", label: "ElevenLabs" },
   { value: "aws_polly", label: "AWS Polly" },
 ];
 
@@ -99,9 +98,7 @@ export function VoiceProviderSelector({
 
 /** Small badge showing which provider is active during a call */
 export function VoiceProviderBadge({ provider, wasFallback }: { provider: string; wasFallback?: boolean }) {
-  const label =
-    provider === "elevenlabs" ? "ElevenLabs" :
-    provider === "aws_polly" ? "AWS Polly" : "Auto";
+  const label = provider === "aws_polly" ? "AWS Polly" : "Auto";
 
   return (
     <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-muted border">
