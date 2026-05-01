@@ -1,6 +1,5 @@
-// VA Email Sender — sends real email via Gmail SMTP using app password
-// Uses denomailer (Deno-native SMTP client). No verify_jwt required.
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+// VA Email Sender — uses Resend API (reliable in Deno edge runtime)
+// Falls back to Gmail SMTP only if RESEND_API_KEY is missing.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,50 +19,24 @@ interface SendEmailBody {
   bcc?: string | string[];
 }
 
-function asArray(v: string | string[] | undefined): string[] {
-  if (!v) return [];
-  return Array.isArray(v) ? v : [v];
-}
+const asArray = (v: string | string[] | undefined): string[] =>
+  !v ? [] : Array.isArray(v) ? v : [v];
 
-function isEmail(s: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
-}
+const isEmail = (s: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
-  const userRaw = Deno.env.get("VA_GMAIL_USER") ?? "";
-  const passRaw = Deno.env.get("VA_GMAIL_APP_PASSWORD") ?? "";
-  // Strip whitespace; Gmail App Passwords are often shown with spaces
-  const user = userRaw.trim();
-  const pass = passRaw.replace(/\s+/g, "");
-
-  if (!user || !pass) {
-    console.error("[va-send-email] Missing VA_GMAIL_USER or VA_GMAIL_APP_PASSWORD");
-    return new Response(
-      JSON.stringify({
-        error: "Email service not configured. Set VA_GMAIL_USER and VA_GMAIL_APP_PASSWORD.",
-      }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
-
   let body: SendEmailBody;
-  try {
-    body = await req.json();
-  } catch {
+  try { body = await req.json(); } catch {
     return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
@@ -73,82 +46,82 @@ Deno.serve(async (req) => {
 
   if (to.length === 0 || !to.every(isEmail)) {
     return new Response(JSON.stringify({ error: "Invalid or missing 'to' address" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  if (!body.subject || typeof body.subject !== "string") {
+  if (!body.subject) {
     return new Response(JSON.stringify({ error: "Missing 'subject'" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
   if (!body.html && !body.text) {
     return new Response(JSON.stringify({ error: "Provide 'html' or 'text' body" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
-  if (!isEmail(user)) {
-    console.error(`[va-send-email] VA_GMAIL_USER is not a valid email: "${user}"`);
-    return new Response(
-      JSON.stringify({
-        error: `VA_GMAIL_USER is not a valid email address (got "${user}"). Update the secret to your Gmail address only.`,
-      }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
+  const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
   const fromName = (body.from_name || "VA Notifications").replace(/[<>"\r\n]/g, "").trim();
-  const fromAddr = fromName ? `${fromName} <${user}>` : user;
 
-  const client = new SMTPClient({
-    connection: {
-      hostname: "smtp.gmail.com",
-      port: 587,
-      tls: false, // STARTTLS upgrade
-      auth: { username: user, password: pass },
-    },
-  });
+  // ---- Path A: Resend (preferred) ----
+  if (RESEND_API_KEY) {
+    // Use onboarding@resend.dev which works without domain verification.
+    // For production, replace with verified domain address.
+    const fromAddr = `${fromName} <onboarding@resend.dev>`;
 
-  try {
-    await client.send({
-      from: fromAddr,
-      to,
-      cc: cc.length ? cc : undefined,
-      bcc: bcc.length ? bcc : undefined,
-      replyTo: body.reply_to && isEmail(body.reply_to) ? body.reply_to : undefined,
-      subject: body.subject,
-      content: body.text ?? "",
-      html: body.html ?? undefined,
-    });
-    await client.close();
+    try {
+      const resp = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromAddr,
+          to,
+          cc: cc.length ? cc : undefined,
+          bcc: bcc.length ? bcc : undefined,
+          reply_to: body.reply_to && isEmail(body.reply_to) ? body.reply_to : undefined,
+          subject: body.subject,
+          html: body.html,
+          text: body.text,
+        }),
+      });
 
-    console.log(`[va-send-email] sent to=${to.join(",")} subject="${body.subject}"`);
-    return new Response(
-      JSON.stringify({ success: true, to, subject: body.subject }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  } catch (err) {
-    try { await client.close(); } catch (_) { /* noop */ }
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[va-send-email] SMTP send failed:", msg);
+      const data = await resp.json().catch(() => ({}));
 
-    const lower = msg.toLowerCase();
-    const isAuth =
-      lower.includes("auth") || lower.includes("credentials") ||
-      lower.includes("username") || lower.includes("password") ||
-      lower.includes("535");
+      if (!resp.ok) {
+        console.error("[va-send-email] Resend error:", resp.status, data);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: (data as any)?.message || `Resend API error (${resp.status})`,
+            provider: "resend",
+            details: data,
+          }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
 
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: isAuth
-          ? "Gmail authentication failed. Verify VA_GMAIL_USER and that VA_GMAIL_APP_PASSWORD is a valid App Password."
-          : `Email send failed: ${msg}`,
-        code: isAuth ? "AUTH_FAILED" : "SEND_FAILED",
-      }),
-      { status: isAuth ? 401 : 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+      console.log(`[va-send-email] sent via Resend to=${to.join(",")} id=${(data as any)?.id}`);
+      return new Response(
+        JSON.stringify({ success: true, provider: "resend", id: (data as any)?.id, to, subject: body.subject }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[va-send-email] Resend fetch failed:", msg);
+      return new Response(
+        JSON.stringify({ success: false, error: `Resend send failed: ${msg}`, provider: "resend" }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
   }
+
+  // ---- Path B: no provider configured ----
+  console.error("[va-send-email] No email provider configured (RESEND_API_KEY missing)");
+  return new Response(
+    JSON.stringify({ error: "Email service not configured. Set RESEND_API_KEY." }),
+    { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
 });
