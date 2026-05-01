@@ -64,17 +64,19 @@ Deno.serve(async (req) => {
     const callSid = params["CallSid"] || "";
     const calledTo = params["To"] || "";
 
-    // Load campaign bridge config
+    // Load campaign bridge config + the script we want Bland to follow.
     let bridgeMode = "bland_did";
     let bridgeTimeout = 15;
+    let campaignScript: string | null = null;
     if (campaign_id) {
       const { data: c } = await supabase
         .from("dialer_campaigns")
-        .select("bridge_mode, bridge_timeout_seconds")
+        .select("bridge_mode, bridge_timeout_seconds, initial_script")
         .eq("id", campaign_id)
         .maybeSingle();
       if ((c as any)?.bridge_mode) bridgeMode = (c as any).bridge_mode;
       if ((c as any)?.bridge_timeout_seconds) bridgeTimeout = (c as any).bridge_timeout_seconds;
+      if ((c as any)?.initial_script) campaignScript = (c as any).initial_script;
     }
 
     const useDid = bridgeMode === "bland_did" && !!BLAND_INBOUND_NUMBER;
