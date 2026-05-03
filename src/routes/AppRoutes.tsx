@@ -231,6 +231,7 @@ const CommunicationAutomation = lazy(() => import('@/pages/CommunicationAutomati
 const CommunicationsAI = lazy(() => import('@/pages/CommunicationsAI'));
 const SecurityConsole = lazy(() => import('@/components/security/SecurityConsole').then(m => ({ default: m.SecurityConsole })));
 const RolesPermissionsPage = lazy(() => import('@/components/security/RolesPermissionsPage').then(m => ({ default: m.RolesPermissionsPage })));
+const StoreDeduplicationPage = lazy(() => import('@/pages/admin/StoreDeduplicationPage'));
 const UserManagementPage = lazy(() => import('@/components/security/UserManagementPage'));
 const MessagesPage = lazy(() => import('@/pages/Messages'));
 const CommunicationInsights = lazy(() => import('@/pages/CommunicationInsights'));
