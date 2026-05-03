@@ -437,6 +437,11 @@ export function useBulkUpload() {
         skipped: 0,
         errors: [],
         auditLogId: null,
+        inserted: 0,
+        updated: 0,
+        skippedDuplicate: 0,
+        errored: 0,
+        skippedDuplicateMatches: [],
       };
 
       try {
