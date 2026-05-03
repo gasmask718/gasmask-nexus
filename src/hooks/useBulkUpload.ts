@@ -58,6 +58,12 @@ export interface ImportResult {
   skipped: number;
   errors: RowValidationError[];
   auditLogId: string | null;
+  // Step 1.5 — fine-grained stores-table outcomes
+  inserted: number;
+  updated: number;
+  skippedDuplicate: number;
+  errored: number;
+  skippedDuplicateMatches: { rowNumber: number; matchedStoreId: string }[];
 }
 
 const initialState: UploadState = {
