@@ -39685,6 +39685,48 @@ export type Database = {
         }
         Relationships: []
       }
+      dynasty_change_log: {
+        Row: {
+          after_data: Json | null
+          before_data: Json | null
+          change_type: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          notes: string | null
+          performed_at: string
+          performed_by: string | null
+          related_entity_id: string | null
+          session_label: string | null
+        }
+        Insert: {
+          after_data?: Json | null
+          before_data?: Json | null
+          change_type: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          notes?: string | null
+          performed_at?: string
+          performed_by?: string | null
+          related_entity_id?: string | null
+          session_label?: string | null
+        }
+        Update: {
+          after_data?: Json | null
+          before_data?: Json | null
+          change_type?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          notes?: string | null
+          performed_at?: string
+          performed_by?: string | null
+          related_entity_id?: string | null
+          session_label?: string | null
+        }
+        Relationships: []
+      }
       dynasty_checkpoints: {
         Row: {
           created_at: string
@@ -110812,6 +110854,19 @@ export type Database = {
       }
       current_ambassador_id: { Args: never; Returns: string }
       detect_intent_conflicts: { Args: { p_intent_id: string }; Returns: Json }
+      detect_store_address_duplicates: {
+        Args: never
+        Returns: {
+          created_dates: string[]
+          duplicate_group_id: number
+          normalized_address: string
+          phones: string[]
+          raw_addresses: string[]
+          store_count: number
+          store_ids: string[]
+          store_names: string[]
+        }[]
+      }
       dialer_claim_watchdog: { Args: { p_business_id: string }; Returns: Json }
       dialer_stuck_call_sweep: {
         Args: never
