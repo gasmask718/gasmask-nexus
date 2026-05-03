@@ -40185,6 +40185,63 @@ export type Database = {
           },
         ]
       }
+      dynasty_merge_overrides: {
+        Row: {
+          duplicate_group_id: number
+          id: string
+          manual_winner_store_id: string
+          normalized_address: string
+          reason: string | null
+          set_at: string
+          set_by: string | null
+        }
+        Insert: {
+          duplicate_group_id: number
+          id?: string
+          manual_winner_store_id: string
+          normalized_address: string
+          reason?: string | null
+          set_at?: string
+          set_by?: string | null
+        }
+        Update: {
+          duplicate_group_id?: number
+          id?: string
+          manual_winner_store_id?: string
+          normalized_address?: string
+          reason?: string | null
+          set_at?: string
+          set_by?: string | null
+        }
+        Relationships: []
+      }
+      dynasty_merge_skiplist: {
+        Row: {
+          duplicate_group_id: number
+          id: string
+          normalized_address: string
+          reason: string | null
+          set_at: string
+          set_by: string | null
+        }
+        Insert: {
+          duplicate_group_id: number
+          id?: string
+          normalized_address: string
+          reason?: string | null
+          set_at?: string
+          set_by?: string | null
+        }
+        Update: {
+          duplicate_group_id?: number
+          id?: string
+          normalized_address?: string
+          reason?: string | null
+          set_at?: string
+          set_by?: string | null
+        }
+        Relationships: []
+      }
       dynasty_objection_library: {
         Row: {
           business_unit: string
@@ -110362,6 +110419,91 @@ export type Database = {
         Args: { p_period_end: string; p_period_start: string }
         Returns: number
       }
+      analyze_store_duplicate_groups: {
+        Args: never
+        Returns: {
+          bag_sale_ledger_count: number
+          call_recordings_count: number
+          call_revenue_attribution_count: number
+          call_revenue_events_count: number
+          communication_events_count: number
+          communication_messages_count: number
+          contact_interactions_count: number
+          contact_profiles_count: number
+          created_at: string
+          deals_count: number
+          deliveries_count: number
+          dialer_followups_count: number
+          duplicate_group_id: number
+          enrichment_count: number
+          followup_recommendations_count: number
+          fraud_flags_count: number
+          group_size: number
+          inventory_state_count: number
+          invoice_total_amount: number
+          invoices_count: number
+          is_active: boolean
+          is_pristine_shell: boolean
+          is_winner: boolean
+          last_any_activity: string
+          last_call_date: string
+          last_invoice_date: string
+          last_updated_at: string
+          last_visit_date: string
+          live_calls_count: number
+          location_events_count: number
+          manual_call_logs_count: number
+          messaging_log_count: number
+          messaging_targets_count: number
+          mission_items_count: number
+          needs_manual_review: boolean
+          normalized_address: string
+          orders_count: number
+          other_fk_count: number
+          phone: string
+          pipeline_count: number
+          raw_address: string
+          reminders_count: number
+          route_checkins_count: number
+          route_stops_count: number
+          sales_prospects_count: number
+          store_brand_relationships_count: number
+          store_brand_stickers_count: number
+          store_call_intelligence_count: number
+          store_contacts_count: number
+          store_credits_count: number
+          store_id: string
+          store_name: string
+          store_notes_count: number
+          store_opportunities_count: number
+          store_orders_count: number
+          store_payments_count: number
+          store_transactions_count: number
+          store_visits_count: number
+          store_voice_notes_count: number
+          store_wallet_balance: number
+          total_activity_score: number
+          tube_sale_ledger_count: number
+          visit_logs_count: number
+          voicemails_count: number
+          wholesale_orders_count: number
+        }[]
+      }
+      analyze_store_duplicate_groups_summary: {
+        Args: never
+        Returns: {
+          active_record_count: number
+          duplicate_group_id: number
+          group_classification: string
+          group_size: number
+          normalized_address: string
+          pristine_shell_count: number
+          proposed_winner_activity_score: number
+          proposed_winner_name: string
+          proposed_winner_store_id: string
+          review_priority: string
+        }[]
+      }
       apply_call_disposition: {
         Args: {
           p_actual_revenue?: number
@@ -110859,6 +111001,15 @@ export type Database = {
         Returns: string
       }
       current_ambassador_id: { Args: never; Returns: string }
+      detect_data_duplicates_in_group: {
+        Args: { p_group_id: number }
+        Returns: {
+          entity_count_total: number
+          entity_duplicates_within_group: number
+          entity_type: string
+          sample_duplicate_pairs: Json
+        }[]
+      }
       detect_intent_conflicts: { Args: { p_intent_id: string }; Returns: Json }
       detect_store_address_duplicates: {
         Args: never
