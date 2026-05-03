@@ -84410,11 +84410,13 @@ export type Database = {
           connected_group_id: string | null
           created_at: string | null
           created_by: string | null
+          created_by_user_id: string | null
           deleted_at: string | null
           email: string | null
           geo_id: string | null
           health_score: number | null
           id: string
+          ingestion_source: string | null
           is_simulation: boolean | null
           last_active_date: string | null
           last_performance_update: string | null
@@ -84481,11 +84483,13 @@ export type Database = {
           connected_group_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          created_by_user_id?: string | null
           deleted_at?: string | null
           email?: string | null
           geo_id?: string | null
           health_score?: number | null
           id?: string
+          ingestion_source?: string | null
           is_simulation?: boolean | null
           last_active_date?: string | null
           last_performance_update?: string | null
@@ -84552,11 +84556,13 @@ export type Database = {
           connected_group_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          created_by_user_id?: string | null
           deleted_at?: string | null
           email?: string | null
           geo_id?: string | null
           health_score?: number | null
           id?: string
+          ingestion_source?: string | null
           is_simulation?: boolean | null
           last_active_date?: string | null
           last_performance_update?: string | null
@@ -110950,6 +110956,15 @@ export type Database = {
         Args: { p_batch_id: string }
         Returns: undefined
       }
+      find_store_by_normalized_address: {
+        Args: {
+          p_city: string
+          p_state: string
+          p_street: string
+          p_zip: string
+        }
+        Returns: string
+      }
       force_portal_logout: {
         Args: { _reason?: string; _target_user_id: string }
         Returns: boolean
@@ -111500,6 +111515,15 @@ export type Database = {
       }
       normalize_brand_name: { Args: { raw_brand: string }; Returns: string }
       normalize_phone: { Args: { raw_phone: string }; Returns: string }
+      normalize_store_address: {
+        Args: {
+          p_city: string
+          p_state: string
+          p_street: string
+          p_zip: string
+        }
+        Returns: string
+      }
       not_developer: { Args: { _user_id: string }; Returns: boolean }
       override_intent_resolution: {
         Args: {

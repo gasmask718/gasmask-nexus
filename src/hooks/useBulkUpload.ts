@@ -58,6 +58,12 @@ export interface ImportResult {
   skipped: number;
   errors: RowValidationError[];
   auditLogId: string | null;
+  // Step 1.5 — fine-grained stores-table outcomes
+  inserted: number;
+  updated: number;
+  skippedDuplicate: number;
+  errored: number;
+  skippedDuplicateMatches: { rowNumber: number; matchedStoreId: string }[];
 }
 
 const initialState: UploadState = {
@@ -431,6 +437,11 @@ export function useBulkUpload() {
         skipped: 0,
         errors: [],
         auditLogId: null,
+        inserted: 0,
+        updated: 0,
+        skippedDuplicate: 0,
+        errored: 0,
+        skippedDuplicateMatches: [],
       };
 
       try {
@@ -530,7 +541,12 @@ export function useBulkUpload() {
         const filteredRows = validRows.filter((r) => !skipRows.has(r.rowNumber));
 
         if (state.uploadType === "stores" || state.uploadType === "combined_crm") {
-          await importStores(filteredRows, mode, result, appendRows, updateRows);
+          if (!user?.id) {
+            throw new Error(
+              "Cannot determine current user (auth.uid). Bulk upload requires an authenticated user for store provenance. Please re-authenticate and retry.",
+            );
+          }
+          await importStores(filteredRows, mode, result, appendRows, updateRows, user.id);
         } else if (state.uploadType === "store_contacts") {
           await importStoreContacts(filteredRows, result);
         } else if (state.uploadType === "store_notes") {
@@ -572,7 +588,29 @@ export function useBulkUpload() {
         queryClient.invalidateQueries({ queryKey: ["invoices"] });
         queryClient.invalidateQueries({ queryKey: ["stores-with-contacts"] });
 
-        toast.success(`Import complete: ${result.success} rows imported`);
+        if (state.uploadType === "stores" || state.uploadType === "combined_crm") {
+          const isNoOp = result.inserted === 0 && result.skippedDuplicate > 0;
+          const summary =
+            `✅ Inserted: ${result.inserted}  ` +
+            `🔄 Updated: ${result.updated}  ` +
+            `⏭️ Skipped (duplicate): ${result.skippedDuplicate}  ` +
+            `❌ Errored: ${result.errored}`;
+          if (isNoOp) {
+            toast.warning(`No new stores added — every row matched an existing store. ${summary}`, { duration: 10000 });
+          } else if (result.errored > 0) {
+            toast.warning(`Import complete with errors. ${summary}`, { duration: 8000 });
+          } else {
+            toast.success(`Import complete. ${summary}`, { duration: 8000 });
+          }
+          if (result.skippedDuplicateMatches.length > 0) {
+            console.info(
+              "[BulkUpload] Skipped duplicate rows (rowNumber → matched store id):",
+              result.skippedDuplicateMatches,
+            );
+          }
+        } else {
+          toast.success(`Import complete: ${result.success} rows imported`);
+        }
       } catch (error: any) {
         setState((prev) => ({
           ...prev,
@@ -608,6 +646,7 @@ async function importStores(
   result: ImportResult,
   appendRows: Set<number> = new Set(),
   updateRows: Set<number> = new Set(),
+  currentUserId?: string,
 ) {
   const BATCH_SIZE = 20;
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
@@ -762,21 +801,42 @@ async function importStores(
             }
           }
 
-          // ── Also write to legacy stores table ──
-          if (effectiveMode === "upsert" || shouldAppend || shouldUpdate) {
-            let query = supabase.from("stores").select("id").eq("name", storeData.name);
-            if (storeData.address_street) {
-              query = query.eq("address_street", storeData.address_street);
-            }
-            const { data: existing } = await query.maybeSingle();
+          // ── Write to legacy stores table (Step 1.5: normalized-address dedup + provenance) ──
+          // Every code path now consults find_store_by_normalized_address() before inserting.
+          if (!currentUserId) {
+            throw new Error("Missing currentUserId — cannot attribute store insert.");
+          }
 
-            if (existing) {
-              const updateData = { ...storeData };
+          let matchedStoreId: string | null = null;
+          try {
+            const { data: matchId, error: rpcErr } = await supabase.rpc(
+              "find_store_by_normalized_address",
+              {
+                p_street: storeData.address_street || "",
+                p_city: storeData.address_city || "",
+                p_state: storeData.address_state || "",
+                p_zip: storeData.address_zip || "",
+              },
+            );
+            if (rpcErr) {
+              console.error("[BulkUpload] dedup RPC error:", rpcErr);
+            } else if (matchId) {
+              matchedStoreId = matchId as string;
+            }
+          } catch (e) {
+            console.error("[BulkUpload] dedup RPC threw:", e);
+          }
+
+          // Decide insert vs update vs skip based on mode + match
+          const isUpdateMode = effectiveMode === "upsert" || shouldAppend || shouldUpdate;
+
+          if (matchedStoreId) {
+            if (isUpdateMode) {
+              // UPDATE existing — preserve created_by_user_id / ingestion_source on the original
+              const updateData: any = { ...storeData };
               if (shouldUpdate) {
                 Object.keys(updateData).forEach((k) => {
-                  if (updateData[k] === undefined) {
-                    delete updateData[k];
-                  }
+                  if (updateData[k] === undefined) delete updateData[k];
                 });
               } else {
                 Object.keys(updateData).forEach((k) => {
@@ -785,12 +845,42 @@ async function importStores(
                   }
                 });
               }
-              await supabase.from("stores").update(updateData).eq("id", existing.id);
+              // Never overwrite original creator/source on update
+              delete updateData.created_by_user_id;
+              delete updateData.ingestion_source;
+
+              const { error: updErr } = await supabase
+                .from("stores")
+                .update(updateData)
+                .eq("id", matchedStoreId);
+              if (updErr) {
+                result.errored += 1;
+                console.error("[BulkUpload] stores update error:", updErr);
+              } else {
+                result.updated += 1;
+              }
             } else {
-              await supabase.from("stores").insert(storeData);
+              // APPEND mode + duplicate found → SKIP, do not insert
+              result.skippedDuplicate += 1;
+              result.skippedDuplicateMatches.push({
+                rowNumber: row.rowNumber,
+                matchedStoreId,
+              });
             }
           } else {
-            await supabase.from("stores").insert(storeData);
+            // No match → INSERT with provenance
+            const insertData: any = {
+              ...storeData,
+              created_by_user_id: currentUserId,
+              ingestion_source: "bulk_upload",
+            };
+            const { error: insErr } = await supabase.from("stores").insert(insertData);
+            if (insErr) {
+              result.errored += 1;
+              console.error("[BulkUpload] stores insert error:", insErr);
+            } else {
+              result.inserted += 1;
+            }
           }
 
           if (row.data.tags) {
