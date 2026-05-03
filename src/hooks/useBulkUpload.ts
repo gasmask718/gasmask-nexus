@@ -588,7 +588,29 @@ export function useBulkUpload() {
         queryClient.invalidateQueries({ queryKey: ["invoices"] });
         queryClient.invalidateQueries({ queryKey: ["stores-with-contacts"] });
 
-        toast.success(`Import complete: ${result.success} rows imported`);
+        if (state.uploadType === "stores" || state.uploadType === "combined_crm") {
+          const isNoOp = result.inserted === 0 && result.skippedDuplicate > 0;
+          const summary =
+            `✅ Inserted: ${result.inserted}  ` +
+            `🔄 Updated: ${result.updated}  ` +
+            `⏭️ Skipped (duplicate): ${result.skippedDuplicate}  ` +
+            `❌ Errored: ${result.errored}`;
+          if (isNoOp) {
+            toast.warning(`No new stores added — every row matched an existing store. ${summary}`, { duration: 10000 });
+          } else if (result.errored > 0) {
+            toast.warning(`Import complete with errors. ${summary}`, { duration: 8000 });
+          } else {
+            toast.success(`Import complete. ${summary}`, { duration: 8000 });
+          }
+          if (result.skippedDuplicateMatches.length > 0) {
+            console.info(
+              "[BulkUpload] Skipped duplicate rows (rowNumber → matched store id):",
+              result.skippedDuplicateMatches,
+            );
+          }
+        } else {
+          toast.success(`Import complete: ${result.success} rows imported`);
+        }
       } catch (error: any) {
         setState((prev) => ({
           ...prev,
