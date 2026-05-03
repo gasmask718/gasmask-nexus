@@ -3154,6 +3154,15 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
 
+      {/* Data Quality — Store Deduplication Detection (read-only) */}
+      <Route path="/admin/store-deduplication" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']}>
+            <Layout><StoreDeduplicationPage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
       {/* QA Command Center - Production Readiness */}
       <Route path="/admin/qa-command-center" element={
         <ProtectedRoute>
