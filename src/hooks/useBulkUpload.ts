@@ -801,21 +801,42 @@ async function importStores(
             }
           }
 
-          // ── Also write to legacy stores table ──
-          if (effectiveMode === "upsert" || shouldAppend || shouldUpdate) {
-            let query = supabase.from("stores").select("id").eq("name", storeData.name);
-            if (storeData.address_street) {
-              query = query.eq("address_street", storeData.address_street);
-            }
-            const { data: existing } = await query.maybeSingle();
+          // ── Write to legacy stores table (Step 1.5: normalized-address dedup + provenance) ──
+          // Every code path now consults find_store_by_normalized_address() before inserting.
+          if (!currentUserId) {
+            throw new Error("Missing currentUserId — cannot attribute store insert.");
+          }
 
-            if (existing) {
-              const updateData = { ...storeData };
+          let matchedStoreId: string | null = null;
+          try {
+            const { data: matchId, error: rpcErr } = await supabase.rpc(
+              "find_store_by_normalized_address",
+              {
+                p_street: storeData.address_street || "",
+                p_city: storeData.address_city || "",
+                p_state: storeData.address_state || "",
+                p_zip: storeData.address_zip || "",
+              },
+            );
+            if (rpcErr) {
+              console.error("[BulkUpload] dedup RPC error:", rpcErr);
+            } else if (matchId) {
+              matchedStoreId = matchId as string;
+            }
+          } catch (e) {
+            console.error("[BulkUpload] dedup RPC threw:", e);
+          }
+
+          // Decide insert vs update vs skip based on mode + match
+          const isUpdateMode = effectiveMode === "upsert" || shouldAppend || shouldUpdate;
+
+          if (matchedStoreId) {
+            if (isUpdateMode) {
+              // UPDATE existing — preserve created_by_user_id / ingestion_source on the original
+              const updateData: any = { ...storeData };
               if (shouldUpdate) {
                 Object.keys(updateData).forEach((k) => {
-                  if (updateData[k] === undefined) {
-                    delete updateData[k];
-                  }
+                  if (updateData[k] === undefined) delete updateData[k];
                 });
               } else {
                 Object.keys(updateData).forEach((k) => {
@@ -824,12 +845,42 @@ async function importStores(
                   }
                 });
               }
-              await supabase.from("stores").update(updateData).eq("id", existing.id);
+              // Never overwrite original creator/source on update
+              delete updateData.created_by_user_id;
+              delete updateData.ingestion_source;
+
+              const { error: updErr } = await supabase
+                .from("stores")
+                .update(updateData)
+                .eq("id", matchedStoreId);
+              if (updErr) {
+                result.errored += 1;
+                console.error("[BulkUpload] stores update error:", updErr);
+              } else {
+                result.updated += 1;
+              }
             } else {
-              await supabase.from("stores").insert(storeData);
+              // APPEND mode + duplicate found → SKIP, do not insert
+              result.skippedDuplicate += 1;
+              result.skippedDuplicateMatches.push({
+                rowNumber: row.rowNumber,
+                matchedStoreId,
+              });
             }
           } else {
-            await supabase.from("stores").insert(storeData);
+            // No match → INSERT with provenance
+            const insertData: any = {
+              ...storeData,
+              created_by_user_id: currentUserId,
+              ingestion_source: "bulk_upload",
+            };
+            const { error: insErr } = await supabase.from("stores").insert(insertData);
+            if (insErr) {
+              result.errored += 1;
+              console.error("[BulkUpload] stores insert error:", insErr);
+            } else {
+              result.inserted += 1;
+            }
           }
 
           if (row.data.tags) {
