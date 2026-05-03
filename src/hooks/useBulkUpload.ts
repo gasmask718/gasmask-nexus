@@ -646,6 +646,7 @@ async function importStores(
   result: ImportResult,
   appendRows: Set<number> = new Set(),
   updateRows: Set<number> = new Set(),
+  currentUserId?: string,
 ) {
   const BATCH_SIZE = 20;
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
