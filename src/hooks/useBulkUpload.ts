@@ -541,7 +541,12 @@ export function useBulkUpload() {
         const filteredRows = validRows.filter((r) => !skipRows.has(r.rowNumber));
 
         if (state.uploadType === "stores" || state.uploadType === "combined_crm") {
-          await importStores(filteredRows, mode, result, appendRows, updateRows);
+          if (!user?.id) {
+            throw new Error(
+              "Cannot determine current user (auth.uid). Bulk upload requires an authenticated user for store provenance. Please re-authenticate and retry.",
+            );
+          }
+          await importStores(filteredRows, mode, result, appendRows, updateRows, user.id);
         } else if (state.uploadType === "store_contacts") {
           await importStoreContacts(filteredRows, result);
         } else if (state.uploadType === "store_notes") {
