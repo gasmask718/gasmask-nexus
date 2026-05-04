@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import twilio from "npm:twilio@5.5.4";
+import twilio from "npm:twilio@5";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,17 +75,6 @@ function createBrandaroToken(
   }));
 
   return accessToken.toJwt();
-}
-
-function base64url(input: Uint8Array): string {
-  return btoa(String.fromCharCode(...input))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
-function base64urlStr(str: string): string {
-  return base64url(new TextEncoder().encode(str));
 }
 
 serve(async (req: Request) => {
