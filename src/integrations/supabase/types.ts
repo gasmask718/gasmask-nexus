@@ -39690,6 +39690,7 @@ export type Database = {
           after_data: Json | null
           before_data: Json | null
           change_type: string
+          duplicate_group_id: number | null
           entity_id: string | null
           entity_type: string
           id: string
@@ -39697,12 +39698,14 @@ export type Database = {
           performed_at: string
           performed_by: string | null
           related_entity_id: string | null
+          session_id: string | null
           session_label: string | null
         }
         Insert: {
           after_data?: Json | null
           before_data?: Json | null
           change_type: string
+          duplicate_group_id?: number | null
           entity_id?: string | null
           entity_type: string
           id?: string
@@ -39710,12 +39713,14 @@ export type Database = {
           performed_at?: string
           performed_by?: string | null
           related_entity_id?: string | null
+          session_id?: string | null
           session_label?: string | null
         }
         Update: {
           after_data?: Json | null
           before_data?: Json | null
           change_type?: string
+          duplicate_group_id?: number | null
           entity_id?: string | null
           entity_type?: string
           id?: string
@@ -39723,6 +39728,7 @@ export type Database = {
           performed_at?: string
           performed_by?: string | null
           related_entity_id?: string | null
+          session_id?: string | null
           session_label?: string | null
         }
         Relationships: []
@@ -82034,6 +82040,7 @@ export type Database = {
           cadence_updated_at: string | null
           can_receive_sms: boolean | null
           created_at: string | null
+          created_via_session: string | null
           email: string | null
           escalation_flag: boolean | null
           id: string
@@ -82047,6 +82054,7 @@ export type Database = {
           last_text_sent_at: string | null
           name: string
           notes: string | null
+          original_store_id: string | null
           phone: string | null
           preferred_sms_provider: string | null
           relationship_type: string | null
@@ -82060,6 +82068,7 @@ export type Database = {
           sms_opt_in_at: string | null
           sms_opt_in_source: string | null
           sms_opt_in_status: string | null
+          source: string | null
           store_id: string
           total_calls_answered: number | null
           total_calls_attempted: number | null
@@ -82073,6 +82082,7 @@ export type Database = {
           cadence_updated_at?: string | null
           can_receive_sms?: boolean | null
           created_at?: string | null
+          created_via_session?: string | null
           email?: string | null
           escalation_flag?: boolean | null
           id?: string
@@ -82086,6 +82096,7 @@ export type Database = {
           last_text_sent_at?: string | null
           name: string
           notes?: string | null
+          original_store_id?: string | null
           phone?: string | null
           preferred_sms_provider?: string | null
           relationship_type?: string | null
@@ -82099,6 +82110,7 @@ export type Database = {
           sms_opt_in_at?: string | null
           sms_opt_in_source?: string | null
           sms_opt_in_status?: string | null
+          source?: string | null
           store_id: string
           total_calls_answered?: number | null
           total_calls_attempted?: number | null
@@ -82112,6 +82124,7 @@ export type Database = {
           cadence_updated_at?: string | null
           can_receive_sms?: boolean | null
           created_at?: string | null
+          created_via_session?: string | null
           email?: string | null
           escalation_flag?: boolean | null
           id?: string
@@ -82125,6 +82138,7 @@ export type Database = {
           last_text_sent_at?: string | null
           name?: string
           notes?: string | null
+          original_store_id?: string | null
           phone?: string | null
           preferred_sms_provider?: string | null
           relationship_type?: string | null
@@ -82138,6 +82152,7 @@ export type Database = {
           sms_opt_in_at?: string | null
           sms_opt_in_source?: string | null
           sms_opt_in_status?: string | null
+          source?: string | null
           store_id?: string
           total_calls_answered?: number | null
           total_calls_attempted?: number | null
@@ -82487,6 +82502,7 @@ export type Database = {
           delete_reason: string | null
           deleted_at: string | null
           deleted_by: string | null
+          deleted_reason: string | null
           dialect_preference: string | null
           do_not_call: boolean | null
           do_not_call_reason: string | null
@@ -82566,6 +82582,7 @@ export type Database = {
           delete_reason?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          deleted_reason?: string | null
           dialect_preference?: string | null
           do_not_call?: boolean | null
           do_not_call_reason?: string | null
@@ -82645,6 +82662,7 @@ export type Database = {
           delete_reason?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          deleted_reason?: string | null
           dialect_preference?: string | null
           do_not_call?: boolean | null
           do_not_call_reason?: string | null
@@ -84730,6 +84748,7 @@ export type Database = {
           created_by: string | null
           created_by_user_id: string | null
           deleted_at: string | null
+          deleted_reason: string | null
           email: string | null
           geo_id: string | null
           health_score: number | null
@@ -84803,6 +84822,7 @@ export type Database = {
           created_by?: string | null
           created_by_user_id?: string | null
           deleted_at?: string | null
+          deleted_reason?: string | null
           email?: string | null
           geo_id?: string | null
           health_score?: number | null
@@ -84876,6 +84896,7 @@ export type Database = {
           created_by?: string | null
           created_by_user_id?: string | null
           deleted_at?: string | null
+          deleted_reason?: string | null
           email?: string | null
           geo_id?: string | null
           health_score?: number | null
@@ -111316,6 +111337,14 @@ export type Database = {
         Args: { p_worker_id: string }
         Returns: undefined
       }
+      execute_store_merge_group: {
+        Args: {
+          p_group_id: number
+          p_operator_acknowledged_review?: boolean
+          p_session_label: string
+        }
+        Returns: Json
+      }
       expire_old_simulations: { Args: never; Returns: undefined }
       export_payout_batch_csv: {
         Args: { p_batch_id: string }
@@ -112326,6 +112355,7 @@ export type Database = {
         }
         Returns: Json
       }
+      verify_merge_session: { Args: { p_session_id: string }; Returns: Json }
       void_invoice: {
         Args: {
           p_invoice_id: string
