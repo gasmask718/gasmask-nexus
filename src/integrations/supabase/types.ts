@@ -110943,6 +110943,7 @@ export type Database = {
         Args: { p_worker_id: string }
         Returns: Json
       }
+      check_merge_approval: { Args: { p_group_id: number }; Returns: Json }
       check_opt_out_before_call: {
         Args: { p_business_id?: string; p_phone: string }
         Returns: Json
