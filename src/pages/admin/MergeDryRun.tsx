@@ -159,6 +159,16 @@ export default function MergeDryRun() {
         </div>
         <div className="flex items-end gap-2">
           <div>
+            <label className="text-xs text-muted-foreground">Group type</label>
+            <Select value={groupType} onValueChange={(v) => setGroupType(v as any)}>
+              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="address">Address-based</SelectItem>
+                <SelectItem value="phone_name">Phone+Name-based</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
             <label className="text-xs text-muted-foreground">Group ID</label>
             <Input
               value={groupIdInput}
