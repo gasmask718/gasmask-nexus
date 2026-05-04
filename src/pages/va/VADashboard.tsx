@@ -17,6 +17,7 @@ import { VALeaderboard } from '@/components/va/VALeaderboard';
 import { VACallbacksQueue } from '@/components/va/VACallbacksQueue';
 import { VACallStats } from '@/components/va/VACallStats';
 import { VARecentCalls } from '@/components/va/VARecentCalls';
+import { VACallHistory } from '@/components/va/VACallHistory';
 import { VASessionSummary } from '@/components/va/VASessionSummary';
 import { VACoachingInbox } from '@/components/va/VACoachingInbox';
 import { Button } from '@/components/ui/button';
