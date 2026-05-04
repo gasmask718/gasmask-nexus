@@ -22,6 +22,7 @@ import {
   Trophy, Ban, RotateCcw, Info, Loader2, ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
+import PhoneNameDuplicatesCard from "@/components/admin/PhoneNameDuplicatesCard";
 
 // ─── Types ────────────────────────────────────────────────────────────
 interface SummaryRow {
@@ -510,6 +511,8 @@ export default function StoreMergePreview() {
             </div>
           </CardContent>
         </Card>
+
+        <PhoneNameDuplicatesCard />
 
         {/* Summary cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-9 gap-4">
