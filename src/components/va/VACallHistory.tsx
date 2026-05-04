@@ -189,7 +189,7 @@ export function VACallHistory() {
 
       {/* Filters */}
       <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 md:p-4 grid grid-cols-2 md:grid-cols-6 gap-2 md:gap-3">
-        <div className="relative md:col-span-2">
+        <div className="relative col-span-2 md:col-span-2">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
           <Input
             value={search}
