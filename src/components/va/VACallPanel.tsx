@@ -56,10 +56,11 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
 
   useEffect(() => {
     if (callStatus === 'connected') {
+      if (!callStartedAt) setCallStartedAt(Date.now());
       timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [callStatus]);
+  }, [callStatus, callStartedAt]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
