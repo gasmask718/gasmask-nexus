@@ -154,6 +154,16 @@ export function VACallHistory() {
     return `${m}:${r.toString().padStart(2, "0")}`;
   };
 
+  const fmtWhen = (iso: string | null) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isToday(d)) return format(d, "h:mm a");
+    if (isYesterday(d)) return `Yest · ${format(d, "h:mm a")}`;
+    const days = (Date.now() - d.getTime()) / 86400000;
+    if (days < 7) return format(d, "EEE · h:mm a");
+    return format(d, "MMM d · h:mm a");
+  };
+
   const getAISummary = (c: any): string | null => {
     if (typeof c.ai_analysis === "string") return c.ai_analysis;
     if (c.ai_analysis && typeof c.ai_analysis === "object") {
