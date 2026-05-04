@@ -1,4 +1,5 @@
 import { createContext, useContext, ReactNode, useState, useCallback, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Device, Call } from "@twilio/voice-sdk";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -58,6 +59,7 @@ export function useVoiceDevice(): VoiceDeviceContextValue {
 // TransportError (31009) from firing on every page load.
 
 export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
+  const location = useLocation();
   const [isReady, setIsReady] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [activeCall, setActiveCall] = useState<Call | null>(null);
@@ -70,6 +72,7 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
   const [registeredAt, setRegisteredAt] = useState<string | null>(null);
   const [micPermission, setMicPermission] = useState<MicPermission>("checking");
   const [browserCallingConfigured, setBrowserCallingConfigured] = useState(false);
+  const tokenFunctionName = location.pathname.startsWith("/va") ? "brandaro-voice-token" : "twilio-voice-token";
 
   const deviceRef = useRef<Device | null>(null);
   const initializingRef = useRef(false);
@@ -119,7 +122,7 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      const { data, error: invokeError } = await supabase.functions.invoke("twilio-voice-token", {
+      const { data, error: invokeError } = await supabase.functions.invoke(tokenFunctionName, {
         body: {},
       });
 
@@ -182,7 +185,7 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       setDeviceState("idle");
       return null;
     }
-  }, []);
+  }, [tokenFunctionName]);
 
   // ── Call handlers ──
 
