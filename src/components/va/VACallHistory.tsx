@@ -60,7 +60,7 @@ export function VACallHistory() {
   }, [user?.id, queryClient]);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["va-call-history", user?.id, search, dateFilter, recordingFilter, directionFilter, page],
+    queryKey: ["va-call-history", user?.id, search, dateFilter, recordingFilter, directionFilter, aiFilter, page],
     queryFn: async () => {
       // No FK declared between va_call_logs.lead_id and any leads table, and lead_id
       // can reference either outreach_leads or brandaro_qualified_leads. So fetch the
@@ -75,6 +75,9 @@ export function VACallHistory() {
           { count: "exact" },
         )
         .eq("va_id", user!.id)
+        // Prioritize calls that have AI feedback (non-null ai_analysis) first,
+        // then most recent.
+        .order("ai_analysis", { ascending: false, nullsFirst: false })
         .order("called_at", { ascending: false, nullsFirst: false });
 
       if (dateFilter) {
@@ -83,6 +86,8 @@ export function VACallHistory() {
       if (recordingFilter === "with") q = q.not("recording_url", "is", null);
       if (recordingFilter === "without") q = q.is("recording_url", null);
       if (directionFilter !== "all") q = q.eq("direction", directionFilter);
+      if (aiFilter === "with_ai") q = q.not("ai_analysis", "is", null);
+      if (aiFilter === "without_ai") q = q.is("ai_analysis", null);
       if (search.trim()) {
         const t = search.trim().replace(/,/g, " ");
         q = q.or(
