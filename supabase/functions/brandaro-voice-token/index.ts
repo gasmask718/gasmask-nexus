@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import twilio from "npm:twilio@5.5.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +13,70 @@ const isValidSid = (value: string | null | undefined, prefix: string) =>
 const pickFirstValidSid = (prefix: string, ...values: Array<string | null | undefined>) =>
   values.find((value) => isValidSid(value, prefix)) ?? null;
 
+const readSecret = (name: string) => {
+  const value = Deno.env.get(name);
+  return typeof value === "string" ? value.trim() : null;
+};
+
+const twilioBasicAuth = (username: string, password: string) =>
+  `Basic ${btoa(`${username}:${password}`)}`;
+
+async function validateTwilioApiKey(accountSid: string, apiKeySid: string, apiKeySecret: string) {
+  const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}.json`, {
+    headers: {
+      Authorization: twilioBasicAuth(apiKeySid, apiKeySecret),
+    },
+  });
+
+  if (response.ok) {
+    return { ok: true as const, detail: "API key authenticated against Brandaro account" };
+  }
+
+  const detail = await response.text();
+  return {
+    ok: false as const,
+    detail: `Twilio rejected BRANDARO_TWILIO_API_KEY_SID / BRANDARO_TWILIO_API_KEY_SECRET for ${accountSid}: HTTP ${response.status} ${detail.slice(0, 200)}`,
+  };
+}
+
+async function validateTwimlApp(accountSid: string, apiKeySid: string, apiKeySecret: string, twimlAppSid: string) {
+  const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Applications/${twimlAppSid}.json`, {
+    headers: {
+      Authorization: twilioBasicAuth(apiKeySid, apiKeySecret),
+    },
+  });
+
+  if (response.ok) {
+    return { ok: true as const, detail: "Brandaro TwiML app belongs to the same Twilio account" };
+  }
+
+  const detail = await response.text();
+  return {
+    ok: false as const,
+    detail: `BRANDARO_TWILIO_TWIML_APP_SID is not accessible from ${accountSid}: HTTP ${response.status} ${detail.slice(0, 200)}`,
+  };
+}
+
+function createBrandaroToken(
+  accountSid: string,
+  apiKeySid: string,
+  apiKeySecret: string,
+  identity: string,
+  twimlAppSid: string,
+  ttl: number,
+): string {
+  const AccessToken = twilio.jwt.AccessToken;
+  const VoiceGrant = AccessToken.VoiceGrant;
+
+  const accessToken = new AccessToken(accountSid, apiKeySid, apiKeySecret, { identity, ttl });
+  accessToken.addGrant(new VoiceGrant({
+    incomingAllow: true,
+    outgoingApplicationSid: twimlAppSid,
+  }));
+
+  return accessToken.toJwt();
+}
+
 function base64url(input: Uint8Array): string {
   return btoa(String.fromCharCode(...input))
     .replace(/\+/g, "-")
@@ -23,80 +88,30 @@ function base64urlStr(str: string): string {
   return base64url(new TextEncoder().encode(str));
 }
 
-async function createTwilioAccessToken(
-  accountSid: string,
-  apiKeySid: string,
-  apiKeySecret: string,
-  identity: string,
-  twimlAppSid: string,
-  ttl = 3600,
-): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-
-  // The TwiML app for Brandaro VA calls - we use the va-power-dialer twiml endpoint
-  // We create a "virtual" TwiML app by embedding the voice URL in the token grant
-  const header = { alg: "HS256", typ: "JWT", cty: "twilio-fpa;v=1" };
-
-  const grants: Record<string, unknown> = {
-    identity,
-    voice: {
-      incoming: { allow: true },
-      outgoing: {
-        application_sid: twimlAppSid,
-      },
-    },
-  };
-
-  const payload = {
-    jti: `${apiKeySid}-${now}`,
-    iss: apiKeySid,
-    sub: accountSid,
-    iat: now,
-    nbf: now,
-    exp: now + ttl,
-    grants,
-  };
-
-  const encodedHeader = base64urlStr(JSON.stringify(header));
-  const encodedPayload = base64urlStr(JSON.stringify(payload));
-  const signingInput = `${encodedHeader}.${encodedPayload}`;
-
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(apiKeySecret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-
-  const signature = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    new TextEncoder().encode(signingInput),
-  );
-
-  return `${signingInput}.${base64url(new Uint8Array(signature))}`;
-}
-
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const accountSid = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID");
-    const apiKeySid = Deno.env.get("BRANDARO_TWILIO_API_KEY_SID");
-    const apiKeySecret = Deno.env.get("BRANDARO_TWILIO_API_KEY_SECRET");
-    const rawTwimlAppSid = Deno.env.get("BRANDARO_TWILIO_TWIML_APP_SID");
-    const fallbackTwimlAppSid = Deno.env.get("TWILIO_TWIML_APP_SID");
+    const accountSid = readSecret("BRANDARO_TWILIO_ACCOUNT_SID");
+    const apiKeySid = readSecret("BRANDARO_TWILIO_API_KEY_SID");
+    const apiKeySecret = readSecret("BRANDARO_TWILIO_API_KEY_SECRET");
+    const rawTwimlAppSid = readSecret("BRANDARO_TWILIO_TWIML_APP_SID");
+    const fallbackTwimlAppSid = readSecret("TWILIO_TWIML_APP_SID");
     const twimlAppSid = pickFirstValidSid("AP", rawTwimlAppSid, fallbackTwimlAppSid);
-    const brandaroAuthToken = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN");
-    const fallbackAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+    const brandaroAuthToken = readSecret("BRANDARO_TWILIO_AUTH_TOKEN");
+    const fallbackAuthToken = readSecret("TWILIO_AUTH_TOKEN");
+    const health = {
+      BRANDARO_TWILIO_ACCOUNT_SID: isValidSid(accountSid, "AC"),
+      BRANDARO_TWILIO_API_KEY_SID: isValidSid(apiKeySid, "SK"),
+      BRANDARO_TWILIO_API_KEY_SECRET: Boolean(apiKeySecret),
+      BRANDARO_TWILIO_TWIML_APP_SID: Boolean(twimlAppSid),
+    };
 
     if (!isValidSid(accountSid, "AC") || !isValidSid(apiKeySid, "SK") || !apiKeySecret) {
       return new Response(
-        JSON.stringify({ configured: false, error: "Brandaro Twilio credentials not configured" }),
+        JSON.stringify({ configured: false, error: "Brandaro Twilio credentials not configured", health }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
@@ -107,12 +122,12 @@ serve(async (req: Request) => {
       const authCandidates = [brandaroAuthToken, fallbackAuthToken].filter((value, index, array) => value && array.indexOf(value) === index) as string[];
       if (authCandidates.length === 0) {
         return new Response(
-          JSON.stringify({ configured: false, error: "A valid Twilio auth token is needed to create the Brandaro TwiML app" }),
+          JSON.stringify({ configured: false, error: "A valid Twilio auth token is needed to create the Brandaro TwiML app", health }),
           { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
         );
       }
 
-      const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+      const SUPABASE_URL = readSecret("SUPABASE_URL")!;
       const twimlUrl = `${SUPABASE_URL}/functions/v1/brandaro-call-twiml`;
 
       let createRes: Response | null = null;
@@ -144,7 +159,7 @@ serve(async (req: Request) => {
 
       if (!createRes?.ok) {
         return new Response(
-          JSON.stringify({ configured: false, error: "Failed to create TwiML app: " + lastCreateError }),
+          JSON.stringify({ configured: false, error: "Failed to create TwiML app: " + lastCreateError, health }),
           { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
         );
       }
@@ -162,7 +177,7 @@ serve(async (req: Request) => {
         });
       }
 
-      const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const supabase = createClient(readSecret("SUPABASE_URL")!, readSecret("SUPABASE_SERVICE_ROLE_KEY")!);
       const jwtToken = authHeader.replace("Bearer ", "");
       const { data: { user }, error: authError } = await supabase.auth.getUser(jwtToken);
 
@@ -176,7 +191,14 @@ serve(async (req: Request) => {
       const ttl = 3600;
 
       // Temporarily patch grants to use the new app SID
-      const token = await createBrandaroToken(accountSid, apiKeySid, apiKeySecret, identity, newAppSid, ttl);
+      const apiValidation = await validateTwilioApiKey(accountSid, apiKeySid, apiKeySecret);
+      if (!apiValidation.ok) {
+        return new Response(JSON.stringify({ configured: false, error: apiValidation.detail, health }), {
+          status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      const token = createBrandaroToken(accountSid, apiKeySid, apiKeySecret, identity, newAppSid, ttl);
 
       return new Response(
         JSON.stringify({
@@ -185,6 +207,7 @@ serve(async (req: Request) => {
           expires_at: new Date(Date.now() + ttl * 1000).toISOString(),
           ttl,
           twiml_app_sid: newAppSid,
+          health: { ...health, BRANDARO_TWILIO_TWIML_APP_SID: true },
           note: "Save BRANDARO_TWILIO_TWIML_APP_SID=" + newAppSid + " as a secret for future use",
         }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
@@ -199,7 +222,7 @@ serve(async (req: Request) => {
       });
     }
 
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const supabase = createClient(readSecret("SUPABASE_URL")!, readSecret("SUPABASE_SERVICE_ROLE_KEY")!);
     const jwtToken = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabase.auth.getUser(jwtToken);
 
@@ -212,7 +235,21 @@ serve(async (req: Request) => {
     const identity = `brandaro_${user.id.replace(/-/g, "")}`;
     const ttl = 3600;
 
-    const token = await createBrandaroToken(accountSid, apiKeySid, apiKeySecret, identity, twimlAppSid, ttl);
+    const apiValidation = await validateTwilioApiKey(accountSid, apiKeySid, apiKeySecret);
+    if (!apiValidation.ok) {
+      return new Response(JSON.stringify({ configured: false, error: apiValidation.detail, health }), {
+        status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const appValidation = await validateTwimlApp(accountSid, apiKeySid, apiKeySecret, twimlAppSid);
+    if (!appValidation.ok) {
+      return new Response(JSON.stringify({ configured: false, error: appValidation.detail, health }), {
+        status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const token = createBrandaroToken(accountSid, apiKeySid, apiKeySecret, identity, twimlAppSid, ttl);
 
     return new Response(
       JSON.stringify({
@@ -220,6 +257,7 @@ serve(async (req: Request) => {
         identity,
         expires_at: new Date(Date.now() + ttl * 1000).toISOString(),
         ttl,
+        health,
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
@@ -232,47 +270,3 @@ serve(async (req: Request) => {
   }
 });
 
-async function createBrandaroToken(
-  accountSid: string,
-  apiKeySid: string,
-  apiKeySecret: string,
-  identity: string,
-  twimlAppSid: string,
-  ttl: number,
-): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
-  const header = { alg: "HS256", typ: "JWT", cty: "twilio-fpa;v=1" };
-
-  const grants: Record<string, unknown> = {
-    identity,
-    voice: {
-      incoming: { allow: true },
-      outgoing: { application_sid: twimlAppSid },
-    },
-  };
-
-  const payload = {
-    jti: `${apiKeySid}-${now}`,
-    iss: apiKeySid,
-    sub: accountSid,
-    iat: now,
-    nbf: now,
-    exp: now + ttl,
-    grants,
-  };
-
-  const encodedHeader = base64urlStr(JSON.stringify(header));
-  const encodedPayload = base64urlStr(JSON.stringify(payload));
-  const signingInput = `${encodedHeader}.${encodedPayload}`;
-
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(apiKeySecret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-
-  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(signingInput));
-  return `${signingInput}.${base64url(new Uint8Array(signature))}`;
-}
