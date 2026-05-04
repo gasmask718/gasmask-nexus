@@ -16,7 +16,20 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { AlertTriangle, Download, ChevronDown, ShieldCheck, Loader2 } from "lucide-react";
+import { AlertTriangle, Download, ChevronDown, ShieldCheck, Loader2, RefreshCw, Clock } from "lucide-react";
+
+function formatStaleness(ts: string | null): { label: string; isStale: boolean } {
+  if (!ts) return { label: "never", isStale: true };
+  const diffMs = Date.now() - new Date(ts).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  const hrs = Math.floor(mins / 60);
+  const days = Math.floor(hrs / 24);
+  const isStale = diffMs > 60 * 60 * 1000; // >1h
+  if (mins < 1) return { label: "just now", isStale: false };
+  if (mins < 60) return { label: `${mins} min ago`, isStale };
+  if (hrs < 24) return { label: `${hrs} hr ago`, isStale };
+  return { label: `${days} day${days > 1 ? "s" : ""} ago`, isStale };
+}
 
 type Json = any; // dry-run shape is large + dynamic
 
@@ -38,6 +51,37 @@ export default function MergeDryRun() {
       if (error) throw error;
       return data;
     },
+  });
+
+  const { data: cacheMeta, refetch: refetchMeta } = useQuery({
+    queryKey: ["merge-cache-meta"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dynasty_merge_analysis_cache_meta" as any)
+        .select("last_refreshed_at, rows_cached, last_refresh_duration_seconds")
+        .order("last_refreshed_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+    refetchInterval: 60_000,
+  });
+
+  const refreshCache = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("refresh_merge_analysis_cache" as any);
+      if (error) throw error;
+      return data as any;
+    },
+    onSuccess: (res: any) => {
+      const rows = res?.rows_cached ?? res?.[0]?.rows_cached ?? "?";
+      const dur = res?.duration_seconds ?? res?.[0]?.duration_seconds ?? "?";
+      toast.success(`Cache refreshed: ${rows} rows in ${dur}s`);
+      refetchMeta();
+      qc.invalidateQueries({ queryKey: ["merge-dry-run"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Cache refresh failed"),
   });
 
   const { data: feedback } = useQuery({
@@ -129,8 +173,47 @@ export default function MergeDryRun() {
             <Download className="h-4 w-4 mr-2" />
             JSON
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => refreshCache.mutate()}
+            disabled={refreshCache.isPending}
+            title="Rebuild duplicate-analysis cache (admin only)"
+          >
+            {refreshCache.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            Refresh Cache
+          </Button>
         </div>
       </div>
+
+      {(() => {
+        const stale = formatStaleness(cacheMeta?.last_refreshed_at ?? null);
+        return (
+          <div
+            className={
+              "flex items-center gap-2 text-xs px-3 py-2 rounded-md border " +
+              (stale.isStale
+                ? "bg-yellow-500/10 border-yellow-500/40 text-yellow-700 dark:text-yellow-400"
+                : "bg-muted/40 border-border text-muted-foreground")
+            }
+          >
+            <Clock className="h-3.5 w-3.5" />
+            <span>
+              Analysis cache refreshed: <strong>{stale.label}</strong>
+              {cacheMeta?.rows_cached != null && <> · {cacheMeta.rows_cached} rows cached</>}
+              {cacheMeta?.last_refresh_duration_seconds != null && (
+                <> · last build {Number(cacheMeta.last_refresh_duration_seconds).toFixed(2)}s</>
+              )}
+            </span>
+            {stale.isStale && (
+              <Badge variant="destructive" className="ml-auto text-[10px]">Stale &gt; 1 hour</Badge>
+            )}
+          </div>
+        );
+      })()}
 
       {isFetching && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
