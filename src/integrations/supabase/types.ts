@@ -111307,6 +111307,26 @@ export type Database = {
           store_names: string[]
         }[]
       }
+      detect_store_phone_name_duplicates: {
+        Args: never
+        Returns: {
+          created_at: string
+          distinct_addresses: number
+          distinct_names: number
+          group_size: number
+          is_owner_cluster_candidate: boolean
+          is_winner: boolean
+          needs_review: boolean
+          norm_name: string
+          norm_phone: string
+          phone: string
+          phone_name_group_id: number
+          raw_address: string
+          review_reason: string
+          store_id: string
+          store_name: string
+        }[]
+      }
       dialer_claim_watchdog: { Args: { p_business_id: string }; Returns: Json }
       dialer_stuck_call_sweep: {
         Args: never
@@ -111390,6 +111410,7 @@ export type Database = {
           store_name: string
         }[]
       }
+      extract_address_from_name: { Args: { p_name: string }; Returns: string }
       finalize_invoice: {
         Args: { p_invoice_id: string; p_user_id?: string }
         Returns: Json
@@ -111977,6 +111998,10 @@ export type Database = {
         Returns: Json
       }
       preview_invoice_repair: { Args: { p_invoice_id: string }; Returns: Json }
+      preview_phone_name_merge_group: {
+        Args: { p_phone_name_group_id: number }
+        Returns: Json
+      }
       preview_store_merge_group: { Args: { p_group_id: number }; Returns: Json }
       process_ai_approval: {
         Args: { p_approved: boolean; p_notes?: string; p_request_id: string }
