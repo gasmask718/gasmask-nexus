@@ -9,6 +9,9 @@ const corsHeaders = {
 const isValidSid = (value: string | null | undefined, prefix: string) =>
   typeof value === "string" && new RegExp(`^${prefix}[A-Za-z0-9]{32}$`).test(value);
 
+const pickFirstValidSid = (prefix: string, ...values: Array<string | null | undefined>) =>
+  values.find((value) => isValidSid(value, prefix)) ?? null;
+
 function base64url(input: Uint8Array): string {
   return btoa(String.fromCharCode(...input))
     .replace(/\+/g, "-")
@@ -86,7 +89,10 @@ serve(async (req: Request) => {
     const apiKeySid = Deno.env.get("BRANDARO_TWILIO_API_KEY_SID");
     const apiKeySecret = Deno.env.get("BRANDARO_TWILIO_API_KEY_SECRET");
     const rawTwimlAppSid = Deno.env.get("BRANDARO_TWILIO_TWIML_APP_SID");
-    const twimlAppSid = isValidSid(rawTwimlAppSid, "AP") ? rawTwimlAppSid : null;
+    const fallbackTwimlAppSid = Deno.env.get("TWILIO_TWIML_APP_SID");
+    const twimlAppSid = pickFirstValidSid("AP", rawTwimlAppSid, fallbackTwimlAppSid);
+    const brandaroAuthToken = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN");
+    const fallbackAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN");
 
     if (!isValidSid(accountSid, "AC") || !isValidSid(apiKeySid, "SK") || !apiKeySecret) {
       return new Response(
@@ -98,10 +104,10 @@ serve(async (req: Request) => {
     // If no valid TwiML app SID, create one via Twilio API
     if (!twimlAppSid) {
       console.log("No valid BRANDARO_TWILIO_TWIML_APP_SID set - creating TwiML app...");
-      const authToken = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN");
-      if (!authToken) {
+      const authCandidates = [brandaroAuthToken, fallbackAuthToken].filter((value, index, array) => value && array.indexOf(value) === index) as string[];
+      if (authCandidates.length === 0) {
         return new Response(
-          JSON.stringify({ configured: false, error: "BRANDARO_TWILIO_AUTH_TOKEN needed to create TwiML app" }),
+          JSON.stringify({ configured: false, error: "A valid Twilio auth token is needed to create the Brandaro TwiML app" }),
           { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
         );
       }
@@ -109,30 +115,36 @@ serve(async (req: Request) => {
       const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
       const twimlUrl = `${SUPABASE_URL}/functions/v1/brandaro-call-twiml`;
 
-      // Create TwiML application
-      const createRes = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Applications.json`,
-        {
-          method: "POST",
-          headers: {
-            "Authorization": "Basic " + btoa(`${accountSid}:${authToken}`),
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            FriendlyName: "Brandaro VA Dialer",
-            VoiceUrl: twimlUrl,
-            VoiceMethod: "POST",
-            StatusCallback: `${SUPABASE_URL}/functions/v1/brandaro-call-status`,
-            StatusCallbackMethod: "POST",
-          }),
-        },
-      );
+      let createRes: Response | null = null;
+      let lastCreateError = "Unknown error";
 
-      if (!createRes.ok) {
-        const errText = await createRes.text();
-        console.error("Failed to create TwiML app:", errText);
+      for (const authToken of authCandidates) {
+        createRes = await fetch(
+          `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Applications.json`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": "Basic " + btoa(`${accountSid}:${authToken}`),
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              FriendlyName: "Brandaro VA Dialer",
+              VoiceUrl: twimlUrl,
+              VoiceMethod: "POST",
+              StatusCallback: `${SUPABASE_URL}/functions/v1/brandaro-call-status`,
+              StatusCallbackMethod: "POST",
+            }),
+          },
+        );
+
+        if (createRes.ok) break;
+        lastCreateError = await createRes.text();
+        console.error("Failed to create TwiML app with one auth token:", lastCreateError);
+      }
+
+      if (!createRes?.ok) {
         return new Response(
-          JSON.stringify({ configured: false, error: "Failed to create TwiML app: " + errText }),
+          JSON.stringify({ configured: false, error: "Failed to create TwiML app: " + lastCreateError }),
           { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
         );
       }
