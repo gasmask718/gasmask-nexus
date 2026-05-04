@@ -111357,6 +111357,10 @@ export type Database = {
         Args: { p_worker_id: string }
         Returns: undefined
       }
+      execute_address_extractions: {
+        Args: { p_apply_conflicts?: boolean; p_session_label: string }
+        Returns: Json
+      }
       execute_store_merge_group: {
         Args: {
           p_group_id: number
@@ -111996,6 +112000,24 @@ export type Database = {
           p_notes?: string
         }
         Returns: Json
+      }
+      preview_address_extractions: {
+        Args: never
+        Returns: {
+          conflict: boolean
+          conflict_reason: string
+          current_address_city: string
+          current_address_state: string
+          current_address_street: string
+          current_address_zip: string
+          current_master_name: string
+          current_name: string
+          extracted_address: string
+          has_existing_address: boolean
+          proposed_clean_master_name: string
+          proposed_clean_name: string
+          store_id: string
+        }[]
       }
       preview_invoice_repair: { Args: { p_invoice_id: string }; Returns: Json }
       preview_phone_name_merge_group: {
