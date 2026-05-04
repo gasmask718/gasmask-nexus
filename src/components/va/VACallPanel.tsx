@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { VAScripts } from './VAScripts';
 import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
+import { VAServicesPricing } from './VAServicesPricing';
 import { VAInvoiceModal } from './VAInvoiceModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -257,15 +258,17 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
 
       {/* Contextual Tabs */}
       <div className="glass-card rounded-2xl border border-border/50 overflow-hidden">
-        <Tabs defaultValue="scripts">
+        <Tabs defaultValue="services">
           <TabsList className="w-full bg-accent/30 rounded-none border-b border-border/30 h-10">
+            <TabsTrigger value="services" className="flex-1 text-xs data-[state=active]:bg-background/50">Services & Pricing</TabsTrigger>
+            <TabsTrigger value="faqs" className="flex-1 text-xs data-[state=active]:bg-background/50">{t('va.call.faqs')}</TabsTrigger>
             <TabsTrigger value="scripts" className="flex-1 text-xs data-[state=active]:bg-background/50">{t('va.call.scripts')}</TabsTrigger>
             <TabsTrigger value="rebuttals" className="flex-1 text-xs data-[state=active]:bg-background/50">{t('va.call.rebuttals')}</TabsTrigger>
-            <TabsTrigger value="faqs" className="flex-1 text-xs data-[state=active]:bg-background/50">{t('va.call.faqs')}</TabsTrigger>
           </TabsList>
+          <TabsContent value="services" className="p-4"><VAServicesPricing /></TabsContent>
+          <TabsContent value="faqs" className="p-4"><VAFAQs /></TabsContent>
           <TabsContent value="scripts" className="p-4"><VAScripts /></TabsContent>
           <TabsContent value="rebuttals" className="p-4"><VARebuttals /></TabsContent>
-          <TabsContent value="faqs" className="p-4"><VAFAQs /></TabsContent>
         </Tabs>
       </div>
 
