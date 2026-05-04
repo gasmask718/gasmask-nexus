@@ -37,7 +37,8 @@ export default function MergeDryRun() {
   const [groupIdInput, setGroupIdInput] = useState<string>("1");
   const [activeGroupId, setActiveGroupId] = useState<number | null>(1);
   const [feedbackText, setFeedbackText] = useState("");
-  const [decision, setDecision] = useState<"approve" | "hold" | "reject" | "needs_review">("needs_review");
+  type Decision = "approve" | "hold" | "reject" | "needs_review" | "override_winner" | "skiplist" | "defer_to_bulk";
+  const [decision, setDecision] = useState<Decision>("needs_review");
   const qc = useQueryClient();
 
   const { data, isFetching, error, refetch } = useQuery({
