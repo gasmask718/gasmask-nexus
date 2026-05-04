@@ -22,6 +22,7 @@ import {
   Trophy, Ban, RotateCcw, Info, Loader2, ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
+import PhoneNameDuplicatesCard from "@/components/admin/PhoneNameDuplicatesCard";
 
 // ─── Types ────────────────────────────────────────────────────────────
 interface SummaryRow {
