@@ -76,6 +76,16 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const configCheckedRef = useRef(false);
 
+  const getErrorMessage = useCallback((err: unknown, fallback: string) => {
+    if (err instanceof Error && err.message?.trim()) return err.message.trim();
+    if (typeof err === "string" && err.trim()) return err.trim();
+    if (err && typeof err === "object") {
+      const maybeMessage = (err as { message?: unknown }).message;
+      if (typeof maybeMessage === "string" && maybeMessage.trim()) return maybeMessage.trim();
+    }
+    return fallback;
+  }, []);
+
   // ── Microphone permission ──
   const checkMicPermission = useCallback(async () => {
     try {
@@ -250,13 +260,14 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       });
 
       device.on("error", (err) => {
-        console.warn("[VoiceDevice] Device error:", err.message);
-        setDeviceError(err.message);
-        lastErrorRef.current = err.message;
+        const message = getErrorMessage(err, "Voice device error");
+        console.warn("[VoiceDevice] Device error:", message);
+        setDeviceError(message);
+        lastErrorRef.current = message;
         setDeviceState("error");
         setIsReady(false);
         if (activeCall || isConnecting) {
-          toast.error(`Voice error: ${err.message}`);
+          toast.error(`Voice error: ${message}`);
         }
       });
 
@@ -276,7 +287,7 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       await device.register();
       deviceRef.current = device;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = getErrorMessage(err, lastErrorRef.current || deviceError || "Voice device failed to initialize");
       console.warn("[VoiceDevice] Device init error:", msg);
       setDeviceError(msg);
       lastErrorRef.current = msg;
@@ -284,7 +295,7 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
     } finally {
       initializingRef.current = false;
     }
-  }, [fetchToken, setupCallHandlers, deviceState, activeCall, isConnecting]);
+  }, [fetchToken, setupCallHandlers, deviceState, activeCall, isConnecting, deviceError, getErrorMessage]);
 
   // ── Actions ──
 
