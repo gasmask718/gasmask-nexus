@@ -512,6 +512,8 @@ export default function StoreMergePreview() {
           </CardContent>
         </Card>
 
+        <PhoneNameDuplicatesCard />
+
         {/* Summary cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-9 gap-4">
           <SummaryCard label="Total groups" value={totalGroups} />
