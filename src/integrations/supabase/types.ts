@@ -39799,6 +39799,36 @@ export type Database = {
         }
         Relationships: []
       }
+      dynasty_dryrun_feedback: {
+        Row: {
+          created_at: string
+          decision: string
+          duplicate_group_id: number
+          feedback_text: string | null
+          id: string
+          reviewer_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decision?: string
+          duplicate_group_id: number
+          feedback_text?: string | null
+          id?: string
+          reviewer_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decision?: string
+          duplicate_group_id?: number
+          feedback_text?: string | null
+          id?: string
+          reviewer_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dynasty_earn_affiliates: {
         Row: {
           avatar_url: string | null
