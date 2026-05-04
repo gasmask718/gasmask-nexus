@@ -279,6 +279,15 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
         </AnimatePresence>
       </div>
 
+      {/* Live Claude Coach */}
+      <VALiveCoachPanel
+        active={callStatus === 'connected'}
+        callLogId={callLogId}
+        leadId={lead.id}
+        leadName={lead.business_name}
+        startedAt={callStartedAt ?? undefined}
+      />
+
       {/* Contextual Tabs */}
       <div className="glass-card rounded-2xl border border-border/50 overflow-hidden">
         <Tabs defaultValue="services">
