@@ -450,28 +450,59 @@ export default function MergeDryRun() {
           </div>
 
           {/* Operator feedback */}
-          <Card>
+          <Card className={data.needs_review ? "border-yellow-500/60" : ""}>
             <CardHeader>
-              <CardTitle className="text-base">Operator Feedback</CardTitle>
-              <CardDescription>Record a decision and notes for this dry-run plan. Logged in dynasty_dryrun_feedback.</CardDescription>
+              <CardTitle className="text-base">
+                {data.needs_review ? "Operator Decision Required" : "Operator Feedback"}
+              </CardTitle>
+              <CardDescription>
+                Record a decision and notes for this dry-run plan. Logged in dynasty_dryrun_feedback.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex gap-2 items-end">
-                <div className="w-48">
+              <div className="flex gap-2 items-end flex-wrap">
+                <div className="w-64">
                   <label className="text-xs text-muted-foreground">Decision</label>
                   <Select value={decision} onValueChange={(v) => setDecision(v as any)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="needs_review">Needs review</SelectItem>
-                      <SelectItem value="approve">Approve</SelectItem>
-                      <SelectItem value="hold">Hold</SelectItem>
-                      <SelectItem value="reject">Reject</SelectItem>
+                      {data.needs_review ? (
+                        <>
+                          <SelectItem value="approve">Approve as proposed</SelectItem>
+                          <SelectItem value="override_winner">Override winner</SelectItem>
+                          <SelectItem value="skiplist">Skiplist this group</SelectItem>
+                          <SelectItem value="defer_to_bulk">Defer to bulk session</SelectItem>
+                        </>
+                      ) : (
+                        <>
+                          <SelectItem value="approve">Approve</SelectItem>
+                          <SelectItem value="needs_review">Needs review</SelectItem>
+                          <SelectItem value="hold">Hold</SelectItem>
+                          <SelectItem value="reject">Reject</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={() => submitFeedback.mutate()} disabled={submitFeedback.isPending}>
+                <Button
+                  onClick={() => submitFeedback.mutate()}
+                  disabled={
+                    submitFeedback.isPending ||
+                    (data.needs_review &&
+                      decision === "approve" &&
+                      !(Array.isArray(feedback) &&
+                        feedback.some((f: any) =>
+                          ["override_winner", "skiplist", "defer_to_bulk", "needs_review"].includes(f.decision),
+                        )))
+                  }
+                  title={
+                    data.needs_review && decision === "approve"
+                      ? "Record a non-approve decision first (override/skiplist/defer/needs_review)"
+                      : undefined
+                  }
+                >
                   {submitFeedback.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Submit feedback
+                  Submit decision
                 </Button>
               </div>
               <Textarea
@@ -482,7 +513,7 @@ export default function MergeDryRun() {
               />
               {Array.isArray(feedback) && feedback.length > 0 && (
                 <div className="space-y-1 mt-3">
-                  <div className="text-xs text-muted-foreground">Previous feedback ({feedback.length})</div>
+                  <div className="text-xs text-muted-foreground">Decision history ({feedback.length})</div>
                   {feedback.map((f: any) => (
                     <div key={f.id} className="text-xs border rounded p-2">
                       <Badge variant="outline" className="mr-2">{f.decision}</Badge>
