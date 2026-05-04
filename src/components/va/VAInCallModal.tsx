@@ -11,6 +11,7 @@ import {
 import { VAScripts } from './VAScripts';
 import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
+import { VAServicesPricing } from './VAServicesPricing';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
