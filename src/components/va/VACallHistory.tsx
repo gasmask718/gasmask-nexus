@@ -12,8 +12,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Phone, Search, ChevronLeft, ChevronRight, FileText, ChevronDown,
   PhoneOff, Clock, Calendar, User, AlertCircle, PhoneIncoming, PhoneOutgoing,
+  Sparkles,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, formatDistanceToNowStrict, isToday, isYesterday } from "date-fns";
 
 const PAGE_SIZE = 10;
 
@@ -35,13 +36,14 @@ export function VACallHistory() {
   const [dateFilter, setDateFilter] = useState("");
   const [recordingFilter, setRecordingFilter] = useState<"all" | "with" | "without">("all");
   const [directionFilter, setDirectionFilter] = useState<"all" | "outbound" | "inbound">("all");
+  const [aiFilter, setAiFilter] = useState<"all" | "with_ai" | "without_ai">("all");
   const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   // Reset to first page whenever filters change
   useEffect(() => {
     setPage(0);
-  }, [search, dateFilter, recordingFilter, directionFilter]);
+  }, [search, dateFilter, recordingFilter, directionFilter, aiFilter]);
 
   // Realtime: refresh when new calls land for this VA
   useEffect(() => {
@@ -58,7 +60,7 @@ export function VACallHistory() {
   }, [user?.id, queryClient]);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["va-call-history", user?.id, search, dateFilter, recordingFilter, directionFilter, page],
+    queryKey: ["va-call-history", user?.id, search, dateFilter, recordingFilter, directionFilter, aiFilter, page],
     queryFn: async () => {
       // No FK declared between va_call_logs.lead_id and any leads table, and lead_id
       // can reference either outreach_leads or brandaro_qualified_leads. So fetch the
@@ -73,6 +75,9 @@ export function VACallHistory() {
           { count: "exact" },
         )
         .eq("va_id", user!.id)
+        // Prioritize calls that have AI feedback (non-null ai_analysis) first,
+        // then most recent.
+        .order("ai_analysis", { ascending: false, nullsFirst: false })
         .order("called_at", { ascending: false, nullsFirst: false });
 
       if (dateFilter) {
@@ -81,6 +86,8 @@ export function VACallHistory() {
       if (recordingFilter === "with") q = q.not("recording_url", "is", null);
       if (recordingFilter === "without") q = q.is("recording_url", null);
       if (directionFilter !== "all") q = q.eq("direction", directionFilter);
+      if (aiFilter === "with_ai") q = q.not("ai_analysis", "is", null);
+      if (aiFilter === "without_ai") q = q.is("ai_analysis", null);
       if (search.trim()) {
         const t = search.trim().replace(/,/g, " ");
         q = q.or(
@@ -147,6 +154,16 @@ export function VACallHistory() {
     return `${m}:${r.toString().padStart(2, "0")}`;
   };
 
+  const fmtWhen = (iso: string | null) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isToday(d)) return format(d, "h:mm a");
+    if (isYesterday(d)) return `Yest · ${format(d, "h:mm a")}`;
+    const days = (Date.now() - d.getTime()) / 86400000;
+    if (days < 7) return format(d, "EEE · h:mm a");
+    return format(d, "MMM d · h:mm a");
+  };
+
   const getAISummary = (c: any): string | null => {
     if (typeof c.ai_analysis === "string") return c.ai_analysis;
     if (c.ai_analysis && typeof c.ai_analysis === "object") {
@@ -171,8 +188,8 @@ export function VACallHistory() {
       </div>
 
       {/* Filters */}
-      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 md:p-4 grid grid-cols-1 md:grid-cols-5 gap-2 md:gap-3">
-        <div className="relative md:col-span-2">
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 md:p-4 grid grid-cols-2 md:grid-cols-6 gap-2 md:gap-3">
+        <div className="relative col-span-2 md:col-span-2">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
           <Input
             value={search}
@@ -208,6 +225,16 @@ export function VACallHistory() {
             <SelectItem value="all">All calls</SelectItem>
             <SelectItem value="with">With recording</SelectItem>
             <SelectItem value="without">Without recording</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={aiFilter} onValueChange={(v) => setAiFilter(v as any)}>
+          <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">AI: any</SelectItem>
+            <SelectItem value="with_ai">With AI feedback</SelectItem>
+            <SelectItem value="without_ai">No AI feedback</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -268,17 +295,21 @@ export function VACallHistory() {
                           {lead?.phone || c.twilio_number || "—"}
                         </span>
                       </p>
-                      <p className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+                      <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
                         <Clock className="h-3 w-3" />
-                        {c.called_at ? format(new Date(c.called_at), "MMM d, yyyy · h:mm a") : "—"}
-                        <span className="font-mono tabular-nums">· {fmtDur(c.duration_seconds)}</span>
-                        {c.twilio_number && lead?.phone && (
-                          <span className="text-slate-500">· via {c.twilio_number}</span>
-                        )}
+                        <span title={c.called_at ? format(new Date(c.called_at), "PPpp") : ""}>
+                          {fmtWhen(c.called_at)}
+                        </span>
+                        <span className="font-mono tabular-nums text-slate-500">· {fmtDur(c.duration_seconds)}</span>
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                    {aiSummary && (
+                      <Badge className="text-[10px] bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 gap-1">
+                        <Sparkles className="h-2.5 w-2.5" /> AI
+                      </Badge>
+                    )}
                     {c.disposition && (
                       <Badge variant="outline" className="text-[10px] border-slate-600 text-slate-300">
                         {String(c.disposition).replace(/_/g, " ")}
