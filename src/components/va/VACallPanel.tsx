@@ -120,8 +120,7 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
           // Server-side dial succeeded; browser audio leg unavailable — keep ringing UI
           setTimeout(() => setCallStatus(prev => prev === 'ringing' ? 'connected' : prev), 4000);
         } else {
-          const reason = voice.deviceError || voice.disabledReason || 'Voice device not ready';
-          toast.error('Could not place call: ' + reason);
+          // Provider already shows a specific toast — just reset UI
           setCallStatus('idle');
         }
       }
