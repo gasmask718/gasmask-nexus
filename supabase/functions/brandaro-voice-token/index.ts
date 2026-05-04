@@ -22,6 +22,7 @@ async function createTwilioAccessToken(
   apiKeySid: string,
   apiKeySecret: string,
   identity: string,
+  twimlAppSid: string,
   ttl = 3600,
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
@@ -36,7 +37,7 @@ async function createTwilioAccessToken(
     voice: {
       incoming: { allow: true },
       outgoing: {
-        application_sid: Deno.env.get("BRANDARO_TWILIO_TWIML_APP_SID") || "",
+        application_sid: twimlAppSid,
       },
     },
   };
