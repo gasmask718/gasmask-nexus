@@ -111686,6 +111686,7 @@ export type Database = {
         Returns: Json
       }
       preview_invoice_repair: { Args: { p_invoice_id: string }; Returns: Json }
+      preview_store_merge_group: { Args: { p_group_id: number }; Returns: Json }
       process_ai_approval: {
         Args: { p_approved: boolean; p_notes?: string; p_request_id: string }
         Returns: boolean
