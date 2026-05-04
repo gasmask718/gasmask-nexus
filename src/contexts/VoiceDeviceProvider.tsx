@@ -206,6 +206,8 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
 
   // ── Device init (LAZY — only called from makeCall) ──
 
+  const lastErrorRef = useRef<string | null>(null);
+
   const initDevice = useCallback(async () => {
     if (initializingRef.current) return;
     if (deviceRef.current && deviceState === "registered") return;
@@ -214,6 +216,9 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
     try {
       const token = await fetchToken();
       if (!token) {
+        lastErrorRef.current = deviceState === "not_configured"
+          ? "Browser calling not configured (missing Twilio credentials)"
+          : "Could not fetch Twilio voice token";
         initializingRef.current = false;
         return;
       }
@@ -234,6 +239,7 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       device.on("registered", () => {
         setIsReady(true);
         setDeviceError(null);
+        lastErrorRef.current = null;
         setDeviceState("registered");
         setRegisteredAt(new Date().toISOString());
       });
@@ -246,9 +252,9 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       device.on("error", (err) => {
         console.warn("[VoiceDevice] Device error:", err.message);
         setDeviceError(err.message);
+        lastErrorRef.current = err.message;
         setDeviceState("error");
         setIsReady(false);
-        // Only show toast if user was actively trying to call
         if (activeCall || isConnecting) {
           toast.error(`Voice error: ${err.message}`);
         }
@@ -270,8 +276,10 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       await device.register();
       deviceRef.current = device;
     } catch (err) {
-      console.warn("[VoiceDevice] Device init error:", err);
-      setDeviceError(err instanceof Error ? err.message : String(err));
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[VoiceDevice] Device init error:", msg);
+      setDeviceError(msg);
+      lastErrorRef.current = msg;
       setDeviceState("error");
     } finally {
       initializingRef.current = false;
@@ -281,15 +289,16 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
   // ── Actions ──
 
   const makeCall = useCallback(async (to: string, params?: Record<string, string>): Promise<Call | null> => {
+    lastErrorRef.current = null;
     // Lazy init — only create Device when user actually tries to call
     if (!deviceRef.current) {
       await initDevice();
       if (!deviceRef.current) {
-        if (deviceState === "not_configured") {
-          toast.error("Browser calling is not configured. Use AI Call or Manual Call instead.");
-        } else {
-          toast.error("Voice calling not ready. Please try again.");
-        }
+        const reason = lastErrorRef.current
+          || (deviceState === "not_configured"
+            ? "Browser calling not configured. Use AI Call or Manual Call instead."
+            : "Voice device not ready. Please try again.");
+        toast.error(reason);
         return null;
       }
     }
