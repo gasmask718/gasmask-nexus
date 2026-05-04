@@ -114,6 +114,7 @@ function VADashboardInner() {
     { key: 'leaderboard' as VAView, label: 'Leaderboard', icon: Trophy },
     { key: 'callbacks' as VAView, label: 'Callbacks', icon: Clock },
     { key: 'coaching' as VAView, label: 'AI Coaching', icon: Sparkles, badge: unreadCoaching },
+    { key: 'history' as VAView, label: 'Call History', icon: History },
     { key: 'call' as VAView, label: t('va.nav.activeCall'), icon: Phone },
     { key: 'scripts' as VAView, label: t('va.nav.scripts'), icon: BookOpen },
     { key: 'faqs' as VAView, label: t('va.nav.faqs'), icon: HelpCircle },
