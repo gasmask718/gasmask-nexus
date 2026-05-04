@@ -305,6 +305,11 @@ export function VACallHistory() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                    {aiSummary && (
+                      <Badge className="text-[10px] bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 gap-1">
+                        <Sparkles className="h-2.5 w-2.5" /> AI
+                      </Badge>
+                    )}
                     {c.disposition && (
                       <Badge variant="outline" className="text-[10px] border-slate-600 text-slate-300">
                         {String(c.disposition).replace(/_/g, " ")}
