@@ -3174,6 +3174,15 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
 
+      {/* Data Quality — Merge Dry-Run (read-only Phase A-F preview + feedback) */}
+      <Route path="/admin/merge-dry-run" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']}>
+            <Layout><MergeDryRun /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
       {/* QA Command Center - Production Readiness */}
       <Route path="/admin/qa-command-center" element={
         <ProtectedRoute>
