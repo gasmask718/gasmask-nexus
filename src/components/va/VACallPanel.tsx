@@ -14,6 +14,7 @@ import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
 import { VAServicesPricing } from './VAServicesPricing';
 import { VAInvoiceModal } from './VAInvoiceModal';
+import { VALiveCoachPanel } from './VALiveCoachPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ActiveCallLead {
