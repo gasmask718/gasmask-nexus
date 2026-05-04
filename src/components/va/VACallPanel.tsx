@@ -67,6 +67,25 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
 
   const initiateCall = async () => {
     if (!lead || !twilioNumber) return;
+
+    // Request mic permission directly from the user gesture (must be synchronous chain)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+    } catch (err: any) {
+      if (err?.name === 'NotAllowedError') {
+        toast.error('Microphone blocked. Enable mic access in your browser settings, then retry.');
+      } else if (err?.name === 'NotFoundError') {
+        toast.error('No microphone detected on this device.');
+      } else if (err?.name === 'NotReadableError') {
+        toast.error('Microphone is in use by another application.');
+      } else {
+        toast.error('Microphone unavailable: ' + (err?.message || 'unknown error'));
+      }
+      setCallStatus('idle');
+      return;
+    }
+
     setCallStatus('ringing');
     setSeconds(0);
 
@@ -98,9 +117,11 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
 
       if (!call) {
         if (data?.callSid) {
+          // Server-side dial succeeded; browser audio leg unavailable — keep ringing UI
           setTimeout(() => setCallStatus(prev => prev === 'ringing' ? 'connected' : prev), 4000);
         } else {
-          toast.error('Could not place call — check microphone permissions');
+          const reason = voice.deviceError || voice.disabledReason || 'Voice device not ready';
+          toast.error('Could not place call: ' + reason);
           setCallStatus('idle');
         }
       }
