@@ -53,6 +53,37 @@ export default function MergeDryRun() {
     },
   });
 
+  const { data: cacheMeta, refetch: refetchMeta } = useQuery({
+    queryKey: ["merge-cache-meta"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dynasty_merge_analysis_cache_meta" as any)
+        .select("last_refreshed_at, rows_cached, last_refresh_duration_seconds")
+        .order("last_refreshed_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+    refetchInterval: 60_000,
+  });
+
+  const refreshCache = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("refresh_merge_analysis_cache" as any);
+      if (error) throw error;
+      return data as any;
+    },
+    onSuccess: (res: any) => {
+      const rows = res?.rows_cached ?? res?.[0]?.rows_cached ?? "?";
+      const dur = res?.duration_seconds ?? res?.[0]?.duration_seconds ?? "?";
+      toast.success(`Cache refreshed: ${rows} rows in ${dur}s`);
+      refetchMeta();
+      qc.invalidateQueries({ queryKey: ["merge-dry-run"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Cache refresh failed"),
+  });
+
   const { data: feedback } = useQuery({
     queryKey: ["dryrun-feedback", activeGroupId],
     enabled: activeGroupId !== null,
