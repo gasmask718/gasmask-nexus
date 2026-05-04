@@ -36,19 +36,26 @@ type Json = any; // dry-run shape is large + dynamic
 export default function MergeDryRun() {
   const [groupIdInput, setGroupIdInput] = useState<string>("1");
   const [activeGroupId, setActiveGroupId] = useState<number | null>(1);
+  const [groupType, setGroupType] = useState<"address" | "phone_name">("address");
   const [feedbackText, setFeedbackText] = useState("");
   type Decision = "approve" | "hold" | "reject" | "needs_review" | "override_winner" | "skiplist" | "defer_to_bulk";
   const [decision, setDecision] = useState<Decision>("needs_review");
   const qc = useQueryClient();
 
   const { data, isFetching, error, refetch } = useQuery({
-    queryKey: ["merge-dry-run", activeGroupId],
+    queryKey: ["merge-dry-run", groupType, activeGroupId],
     enabled: activeGroupId !== null,
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<Json> => {
-      const { data, error } = await supabase.rpc("preview_store_merge_group" as any, {
-        p_group_id: activeGroupId,
-      });
+      const rpcName =
+        groupType === "phone_name"
+          ? "preview_phone_name_merge_group"
+          : "preview_store_merge_group";
+      const params =
+        groupType === "phone_name"
+          ? { p_phone_name_group_id: activeGroupId }
+          : { p_group_id: activeGroupId };
+      const { data, error } = await supabase.rpc(rpcName as any, params as any);
       if (error) throw error;
       return data;
     },
