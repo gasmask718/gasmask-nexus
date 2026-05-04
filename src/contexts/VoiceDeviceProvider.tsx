@@ -320,14 +320,16 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       setupCallHandlers(call);
       return call;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = getErrorMessage(err, lastErrorRef.current || deviceError || "Failed to connect call");
       console.error("[VoiceDevice] Connect error:", msg);
       toast.error(`Failed to connect call: ${msg}`);
+      setDeviceError(msg);
+      lastErrorRef.current = msg;
       setIsConnecting(false);
       setCallStatus("failed");
       return null;
     }
-  }, [initDevice, setupCallHandlers, deviceState]);
+  }, [initDevice, setupCallHandlers, deviceState, deviceError, getErrorMessage]);
 
   const hangUp = useCallback(() => {
     if (activeCall) {
