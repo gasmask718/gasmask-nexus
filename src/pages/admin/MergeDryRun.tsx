@@ -16,7 +16,20 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { AlertTriangle, Download, ChevronDown, ShieldCheck, Loader2 } from "lucide-react";
+import { AlertTriangle, Download, ChevronDown, ShieldCheck, Loader2, RefreshCw, Clock } from "lucide-react";
+
+function formatStaleness(ts: string | null): { label: string; isStale: boolean } {
+  if (!ts) return { label: "never", isStale: true };
+  const diffMs = Date.now() - new Date(ts).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  const hrs = Math.floor(mins / 60);
+  const days = Math.floor(hrs / 24);
+  const isStale = diffMs > 60 * 60 * 1000; // >1h
+  if (mins < 1) return { label: "just now", isStale: false };
+  if (mins < 60) return { label: `${mins} min ago`, isStale };
+  if (hrs < 24) return { label: `${hrs} hr ago`, isStale };
+  return { label: `${days} day${days > 1 ? "s" : ""} ago`, isStale };
+}
 
 type Json = any; // dry-run shape is large + dynamic
 
