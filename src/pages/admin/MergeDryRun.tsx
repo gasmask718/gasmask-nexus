@@ -230,6 +230,27 @@ export default function MergeDryRun() {
 
       {data && (
         <>
+          {/* Manual review gate */}
+          {data.needs_review && (
+            <Alert className="border-yellow-500/60 bg-yellow-500/10 text-yellow-900 dark:text-yellow-200">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>⚠️ This group requires manual review before merging</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc pl-5 mt-2 space-y-1">
+                  {(data.review_reasons ?? []).map((r: any, i: number) => (
+                    <li key={i}>
+                      <Badge variant="outline" className="mr-2">{r.rule}</Badge>
+                      {r.description}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-2 text-xs">
+                  Operator must record a decision below before any approval action becomes available.
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Top-level merge summary */}
           <Card>
             <CardHeader>
