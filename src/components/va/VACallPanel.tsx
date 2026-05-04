@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { VAScripts } from './VAScripts';
 import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
+import { VAServicesPricing } from './VAServicesPricing';
 import { VAInvoiceModal } from './VAInvoiceModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
