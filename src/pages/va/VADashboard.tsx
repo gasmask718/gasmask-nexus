@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/sidebar';
 import {
   Users, Phone, BookOpen, HelpCircle, FileText, Settings, LogOut, Headset, PanelLeft,
-  Search, ArrowLeft, Zap, Trophy, Clock, UserCircle, Sparkles, Building2,
+  Search, ArrowLeft, Zap, Trophy, Clock, UserCircle, Sparkles, Building2, History,
 } from 'lucide-react';
 import { useVAActiveCompany } from '@/hooks/useVAActiveCompany';
 
