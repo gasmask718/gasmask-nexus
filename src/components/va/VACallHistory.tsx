@@ -60,13 +60,16 @@ export function VACallHistory() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["va-call-history", user?.id, search, dateFilter, recordingFilter, directionFilter, page],
     queryFn: async () => {
+      // No FK declared between va_call_logs.lead_id and any leads table, and lead_id
+      // can reference either outreach_leads or brandaro_qualified_leads. So fetch the
+      // call rows first, then enrich client-side with a single batched lookup against
+      // both possible source tables.
       let q = (supabase as any)
         .from("va_call_logs")
         .select(
           `id, call_sid, twilio_number, called_at, duration_seconds, call_status,
-           disposition, excitement_level, recording_url, transcript, ai_summary:ai_analysis,
-           ai_analysis, va_notes, direction, lead_id, va_id,
-           outreach_leads:lead_id ( id, store_name, contact_name, phone )`,
+           disposition, excitement_level, recording_url, transcript,
+           ai_analysis, va_notes, direction, lead_id, va_id`,
           { count: "exact" },
         )
         .eq("va_id", user!.id)
@@ -90,7 +93,44 @@ export function VACallHistory() {
 
       const { data, count, error } = await q;
       if (error) throw error;
-      return { rows: data || [], count: count || 0 };
+
+      const rows = data || [];
+      const leadIds = Array.from(
+        new Set(rows.map((r: any) => r.lead_id).filter(Boolean)),
+      ) as string[];
+
+      const leadMap = new Map<string, { store_name?: string; contact_name?: string; phone?: string }>();
+      if (leadIds.length > 0) {
+        const [outreach, qualified] = await Promise.all([
+          (supabase as any)
+            .from("outreach_leads")
+            .select("id, store_name, contact_name, phone")
+            .in("id", leadIds),
+          (supabase as any)
+            .from("brandaro_qualified_leads")
+            .select("id, business_name, full_name, phone_number")
+            .in("id", leadIds),
+        ]);
+        (outreach.data || []).forEach((l: any) =>
+          leadMap.set(l.id, { store_name: l.store_name, contact_name: l.contact_name, phone: l.phone }),
+        );
+        (qualified.data || []).forEach((l: any) => {
+          if (!leadMap.has(l.id)) {
+            leadMap.set(l.id, {
+              store_name: l.business_name,
+              contact_name: l.full_name,
+              phone: l.phone_number,
+            });
+          }
+        });
+      }
+
+      const enriched = rows.map((r: any) => ({
+        ...r,
+        outreach_leads: r.lead_id ? leadMap.get(r.lead_id) || null : null,
+      }));
+
+      return { rows: enriched, count: count || 0 };
     },
     enabled: !!user,
     refetchOnWindowFocus: true,
