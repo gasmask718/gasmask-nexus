@@ -227,6 +227,16 @@ export function VACallHistory() {
             <SelectItem value="without">Without recording</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={aiFilter} onValueChange={(v) => setAiFilter(v as any)}>
+          <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">AI: any</SelectItem>
+            <SelectItem value="with_ai">With AI feedback</SelectItem>
+            <SelectItem value="without_ai">No AI feedback</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Error */}
