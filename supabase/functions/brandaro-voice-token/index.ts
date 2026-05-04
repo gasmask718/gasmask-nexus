@@ -6,6 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const isValidSid = (value: string | null | undefined, prefix: string) =>
+  typeof value === "string" && new RegExp(`^${prefix}[A-Za-z0-9]{32}$`).test(value);
+
 function base64url(input: Uint8Array): string {
   return btoa(String.fromCharCode(...input))
     .replace(/\+/g, "-")
@@ -82,18 +85,19 @@ serve(async (req: Request) => {
     const accountSid = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID");
     const apiKeySid = Deno.env.get("BRANDARO_TWILIO_API_KEY_SID");
     const apiKeySecret = Deno.env.get("BRANDARO_TWILIO_API_KEY_SECRET");
-    const twimlAppSid = Deno.env.get("BRANDARO_TWILIO_TWIML_APP_SID");
+    const rawTwimlAppSid = Deno.env.get("BRANDARO_TWILIO_TWIML_APP_SID");
+    const twimlAppSid = isValidSid(rawTwimlAppSid, "AP") ? rawTwimlAppSid : null;
 
-    if (!accountSid || !apiKeySid || !apiKeySecret) {
+    if (!isValidSid(accountSid, "AC") || !isValidSid(apiKeySid, "SK") || !apiKeySecret) {
       return new Response(
         JSON.stringify({ configured: false, error: "Brandaro Twilio credentials not configured" }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
 
-    // If no TwiML app SID, create one via Twilio API
+    // If no valid TwiML app SID, create one via Twilio API
     if (!twimlAppSid) {
-      console.log("No BRANDARO_TWILIO_TWIML_APP_SID set - creating TwiML app...");
+      console.log("No valid BRANDARO_TWILIO_TWIML_APP_SID set - creating TwiML app...");
       const authToken = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN");
       if (!authToken) {
         return new Response(
