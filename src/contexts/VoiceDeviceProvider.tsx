@@ -138,8 +138,11 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
           return null;
         }
 
-        console.warn("[VoiceDevice] Token error:", invokeError?.message || errData.error);
-        setDeviceError(errData.error || invokeError?.message || "Token fetch failed");
+        const detailedError = errData.error || invokeError?.message || "Token fetch failed";
+        console.warn("[VoiceDevice] Token error:", detailedError);
+        setVoiceHealth(errData.health ?? null);
+        setBrowserCallingConfigured(errData.configured !== false);
+        setDeviceError(detailedError);
         setDeviceState("error");
         return null;
       }
