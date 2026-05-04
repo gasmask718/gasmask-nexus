@@ -295,13 +295,12 @@ export function VACallHistory() {
                           {lead?.phone || c.twilio_number || "—"}
                         </span>
                       </p>
-                      <p className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+                      <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
                         <Clock className="h-3 w-3" />
-                        {c.called_at ? format(new Date(c.called_at), "MMM d, yyyy · h:mm a") : "—"}
-                        <span className="font-mono tabular-nums">· {fmtDur(c.duration_seconds)}</span>
-                        {c.twilio_number && lead?.phone && (
-                          <span className="text-slate-500">· via {c.twilio_number}</span>
-                        )}
+                        <span title={c.called_at ? format(new Date(c.called_at), "PPpp") : ""}>
+                          {fmtWhen(c.called_at)}
+                        </span>
+                        <span className="font-mono tabular-nums text-slate-500">· {fmtDur(c.duration_seconds)}</span>
                       </p>
                     </div>
                   </div>
