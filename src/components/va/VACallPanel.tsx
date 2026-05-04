@@ -14,6 +14,7 @@ import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
 import { VAServicesPricing } from './VAServicesPricing';
 import { VAInvoiceModal } from './VAInvoiceModal';
+import { VALiveCoachPanel } from './VALiveCoachPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ActiveCallLead {
@@ -38,6 +39,7 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [invoiceCreated, setInvoiceCreated] = useState(false);
   const [callLogId, setCallLogId] = useState<string | null>(null);
+  const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -54,10 +56,11 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
 
   useEffect(() => {
     if (callStatus === 'connected') {
+      if (!callStartedAt) setCallStartedAt(Date.now());
       timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [callStatus]);
+  }, [callStatus, callStartedAt]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -275,6 +278,15 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
           )}
         </AnimatePresence>
       </div>
+
+      {/* Live Claude Coach */}
+      <VALiveCoachPanel
+        active={callStatus === 'connected'}
+        callLogId={callLogId}
+        leadId={lead.id}
+        leadName={lead.business_name}
+        startedAt={callStartedAt ?? undefined}
+      />
 
       {/* Contextual Tabs */}
       <div className="glass-card rounded-2xl border border-border/50 overflow-hidden">

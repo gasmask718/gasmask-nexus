@@ -99846,6 +99846,62 @@ export type Database = {
         }
         Relationships: []
       }
+      va_live_call_analysis: {
+        Row: {
+          buyer_intent: string | null
+          call_log_id: string | null
+          coaching_tip: string | null
+          created_at: string
+          cumulative_transcript: string | null
+          id: string
+          lead_id: string | null
+          next_best_action: string | null
+          objection_detected: string | null
+          raw_analysis: Json | null
+          sentiment: string | null
+          transcript_chunk: string
+          va_id: string
+        }
+        Insert: {
+          buyer_intent?: string | null
+          call_log_id?: string | null
+          coaching_tip?: string | null
+          created_at?: string
+          cumulative_transcript?: string | null
+          id?: string
+          lead_id?: string | null
+          next_best_action?: string | null
+          objection_detected?: string | null
+          raw_analysis?: Json | null
+          sentiment?: string | null
+          transcript_chunk: string
+          va_id: string
+        }
+        Update: {
+          buyer_intent?: string | null
+          call_log_id?: string | null
+          coaching_tip?: string | null
+          created_at?: string
+          cumulative_transcript?: string | null
+          id?: string
+          lead_id?: string | null
+          next_best_action?: string | null
+          objection_detected?: string | null
+          raw_analysis?: Json | null
+          sentiment?: string | null
+          transcript_chunk?: string
+          va_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_live_call_analysis_call_log_id_fkey"
+            columns: ["call_log_id"]
+            isOneToOne: false
+            referencedRelation: "va_call_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       va_monitor_logs: {
         Row: {
           admin_id: string
