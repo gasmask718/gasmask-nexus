@@ -17,6 +17,7 @@ import { VALeaderboard } from '@/components/va/VALeaderboard';
 import { VACallbacksQueue } from '@/components/va/VACallbacksQueue';
 import { VACallStats } from '@/components/va/VACallStats';
 import { VARecentCalls } from '@/components/va/VARecentCalls';
+import { VACallHistory } from '@/components/va/VACallHistory';
 import { VASessionSummary } from '@/components/va/VASessionSummary';
 import { VACoachingInbox } from '@/components/va/VACoachingInbox';
 import { Button } from '@/components/ui/button';
@@ -29,11 +30,11 @@ import {
 } from '@/components/ui/sidebar';
 import {
   Users, Phone, BookOpen, HelpCircle, FileText, Settings, LogOut, Headset, PanelLeft,
-  Search, ArrowLeft, Zap, Trophy, Clock, UserCircle, Sparkles, Building2,
+  Search, ArrowLeft, Zap, Trophy, Clock, UserCircle, Sparkles, Building2, History,
 } from 'lucide-react';
 import { useVAActiveCompany } from '@/hooks/useVAActiveCompany';
 
-type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'leaderboard' | 'callbacks' | 'coaching';
+type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'leaderboard' | 'callbacks' | 'coaching' | 'history';
 
 function VADashboardInner() {
   const navigate = useNavigate();
@@ -113,6 +114,7 @@ function VADashboardInner() {
     { key: 'leaderboard' as VAView, label: 'Leaderboard', icon: Trophy },
     { key: 'callbacks' as VAView, label: 'Callbacks', icon: Clock },
     { key: 'coaching' as VAView, label: 'AI Coaching', icon: Sparkles, badge: unreadCoaching },
+    { key: 'history' as VAView, label: 'Call History', icon: History },
     { key: 'call' as VAView, label: t('va.nav.activeCall'), icon: Phone },
     { key: 'scripts' as VAView, label: t('va.nav.scripts'), icon: BookOpen },
     { key: 'faqs' as VAView, label: t('va.nav.faqs'), icon: HelpCircle },
@@ -263,6 +265,19 @@ function VADashboardInner() {
             {view === 'coaching' && (
               <div className="max-w-3xl">
                 <VACoachingInbox />
+              </div>
+            )}
+            {view === 'history' && (
+              <div className="max-w-5xl">
+                <div className="mb-4">
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <History className="h-5 w-5 text-cyan-400" /> Call History
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Your recordings and transcripts. Same source as the admin review panel — scoped to your account.
+                  </p>
+                </div>
+                <VACallHistory />
               </div>
             )}
             {view === 'call' && (
