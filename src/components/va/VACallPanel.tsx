@@ -39,6 +39,7 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [invoiceCreated, setInvoiceCreated] = useState(false);
   const [callLogId, setCallLogId] = useState<string | null>(null);
+  const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
