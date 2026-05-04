@@ -36,13 +36,14 @@ export function VACallHistory() {
   const [dateFilter, setDateFilter] = useState("");
   const [recordingFilter, setRecordingFilter] = useState<"all" | "with" | "without">("all");
   const [directionFilter, setDirectionFilter] = useState<"all" | "outbound" | "inbound">("all");
+  const [aiFilter, setAiFilter] = useState<"all" | "with_ai" | "without_ai">("all");
   const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   // Reset to first page whenever filters change
   useEffect(() => {
     setPage(0);
-  }, [search, dateFilter, recordingFilter, directionFilter]);
+  }, [search, dateFilter, recordingFilter, directionFilter, aiFilter]);
 
   // Realtime: refresh when new calls land for this VA
   useEffect(() => {
