@@ -267,6 +267,19 @@ function VADashboardInner() {
                 <VACoachingInbox />
               </div>
             )}
+            {view === 'history' && (
+              <div className="max-w-5xl">
+                <div className="mb-4">
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <History className="h-5 w-5 text-cyan-400" /> Call History
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Your recordings and transcripts. Same source as the admin review panel — scoped to your account.
+                  </p>
+                </div>
+                <VACallHistory />
+              </div>
+            )}
             {view === 'call' && (
               <VACallPanel
                 lead={callLead}
