@@ -40215,6 +40215,237 @@ export type Database = {
           },
         ]
       }
+      dynasty_merge_analysis_cache: {
+        Row: {
+          bag_sale_ledger_count: number | null
+          cached_at: string
+          call_recordings_count: number | null
+          call_revenue_attribution_count: number | null
+          call_revenue_events_count: number | null
+          communication_events_count: number | null
+          communication_messages_count: number | null
+          contact_interactions_count: number | null
+          contact_profiles_count: number | null
+          created_at: string | null
+          deals_count: number | null
+          deliveries_count: number | null
+          dialer_followups_count: number | null
+          duplicate_group_id: number
+          enrichment_count: number | null
+          followup_recommendations_count: number | null
+          fraud_flags_count: number | null
+          group_size: number | null
+          inventory_state_count: number | null
+          invoice_total_amount: number | null
+          invoices_count: number | null
+          is_active: boolean | null
+          is_pristine_shell: boolean | null
+          is_winner: boolean | null
+          last_any_activity: string | null
+          last_call_date: string | null
+          last_invoice_date: string | null
+          last_updated_at: string | null
+          last_visit_date: string | null
+          live_calls_count: number | null
+          location_events_count: number | null
+          manual_call_logs_count: number | null
+          messaging_log_count: number | null
+          messaging_targets_count: number | null
+          mission_items_count: number | null
+          needs_manual_review: boolean | null
+          normalized_address: string | null
+          orders_count: number | null
+          other_fk_count: number | null
+          phone: string | null
+          pipeline_count: number | null
+          raw_address: string | null
+          reminders_count: number | null
+          route_checkins_count: number | null
+          route_stops_count: number | null
+          sales_prospects_count: number | null
+          store_brand_relationships_count: number | null
+          store_brand_stickers_count: number | null
+          store_call_intelligence_count: number | null
+          store_contacts_count: number | null
+          store_credits_count: number | null
+          store_id: string
+          store_name: string | null
+          store_notes_count: number | null
+          store_opportunities_count: number | null
+          store_orders_count: number | null
+          store_payments_count: number | null
+          store_transactions_count: number | null
+          store_visits_count: number | null
+          store_voice_notes_count: number | null
+          store_wallet_balance: number | null
+          total_activity_score: number | null
+          tube_sale_ledger_count: number | null
+          visit_logs_count: number | null
+          voicemails_count: number | null
+          wholesale_orders_count: number | null
+        }
+        Insert: {
+          bag_sale_ledger_count?: number | null
+          cached_at?: string
+          call_recordings_count?: number | null
+          call_revenue_attribution_count?: number | null
+          call_revenue_events_count?: number | null
+          communication_events_count?: number | null
+          communication_messages_count?: number | null
+          contact_interactions_count?: number | null
+          contact_profiles_count?: number | null
+          created_at?: string | null
+          deals_count?: number | null
+          deliveries_count?: number | null
+          dialer_followups_count?: number | null
+          duplicate_group_id: number
+          enrichment_count?: number | null
+          followup_recommendations_count?: number | null
+          fraud_flags_count?: number | null
+          group_size?: number | null
+          inventory_state_count?: number | null
+          invoice_total_amount?: number | null
+          invoices_count?: number | null
+          is_active?: boolean | null
+          is_pristine_shell?: boolean | null
+          is_winner?: boolean | null
+          last_any_activity?: string | null
+          last_call_date?: string | null
+          last_invoice_date?: string | null
+          last_updated_at?: string | null
+          last_visit_date?: string | null
+          live_calls_count?: number | null
+          location_events_count?: number | null
+          manual_call_logs_count?: number | null
+          messaging_log_count?: number | null
+          messaging_targets_count?: number | null
+          mission_items_count?: number | null
+          needs_manual_review?: boolean | null
+          normalized_address?: string | null
+          orders_count?: number | null
+          other_fk_count?: number | null
+          phone?: string | null
+          pipeline_count?: number | null
+          raw_address?: string | null
+          reminders_count?: number | null
+          route_checkins_count?: number | null
+          route_stops_count?: number | null
+          sales_prospects_count?: number | null
+          store_brand_relationships_count?: number | null
+          store_brand_stickers_count?: number | null
+          store_call_intelligence_count?: number | null
+          store_contacts_count?: number | null
+          store_credits_count?: number | null
+          store_id: string
+          store_name?: string | null
+          store_notes_count?: number | null
+          store_opportunities_count?: number | null
+          store_orders_count?: number | null
+          store_payments_count?: number | null
+          store_transactions_count?: number | null
+          store_visits_count?: number | null
+          store_voice_notes_count?: number | null
+          store_wallet_balance?: number | null
+          total_activity_score?: number | null
+          tube_sale_ledger_count?: number | null
+          visit_logs_count?: number | null
+          voicemails_count?: number | null
+          wholesale_orders_count?: number | null
+        }
+        Update: {
+          bag_sale_ledger_count?: number | null
+          cached_at?: string
+          call_recordings_count?: number | null
+          call_revenue_attribution_count?: number | null
+          call_revenue_events_count?: number | null
+          communication_events_count?: number | null
+          communication_messages_count?: number | null
+          contact_interactions_count?: number | null
+          contact_profiles_count?: number | null
+          created_at?: string | null
+          deals_count?: number | null
+          deliveries_count?: number | null
+          dialer_followups_count?: number | null
+          duplicate_group_id?: number
+          enrichment_count?: number | null
+          followup_recommendations_count?: number | null
+          fraud_flags_count?: number | null
+          group_size?: number | null
+          inventory_state_count?: number | null
+          invoice_total_amount?: number | null
+          invoices_count?: number | null
+          is_active?: boolean | null
+          is_pristine_shell?: boolean | null
+          is_winner?: boolean | null
+          last_any_activity?: string | null
+          last_call_date?: string | null
+          last_invoice_date?: string | null
+          last_updated_at?: string | null
+          last_visit_date?: string | null
+          live_calls_count?: number | null
+          location_events_count?: number | null
+          manual_call_logs_count?: number | null
+          messaging_log_count?: number | null
+          messaging_targets_count?: number | null
+          mission_items_count?: number | null
+          needs_manual_review?: boolean | null
+          normalized_address?: string | null
+          orders_count?: number | null
+          other_fk_count?: number | null
+          phone?: string | null
+          pipeline_count?: number | null
+          raw_address?: string | null
+          reminders_count?: number | null
+          route_checkins_count?: number | null
+          route_stops_count?: number | null
+          sales_prospects_count?: number | null
+          store_brand_relationships_count?: number | null
+          store_brand_stickers_count?: number | null
+          store_call_intelligence_count?: number | null
+          store_contacts_count?: number | null
+          store_credits_count?: number | null
+          store_id?: string
+          store_name?: string | null
+          store_notes_count?: number | null
+          store_opportunities_count?: number | null
+          store_orders_count?: number | null
+          store_payments_count?: number | null
+          store_transactions_count?: number | null
+          store_visits_count?: number | null
+          store_voice_notes_count?: number | null
+          store_wallet_balance?: number | null
+          total_activity_score?: number | null
+          tube_sale_ledger_count?: number | null
+          visit_logs_count?: number | null
+          voicemails_count?: number | null
+          wholesale_orders_count?: number | null
+        }
+        Relationships: []
+      }
+      dynasty_merge_analysis_cache_meta: {
+        Row: {
+          id: number
+          last_refresh_duration_seconds: number | null
+          last_refreshed_at: string | null
+          refreshed_by: string | null
+          rows_cached: number | null
+        }
+        Insert: {
+          id?: number
+          last_refresh_duration_seconds?: number | null
+          last_refreshed_at?: string | null
+          refreshed_by?: string | null
+          rows_cached?: number | null
+        }
+        Update: {
+          id?: number
+          last_refresh_duration_seconds?: number | null
+          last_refreshed_at?: string | null
+          refreshed_by?: string | null
+          rows_cached?: number | null
+        }
+        Relationships: []
+      }
       dynasty_merge_overrides: {
         Row: {
           duplicate_group_id: number
@@ -111761,6 +111992,7 @@ export type Database = {
         Args: { p_token_hash: string; p_user_id: string }
         Returns: Json
       }
+      refresh_merge_analysis_cache: { Args: never; Returns: Json }
       reinstate_user_access: { Args: { _invite_id: string }; Returns: boolean }
       reject_enrichment_candidate: {
         Args: { p_candidate_id: string }
