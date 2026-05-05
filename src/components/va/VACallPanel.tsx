@@ -15,6 +15,9 @@ import { VAFAQs } from './VAFAQs';
 import { VAServicesPricing } from './VAServicesPricing';
 import { VAInvoiceModal } from './VAInvoiceModal';
 import { VALiveCoachPanel } from './VALiveCoachPanel';
+import { VACallWrapUpModal } from './VACallWrapUpModal';
+import { useQuery } from '@tanstack/react-query';
+import { History, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ActiveCallLead {
