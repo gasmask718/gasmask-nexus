@@ -120,12 +120,22 @@ async function fetchOutcomesBatch(storeIds: string[]) {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - THRESHOLDS.WINDOW_DAYS);
 
-  const { data } = await supabase
-    .from('delivery_checklists')
-    .select('store_id, outcome_summary')
-    .in('store_id', storeIds)
-    .gte('completed_at', cutoff.toISOString())
-    .not('outcome_summary', 'is', null);
+  const CHUNK_SIZE = 100;
+  const chunks: string[][] = [];
+  for (let i = 0; i < storeIds.length; i += CHUNK_SIZE) {
+    chunks.push(storeIds.slice(i, i + CHUNK_SIZE));
+  }
+  const results = await Promise.all(
+    chunks.map((chunk) =>
+      supabase
+        .from('delivery_checklists')
+        .select('store_id, outcome_summary')
+        .in('store_id', chunk)
+        .gte('completed_at', cutoff.toISOString())
+        .not('outcome_summary', 'is', null)
+    )
+  );
+  const data = results.flatMap((r) => r.data || []);
 
   // Group by store
   const grouped = new Map<string, { outcome_type: string }[]>();
