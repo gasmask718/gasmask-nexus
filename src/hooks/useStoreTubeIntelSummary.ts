@@ -27,15 +27,25 @@ export function useStoreTubeIntelSummaryBatch(storeIds: string[]) {
     queryFn: async () => {
       if (!storeIds.length) return new Map<string, TubeIntelSummary>();
 
-      const { data, error } = await supabase
-        .from('v_store_tube_intel_summary')
-        .select('*')
-        .in('store_id', storeIds);
-
-      if (error) {
-        console.error('[INTEL-SUMMARY-BATCH] Failed to fetch:', error);
-        throw error;
+      const CHUNK_SIZE = 100;
+      const chunks: string[][] = [];
+      for (let i = 0; i < storeIds.length; i += CHUNK_SIZE) {
+        chunks.push(storeIds.slice(i, i + CHUNK_SIZE));
       }
+
+      const results = await Promise.all(
+        chunks.map((chunk) =>
+          supabase.from('v_store_tube_intel_summary').select('*').in('store_id', chunk)
+        )
+      );
+
+      const firstError = results.find((r) => r.error);
+      if (firstError?.error) {
+        console.error('[INTEL-SUMMARY-BATCH] Failed to fetch:', firstError.error);
+        throw firstError.error;
+      }
+
+      const data = results.flatMap((r) => r.data || []);
 
       const map = new Map<string, TubeIntelSummary>();
       for (const row of (data || []) as TubeIntelSummary[]) {
