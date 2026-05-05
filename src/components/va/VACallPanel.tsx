@@ -350,6 +350,24 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
       </div>
 
       <VAInvoiceModal open={invoiceOpen} onClose={handleInvoiceClose} lead={lead} />
+
+      {/* Manual reopen if VA dismissed */}
+      {callStatus === 'ended' && callLogId && !wrapUpOpen && (
+        <div className="flex justify-center">
+          <Button size="sm" variant="outline" className="gap-1.5 text-cyan-300 border-cyan-500/40" onClick={() => setWrapUpOpen(true)}>
+            <RotateCcw className="h-3.5 w-3.5" /> Open call wrap-up
+          </Button>
+        </div>
+      )}
+
+      <VACallWrapUpModal
+        open={wrapUpOpen}
+        onClose={() => setWrapUpOpen(false)}
+        callLogId={callLogId}
+        leadName={lead.business_name}
+        leadId={lead.id}
+        durationSeconds={seconds}
+      />
     </motion.div>
   );
 }
