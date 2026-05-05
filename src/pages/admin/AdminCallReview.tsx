@@ -664,6 +664,26 @@ export default function AdminCallReview() {
           </div>
         </div>
       </div>
+
+      <VACallWrapUpModal
+        open={wrapUpOpen}
+        onClose={() => {
+          setWrapUpOpen(false);
+          if (selectedCall?.id) {
+            (supabase as any)
+              .from('va_call_logs')
+              .select('*, profiles!va_call_logs_va_id_fkey(name)')
+              .eq('id', selectedCall.id)
+              .maybeSingle()
+              .then(({ data }: any) => { if (data) setSelectedCall(data); });
+          }
+          queryClient.invalidateQueries({ queryKey: ['admin-call-review'] });
+        }}
+        callLogId={selectedCall?.id ?? null}
+        leadName={selectedCall?.profiles?.name}
+        leadId={selectedCall?.lead_id}
+        durationSeconds={selectedCall?.duration_seconds}
+      />
     </div>
   );
 }
