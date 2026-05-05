@@ -99373,14 +99373,18 @@ export type Database = {
           ai_analysis: Json | null
           call_sid: string | null
           call_status: string | null
+          call_summary: string | null
           callback_scheduled_at: string | null
           called_at: string | null
           direction: string
           disposition: string | null
           duration_seconds: number | null
           excitement_level: string | null
+          follow_up_at: string | null
+          follow_up_status: string | null
           id: string
           lead_id: string | null
+          next_call_context: string | null
           recording_sid: string | null
           recording_url: string | null
           transcript: string | null
@@ -99389,19 +99393,24 @@ export type Database = {
           va_id: string
           va_notes: string | null
           voicemail_dropped: boolean | null
+          wrap_up_completed_at: string | null
         }
         Insert: {
           ai_analysis?: Json | null
           call_sid?: string | null
           call_status?: string | null
+          call_summary?: string | null
           callback_scheduled_at?: string | null
           called_at?: string | null
           direction?: string
           disposition?: string | null
           duration_seconds?: number | null
           excitement_level?: string | null
+          follow_up_at?: string | null
+          follow_up_status?: string | null
           id?: string
           lead_id?: string | null
+          next_call_context?: string | null
           recording_sid?: string | null
           recording_url?: string | null
           transcript?: string | null
@@ -99410,19 +99419,24 @@ export type Database = {
           va_id: string
           va_notes?: string | null
           voicemail_dropped?: boolean | null
+          wrap_up_completed_at?: string | null
         }
         Update: {
           ai_analysis?: Json | null
           call_sid?: string | null
           call_status?: string | null
+          call_summary?: string | null
           callback_scheduled_at?: string | null
           called_at?: string | null
           direction?: string
           disposition?: string | null
           duration_seconds?: number | null
           excitement_level?: string | null
+          follow_up_at?: string | null
+          follow_up_status?: string | null
           id?: string
           lead_id?: string | null
+          next_call_context?: string | null
           recording_sid?: string | null
           recording_url?: string | null
           transcript?: string | null
@@ -99431,6 +99445,7 @@ export type Database = {
           va_id?: string
           va_notes?: string | null
           voicemail_dropped?: boolean | null
+          wrap_up_completed_at?: string | null
         }
         Relationships: [
           {
