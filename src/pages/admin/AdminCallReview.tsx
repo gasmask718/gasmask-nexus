@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { VACoachingReport } from '@/components/va/VACoachingReport';
+import { VACallWrapUpModal } from '@/components/va/VACallWrapUpModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Headset, ArrowLeft, Play, Flame, Sun, Snowflake, Star, RefreshCw, Download,
   FileText, MessageSquare, Search, ChevronLeft, ChevronRight, Sparkles, Send,
+  Pencil, RotateCcw,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
