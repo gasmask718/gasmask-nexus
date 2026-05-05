@@ -29,17 +29,30 @@
      queryFn: async () => {
        if (!storeIds.length) return new Map<string, StoreKPISummary>();
  
-       // Fetch all KPI rows for all stores in one query
-       const { data, error } = await supabase
-         .from('v_store_tube_kpi')
-         .select('*')
-         .in('store_id', storeIds)
-         .order('brand_name');
- 
-       if (error) {
-         console.error('[KPI-BATCH] Failed to fetch tube KPI:', error);
-         throw error;
+       // Chunk to avoid URL length limits when many store IDs
+       const CHUNK_SIZE = 100;
+       const chunks: string[][] = [];
+       for (let i = 0; i < storeIds.length; i += CHUNK_SIZE) {
+         chunks.push(storeIds.slice(i, i + CHUNK_SIZE));
        }
+
+       const results = await Promise.all(
+         chunks.map((chunk) =>
+           supabase
+             .from('v_store_tube_kpi')
+             .select('*')
+             .in('store_id', chunk)
+             .order('brand_name')
+         )
+       );
+
+       const firstError = results.find((r) => r.error);
+       if (firstError?.error) {
+         console.error('[KPI-BATCH] Failed to fetch tube KPI:', firstError.error);
+         throw firstError.error;
+       }
+
+       const data = results.flatMap((r) => r.data || []);
  
        // Group by store_id and compute summaries
        const kpiMap = new Map<string, StoreKPISummary>();
