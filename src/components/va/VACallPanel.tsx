@@ -175,9 +175,6 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
     setInvoiceOpen(false);
     setInvoiceCreated(true);
   };
-    setInvoiceOpen(false);
-    setInvoiceCreated(true);
-  };
 
   const effectiveMuted = voice.activeCall ? voice.isMuted : false;
 
