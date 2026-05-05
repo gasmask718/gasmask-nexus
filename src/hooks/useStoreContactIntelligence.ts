@@ -34,15 +34,25 @@ export function useStoreContactIntelligence(storeIds: string[]) {
     queryFn: async () => {
       if (!storeIds.length) return new Map<string, StoreIntelligence>();
 
-      const { data, error } = await (supabase as any)
-        .from('store_answer_profile')
-        .select('store_id, answer_rate, voicemail_rate, busy_rate, pickup_probability, avg_call_duration, total_attempts, total_answers, best_hour, best_day_of_week')
-        .in('store_id', storeIds);
-
-      if (error) {
-        console.error('STORE_INTELLIGENCE_FETCH_FAILED', error);
+      const CHUNK_SIZE = 100;
+      const chunks: string[][] = [];
+      for (let i = 0; i < storeIds.length; i += CHUNK_SIZE) {
+        chunks.push(storeIds.slice(i, i + CHUNK_SIZE));
+      }
+      const results = await Promise.all(
+        chunks.map((chunk) =>
+          (supabase as any)
+            .from('store_answer_profile')
+            .select('store_id, answer_rate, voicemail_rate, busy_rate, pickup_probability, avg_call_duration, total_attempts, total_answers, best_hour, best_day_of_week')
+            .in('store_id', chunk)
+        )
+      );
+      const firstError = results.find((r: any) => r.error);
+      if (firstError?.error) {
+        console.error('STORE_INTELLIGENCE_FETCH_FAILED', firstError.error);
         return new Map<string, StoreIntelligence>();
       }
+      const data = results.flatMap((r: any) => r.data || []);
 
       const map = new Map<string, StoreIntelligence>();
       (data || []).forEach((row: any) => {
