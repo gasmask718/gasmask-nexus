@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { VACoachingReport } from '@/components/va/VACoachingReport';
+import { VACallWrapUpModal } from '@/components/va/VACallWrapUpModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Headset, ArrowLeft, Play, Flame, Sun, Snowflake, Star, RefreshCw, Download,
   FileText, MessageSquare, Search, ChevronLeft, ChevronRight, Sparkles, Send,
+  Pencil, RotateCcw,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -29,6 +31,7 @@ export default function AdminCallReview() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [page, setPage] = useState(0);
   const [selectedCall, setSelectedCall] = useState<any>(null);
+  const [wrapUpOpen, setWrapUpOpen] = useState(false);
 
   // Reset to first page when filters change
   useEffect(() => {
@@ -593,6 +596,55 @@ export default function AdminCallReview() {
                   <VACoachingReport data={selectedCall.ai_analysis} onClose={() => {}} />
                 )}
 
+                {/* Post-Call Wrap-Up */}
+                <Card className="bg-slate-800/50 border-slate-700">
+                  <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-white text-sm flex items-center gap-2">
+                      <RotateCcw className="h-4 w-4 text-cyan-400" />
+                      Call Wrap-Up & Next-Call Context
+                    </CardTitle>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 gap-1 text-cyan-300 border-cyan-500/40"
+                      onClick={() => setWrapUpOpen(true)}
+                    >
+                      <Pencil className="h-3 w-3" />
+                      {selectedCall.wrap_up_completed_at ? 'Edit' : 'Add'}
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    {selectedCall.follow_up_status ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400 text-xs">Status:</span>
+                        <Badge className="bg-cyan-500/20 text-cyan-300">
+                          {selectedCall.follow_up_status.replace(/_/g, ' ')}
+                        </Badge>
+                        {selectedCall.follow_up_at && (
+                          <span className="text-xs text-amber-300">
+                            ↻ {new Date(selectedCall.follow_up_at).toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-500 italic">No outcome captured yet.</p>
+                    )}
+                    {selectedCall.call_summary && (
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-500 font-bold">Conversation overview</p>
+                        <p className="text-slate-300 whitespace-pre-wrap text-xs leading-relaxed">{selectedCall.call_summary}</p>
+                      </div>
+                    )}
+                    {selectedCall.next_call_context && (
+                      <div className="rounded-md border border-cyan-500/20 bg-cyan-500/5 p-2">
+                        <p className="text-[10px] uppercase text-cyan-300 font-bold mb-1">Context for next call</p>
+                        <p className="text-slate-300 whitespace-pre-wrap text-xs leading-relaxed">{selectedCall.next_call_context}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+
                 {selectedCall.va_notes && (
                   <Card className="bg-slate-800/50 border-slate-700">
                     <CardHeader className="pb-2">
@@ -612,6 +664,26 @@ export default function AdminCallReview() {
           </div>
         </div>
       </div>
+
+      <VACallWrapUpModal
+        open={wrapUpOpen}
+        onClose={() => {
+          setWrapUpOpen(false);
+          if (selectedCall?.id) {
+            (supabase as any)
+              .from('va_call_logs')
+              .select('*, profiles!va_call_logs_va_id_fkey(name)')
+              .eq('id', selectedCall.id)
+              .maybeSingle()
+              .then(({ data }: any) => { if (data) setSelectedCall(data); });
+          }
+          queryClient.invalidateQueries({ queryKey: ['admin-call-review'] });
+        }}
+        callLogId={selectedCall?.id ?? null}
+        leadName={selectedCall?.profiles?.name}
+        leadId={selectedCall?.lead_id}
+        durationSeconds={selectedCall?.duration_seconds}
+      />
     </div>
   );
 }

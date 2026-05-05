@@ -15,6 +15,9 @@ import { VAFAQs } from './VAFAQs';
 import { VAServicesPricing } from './VAServicesPricing';
 import { VAInvoiceModal } from './VAInvoiceModal';
 import { VALiveCoachPanel } from './VALiveCoachPanel';
+import { VACallWrapUpModal } from './VACallWrapUpModal';
+import { useQuery } from '@tanstack/react-query';
+import { History, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ActiveCallLead {
@@ -40,7 +43,26 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
   const [invoiceCreated, setInvoiceCreated] = useState(false);
   const [callLogId, setCallLogId] = useState<string | null>(null);
   const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
+  const [wrapUpOpen, setWrapUpOpen] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch the most recent prior wrap-up for this lead so the VA never starts from scratch
+  const { data: priorContext } = useQuery({
+    queryKey: ['va-prior-context', lead?.id],
+    queryFn: async () => {
+      if (!lead?.id) return null;
+      const { data } = await (supabase as any)
+        .from('va_call_logs')
+        .select('id, called_at, follow_up_status, call_summary, next_call_context, follow_up_at')
+        .eq('lead_id', lead.id)
+        .not('wrap_up_completed_at', 'is', null)
+        .order('called_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!lead?.id,
+  });
 
   useEffect(() => {
     const vs = voice.callStatus;
@@ -145,6 +167,8 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
         .eq('id', callLogId);
     }
     toast.success(t('va.call.ended'));
+    // Open wrap-up immediately so VA captures status + next-call context
+    if (callLogId) setWrapUpOpen(true);
   };
 
   const handleInvoiceClose = () => {
@@ -199,7 +223,28 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
         )}
       </div>
 
-      {/* Call Header */}
+      {/* Prior call context — never start from scratch */}
+      {priorContext && (priorContext.next_call_context || priorContext.call_summary) && (
+        <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-3">
+          <div className="flex items-center gap-2 mb-1.5">
+            <History className="h-3.5 w-3.5 text-cyan-400" />
+            <span className="text-xs font-semibold text-cyan-300">Where you left off last time</span>
+            {priorContext.follow_up_status && (
+              <Badge className="bg-cyan-500/20 text-cyan-300 text-[10px]">{priorContext.follow_up_status.replace(/_/g, ' ')}</Badge>
+            )}
+            <span className="ml-auto text-[10px] text-slate-500">
+              {priorContext.called_at ? new Date(priorContext.called_at).toLocaleString() : ''}
+            </span>
+          </div>
+          {priorContext.next_call_context && (
+            <p className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed">{priorContext.next_call_context}</p>
+          )}
+          {!priorContext.next_call_context && priorContext.call_summary && (
+            <p className="text-xs text-slate-400 whitespace-pre-wrap leading-relaxed italic">{priorContext.call_summary}</p>
+          )}
+        </div>
+      )}
+
       <div className="glass-card rounded-2xl p-5 border border-border/50">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -305,6 +350,24 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
       </div>
 
       <VAInvoiceModal open={invoiceOpen} onClose={handleInvoiceClose} lead={lead} />
+
+      {/* Manual reopen if VA dismissed */}
+      {callStatus === 'ended' && callLogId && !wrapUpOpen && (
+        <div className="flex justify-center">
+          <Button size="sm" variant="outline" className="gap-1.5 text-cyan-300 border-cyan-500/40" onClick={() => setWrapUpOpen(true)}>
+            <RotateCcw className="h-3.5 w-3.5" /> Open call wrap-up
+          </Button>
+        </div>
+      )}
+
+      <VACallWrapUpModal
+        open={wrapUpOpen}
+        onClose={() => setWrapUpOpen(false)}
+        callLogId={callLogId}
+        leadName={lead.business_name}
+        leadId={lead.id}
+        durationSeconds={seconds}
+      />
     </motion.div>
   );
 }
