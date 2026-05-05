@@ -31,6 +31,7 @@ export default function AdminCallReview() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [page, setPage] = useState(0);
   const [selectedCall, setSelectedCall] = useState<any>(null);
+  const [wrapUpOpen, setWrapUpOpen] = useState(false);
 
   // Reset to first page when filters change
   useEffect(() => {
