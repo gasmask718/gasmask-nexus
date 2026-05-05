@@ -43,7 +43,26 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
   const [invoiceCreated, setInvoiceCreated] = useState(false);
   const [callLogId, setCallLogId] = useState<string | null>(null);
   const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
+  const [wrapUpOpen, setWrapUpOpen] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch the most recent prior wrap-up for this lead so the VA never starts from scratch
+  const { data: priorContext } = useQuery({
+    queryKey: ['va-prior-context', lead?.id],
+    queryFn: async () => {
+      if (!lead?.id) return null;
+      const { data } = await (supabase as any)
+        .from('va_call_logs')
+        .select('id, called_at, follow_up_status, call_summary, next_call_context, follow_up_at')
+        .eq('lead_id', lead.id)
+        .not('wrap_up_completed_at', 'is', null)
+        .order('called_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!lead?.id,
+  });
 
   useEffect(() => {
     const vs = voice.callStatus;
