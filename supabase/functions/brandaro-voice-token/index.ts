@@ -33,9 +33,29 @@ async function validateTwilioApiKey(accountSid: string, apiKeySid: string, apiKe
   }
 
   const detail = await response.text();
+
+  // Diagnostic: probe what account this API key actually belongs to
+  let ownerProbe = "unknown";
+  try {
+    const probe = await fetch(`https://api.twilio.com/2010-04-01/Accounts.json`, {
+      headers: { Authorization: twilioBasicAuth(apiKeySid, apiKeySecret) },
+    });
+    if (probe.ok) {
+      const pj = await probe.json();
+      const sids = (pj?.accounts || []).map((a: any) => a.sid).slice(0, 3);
+      ownerProbe = sids.length ? `key valid; owns accounts=${sids.join(",")}` : "key valid; no accounts returned";
+    } else {
+      ownerProbe = `key invalid (HTTP ${probe.status}) — SID/Secret pair is wrong or from deleted key`;
+    }
+  } catch (e) {
+    ownerProbe = `probe failed: ${(e as Error).message}`;
+  }
+
+  const sidInfo = `apiKeySid prefix=${apiKeySid.slice(0,2)} len=${apiKeySid.length}`;
+  const secretInfo = `secret len=${apiKeySecret.length}`;
   return {
     ok: false as const,
-    detail: `Twilio rejected BRANDARO_TWILIO_API_KEY_SID / BRANDARO_TWILIO_API_KEY_SECRET for ${accountSid}: HTTP ${response.status} ${detail.slice(0, 200)}`,
+    detail: `Twilio 401 for ${accountSid}. ${sidInfo}. ${secretInfo}. Diagnostic: ${ownerProbe}. Raw: HTTP ${response.status} ${detail.slice(0, 150)}`,
   };
 }
 
