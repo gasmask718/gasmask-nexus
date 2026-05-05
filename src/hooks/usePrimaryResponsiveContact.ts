@@ -78,23 +78,33 @@ export function usePrimaryResponsiveContactBatch(storeIds: string[]) {
     queryKey: ['primary-responsive-contacts-batch', storeIds.sort().join(',')],
     queryFn: async () => {
       if (storeIds.length === 0) return {};
-      const { data: contacts, error } = await supabase
-        .from('store_contacts')
-        .select(`
-          id, name, phone, store_id,
-          responsive_by_text, responsive_by_call,
-          responsiveness_status,
-          last_responded_at,
-          last_text_received_at,
-          last_call_answered_at,
-          total_calls_attempted, total_calls_answered,
-          total_texts_sent, total_texts_received,
-          is_primary
-        `)
-        .in('store_id', storeIds)
-        .eq('is_simulation', false);
-
-      if (error) throw error;
+      const CHUNK_SIZE = 100;
+      const chunks: string[][] = [];
+      for (let i = 0; i < storeIds.length; i += CHUNK_SIZE) {
+        chunks.push(storeIds.slice(i, i + CHUNK_SIZE));
+      }
+      const results = await Promise.all(
+        chunks.map((chunk) =>
+          supabase
+            .from('store_contacts')
+            .select(`
+              id, name, phone, store_id,
+              responsive_by_text, responsive_by_call,
+              responsiveness_status,
+              last_responded_at,
+              last_text_received_at,
+              last_call_answered_at,
+              total_calls_attempted, total_calls_answered,
+              total_texts_sent, total_texts_received,
+              is_primary
+            `)
+            .in('store_id', chunk)
+            .eq('is_simulation', false)
+        )
+      );
+      const firstError = results.find((r) => r.error);
+      if (firstError?.error) throw firstError.error;
+      const contacts = results.flatMap((r) => r.data || []);
 
       // Group by store
       const grouped: Record<string, typeof contacts> = {};
