@@ -140,15 +140,29 @@ export function useLastOrderSnapshotBatch(storeIds: string[]) {
     queryFn: async () => {
       if (!storeIds.length) return new Map<string, LastOrderSnapshot[]>();
 
-      const { data, error } = await supabase
-        .from('v_store_last_order_snapshot' as any)
-        .select('*')
-        .in('store_id', storeIds);
-
-      if (error) {
-        console.error('[LOS-BATCH] Failed to fetch:', error);
-        throw error;
+      // Chunk to avoid URL length limits with .in() on large arrays
+      const CHUNK_SIZE = 100;
+      const chunks: string[][] = [];
+      for (let i = 0; i < storeIds.length; i += CHUNK_SIZE) {
+        chunks.push(storeIds.slice(i, i + CHUNK_SIZE));
       }
+
+      const results = await Promise.all(
+        chunks.map((chunk) =>
+          supabase
+            .from('v_store_last_order_snapshot' as any)
+            .select('*')
+            .in('store_id', chunk)
+        )
+      );
+
+      const firstError = results.find((r) => r.error);
+      if (firstError?.error) {
+        console.error('[LOS-BATCH] Failed to fetch:', firstError.error);
+        throw firstError.error;
+      }
+
+      const data = results.flatMap((r) => r.data || []);
 
       // Group raw rows by store
       const rawMap = new Map<string, LastOrderSnapshot[]>();
