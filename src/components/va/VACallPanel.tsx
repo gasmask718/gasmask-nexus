@@ -167,9 +167,14 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
         .eq('id', callLogId);
     }
     toast.success(t('va.call.ended'));
+    // Open wrap-up immediately so VA captures status + next-call context
+    if (callLogId) setWrapUpOpen(true);
   };
 
   const handleInvoiceClose = () => {
+    setInvoiceOpen(false);
+    setInvoiceCreated(true);
+  };
     setInvoiceOpen(false);
     setInvoiceCreated(true);
   };
