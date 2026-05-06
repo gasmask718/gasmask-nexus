@@ -12,6 +12,7 @@ import { VARebuttals } from '@/components/va/VARebuttals';
 import { VAFAQs } from '@/components/va/VAFAQs';
 import { VALeadDiscovery } from '@/components/va/VALeadDiscovery';
 import { VAPowerDialer } from '@/components/va/VAPowerDialer';
+import { UnifiedCallActions } from '@/components/communication/UnifiedCallActions';
 import { VADialerAssist } from '@/components/va/VADialerAssist';
 import { VALeaderboard } from '@/components/va/VALeaderboard';
 import { VACallbacksQueue } from '@/components/va/VACallbacksQueue';
@@ -240,11 +241,13 @@ function VADashboardInner() {
             {view === 'dialer' && (
               <div className="flex gap-4 h-[calc(100vh-8rem)]">
                 {/* Left: Dialer 60% */}
-                <div className="w-[60%] overflow-y-auto pr-2">
+                <div className="w-[60%] overflow-y-auto pr-2 space-y-4">
+                  <UnifiedCallActions
+                    mode="va_auto_dialer"
+                    businessUnit={activeCompany?.company_slug ?? null}
+                  />
                   <VAPowerDialer leads={dialerLeads.length > 0 ? dialerLeads : allLeads} onEndSession={handleEndDialerSession} />
-                  <div className="mt-4">
-                    <VALeaderboard />
-                  </div>
+                  <VALeaderboard />
                 </div>
                 {/* Right: Assist 40% */}
                 <div className="w-[40%] bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
