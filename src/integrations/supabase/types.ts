@@ -112091,6 +112091,18 @@ export type Database = {
         }[]
       }
       preview_invoice_repair: { Args: { p_invoice_id: string }; Returns: Json }
+      preview_pass2_extraction: {
+        Args: never
+        Returns: {
+          conflict: boolean
+          conflict_reason: string
+          current_name: string
+          extracted_address: string
+          pattern_type: string
+          proposed_name: string
+          store_id: string
+        }[]
+      }
       preview_phone_name_merge_group: {
         Args: { p_phone_name_group_id: number }
         Returns: Json
