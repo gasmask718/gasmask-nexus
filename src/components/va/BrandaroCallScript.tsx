@@ -26,6 +26,16 @@ interface Rebuttal {
   aggressive_rebuttal: string | null;
 }
 
+interface Package {
+  id: string;
+  name: string;
+  price_label: string;
+  payment_terms: string;
+  highlights: string;
+  best_for: string;
+  is_target: boolean;
+}
+
 interface Props {
   businessName?: string;
   firstName?: string;
@@ -33,12 +43,6 @@ interface Props {
   city?: string;
 }
 
-const PACKAGES = [
-  { name: 'Starter', price: '$750', terms: '$375 deposit / $375 launch', highlights: '3 pages, mobile-responsive, basic SEO, live in 5–7 days', best: 'New businesses, solopreneurs' },
-  { name: 'Professional ⭐', price: '$1,500', terms: '$750 deposit / $750 launch', highlights: 'Up to 7 pages, advanced SEO, social integration, popups, 7–10 days', best: 'Established service businesses' },
-  { name: 'Premium', price: '$2,997', terms: '$1,498.50 / $1,498.50', highlights: 'Unlimited pages, custom photography, pro copy, e-commerce, 14–21 days', best: 'Brands wanting standout design / e-com' },
-  { name: 'Enterprise', price: '$5,000+', terms: 'Custom', highlights: 'Multi-location, portals, custom integrations, dedicated PM', best: 'Multi-location / franchises' },
-];
 
 const CLOSES = [
   { name: 'Assumptive', text: 'What email should I send the receipt to?' },
@@ -68,13 +72,14 @@ function fillTokens(text: string, p: Props): string {
 export function BrandaroCallScript(props: Props) {
   const [steps, setSteps] = useState<ScriptStep[]>([]);
   const [rebuttals, setRebuttals] = useState<Rebuttal[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeIdx, setActiveIdx] = useState(0);
 
   useEffect(() => {
     let cancel = false;
     (async () => {
-      const [s, r] = await Promise.all([
+      const [s, r, p] = await Promise.all([
         (supabase as any)
           .from('brandaro_sales_script_steps')
           .select('id, step_number, step_name, step_key, display_label, va_says, coaching_tip, tag_lead_as')
@@ -83,10 +88,16 @@ export function BrandaroCallScript(props: Props) {
         (supabase as any)
           .from('brandaro_closer_rebuttals')
           .select('id, objection_key, label, human_response, soft_rebuttal, aggressive_rebuttal'),
+        (supabase as any)
+          .from('brandaro_sales_packages')
+          .select('id, name, price_label, payment_terms, highlights, best_for, is_target')
+          .eq('active', true)
+          .order('sort_order'),
       ]);
       if (cancel) return;
       setSteps(s.data || []);
       setRebuttals(r.data || []);
+      setPackages(p.data || []);
       setLoading(false);
     })();
     return () => { cancel = true; };
@@ -194,15 +205,18 @@ export function BrandaroCallScript(props: Props) {
 
           {/* PACKAGES */}
           <TabsContent value="packages" className="p-4 space-y-2 mt-0 max-h-[420px] overflow-y-auto">
-            {PACKAGES.map(p => (
-              <div key={p.name} className="bg-slate-800/60 border border-slate-700 rounded p-3">
+            {packages.length === 0 && <p className="text-xs text-slate-400">No packages loaded.</p>}
+            {packages.map(p => (
+              <div key={p.id} className={`rounded p-3 border ${p.is_target ? 'bg-emerald-900/20 border-emerald-500/50' : 'bg-slate-800/60 border-slate-700'}`}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-bold text-white">{p.name}</span>
-                  <span className="text-sm font-mono text-emerald-400">{p.price}</span>
+                  <span className="text-sm font-bold text-white flex items-center gap-1">
+                    {p.name} {p.is_target && <Badge className="bg-emerald-600 text-white text-[9px] px-1.5 py-0">TARGET</Badge>}
+                  </span>
+                  <span className="text-sm font-mono text-emerald-400">{p.price_label}</span>
                 </div>
-                <div className="text-[10px] text-slate-400 mb-1">{p.terms}</div>
+                <div className="text-[10px] text-slate-400 mb-1">{p.payment_terms}</div>
                 <div className="text-xs text-slate-200">{p.highlights}</div>
-                <div className="text-[10px] text-cyan-400 mt-1">Best for: {p.best}</div>
+                <div className="text-[10px] text-cyan-400 mt-1">Best for: {p.best_for}</div>
               </div>
             ))}
             <div className="bg-slate-800/40 border border-slate-700 rounded p-2 text-[11px] text-slate-300">

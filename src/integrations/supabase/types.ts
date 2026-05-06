@@ -17878,6 +17878,51 @@ export type Database = {
           },
         ]
       }
+      brandaro_sales_packages: {
+        Row: {
+          active: boolean
+          best_for: string
+          created_at: string
+          highlights: string
+          id: string
+          is_target: boolean
+          name: string
+          payment_terms: string
+          price_label: string
+          price_numeric: number | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          best_for: string
+          created_at?: string
+          highlights: string
+          id?: string
+          is_target?: boolean
+          name: string
+          payment_terms: string
+          price_label: string
+          price_numeric?: number | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          best_for?: string
+          created_at?: string
+          highlights?: string
+          id?: string
+          is_target?: boolean
+          name?: string
+          payment_terms?: string
+          price_label?: string
+          price_numeric?: number | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       brandaro_sales_script_steps: {
         Row: {
           coaching_tip: string | null
