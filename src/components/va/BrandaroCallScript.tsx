@@ -205,15 +205,18 @@ export function BrandaroCallScript(props: Props) {
 
           {/* PACKAGES */}
           <TabsContent value="packages" className="p-4 space-y-2 mt-0 max-h-[420px] overflow-y-auto">
-            {PACKAGES.map(p => (
-              <div key={p.name} className="bg-slate-800/60 border border-slate-700 rounded p-3">
+            {packages.length === 0 && <p className="text-xs text-slate-400">No packages loaded.</p>}
+            {packages.map(p => (
+              <div key={p.id} className={`rounded p-3 border ${p.is_target ? 'bg-emerald-900/20 border-emerald-500/50' : 'bg-slate-800/60 border-slate-700'}`}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-bold text-white">{p.name}</span>
-                  <span className="text-sm font-mono text-emerald-400">{p.price}</span>
+                  <span className="text-sm font-bold text-white flex items-center gap-1">
+                    {p.name} {p.is_target && <Badge className="bg-emerald-600 text-white text-[9px] px-1.5 py-0">TARGET</Badge>}
+                  </span>
+                  <span className="text-sm font-mono text-emerald-400">{p.price_label}</span>
                 </div>
-                <div className="text-[10px] text-slate-400 mb-1">{p.terms}</div>
+                <div className="text-[10px] text-slate-400 mb-1">{p.payment_terms}</div>
                 <div className="text-xs text-slate-200">{p.highlights}</div>
-                <div className="text-[10px] text-cyan-400 mt-1">Best for: {p.best}</div>
+                <div className="text-[10px] text-cyan-400 mt-1">Best for: {p.best_for}</div>
               </div>
             ))}
             <div className="bg-slate-800/40 border border-slate-700 rounded p-2 text-[11px] text-slate-300">
