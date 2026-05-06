@@ -43,12 +43,6 @@ interface Props {
   city?: string;
 }
 
-const PACKAGES = [
-  { name: 'Starter', price: '$750', terms: '$375 deposit / $375 launch', highlights: '3 pages, mobile-responsive, basic SEO, live in 5–7 days', best: 'New businesses, solopreneurs' },
-  { name: 'Professional ⭐', price: '$1,500', terms: '$750 deposit / $750 launch', highlights: 'Up to 7 pages, advanced SEO, social integration, popups, 7–10 days', best: 'Established service businesses' },
-  { name: 'Premium', price: '$2,997', terms: '$1,498.50 / $1,498.50', highlights: 'Unlimited pages, custom photography, pro copy, e-commerce, 14–21 days', best: 'Brands wanting standout design / e-com' },
-  { name: 'Enterprise', price: '$5,000+', terms: 'Custom', highlights: 'Multi-location, portals, custom integrations, dedicated PM', best: 'Multi-location / franchises' },
-];
 
 const CLOSES = [
   { name: 'Assumptive', text: 'What email should I send the receipt to?' },
