@@ -72,13 +72,14 @@ function fillTokens(text: string, p: Props): string {
 export function BrandaroCallScript(props: Props) {
   const [steps, setSteps] = useState<ScriptStep[]>([]);
   const [rebuttals, setRebuttals] = useState<Rebuttal[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeIdx, setActiveIdx] = useState(0);
 
   useEffect(() => {
     let cancel = false;
     (async () => {
-      const [s, r] = await Promise.all([
+      const [s, r, p] = await Promise.all([
         (supabase as any)
           .from('brandaro_sales_script_steps')
           .select('id, step_number, step_name, step_key, display_label, va_says, coaching_tip, tag_lead_as')
@@ -87,10 +88,16 @@ export function BrandaroCallScript(props: Props) {
         (supabase as any)
           .from('brandaro_closer_rebuttals')
           .select('id, objection_key, label, human_response, soft_rebuttal, aggressive_rebuttal'),
+        (supabase as any)
+          .from('brandaro_sales_packages')
+          .select('id, name, price_label, payment_terms, highlights, best_for, is_target')
+          .eq('active', true)
+          .order('sort_order'),
       ]);
       if (cancel) return;
       setSteps(s.data || []);
       setRebuttals(r.data || []);
+      setPackages(p.data || []);
       setLoading(false);
     })();
     return () => { cancel = true; };
