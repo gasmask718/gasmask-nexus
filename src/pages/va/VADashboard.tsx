@@ -12,6 +12,7 @@ import { VARebuttals } from '@/components/va/VARebuttals';
 import { VAFAQs } from '@/components/va/VAFAQs';
 import { VALeadDiscovery } from '@/components/va/VALeadDiscovery';
 import { VAPowerDialer } from '@/components/va/VAPowerDialer';
+import { UnifiedCallActions } from '@/components/communication/UnifiedCallActions';
 import { VADialerAssist } from '@/components/va/VADialerAssist';
 import { VALeaderboard } from '@/components/va/VALeaderboard';
 import { VACallbacksQueue } from '@/components/va/VACallbacksQueue';
