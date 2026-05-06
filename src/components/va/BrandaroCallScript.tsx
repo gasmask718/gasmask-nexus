@@ -26,6 +26,16 @@ interface Rebuttal {
   aggressive_rebuttal: string | null;
 }
 
+interface Package {
+  id: string;
+  name: string;
+  price_label: string;
+  payment_terms: string;
+  highlights: string;
+  best_for: string;
+  is_target: boolean;
+}
+
 interface Props {
   businessName?: string;
   firstName?: string;
