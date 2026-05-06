@@ -58,11 +58,11 @@ const INDUSTRY_HOOKS: Record<string, string> = {
 
 function fillTokens(text: string, p: Props): string {
   return text
-    .replaceAll('[FIRST_NAME]', p.firstName || '[FIRST_NAME]')
-    .replaceAll('[VA_NAME]', p.vaName || '[VA_NAME]')
-    .replaceAll('[BUSINESS_NAME]', p.businessName || '[BUSINESS_NAME]')
-    .replaceAll('[CITY]', p.city || '[CITY]')
-    .replaceAll('[NAME]', p.firstName || '[NAME]');
+    .replace(/\[FIRST_NAME\]/g, p.firstName || '[FIRST_NAME]')
+    .replace(/\[VA_NAME\]/g, p.vaName || '[VA_NAME]')
+    .replace(/\[BUSINESS_NAME\]/g, p.businessName || '[BUSINESS_NAME]')
+    .replace(/\[CITY\]/g, p.city || '[CITY]')
+    .replace(/\[NAME\]/g, p.firstName || '[NAME]');
 }
 
 export function BrandaroCallScript(props: Props) {
