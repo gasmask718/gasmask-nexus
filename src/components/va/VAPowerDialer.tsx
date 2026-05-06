@@ -489,6 +489,11 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
           <Button onClick={stopDialer} variant="ghost" size="sm" className="w-full text-red-400 hover:text-red-300 gap-2">
             <X className="h-4 w-4" /> Stop Dialer
           </Button>
+
+          {/* Live 8-Stage Brandaro Sales Script */}
+          <div className="pt-2">
+            <BrandaroCallScript businessName={currentLead?.business_name} />
+          </div>
         </CardContent>
       </Card>
     );
