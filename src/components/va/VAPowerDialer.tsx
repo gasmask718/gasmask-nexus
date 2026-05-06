@@ -12,6 +12,7 @@ import {
   Phone, PhoneOff, SkipForward, X, Loader2, PlayCircle, AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { BrandaroCallScript } from './BrandaroCallScript';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VA Auto Dialer — Sequential Lead Processing State Machine
