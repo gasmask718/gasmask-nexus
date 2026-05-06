@@ -143,8 +143,8 @@ export function UnifiedCallActions({
   // ─── Pull next lead from queue ───
   const fetchNextLead = useCallback(async (campaignId: string): Promise<QueueLead | null> => {
     // Pull oldest pending lead — campaign association via assignment_notes/source for now.
-    const { data, error } = await supabase
-      .from('dynasty_call_queue' as any)
+    const { data, error } = await (supabase as any)
+      .from('dynasty_call_queue')
       .select('*')
       .eq('status', 'pending')
       .order('created_at', { ascending: true })
