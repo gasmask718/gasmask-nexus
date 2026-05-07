@@ -77,6 +77,13 @@ export default function BrandaroCRMDashboard() {
     });
   }, [leads, search, statusFilter]);
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = useMemo(
+    () => filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filtered, currentPage]
+  );
+
   const kpis = useMemo(() => {
     const total = leads.length;
     const hot = leads.filter((l: any) => (l.intent_score || 0) >= 70).length;
