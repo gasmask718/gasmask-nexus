@@ -16230,6 +16230,48 @@ export type Database = {
           },
         ]
       }
+      brandaro_number_sessions: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          number_id: string
+          started_at: string
+          va_id: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          number_id: string
+          started_at?: string
+          va_id: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          number_id?: string
+          started_at?: string
+          va_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_number_sessions_number_id_fkey"
+            columns: ["number_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_number_last_sessions"
+            referencedColumns: ["number_id"]
+          },
+          {
+            foreignKeyName: "brandaro_number_sessions_number_id_fkey"
+            columns: ["number_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_phone_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_objection_handlers: {
         Row: {
           coaching_tip: string | null
@@ -100720,6 +100762,13 @@ export type Database = {
             foreignKeyName: "va_sessions_twilio_number_id_fkey"
             columns: ["twilio_number_id"]
             isOneToOne: false
+            referencedRelation: "brandaro_number_last_sessions"
+            referencedColumns: ["number_id"]
+          },
+          {
+            foreignKeyName: "va_sessions_twilio_number_id_fkey"
+            columns: ["twilio_number_id"]
+            isOneToOne: false
             referencedRelation: "brandaro_phone_numbers"
             referencedColumns: ["id"]
           },
@@ -107152,6 +107201,28 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
             referencedColumns: ["ambassador_id"]
+          },
+        ]
+      }
+      brandaro_number_last_sessions: {
+        Row: {
+          assigned_va_id: string | null
+          ended_at: string | null
+          friendly_name: string | null
+          in_use: boolean | null
+          last_va_id: string | null
+          number_id: string | null
+          phone_number: string | null
+          session_id: string | null
+          started_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_phone_numbers_assigned_va_id_fkey"
+            columns: ["assigned_va_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
