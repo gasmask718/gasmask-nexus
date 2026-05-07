@@ -296,9 +296,8 @@ function VADashboardInner() {
               />
             )}
             {view === 'scripts' && (
-              <div className="max-w-2xl space-y-4">
-                <VAScripts />
-                <VARebuttals />
+              <div className="h-[calc(100vh-8rem)] rounded-xl border border-slate-700 overflow-hidden">
+                <VAScriptsRebuttalsPanel />
               </div>
             )}
             {view === 'faqs' && <div className="max-w-2xl"><VAFAQs /></div>}
