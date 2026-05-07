@@ -651,16 +651,23 @@ export function UnifiedCallActions({
           </Button>
         </div>
       )}
+
+      {(callStatus === 'dialing' || callStatus === 'connected') && currentLead && (
         <div className="space-y-3">
-          <div className="bg-slate-800/60 rounded-lg p-4 border border-slate-700">
-            <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">Now Calling</div>
-            <div className="text-xl font-bold">
-              {currentLead.business_name || currentLead.contact_name || 'Lead'}
+          <div className="bg-slate-800/60 rounded-lg p-4 border border-slate-700 flex items-start justify-between">
+            <div>
+              <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">
+                {callStatus === 'dialing' ? 'Dialing…' : 'Connected'}
+              </div>
+              <div className="text-xl font-bold">
+                {currentLead.business_name || currentLead.contact_name || 'Lead'}
+              </div>
+              <div className="font-mono text-cyan-300 text-sm">{currentLead.phone_number}</div>
             </div>
-            <div className="font-mono text-cyan-300 text-sm">{currentLead.phone_number}</div>
-            {currentLead.state && (
-              <div className="text-xs text-slate-500 mt-1">State: {currentLead.state}</div>
-            )}
+            <div className="text-right">
+              <div className={`inline-flex h-2 w-2 rounded-full mr-2 ${callStatus === 'dialing' ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400 animate-pulse'}`} />
+              <span className="font-mono text-sm text-slate-300">{callElapsed}</span>
+            </div>
           </div>
 
           <div className="bg-slate-800/40 rounded-lg p-3 border border-slate-700/50 text-sm text-slate-300">
