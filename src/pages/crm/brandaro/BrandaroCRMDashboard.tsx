@@ -16,8 +16,11 @@ import {
   Users, Target, Flame, TrendingUp,
 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import CRMLayout from '../CRMLayout';
 import LastUserLogsTable from '@/components/crm/brandaro/LastUserLogsTable';
+
+const PAGE_SIZE = 25;
 
 const STATUS_COLORS: Record<string, string> = {
   new: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
@@ -32,6 +35,7 @@ export default function BrandaroCRMDashboard() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(1);
 
   const { data: business } = useQuery({
     queryKey: ['business-brandaro'],
@@ -72,6 +76,13 @@ export default function BrandaroCRMDashboard() {
       return matchesSearch && matchesStatus;
     });
   }, [leads, search, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = useMemo(
+    () => filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filtered, currentPage]
+  );
 
   const kpis = useMemo(() => {
     const total = leads.length;
@@ -123,11 +134,11 @@ export default function BrandaroCRMDashboard() {
                 <Input
                   placeholder="Search by business, email, phone, location..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                   className="pl-9"
                 />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filter status" />
                 </SelectTrigger>
@@ -172,7 +183,7 @@ export default function BrandaroCRMDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((lead: any) => (
+                    {paginated.map((lead: any) => (
                       <TableRow
                         key={lead.id}
                         className="cursor-pointer"
@@ -224,6 +235,13 @@ export default function BrandaroCRMDashboard() {
                   </TableBody>
                 </Table>
               </div>
+              <DataTablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={PAGE_SIZE}
+                totalItems={filtered.length}
+                onPageChange={setPage}
+              />
             </CardContent>
           </Card>
         )}

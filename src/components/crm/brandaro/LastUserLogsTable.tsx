@@ -2,12 +2,16 @@
  * LastUserLogsTable — Admin audit view of the most recent VA session per Brandaro phone number.
  * Reads from the `brandaro_number_last_sessions` view (RLS gated to admins).
  */
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, History, Phone } from 'lucide-react';
+import { DataTablePagination } from '@/components/crud/DataTablePagination';
+
+const PAGE_SIZE = 25;
 
 type Row = {
   number_id: string;
@@ -44,6 +48,7 @@ function formatDuration(start: string | null, end: string | null): string {
 }
 
 export default function LastUserLogsTable() {
+  const [page, setPage] = useState(1);
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['brandaro-number-last-sessions'],
     refetchInterval: 30_000,
@@ -94,7 +99,12 @@ export default function LastUserLogsTable() {
           <div className="text-center py-10 text-sm text-muted-foreground">
             No phone numbers found.
           </div>
-        ) : (
+        ) : (() => {
+          const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+          const currentPage = Math.min(page, totalPages);
+          const paginated = rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+          return (
+          <>
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -107,7 +117,7 @@ export default function LastUserLogsTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((r) => {
+                {paginated.map((r) => {
                   const active = !!r.session_id && !r.ended_at;
                   return (
                     <TableRow key={r.number_id}>
@@ -156,7 +166,16 @@ export default function LastUserLogsTable() {
               </TableBody>
             </Table>
           </div>
-        )}
+          <DataTablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={PAGE_SIZE}
+            totalItems={rows.length}
+            onPageChange={setPage}
+          />
+          </>
+          );
+        })()}
       </CardContent>
     </Card>
   );
