@@ -73,14 +73,16 @@ interface QueueLead {
 }
 
 export function UnifiedCallActions({
-  mode = 'va_auto_dialer',
+  mode: initialMode = 'va_auto_dialer',
   businessUnit,
   onLeadComplete,
+  targetLead,
 }: UnifiedCallActionsProps) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { makeCall, hangUp, callStatus: deviceCallStatus, activeCall } = useVoiceDevice();
 
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [selectedCampaign, setSelectedCampaign] = useState<string>('');
   const [selectedPhoneNumber, setSelectedPhoneNumber] = useState<string>('');
   const [currentLead, setCurrentLead] = useState<QueueLead | null>(null);
@@ -91,6 +93,28 @@ export function UnifiedCallActions({
   const [followUpNotes, setFollowUpNotes] = useState<string>('');
   const [followUpAt, setFollowUpAt] = useState<string>('');
   const [lastDialAt, setLastDialAt] = useState<number>(0);
+
+  // Manual mode: free-form target
+  const [manualPhone, setManualPhone] = useState<string>(targetLead?.phone_number || '');
+  const [manualName, setManualName] = useState<string>(
+    targetLead?.business_name || targetLead?.contact_name || ''
+  );
+  const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    if (callStatus !== 'connected') return;
+    const t = setInterval(() => setTick((x) => x + 1), 1000);
+    return () => clearInterval(t);
+  }, [callStatus]);
+
+  useEffect(() => {
+    if (targetLead?.phone_number) setManualPhone(targetLead.phone_number);
+    if (targetLead?.business_name || targetLead?.contact_name) {
+      setManualName(targetLead.business_name || targetLead.contact_name || '');
+    }
+  }, [targetLead]);
+
 
   // ─── Sync UI status with browser device ───
   useEffect(() => {
