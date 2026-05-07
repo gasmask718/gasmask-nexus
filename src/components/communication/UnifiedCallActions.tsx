@@ -682,15 +682,17 @@ export function UnifiedCallActions({
               onClick={() => { hangUp(); setCallStatus('wrap-up'); }}
               className="flex-1 gap-2"
             >
-              <PhoneOff className="h-4 w-4" /> End Call
+              <PhoneOff className="h-4 w-4" /> Hang Up
             </Button>
-            <Button
-              variant="outline"
-              onClick={endSession}
-              className="border-slate-700 text-slate-300"
-            >
-              Stop Dialer
-            </Button>
+            {mode === 'va_auto_dialer' && (
+              <Button
+                variant="outline"
+                onClick={endSession}
+                className="border-slate-700 text-slate-300"
+              >
+                Stop Dialer
+              </Button>
+            )}
           </div>
         </div>
       )}
