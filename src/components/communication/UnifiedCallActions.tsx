@@ -158,7 +158,9 @@ export function UnifiedCallActions({
           || String(n.brand).toLowerCase() === 'general';
         // Approximate "allowed_modes" via purpose field until column exists
         const purposeOk = !n.purpose
-          || ['va_auto_dialer', 'outbound', 'dialer', 'general'].includes(String(n.purpose).toLowerCase());
+          || (mode === 'manual'
+            ? ['manual_call', 'manual', 'outbound', 'general'].includes(String(n.purpose).toLowerCase())
+            : ['va_auto_dialer', 'outbound', 'dialer', 'general'].includes(String(n.purpose).toLowerCase()));
         return brandOk && purposeOk;
       });
     },
