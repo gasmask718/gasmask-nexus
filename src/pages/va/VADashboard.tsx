@@ -244,9 +244,11 @@ function VADashboardInner() {
               <div className="flex gap-4 h-[calc(100vh-8rem)]">
                 {/* Left: Persistent Dialer + Active Call Controls (always visible) */}
                 <div className="w-[42%] flex flex-col gap-3 min-w-0">
-                  <div className="sticky top-0 z-10">
+                  <div className="sticky top-0 z-10 space-y-3">
                     <UnifiedCallActions
-                      mode="va_auto_dialer"
+                      businessUnit={activeCompany?.company_slug ?? null}
+                    />
+                    <ManualCallActions
                       businessUnit={activeCompany?.company_slug ?? null}
                     />
                   </div>
