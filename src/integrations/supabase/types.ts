@@ -12855,6 +12855,36 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_closing_techniques: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          script: string
+          sort_order: number
+          technique_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          script: string
+          sort_order?: number
+          technique_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          script?: string
+          sort_order?: number
+          technique_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       brandaro_competitor_captures: {
         Row: {
           capture_method: string | null
@@ -14619,6 +14649,36 @@ export type Database = {
           },
         ]
       }
+      brandaro_industry_hooks: {
+        Row: {
+          created_at: string
+          hook: string
+          id: string
+          industry: string
+          is_active: boolean
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          hook: string
+          id?: string
+          industry: string
+          is_active?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          hook?: string
+          id?: string
+          industry?: string
+          is_active?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       brandaro_industry_intelligence: {
         Row: {
           avg_business_age_years: number | null
@@ -16227,6 +16287,48 @@ export type Database = {
           },
         ]
       }
+      brandaro_packages: {
+        Row: {
+          best_for: string
+          created_at: string
+          id: string
+          included_highlights: string
+          is_active: boolean
+          is_target: boolean
+          package_name: string
+          payment_terms: string
+          price: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          best_for: string
+          created_at?: string
+          id?: string
+          included_highlights: string
+          is_active?: boolean
+          is_target?: boolean
+          package_name: string
+          payment_terms: string
+          price: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          best_for?: string
+          created_at?: string
+          id?: string
+          included_highlights?: string
+          is_active?: boolean
+          is_target?: boolean
+          package_name?: string
+          payment_terms?: string
+          price?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       brandaro_payment_links: {
         Row: {
           amount: number
@@ -16926,6 +17028,36 @@ export type Database = {
           script_variant?: string | null
           updated_at?: string | null
           win_rate?: number | null
+        }
+        Relationships: []
+      }
+      brandaro_post_call_workflows: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          outcome: string
+          sort_order: number
+          steps: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          outcome: string
+          sort_order?: number
+          steps: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          outcome?: string
+          sort_order?: number
+          steps?: string
+          updated_at?: string
         }
         Relationships: []
       }

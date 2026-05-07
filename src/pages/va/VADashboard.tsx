@@ -14,6 +14,7 @@ import { VALeadDiscovery } from '@/components/va/VALeadDiscovery';
 import { VAPowerDialer } from '@/components/va/VAPowerDialer';
 import { UnifiedCallActions } from '@/components/communication/UnifiedCallActions';
 import { VADialerAssist } from '@/components/va/VADialerAssist';
+import { VAScriptsRebuttalsPanel } from '@/components/va/VAScriptsRebuttalsPanel';
 import { VALeaderboard } from '@/components/va/VALeaderboard';
 import { VACallbacksQueue } from '@/components/va/VACallbacksQueue';
 import { VACallStats } from '@/components/va/VACallStats';
@@ -240,18 +241,22 @@ function VADashboardInner() {
             {view === 'discovery' && <VALeadDiscovery />}
             {view === 'dialer' && (
               <div className="flex gap-4 h-[calc(100vh-8rem)]">
-                {/* Left: Dialer 60% */}
-                <div className="w-[60%] overflow-y-auto pr-2 space-y-4">
-                  <UnifiedCallActions
-                    mode="va_auto_dialer"
-                    businessUnit={activeCompany?.company_slug ?? null}
-                  />
-                  <VAPowerDialer leads={dialerLeads.length > 0 ? dialerLeads : allLeads} onEndSession={handleEndDialerSession} />
-                  <VALeaderboard />
+                {/* Left: Persistent Dialer + Active Call Controls (always visible) */}
+                <div className="w-[42%] flex flex-col gap-3 min-w-0">
+                  <div className="sticky top-0 z-10">
+                    <UnifiedCallActions
+                      mode="va_auto_dialer"
+                      businessUnit={activeCompany?.company_slug ?? null}
+                    />
+                  </div>
+                  <div className="flex-1 overflow-y-auto pr-1 space-y-3">
+                    <VAPowerDialer leads={dialerLeads.length > 0 ? dialerLeads : allLeads} onEndSession={handleEndDialerSession} />
+                    <VADialerAssist />
+                  </div>
                 </div>
-                {/* Right: Assist 40% */}
-                <div className="w-[40%] bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
-                  <VADialerAssist />
+                {/* Right: Scripts & Rebuttals (tabbed reference, never obscures dialer) */}
+                <div className="flex-1 min-w-0 rounded-xl border border-slate-700 overflow-hidden">
+                  <VAScriptsRebuttalsPanel />
                 </div>
               </div>
             )}
@@ -291,9 +296,8 @@ function VADashboardInner() {
               />
             )}
             {view === 'scripts' && (
-              <div className="max-w-2xl space-y-4">
-                <VAScripts />
-                <VARebuttals />
+              <div className="h-[calc(100vh-8rem)] rounded-xl border border-slate-700 overflow-hidden">
+                <VAScriptsRebuttalsPanel />
               </div>
             )}
             {view === 'faqs' && <div className="max-w-2xl"><VAFAQs /></div>}
