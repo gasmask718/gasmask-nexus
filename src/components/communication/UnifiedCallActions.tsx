@@ -587,7 +587,70 @@ export function UnifiedCallActions({
         </div>
       )}
 
-      {(callStatus === 'dialing' || callStatus === 'connected') && currentLead && (
+      {callStatus === 'idle' && mode === 'manual' && (
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Lead Name / Business</label>
+            <input
+              type="text"
+              value={manualName}
+              onChange={(e) => setManualName(e.target.value)}
+              placeholder="e.g. Acme Corp"
+              disabled={!!targetLead?.business_name || !!targetLead?.contact_name}
+              className="w-full h-9 rounded-md bg-slate-800 border border-slate-700 px-3 text-sm text-white disabled:opacity-70"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Phone Number</label>
+            <input
+              type="tel"
+              value={manualPhone}
+              onChange={(e) => setManualPhone(e.target.value)}
+              placeholder="+15551234567"
+              disabled={!!targetLead?.phone_number}
+              className="w-full h-9 rounded-md bg-slate-800 border border-slate-700 px-3 text-sm text-white font-mono disabled:opacity-70"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 flex items-center gap-1 mb-1">
+              <Hash className="h-3 w-3" /> Caller ID (Twilio)
+            </label>
+            <Select value={selectedPhoneNumber} onValueChange={setSelectedPhoneNumber}>
+              <SelectTrigger className="bg-slate-800 border-slate-700">
+                <SelectValue placeholder="Select number…" />
+              </SelectTrigger>
+              <SelectContent>
+                {phoneNumbers.length === 0 && (
+                  <div className="px-3 py-2 text-xs text-muted-foreground">
+                    No approved numbers found for this hub
+                  </div>
+                )}
+                {phoneNumbers.map((n: any) => (
+                  <SelectItem key={n.id} value={n.phone_number}>
+                    <span className="font-mono">{n.phone_number}</span>
+                    <span className="text-xs text-muted-foreground ml-2">{n.friendly_name}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {isLeadRestricted && (
+            <div className="flex items-center gap-2 text-rose-400 text-xs bg-rose-500/10 p-2 rounded">
+              <Ban className="h-3 w-3" />
+              Lead is marked {targetLead?.status} — calling is blocked.
+            </div>
+          )}
+
+          <Button
+            onClick={startManualCall}
+            disabled={isLeadRestricted || !manualPhone || !selectedPhoneNumber}
+            className="w-full bg-cyan-600 hover:bg-cyan-700 gap-2"
+          >
+            <Phone className="h-4 w-4" /> Call Now
+          </Button>
+        </div>
+      )}
         <div className="space-y-3">
           <div className="bg-slate-800/60 rounded-lg p-4 border border-slate-700">
             <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">Now Calling</div>
