@@ -99,7 +99,12 @@ export default function LastUserLogsTable() {
           <div className="text-center py-10 text-sm text-muted-foreground">
             No phone numbers found.
           </div>
-        ) : (
+        ) : (() => {
+          const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+          const currentPage = Math.min(page, totalPages);
+          const paginated = rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+          return (
+          <>
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -112,7 +117,7 @@ export default function LastUserLogsTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((r) => {
+                {paginated.map((r) => {
                   const active = !!r.session_id && !r.ended_at;
                   return (
                     <TableRow key={r.number_id}>
@@ -161,7 +166,16 @@ export default function LastUserLogsTable() {
               </TableBody>
             </Table>
           </div>
-        )}
+          <DataTablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={PAGE_SIZE}
+            totalItems={rows.length}
+            onPageChange={setPage}
+          />
+          </>
+          );
+        })()}
       </CardContent>
     </Card>
   );
