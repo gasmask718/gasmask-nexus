@@ -51,6 +51,14 @@ interface UnifiedCallActionsProps {
   /** Business unit / hub slug (e.g. "brandaro"). Falls back to "general". */
   businessUnit?: string | null;
   onLeadComplete?: (leadId: string, disposition: string) => void;
+  /** For manual mode: pre-populate the target lead. */
+  targetLead?: {
+    id?: string;
+    business_name?: string | null;
+    contact_name?: string | null;
+    phone_number: string;
+    status?: string | null;
+  } | null;
 }
 
 interface QueueLead {
@@ -65,14 +73,16 @@ interface QueueLead {
 }
 
 export function UnifiedCallActions({
-  mode = 'va_auto_dialer',
+  mode: initialMode = 'va_auto_dialer',
   businessUnit,
   onLeadComplete,
+  targetLead,
 }: UnifiedCallActionsProps) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { makeCall, hangUp, callStatus: deviceCallStatus, activeCall } = useVoiceDevice();
 
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [selectedCampaign, setSelectedCampaign] = useState<string>('');
   const [selectedPhoneNumber, setSelectedPhoneNumber] = useState<string>('');
   const [currentLead, setCurrentLead] = useState<QueueLead | null>(null);
@@ -83,6 +93,28 @@ export function UnifiedCallActions({
   const [followUpNotes, setFollowUpNotes] = useState<string>('');
   const [followUpAt, setFollowUpAt] = useState<string>('');
   const [lastDialAt, setLastDialAt] = useState<number>(0);
+
+  // Manual mode: free-form target
+  const [manualPhone, setManualPhone] = useState<string>(targetLead?.phone_number || '');
+  const [manualName, setManualName] = useState<string>(
+    targetLead?.business_name || targetLead?.contact_name || ''
+  );
+  const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    if (callStatus !== 'connected') return;
+    const t = setInterval(() => setTick((x) => x + 1), 1000);
+    return () => clearInterval(t);
+  }, [callStatus]);
+
+  useEffect(() => {
+    if (targetLead?.phone_number) setManualPhone(targetLead.phone_number);
+    if (targetLead?.business_name || targetLead?.contact_name) {
+      setManualName(targetLead.business_name || targetLead.contact_name || '');
+    }
+  }, [targetLead]);
+
 
   // ─── Sync UI status with browser device ───
   useEffect(() => {
@@ -126,7 +158,9 @@ export function UnifiedCallActions({
           || String(n.brand).toLowerCase() === 'general';
         // Approximate "allowed_modes" via purpose field until column exists
         const purposeOk = !n.purpose
-          || ['va_auto_dialer', 'outbound', 'dialer', 'general'].includes(String(n.purpose).toLowerCase());
+          || (mode === 'manual'
+            ? ['manual_call', 'manual', 'outbound', 'general'].includes(String(n.purpose).toLowerCase())
+            : ['va_auto_dialer', 'outbound', 'dialer', 'general'].includes(String(n.purpose).toLowerCase()));
         return brandOk && purposeOk;
       });
     },
@@ -333,6 +367,120 @@ export function UnifiedCallActions({
     setFollowUpAt('');
   }, [activeCall, hangUp]);
 
+  // ─── Manual Call: ad-hoc, single lead, no queue ───
+  const startManualCall = useCallback(async () => {
+    if (!user) { toast.error('Not signed in'); return; }
+    if (!selectedPhoneNumber) { toast.error('No approved numbers found for this hub'); return; }
+    const phone = (manualPhone || '').trim();
+    if (!phone || phone.replace(/\D/g, '').length < 7) {
+      toast.error('Enter a valid phone number');
+      return;
+    }
+    const status = String(targetLead?.status || '').toLowerCase();
+    if (RESTRICTED_STATUSES.has(status)) {
+      toast.error('Lead is marked Do-Not-Call / opted out');
+      return;
+    }
+    const now = Date.now();
+    if (now - lastDialAt < 2000) {
+      toast.warning('Please wait — duplicate dial blocked');
+      return;
+    }
+    setLastDialAt(now);
+
+    const lead: QueueLead = {
+      id: targetLead?.id || crypto.randomUUID(),
+      business_name: manualName || targetLead?.business_name || null,
+      contact_name: targetLead?.contact_name || null,
+      phone_number: phone,
+      state: null,
+      status: targetLead?.status || 'manual',
+      source_table: 'manual',
+      source_lead_id: targetLead?.id || null,
+    };
+    setCurrentLead(lead);
+    setCallStatus('dialing');
+
+    const { data, error } = await supabase.functions.invoke('va-power-dialer', {
+      body: {
+        vaId: user.id,
+        action: 'dial',
+        twilioNumber: selectedPhoneNumber,
+        leadId: lead.source_lead_id || lead.id,
+        leadPhone: lead.phone_number,
+        leadName: lead.business_name || lead.contact_name,
+        mode: 'manual_call',
+      },
+    });
+    if (error) {
+      toast.error(`Network execution failed: ${error.message}`);
+      setCallStatus('wrap-up');
+      return;
+    }
+    if ((data as any)?.skipped) {
+      toast.error('Lead is on DNC list');
+      setCallStatus('wrap-up');
+      return;
+    }
+    setActiveCallLogId((data as any)?.callLogId || null);
+    setCallStartedAt(Date.now());
+    try {
+      await makeCall(lead.phone_number, {
+        From: selectedPhoneNumber,
+        callLogId: (data as any)?.callLogId || '',
+      });
+    } catch (e: any) {
+      toast.error(`Browser call failed: ${e?.message || e}`);
+      setCallStatus('wrap-up');
+    }
+  }, [user, selectedPhoneNumber, manualPhone, manualName, targetLead, lastDialAt, makeCall]);
+
+  const saveManualDisposition = useMutation({
+    mutationFn: async () => {
+      if (!disposition) throw new Error('Select a disposition');
+      if (!currentLead || !user) throw new Error('No active lead');
+      await (supabase as any).from('call_dispositions').insert({
+        call_log_id: activeCallLogId,
+        business_name: currentLead.business_name,
+        disposition_code: disposition,
+        follow_up_required: !!followUpAt || disposition === 'callback',
+        follow_up_scheduled_at: followUpAt || null,
+        notes: followUpNotes || null,
+        created_by: user.id,
+      });
+      if (activeCallLogId) {
+        await supabase.functions.invoke('va-power-dialer', {
+          body: {
+            vaId: user.id,
+            action: 'disposition',
+            callLogId: activeCallLogId,
+            leadId: currentLead.source_lead_id || currentLead.id,
+            disposition,
+            notes: followUpNotes || undefined,
+            callbackAt: followUpAt || undefined,
+          },
+        });
+      }
+      onLeadComplete?.(currentLead.id, disposition);
+    },
+    onSuccess: () => {
+      toast.success('Call logged');
+      setDisposition(''); setFollowUpNotes(''); setFollowUpAt('');
+      setActiveCallLogId(null); setCurrentLead(null);
+      setCallStartedAt(null); setCallStatus('idle');
+    },
+    onError: (e: any) => toast.error(e?.message || 'Failed to save'),
+  });
+
+  const callElapsed = useMemo(() => {
+    if (!callStartedAt) return '00:00';
+    const s = Math.floor((Date.now() - callStartedAt) / 1000);
+    void tick;
+    return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  }, [callStartedAt, tick]);
+
+  const isLeadRestricted = RESTRICTED_STATUSES.has(String(targetLead?.status || '').toLowerCase());
+
   // ─── Renders ───
   const headerBadge = useMemo(() => {
     const map: Record<CallStatus, string> = {
@@ -346,16 +494,31 @@ export function UnifiedCallActions({
 
   return (
     <Card className="bg-slate-900 border-slate-700 text-white p-5 space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-bold flex items-center gap-2">
           <PhoneCall className="h-5 w-5 text-cyan-400" />
           Unified Call Actions
-          <Badge className="ml-2 bg-slate-800 text-slate-300 text-[10px] uppercase">{mode}</Badge>
         </h2>
-        <Badge className={`${headerBadge} uppercase text-[10px]`}>{callStatus}</Badge>
+        <div className="flex items-center gap-2">
+          {callStatus === 'idle' && (
+            <div className="flex rounded-md border border-slate-700 overflow-hidden text-[10px]">
+              <button
+                type="button"
+                onClick={() => setMode('manual')}
+                className={`px-2 py-1 uppercase ${mode === 'manual' ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+              >Manual</button>
+              <button
+                type="button"
+                onClick={() => setMode('va_auto_dialer')}
+                className={`px-2 py-1 uppercase ${mode === 'va_auto_dialer' ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+              >Auto</button>
+            </div>
+          )}
+          <Badge className={`${headerBadge} uppercase text-[10px]`}>{callStatus}</Badge>
+        </div>
       </div>
 
-      {callStatus === 'idle' && (
+      {callStatus === 'idle' && mode === 'va_auto_dialer' && (
         <div className="space-y-3">
           <div>
             <label className="text-xs text-slate-400 flex items-center gap-1 mb-1">
@@ -424,17 +587,87 @@ export function UnifiedCallActions({
         </div>
       )}
 
+      {callStatus === 'idle' && mode === 'manual' && (
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Lead Name / Business</label>
+            <input
+              type="text"
+              value={manualName}
+              onChange={(e) => setManualName(e.target.value)}
+              placeholder="e.g. Acme Corp"
+              disabled={!!targetLead?.business_name || !!targetLead?.contact_name}
+              className="w-full h-9 rounded-md bg-slate-800 border border-slate-700 px-3 text-sm text-white disabled:opacity-70"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Phone Number</label>
+            <input
+              type="tel"
+              value={manualPhone}
+              onChange={(e) => setManualPhone(e.target.value)}
+              placeholder="+15551234567"
+              disabled={!!targetLead?.phone_number}
+              className="w-full h-9 rounded-md bg-slate-800 border border-slate-700 px-3 text-sm text-white font-mono disabled:opacity-70"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 flex items-center gap-1 mb-1">
+              <Hash className="h-3 w-3" /> Caller ID (Twilio)
+            </label>
+            <Select value={selectedPhoneNumber} onValueChange={setSelectedPhoneNumber}>
+              <SelectTrigger className="bg-slate-800 border-slate-700">
+                <SelectValue placeholder="Select number…" />
+              </SelectTrigger>
+              <SelectContent>
+                {phoneNumbers.length === 0 && (
+                  <div className="px-3 py-2 text-xs text-muted-foreground">
+                    No approved numbers found for this hub
+                  </div>
+                )}
+                {phoneNumbers.map((n: any) => (
+                  <SelectItem key={n.id} value={n.phone_number}>
+                    <span className="font-mono">{n.phone_number}</span>
+                    <span className="text-xs text-muted-foreground ml-2">{n.friendly_name}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {isLeadRestricted && (
+            <div className="flex items-center gap-2 text-rose-400 text-xs bg-rose-500/10 p-2 rounded">
+              <Ban className="h-3 w-3" />
+              Lead is marked {targetLead?.status} — calling is blocked.
+            </div>
+          )}
+
+          <Button
+            onClick={startManualCall}
+            disabled={isLeadRestricted || !manualPhone || !selectedPhoneNumber}
+            className="w-full bg-cyan-600 hover:bg-cyan-700 gap-2"
+          >
+            <Phone className="h-4 w-4" /> Call Now
+          </Button>
+        </div>
+      )}
+
       {(callStatus === 'dialing' || callStatus === 'connected') && currentLead && (
         <div className="space-y-3">
-          <div className="bg-slate-800/60 rounded-lg p-4 border border-slate-700">
-            <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">Now Calling</div>
-            <div className="text-xl font-bold">
-              {currentLead.business_name || currentLead.contact_name || 'Lead'}
+          <div className="bg-slate-800/60 rounded-lg p-4 border border-slate-700 flex items-start justify-between">
+            <div>
+              <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">
+                {callStatus === 'dialing' ? 'Dialing…' : 'Connected'}
+              </div>
+              <div className="text-xl font-bold">
+                {currentLead.business_name || currentLead.contact_name || 'Lead'}
+              </div>
+              <div className="font-mono text-cyan-300 text-sm">{currentLead.phone_number}</div>
             </div>
-            <div className="font-mono text-cyan-300 text-sm">{currentLead.phone_number}</div>
-            {currentLead.state && (
-              <div className="text-xs text-slate-500 mt-1">State: {currentLead.state}</div>
-            )}
+            <div className="text-right">
+              <div className={`inline-flex h-2 w-2 rounded-full mr-2 ${callStatus === 'dialing' ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400 animate-pulse'}`} />
+              <span className="font-mono text-sm text-slate-300">{callElapsed}</span>
+            </div>
           </div>
 
           <div className="bg-slate-800/40 rounded-lg p-3 border border-slate-700/50 text-sm text-slate-300">
@@ -449,15 +682,17 @@ export function UnifiedCallActions({
               onClick={() => { hangUp(); setCallStatus('wrap-up'); }}
               className="flex-1 gap-2"
             >
-              <PhoneOff className="h-4 w-4" /> End Call
+              <PhoneOff className="h-4 w-4" /> Hang Up
             </Button>
-            <Button
-              variant="outline"
-              onClick={endSession}
-              className="border-slate-700 text-slate-300"
-            >
-              Stop Dialer
-            </Button>
+            {mode === 'va_auto_dialer' && (
+              <Button
+                variant="outline"
+                onClick={endSession}
+                className="border-slate-700 text-slate-300"
+              >
+                Stop Dialer
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -514,21 +749,24 @@ export function UnifiedCallActions({
 
           <div className="flex gap-2">
             <Button
-              onClick={() => saveAndNext.mutate()}
-              disabled={!disposition || saveAndNext.isPending}
+              onClick={() => mode === 'manual' ? saveManualDisposition.mutate() : saveAndNext.mutate()}
+              disabled={
+                !disposition ||
+                (mode === 'manual' ? saveManualDisposition.isPending : saveAndNext.isPending)
+              }
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 gap-2"
             >
-              {saveAndNext.isPending
+              {(mode === 'manual' ? saveManualDisposition.isPending : saveAndNext.isPending)
                 ? <Loader2 className="h-4 w-4 animate-spin" />
                 : <ArrowRight className="h-4 w-4" />}
-              Save & Next
+              {mode === 'manual' ? 'Save Log' : 'Save & Next'}
             </Button>
             <Button
               variant="outline"
               onClick={endSession}
               className="border-slate-700 text-slate-300"
             >
-              End Session
+              {mode === 'manual' ? 'Cancel' : 'End Session'}
             </Button>
           </div>
         </div>
