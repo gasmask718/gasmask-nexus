@@ -50,6 +50,11 @@ export default function AdminNumbersPage() {
 
   const forceRelease = async (id: string) => {
     await (supabase as any).from('brandaro_phone_numbers').update({ in_use: false, assigned_va_id: null }).eq('id', id);
+    await (supabase as any)
+      .from('brandaro_number_sessions')
+      .update({ ended_at: new Date().toISOString() })
+      .eq('number_id', id)
+      .is('ended_at', null);
     toast.success('Number released'); invalidate();
   };
 
