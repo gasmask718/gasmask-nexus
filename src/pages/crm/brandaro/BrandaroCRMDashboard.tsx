@@ -183,7 +183,7 @@ export default function BrandaroCRMDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((lead: any) => (
+                    {paginated.map((lead: any) => (
                       <TableRow
                         key={lead.id}
                         className="cursor-pointer"
@@ -235,6 +235,13 @@ export default function BrandaroCRMDashboard() {
                   </TableBody>
                 </Table>
               </div>
+              <DataTablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={PAGE_SIZE}
+                totalItems={filtered.length}
+                onPageChange={setPage}
+              />
             </CardContent>
           </Card>
         )}
