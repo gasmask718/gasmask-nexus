@@ -274,6 +274,9 @@ const GlobalCRM = lazy(() => import('@/pages/crm/GlobalCRM'));
 const GlobalCRMDashboard = lazy(() => import('@/pages/crm/GlobalCRMDashboard'));
 const BusinessCRMDashboard = lazy(() => import('@/pages/crm/BusinessCRMDashboard'));
 const CRMRouter = lazy(() => import('@/pages/crm/CRMRouter'));
+const BrandaroLeadProfile = lazy(() => import('@/pages/crm/brandaro/BrandaroLeadProfile'));
+const BrandaroProductsPage = lazy(() => import('@/pages/products/ProductsPage'));
+const MaintenanceListPage = lazy(() => import('@/pages/maintenance/MaintenanceListPage'));
 const DynamicCRMPage = lazy(() => import('@/pages/crm/DynamicCRMPage'));
 const ContactManagementPage = lazy(() => import('@/pages/crm/ContactManagementPage'));
 
@@ -1551,6 +1554,9 @@ export default function AppRoutes() {
         {/* Business-scoped CRM routes - CANONICAL PATTERN: /crm/:businessSlug/* */}
         {/* CRMRouter handles legacy vs new CRM routing: Grabba → Legacy, Others → Blueprint */}
         <Route path="/crm/:businessSlug" element={<CRMRouter />} />
+        <Route path="/crm/brandaro/:leadId" element={<BrandaroLeadProfile />} />
+        <Route path="/products" element={<BrandaroProductsPage />} />
+        <Route path="/maintenance-list" element={<MaintenanceListPage />} />
         
         {/* TopTier Partner CRM Routes */}
         <Route path="/crm/toptier-experience/partners" element={<TopTierPartnerDashboard />} />

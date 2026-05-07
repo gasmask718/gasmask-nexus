@@ -11875,6 +11875,122 @@ export type Database = {
           },
         ]
       }
+      brandaro_client_invoice_items: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          invoice_id: string
+          product_id: string | null
+          quantity: number
+          unit_price: number
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description: string
+          id?: string
+          invoice_id: string
+          product_id?: string | null
+          quantity?: number
+          unit_price?: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_id?: string
+          product_id?: string | null
+          quantity?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_client_invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_client_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_client_invoice_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_client_invoices: {
+        Row: {
+          amount_paid: number
+          client_id: string | null
+          created_at: string
+          currency: string
+          due_at: string | null
+          id: string
+          invoice_number: string
+          issued_at: string
+          lead_id: string | null
+          notes: string | null
+          paid_at: string | null
+          status: string
+          stripe_invoice_id: string | null
+          subtotal: number
+          tax: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number
+          client_id?: string | null
+          created_at?: string
+          currency?: string
+          due_at?: string | null
+          id?: string
+          invoice_number?: string
+          issued_at?: string
+          lead_id?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          status?: string
+          stripe_invoice_id?: string | null
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number
+          client_id?: string | null
+          created_at?: string
+          currency?: string
+          due_at?: string | null
+          id?: string
+          invoice_number?: string
+          issued_at?: string
+          lead_id?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          status?: string
+          stripe_invoice_id?: string | null
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_client_invoices_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_client_lifecycle: {
         Row: {
           assigned_manager: string | null
@@ -11983,6 +12099,66 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_client_products: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          lead_id: string | null
+          next_billing_at: string | null
+          notes: string | null
+          price_override: number | null
+          product_id: string
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          lead_id?: string | null
+          next_billing_at?: string | null
+          notes?: string | null
+          price_override?: number | null
+          product_id: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          lead_id?: string | null
+          next_billing_at?: string | null
+          notes?: string | null
+          price_override?: number | null
+          product_id?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_client_products_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_client_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_products"
             referencedColumns: ["id"]
           },
         ]
@@ -15530,6 +15706,81 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_maintenance_tasks: {
+        Row: {
+          ai_generated: boolean
+          ai_reasoning: string | null
+          assigned_to: string | null
+          client_id: string | null
+          client_product_id: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          lead_id: string | null
+          metadata: Json
+          priority: string
+          status: string
+          task_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ai_generated?: boolean
+          ai_reasoning?: string | null
+          assigned_to?: string | null
+          client_id?: string | null
+          client_product_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          priority?: string
+          status?: string
+          task_type: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ai_generated?: boolean
+          ai_reasoning?: string | null
+          assigned_to?: string | null
+          client_id?: string | null
+          client_product_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          priority?: string
+          status?: string
+          task_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_maintenance_tasks_client_product_id_fkey"
+            columns: ["client_product_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_client_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_maintenance_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_market_duplications: {
         Row: {
           completed_at: string | null
@@ -17110,6 +17361,60 @@ export type Database = {
           test_price?: number
           test_status?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      brandaro_products: {
+        Row: {
+          billing_interval: string | null
+          category: string
+          created_at: string
+          description: string | null
+          features: Json
+          id: string
+          is_active: boolean
+          monthly_obligations: Json
+          name: string
+          price: number
+          product_type: string
+          setup_fee: number | null
+          sku: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          billing_interval?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          monthly_obligations?: Json
+          name: string
+          price?: number
+          product_type?: string
+          setup_fee?: number | null
+          sku?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          billing_interval?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          monthly_obligations?: Json
+          name?: string
+          price?: number
+          product_type?: string
+          setup_fee?: number | null
+          sku?: string | null
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -19288,6 +19593,69 @@ export type Database = {
           upsell_reason?: string | null
         }
         Relationships: []
+      }
+      brandaro_upsell_opportunities: {
+        Row: {
+          ai_generated: boolean
+          client_id: string | null
+          created_at: string
+          estimated_value: number | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          offered_at: string | null
+          product_id: string | null
+          reasoning: string | null
+          responded_at: string | null
+          stage: string
+          updated_at: string
+        }
+        Insert: {
+          ai_generated?: boolean
+          client_id?: string | null
+          created_at?: string
+          estimated_value?: number | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          offered_at?: string | null
+          product_id?: string | null
+          reasoning?: string | null
+          responded_at?: string | null
+          stage?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_generated?: boolean
+          client_id?: string | null
+          created_at?: string
+          estimated_value?: number | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          offered_at?: string | null
+          product_id?: string | null
+          reasoning?: string | null
+          responded_at?: string | null
+          stage?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_upsell_opportunities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_upsell_opportunities_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_urgency: {
         Row: {
