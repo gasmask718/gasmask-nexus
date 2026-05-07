@@ -367,6 +367,120 @@ export function UnifiedCallActions({
     setFollowUpAt('');
   }, [activeCall, hangUp]);
 
+  // ─── Manual Call: ad-hoc, single lead, no queue ───
+  const startManualCall = useCallback(async () => {
+    if (!user) { toast.error('Not signed in'); return; }
+    if (!selectedPhoneNumber) { toast.error('No approved numbers found for this hub'); return; }
+    const phone = (manualPhone || '').trim();
+    if (!phone || phone.replace(/\D/g, '').length < 7) {
+      toast.error('Enter a valid phone number');
+      return;
+    }
+    const status = String(targetLead?.status || '').toLowerCase();
+    if (RESTRICTED_STATUSES.has(status)) {
+      toast.error('Lead is marked Do-Not-Call / opted out');
+      return;
+    }
+    const now = Date.now();
+    if (now - lastDialAt < 2000) {
+      toast.warning('Please wait — duplicate dial blocked');
+      return;
+    }
+    setLastDialAt(now);
+
+    const lead: QueueLead = {
+      id: targetLead?.id || crypto.randomUUID(),
+      business_name: manualName || targetLead?.business_name || null,
+      contact_name: targetLead?.contact_name || null,
+      phone_number: phone,
+      state: null,
+      status: targetLead?.status || 'manual',
+      source_table: 'manual',
+      source_lead_id: targetLead?.id || null,
+    };
+    setCurrentLead(lead);
+    setCallStatus('dialing');
+
+    const { data, error } = await supabase.functions.invoke('va-power-dialer', {
+      body: {
+        vaId: user.id,
+        action: 'dial',
+        twilioNumber: selectedPhoneNumber,
+        leadId: lead.source_lead_id || lead.id,
+        leadPhone: lead.phone_number,
+        leadName: lead.business_name || lead.contact_name,
+        mode: 'manual_call',
+      },
+    });
+    if (error) {
+      toast.error(`Network execution failed: ${error.message}`);
+      setCallStatus('wrap-up');
+      return;
+    }
+    if ((data as any)?.skipped) {
+      toast.error('Lead is on DNC list');
+      setCallStatus('wrap-up');
+      return;
+    }
+    setActiveCallLogId((data as any)?.callLogId || null);
+    setCallStartedAt(Date.now());
+    try {
+      await makeCall(lead.phone_number, {
+        From: selectedPhoneNumber,
+        callLogId: (data as any)?.callLogId || '',
+      });
+    } catch (e: any) {
+      toast.error(`Browser call failed: ${e?.message || e}`);
+      setCallStatus('wrap-up');
+    }
+  }, [user, selectedPhoneNumber, manualPhone, manualName, targetLead, lastDialAt, makeCall]);
+
+  const saveManualDisposition = useMutation({
+    mutationFn: async () => {
+      if (!disposition) throw new Error('Select a disposition');
+      if (!currentLead || !user) throw new Error('No active lead');
+      await (supabase as any).from('call_dispositions').insert({
+        call_log_id: activeCallLogId,
+        business_name: currentLead.business_name,
+        disposition_code: disposition,
+        follow_up_required: !!followUpAt || disposition === 'callback',
+        follow_up_scheduled_at: followUpAt || null,
+        notes: followUpNotes || null,
+        created_by: user.id,
+      });
+      if (activeCallLogId) {
+        await supabase.functions.invoke('va-power-dialer', {
+          body: {
+            vaId: user.id,
+            action: 'disposition',
+            callLogId: activeCallLogId,
+            leadId: currentLead.source_lead_id || currentLead.id,
+            disposition,
+            notes: followUpNotes || undefined,
+            callbackAt: followUpAt || undefined,
+          },
+        });
+      }
+      onLeadComplete?.(currentLead.id, disposition);
+    },
+    onSuccess: () => {
+      toast.success('Call logged');
+      setDisposition(''); setFollowUpNotes(''); setFollowUpAt('');
+      setActiveCallLogId(null); setCurrentLead(null);
+      setCallStartedAt(null); setCallStatus('idle');
+    },
+    onError: (e: any) => toast.error(e?.message || 'Failed to save'),
+  });
+
+  const callElapsed = useMemo(() => {
+    if (!callStartedAt) return '00:00';
+    const s = Math.floor((Date.now() - callStartedAt) / 1000);
+    void tick;
+    return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  }, [callStartedAt, tick]);
+
+  const isLeadRestricted = RESTRICTED_STATUSES.has(String(targetLead?.status || '').toLowerCase());
+
   // ─── Renders ───
   const headerBadge = useMemo(() => {
     const map: Record<CallStatus, string> = {
