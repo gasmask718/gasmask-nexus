@@ -749,21 +749,24 @@ export function UnifiedCallActions({
 
           <div className="flex gap-2">
             <Button
-              onClick={() => saveAndNext.mutate()}
-              disabled={!disposition || saveAndNext.isPending}
+              onClick={() => mode === 'manual' ? saveManualDisposition.mutate() : saveAndNext.mutate()}
+              disabled={
+                !disposition ||
+                (mode === 'manual' ? saveManualDisposition.isPending : saveAndNext.isPending)
+              }
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 gap-2"
             >
-              {saveAndNext.isPending
+              {(mode === 'manual' ? saveManualDisposition.isPending : saveAndNext.isPending)
                 ? <Loader2 className="h-4 w-4 animate-spin" />
                 : <ArrowRight className="h-4 w-4" />}
-              Save & Next
+              {mode === 'manual' ? 'Save Log' : 'Save & Next'}
             </Button>
             <Button
               variant="outline"
               onClick={endSession}
               className="border-slate-700 text-slate-300"
             >
-              End Session
+              {mode === 'manual' ? 'Cancel' : 'End Session'}
             </Button>
           </div>
         </div>
