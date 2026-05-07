@@ -16,6 +16,7 @@ import {
   Users, Target, Flame, TrendingUp,
 } from 'lucide-react';
 import CRMLayout from '../CRMLayout';
+import LastUserLogsTable from '@/components/crm/brandaro/LastUserLogsTable';
 
 const STATUS_COLORS: Record<string, string> = {
   new: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
