@@ -12,9 +12,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  ArrowLeft, Search, Loader2, Phone, Mail, Globe, MapPin, Sparkles,
+  ArrowLeft, Search, Loader2, Sparkles,
   Users, Target, Flame, TrendingUp,
 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import CRMLayout from '../CRMLayout';
 import LastUserLogsTable from '@/components/crm/brandaro/LastUserLogsTable';
 
@@ -153,60 +154,78 @@ export default function BrandaroCRMDashboard() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-3">
-            {filtered.map((lead: any) => (
-              <Card key={lead.id} className="hover:bg-accent/40 transition-colors cursor-pointer" onClick={() => navigate(`/crm/brandaro/${lead.id}`)}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="flex-1 min-w-[260px]">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-base">{lead.business_name || 'Unnamed lead'}</h3>
-                        {lead.status && (
-                          <Badge variant="outline" className={STATUS_COLORS[lead.status] || ''}>
-                            {lead.status}
-                          </Badge>
-                        )}
-                        {lead.priority_tier && (
-                          <Badge variant="outline">{lead.priority_tier}</Badge>
-                        )}
-                        {lead.has_website === false && (
-                          <Badge variant="outline" className="border-amber-500/40 text-amber-600">
-                            No website
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                        {lead.industry && <span>{lead.industry}</span>}
-                        {lead.location && (
-                          <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{lead.location}</span>
-                        )}
-                        {lead.phone && (
-                          <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{lead.phone}</span>
-                        )}
-                        {lead.email && (
-                          <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{lead.email}</span>
-                        )}
-                        {lead.website && (
-                          <span className="flex items-center gap-1"><Globe className="h-3 w-3" />{lead.website}</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-sky-500">{lead.intent_score ?? 0}</div>
-                        <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Intent</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-sm font-medium">{lead.pipeline || 'inbound'}</div>
-                        <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Pipeline</div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Card>
+            <CardContent className="p-0">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40">
+                      <TableHead>Business Name</TableHead>
+                      <TableHead>Industry</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Website</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Pipeline</TableHead>
+                      <TableHead className="text-right">Intent</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((lead: any) => (
+                      <TableRow
+                        key={lead.id}
+                        className="cursor-pointer"
+                        onClick={() => navigate(`/crm/brandaro/${lead.id}`)}
+                      >
+                        <TableCell>
+                          <div className="font-medium">{lead.business_name || 'Unnamed lead'}</div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {lead.priority_tier && (
+                              <Badge variant="outline" className="text-[10px]">{lead.priority_tier}</Badge>
+                            )}
+                            {lead.has_website === false && (
+                              <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600">
+                                No website
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{lead.industry || '—'}</TableCell>
+                        <TableCell className="text-sm">{lead.location || '—'}</TableCell>
+                        <TableCell className="text-sm font-mono">{lead.phone || '—'}</TableCell>
+                        <TableCell className="text-sm">{lead.email || '—'}</TableCell>
+                        <TableCell className="text-sm max-w-[180px] truncate">
+                          {lead.website ? (
+                            <a
+                              href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-sky-600 hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {lead.website}
+                            </a>
+                          ) : '—'}
+                        </TableCell>
+                        <TableCell>
+                          {lead.status ? (
+                            <Badge variant="outline" className={STATUS_COLORS[lead.status] || ''}>
+                              {lead.status}
+                            </Badge>
+                          ) : '—'}
+                        </TableCell>
+                        <TableCell className="text-sm">{lead.pipeline || 'inbound'}</TableCell>
+                        <TableCell className="text-right">
+                          <span className="text-base font-bold text-sky-500">{lead.intent_score ?? 0}</span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         <LastUserLogsTable />
