@@ -12,9 +12,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  ArrowLeft, Search, Loader2, Phone, Mail, Globe, MapPin, Sparkles,
+  ArrowLeft, Search, Loader2, Sparkles,
   Users, Target, Flame, TrendingUp,
 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import CRMLayout from '../CRMLayout';
 import LastUserLogsTable from '@/components/crm/brandaro/LastUserLogsTable';
 
