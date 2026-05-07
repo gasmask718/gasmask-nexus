@@ -2,12 +2,16 @@
  * LastUserLogsTable — Admin audit view of the most recent VA session per Brandaro phone number.
  * Reads from the `brandaro_number_last_sessions` view (RLS gated to admins).
  */
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, History, Phone } from 'lucide-react';
+import { DataTablePagination } from '@/components/crud/DataTablePagination';
+
+const PAGE_SIZE = 25;
 
 type Row = {
   number_id: string;
