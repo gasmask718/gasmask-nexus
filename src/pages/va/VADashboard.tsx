@@ -13,6 +13,7 @@ import { VAFAQs } from '@/components/va/VAFAQs';
 import { VALeadDiscovery } from '@/components/va/VALeadDiscovery';
 import { VAPowerDialer } from '@/components/va/VAPowerDialer';
 import { UnifiedCallActions } from '@/components/communication/UnifiedCallActions';
+import { ManualCallActions } from '@/components/communication/ManualCallActions';
 import { VADialerAssist } from '@/components/va/VADialerAssist';
 import { VAScriptsRebuttalsPanel } from '@/components/va/VAScriptsRebuttalsPanel';
 import { VALeaderboard } from '@/components/va/VALeaderboard';
@@ -243,9 +244,11 @@ function VADashboardInner() {
               <div className="flex gap-4 h-[calc(100vh-8rem)]">
                 {/* Left: Persistent Dialer + Active Call Controls (always visible) */}
                 <div className="w-[42%] flex flex-col gap-3 min-w-0">
-                  <div className="sticky top-0 z-10">
+                  <div className="sticky top-0 z-10 space-y-3">
                     <UnifiedCallActions
-                      mode="va_auto_dialer"
+                      businessUnit={activeCompany?.company_slug ?? null}
+                    />
+                    <ManualCallActions
                       businessUnit={activeCompany?.company_slug ?? null}
                     />
                   </div>
