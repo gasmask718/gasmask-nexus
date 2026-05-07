@@ -1551,6 +1551,9 @@ export default function AppRoutes() {
         {/* Business-scoped CRM routes - CANONICAL PATTERN: /crm/:businessSlug/* */}
         {/* CRMRouter handles legacy vs new CRM routing: Grabba → Legacy, Others → Blueprint */}
         <Route path="/crm/:businessSlug" element={<CRMRouter />} />
+        <Route path="/crm/brandaro/:leadId" element={<BrandaroLeadProfile />} />
+        <Route path="/products" element={<ProductsPage />} />
+        <Route path="/maintenance-list" element={<MaintenanceListPage />} />
         
         {/* TopTier Partner CRM Routes */}
         <Route path="/crm/toptier-experience/partners" element={<TopTierPartnerDashboard />} />
