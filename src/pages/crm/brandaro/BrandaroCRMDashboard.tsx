@@ -208,6 +208,8 @@ export default function BrandaroCRMDashboard() {
             ))}
           </div>
         )}
+
+        <LastUserLogsTable />
       </div>
     </CRMLayout>
   );
