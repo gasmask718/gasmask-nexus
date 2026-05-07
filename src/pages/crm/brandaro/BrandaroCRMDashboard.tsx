@@ -134,11 +134,11 @@ export default function BrandaroCRMDashboard() {
                 <Input
                   placeholder="Search by business, email, phone, location..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                   className="pl-9"
                 />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filter status" />
                 </SelectTrigger>
