@@ -15273,6 +15273,7 @@ export type Database = {
           assigned_locked_until: string | null
           assigned_manager_id: string | null
           assigned_va_id: string | null
+          business_id: string | null
           business_name: string
           created_at: string | null
           email: string | null
@@ -15298,6 +15299,7 @@ export type Database = {
           assigned_locked_until?: string | null
           assigned_manager_id?: string | null
           assigned_va_id?: string | null
+          business_id?: string | null
           business_name: string
           created_at?: string | null
           email?: string | null
@@ -15323,6 +15325,7 @@ export type Database = {
           assigned_locked_until?: string | null
           assigned_manager_id?: string | null
           assigned_va_id?: string | null
+          business_id?: string | null
           business_name?: string
           created_at?: string | null
           email?: string | null
@@ -15357,6 +15360,13 @@ export type Database = {
             columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_leads_master_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
