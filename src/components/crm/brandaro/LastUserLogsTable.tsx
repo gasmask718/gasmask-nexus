@@ -48,6 +48,7 @@ function formatDuration(start: string | null, end: string | null): string {
 }
 
 export default function LastUserLogsTable() {
+  const [page, setPage] = useState(1);
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['brandaro-number-last-sessions'],
     refetchInterval: 30_000,
