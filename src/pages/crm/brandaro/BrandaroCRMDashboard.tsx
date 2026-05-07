@@ -154,7 +154,7 @@ export default function BrandaroCRMDashboard() {
         ) : (
           <div className="grid gap-3">
             {filtered.map((lead: any) => (
-              <Card key={lead.id} className="hover:bg-accent/40 transition-colors">
+              <Card key={lead.id} className="hover:bg-accent/40 transition-colors cursor-pointer" onClick={() => navigate(`/crm/brandaro/${lead.id}`)}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1 min-w-[260px]">
