@@ -494,13 +494,28 @@ export function UnifiedCallActions({
 
   return (
     <Card className="bg-slate-900 border-slate-700 text-white p-5 space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-bold flex items-center gap-2">
           <PhoneCall className="h-5 w-5 text-cyan-400" />
           Unified Call Actions
-          <Badge className="ml-2 bg-slate-800 text-slate-300 text-[10px] uppercase">{mode}</Badge>
         </h2>
-        <Badge className={`${headerBadge} uppercase text-[10px]`}>{callStatus}</Badge>
+        <div className="flex items-center gap-2">
+          {callStatus === 'idle' && (
+            <div className="flex rounded-md border border-slate-700 overflow-hidden text-[10px]">
+              <button
+                type="button"
+                onClick={() => setMode('manual')}
+                className={`px-2 py-1 uppercase ${mode === 'manual' ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+              >Manual</button>
+              <button
+                type="button"
+                onClick={() => setMode('va_auto_dialer')}
+                className={`px-2 py-1 uppercase ${mode === 'va_auto_dialer' ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+              >Auto</button>
+            </div>
+          )}
+          <Badge className={`${headerBadge} uppercase text-[10px]`}>{callStatus}</Badge>
+        </div>
       </div>
 
       {callStatus === 'idle' && (
