@@ -518,7 +518,7 @@ export function UnifiedCallActions({
         </div>
       </div>
 
-      {callStatus === 'idle' && (
+      {callStatus === 'idle' && mode === 'va_auto_dialer' && (
         <div className="space-y-3">
           <div>
             <label className="text-xs text-slate-400 flex items-center gap-1 mb-1">
