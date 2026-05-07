@@ -11,6 +11,14 @@ import BusinessCRMDashboard from './BusinessCRMDashboard';
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
 import { useMemo } from 'react';
 import { TopTierPartnerDashboard } from '@/pages/crm/toptier';
+import BrandaroCRMDashboard from './brandaro/BrandaroCRMDashboard';
+
+const BRANDARO_BUSINESS_SLUGS = ['brandaro', 'brand-aro', 'brand_aro'];
+
+export function isBrandaroBusiness(slug: string | undefined): boolean {
+  if (!slug) return false;
+  return BRANDARO_BUSINESS_SLUGS.includes(slug.toLowerCase().trim());
+}
 
 // Grabba business slugs - these use the legacy CRM
 const GRABBA_BUSINESS_SLUGS = [
@@ -54,6 +62,7 @@ export default function CRMRouter() {
   
   const isGrabba = useMemo(() => isGrabbaBusiness(businessSlug), [businessSlug]);
   const isTopTier = useMemo(() => isTopTierBusiness(businessSlug), [businessSlug]);
+  const isBrandaro = useMemo(() => isBrandaroBusiness(businessSlug), [businessSlug]);
   
   // Grabba businesses use the legacy GrabbaCRM wrapped in GrabbaLayout
   if (isGrabba) {
@@ -67,6 +76,11 @@ export default function CRMRouter() {
   // TopTier uses the Partner KPI Dashboard
   if (isTopTier) {
     return <TopTierPartnerDashboard />;
+  }
+
+  // Brandaro uses its own lead-centric CRM
+  if (isBrandaro) {
+    return <BrandaroCRMDashboard />;
   }
   
   // All other businesses use the new Blueprint-based CRM
