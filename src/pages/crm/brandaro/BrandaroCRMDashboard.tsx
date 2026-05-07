@@ -16,8 +16,11 @@ import {
   Users, Target, Flame, TrendingUp,
 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import CRMLayout from '../CRMLayout';
 import LastUserLogsTable from '@/components/crm/brandaro/LastUserLogsTable';
+
+const PAGE_SIZE = 25;
 
 const STATUS_COLORS: Record<string, string> = {
   new: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
