@@ -51,6 +51,14 @@ interface UnifiedCallActionsProps {
   /** Business unit / hub slug (e.g. "brandaro"). Falls back to "general". */
   businessUnit?: string | null;
   onLeadComplete?: (leadId: string, disposition: string) => void;
+  /** For manual mode: pre-populate the target lead. */
+  targetLead?: {
+    id?: string;
+    business_name?: string | null;
+    contact_name?: string | null;
+    phone_number: string;
+    status?: string | null;
+  } | null;
 }
 
 interface QueueLead {
