@@ -60,13 +60,23 @@ interface QueueLead {
   attempt_number: number;
 }
 
+export interface DialerListLead {
+  id?: string;
+  name: string;
+  phone: string;
+}
+
 interface VAPowerDialerProps {
   // legacy prop kept for VADashboard compatibility — ignored by auto dialer
   leads?: any[];
+  /** Optional explicit lead list — bypasses campaign queue, dials these in order. */
+  leadList?: DialerListLead[];
+  /** Optional pre-selected caller-ID (E.164) to seed the picker. */
+  initialCallerId?: string;
   onEndSession: () => void;
 }
 
-export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
+export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPowerDialerProps) {
   const { user } = useAuth();
 
   // ── Initialization data ─────────────────────────────────────────────
