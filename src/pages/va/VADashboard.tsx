@@ -231,6 +231,8 @@ function VADashboardInner() {
                   onCall={lead => { setCallLead(lead); setView('call'); }}
                   onCreateInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(false); setInvoiceOpen(true); }}
                   onSendInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(true); setInvoiceOpen(true); }}
+                  onStartCampaign={(list) => { setCampaignLeadList(list); setView('autodialer'); }}
+                  onQuickDial={(lead) => { setCampaignLeadList([lead]); setView('autodialer'); }}
                 />
                 
                 {/* Recent Calls */}
