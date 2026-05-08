@@ -57,6 +57,7 @@ function VADashboardInner() {
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [invoiceSendMode, setInvoiceSendMode] = useState(false);
   const [dialerLeads, setDialerLeads] = useState<any[]>([]);
+  const [campaignLeadList, setCampaignLeadList] = useState<{ id?: string; name: string; phone: string }[] | null>(null);
   const [showSessionSummary, setShowSessionSummary] = useState(false);
 
   // Fetch leads for dialer
@@ -230,6 +231,8 @@ function VADashboardInner() {
                   onCall={lead => { setCallLead(lead); setView('call'); }}
                   onCreateInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(false); setInvoiceOpen(true); }}
                   onSendInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(true); setInvoiceOpen(true); }}
+                  onStartCampaign={(list) => { setCampaignLeadList(list); setView('autodialer'); }}
+                  onQuickDial={(lead) => { setCampaignLeadList([lead]); setView('autodialer'); }}
                 />
                 
                 {/* Recent Calls */}
@@ -265,7 +268,12 @@ function VADashboardInner() {
             )}
             {view === 'autodialer' && (
               <div className="max-w-3xl">
-                <VAPowerDialer onEndSession={handleEndDialerSession} />
+                <VAPowerDialer
+                  key={campaignLeadList ? `list-${campaignLeadList.length}-${campaignLeadList[0]?.phone || ''}` : 'queue'}
+                  leadList={campaignLeadList || undefined}
+                  initialCallerId={twilioNumber || undefined}
+                  onEndSession={() => { setCampaignLeadList(null); handleEndDialerSession(); }}
+                />
               </div>
             )}
             {view === 'leaderboard' && (

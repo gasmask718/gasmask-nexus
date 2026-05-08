@@ -60,13 +60,23 @@ interface QueueLead {
   attempt_number: number;
 }
 
+export interface DialerListLead {
+  id?: string;
+  name: string;
+  phone: string;
+}
+
 interface VAPowerDialerProps {
   // legacy prop kept for VADashboard compatibility — ignored by auto dialer
   leads?: any[];
+  /** Optional explicit lead list — bypasses campaign queue, dials these in order. */
+  leadList?: DialerListLead[];
+  /** Optional pre-selected caller-ID (E.164) to seed the picker. */
+  initialCallerId?: string;
   onEndSession: () => void;
 }
 
-export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
+export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPowerDialerProps) {
   const { user } = useAuth();
 
   // ── Initialization data ─────────────────────────────────────────────
@@ -77,7 +87,7 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
 
   // ── Selections ──────────────────────────────────────────────────────
   const [selectedCampaign, setSelectedCampaign] = useState<string>('');
-  const [selectedNumber, setSelectedNumber] = useState<string>('');
+  const [selectedNumber, setSelectedNumber] = useState<string>(initialCallerId || '');
 
   // ── Session state ───────────────────────────────────────────────────
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -95,6 +105,10 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
   const [manualPhone, setManualPhone] = useState<string>('');
   const [manualName, setManualName] = useState<string>('');
   const [manualDialing, setManualDialing] = useState(false);
+
+  // List-mode pointer (when leadList prop is provided)
+  const [leadIndex, setLeadIndex] = useState(0);
+  const listMode = !!leadList && leadList.length > 0;
 
   // Stop flag (lets us break out of the auto-loop cleanly)
   const stopFlagRef = useRef(false);
@@ -159,9 +173,39 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
   }, [phase]);
 
   // ── Core loop: fetch next lead ──────────────────────────────────────
+  const leadIndexRef = useRef(0);
+  useEffect(() => { leadIndexRef.current = leadIndex; }, [leadIndex]);
+
   const fetchNextLead = useCallback(async (): Promise<QueueLead | null> => {
-    if (!selectedCampaign) return null;
     setPhase('fetching_lead');
+
+    // ── List mode: explicit lead array (no queue) ─────────────────────
+    if (listMode) {
+      const idx = leadIndexRef.current;
+      if (!leadList || idx >= leadList.length) {
+        toast.success('Lead list complete');
+        setSessionRunning(false);
+        setPhase('idle');
+        return null;
+      }
+      const item = leadList[idx];
+      const cleaned = (item.phone || '').replace(/[^\d+]/g, '');
+      const digits = cleaned.replace(/\D/g, '');
+      const e164 = !cleaned ? '' : (cleaned.startsWith('+') ? cleaned : `+1${digits}`);
+      const lead: QueueLead = {
+        queue_id: '',
+        store_id: item.id || '',
+        business_name: item.name || 'Unknown',
+        phone: e164,
+        notes: null,
+        do_not_call: false,
+        attempt_number: 0,
+      };
+      setCurrentLead(lead);
+      return lead;
+    }
+
+    if (!selectedCampaign) return null;
 
     // Pull oldest queued item for the selected campaign, joined with store.
     const { data, error } = await (supabase as any)
@@ -203,7 +247,7 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
     };
     setCurrentLead(lead);
     return lead;
-  }, [selectedCampaign]);
+  }, [selectedCampaign, listMode, leadList]);
 
   // ── Trigger call via central backend ────────────────────────────────
   const triggerCall = useCallback(async (lead: QueueLead) => {
@@ -279,23 +323,25 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
     if (!lead) return;
     const ok = await triggerCall(lead);
     if (!ok && sessionRunning && !stopFlagRef.current) {
-      // skipped — immediately try the next one
+      // skipped — advance list pointer (if any) and immediately try the next one
+      if (listMode) setLeadIndex((i) => i + 1);
       setTimeout(() => runCycle(), 600);
     }
-  }, [fetchNextLead, triggerCall, sessionRunning]);
+  }, [fetchNextLead, triggerCall, sessionRunning, listMode]);
 
   // ── Start / stop ────────────────────────────────────────────────────
   const startDialerSession = useCallback(async () => {
     if (!user) { toast.error('Not signed in'); return; }
-    if (!selectedCampaign) { toast.error('Select a campaign first'); return; }
+    if (!listMode && !selectedCampaign) { toast.error('Select a campaign first'); return; }
     if (!selectedNumber)   { toast.error('Select a Twilio number first'); return; }
 
     stopFlagRef.current = false;
+    setLeadIndex(0);
     setSessionRunning(true);
     setActiveSessionId(`session_${Date.now()}_${user.id.slice(0, 8)}`);
-    toast.success('Auto dialer session started');
+    toast.success(listMode ? `Calling list of ${leadList!.length} leads` : 'Auto dialer session started');
     runCycle();
-  }, [user, selectedCampaign, selectedNumber, runCycle]);
+  }, [user, listMode, leadList, selectedCampaign, selectedNumber, runCycle]);
 
   const stopDialer = useCallback(() => {
     stopFlagRef.current = true;
@@ -356,16 +402,17 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
       setCallLogId(null);
       setCurrentLead(null);
 
-      // 4. Loop
+      // 4. Advance list pointer (list-mode) and loop
+      if (listMode) setLeadIndex((i) => i + 1);
       if (sessionRunning && !stopFlagRef.current) {
-        runCycle();
+        setTimeout(() => runCycle(), 300);
       } else {
         setPhase('idle');
       }
     } catch (err: any) {
       toast.error('Failed to save disposition: ' + (err.message || 'unknown'));
     }
-  }, [user, currentLead, dispositionCode, vaNotes, callLogId, dispositions, sessionRunning, runCycle]);
+  }, [user, currentLead, dispositionCode, vaNotes, callLogId, dispositions, sessionRunning, runCycle, listMode]);
 
   const skipCurrent = async () => {
     if (!currentLead) return;
@@ -376,7 +423,8 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
     }
     setCallLogId(null);
     setCurrentLead(null);
-    if (sessionRunning && !stopFlagRef.current) runCycle();
+    if (listMode) setLeadIndex((i) => i + 1);
+    if (sessionRunning && !stopFlagRef.current) setTimeout(() => runCycle(), 300);
     else setPhase('idle');
   };
 
@@ -439,22 +487,36 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">Campaign Queue</label>
-            <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
-              <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-                <SelectValue placeholder="Select a campaign…" />
-              </SelectTrigger>
-              <SelectContent>
-                {campaigns.length === 0 && (
-                  <SelectItem value="__none" disabled>No active campaigns</SelectItem>
-                )}
-                {campaigns.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {listMode ? (
+            <div className="rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-3">
+              <div className="text-xs uppercase tracking-wide text-cyan-400 font-semibold mb-1">
+                Lead-List Campaign
+              </div>
+              <div className="text-sm text-white">
+                {leadList!.length} lead{leadList!.length === 1 ? '' : 's'} queued from your leads table
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">
+                Same dial logic · disposition required after each call · DNC enforced server-side
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Campaign Queue</label>
+              <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
+                <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                  <SelectValue placeholder="Select a campaign…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {campaigns.length === 0 && (
+                    <SelectItem value="__none" disabled>No active campaigns</SelectItem>
+                  )}
+                  {campaigns.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div>
             <label className="text-xs text-slate-400 mb-1 block">
@@ -479,10 +541,11 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
 
           <Button
             onClick={startDialerSession}
-            disabled={!selectedCampaign || !selectedNumber}
+            disabled={(listMode ? false : !selectedCampaign) || !selectedNumber}
             className="w-full bg-emerald-600 hover:bg-emerald-700 gap-2"
           >
-            <Phone className="h-4 w-4" /> Start VA Dialer
+            <Phone className="h-4 w-4" />
+            {listMode ? `Start Calling ${leadList!.length} Leads` : 'Start VA Dialer'}
           </Button>
 
           {/* ── Quick Dial: type any number and call ─────────────────── */}
@@ -543,7 +606,7 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
                                          'Connected'}
           </CardTitle>
           <Badge className="bg-slate-700 text-slate-300 text-[10px]">
-            {sessionRunning ? 'AUTO-LOOP' : 'PAUSED'}
+            {listMode ? `LEAD ${Math.min(leadIndex + 1, leadList!.length)} / ${leadList!.length}` : (sessionRunning ? 'AUTO-LOOP' : 'PAUSED')}
           </Badge>
         </CardHeader>
         <CardContent className="space-y-4">

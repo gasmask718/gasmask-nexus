@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useVASession } from '@/contexts/VASessionContext';
@@ -7,8 +7,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Phone, FileText, Send, Search, Loader2, Users } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Phone, FileText, Send, Search, Loader2, Users, Zap, PhoneCall } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 interface Lead {
   id: string;
@@ -20,10 +22,18 @@ interface Lead {
   assigned_va: string | null;
 }
 
+interface CampaignLead {
+  id?: string;
+  name: string;
+  phone: string;
+}
+
 interface VALeadsTableProps {
   onCall: (lead: Lead) => void;
   onCreateInvoice: (lead: Lead) => void;
   onSendInvoice: (lead: Lead) => void;
+  onStartCampaign?: (leads: CampaignLead[]) => void;
+  onQuickDial?: (lead: CampaignLead) => void;
 }
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string }> = {
@@ -35,10 +45,13 @@ const STATUS_CONFIG: Record<string, { bg: string; text: string }> = {
   closed: { bg: 'bg-green-500/15', text: 'text-green-400' },
 };
 
-export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice }: VALeadsTableProps) {
+export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCampaign, onQuickDial }: VALeadsTableProps) {
   const { t } = useVASession();
   const { user } = useAuth();
   const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [quickPhone, setQuickPhone] = useState('');
+  const [quickName, setQuickName] = useState('');
 
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ['va-leads', user?.id],
@@ -58,15 +71,64 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice }: VALeads
     enabled: !!user,
   });
 
-  const filtered = leads.filter(l => {
-    if (!search) return true;
+  const filtered = useMemo(() => {
+    if (!search) return leads;
     const q = search.toLowerCase();
-    return (
-      l.business_name?.toLowerCase().includes(q) ||
-      l.phone?.includes(q) ||
-      l.email?.toLowerCase().includes(q)
+    return leads.filter(
+      l =>
+        l.business_name?.toLowerCase().includes(q) ||
+        l.phone?.includes(q) ||
+        l.email?.toLowerCase().includes(q),
     );
-  });
+  }, [leads, search]);
+
+  const dialableFiltered = useMemo(() => filtered.filter(l => !!l.phone), [filtered]);
+  const allDialableSelected = dialableFiltered.length > 0 && dialableFiltered.every(l => selected.has(l.id));
+
+  const toggleAll = () => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (allDialableSelected) {
+        dialableFiltered.forEach(l => next.delete(l.id));
+      } else {
+        dialableFiltered.forEach(l => next.add(l.id));
+      }
+      return next;
+    });
+  };
+
+  const toggleOne = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleStartCampaign = () => {
+    if (!onStartCampaign) return;
+    const ids = selected.size > 0 ? selected : new Set(dialableFiltered.map(l => l.id));
+    const list: CampaignLead[] = leads
+      .filter(l => ids.has(l.id) && l.phone)
+      .map(l => ({ id: l.id, name: l.business_name || 'Lead', phone: l.phone }));
+    if (list.length === 0) {
+      toast.error('No dialable leads selected');
+      return;
+    }
+    onStartCampaign(list);
+  };
+
+  const handleQuickDial = () => {
+    if (!onQuickDial) return;
+    const cleaned = quickPhone.replace(/[^\d+]/g, '');
+    if (cleaned.replace(/\D/g, '').length < 10) {
+      toast.error('Enter a valid phone number');
+      return;
+    }
+    onQuickDial({ name: quickName.trim() || 'Quick Dial', phone: cleaned });
+    setQuickPhone('');
+    setQuickName('');
+  };
 
   if (isLoading) {
     return (
@@ -76,10 +138,12 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice }: VALeads
     );
   }
 
+  const selectedCount = selected.size;
+
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-bold text-foreground">{t('va.leads.title')}</h2>
         <div className="flex-1 max-w-sm relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -90,7 +154,53 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice }: VALeads
             className="pl-9 bg-secondary border-border text-foreground text-sm h-9"
           />
         </div>
+        {onStartCampaign && (
+          <Button
+            size="sm"
+            onClick={handleStartCampaign}
+            className="bg-cyan-600 hover:bg-cyan-700 text-white gap-2"
+            disabled={dialableFiltered.length === 0}
+          >
+            <Zap className="h-4 w-4" />
+            {selectedCount > 0
+              ? `Start Campaign (${selectedCount})`
+              : `Start Campaign · All (${dialableFiltered.length})`}
+          </Button>
+        )}
       </div>
+
+      {/* Quick Dial bar */}
+      {onQuickDial && (
+        <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-cyan-400 font-semibold pr-1">
+            <PhoneCall className="h-3.5 w-3.5" /> Quick Dial
+          </div>
+          <Input
+            value={quickPhone}
+            onChange={e => setQuickPhone(e.target.value.replace(/[^\d+\-\s()]/g, ''))}
+            placeholder="+1 (555) 123-4567"
+            className="bg-background border-border text-foreground font-mono w-52 h-9"
+            inputMode="tel"
+          />
+          <Input
+            value={quickName}
+            onChange={e => setQuickName(e.target.value)}
+            placeholder="Contact name (optional)"
+            className="bg-background border-border text-foreground w-56 h-9"
+          />
+          <Button
+            size="sm"
+            onClick={handleQuickDial}
+            disabled={!quickPhone}
+            className="bg-cyan-600 hover:bg-cyan-700 text-white gap-2"
+          >
+            <Phone className="h-4 w-4" /> Call Now
+          </Button>
+          <span className="text-[11px] text-muted-foreground">
+            Routes through the same dialer · disposition required after the call
+          </span>
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <Card className="glass-card border-border/50">
@@ -106,7 +216,16 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice }: VALeads
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-accent/30 text-muted-foreground text-xs">
-                <th className="text-left p-3 pl-4 font-medium">{t('va.leads.name')}</th>
+                {onStartCampaign && (
+                  <th className="p-3 pl-4 w-10">
+                    <Checkbox
+                      checked={allDialableSelected}
+                      onCheckedChange={toggleAll}
+                      aria-label="Select all dialable"
+                    />
+                  </th>
+                )}
+                <th className="text-left p-3 font-medium">{t('va.leads.name')}</th>
                 <th className="text-left p-3 font-medium">{t('va.leads.phone')}</th>
                 <th className="text-left p-3 hidden md:table-cell font-medium">{t('va.leads.email')}</th>
                 <th className="text-left p-3 font-medium">{t('va.leads.status')}</th>
@@ -116,6 +235,7 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice }: VALeads
             <tbody>
               {filtered.map((lead, idx) => {
                 const config = STATUS_CONFIG[lead.status] || { bg: 'bg-muted/20', text: 'text-muted-foreground' };
+                const dialable = !!lead.phone;
                 return (
                   <motion.tr
                     key={lead.id}
@@ -124,7 +244,17 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice }: VALeads
                     transition={{ delay: Math.min(idx * 0.02, 0.4), duration: 0.3 }}
                     className="border-t border-border/30 hover:bg-accent/20 transition-colors duration-150 text-foreground"
                   >
-                    <td className="p-3 pl-4 font-medium">{lead.business_name || '—'}</td>
+                    {onStartCampaign && (
+                      <td className="p-3 pl-4">
+                        <Checkbox
+                          checked={selected.has(lead.id)}
+                          onCheckedChange={() => toggleOne(lead.id)}
+                          disabled={!dialable}
+                          aria-label={`Select ${lead.business_name}`}
+                        />
+                      </td>
+                    )}
+                    <td className="p-3 font-medium">{lead.business_name || '—'}</td>
                     <td className="p-3 font-mono text-xs text-muted-foreground">{lead.phone || '—'}</td>
                     <td className="p-3 text-xs text-muted-foreground hidden md:table-cell">{lead.email || '—'}</td>
                     <td className="p-3">
