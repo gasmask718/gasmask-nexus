@@ -11,6 +11,7 @@ interface PhoneNumber {
   id: string;
   phone_number: string;
   friendly_name: string;
+  business: string | null;
   in_use: boolean;
   assigned_va_id: string | null;
 }
@@ -22,15 +23,27 @@ export function VAOnboardingModal() {
   const [selectedNumber, setSelectedNumber] = useState<PhoneNumber | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Pull numbers from /communication/provision-numbers source of truth (dc_phone_numbers).
+  // Exclude toll-free + Brandaro AI Agent numbers (cannot be used as VA caller-ID).
   const { data: numbers = [], isLoading } = useQuery({
-    queryKey: ['va-phone-numbers'],
+    queryKey: ['va-phone-numbers-dc'],
     queryFn: async () => {
       const { data } = await (supabase as any)
-        .from('brandaro_phone_numbers')
-        .select('id, phone_number, friendly_name, in_use, assigned_va_id')
+        .from('dc_phone_numbers')
+        .select('id, phone_number, friendly_name, business, number_type, is_active')
         .eq('is_active', true)
-        .order('friendly_name');
-      return (data || []) as PhoneNumber[];
+        .eq('number_type', 'local')
+        .not('friendly_name', 'ilike', '%AI Agent%')
+        .order('business')
+        .order('phone_number');
+      return ((data || []) as any[]).map((n) => ({
+        id: n.id,
+        phone_number: n.phone_number,
+        friendly_name: n.friendly_name || n.phone_number,
+        business: n.business,
+        in_use: false,
+        assigned_va_id: null,
+      })) as PhoneNumber[];
     },
     enabled: step === 'number',
   });
