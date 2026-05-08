@@ -87,7 +87,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
 
   // ── Selections ──────────────────────────────────────────────────────
   const [selectedCampaign, setSelectedCampaign] = useState<string>('');
-  const [selectedNumber, setSelectedNumber] = useState<string>('');
+  const [selectedNumber, setSelectedNumber] = useState<string>(initialCallerId || '');
 
   // ── Session state ───────────────────────────────────────────────────
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
