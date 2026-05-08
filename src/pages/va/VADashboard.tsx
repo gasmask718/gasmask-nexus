@@ -23,6 +23,7 @@ import { VARecentCalls } from '@/components/va/VARecentCalls';
 import { VACallHistory } from '@/components/va/VACallHistory';
 import { VASessionSummary } from '@/components/va/VASessionSummary';
 import { VACoachingInbox } from '@/components/va/VACoachingInbox';
+import { VAAutoDialerSection } from '@/components/va/VAAutoDialerSection';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
@@ -37,7 +38,7 @@ import {
 } from 'lucide-react';
 import { useVAActiveCompany } from '@/hooks/useVAActiveCompany';
 
-type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'leaderboard' | 'callbacks' | 'coaching' | 'history';
+type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'autodialer' | 'leaderboard' | 'callbacks' | 'coaching' | 'history';
 
 function VADashboardInner() {
   const navigate = useNavigate();
@@ -114,6 +115,7 @@ function VADashboardInner() {
     { key: 'leads' as VAView, label: t('va.nav.leads'), icon: Users },
     { key: 'discovery' as VAView, label: t('va.nav.discovery'), icon: Search },
     { key: 'dialer' as VAView, label: 'Power Dialer', icon: Zap },
+    { key: 'autodialer' as VAView, label: 'Auto Dialer', icon: Sparkles },
     { key: 'leaderboard' as VAView, label: 'Leaderboard', icon: Trophy },
     { key: 'callbacks' as VAView, label: 'Callbacks', icon: Clock },
     { key: 'coaching' as VAView, label: 'AI Coaching', icon: Sparkles, badge: unreadCoaching },
@@ -263,6 +265,7 @@ function VADashboardInner() {
                 </div>
               </div>
             )}
+            {view === 'autodialer' && <VAAutoDialerSection />}
             {view === 'leaderboard' && (
               <div className="max-w-4xl">
                 <VALeaderboard />
