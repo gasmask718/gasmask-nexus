@@ -39,7 +39,8 @@ interface PhoneNumber {
   id: string;
   phone_number: string;
   friendly_name: string | null;
-  state: string | null;
+  business: string | null;
+  number_type: string | null;
 }
 interface Disposition {
   id: string;
@@ -105,10 +106,14 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
             .eq('status', 'active')
             .is('archived_at', null)
             .order('created_at', { ascending: false }),
+          // Pull from /communication/provision-numbers source of truth (dc_phone_numbers).
+          // Exclude toll-free numbers and Brandaro AI Agent numbers per business rule.
           (supabase as any)
-            .from('dynasty_phone_numbers')
-            .select('id, phone_number, friendly_name, state')
+            .from('dc_phone_numbers')
+            .select('id, phone_number, friendly_name, business, number_type')
             .eq('is_active', true)
+            .eq('number_type', 'local')
+            .not('friendly_name', 'ilike', '%AI Agent%')
             .order('phone_number'),
           (supabase as any)
             .from('dialer_disposition_codes')
@@ -415,7 +420,7 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
                 )}
                 {numbers.map(n => (
                   <SelectItem key={n.id} value={n.phone_number}>
-                    {n.phone_number} {n.state ? `· ${n.state}` : ''}{n.friendly_name ? ` · ${n.friendly_name}` : ''}
+                    {n.phone_number}{n.business ? ` · ${n.business}` : ''}{n.friendly_name ? ` · ${n.friendly_name}` : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
