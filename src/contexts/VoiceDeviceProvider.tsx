@@ -250,6 +250,16 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       const device = new Device(token, {
         codecPreferences: [Call.Codec.Opus, Call.Codec.PCMU],
         logLevel: 1,
+        // Edge fallback chain bypasses localized DNS/routing failures (53000)
+        edge: ["roaming", "ashburn", "dublin", "sydney"],
+        // Prioritize signaling traffic via DSCP tagging when supported
+        // @ts-expect-error - option exists in @twilio/voice-sdk runtime
+        dscp: true,
+        closeProtection: true,
+        allowIncomingWhileBusy: false,
+        maxCallSignalingTimeoutMs: 30000,
+        // @ts-expect-error - improves precision of signaling errors (incl. 53000)
+        enableImprovedSignalingErrorPrecision: true,
       });
 
       device.on("registered", () => {
@@ -258,6 +268,7 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
         lastErrorRef.current = null;
         setDeviceState("registered");
         setRegisteredAt(new Date().toISOString());
+        signalingRetryRef.current = 0;
       });
 
       device.on("unregistered", () => {
@@ -265,14 +276,36 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
         setDeviceState("idle");
       });
 
-      device.on("error", (err) => {
+      device.on("error", async (err: any) => {
+        const code: number | undefined = err?.code;
         const message = getErrorMessage(err, "Voice device error");
-        console.warn("[VoiceDevice] Device error:", message);
+        console.warn("[VoiceDevice] Device error:", code, message);
+
+        // 53000 = signaling ConnectionError. Auto-retry once with token refresh
+        // before surfacing to the VA.
+        if (code === 53000 && signalingRetryRef.current < 1) {
+          signalingRetryRef.current += 1;
+          console.warn("[VoiceDevice] 53000 detected — auto-retrying signaling (attempt 1)");
+          toast.warning("Voice signaling glitch — reconnecting…");
+          try {
+            const fresh = await fetchToken();
+            if (fresh && deviceRef.current) {
+              deviceRef.current.updateToken(fresh);
+              await deviceRef.current.register();
+              return;
+            }
+          } catch (retryErr) {
+            console.warn("[VoiceDevice] 53000 retry failed:", retryErr);
+          }
+        }
+
         setDeviceError(message);
         lastErrorRef.current = message;
         setDeviceState("error");
         setIsReady(false);
-        if (activeCall || isConnecting) {
+        if (code === 53000) {
+          toast.error("Voice connection lost (53000). Check network/firewall and click Reinit.", { duration: 8000 });
+        } else if (activeCall || isConnecting) {
           toast.error(`Voice error: ${message}`);
         }
       });
