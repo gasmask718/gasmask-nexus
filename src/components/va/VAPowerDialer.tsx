@@ -485,6 +485,40 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
             <Phone className="h-4 w-4" /> Start VA Dialer
           </Button>
 
+          {/* ── Quick Dial: type any number and call ─────────────────── */}
+          <div className="pt-2 border-t border-slate-700/60">
+            <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-2 flex items-center gap-2">
+              <PhoneCall className="h-3 w-3 text-cyan-400" /> Quick Dial · Manual Number
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              <Input
+                value={manualPhone}
+                onChange={(e) => setManualPhone(e.target.value.replace(/[^\d+\-\s()]/g, ''))}
+                placeholder="+1 (555) 123-4567"
+                className="bg-slate-800 border-slate-700 text-white font-mono"
+                inputMode="tel"
+              />
+              <Input
+                value={manualName}
+                onChange={(e) => setManualName(e.target.value)}
+                placeholder="Contact name (optional)"
+                className="bg-slate-800 border-slate-700 text-white"
+              />
+              <Button
+                onClick={dialManualNumber}
+                disabled={!selectedNumber || !manualPhone || manualDialing}
+                className="w-full bg-cyan-600 hover:bg-cyan-700 gap-2"
+              >
+                {manualDialing
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Dialing…</>
+                  : <><PhoneCall className="h-4 w-4" /> Dial Number</>}
+              </Button>
+              <p className="text-[10px] text-slate-500">
+                Uses the selected Caller-ID. Logged in va_call_logs · disposition required after the call.
+              </p>
+            </div>
+          </div>
+
           <Button variant="ghost" size="sm" className="w-full text-slate-400" onClick={onEndSession}>
             Exit dialer view
           </Button>
