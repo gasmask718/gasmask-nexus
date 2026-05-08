@@ -244,23 +244,21 @@ function VADashboardInner() {
             {view === 'discovery' && <VALeadDiscovery />}
             {view === 'dialer' && (
               <div className="flex gap-4 h-[calc(100vh-8rem)]">
-                {/* Left: Persistent Dialer + Active Call Controls (always visible) */}
-                <div className="w-[42%] flex flex-col gap-3 min-w-0">
-                  <div className="sticky top-0 z-10 space-y-3">
-                    <UnifiedCallActions
-                      businessUnit={activeCompany?.company_slug ?? null}
-                    />
-                    <ManualCallActions
-                      businessUnit={activeCompany?.company_slug ?? null}
-                    />
+                {/* Left: Persistent manual-call controls + full Auto-Dialer engine
+                    (same CampaignDialPage that powers /communication/campaign-dial:
+                     7 audience sources, Bland AI agents, server dispatcher,
+                     realtime queue monitor, recover-stuck, history). */}
+                <div className="flex-1 flex flex-col gap-3 min-w-0">
+                  <div className="space-y-3">
+                    <UnifiedCallActions businessUnit={activeCompany?.company_slug ?? null} />
+                    <ManualCallActions businessUnit={activeCompany?.company_slug ?? null} />
                   </div>
-                  <div className="flex-1 overflow-y-auto pr-1 space-y-3">
-                    <VAPowerDialer leads={dialerLeads.length > 0 ? dialerLeads : allLeads} onEndSession={handleEndDialerSession} />
-                    <VADialerAssist />
+                  <div className="flex-1 min-h-0 rounded-xl border border-slate-700 bg-slate-900/40 overflow-hidden">
+                    <VAAutoDialerSection />
                   </div>
                 </div>
                 {/* Right: Scripts & Rebuttals (tabbed reference, never obscures dialer) */}
-                <div className="flex-1 min-w-0 rounded-xl border border-slate-700 overflow-hidden">
+                <div className="w-[34%] min-w-0 rounded-xl border border-slate-700 overflow-hidden">
                   <VAScriptsRebuttalsPanel />
                 </div>
               </div>
