@@ -9,8 +9,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Phone, PhoneOff, SkipForward, X, Loader2, PlayCircle, AlertTriangle,
+  Phone, PhoneOff, SkipForward, X, Loader2, PlayCircle, AlertTriangle, PhoneCall,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { BrandaroCallScript } from './BrandaroCallScript';
 
@@ -89,6 +90,11 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
   // ── Wrap-up form ────────────────────────────────────────────────────
   const [dispositionCode, setDispositionCode] = useState<string>('');
   const [vaNotes, setVaNotes] = useState<string>('');
+
+  // ── Quick-dial (manual number) ──────────────────────────────────────
+  const [manualPhone, setManualPhone] = useState<string>('');
+  const [manualName, setManualName] = useState<string>('');
+  const [manualDialing, setManualDialing] = useState(false);
 
   // Stop flag (lets us break out of the auto-loop cleanly)
   const stopFlagRef = useRef(false);
@@ -208,17 +214,20 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
     }
     if (lead.do_not_call) {
       toast.warning(`${lead.business_name} is marked Do-Not-Call — skipping`);
-      // mark queue item skipped
-      await (supabase as any).from('campaign_call_queue')
-        .update({ status: 'skipped', completed_at: new Date().toISOString() })
-        .eq('id', lead.queue_id);
+      if (lead.queue_id) {
+        await (supabase as any).from('campaign_call_queue')
+          .update({ status: 'skipped', completed_at: new Date().toISOString() })
+          .eq('id', lead.queue_id);
+      }
       return false;
     }
     if (!lead.phone) {
       toast.warning(`${lead.business_name} has no phone — skipping`);
-      await (supabase as any).from('campaign_call_queue')
-        .update({ status: 'skipped', completed_at: new Date().toISOString() })
-        .eq('id', lead.queue_id);
+      if (lead.queue_id) {
+        await (supabase as any).from('campaign_call_queue')
+          .update({ status: 'skipped', completed_at: new Date().toISOString() })
+          .eq('id', lead.queue_id);
+      }
       return false;
     }
 
@@ -228,7 +237,7 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
         body: {
           vaId: user.id,
           twilioNumber: selectedNumber,
-          leadId: lead.store_id,
+          leadId: lead.store_id || null,
           leadPhone: lead.phone,
           leadName: lead.business_name,
           action: 'dial',
@@ -237,20 +246,24 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
       if (error) throw error;
       if (data?.skipped) {
         toast.info(`${lead.business_name} skipped (${data.reason})`);
-        await (supabase as any).from('campaign_call_queue')
-          .update({ status: 'skipped', completed_at: new Date().toISOString() })
-          .eq('id', lead.queue_id);
+        if (lead.queue_id) {
+          await (supabase as any).from('campaign_call_queue')
+            .update({ status: 'skipped', completed_at: new Date().toISOString() })
+            .eq('id', lead.queue_id);
+        }
         return false;
       }
       setCallLogId(data?.callLogId || null);
-      // mark queue item in-flight
-      await (supabase as any).from('campaign_call_queue')
-        .update({
-          status: 'dialing',
-          started_at: new Date().toISOString(),
-          attempt_number: lead.attempt_number + 1,
-        })
-        .eq('id', lead.queue_id);
+      // mark queue item in-flight (auto-loop only)
+      if (lead.queue_id) {
+        await (supabase as any).from('campaign_call_queue')
+          .update({
+            status: 'dialing',
+            started_at: new Date().toISOString(),
+            attempt_number: lead.attempt_number + 1,
+          })
+          .eq('id', lead.queue_id);
+      }
       return true;
     } catch (err: any) {
       toast.error('Network error triggering call: ' + (err.message || 'unknown'));
@@ -322,16 +335,18 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
         if (error) throw error;
       }
 
-      // 2. Close the queue item
-      await (supabase as any).from('campaign_call_queue')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-        })
-        .eq('id', currentLead.queue_id);
+      // 2. Close the queue item (auto-loop only)
+      if (currentLead.queue_id) {
+        await (supabase as any).from('campaign_call_queue')
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', currentLead.queue_id);
+      }
 
       // 3. Stamp DNC if disposition demands
-      if (dispObj?.marks_do_not_call) {
+      if (dispObj?.marks_do_not_call && currentLead.store_id) {
         await (supabase as any).from('stores')
           .update({ do_not_call: true })
           .eq('id', currentLead.store_id);
@@ -354,14 +369,49 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
 
   const skipCurrent = async () => {
     if (!currentLead) return;
-    await (supabase as any).from('campaign_call_queue')
-      .update({ status: 'skipped', completed_at: new Date().toISOString() })
-      .eq('id', currentLead.queue_id);
+    if (currentLead.queue_id) {
+      await (supabase as any).from('campaign_call_queue')
+        .update({ status: 'skipped', completed_at: new Date().toISOString() })
+        .eq('id', currentLead.queue_id);
+    }
     setCallLogId(null);
     setCurrentLead(null);
     if (sessionRunning && !stopFlagRef.current) runCycle();
     else setPhase('idle');
   };
+
+  // ── Quick-dial: place a single call to a typed-in number ────────────
+  const dialManualNumber = useCallback(async () => {
+    if (!user) { toast.error('Not signed in'); return; }
+    if (!selectedNumber) { toast.error('Select a Caller-ID number first'); return; }
+    const cleaned = manualPhone.replace(/[^\d+]/g, '');
+    const digits = cleaned.replace(/\D/g, '');
+    if (digits.length < 10) { toast.error('Enter a valid phone number (10+ digits)'); return; }
+    const e164 = cleaned.startsWith('+') ? cleaned : `+1${digits}`;
+
+    setManualDialing(true);
+    const lead: QueueLead = {
+      queue_id: '',                     // no queue — manual call
+      store_id: '',                     // no store — manual call
+      business_name: manualName.trim() || 'Manual Dial',
+      phone: e164,
+      notes: null,
+      do_not_call: false,
+      attempt_number: 0,
+    };
+    setCurrentLead(lead);
+    stopFlagRef.current = true;          // ensure no auto-loop
+    setSessionRunning(false);
+    const ok = await triggerCall(lead);
+    setManualDialing(false);
+    if (ok) {
+      setManualPhone('');
+      setManualName('');
+    } else {
+      setCurrentLead(null);
+      setPhase('idle');
+    }
+  }, [user, selectedNumber, manualPhone, manualName, triggerCall]);
 
   // ── Cleanup on unmount ──────────────────────────────────────────────
   useEffect(() => () => { stopFlagRef.current = true; }, []);
@@ -434,6 +484,40 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
           >
             <Phone className="h-4 w-4" /> Start VA Dialer
           </Button>
+
+          {/* ── Quick Dial: type any number and call ─────────────────── */}
+          <div className="pt-2 border-t border-slate-700/60">
+            <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-2 flex items-center gap-2">
+              <PhoneCall className="h-3 w-3 text-cyan-400" /> Quick Dial · Manual Number
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              <Input
+                value={manualPhone}
+                onChange={(e) => setManualPhone(e.target.value.replace(/[^\d+\-\s()]/g, ''))}
+                placeholder="+1 (555) 123-4567"
+                className="bg-slate-800 border-slate-700 text-white font-mono"
+                inputMode="tel"
+              />
+              <Input
+                value={manualName}
+                onChange={(e) => setManualName(e.target.value)}
+                placeholder="Contact name (optional)"
+                className="bg-slate-800 border-slate-700 text-white"
+              />
+              <Button
+                onClick={dialManualNumber}
+                disabled={!selectedNumber || !manualPhone || manualDialing}
+                className="w-full bg-cyan-600 hover:bg-cyan-700 gap-2"
+              >
+                {manualDialing
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Dialing…</>
+                  : <><PhoneCall className="h-4 w-4" /> Dial Number</>}
+              </Button>
+              <p className="text-[10px] text-slate-500">
+                Uses the selected Caller-ID. Logged in va_call_logs · disposition required after the call.
+              </p>
+            </div>
+          </div>
 
           <Button variant="ghost" size="sm" className="w-full text-slate-400" onClick={onEndSession}>
             Exit dialer view
