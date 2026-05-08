@@ -78,6 +78,7 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
   const initializingRef = useRef(false);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const configCheckedRef = useRef(false);
+  const signalingRetryRef = useRef(0);
 
   const getErrorMessage = useCallback((err: unknown, fallback: string) => {
     if (err instanceof Error && err.message?.trim()) return err.message.trim();
