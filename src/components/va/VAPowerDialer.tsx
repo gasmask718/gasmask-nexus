@@ -39,7 +39,8 @@ interface PhoneNumber {
   id: string;
   phone_number: string;
   friendly_name: string | null;
-  state: string | null;
+  business: string | null;
+  number_type: string | null;
 }
 interface Disposition {
   id: string;
