@@ -9,8 +9,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Phone, PhoneOff, SkipForward, X, Loader2, PlayCircle, AlertTriangle,
+  Phone, PhoneOff, SkipForward, X, Loader2, PlayCircle, AlertTriangle, PhoneCall,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { BrandaroCallScript } from './BrandaroCallScript';
 
