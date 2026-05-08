@@ -22,40 +22,30 @@ const twilioBasicAuth = (username: string, password: string) =>
   `Basic ${btoa(`${username}:${password}`)}`;
 
 async function validateTwilioApiKey(accountSid: string, apiKeySid: string, apiKeySecret: string) {
-  const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}.json`, {
-    headers: {
-      Authorization: twilioBasicAuth(apiKeySid, apiKeySecret),
-    },
-  });
+  // Use IncomingPhoneNumbers.json which works with restricted API keys (only requires
+  // standard voice/messaging perms — NOT iam/accounts/read which restricted keys lack).
+  const response = await fetch(
+    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/IncomingPhoneNumbers.json?PageSize=1`,
+    { headers: { Authorization: twilioBasicAuth(apiKeySid, apiKeySecret) } },
+  );
 
   if (response.ok) {
     return { ok: true as const, detail: "API key authenticated against Brandaro account" };
   }
 
   const detail = await response.text();
-
-  // Diagnostic: probe what account this API key actually belongs to
-  let ownerProbe = "unknown";
-  try {
-    const probe = await fetch(`https://api.twilio.com/2010-04-01/Accounts.json`, {
-      headers: { Authorization: twilioBasicAuth(apiKeySid, apiKeySecret) },
-    });
-    if (probe.ok) {
-      const pj = await probe.json();
-      const sids = (pj?.accounts || []).map((a: any) => a.sid).slice(0, 3);
-      ownerProbe = sids.length ? `key valid; owns accounts=${sids.join(",")}` : "key valid; no accounts returned";
-    } else {
-      ownerProbe = `key invalid (HTTP ${probe.status}) — SID/Secret pair is wrong or from deleted key`;
-    }
-  } catch (e) {
-    ownerProbe = `probe failed: ${(e as Error).message}`;
+  // 70051 = restricted-key permission gap on this specific endpoint. Treat as OK
+  // because the TwiML-app validation step below is the authoritative check for what
+  // we actually need (voice grant + outgoing app SID).
+  if (response.status === 401 && detail.includes("70051")) {
+    return { ok: true as const, detail: "API key is restricted; deferring to TwiML app validation" };
   }
 
   const sidInfo = `apiKeySid prefix=${apiKeySid.slice(0,2)} len=${apiKeySid.length}`;
   const secretInfo = `secret len=${apiKeySecret.length}`;
   return {
     ok: false as const,
-    detail: `Twilio 401 for ${accountSid}. ${sidInfo}. ${secretInfo}. Diagnostic: ${ownerProbe}. Raw: HTTP ${response.status} ${detail.slice(0, 150)}`,
+    detail: `Twilio ${response.status} for ${accountSid}. ${sidInfo}. ${secretInfo}. Raw: ${detail.slice(0, 200)}`,
   };
 }
 
