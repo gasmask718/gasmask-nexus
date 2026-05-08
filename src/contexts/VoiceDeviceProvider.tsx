@@ -254,14 +254,13 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
         // Edge fallback chain bypasses localized DNS/routing failures (53000)
         edge: ["roaming", "ashburn", "dublin", "sydney"],
         // Prioritize signaling traffic via DSCP tagging when supported
-        // @ts-expect-error - option exists in @twilio/voice-sdk runtime
         dscp: true,
         closeProtection: true,
         allowIncomingWhileBusy: false,
         maxCallSignalingTimeoutMs: 30000,
-        // @ts-expect-error - improves precision of signaling errors (incl. 53000)
+        // Improves precision of signaling errors (incl. 53000)
         enableImprovedSignalingErrorPrecision: true,
-      });
+      } as ConstructorParameters<typeof Device>[1]);
 
       device.on("registered", () => {
         setIsReady(true);
