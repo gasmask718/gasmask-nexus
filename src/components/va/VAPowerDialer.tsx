@@ -91,6 +91,11 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
   const [dispositionCode, setDispositionCode] = useState<string>('');
   const [vaNotes, setVaNotes] = useState<string>('');
 
+  // ── Quick-dial (manual number) ──────────────────────────────────────
+  const [manualPhone, setManualPhone] = useState<string>('');
+  const [manualName, setManualName] = useState<string>('');
+  const [manualDialing, setManualDialing] = useState(false);
+
   // Stop flag (lets us break out of the auto-loop cleanly)
   const stopFlagRef = useRef(false);
 
