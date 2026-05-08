@@ -57,6 +57,7 @@ function VADashboardInner() {
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [invoiceSendMode, setInvoiceSendMode] = useState(false);
   const [dialerLeads, setDialerLeads] = useState<any[]>([]);
+  const [campaignLeadList, setCampaignLeadList] = useState<{ id?: string; name: string; phone: string }[] | null>(null);
   const [showSessionSummary, setShowSessionSummary] = useState(false);
 
   // Fetch leads for dialer
