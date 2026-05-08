@@ -115,6 +115,7 @@ function VADashboardInner() {
     { key: 'leads' as VAView, label: t('va.nav.leads'), icon: Users },
     { key: 'discovery' as VAView, label: t('va.nav.discovery'), icon: Search },
     { key: 'dialer' as VAView, label: 'Power Dialer', icon: Zap },
+    { key: 'autodialer' as VAView, label: 'Auto Dialer', icon: Sparkles },
     { key: 'leaderboard' as VAView, label: 'Leaderboard', icon: Trophy },
     { key: 'callbacks' as VAView, label: 'Callbacks', icon: Clock },
     { key: 'coaching' as VAView, label: 'AI Coaching', icon: Sparkles, badge: unreadCoaching },
