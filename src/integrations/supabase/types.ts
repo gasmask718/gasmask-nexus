@@ -112874,6 +112874,15 @@ export type Database = {
         Args: { p_max_retries?: number }
         Returns: number
       }
+      reverse_corrupted_merge: {
+        Args: {
+          p_dry_run?: boolean
+          p_force_cascade?: boolean
+          p_session_id: string
+          p_session_label: string
+        }
+        Returns: Json
+      }
       revoke_ambassador_invite: {
         Args: { p_invite_id: string; p_reason?: string }
         Returns: boolean
