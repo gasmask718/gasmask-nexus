@@ -105,10 +105,14 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
             .eq('status', 'active')
             .is('archived_at', null)
             .order('created_at', { ascending: false }),
+          // Pull from /communication/provision-numbers source of truth (dc_phone_numbers).
+          // Exclude toll-free numbers and Brandaro AI Agent numbers per business rule.
           (supabase as any)
-            .from('dynasty_phone_numbers')
-            .select('id, phone_number, friendly_name, state')
+            .from('dc_phone_numbers')
+            .select('id, phone_number, friendly_name, business, number_type')
             .eq('is_active', true)
+            .eq('number_type', 'local')
+            .not('friendly_name', 'ilike', '%AI Agent%')
             .order('phone_number'),
           (supabase as any)
             .from('dialer_disposition_codes')
