@@ -232,7 +232,18 @@ function VADashboardInner() {
                   onCreateInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(false); setInvoiceOpen(true); }}
                   onSendInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(true); setInvoiceOpen(true); }}
                   onStartCampaign={(list) => { setCampaignLeadList(list); setView('autodialer'); }}
-                  onQuickDial={(lead) => { setCampaignLeadList([lead]); setView('autodialer'); }}
+                  onQuickDial={(lead) => {
+                    setCallLead({
+                      id: `quick-${Date.now()}`,
+                      business_name: lead.name,
+                      phone: lead.phone,
+                      email: null,
+                      status: 'new',
+                      created_at: new Date().toISOString(),
+                      assigned_va: null,
+                    } as any);
+                    setView('call');
+                  }}
                 />
                 
                 {/* Recent Calls */}
