@@ -420,7 +420,7 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
                 )}
                 {numbers.map(n => (
                   <SelectItem key={n.id} value={n.phone_number}>
-                    {n.phone_number} {n.state ? `· ${n.state}` : ''}{n.friendly_name ? ` · ${n.friendly_name}` : ''}
+                    {n.phone_number}{n.business ? ` · ${n.business}` : ''}{n.friendly_name ? ` · ${n.friendly_name}` : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
