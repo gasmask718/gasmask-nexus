@@ -487,22 +487,36 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">Campaign Queue</label>
-            <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
-              <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-                <SelectValue placeholder="Select a campaign…" />
-              </SelectTrigger>
-              <SelectContent>
-                {campaigns.length === 0 && (
-                  <SelectItem value="__none" disabled>No active campaigns</SelectItem>
-                )}
-                {campaigns.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {listMode ? (
+            <div className="rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-3">
+              <div className="text-xs uppercase tracking-wide text-cyan-400 font-semibold mb-1">
+                Lead-List Campaign
+              </div>
+              <div className="text-sm text-white">
+                {leadList!.length} lead{leadList!.length === 1 ? '' : 's'} queued from your leads table
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">
+                Same dial logic · disposition required after each call · DNC enforced server-side
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Campaign Queue</label>
+              <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
+                <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                  <SelectValue placeholder="Select a campaign…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {campaigns.length === 0 && (
+                    <SelectItem value="__none" disabled>No active campaigns</SelectItem>
+                  )}
+                  {campaigns.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div>
             <label className="text-xs text-slate-400 mb-1 block">
@@ -527,10 +541,11 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
 
           <Button
             onClick={startDialerSession}
-            disabled={!selectedCampaign || !selectedNumber}
+            disabled={(listMode ? false : !selectedCampaign) || !selectedNumber}
             className="w-full bg-emerald-600 hover:bg-emerald-700 gap-2"
           >
-            <Phone className="h-4 w-4" /> Start VA Dialer
+            <Phone className="h-4 w-4" />
+            {listMode ? `Start Calling ${leadList!.length} Leads` : 'Start VA Dialer'}
           </Button>
 
           {/* ── Quick Dial: type any number and call ─────────────────── */}
