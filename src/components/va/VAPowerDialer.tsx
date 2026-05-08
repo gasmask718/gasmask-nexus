@@ -369,14 +369,49 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
 
   const skipCurrent = async () => {
     if (!currentLead) return;
-    await (supabase as any).from('campaign_call_queue')
-      .update({ status: 'skipped', completed_at: new Date().toISOString() })
-      .eq('id', currentLead.queue_id);
+    if (currentLead.queue_id) {
+      await (supabase as any).from('campaign_call_queue')
+        .update({ status: 'skipped', completed_at: new Date().toISOString() })
+        .eq('id', currentLead.queue_id);
+    }
     setCallLogId(null);
     setCurrentLead(null);
     if (sessionRunning && !stopFlagRef.current) runCycle();
     else setPhase('idle');
   };
+
+  // ── Quick-dial: place a single call to a typed-in number ────────────
+  const dialManualNumber = useCallback(async () => {
+    if (!user) { toast.error('Not signed in'); return; }
+    if (!selectedNumber) { toast.error('Select a Caller-ID number first'); return; }
+    const cleaned = manualPhone.replace(/[^\d+]/g, '');
+    const digits = cleaned.replace(/\D/g, '');
+    if (digits.length < 10) { toast.error('Enter a valid phone number (10+ digits)'); return; }
+    const e164 = cleaned.startsWith('+') ? cleaned : `+1${digits}`;
+
+    setManualDialing(true);
+    const lead: QueueLead = {
+      queue_id: '',                     // no queue — manual call
+      store_id: '',                     // no store — manual call
+      business_name: manualName.trim() || 'Manual Dial',
+      phone: e164,
+      notes: null,
+      do_not_call: false,
+      attempt_number: 0,
+    };
+    setCurrentLead(lead);
+    stopFlagRef.current = true;          // ensure no auto-loop
+    setSessionRunning(false);
+    const ok = await triggerCall(lead);
+    setManualDialing(false);
+    if (ok) {
+      setManualPhone('');
+      setManualName('');
+    } else {
+      setCurrentLead(null);
+      setPhase('idle');
+    }
+  }, [user, selectedNumber, manualPhone, manualName, triggerCall]);
 
   // ── Cleanup on unmount ──────────────────────────────────────────────
   useEffect(() => () => { stopFlagRef.current = true; }, []);
