@@ -410,7 +410,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     } catch (err: any) {
       toast.error('Failed to save disposition: ' + (err.message || 'unknown'));
     }
-  }, [user, currentLead, dispositionCode, vaNotes, callLogId, dispositions, sessionRunning, runCycle]);
+  }, [user, currentLead, dispositionCode, vaNotes, callLogId, dispositions, sessionRunning, runCycle, listMode]);
 
   const skipCurrent = async () => {
     if (!currentLead) return;
