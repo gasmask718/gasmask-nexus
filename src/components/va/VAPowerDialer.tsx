@@ -214,17 +214,20 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
     }
     if (lead.do_not_call) {
       toast.warning(`${lead.business_name} is marked Do-Not-Call — skipping`);
-      // mark queue item skipped
-      await (supabase as any).from('campaign_call_queue')
-        .update({ status: 'skipped', completed_at: new Date().toISOString() })
-        .eq('id', lead.queue_id);
+      if (lead.queue_id) {
+        await (supabase as any).from('campaign_call_queue')
+          .update({ status: 'skipped', completed_at: new Date().toISOString() })
+          .eq('id', lead.queue_id);
+      }
       return false;
     }
     if (!lead.phone) {
       toast.warning(`${lead.business_name} has no phone — skipping`);
-      await (supabase as any).from('campaign_call_queue')
-        .update({ status: 'skipped', completed_at: new Date().toISOString() })
-        .eq('id', lead.queue_id);
+      if (lead.queue_id) {
+        await (supabase as any).from('campaign_call_queue')
+          .update({ status: 'skipped', completed_at: new Date().toISOString() })
+          .eq('id', lead.queue_id);
+      }
       return false;
     }
 
@@ -234,7 +237,7 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
         body: {
           vaId: user.id,
           twilioNumber: selectedNumber,
-          leadId: lead.store_id,
+          leadId: lead.store_id || null,
           leadPhone: lead.phone,
           leadName: lead.business_name,
           action: 'dial',
@@ -243,20 +246,24 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
       if (error) throw error;
       if (data?.skipped) {
         toast.info(`${lead.business_name} skipped (${data.reason})`);
-        await (supabase as any).from('campaign_call_queue')
-          .update({ status: 'skipped', completed_at: new Date().toISOString() })
-          .eq('id', lead.queue_id);
+        if (lead.queue_id) {
+          await (supabase as any).from('campaign_call_queue')
+            .update({ status: 'skipped', completed_at: new Date().toISOString() })
+            .eq('id', lead.queue_id);
+        }
         return false;
       }
       setCallLogId(data?.callLogId || null);
-      // mark queue item in-flight
-      await (supabase as any).from('campaign_call_queue')
-        .update({
-          status: 'dialing',
-          started_at: new Date().toISOString(),
-          attempt_number: lead.attempt_number + 1,
-        })
-        .eq('id', lead.queue_id);
+      // mark queue item in-flight (auto-loop only)
+      if (lead.queue_id) {
+        await (supabase as any).from('campaign_call_queue')
+          .update({
+            status: 'dialing',
+            started_at: new Date().toISOString(),
+            attempt_number: lead.attempt_number + 1,
+          })
+          .eq('id', lead.queue_id);
+      }
       return true;
     } catch (err: any) {
       toast.error('Network error triggering call: ' + (err.message || 'unknown'));
