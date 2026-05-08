@@ -421,7 +421,8 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     }
     setCallLogId(null);
     setCurrentLead(null);
-    if (sessionRunning && !stopFlagRef.current) runCycle();
+    if (listMode) setLeadIndex((i) => i + 1);
+    if (sessionRunning && !stopFlagRef.current) setTimeout(() => runCycle(), 300);
     else setPhase('idle');
   };
 
