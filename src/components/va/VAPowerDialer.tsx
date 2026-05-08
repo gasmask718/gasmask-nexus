@@ -323,23 +323,25 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     if (!lead) return;
     const ok = await triggerCall(lead);
     if (!ok && sessionRunning && !stopFlagRef.current) {
-      // skipped — immediately try the next one
+      // skipped — advance list pointer (if any) and immediately try the next one
+      if (listMode) setLeadIndex((i) => i + 1);
       setTimeout(() => runCycle(), 600);
     }
-  }, [fetchNextLead, triggerCall, sessionRunning]);
+  }, [fetchNextLead, triggerCall, sessionRunning, listMode]);
 
   // ── Start / stop ────────────────────────────────────────────────────
   const startDialerSession = useCallback(async () => {
     if (!user) { toast.error('Not signed in'); return; }
-    if (!selectedCampaign) { toast.error('Select a campaign first'); return; }
+    if (!listMode && !selectedCampaign) { toast.error('Select a campaign first'); return; }
     if (!selectedNumber)   { toast.error('Select a Twilio number first'); return; }
 
     stopFlagRef.current = false;
+    setLeadIndex(0);
     setSessionRunning(true);
     setActiveSessionId(`session_${Date.now()}_${user.id.slice(0, 8)}`);
-    toast.success('Auto dialer session started');
+    toast.success(listMode ? `Calling list of ${leadList!.length} leads` : 'Auto dialer session started');
     runCycle();
-  }, [user, selectedCampaign, selectedNumber, runCycle]);
+  }, [user, listMode, leadList, selectedCampaign, selectedNumber, runCycle]);
 
   const stopDialer = useCallback(() => {
     stopFlagRef.current = true;
