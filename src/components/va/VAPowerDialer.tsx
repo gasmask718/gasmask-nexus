@@ -335,16 +335,18 @@ export function VAPowerDialer({ onEndSession }: VAPowerDialerProps) {
         if (error) throw error;
       }
 
-      // 2. Close the queue item
-      await (supabase as any).from('campaign_call_queue')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-        })
-        .eq('id', currentLead.queue_id);
+      // 2. Close the queue item (auto-loop only)
+      if (currentLead.queue_id) {
+        await (supabase as any).from('campaign_call_queue')
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', currentLead.queue_id);
+      }
 
       // 3. Stamp DNC if disposition demands
-      if (dispObj?.marks_do_not_call) {
+      if (dispObj?.marks_do_not_call && currentLead.store_id) {
         await (supabase as any).from('stores')
           .update({ do_not_call: true })
           .eq('id', currentLead.store_id);
