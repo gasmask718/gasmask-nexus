@@ -106,6 +106,10 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   const [manualName, setManualName] = useState<string>('');
   const [manualDialing, setManualDialing] = useState(false);
 
+  // List-mode pointer (when leadList prop is provided)
+  const [leadIndex, setLeadIndex] = useState(0);
+  const listMode = !!leadList && leadList.length > 0;
+
   // Stop flag (lets us break out of the auto-loop cleanly)
   const stopFlagRef = useRef(false);
 
