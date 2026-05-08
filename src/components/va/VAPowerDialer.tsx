@@ -173,9 +173,39 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   }, [phase]);
 
   // ── Core loop: fetch next lead ──────────────────────────────────────
+  const leadIndexRef = useRef(0);
+  useEffect(() => { leadIndexRef.current = leadIndex; }, [leadIndex]);
+
   const fetchNextLead = useCallback(async (): Promise<QueueLead | null> => {
-    if (!selectedCampaign) return null;
     setPhase('fetching_lead');
+
+    // ── List mode: explicit lead array (no queue) ─────────────────────
+    if (listMode) {
+      const idx = leadIndexRef.current;
+      if (!leadList || idx >= leadList.length) {
+        toast.success('Lead list complete');
+        setSessionRunning(false);
+        setPhase('idle');
+        return null;
+      }
+      const item = leadList[idx];
+      const cleaned = (item.phone || '').replace(/[^\d+]/g, '');
+      const digits = cleaned.replace(/\D/g, '');
+      const e164 = !cleaned ? '' : (cleaned.startsWith('+') ? cleaned : `+1${digits}`);
+      const lead: QueueLead = {
+        queue_id: '',
+        store_id: item.id || '',
+        business_name: item.name || 'Unknown',
+        phone: e164,
+        notes: null,
+        do_not_call: false,
+        attempt_number: 0,
+      };
+      setCurrentLead(lead);
+      return lead;
+    }
+
+    if (!selectedCampaign) return null;
 
     // Pull oldest queued item for the selected campaign, joined with store.
     const { data, error } = await (supabase as any)
@@ -217,7 +247,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     };
     setCurrentLead(lead);
     return lead;
-  }, [selectedCampaign]);
+  }, [selectedCampaign, listMode, leadList]);
 
   // ── Trigger call via central backend ────────────────────────────────
   const triggerCall = useCallback(async (lead: QueueLead) => {
