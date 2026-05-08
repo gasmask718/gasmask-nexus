@@ -268,7 +268,12 @@ function VADashboardInner() {
             )}
             {view === 'autodialer' && (
               <div className="max-w-3xl">
-                <VAPowerDialer onEndSession={handleEndDialerSession} />
+                <VAPowerDialer
+                  key={campaignLeadList ? `list-${campaignLeadList.length}-${campaignLeadList[0]?.phone || ''}` : 'queue'}
+                  leadList={campaignLeadList || undefined}
+                  initialCallerId={twilioNumber || undefined}
+                  onEndSession={() => { setCampaignLeadList(null); handleEndDialerSession(); }}
+                />
               </div>
             )}
             {view === 'leaderboard' && (
