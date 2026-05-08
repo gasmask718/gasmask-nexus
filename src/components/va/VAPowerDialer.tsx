@@ -606,7 +606,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
                                          'Connected'}
           </CardTitle>
           <Badge className="bg-slate-700 text-slate-300 text-[10px]">
-            {sessionRunning ? 'AUTO-LOOP' : 'PAUSED'}
+            {listMode ? `LEAD ${Math.min(leadIndex + 1, leadList!.length)} / ${leadList!.length}` : (sessionRunning ? 'AUTO-LOOP' : 'PAUSED')}
           </Badge>
         </CardHeader>
         <CardContent className="space-y-4">
