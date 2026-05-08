@@ -263,7 +263,11 @@ function VADashboardInner() {
                 </div>
               </div>
             )}
-            {view === 'autodialer' && <VAAutoDialerSection />}
+            {view === 'autodialer' && (
+              <div className="max-w-3xl">
+                <VAPowerDialer onEndSession={handleEndDialerSession} />
+              </div>
+            )}
             {view === 'leaderboard' && (
               <div className="max-w-4xl">
                 <VALeaderboard />
