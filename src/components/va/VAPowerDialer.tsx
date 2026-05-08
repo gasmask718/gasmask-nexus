@@ -400,9 +400,10 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       setCallLogId(null);
       setCurrentLead(null);
 
-      // 4. Loop
+      // 4. Advance list pointer (list-mode) and loop
+      if (listMode) setLeadIndex((i) => i + 1);
       if (sessionRunning && !stopFlagRef.current) {
-        runCycle();
+        setTimeout(() => runCycle(), 300);
       } else {
         setPhase('idle');
       }
