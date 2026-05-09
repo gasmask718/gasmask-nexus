@@ -32,7 +32,7 @@ export function useStoreTubeBrandsKpi(storeId: string | undefined | null) {
       if (ledgerRes.error) throw new Error(`TUBE_LEDGER_FAILED: ${ledgerRes.error.message}`);
 
       const since30 = Date.now() - 30 * 24 * 3600_000;
-      const ledger = (ledgerRes.data || []) as Array<{ brand: string | null; tubes_delta: number; created_at: string }>;
+      const ledger = (ledgerRes.data || []) as unknown as Array<{ brand: string | null; tubes_delta: number; created_at: string }>;
       const ledgerByBrand = new Map<string, { lifetime: number; d30: number }>();
       for (const row of ledger) {
         const key = (row.brand || '').toLowerCase().trim();
@@ -43,7 +43,7 @@ export function useStoreTubeBrandsKpi(storeId: string | undefined | null) {
         ledgerByBrand.set(key, acc);
       }
 
-      const kpiRows = (kpiRes.data || []) as Array<{
+      const kpiRows = (kpiRes.data || []) as unknown as Array<{
         brand_id: string; brand_name: string; tube_count: number | null; last_order_date: string | null;
       }>;
 
