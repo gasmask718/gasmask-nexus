@@ -70,11 +70,13 @@ export function EngagementBanner({ storeId }: Props) {
   };
   const handleAddCampaign = async () => {
     try {
+      const { data: userData } = await supabase.auth.getUser();
       const { error } = await supabase.from('campaign_queue_items' as any).insert({
         store_id: storeId,
         flow_status: flow,
         intent: 'reactivation',
         queued_at: new Date().toISOString(),
+        queued_by: userData.user?.id ?? null,
       });
       if (error) throw error;
       toast({ title: 'Added to AI Campaign', description: `${storeName} queued for reactivation.` });
