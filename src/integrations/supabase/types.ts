@@ -23733,6 +23733,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "call_priority_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       call_quality_scores: {
@@ -26898,6 +26905,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "checklist_additional_stores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       checklist_completions: {
@@ -27063,6 +27077,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "checklist_delivery_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       checklist_inventory_photos: {
@@ -27107,6 +27128,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_inventory_photos_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -27170,6 +27198,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_sticker_visibility_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -27244,6 +27279,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_tube_counts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -27322,6 +27364,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_tube_intelligence_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -29591,6 +29640,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "communication_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+          {
             foreignKeyName: "communication_events_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -29736,6 +29792,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "communication_logs_wholesaler_id_fkey"
@@ -31279,6 +31342,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_profiles_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -35434,6 +35504,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "deliveries_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       delivery_activity_log: {
@@ -38508,6 +38585,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_route_stops_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -45776,6 +45860,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "followup_recommendations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       forbidden_ai_behaviors: {
@@ -46062,6 +46153,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fraud_flags_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -50350,6 +50448,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "influencer_conversions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+          {
             foreignKeyName: "influencer_conversions_wholesale_hub_id_fkey"
             columns: ["wholesale_hub_id"]
             isOneToOne: false
@@ -51545,6 +51650,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "inventory_alerts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       inventory_audit_log: {
@@ -51783,6 +51895,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -52361,6 +52480,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_stores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -53155,6 +53281,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -55030,6 +55163,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "location_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "location_events_user_id_fkey"
@@ -58354,6 +58494,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "mission_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       mission_notifications: {
@@ -59237,6 +59384,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      neighborhood_zip_lookup: {
+        Row: {
+          boro: string | null
+          city: string | null
+          created_at: string
+          neighborhood: string
+          state: string | null
+          zip_code: string
+        }
+        Insert: {
+          boro?: string | null
+          city?: string | null
+          created_at?: string
+          neighborhood: string
+          state?: string | null
+          zip_code: string
+        }
+        Update: {
+          boro?: string | null
+          city?: string | null
+          created_at?: string
+          neighborhood?: string
+          state?: string | null
+          zip_code?: string
+        }
+        Relationships: []
       }
       neighborhoods: {
         Row: {
@@ -60618,6 +60792,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "orders_updated_by_fkey"
@@ -69589,6 +69770,7 @@ export type Database = {
           taxable: boolean | null
           track_by: string
           track_inventory: boolean | null
+          tube_count: number | null
           type: string
           unit_type: string
           units_per_box: number | null
@@ -69653,6 +69835,7 @@ export type Database = {
           taxable?: boolean | null
           track_by?: string
           track_inventory?: boolean | null
+          tube_count?: number | null
           type: string
           unit_type: string
           units_per_box?: number | null
@@ -69717,6 +69900,7 @@ export type Database = {
           taxable?: boolean | null
           track_by?: string
           track_inventory?: boolean | null
+          tube_count?: number | null
           type?: string
           unit_type?: string
           units_per_box?: number | null
@@ -72091,6 +72275,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reminders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+          {
             foreignKeyName: "reminders_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
@@ -72842,6 +73033,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "route_checkins_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       route_insights: {
@@ -72892,6 +73090,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_insights_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -73101,6 +73306,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_stops_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -73835,6 +74047,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_prospects_converted_store_id_fkey"
+            columns: ["converted_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -82962,6 +83181,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       store_credit_transactions: {
@@ -83047,6 +83273,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_credits_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -83951,6 +84184,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "store_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       store_payments: {
@@ -84069,6 +84309,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_payments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -84196,6 +84443,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_performance_snapshots_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -84362,6 +84616,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_product_state_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -84722,6 +84983,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "store_rewards_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       store_scores: {
@@ -84873,6 +85141,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "store_subscriptions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       store_transactions: {
@@ -84984,6 +85259,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "store_transactions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+          {
             foreignKeyName: "store_transactions_wallet_id_fkey"
             columns: ["wallet_id"]
             isOneToOne: false
@@ -85078,6 +85360,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_tube_inventory_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -85470,6 +85759,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "store_wallet_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       store_wholesaler_associations: {
@@ -85598,12 +85894,14 @@ export type Database = {
       }
       stores: {
         Row: {
+          activated_at: string | null
           address_city: string | null
           address_country: string | null
           address_state: string | null
           address_street: string | null
           address_zip: string | null
           alt_phone: string | null
+          assigned_ambassador_id: string | null
           boro: string | null
           company_id: string | null
           connected_group_id: string | null
@@ -85619,6 +85917,7 @@ export type Database = {
           ingestion_source: string | null
           is_simulation: boolean | null
           last_active_date: string | null
+          last_classified_at: string | null
           last_performance_update: string | null
           last_visit_date: string | null
           last_visit_driver_id: string | null
@@ -85632,6 +85931,7 @@ export type Database = {
           notes_old: string | null
           notes_overview: string | null
           open_date: string | null
+          outreach_notes: string | null
           payment_type: Database["public"]["Enums"]["payment_type"] | null
           performance_score: number | null
           performance_tier: string | null
@@ -85642,6 +85942,7 @@ export type Database = {
           responsiveness: Database["public"]["Enums"]["responsiveness"] | null
           rpa_status: string | null
           sells_flowers: boolean | null
+          source: string | null
           special_information: string | null
           status: Database["public"]["Enums"]["store_status"] | null
           sticker_door: boolean | null
@@ -85672,12 +85973,14 @@ export type Database = {
           wholesaler_name: string | null
         }
         Insert: {
+          activated_at?: string | null
           address_city?: string | null
           address_country?: string | null
           address_state?: string | null
           address_street?: string | null
           address_zip?: string | null
           alt_phone?: string | null
+          assigned_ambassador_id?: string | null
           boro?: string | null
           company_id?: string | null
           connected_group_id?: string | null
@@ -85693,6 +85996,7 @@ export type Database = {
           ingestion_source?: string | null
           is_simulation?: boolean | null
           last_active_date?: string | null
+          last_classified_at?: string | null
           last_performance_update?: string | null
           last_visit_date?: string | null
           last_visit_driver_id?: string | null
@@ -85706,6 +86010,7 @@ export type Database = {
           notes_old?: string | null
           notes_overview?: string | null
           open_date?: string | null
+          outreach_notes?: string | null
           payment_type?: Database["public"]["Enums"]["payment_type"] | null
           performance_score?: number | null
           performance_tier?: string | null
@@ -85716,6 +86021,7 @@ export type Database = {
           responsiveness?: Database["public"]["Enums"]["responsiveness"] | null
           rpa_status?: string | null
           sells_flowers?: boolean | null
+          source?: string | null
           special_information?: string | null
           status?: Database["public"]["Enums"]["store_status"] | null
           sticker_door?: boolean | null
@@ -85746,12 +86052,14 @@ export type Database = {
           wholesaler_name?: string | null
         }
         Update: {
+          activated_at?: string | null
           address_city?: string | null
           address_country?: string | null
           address_state?: string | null
           address_street?: string | null
           address_zip?: string | null
           alt_phone?: string | null
+          assigned_ambassador_id?: string | null
           boro?: string | null
           company_id?: string | null
           connected_group_id?: string | null
@@ -85767,6 +86075,7 @@ export type Database = {
           ingestion_source?: string | null
           is_simulation?: boolean | null
           last_active_date?: string | null
+          last_classified_at?: string | null
           last_performance_update?: string | null
           last_visit_date?: string | null
           last_visit_driver_id?: string | null
@@ -85780,6 +86089,7 @@ export type Database = {
           notes_old?: string | null
           notes_overview?: string | null
           open_date?: string | null
+          outreach_notes?: string | null
           payment_type?: Database["public"]["Enums"]["payment_type"] | null
           performance_score?: number | null
           performance_tier?: string | null
@@ -85790,6 +86100,7 @@ export type Database = {
           responsiveness?: Database["public"]["Enums"]["responsiveness"] | null
           rpa_status?: string | null
           sells_flowers?: boolean | null
+          source?: string | null
           special_information?: string | null
           status?: Database["public"]["Enums"]["store_status"] | null
           sticker_door?: boolean | null
@@ -85820,6 +86131,13 @@ export type Database = {
           wholesaler_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "stores_assigned_ambassador_id_fkey"
+            columns: ["assigned_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "stores_company_id_fkey"
             columns: ["company_id"]
@@ -102321,6 +102639,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "visit_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+          {
             foreignKeyName: "visit_logs_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -102398,6 +102723,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visit_products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "visit_products_visit_id_fkey"
@@ -102908,6 +103240,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voicemails_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -103657,6 +103996,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesale_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "wholesale_orders_wholesaler_id_fkey"
@@ -104943,6 +105289,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_store_map_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "wholesaler_store_map_wholesaler_id_fkey"
@@ -107939,6 +108292,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       ut_category_demand: {
@@ -108280,6 +108640,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -109087,6 +109454,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       v_contact_responsiveness_summary: {
@@ -109128,6 +109502,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -109224,6 +109605,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       v_historical_invoice_audit: {
@@ -109258,6 +109646,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -109528,6 +109923,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       v_invoice_line_units: {
@@ -109739,6 +110141,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       v_legacy_invoice_price_clusters: {
@@ -109842,6 +110251,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -110112,6 +110528,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -110607,6 +111030,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
         ]
       }
       v_store_brand_order_gaps: {
@@ -110637,6 +111067,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -110676,6 +111113,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -110726,6 +111170,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -110785,6 +111236,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -110867,6 +111325,35 @@ export type Database = {
           tube_count: number | null
         }
         Relationships: []
+      }
+      v_store_tube_summary: {
+        Row: {
+          address_zip: string | null
+          assigned_ambassador_id: string | null
+          boro: string | null
+          current_inventory_count: number | null
+          last_tube_transaction_at: string | null
+          lifetime_tubes_delivered: number | null
+          neighborhood: string | null
+          restock_status: string | null
+          status: Database["public"]["Enums"]["store_status"] | null
+          store_id: string | null
+          store_name: string | null
+          top_brand: string | null
+          tubes_last_30_days: number | null
+          tubes_last_90_days: number | null
+          tubes_sold_estimate: number | null
+          tubes_this_month: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stores_assigned_ambassador_id_fkey"
+            columns: ["assigned_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_store_tubes_on_hand: {
         Row: {
@@ -113923,7 +114410,20 @@ export type Database = {
       sampling_status_enum: "none" | "samples_given" | "trialing" | "converted"
       sms_provider: "twilio" | "biztext"
       sticker_status: "none" | "doorOnly" | "inStoreOnly" | "doorAndInStore"
-      store_status: "active" | "inactive" | "prospect" | "needsFollowUp"
+      store_status:
+        | "active"
+        | "inactive"
+        | "prospect"
+        | "needsFollowUp"
+        | "contacted"
+        | "sample_sent"
+        | "visited"
+        | "demo_scheduled"
+        | "revenue_active"
+        | "engagement_active"
+        | "dormant"
+        | "lost"
+        | "dead"
       store_type:
         | "bodega"
         | "smoke_shop"
@@ -114573,7 +115073,21 @@ export const Constants = {
       sampling_status_enum: ["none", "samples_given", "trialing", "converted"],
       sms_provider: ["twilio", "biztext"],
       sticker_status: ["none", "doorOnly", "inStoreOnly", "doorAndInStore"],
-      store_status: ["active", "inactive", "prospect", "needsFollowUp"],
+      store_status: [
+        "active",
+        "inactive",
+        "prospect",
+        "needsFollowUp",
+        "contacted",
+        "sample_sent",
+        "visited",
+        "demo_scheduled",
+        "revenue_active",
+        "engagement_active",
+        "dormant",
+        "lost",
+        "dead",
+      ],
       store_type: [
         "bodega",
         "smoke_shop",
