@@ -225,8 +225,18 @@ export type Database = {
           extracted_address: string | null
           extracted_at: string
           extracted_source: string | null
+          geocode_error: string | null
+          geocode_status: string | null
+          geocoded_at: string | null
+          google_place_id: string | null
           original_address: string | null
           original_name: string | null
+          resolved_address: string | null
+          resolved_boro: string | null
+          resolved_lat: number | null
+          resolved_lng: number | null
+          resolved_neighborhood: string | null
+          resolved_zip: string | null
           review_status: string | null
           store_id: string
         }
@@ -235,8 +245,18 @@ export type Database = {
           extracted_address?: string | null
           extracted_at?: string
           extracted_source?: string | null
+          geocode_error?: string | null
+          geocode_status?: string | null
+          geocoded_at?: string | null
+          google_place_id?: string | null
           original_address?: string | null
           original_name?: string | null
+          resolved_address?: string | null
+          resolved_boro?: string | null
+          resolved_lat?: number | null
+          resolved_lng?: number | null
+          resolved_neighborhood?: string | null
+          resolved_zip?: string | null
           review_status?: string | null
           store_id: string
         }
@@ -245,8 +265,18 @@ export type Database = {
           extracted_address?: string | null
           extracted_at?: string
           extracted_source?: string | null
+          geocode_error?: string | null
+          geocode_status?: string | null
+          geocoded_at?: string | null
+          google_place_id?: string | null
           original_address?: string | null
           original_name?: string | null
+          resolved_address?: string | null
+          resolved_boro?: string | null
+          resolved_lat?: number | null
+          resolved_lng?: number | null
+          resolved_neighborhood?: string | null
+          resolved_zip?: string | null
           review_status?: string | null
           store_id?: string
         }
@@ -45088,6 +45118,84 @@ export type Database = {
           viator_product_code?: string | null
         }
         Relationships: []
+      }
+      field_capture_queue: {
+        Row: {
+          assigned_ambassador_id: string | null
+          assigned_at: string | null
+          capture_data: Json | null
+          captured_at: string | null
+          captured_by: string | null
+          created_at: string
+          id: string
+          priority: number
+          reason: string
+          status: string
+          store_id: string
+        }
+        Insert: {
+          assigned_ambassador_id?: string | null
+          assigned_at?: string | null
+          capture_data?: Json | null
+          captured_at?: string | null
+          captured_by?: string | null
+          created_at?: string
+          id?: string
+          priority?: number
+          reason?: string
+          status?: string
+          store_id: string
+        }
+        Update: {
+          assigned_ambassador_id?: string | null
+          assigned_at?: string | null
+          capture_data?: Json | null
+          captured_at?: string | null
+          captured_by?: string | null
+          created_at?: string
+          id?: string
+          priority?: number
+          reason?: string
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_capture_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_intelligence_v"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "field_capture_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_capture_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_reactivation_data_gaps"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "field_capture_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_reactivation_targets"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "field_capture_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+        ]
       }
       field_submission_rules: {
         Row: {
