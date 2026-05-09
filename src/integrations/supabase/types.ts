@@ -114473,6 +114473,7 @@ export type Database = {
         | "lost"
         | "dead"
         | "reactivation_target"
+        | "test"
       store_type:
         | "bodega"
         | "smoke_shop"
@@ -115137,6 +115138,7 @@ export const Constants = {
         "lost",
         "dead",
         "reactivation_target",
+        "test",
       ],
       store_type: [
         "bodega",
