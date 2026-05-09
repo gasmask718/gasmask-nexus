@@ -71,6 +71,7 @@ export default function ContactSelector({
   const [activeTypes, setActiveTypes] = useState<Set<EntityType>>(new Set(["store"]));
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [flowStatus, setFlowStatus] = useState<FlowStatus>("all");
 
   const toggleType = (type: EntityType) => {
     setActiveTypes((prev) => {
