@@ -438,7 +438,17 @@ export default function FollowUpManagerPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={sortBy} onValueChange={setSortBy}>
+              <Select value={customerStatusFilter} onValueChange={(v) => setCustomerStatusFilter(v as CustomerStatusFilter)}>
+                <SelectTrigger className="w-[200px]">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Customer Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CUSTOMER_STATUS_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
                 <SelectTrigger className="w-[140px]">
                   <Calendar className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Sort by" />
