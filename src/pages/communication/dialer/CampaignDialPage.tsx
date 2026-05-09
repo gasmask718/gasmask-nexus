@@ -49,7 +49,7 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 type AudienceKey =
   | "prospects" | "stores" | "ambassadors" | "bikers"
-  | "drivers" | "customers" | "csv";
+  | "drivers" | "customers" | "prior_customers" | "csv";
 
 interface AudienceSource {
   key: AudienceKey;
