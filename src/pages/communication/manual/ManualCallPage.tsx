@@ -129,8 +129,14 @@ const ManualCallPage = () => {
       (c.organization && c.organization.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesTab = contactTab === 'all' ||
       (contactTab === 'people' && c.type === 'person') ||
-      (contactTab === 'stores' && c.type === 'store');
-    return matchesSearch && matchesTab;
+      (contactTab === 'stores' && c.type === 'store') ||
+      (contactTab === 'customers' && c.type === 'store' && priorCustomerMap.has(c.id));
+    let matchesBucket = true;
+    if (contactTab === 'customers' && priorBucket !== 'all') {
+      const seg = priorCustomerMap.get(c.id);
+      matchesBucket = seg?.flow_status === priorBucket;
+    }
+    return matchesSearch && matchesTab && matchesBucket;
   });
 
   // Load contact from URL param
