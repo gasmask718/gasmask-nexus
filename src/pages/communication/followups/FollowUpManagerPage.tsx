@@ -449,6 +449,7 @@ export default function FollowUpManagerPage() {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-[140px]">
                   <Calendar className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Sort by" />
