@@ -28,6 +28,7 @@ interface ContactSelectorProps {
 
 const ENTITY_TYPES = [
   { key: "store", label: "Stores" },
+  { key: "prior_customer", label: "Prior Customers" },
   { key: "prospect", label: "Prospects" },
   { key: "driver", label: "Drivers" },
   { key: "biker", label: "Bikers" },
@@ -39,12 +40,24 @@ const ENTITY_TYPES = [
 
 type EntityType = (typeof ENTITY_TYPES)[number]["key"];
 
+type FlowStatus = "all" | "active_flow" | "recently_quiet" | "cold" | "long_dormant";
+
+const FLOW_STATUS_META: Record<Exclude<FlowStatus, "all">, { label: string; dot: string; chip: string }> = {
+  active_flow:    { label: "Active Flow",     dot: "bg-green-500",  chip: "data-[on=true]:bg-green-500/15 data-[on=true]:border-green-500/40 data-[on=true]:text-green-400" },
+  recently_quiet: { label: "Recently Quiet",  dot: "bg-yellow-500", chip: "data-[on=true]:bg-yellow-500/15 data-[on=true]:border-yellow-500/40 data-[on=true]:text-yellow-400" },
+  cold:           { label: "Cold",            dot: "bg-red-500",    chip: "data-[on=true]:bg-red-500/15 data-[on=true]:border-red-500/40 data-[on=true]:text-red-400" },
+  long_dormant:   { label: "Long Dormant",    dot: "bg-zinc-500",   chip: "data-[on=true]:bg-zinc-500/20 data-[on=true]:border-zinc-500/40 data-[on=true]:text-zinc-300" },
+};
+
 interface ContactRow {
   key: string; // {type}:{id}
   type: EntityType;
   id: string;
   name: string;
   phone: string;
+  flow_status?: Exclude<FlowStatus, "all">;
+  lifetime_tubes?: number;
+  days_since?: number;
 }
 
 const PAGE_SIZE = 20;
