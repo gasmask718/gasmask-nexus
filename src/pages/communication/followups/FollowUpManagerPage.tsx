@@ -180,7 +180,16 @@ export default function FollowUpManagerPage() {
         item.business?.name?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesReason = reasonFilter === 'all' || item.reason === reasonFilter;
       const matchesAction = actionFilter === 'all' || item.recommended_action === actionFilter;
-      return matchesSearch && matchesReason && matchesAction;
+      let matchesCustomer = true;
+      if (customerStatusFilter !== 'all') {
+        const seg = item.store_id ? priorCustomerMap.get(item.store_id) : undefined;
+        if (customerStatusFilter === 'prospect') {
+          matchesCustomer = !seg;
+        } else {
+          matchesCustomer = seg?.flow_status === customerStatusFilter;
+        }
+      }
+      return matchesSearch && matchesReason && matchesAction && matchesCustomer;
     });
 
     filtered.sort((a, b) => {
