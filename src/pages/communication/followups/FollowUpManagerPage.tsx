@@ -496,6 +496,13 @@ export default function FollowUpManagerPage() {
             <CheckCircle className="h-3 w-3" />
             Completed
           </TabsTrigger>
+          <TabsTrigger value="prior-customers" className="gap-1">
+            <Sparkles className="h-3 w-3" />
+            Prior Customers
+            {priorCustomerCounts.total > 0 && (
+              <Badge variant="secondary" className="ml-1">{priorCustomerCounts.total}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="by-reason" className="gap-1">
             <Filter className="h-3 w-3" />
             By Reason
