@@ -1,9 +1,13 @@
 // tube-replenishment-ai
 // Tube-specific replenishment recommendations sourced from the canonical
-// v_invoice_effective_tubes view (NOT wholesale_orders). Used by the
-// dialer's "Schedule Delivery" flow to pre-fill accurate box quantities.
+// v_invoice_effective_tubes view (NOT wholesale_orders).
 //
-// Cloned from supabase/functions/replenishment-ai/index.ts (Session 7, Step 3).
+// Session 7, Step 3.5:
+//   PART A — Visit-day grouping (avg tubes per distinct visit day, not per
+//            invoice row, with 1.3x safety factor).
+//   PART B — Price-cluster verification: cross-checks each invoice's implied
+//            $/tube against legacy_invoice_price_map and emits a confidence
+//            rating that the UI can surface to the operator.
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -16,15 +20,18 @@ const corsHeaders = {
 };
 
 const TUBES_PER_BOX = 100;
+const SAFETY_FACTOR = 1.3;
 const RETAIL_PRICE_PER_BOX = 200;
 const WHOLESALE_PRICE_PER_BOX = 150;
+const PRICE_TOLERANCE = 0.10; // $/tube tolerance for cluster match
 
 interface BrandAgg {
   brand: string;
   lifetime_tubes: number;
+  visit_days: Set<string>;
   invoice_count: number;
   last_order_date: string | null;
-  avg_tubes_per_order: number;
+  tubes_by_day: Map<string, number>;
 }
 
 serve(async (req) => {
@@ -48,7 +55,7 @@ serve(async (req) => {
 
     console.log("[tube-replenishment-ai] storeId:", storeId);
 
-    // Pull store tube summary (canonical)
+    // Canonical store summary
     const { data: summary, error: sumErr } = await supabase
       .from("v_store_tube_summary")
       .select(
@@ -69,22 +76,30 @@ serve(async (req) => {
             monthly_velocity_boxes: 0,
             total_invoices: 0,
             is_wholesale: false,
+            price_verification: {
+              invoices_with_verified_pricing: 0,
+              invoices_with_inferred_pricing: 0,
+              invoices_with_unclear_pricing: 0,
+              price_clusters_used: [],
+              verification_confidence: "low",
+            },
           },
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Pull per-invoice tube counts joined with invoice brand for this store.
-    // v_invoice_effective_tubes lacks brand, so we join via invoices.
+    // Pull invoices for this store
     const { data: invoiceRows, error: invErr } = await supabase
       .from("invoices")
-      .select("id, brand, created_at")
+      .select("id, brand, total, created_at")
       .eq("store_id", storeId)
       .is("deleted_at", null);
     if (invErr) throw invErr;
 
     const invoiceIds = (invoiceRows ?? []).map((r: any) => r.id);
+
+    // Pull tube view rows
     let tubeRows: any[] = [];
     if (invoiceIds.length > 0) {
       const { data: vRows, error: vErr } = await supabase
@@ -95,40 +110,89 @@ serve(async (req) => {
       tubeRows = vRows ?? [];
     }
 
-    // Index brand by invoice_id
-    const brandByInvoice = new Map<string, string>();
-    for (const r of invoiceRows ?? []) {
-      if (r?.id) brandByInvoice.set(r.id, (r.brand || "Unknown").toString());
+    // Pull price-cluster map (small reference table)
+    const { data: clusterRows } = await supabase
+      .from("legacy_invoice_price_map")
+      .select("total_amount, price_per_unit, inferred_units, confidence_level");
+    const clusterByTotal = new Map<number, any>();
+    for (const c of clusterRows ?? []) {
+      clusterByTotal.set(Number(c.total_amount), c);
     }
 
-    // Aggregate per brand
+    // Index invoice meta + tube counts
+    const invoiceMeta = new Map<string, { brand: string; total: number; date: string | null }>();
+    for (const r of invoiceRows ?? []) {
+      invoiceMeta.set(r.id, {
+        brand: (r.brand || "Unknown").toString(),
+        total: Number(r.total) || 0,
+        date: r.created_at ? String(r.created_at).slice(0, 10) : null,
+      });
+    }
+    const tubesByInvoice = new Map<string, number>();
+    for (const tr of tubeRows) {
+      tubesByInvoice.set(tr.invoice_id, Number(tr.tube_count) || 0);
+    }
+
+    // ========== PART B: Price-cluster verification ==========
+    let verifiedCnt = 0;
+    let inferredCnt = 0;
+    let unclearCnt = 0;
+    const clusterUsage = new Map<number, number>(); // ppt → count
+
+    for (const inv of invoiceRows ?? []) {
+      const tubes = tubesByInvoice.get(inv.id);
+      const total = Number(inv.total) || 0;
+      if (!tubes || tubes <= 0) {
+        unclearCnt++;
+        continue;
+      }
+      const impliedPpt = total / tubes;
+      const cluster = clusterByTotal.get(total);
+      if (
+        cluster &&
+        Math.abs(Number(cluster.price_per_unit) - impliedPpt) < PRICE_TOLERANCE
+      ) {
+        verifiedCnt++;
+        const ppt = Math.round(Number(cluster.price_per_unit) * 100) / 100;
+        clusterUsage.set(ppt, (clusterUsage.get(ppt) ?? 0) + 1);
+      } else {
+        inferredCnt++;
+        const ppt = Math.round(impliedPpt * 100) / 100;
+        clusterUsage.set(ppt, (clusterUsage.get(ppt) ?? 0) + 1);
+      }
+    }
+    const totalEvaluated = verifiedCnt + inferredCnt + unclearCnt;
+    const verifiedPct = totalEvaluated ? verifiedCnt / totalEvaluated : 0;
+    const verificationConfidence: "high" | "medium" | "low" =
+      verifiedPct >= 0.8 ? "high" : verifiedPct >= 0.5 ? "medium" : "low";
+    const priceClustersUsed = Array.from(clusterUsage.entries())
+      .map(([price_per_tube, invoice_count]) => ({ price_per_tube, invoice_count }))
+      .sort((a, b) => b.invoice_count - a.invoice_count);
+
+    // ========== PART A: Visit-day grouping per brand ==========
     const agg = new Map<string, BrandAgg>();
     for (const tr of tubeRows) {
-      const brand = brandByInvoice.get(tr.invoice_id) || "Unknown";
+      const meta = invoiceMeta.get(tr.invoice_id);
+      const brand = meta?.brand || "Unknown";
       const tubes = Number(tr.tube_count) || 0;
-      const dateStr = tr.invoice_date as string | null;
+      const dayKey = (tr.invoice_date || meta?.date || "").slice(0, 10);
+      if (!dayKey) continue;
       const cur = agg.get(brand) ?? {
         brand,
         lifetime_tubes: 0,
+        visit_days: new Set<string>(),
         invoice_count: 0,
         last_order_date: null,
-        avg_tubes_per_order: 0,
+        tubes_by_day: new Map<string, number>(),
       };
       cur.lifetime_tubes += tubes;
       cur.invoice_count += 1;
-      if (
-        dateStr &&
-        (!cur.last_order_date ||
-          new Date(dateStr) > new Date(cur.last_order_date))
-      ) {
-        cur.last_order_date = dateStr;
+      cur.visit_days.add(dayKey);
+      cur.tubes_by_day.set(dayKey, (cur.tubes_by_day.get(dayKey) ?? 0) + tubes);
+      if (!cur.last_order_date || dayKey > cur.last_order_date) {
+        cur.last_order_date = dayKey;
       }
       agg.set(brand, cur);
-    }
-    for (const v of agg.values()) {
-      v.avg_tubes_per_order = v.invoice_count
-        ? v.lifetime_tubes / v.invoice_count
-        : 0;
     }
 
     const now = Date.now();
@@ -139,13 +203,11 @@ serve(async (req) => {
       ? Math.floor((now - lastTxn) / 86_400_000)
       : null;
 
-    // Monthly velocity in boxes (last 30d preferred; fallback to 90d/3)
     const tubes30 = Number(summary.tubes_last_30_days) || 0;
     const tubes90 = Number(summary.tubes_last_90_days) || 0;
     const monthlyTubes = tubes30 > 0 ? tubes30 : tubes90 / 3;
     const monthlyVelocityBoxes = +(monthlyTubes / TUBES_PER_BOX).toFixed(2);
 
-    // Wholesale heuristic
     const lifetimeRevenue = Number(summary.lifetime_invoice_revenue) || 0;
     const invCount = Number(summary.invoice_count) || 0;
     const avgInvoice = invCount ? lifetimeRevenue / invCount : 0;
@@ -157,14 +219,16 @@ serve(async (req) => {
 
     const inventoryCount = Number(summary.current_inventory_count) || 0;
 
-    // Build recommendations: math-driven quantities
     const ranked = Array.from(agg.values()).sort(
       (a, b) => b.lifetime_tubes - a.lifetime_tubes,
     );
 
     const recommendations = ranked.map((b) => {
-      const avgBoxes = Math.max(1, Math.round(b.avg_tubes_per_order / TUBES_PER_BOX));
-      // Subtract on-hand inventory only if recent + meaningful
+      const visitDays = b.visit_days.size || 1;
+      const avgTubesPerVisit = b.lifetime_tubes / visitDays;
+      const recBoxesRaw = (avgTubesPerVisit * SAFETY_FACTOR) / TUBES_PER_BOX;
+      const avgBoxes = Math.max(1, Math.round(recBoxesRaw));
+
       const inventoryAdj =
         inventoryCount > 0 && lastOrderDaysAgo !== null && lastOrderDaysAgo < 30
           ? Math.floor(inventoryCount / TUBES_PER_BOX)
@@ -188,12 +252,13 @@ serve(async (req) => {
         risk = Math.max(10, 30 - brandLastDays);
       }
 
+      const avgVisitTubes = Math.round(avgTubesPerVisit);
       const reason =
         timing === "urgent"
-          ? `Last ${b.brand} order was ${brandLastDays} days ago. Historical avg ${avgBoxes} boxes per delivery — overdue restock.`
+          ? `Last ${b.brand} delivery was ${brandLastDays} days ago. Across ${visitDays} visit days, store averages ${avgVisitTubes} tubes/visit (≈${avgBoxes} boxes). Overdue restock.`
           : timing === "soon"
-          ? `${b.brand} typically reorders every ~30 days. ${brandLastDays} days since last — pitch ${recommendedBoxes} boxes.`
-          : `${b.brand} on regular cadence (${brandLastDays}d). Maintain ${recommendedBoxes}-box delivery.`;
+          ? `${b.brand} typically reorders every ~30 days. ${brandLastDays} days since last visit. Avg ${avgVisitTubes} tubes/visit across ${visitDays} visit days → pitch ${recommendedBoxes} boxes.`
+          : `${b.brand} on regular cadence (${brandLastDays}d). Avg ${avgVisitTubes} tubes/visit (${visitDays} visit days) → maintain ${recommendedBoxes}-box delivery.`;
 
       return {
         brand: b.brand,
@@ -201,8 +266,15 @@ serve(async (req) => {
         recommended_tubes: recommendedBoxes * TUBES_PER_BOX,
         estimated_revenue: recommendedBoxes * pricePerBox,
         stockout_risk_score: risk,
-        reason,
         recommended_timing: timing,
+        reason,
+        debug: {
+          visit_days: visitDays,
+          avg_tubes_per_visit: avgVisitTubes,
+          safety_factor: SAFETY_FACTOR,
+          lifetime_tubes: b.lifetime_tubes,
+          invoice_rows: b.invoice_count,
+        },
       };
     });
 
@@ -216,11 +288,19 @@ serve(async (req) => {
         monthly_velocity_boxes: monthlyVelocityBoxes,
         total_invoices: invCount,
         is_wholesale: isWholesale,
+        price_verification: {
+          invoices_with_verified_pricing: verifiedCnt,
+          invoices_with_inferred_pricing: inferredCnt,
+          invoices_with_unclear_pricing: unclearCnt,
+          price_clusters_used: priceClustersUsed,
+          verification_confidence: verificationConfidence,
+          verified_pct: +(verifiedPct * 100).toFixed(1),
+        },
       },
     };
 
     console.log(
-      `[tube-replenishment-ai] ${recommendations.length} recs for ${summary.store_name}`,
+      `[tube-replenishment-ai] ${recommendations.length} recs for ${summary.store_name} | confidence=${verificationConfidence} (${verifiedCnt}/${totalEvaluated})`,
     );
 
     return new Response(JSON.stringify(payload), {
