@@ -74416,7 +74416,9 @@ export type Database = {
           brand_ids: string[] | null
           completed_at: string | null
           created_at: string | null
+          created_by: string | null
           date: string
+          end_time: string | null
           estimated_distance_km: number | null
           estimated_duration_minutes: number | null
           estimated_profit: number | null
@@ -74424,11 +74426,15 @@ export type Database = {
           is_optimized: boolean | null
           locked_at: string | null
           locked_by: string | null
+          name: string | null
+          notes: string | null
           optimization_score: number | null
           route_state: string | null
+          start_time: string | null
           started_at: string | null
           status: string | null
           territory: string | null
+          total_stops: number | null
           type: string
           vehicle_type: string | null
         }
@@ -74439,7 +74445,9 @@ export type Database = {
           brand_ids?: string[] | null
           completed_at?: string | null
           created_at?: string | null
+          created_by?: string | null
           date: string
+          end_time?: string | null
           estimated_distance_km?: number | null
           estimated_duration_minutes?: number | null
           estimated_profit?: number | null
@@ -74447,11 +74455,15 @@ export type Database = {
           is_optimized?: boolean | null
           locked_at?: string | null
           locked_by?: string | null
+          name?: string | null
+          notes?: string | null
           optimization_score?: number | null
           route_state?: string | null
+          start_time?: string | null
           started_at?: string | null
           status?: string | null
           territory?: string | null
+          total_stops?: number | null
           type: string
           vehicle_type?: string | null
         }
@@ -74462,7 +74474,9 @@ export type Database = {
           brand_ids?: string[] | null
           completed_at?: string | null
           created_at?: string | null
+          created_by?: string | null
           date?: string
+          end_time?: string | null
           estimated_distance_km?: number | null
           estimated_duration_minutes?: number | null
           estimated_profit?: number | null
@@ -74470,11 +74484,15 @@ export type Database = {
           is_optimized?: boolean | null
           locked_at?: string | null
           locked_by?: string | null
+          name?: string | null
+          notes?: string | null
           optimization_score?: number | null
           route_state?: string | null
+          start_time?: string | null
           started_at?: string | null
           status?: string | null
           territory?: string | null
+          total_stops?: number | null
           type?: string
           vehicle_type?: string | null
         }
