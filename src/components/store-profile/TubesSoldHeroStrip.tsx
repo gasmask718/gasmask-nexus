@@ -1,4 +1,4 @@
-import { Flame, TrendingUp, TrendingDown, Minus, Snowflake, Boxes, Calendar } from 'lucide-react';
+import { Flame, TrendingUp, TrendingDown, Minus, Snowflake, Boxes, Calendar, DollarSign } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProfileStatCard } from '@/components/profile/ProfileStatCard';
