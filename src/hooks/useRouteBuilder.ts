@@ -1,5 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// ROUTE BUILDER HOOK — Route Planning & Management
+// ROUTE BUILDER HOOK — Canonical writer for `routes` + `route_stops`
+// ═══════════════════════════════════════════════════════════════════════════════
+// Step 1 (B1 fix, Session 7): Repointed from ghost `route_plans` table to the
+// canonical `routes` table. Column mapping:
+//   driver_id      → routes.assigned_to
+//   region         → routes.territory
+//   scheduled_date → routes.date
+//   brand          → routes.brand_ids[] (single-element array)
+//   name/start_time/end_time/total_stops/notes/created_by → additive columns
+//   stop.order_index → route_stops.planned_order
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useState, useCallback } from 'react';
@@ -11,21 +20,19 @@ export type StopStatus = 'pending' | 'visited' | 'skipped';
 
 export interface RoutePlan {
   id: string;
-  name: string;
+  name: string | null;
   status: RouteStatus;
-  driver_id?: string;
-  brand?: string;
-  region?: string;
+  driver_id?: string | null;
+  brand?: string | null;
+  region?: string | null;
   scheduled_date: string;
-  start_time?: string;
-  end_time?: string;
+  start_time?: string | null;
+  end_time?: string | null;
   total_stops: number;
-  notes?: string;
-  created_by?: string;
+  notes?: string | null;
+  created_by?: string | null;
   created_at: string;
-  updated_at: string;
   stops?: RouteStop[];
-  driver?: { id: string; name: string };
 }
 
 export interface RouteStop {
@@ -59,6 +66,25 @@ export interface RouteFilters {
   dateTo?: string;
 }
 
+// Map a `routes` row → RoutePlan shape used by the rest of the app.
+function rowToRoutePlan(row: any): RoutePlan {
+  return {
+    id: row.id,
+    name: row.name ?? null,
+    status: (row.status as RouteStatus) ?? 'draft',
+    driver_id: row.assigned_to ?? null,
+    brand: Array.isArray(row.brand_ids) && row.brand_ids.length > 0 ? row.brand_ids[0] : null,
+    region: row.territory ?? null,
+    scheduled_date: row.date,
+    start_time: row.start_time ?? null,
+    end_time: row.end_time ?? null,
+    total_stops: row.total_stops ?? 0,
+    notes: row.notes ?? null,
+    created_by: row.created_by ?? null,
+    created_at: row.created_at,
+  };
+}
+
 export function useRouteBuilder() {
   const [routes, setRoutes] = useState<RoutePlan[]>([]);
   const [loading, setLoading] = useState(false);
@@ -75,7 +101,7 @@ export function useRouteBuilder() {
 
     if (!stores) return storeIds.map((id, idx) => ({ store_id: id, order_index: idx }));
 
-    const sorted = [...stores].sort((a, b) => 
+    const sorted = [...stores].sort((a, b) =>
       (a.name || '').localeCompare(b.name || '')
     );
 
@@ -88,7 +114,7 @@ export function useRouteBuilder() {
 
   const buildRouteFromStores = useCallback(async (options: BuildRouteOptions) => {
     const orderedStops = await autoOrderStops(options.storeIds);
-    const routeName = options.name || 
+    const routeName = options.name ||
       `${options.brand || 'Route'} - ${options.scheduledDate.toLocaleDateString()}`;
 
     return {
@@ -104,43 +130,52 @@ export function useRouteBuilder() {
     };
   }, [autoOrderStops]);
 
-  const saveRoute = useCallback(async (routePayload: Awaited<ReturnType<typeof buildRouteFromStores>>) => {
+  const saveRoute = useCallback(async (
+    routePayload: Awaited<ReturnType<typeof buildRouteFromStores>>
+  ) => {
     setLoading(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
-      
-      const { data: route, error: routeError } = await (supabase
-        .from('route_plans' as any)
+
+      const { data: route, error: routeError } = await supabase
+        .from('routes')
         .insert({
           name: routePayload.name,
+          type: 'delivery',
           status: 'scheduled',
-          driver_id: routePayload.driver_id,
-          brand: routePayload.brand,
-          region: routePayload.region,
-          scheduled_date: routePayload.scheduled_date,
-          start_time: routePayload.start_time,
+          date: routePayload.scheduled_date,
+          assigned_to: routePayload.driver_id ?? null,
+          territory: routePayload.region ?? null,
+          brand_ids: routePayload.brand ? [routePayload.brand] : [],
+          start_time: routePayload.start_time ?? null,
           total_stops: routePayload.total_stops,
-          notes: routePayload.notes,
-          created_by: userData.user?.id,
+          notes: routePayload.notes ?? null,
+          created_by: userData.user?.id ?? null,
         })
         .select()
-        .single() as any);
+        .single();
 
       if (routeError) throw routeError;
 
       if (routePayload.stops?.length && route?.id) {
-        const stopsToInsert = routePayload.stops.map(stop => ({
+        const stopsToInsert = routePayload.stops.map((stop) => ({
           route_id: route.id,
           store_id: stop.store_id,
           planned_order: stop.order_index,
           status: 'pending',
         }));
 
-        await supabase.from('route_stops').insert(stopsToInsert);
+        const { error: stopsError } = await supabase
+          .from('route_stops')
+          .insert(stopsToInsert);
+        if (stopsError) throw stopsError;
       }
 
-      toast({ title: 'Route Created', description: `${routePayload.name} with ${routePayload.total_stops} stops` });
-      return route as RoutePlan;
+      toast({
+        title: 'Route Created',
+        description: `${routePayload.name} with ${routePayload.total_stops} stops`,
+      });
+      return rowToRoutePlan(route);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create route';
       setError(message);
@@ -154,22 +189,26 @@ export function useRouteBuilder() {
   const getRoutes = useCallback(async (filters?: RouteFilters) => {
     setLoading(true);
     try {
-      let query = (supabase.from('route_plans' as any).select('*') as any).order('scheduled_date', { ascending: false });
+      let query = supabase
+        .from('routes')
+        .select('*')
+        .order('date', { ascending: false });
 
       if (filters?.status) {
         const statuses = Array.isArray(filters.status) ? filters.status : [filters.status];
         query = query.in('status', statuses);
       }
-      if (filters?.driverId) query = query.eq('driver_id', filters.driverId);
-      if (filters?.brand) query = query.eq('brand', filters.brand);
-      if (filters?.dateFrom) query = query.gte('scheduled_date', filters.dateFrom);
-      if (filters?.dateTo) query = query.lte('scheduled_date', filters.dateTo);
+      if (filters?.driverId) query = query.eq('assigned_to', filters.driverId);
+      if (filters?.brand) query = query.contains('brand_ids', [filters.brand]);
+      if (filters?.dateFrom) query = query.gte('date', filters.dateFrom);
+      if (filters?.dateTo) query = query.lte('date', filters.dateTo);
 
       const { data, error: fetchError } = await query;
       if (fetchError) throw fetchError;
 
-      setRoutes((data || []) as RoutePlan[]);
-      return (data || []) as RoutePlan[];
+      const mapped = (data || []).map(rowToRoutePlan);
+      setRoutes(mapped);
+      return mapped;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch routes');
       return [];
@@ -180,10 +219,20 @@ export function useRouteBuilder() {
 
   const getRouteWithStops = useCallback(async (routeId: string) => {
     try {
-      const { data: route } = await (supabase.from('route_plans' as any).select('*').eq('id', routeId).single() as any);
-      const { data: stops } = await supabase.from('route_stops').select('*, store:stores(id, name)').eq('route_id', routeId).order('planned_order', { ascending: true });
+      const { data: route, error: routeErr } = await supabase
+        .from('routes')
+        .select('*')
+        .eq('id', routeId)
+        .single();
+      if (routeErr) throw routeErr;
 
-      const transformedStops = (stops || []).map((stop: any) => ({
+      const { data: stops } = await supabase
+        .from('route_stops')
+        .select('*, store:stores(id, name)')
+        .eq('route_id', routeId)
+        .order('planned_order', { ascending: true });
+
+      const transformedStops: RouteStop[] = (stops || []).map((stop: any) => ({
         id: stop.id,
         route_id: stop.route_id,
         store_id: stop.store_id,
@@ -193,7 +242,7 @@ export function useRouteBuilder() {
         store: stop.store,
       }));
 
-      return { ...route, stops: transformedStops } as RoutePlan;
+      return { ...rowToRoutePlan(route), stops: transformedStops };
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch route');
       return null;
@@ -202,33 +251,72 @@ export function useRouteBuilder() {
 
   const updateRouteStatus = useCallback(async (routeId: string, status: RouteStatus) => {
     try {
-      const updateData: any = { status, updated_at: new Date().toISOString() };
-      if (status === 'completed') updateData.end_time = new Date().toTimeString().slice(0, 5);
+      const updateData: Record<string, unknown> = { status };
+      if (status === 'completed') {
+        updateData.end_time = new Date().toTimeString().slice(0, 8);
+        updateData.completed_at = new Date().toISOString();
+      }
+      if (status === 'in_progress') {
+        updateData.started_at = new Date().toISOString();
+      }
 
-      await (supabase.from('route_plans' as any).update(updateData).eq('id', routeId) as any);
-      setRoutes(prev => prev.map(r => r.id === routeId ? { ...r, status } : r));
+      const { error: updErr } = await supabase
+        .from('routes')
+        .update(updateData)
+        .eq('id', routeId);
+      if (updErr) throw updErr;
+
+      setRoutes((prev) => prev.map((r) => (r.id === routeId ? { ...r, status } : r)));
       toast({ title: 'Route Updated', description: `Route marked as ${status}` });
       return true;
     } catch (err) {
-      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed', variant: 'destructive' });
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed',
+        variant: 'destructive',
+      });
       return false;
     }
   }, [toast]);
 
-  const markStopCompleted = useCallback(async (stopId: string, status: StopStatus = 'visited', notes?: string) => {
+  const markStopCompleted = useCallback(async (
+    stopId: string,
+    status: StopStatus = 'visited',
+    notes?: string,
+  ) => {
     try {
-      const updateData: any = { status };
+      const updateData: Record<string, unknown> = { status };
       if (notes) updateData.notes_to_worker = notes;
-      await supabase.from('route_stops').update(updateData).eq('id', stopId);
+      const { error: stopErr } = await supabase
+        .from('route_stops')
+        .update(updateData)
+        .eq('id', stopId);
+      if (stopErr) throw stopErr;
+
       toast({ title: 'Stop Updated', description: `Stop marked as ${status}` });
       return true;
     } catch (err) {
-      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed', variant: 'destructive' });
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed',
+        variant: 'destructive',
+      });
       return false;
     }
   }, [toast]);
 
-  return { routes, loading, error, buildRouteFromStores, saveRoute, getRoutes, getRouteWithStops, updateRouteStatus, markStopCompleted, refetch: () => getRoutes() };
+  return {
+    routes,
+    loading,
+    error,
+    buildRouteFromStores,
+    saveRoute,
+    getRoutes,
+    getRouteWithStops,
+    updateRouteStatus,
+    markStopCompleted,
+    refetch: () => getRoutes(),
+  };
 }
 
 export default useRouteBuilder;
