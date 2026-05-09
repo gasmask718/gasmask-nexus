@@ -74,7 +74,11 @@ export default function FollowUpManagerPage() {
   const [sortBy, setSortBy] = useState('due_at');
   const [rescheduleItem, setRescheduleItem] = useState<FollowUpQueueItem | null>(null);
   const [cadenceFilter, setCadenceFilter] = useState<CadenceFilter>('all');
+  const [customerStatusFilter, setCustomerStatusFilter] = useState<CustomerStatusFilter>('all');
+  const [priorCustomerBucket, setPriorCustomerBucket] = useState<FlowStatus | 'all'>('all');
   const [executionTargets, setExecutionTargets] = useState<ExecutionTarget[]>([]);
+
+  const { map: priorCustomerMap, counts: priorCustomerCounts } = usePriorCustomerSegmentMap();
 
   const { data: stats } = useFollowUpQueueStats();
   const { data: cadenceStats } = useContactCadenceStats();
