@@ -33886,6 +33886,39 @@ export type Database = {
           },
         ]
       }
+      data_quality_flags: {
+        Row: {
+          details: Json | null
+          entity_id: string
+          entity_type: string
+          flag_type: string
+          flagged_at: string
+          id: string
+          resolved_at: string | null
+          resolved_by: string | null
+        }
+        Insert: {
+          details?: Json | null
+          entity_id: string
+          entity_type: string
+          flag_type: string
+          flagged_at?: string
+          id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Update: {
+          details?: Json | null
+          entity_id?: string
+          entity_type?: string
+          flag_type?: string
+          flagged_at?: string
+          id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Relationships: []
+      }
       dc_agents: {
         Row: {
           agent_id: string | null
@@ -85916,6 +85949,7 @@ export type Database = {
           id: string
           ingestion_source: string | null
           is_simulation: boolean | null
+          is_test_data: boolean
           last_active_date: string | null
           last_classified_at: string | null
           last_performance_update: string | null
@@ -85995,6 +86029,7 @@ export type Database = {
           id?: string
           ingestion_source?: string | null
           is_simulation?: boolean | null
+          is_test_data?: boolean
           last_active_date?: string | null
           last_classified_at?: string | null
           last_performance_update?: string | null
@@ -86074,6 +86109,7 @@ export type Database = {
           id?: string
           ingestion_source?: string | null
           is_simulation?: boolean | null
+          is_test_data?: boolean
           last_active_date?: string | null
           last_classified_at?: string | null
           last_performance_update?: string | null
