@@ -388,7 +388,43 @@ export default function ContactSelector({
         ))}
       </div>
 
-      {/* Search */}
+      {/* Prior Customers flow-status segmentation */}
+      {showFlowFilter && (
+        <div className="rounded-md border border-border/60 bg-background/50 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Prior Customer Flow
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              Lifetime tubes: <strong className="text-foreground">{priorCustomerStats.all.tubes.toLocaleString()}</strong>
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {(["all", "active_flow", "recently_quiet", "cold", "long_dormant"] as FlowStatus[]).map((s) => {
+              const meta = s === "all" ? null : FLOW_STATUS_META[s];
+              const stats = priorCustomerStats[s];
+              const on = flowStatus === s;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  data-on={on}
+                  onClick={() => { setFlowStatus(s); setPage(1); }}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors hover:bg-muted ${
+                    on ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground"
+                  } ${meta?.chip ?? ""}`}
+                >
+                  {meta && <span className={`h-2 w-2 rounded-full ${meta.dot}`} />}
+                  <span>{meta?.label ?? "All"}</span>
+                  <span className="rounded-full bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums">
+                    {stats.count.toLocaleString()}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
