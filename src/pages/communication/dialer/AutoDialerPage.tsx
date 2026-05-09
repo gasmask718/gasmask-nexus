@@ -150,6 +150,9 @@ export default function AutoDialerPage() {
         <TabsContent value="prospects" className="mt-4">
           <DialerProspectsTab />
         </TabsContent>
+        <TabsContent value="prior-customers" className="mt-4">
+          <DialerPriorCustomersTab />
+        </TabsContent>
         <TabsContent value="campaigns" className="mt-4">
           <DialerCampaignsTab />
         </TabsContent>
