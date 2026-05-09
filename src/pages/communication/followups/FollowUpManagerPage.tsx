@@ -27,6 +27,18 @@ import { ContactCadenceBoard, CadenceQuickStats } from '@/components/communicati
 import { useContactCadenceStats } from '@/hooks/useContactCadence';
 import type { CadenceFilter } from '@/hooks/useContactCadence';
 import { useStoreContactIntelligence } from '@/hooks/useStoreContactIntelligence';
+import { usePriorCustomerSegmentMap, FLOW_STATUS_META, FLOW_STATUS_ORDER, type FlowStatus } from '@/hooks/usePriorCustomerSegmentMap';
+import { Sparkles } from 'lucide-react';
+
+type CustomerStatusFilter = 'all' | FlowStatus | 'prospect';
+const CUSTOMER_STATUS_OPTIONS: { value: CustomerStatusFilter; label: string }[] = [
+  { value: 'all', label: 'All Customers' },
+  { value: 'active_flow', label: '🟢 Active Flow' },
+  { value: 'recently_quiet', label: '🟡 Recently Quiet' },
+  { value: 'cold', label: '🔴 Cold' },
+  { value: 'long_dormant', label: '⚫ Long Dormant' },
+  { value: 'prospect', label: '✨ Prospects (no orders)' },
+];
 
 const REASON_OPTIONS = [
   { value: 'all', label: 'All Reasons' },
