@@ -187,7 +187,7 @@ export default function CampaignDialPage() {
   // ─── Audience query (skipped for CSV) ──────────────────────────────────────
   const { data: audience, isLoading: audienceLoading } = useQuery({
     queryKey: ["campaign-dial:audience", audienceKey, page, search],
-    enabled: audienceKey !== "csv" && !!source.table,
+    enabled: audienceKey !== "csv" && audienceKey !== "prior_customers" && !!source.table,
     queryFn: async () => {
       const from = (page - 1) * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
