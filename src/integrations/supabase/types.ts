@@ -113589,6 +113589,8 @@ export type Database = {
           top_brand: string | null
           tubes_last_30_days: number | null
           tubes_last_90_days: number | null
+          tubes_mom_delta_pct: number | null
+          tubes_prior_month: number | null
           tubes_sold_estimate: number | null
           tubes_this_month: number | null
         }
