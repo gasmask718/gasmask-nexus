@@ -627,6 +627,7 @@ const Stores = () => {
   const { data: tubeKPIMap, isLoading: kpiLoading } = useStoreTubeKPIBatch(paginatedStoreIds);
   const { data: tubeIntelMap } = useStoreTubeIntelSummaryBatch(paginatedStoreIds);
   const { data: losMap } = useLastOrderSnapshotBatch(paginatedStoreIds);
+  const { map: tubeSummaryMap } = useStoreTubeSummariesBulk();
 
   const formatBrandName = (brand: string) => {
     const normalized = brand.toLowerCase();
@@ -1182,12 +1183,34 @@ const Stores = () => {
                        dataSource={t('card.tube_inventory.source') || 'v_store_tube_kpi'}
                        variant="inline"
                      />
-                      <StoreKPIBadge
-                        summary={tubeKPIMap?.get(store.id)}
-                        isLoading={kpiLoading}
-                        intelSummary={tubeIntelMap?.get(store.id)}
-                      />
-                   </div>
+                       <StoreKPIBadge
+                         summary={tubeKPIMap?.get(store.id)}
+                         isLoading={kpiLoading}
+                         intelSummary={tubeIntelMap?.get(store.id)}
+                       />
+                       {(() => {
+                         const ts = tubeSummaryMap.get(store.id);
+                         const sold = Number(ts?.lifetime_tubes_delivered || 0);
+                         const sold30 = Number(ts?.tubes_last_30_days || 0);
+                         const onHand = Number(ts?.current_inventory_count || 0);
+                         return (
+                           <div className="flex items-center gap-3 mt-2 text-xs">
+                             <span className="flex items-center gap-1 text-blue-600" title="On hand">
+                               📦 <span className="font-mono font-semibold">{onHand.toLocaleString()}</span>
+                               <span className="text-muted-foreground">on hand</span>
+                             </span>
+                             <span className="flex items-center gap-1 text-red-600" title="Lifetime sold">
+                               🔥 <span className="font-mono font-semibold">{sold.toLocaleString()}</span>
+                               <span className="text-muted-foreground">sold</span>
+                             </span>
+                             <span className="flex items-center gap-1 text-red-500" title="Last 30 days sold">
+                               📈 <span className="font-mono font-semibold">{sold30.toLocaleString()}</span>
+                               <span className="text-muted-foreground">30d</span>
+                             </span>
+                           </div>
+                         );
+                       })()}
+                    </div>
                 </CardContent>
               </Card>
             );
