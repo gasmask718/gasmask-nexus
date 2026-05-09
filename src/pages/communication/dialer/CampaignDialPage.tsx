@@ -30,13 +30,19 @@ import {
   Phone, Users, Bot, Rocket, Search, Upload, Plus, Trash2, Activity,
   CheckCircle2, XCircle, Clock, Mic, PhoneForwarded, MessageSquare,
   Pause, Play, Square, Target, FileText, RotateCcw, AlertTriangle,
-  Building2, Bike, Truck, UserPlus, Store, Heart, Hash, Loader2,
+  Building2, Bike, Truck, UserPlus, Store, Heart, Hash, Loader2, Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { CallTimelineDrawer } from "@/components/dialer/CallTimelineDrawer";
+import {
+  usePriorCustomerSegmentMap,
+  FLOW_STATUS_META,
+  FLOW_STATUS_ORDER,
+  type FlowStatus,
+} from "@/hooks/usePriorCustomerSegmentMap";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Audience source registry — all 7 categories wired to authoritative tables.
