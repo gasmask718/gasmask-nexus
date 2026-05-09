@@ -51,7 +51,7 @@ export function EngagementBanner({ storeId }: Props) {
   const days = seg.days_since_last_order ?? 0;
   const tubes = seg.lifetime_tubes ?? 0;
   const topBrand = tubeSummary.data?.top_brand || null;
-  const phone = phoneQuery.data?.phone || seg.phone || null;
+  const phone = phoneQuery.data?.phone || (seg as any).phone || null;
   const storeName = phoneQuery.data?.name || seg.store_name || 'this customer';
 
   const body = flow === 'active_flow'
