@@ -476,7 +476,7 @@ export default function CampaignDialPage() {
           </CardHeader>
           <CardContent className="flex-1 flex flex-col overflow-hidden gap-3">
             {/* Source picker */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-8 gap-1">
               {AUDIENCE_SOURCES.map((s) => {
                 const Icon = s.icon;
                 const active = s.key === audienceKey;
