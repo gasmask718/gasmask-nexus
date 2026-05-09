@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Headphones, Store, Target, Users, History, Settings, AlertTriangle, Radio, Mic, Disc, PhoneOff } from 'lucide-react';
+import { Phone, Headphones, Store, Target, Users, History, Settings, AlertTriangle, Radio, Mic, Disc, PhoneOff, Sparkles } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
