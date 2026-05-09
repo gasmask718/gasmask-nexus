@@ -1,4 +1,4 @@
-import { Flame, TrendingUp, TrendingDown, Minus, Snowflake, Boxes, Calendar } from 'lucide-react';
+import { Flame, TrendingUp, TrendingDown, Minus, Snowflake, Boxes, Calendar, DollarSign } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProfileStatCard } from '@/components/profile/ProfileStatCard';
@@ -30,8 +30,8 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
 
   if (summary.isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-        {[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-20" />)}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+        {[0, 1, 2, 3, 4].map(i => <Skeleton key={i} className="h-20" />)}
       </div>
     );
   }
@@ -43,7 +43,9 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
   const s = summary.data;
   if (!s) return null;
 
-  const lifetime = Number(s.lifetime_tubes_delivered || 0);
+  const lifetime = Number(s.lifetime_tubes_sold ?? s.lifetime_tubes_delivered ?? 0);
+  const lifetimeRevenue = Number(s.lifetime_invoice_revenue || 0);
+  const invoiceCount = Number(s.invoice_count || 0);
   const thisMonth = Number(s.tubes_this_month || 0);
   const last30 = Number(s.tubes_last_30_days || 0);
   const onHand = Number(s.current_inventory_count || 0);
@@ -81,7 +83,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -137,6 +139,22 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
               <div className="min-w-0">
                 <p className="text-2xl font-bold text-blue-600">{fmt(onHand)}</p>
                 <p className={cn('text-xs', restock.cls)}>{restock.label}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-emerald-500/15">
+                <DollarSign className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-2xl font-bold text-emerald-600">${lifetimeRevenue.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {invoiceCount.toLocaleString()} invoice{invoiceCount === 1 ? '' : 's'}
+                </p>
               </div>
             </div>
           </CardContent>
