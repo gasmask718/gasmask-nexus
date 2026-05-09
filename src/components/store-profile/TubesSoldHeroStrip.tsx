@@ -30,8 +30,8 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
 
   if (summary.isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-        {[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-20" />)}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+        {[0, 1, 2, 3, 4].map(i => <Skeleton key={i} className="h-20" />)}
       </div>
     );
   }
