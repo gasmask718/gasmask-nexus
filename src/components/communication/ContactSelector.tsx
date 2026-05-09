@@ -285,14 +285,35 @@ export default function ContactSelector({
     enabled: activeTypes.size > 0,
   });
 
-  // Filter by search
+  // Flow status counts (Prior Customers segmentation)
+  const priorCustomerStats = useMemo(() => {
+    const buckets: Record<string, { count: number; tubes: number }> = {
+      all: { count: 0, tubes: 0 },
+      active_flow: { count: 0, tubes: 0 },
+      recently_quiet: { count: 0, tubes: 0 },
+      cold: { count: 0, tubes: 0 },
+      long_dormant: { count: 0, tubes: 0 },
+    };
+    for (const c of allContacts) {
+      if (c.type !== "prior_customer" || !c.flow_status) continue;
+      buckets.all.count++; buckets.all.tubes += c.lifetime_tubes || 0;
+      buckets[c.flow_status].count++;
+      buckets[c.flow_status].tubes += c.lifetime_tubes || 0;
+    }
+    return buckets;
+  }, [allContacts]);
+
+  const showFlowFilter = activeTypes.has("prior_customer");
+
+  // Filter by search + flow status
   const filtered = useMemo(() => {
-    if (!search.trim()) return allContacts;
-    const q = search.toLowerCase();
-    return allContacts.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.phone.includes(q)
-    );
-  }, [allContacts, search]);
+    const q = search.trim().toLowerCase();
+    return allContacts.filter((c) => {
+      if (showFlowFilter && flowStatus !== "all" && c.type === "prior_customer" && c.flow_status !== flowStatus) return false;
+      if (!q) return true;
+      return c.name.toLowerCase().includes(q) || c.phone.includes(q);
+    });
+  }, [allContacts, search, flowStatus, showFlowFilter]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
