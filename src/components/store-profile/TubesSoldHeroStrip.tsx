@@ -193,6 +193,11 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
                 );
               })}
             </div>
+            {lifetime > 0 && (
+              <p className="text-[11px] text-muted-foreground mt-2 italic">
+                Brand attribution available for {Math.min(100, Math.round((brandTotal / lifetime) * 100))}% of lifetime tubes. Historical operator-verified attributions don't include per-brand detail.
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
