@@ -11,8 +11,10 @@ export interface StoreTubeSummary {
   status: string | null;
   assigned_ambassador_id: string | null;
   lifetime_tubes_delivered: number | null;
+  lifetime_tubes_sold: number | null;
+  lifetime_invoice_revenue: number | null;
+  invoice_count: number | null;
   current_inventory_count: number | null;
-  tubes_sold_estimate: number | null;
   tubes_last_30_days: number | null;
   tubes_this_month: number | null;
   tubes_last_90_days: number | null;
