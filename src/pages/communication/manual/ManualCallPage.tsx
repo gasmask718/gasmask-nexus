@@ -39,6 +39,8 @@ const ManualCallPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [contactTab, setContactTab] = useState('all');
+  const [priorBucket, setPriorBucket] = useState<FlowStatus | 'all'>('all');
+  const { map: priorCustomerMap, counts: priorCounts } = usePriorCustomerSegmentMap();
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customNumber, setCustomNumber] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
