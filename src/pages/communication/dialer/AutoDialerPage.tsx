@@ -115,6 +115,12 @@ export default function AutoDialerPage() {
           <TabsTrigger value="prospects" className="gap-1.5 text-xs">
             <Target className="h-3.5 w-3.5" /> Prospects
           </TabsTrigger>
+          <TabsTrigger value="prior-customers" className="gap-1.5 text-xs">
+            <Sparkles className="h-3.5 w-3.5" /> Prior Customers
+            {priorCustomerCounts.total > 0 && (
+              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">{priorCustomerCounts.total}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="campaigns" className="gap-1.5 text-xs">
             <Users className="h-3.5 w-3.5" /> Campaigns
           </TabsTrigger>
