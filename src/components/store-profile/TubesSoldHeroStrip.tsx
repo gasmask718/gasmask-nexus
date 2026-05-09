@@ -43,7 +43,9 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
   const s = summary.data;
   if (!s) return null;
 
-  const lifetime = Number(s.lifetime_tubes_delivered || 0);
+  const lifetime = Number(s.lifetime_tubes_sold ?? s.lifetime_tubes_delivered ?? 0);
+  const lifetimeRevenue = Number(s.lifetime_invoice_revenue || 0);
+  const invoiceCount = Number(s.invoice_count || 0);
   const thisMonth = Number(s.tubes_this_month || 0);
   const last30 = Number(s.tubes_last_30_days || 0);
   const onHand = Number(s.current_inventory_count || 0);
