@@ -117,6 +117,36 @@ export default function ContactSelector({
           })()
         );
       }
+      if (types.includes("prior_customer")) {
+        fetchers.push(
+          (async () => {
+            let p = 0;
+            const PAGE = 1000;
+            while (true) {
+              const { data } = await (supabase as any)
+                .from("v_prior_customer_segments")
+                .select("store_id, store_name, phone, flow_status, lifetime_tubes, days_since_last_order")
+                .order("lifetime_tubes", { ascending: false })
+                .range(p * PAGE, (p + 1) * PAGE - 1);
+              if (!data?.length) break;
+              data.forEach((r: any) =>
+                rows.push({
+                  key: `prior_customer:${r.store_id}`,
+                  type: "prior_customer",
+                  id: r.store_id,
+                  name: `${r.store_name || "Unknown"} · ${(r.lifetime_tubes || 0).toLocaleString()} tubes`,
+                  phone: r.phone || "",
+                  flow_status: r.flow_status,
+                  lifetime_tubes: r.lifetime_tubes || 0,
+                  days_since: r.days_since_last_order ?? undefined,
+                })
+              );
+              if (data.length < PAGE) break;
+              p++;
+            }
+          })()
+        );
+      }
       if (types.includes("prospect")) {
         fetchers.push(
           (supabase as any)
