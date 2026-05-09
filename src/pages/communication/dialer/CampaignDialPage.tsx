@@ -70,6 +70,7 @@ const AUDIENCE_SOURCES: AudienceSource[] = [
   { key: "bikers",      label: "Bikers",          icon: Bike,        table: "bikers",               nameCol: "full_name",  phoneCol: "phone",         searchCols: ["full_name", "phone"],            description: "Last-mile bikers" },
   { key: "drivers",     label: "Drivers",         icon: Truck,       table: "drivers",              nameCol: "full_name",  phoneCol: "phone",         searchCols: ["full_name", "phone"],            description: "Logistics drivers" },
   { key: "customers",   label: "Customers (CRM)", icon: Heart,       table: "crm_customers",        nameCol: "name",       phoneCol: "phone",         searchCols: ["name", "phone", "city"],         description: "CRM customer list" },
+  { key: "prior_customers", label: "Prior Customers", icon: Sparkles, table: null,                  nameCol: "store_name", phoneCol: "phone",         searchCols: [],                                 description: "Past buyers segmented by recency" },
   { key: "csv",         label: "CSV / Manual",    icon: Upload,      table: null,                   nameCol: "",           phoneCol: "",              searchCols: [],                                 description: "Paste numbers or upload CSV" },
 ];
 
