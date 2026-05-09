@@ -21,6 +21,7 @@ import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeCon
 import { useGlobalTags } from '@/hooks/useGlobalTags';
 import { useStoreProductCounts } from '@/hooks/useProductStoreAssignments';
 import { useStoreTubeKPIBatch } from '@/hooks/useStoreTubeKPIBatch';
+import { useStoreTubeSummariesBulk } from '@/hooks/useStoreTubeSummariesBulk';
 import { useStoreTubeIntelSummaryBatch } from '@/hooks/useStoreTubeIntelSummary';
 import { useLastOrderSnapshotBatch } from '@/hooks/useLastOrderSnapshot';
 import { StoreKPIBadge } from '@/components/store/StoreKPIBadge';
