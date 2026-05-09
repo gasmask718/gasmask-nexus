@@ -143,6 +143,22 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-emerald-500/15">
+                <DollarSign className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-2xl font-bold text-emerald-600">${lifetimeRevenue.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {invoiceCount.toLocaleString()} invoice{invoiceCount === 1 ? '' : 's'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {brandTotal > 0 && (
