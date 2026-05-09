@@ -25,6 +25,7 @@ export default function AutoDialerPage() {
   const { currentBusiness } = useBusiness();
   const bizId = currentBusiness?.id;
   const [activeTab, setActiveTab] = useState('console');
+  const { counts: priorCustomerCounts } = usePriorCustomerSegmentMap();
 
   // Status banner data
   const { data: queueCount = 0 } = useQuery({
