@@ -526,6 +526,7 @@ const RouteEnginePage = lazy(() => import('@/pages/gasmask/RouteEnginePage'));
 const GasmaskDriverRoutePage = lazy(() => import('@/pages/gasmask/DriverRoutePage'));
 const AgentCenterPage = lazy(() => import('@/pages/gasmask/AgentCenterPage'));
 const NoteCleanerPage = lazy(() => import('@/pages/gasmask/NoteCleanerPage'));
+const StoreIntelligencePage = lazy(() => import('@/pages/gasmask/StoreIntelligencePage'));
 const CommunicationOverview = lazy(() => import('@/pages/communication/CommunicationOverview'));
 const CommunicationCampaigns = lazy(() => import('@/pages/communication/CommunicationCampaigns'));
 const CommunicationCampaignNew = lazy(() => import('@/pages/communication/CommunicationCampaignNew'));
