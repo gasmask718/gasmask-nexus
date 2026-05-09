@@ -25436,6 +25436,91 @@ export type Database = {
           },
         ]
       }
+      campaign_queue_items: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          flow_status: string | null
+          id: string
+          intent: string
+          notes: string | null
+          processed: boolean
+          processed_at: string | null
+          queued_at: string
+          queued_by: string | null
+          store_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          flow_status?: string | null
+          id?: string
+          intent?: string
+          notes?: string | null
+          processed?: boolean
+          processed_at?: string | null
+          queued_at?: string
+          queued_by?: string | null
+          store_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          flow_status?: string | null
+          id?: string
+          intent?: string
+          notes?: string | null
+          processed?: boolean
+          processed_at?: string | null
+          queued_at?: string
+          queued_by?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_queue_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_intelligence_v"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "campaign_queue_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_queue_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_field_capture_queue"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "campaign_queue_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_reactivation_data_gaps"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "campaign_queue_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_reactivation_targets"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "campaign_queue_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       campaign_recipients: {
         Row: {
           campaign_id: string
