@@ -283,13 +283,37 @@ const ManualCallPage = () => {
             />
 
             <div className="flex gap-1">
-              {['all', 'people', 'stores'].map(tab => (
+              {['all', 'people', 'stores', 'customers'].map(tab => (
                 <Button key={tab} size="sm" variant={contactTab === tab ? 'default' : 'ghost'}
                   className="h-6 text-xs flex-1 capitalize" onClick={() => setContactTab(tab)}>
-                  {tab}
+                  {tab === 'customers' ? <><Sparkles className="h-3 w-3 mr-0.5" />Customers</> : tab}
                 </Button>
               ))}
             </div>
+
+            {contactTab === 'customers' && (
+              <div className="flex flex-wrap gap-1">
+                <Button
+                  size="sm"
+                  variant={priorBucket === 'all' ? 'secondary' : 'ghost'}
+                  className="h-5 text-[10px] px-1.5"
+                  onClick={() => setPriorBucket('all')}
+                >
+                  All ({priorCounts.total})
+                </Button>
+                {FLOW_STATUS_ORDER.map(s => (
+                  <Button
+                    key={s}
+                    size="sm"
+                    variant={priorBucket === s ? 'secondary' : 'ghost'}
+                    className="h-5 text-[10px] px-1.5"
+                    onClick={() => setPriorBucket(s)}
+                  >
+                    {FLOW_STATUS_META[s].emoji} {priorCounts[s]}
+                  </Button>
+                ))}
+              </div>
+            )}
 
             <ScrollArea className="h-[calc(100vh-380px)] min-h-[300px]">
               {contactsLoading ? (
