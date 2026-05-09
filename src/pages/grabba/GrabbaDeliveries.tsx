@@ -1,3 +1,8 @@
+/**
+ * @deprecated driver_routes is legacy as of 2026-05-09.
+ * Superseded by canonical `routes` + `route_stops`.
+ * This consumer is preserved for historical data access only.
+ */
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";

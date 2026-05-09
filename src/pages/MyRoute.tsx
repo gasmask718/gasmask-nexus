@@ -1,3 +1,9 @@
+/**
+ * @deprecated routes_generated is legacy as of 2026-05-09.
+ * Use the canonical `routes` table instead.
+ * This consumer is preserved for historical data access only.
+ * Do not write new logic against routes_generated.
+ */
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";

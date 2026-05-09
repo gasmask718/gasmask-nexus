@@ -1,3 +1,8 @@
+/**
+ * @deprecated driver_routes is legacy as of 2026-05-09.
+ * Superseded by canonical `routes` + `route_stops`.
+ * This consumer is preserved for historical data access only.
+ */
 // Universal Action Modals for Grabba Skyscraper
 // Provides consistent modal UIs for all common actions
 

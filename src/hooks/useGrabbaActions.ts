@@ -1,3 +1,8 @@
+/**
+ * @deprecated driver_routes is legacy as of 2026-05-09.
+ * Superseded by canonical `routes` + `route_stops`.
+ * This consumer is preserved for historical data access only.
+ */
 // Universal Action Hooks for Grabba Skyscraper
 // Centralizes all common CRUD operations and actions across floors
 
