@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Headphones, Store, Target, Users, History, Settings, AlertTriangle, Radio, Mic, Disc, PhoneOff } from 'lucide-react';
+import { Phone, Headphones, Store, Target, Users, History, Settings, AlertTriangle, Radio, Mic, Disc, PhoneOff, Sparkles } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
@@ -18,11 +18,14 @@ import DialerCampaignsTab from './tabs/DialerCampaignsTab';
 import DialerLiveCallsTab from './tabs/DialerLiveCallsTab';
 import CallRecordingsTab from '@/components/dialer/CallRecordingsTab';
 import MissedCallsTab from '@/components/dialer/MissedCallsTab';
+import DialerPriorCustomersTab from './tabs/DialerPriorCustomersTab';
+import { usePriorCustomerSegmentMap } from '@/hooks/usePriorCustomerSegmentMap';
 
 export default function AutoDialerPage() {
   const { currentBusiness } = useBusiness();
   const bizId = currentBusiness?.id;
   const [activeTab, setActiveTab] = useState('console');
+  const { counts: priorCustomerCounts } = usePriorCustomerSegmentMap();
 
   // Status banner data
   const { data: queueCount = 0 } = useQuery({
@@ -112,6 +115,12 @@ export default function AutoDialerPage() {
           <TabsTrigger value="prospects" className="gap-1.5 text-xs">
             <Target className="h-3.5 w-3.5" /> Prospects
           </TabsTrigger>
+          <TabsTrigger value="prior-customers" className="gap-1.5 text-xs">
+            <Sparkles className="h-3.5 w-3.5" /> Prior Customers
+            {priorCustomerCounts.total > 0 && (
+              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">{priorCustomerCounts.total}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="campaigns" className="gap-1.5 text-xs">
             <Users className="h-3.5 w-3.5" /> Campaigns
           </TabsTrigger>
@@ -140,6 +149,9 @@ export default function AutoDialerPage() {
         </TabsContent>
         <TabsContent value="prospects" className="mt-4">
           <DialerProspectsTab />
+        </TabsContent>
+        <TabsContent value="prior-customers" className="mt-4">
+          <DialerPriorCustomersTab />
         </TabsContent>
         <TabsContent value="campaigns" className="mt-4">
           <DialerCampaignsTab />

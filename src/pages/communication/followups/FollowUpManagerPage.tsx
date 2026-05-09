@@ -27,6 +27,18 @@ import { ContactCadenceBoard, CadenceQuickStats } from '@/components/communicati
 import { useContactCadenceStats } from '@/hooks/useContactCadence';
 import type { CadenceFilter } from '@/hooks/useContactCadence';
 import { useStoreContactIntelligence } from '@/hooks/useStoreContactIntelligence';
+import { usePriorCustomerSegmentMap, FLOW_STATUS_META, FLOW_STATUS_ORDER, type FlowStatus } from '@/hooks/usePriorCustomerSegmentMap';
+import { Sparkles } from 'lucide-react';
+
+type CustomerStatusFilter = 'all' | FlowStatus | 'prospect';
+const CUSTOMER_STATUS_OPTIONS: { value: CustomerStatusFilter; label: string }[] = [
+  { value: 'all', label: 'All Customers' },
+  { value: 'active_flow', label: '🟢 Active Flow' },
+  { value: 'recently_quiet', label: '🟡 Recently Quiet' },
+  { value: 'cold', label: '🔴 Cold' },
+  { value: 'long_dormant', label: '⚫ Long Dormant' },
+  { value: 'prospect', label: '✨ Prospects (no orders)' },
+];
 
 const REASON_OPTIONS = [
   { value: 'all', label: 'All Reasons' },
@@ -62,7 +74,11 @@ export default function FollowUpManagerPage() {
   const [sortBy, setSortBy] = useState('due_at');
   const [rescheduleItem, setRescheduleItem] = useState<FollowUpQueueItem | null>(null);
   const [cadenceFilter, setCadenceFilter] = useState<CadenceFilter>('all');
+  const [customerStatusFilter, setCustomerStatusFilter] = useState<CustomerStatusFilter>('all');
+  const [priorCustomerBucket, setPriorCustomerBucket] = useState<FlowStatus | 'all'>('all');
   const [executionTargets, setExecutionTargets] = useState<ExecutionTarget[]>([]);
+
+  const { map: priorCustomerMap, counts: priorCustomerCounts } = usePriorCustomerSegmentMap();
 
   const { data: stats } = useFollowUpQueueStats();
   const { data: cadenceStats } = useContactCadenceStats();
@@ -164,7 +180,16 @@ export default function FollowUpManagerPage() {
         item.business?.name?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesReason = reasonFilter === 'all' || item.reason === reasonFilter;
       const matchesAction = actionFilter === 'all' || item.recommended_action === actionFilter;
-      return matchesSearch && matchesReason && matchesAction;
+      let matchesCustomer = true;
+      if (customerStatusFilter !== 'all') {
+        const seg = item.store_id ? priorCustomerMap.get(item.store_id) : undefined;
+        if (customerStatusFilter === 'prospect') {
+          matchesCustomer = !seg;
+        } else {
+          matchesCustomer = seg?.flow_status === customerStatusFilter;
+        }
+      }
+      return matchesSearch && matchesReason && matchesAction && matchesCustomer;
     });
 
     filtered.sort((a, b) => {
@@ -413,6 +438,17 @@ export default function FollowUpManagerPage() {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={customerStatusFilter} onValueChange={(v) => setCustomerStatusFilter(v as CustomerStatusFilter)}>
+                <SelectTrigger className="w-[200px]">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Customer Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CUSTOMER_STATUS_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-[140px]">
                   <Calendar className="h-4 w-4 mr-2" />
@@ -459,6 +495,13 @@ export default function FollowUpManagerPage() {
           <TabsTrigger value="completed" className="gap-1">
             <CheckCircle className="h-3 w-3" />
             Completed
+          </TabsTrigger>
+          <TabsTrigger value="prior-customers" className="gap-1">
+            <Sparkles className="h-3 w-3" />
+            Prior Customers
+            {priorCustomerCounts.total > 0 && (
+              <Badge variant="secondary" className="ml-1">{priorCustomerCounts.total}</Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="by-reason" className="gap-1">
             <Filter className="h-3 w-3" />
@@ -507,6 +550,48 @@ export default function FollowUpManagerPage() {
 
         <TabsContent value="completed" className="mt-4">
           {renderFollowUpList(completedFollowUps, completedLoading, 'No completed follow-ups', false)}
+        </TabsContent>
+
+        <TabsContent value="prior-customers" className="mt-4 space-y-4">
+          {/* Bucket sub-chips */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={priorCustomerBucket === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setPriorCustomerBucket('all')}
+            >
+              All <Badge variant="secondary" className="ml-2">{priorCustomerCounts.total}</Badge>
+            </Button>
+            {FLOW_STATUS_ORDER.map(s => {
+              const meta = FLOW_STATUS_META[s];
+              const active = priorCustomerBucket === s;
+              return (
+                <Button
+                  key={s}
+                  variant={active ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPriorCustomerBucket(s)}
+                  className={active ? '' : meta.color}
+                >
+                  {meta.emoji} {meta.label}
+                  <Badge variant="secondary" className="ml-2">{priorCustomerCounts[s]}</Badge>
+                </Button>
+              );
+            })}
+          </div>
+
+          {(() => {
+            const priorIds = new Set(
+              Array.from(priorCustomerMap.entries())
+                .filter(([, seg]) => priorCustomerBucket === 'all' || seg.flow_status === priorCustomerBucket)
+                .map(([id]) => id)
+            );
+            const items = allFollowUps.filter(f => f.store_id && priorIds.has(f.store_id));
+            const emptyMsg = priorCustomerBucket === 'all'
+              ? 'No active follow-ups for prior customers'
+              : `No active follow-ups for ${FLOW_STATUS_META[priorCustomerBucket as FlowStatus].label} customers`;
+            return renderFollowUpList(items, false, emptyMsg);
+          })()}
         </TabsContent>
 
         <TabsContent value="by-reason" className="mt-4">

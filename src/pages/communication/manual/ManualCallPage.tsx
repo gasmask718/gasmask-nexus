@@ -9,12 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Phone, PhoneCall, PhoneOff, Search, User, Clock, MessageSquare, Save, Tag, Store, Plus, History, Users } from 'lucide-react';
+import { Phone, PhoneCall, PhoneOff, Search, User, Clock, MessageSquare, Save, Tag, Store, Plus, History, Users, Sparkles } from 'lucide-react';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import { usePriorCustomerSegmentMap, FLOW_STATUS_META, FLOW_STATUS_ORDER, type FlowStatus } from '@/hooks/usePriorCustomerSegmentMap';
 
 interface Contact {
   id: string;
@@ -38,6 +39,8 @@ const ManualCallPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [contactTab, setContactTab] = useState('all');
+  const [priorBucket, setPriorBucket] = useState<FlowStatus | 'all'>('all');
+  const { map: priorCustomerMap, counts: priorCounts } = usePriorCustomerSegmentMap();
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customNumber, setCustomNumber] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -126,8 +129,14 @@ const ManualCallPage = () => {
       (c.organization && c.organization.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesTab = contactTab === 'all' ||
       (contactTab === 'people' && c.type === 'person') ||
-      (contactTab === 'stores' && c.type === 'store');
-    return matchesSearch && matchesTab;
+      (contactTab === 'stores' && c.type === 'store') ||
+      (contactTab === 'customers' && c.type === 'store' && priorCustomerMap.has(c.id));
+    let matchesBucket = true;
+    if (contactTab === 'customers' && priorBucket !== 'all') {
+      const seg = priorCustomerMap.get(c.id);
+      matchesBucket = seg?.flow_status === priorBucket;
+    }
+    return matchesSearch && matchesTab && matchesBucket;
   });
 
   // Load contact from URL param
@@ -274,13 +283,37 @@ const ManualCallPage = () => {
             />
 
             <div className="flex gap-1">
-              {['all', 'people', 'stores'].map(tab => (
+              {['all', 'people', 'stores', 'customers'].map(tab => (
                 <Button key={tab} size="sm" variant={contactTab === tab ? 'default' : 'ghost'}
                   className="h-6 text-xs flex-1 capitalize" onClick={() => setContactTab(tab)}>
-                  {tab}
+                  {tab === 'customers' ? <><Sparkles className="h-3 w-3 mr-0.5" />Customers</> : tab}
                 </Button>
               ))}
             </div>
+
+            {contactTab === 'customers' && (
+              <div className="flex flex-wrap gap-1">
+                <Button
+                  size="sm"
+                  variant={priorBucket === 'all' ? 'secondary' : 'ghost'}
+                  className="h-5 text-[10px] px-1.5"
+                  onClick={() => setPriorBucket('all')}
+                >
+                  All ({priorCounts.total})
+                </Button>
+                {FLOW_STATUS_ORDER.map(s => (
+                  <Button
+                    key={s}
+                    size="sm"
+                    variant={priorBucket === s ? 'secondary' : 'ghost'}
+                    className="h-5 text-[10px] px-1.5"
+                    onClick={() => setPriorBucket(s)}
+                  >
+                    {FLOW_STATUS_META[s].emoji} {priorCounts[s]}
+                  </Button>
+                ))}
+              </div>
+            )}
 
             <ScrollArea className="h-[calc(100vh-380px)] min-h-[300px]">
               {contactsLoading ? (

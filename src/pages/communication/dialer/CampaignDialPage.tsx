@@ -30,20 +30,26 @@ import {
   Phone, Users, Bot, Rocket, Search, Upload, Plus, Trash2, Activity,
   CheckCircle2, XCircle, Clock, Mic, PhoneForwarded, MessageSquare,
   Pause, Play, Square, Target, FileText, RotateCcw, AlertTriangle,
-  Building2, Bike, Truck, UserPlus, Store, Heart, Hash, Loader2,
+  Building2, Bike, Truck, UserPlus, Store, Heart, Hash, Loader2, Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { CallTimelineDrawer } from "@/components/dialer/CallTimelineDrawer";
+import {
+  usePriorCustomerSegmentMap,
+  FLOW_STATUS_META,
+  FLOW_STATUS_ORDER,
+  type FlowStatus,
+} from "@/hooks/usePriorCustomerSegmentMap";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Audience source registry — all 7 categories wired to authoritative tables.
 // ─────────────────────────────────────────────────────────────────────────────
 type AudienceKey =
   | "prospects" | "stores" | "ambassadors" | "bikers"
-  | "drivers" | "customers" | "csv";
+  | "drivers" | "customers" | "prior_customers" | "csv";
 
 interface AudienceSource {
   key: AudienceKey;
@@ -64,6 +70,7 @@ const AUDIENCE_SOURCES: AudienceSource[] = [
   { key: "bikers",      label: "Bikers",          icon: Bike,        table: "bikers",               nameCol: "full_name",  phoneCol: "phone",         searchCols: ["full_name", "phone"],            description: "Last-mile bikers" },
   { key: "drivers",     label: "Drivers",         icon: Truck,       table: "drivers",              nameCol: "full_name",  phoneCol: "phone",         searchCols: ["full_name", "phone"],            description: "Logistics drivers" },
   { key: "customers",   label: "Customers (CRM)", icon: Heart,       table: "crm_customers",        nameCol: "name",       phoneCol: "phone",         searchCols: ["name", "phone", "city"],         description: "CRM customer list" },
+  { key: "prior_customers", label: "Prior Customers", icon: Sparkles, table: null,                  nameCol: "store_name", phoneCol: "phone",         searchCols: [],                                 description: "Past buyers segmented by recency" },
   { key: "csv",         label: "CSV / Manual",    icon: Upload,      table: null,                   nameCol: "",           phoneCol: "",              searchCols: [],                                 description: "Paste numbers or upload CSV" },
 ];
 
@@ -136,6 +143,9 @@ export default function CampaignDialPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [priorBucket, setPriorBucket] = useState<FlowStatus | "all">("all");
+
+  const { segments: priorSegments, counts: priorCounts } = usePriorCustomerSegmentMap();
 
   const [csvRows, setCsvRows] = useState<CsvRow[]>([]);
   const [csvPhone, setCsvPhone] = useState("");
@@ -177,7 +187,7 @@ export default function CampaignDialPage() {
   // ─── Audience query (skipped for CSV) ──────────────────────────────────────
   const { data: audience, isLoading: audienceLoading } = useQuery({
     queryKey: ["campaign-dial:audience", audienceKey, page, search],
-    enabled: audienceKey !== "csv" && !!source.table,
+    enabled: audienceKey !== "csv" && audienceKey !== "prior_customers" && !!source.table,
     queryFn: async () => {
       const from = (page - 1) * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -291,6 +301,22 @@ export default function CampaignDialPage() {
           priority_score: Math.max(1, 1000 - i),
           status: "queued",
         }));
+      } else if (audienceKey === "prior_customers") {
+        const ids = selectedIds;
+        const fetched: AudienceRow[] = priorSegments
+          .filter(s => ids.has(s.store_id))
+          .map(s => ({ id: s.store_id, name: s.store_name || "Unknown", phone: ((s as any).phone as string | null) || null }));
+        queueItems = fetched
+          .map((r) => ({ ...r, e164: r.phone ? toE164(r.phone) : null }))
+          .filter((r) => r.e164)
+          .map((r, i) => ({
+            business_id: bizId,
+            campaign_id: campaign.id,
+            phone_number: r.e164!,
+            contact_name: r.name,
+            priority_score: Math.max(1, 1000 - i),
+            status: "queued",
+          }));
       } else {
         const ids = Array.from(selectedIds);
         const fetched: AudienceRow[] = [];
@@ -466,7 +492,7 @@ export default function CampaignDialPage() {
           </CardHeader>
           <CardContent className="flex-1 flex flex-col overflow-hidden gap-3">
             {/* Source picker */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-8 gap-1">
               {AUDIENCE_SOURCES.map((s) => {
                 const Icon = s.icon;
                 const active = s.key === audienceKey;
@@ -486,7 +512,99 @@ export default function CampaignDialPage() {
               })}
             </div>
 
-            {audienceKey === "csv" ? (
+            {audienceKey === "prior_customers" ? (
+              // Prior Customers mode — segments from v_prior_customer_segments with bucket chips
+              <div className="flex-1 flex flex-col gap-3 overflow-hidden">
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => setPriorBucket("all")}
+                    className={`text-xs px-2 py-1 rounded border ${priorBucket === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-muted/30 border-transparent hover:bg-muted/60"}`}
+                  >
+                    All ({priorCounts.total})
+                  </button>
+                  {FLOW_STATUS_ORDER.map(s => {
+                    const meta = FLOW_STATUS_META[s];
+                    const active = priorBucket === s;
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => setPriorBucket(s)}
+                        className={`text-xs px-2 py-1 rounded border ${active ? "bg-primary text-primary-foreground border-primary" : "bg-muted/30 border-transparent hover:bg-muted/60"}`}
+                      >
+                        {meta.emoji} {meta.label} ({priorCounts[s]})
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="pl-8"
+                    placeholder="Search prior customers…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+                {(() => {
+                  const filtered = priorSegments
+                    .filter(s => priorBucket === "all" || s.flow_status === priorBucket)
+                    .filter(s => !search.trim() || s.store_name?.toLowerCase().includes(search.toLowerCase()) || ((s as any).phone || "").includes(search))
+                    .sort((a, b) => (b.lifetime_tubes || 0) - (a.lifetime_tubes || 0));
+                  const allFilteredSelected = filtered.length > 0 && filtered.every(s => selectedIds.has(s.store_id));
+                  return (
+                    <ScrollArea className="flex-1 border rounded-md">
+                      {filtered.length === 0 ? (
+                        <div className="p-8 text-center text-sm text-muted-foreground">No prior customers in this bucket</div>
+                      ) : (
+                        <table className="w-full text-sm">
+                          <thead className="sticky top-0 bg-card border-b">
+                            <tr>
+                              <th className="p-2 w-8">
+                                <Checkbox
+                                  checked={allFilteredSelected}
+                                  onCheckedChange={(checked) => {
+                                    setSelectedIds(prev => {
+                                      const next = new Set(prev);
+                                      filtered.forEach(s => { if (checked) next.add(s.store_id); else next.delete(s.store_id); });
+                                      return next;
+                                    });
+                                  }}
+                                />
+                              </th>
+                              <th className="p-2 text-left">Store</th>
+                              <th className="p-2 text-left">Phone</th>
+                              <th className="p-2 text-left">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filtered.map(s => {
+                              const phone = (s as any).phone as string | null;
+                              const meta = FLOW_STATUS_META[s.flow_status];
+                              return (
+                                <tr
+                                  key={s.store_id}
+                                  onClick={() => phone && setSelectedIds(prev => {
+                                    const next = new Set(prev);
+                                    if (next.has(s.store_id)) next.delete(s.store_id); else next.add(s.store_id);
+                                    return next;
+                                  })}
+                                  className={`border-b cursor-pointer hover:bg-muted/40 ${selectedIds.has(s.store_id) ? "bg-primary/5" : ""} ${!phone ? "opacity-40" : ""}`}
+                                >
+                                  <td className="p-2"><Checkbox checked={selectedIds.has(s.store_id)} disabled={!phone} /></td>
+                                  <td className="p-2">{s.store_name || "—"}</td>
+                                  <td className="p-2 font-mono text-xs">{phone || <span className="text-destructive">no phone</span>}</td>
+                                  <td className="p-2"><Badge variant="outline" className={meta.color}>{meta.emoji} {meta.label}</Badge></td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      )}
+                    </ScrollArea>
+                  );
+                })()}
+              </div>
+            ) : audienceKey === "csv" ? (
               // CSV / Manual mode
               <div className="flex-1 flex flex-col gap-3 overflow-hidden">
                 <div className="flex gap-2">
