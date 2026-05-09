@@ -18,6 +18,8 @@ import DialerCampaignsTab from './tabs/DialerCampaignsTab';
 import DialerLiveCallsTab from './tabs/DialerLiveCallsTab';
 import CallRecordingsTab from '@/components/dialer/CallRecordingsTab';
 import MissedCallsTab from '@/components/dialer/MissedCallsTab';
+import DialerPriorCustomersTab from './tabs/DialerPriorCustomersTab';
+import { usePriorCustomerSegmentMap } from '@/hooks/usePriorCustomerSegmentMap';
 
 export default function AutoDialerPage() {
   const { currentBusiness } = useBusiness();
