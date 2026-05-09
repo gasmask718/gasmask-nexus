@@ -526,6 +526,7 @@ const RouteEnginePage = lazy(() => import('@/pages/gasmask/RouteEnginePage'));
 const GasmaskDriverRoutePage = lazy(() => import('@/pages/gasmask/DriverRoutePage'));
 const AgentCenterPage = lazy(() => import('@/pages/gasmask/AgentCenterPage'));
 const NoteCleanerPage = lazy(() => import('@/pages/gasmask/NoteCleanerPage'));
+const StoreIntelligencePage = lazy(() => import('@/pages/gasmask/StoreIntelligencePage'));
 const CommunicationOverview = lazy(() => import('@/pages/communication/CommunicationOverview'));
 const CommunicationCampaigns = lazy(() => import('@/pages/communication/CommunicationCampaigns'));
 const CommunicationCampaignNew = lazy(() => import('@/pages/communication/CommunicationCampaignNew'));
@@ -1287,6 +1288,7 @@ export default function AppRoutes() {
         <Route path="/gasmask/stores/:id" element={<StoreDetail />} />
         <Route path="/gasmask/stores/:id/order" element={<StoreOrder />} />
         <Route path="/gasmask/store-performance" element={<StorePerformance />} />
+        <Route path="/gasmask/store-intelligence" element={<StoreIntelligencePage />} />
         <Route path="/gasmask/products" element={<Products />} />
         <Route path="/gasmask/inventory" element={<Products />} />
         <Route path="/gasmask/map" element={<MapPage />} />
