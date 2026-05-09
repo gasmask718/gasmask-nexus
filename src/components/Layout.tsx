@@ -815,6 +815,7 @@ const Layout = ({ children }: LayoutProps) => {
         <div className="ml-4 mt-0.5 space-y-0.5">
           {[
             { path: '/territory', label: 'Territory Control', icon: Map },
+            { path: '/territory/tube-intelligence', label: '🗺️ Tube Territory', icon: MapPin },
             { path: '/territory/gap-intelligence', label: 'Gap Intelligence', icon: Search },
             { path: '/territory/ingestion', label: 'Ingestion Wizard', icon: Upload },
             { path: '/territory/planning', label: 'Strategic Planning', icon: Target },

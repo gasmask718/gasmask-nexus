@@ -50,6 +50,8 @@ import { StoreRoleSection } from "@/components/store/StoreRoleSection";
 // Adding a section to these components propagates to ALL store profile pages.
 // ═══════════════════════════════════════════════════════════════════════════════
 import { SharedStoreCoreIntelligence } from "@/components/store/SharedStoreCoreIntelligence";
+import { TubesSoldHeroStrip } from "@/components/store-profile/TubesSoldHeroStrip";
+import { EngagementBanner } from "@/components/store-profile/EngagementBanner";
 import { BrandPaymentQuickView } from "@/components/store/BrandPaymentQuickView";
 import { SharedStorePerformanceTabs } from "@/components/store/SharedStorePerformanceTabs";
 
@@ -432,6 +434,8 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
           {/* ═══════════════════════════════════════════════════════════ */}
           {/* CANONICAL SHARED SECTIONS — Auto-synced with all profiles */}
           {/* ═══════════════════════════════════════════════════════════ */}
+          <TubesSoldHeroStrip storeId={id} />
+          <EngagementBanner storeId={id} />
           <SharedStoreCoreIntelligence
             storeId={id}
             storeName={store.store_name}

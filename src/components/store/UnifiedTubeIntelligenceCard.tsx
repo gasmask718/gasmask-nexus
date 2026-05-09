@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TUBE_BRAND_COLORS } from '@/constants/tubeColors';
+import { UnifiedTubeSoldTable } from '@/components/store/UnifiedTubeSoldTable';
 import { CardHelper } from '@/components/portal/guidance';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { UpdateMethod } from '@/services/fieldGovernance/types';
@@ -939,6 +940,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
             )}
           </>
         )}
+        <UnifiedTubeSoldTable storeId={storeId} />
       </CardContent>
     </Card>
   );

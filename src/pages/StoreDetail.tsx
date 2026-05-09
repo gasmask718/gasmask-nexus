@@ -46,6 +46,8 @@ import { useStoreMasterResolver } from "@/hooks/useStoreMasterResolver";
 // Adding a section to these components propagates to ALL store profile pages.
 // ═══════════════════════════════════════════════════════════════════════════════
 import { SharedStoreCoreIntelligence } from "@/components/store/SharedStoreCoreIntelligence";
+import { TubesSoldHeroStrip } from "@/components/store-profile/TubesSoldHeroStrip";
+import { EngagementBanner } from "@/components/store-profile/EngagementBanner";
 import { BrandPaymentQuickView } from "@/components/store/BrandPaymentQuickView";
 import { QuickStatsBrandPaymentMatrix } from "@/components/store/QuickStatsBrandPaymentMatrix";
 import { CanonicalStoreDataProvider } from "@/components/store/CanonicalStoreDataProvider";
@@ -721,6 +723,8 @@ const StoreDetail = () => {
           {/* CANONICAL SHARED SECTIONS — Auto-synced with all profiles */}
           {/* ═══════════════════════════════════════════════════════════ */}
           <StorePeopleSection storeId={id || ""} />
+          <TubesSoldHeroStrip storeId={id || ""} />
+          <EngagementBanner storeId={id || ""} />
           <SharedStoreCoreIntelligence
             storeId={id || ""}
             storeName={store.name}

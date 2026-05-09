@@ -69,6 +69,8 @@ const InfluencerCampaigns = lazy(() => import('@/pages/InfluencerCampaigns'));
 const ExecutiveReports = lazy(() => import('@/pages/ExecutiveReports'));
 const Territories = lazy(() => import('@/pages/Territories'));
 const TerritoryOverview = lazy(() => import('@/pages/territory/TerritoryOverview'));
+const TubeTerritoryPage = lazy(() => import('@/pages/territory/TubeTerritoryPage'));
+const NeighborhoodDetailPage = lazy(() => import('@/pages/territory/NeighborhoodDetailPage'));
 const TerritoryNeighborhoods = lazy(() => import('@/pages/territory/TerritoryNeighborhoods'));
 const TerritoryTasks = lazy(() => import('@/pages/territory/TerritoryTasks'));
 const TerritoryCandidates = lazy(() => import('@/pages/territory/TerritoryCandidates'));
@@ -1228,6 +1230,8 @@ export default function AppRoutes() {
 
         {/* Territory Control Center (Floor 0-2 visibility — read-only) */}
         <Route path="/territory" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryOverview /></RequireRole>} />
+        <Route path="/territory/tube-intelligence" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TubeTerritoryPage /></RequireRole>} />
+        <Route path="/territory/tube-intelligence/:neighborhood" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><NeighborhoodDetailPage /></RequireRole>} />
         <Route path="/territory/neighborhoods" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryNeighborhoods /></RequireRole>} />
         <Route path="/territory/tasks" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryTasks /></RequireRole>} />
         <Route path="/territory/candidates" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryCandidates /></RequireRole>} />
