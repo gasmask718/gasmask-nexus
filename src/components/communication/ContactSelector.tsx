@@ -28,6 +28,7 @@ interface ContactSelectorProps {
 
 const ENTITY_TYPES = [
   { key: "store", label: "Stores" },
+  { key: "prior_customer", label: "Prior Customers" },
   { key: "prospect", label: "Prospects" },
   { key: "driver", label: "Drivers" },
   { key: "biker", label: "Bikers" },
@@ -39,12 +40,24 @@ const ENTITY_TYPES = [
 
 type EntityType = (typeof ENTITY_TYPES)[number]["key"];
 
+type FlowStatus = "all" | "active_flow" | "recently_quiet" | "cold" | "long_dormant";
+
+const FLOW_STATUS_META: Record<Exclude<FlowStatus, "all">, { label: string; dot: string; chip: string }> = {
+  active_flow:    { label: "Active Flow",     dot: "bg-green-500",  chip: "data-[on=true]:bg-green-500/15 data-[on=true]:border-green-500/40 data-[on=true]:text-green-400" },
+  recently_quiet: { label: "Recently Quiet",  dot: "bg-yellow-500", chip: "data-[on=true]:bg-yellow-500/15 data-[on=true]:border-yellow-500/40 data-[on=true]:text-yellow-400" },
+  cold:           { label: "Cold",            dot: "bg-red-500",    chip: "data-[on=true]:bg-red-500/15 data-[on=true]:border-red-500/40 data-[on=true]:text-red-400" },
+  long_dormant:   { label: "Long Dormant",    dot: "bg-zinc-500",   chip: "data-[on=true]:bg-zinc-500/20 data-[on=true]:border-zinc-500/40 data-[on=true]:text-zinc-300" },
+};
+
 interface ContactRow {
   key: string; // {type}:{id}
   type: EntityType;
   id: string;
   name: string;
   phone: string;
+  flow_status?: Exclude<FlowStatus, "all">;
+  lifetime_tubes?: number;
+  days_since?: number;
 }
 
 const PAGE_SIZE = 20;
@@ -58,6 +71,7 @@ export default function ContactSelector({
   const [activeTypes, setActiveTypes] = useState<Set<EntityType>>(new Set(["store"]));
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [flowStatus, setFlowStatus] = useState<FlowStatus>("all");
 
   const toggleType = (type: EntityType) => {
     setActiveTypes((prev) => {
@@ -99,6 +113,36 @@ export default function ContactSelector({
               );
               if (data.length < PAGE) break;
               page++;
+            }
+          })()
+        );
+      }
+      if (types.includes("prior_customer")) {
+        fetchers.push(
+          (async () => {
+            let p = 0;
+            const PAGE = 1000;
+            while (true) {
+              const { data } = await (supabase as any)
+                .from("v_prior_customer_segments")
+                .select("store_id, store_name, phone, flow_status, lifetime_tubes, days_since_last_order")
+                .order("lifetime_tubes", { ascending: false })
+                .range(p * PAGE, (p + 1) * PAGE - 1);
+              if (!data?.length) break;
+              data.forEach((r: any) =>
+                rows.push({
+                  key: `prior_customer:${r.store_id}`,
+                  type: "prior_customer",
+                  id: r.store_id,
+                  name: `${r.store_name || "Unknown"} · ${(r.lifetime_tubes || 0).toLocaleString()} tubes`,
+                  phone: r.phone || "",
+                  flow_status: r.flow_status,
+                  lifetime_tubes: r.lifetime_tubes || 0,
+                  days_since: r.days_since_last_order ?? undefined,
+                })
+              );
+              if (data.length < PAGE) break;
+              p++;
             }
           })()
         );
@@ -241,14 +285,35 @@ export default function ContactSelector({
     enabled: activeTypes.size > 0,
   });
 
-  // Filter by search
+  // Flow status counts (Prior Customers segmentation)
+  const priorCustomerStats = useMemo(() => {
+    const buckets: Record<string, { count: number; tubes: number }> = {
+      all: { count: 0, tubes: 0 },
+      active_flow: { count: 0, tubes: 0 },
+      recently_quiet: { count: 0, tubes: 0 },
+      cold: { count: 0, tubes: 0 },
+      long_dormant: { count: 0, tubes: 0 },
+    };
+    for (const c of allContacts) {
+      if (c.type !== "prior_customer" || !c.flow_status) continue;
+      buckets.all.count++; buckets.all.tubes += c.lifetime_tubes || 0;
+      buckets[c.flow_status].count++;
+      buckets[c.flow_status].tubes += c.lifetime_tubes || 0;
+    }
+    return buckets;
+  }, [allContacts]);
+
+  const showFlowFilter = activeTypes.has("prior_customer");
+
+  // Filter by search + flow status
   const filtered = useMemo(() => {
-    if (!search.trim()) return allContacts;
-    const q = search.toLowerCase();
-    return allContacts.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.phone.includes(q)
-    );
-  }, [allContacts, search]);
+    const q = search.trim().toLowerCase();
+    return allContacts.filter((c) => {
+      if (showFlowFilter && flowStatus !== "all" && c.type === "prior_customer" && c.flow_status !== flowStatus) return false;
+      if (!q) return true;
+      return c.name.toLowerCase().includes(q) || c.phone.includes(q);
+    });
+  }, [allContacts, search, flowStatus, showFlowFilter]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -323,7 +388,43 @@ export default function ContactSelector({
         ))}
       </div>
 
-      {/* Search */}
+      {/* Prior Customers flow-status segmentation */}
+      {showFlowFilter && (
+        <div className="rounded-md border border-border/60 bg-background/50 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Prior Customer Flow
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              Lifetime tubes: <strong className="text-foreground">{priorCustomerStats.all.tubes.toLocaleString()}</strong>
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {(["all", "active_flow", "recently_quiet", "cold", "long_dormant"] as FlowStatus[]).map((s) => {
+              const meta = s === "all" ? null : FLOW_STATUS_META[s];
+              const stats = priorCustomerStats[s];
+              const on = flowStatus === s;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  data-on={on}
+                  onClick={() => { setFlowStatus(s); setPage(1); }}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors hover:bg-muted ${
+                    on ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground"
+                  } ${meta?.chip ?? ""}`}
+                >
+                  {meta && <span className={`h-2 w-2 rounded-full ${meta.dot}`} />}
+                  <span>{meta?.label ?? "All"}</span>
+                  <span className="rounded-full bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums">
+                    {stats.count.toLocaleString()}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
