@@ -143,6 +143,9 @@ export default function CampaignDialPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [priorBucket, setPriorBucket] = useState<FlowStatus | "all">("all");
+
+  const { segments: priorSegments, counts: priorCounts } = usePriorCustomerSegmentMap();
 
   const [csvRows, setCsvRows] = useState<CsvRow[]>([]);
   const [csvPhone, setCsvPhone] = useState("");
