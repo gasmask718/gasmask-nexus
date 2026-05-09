@@ -552,6 +552,48 @@ export default function FollowUpManagerPage() {
           {renderFollowUpList(completedFollowUps, completedLoading, 'No completed follow-ups', false)}
         </TabsContent>
 
+        <TabsContent value="prior-customers" className="mt-4 space-y-4">
+          {/* Bucket sub-chips */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={priorCustomerBucket === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setPriorCustomerBucket('all')}
+            >
+              All <Badge variant="secondary" className="ml-2">{priorCustomerCounts.total}</Badge>
+            </Button>
+            {FLOW_STATUS_ORDER.map(s => {
+              const meta = FLOW_STATUS_META[s];
+              const active = priorCustomerBucket === s;
+              return (
+                <Button
+                  key={s}
+                  variant={active ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPriorCustomerBucket(s)}
+                  className={active ? '' : meta.color}
+                >
+                  {meta.emoji} {meta.label}
+                  <Badge variant="secondary" className="ml-2">{priorCustomerCounts[s]}</Badge>
+                </Button>
+              );
+            })}
+          </div>
+
+          {(() => {
+            const priorIds = new Set(
+              Array.from(priorCustomerMap.entries())
+                .filter(([, seg]) => priorCustomerBucket === 'all' || seg.flow_status === priorCustomerBucket)
+                .map(([id]) => id)
+            );
+            const items = allFollowUps.filter(f => f.store_id && priorIds.has(f.store_id));
+            const emptyMsg = priorCustomerBucket === 'all'
+              ? 'No active follow-ups for prior customers'
+              : `No active follow-ups for ${FLOW_STATUS_META[priorCustomerBucket as FlowStatus].label} customers`;
+            return renderFollowUpList(items, false, emptyMsg);
+          })()}
+        </TabsContent>
+
         <TabsContent value="by-reason" className="mt-4">
           {renderGroupedSection(groupedByReason, <Filter className="h-5 w-5 text-muted-foreground" />)}
         </TabsContent>
