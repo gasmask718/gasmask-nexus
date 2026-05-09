@@ -512,7 +512,99 @@ export default function CampaignDialPage() {
               })}
             </div>
 
-            {audienceKey === "csv" ? (
+            {audienceKey === "prior_customers" ? (
+              // Prior Customers mode — segments from v_prior_customer_segments with bucket chips
+              <div className="flex-1 flex flex-col gap-3 overflow-hidden">
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => setPriorBucket("all")}
+                    className={`text-xs px-2 py-1 rounded border ${priorBucket === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-muted/30 border-transparent hover:bg-muted/60"}`}
+                  >
+                    All ({priorCounts.total})
+                  </button>
+                  {FLOW_STATUS_ORDER.map(s => {
+                    const meta = FLOW_STATUS_META[s];
+                    const active = priorBucket === s;
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => setPriorBucket(s)}
+                        className={`text-xs px-2 py-1 rounded border ${active ? "bg-primary text-primary-foreground border-primary" : "bg-muted/30 border-transparent hover:bg-muted/60"}`}
+                      >
+                        {meta.emoji} {meta.label} ({priorCounts[s]})
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="pl-8"
+                    placeholder="Search prior customers…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+                {(() => {
+                  const filtered = priorSegments
+                    .filter(s => priorBucket === "all" || s.flow_status === priorBucket)
+                    .filter(s => !search.trim() || s.store_name?.toLowerCase().includes(search.toLowerCase()) || ((s as any).phone || "").includes(search))
+                    .sort((a, b) => (b.lifetime_tubes || 0) - (a.lifetime_tubes || 0));
+                  const allFilteredSelected = filtered.length > 0 && filtered.every(s => selectedIds.has(s.store_id));
+                  return (
+                    <ScrollArea className="flex-1 border rounded-md">
+                      {filtered.length === 0 ? (
+                        <div className="p-8 text-center text-sm text-muted-foreground">No prior customers in this bucket</div>
+                      ) : (
+                        <table className="w-full text-sm">
+                          <thead className="sticky top-0 bg-card border-b">
+                            <tr>
+                              <th className="p-2 w-8">
+                                <Checkbox
+                                  checked={allFilteredSelected}
+                                  onCheckedChange={(checked) => {
+                                    setSelectedIds(prev => {
+                                      const next = new Set(prev);
+                                      filtered.forEach(s => { if (checked) next.add(s.store_id); else next.delete(s.store_id); });
+                                      return next;
+                                    });
+                                  }}
+                                />
+                              </th>
+                              <th className="p-2 text-left">Store</th>
+                              <th className="p-2 text-left">Phone</th>
+                              <th className="p-2 text-left">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filtered.map(s => {
+                              const phone = (s as any).phone as string | null;
+                              const meta = FLOW_STATUS_META[s.flow_status];
+                              return (
+                                <tr
+                                  key={s.store_id}
+                                  onClick={() => phone && setSelectedIds(prev => {
+                                    const next = new Set(prev);
+                                    if (next.has(s.store_id)) next.delete(s.store_id); else next.add(s.store_id);
+                                    return next;
+                                  })}
+                                  className={`border-b cursor-pointer hover:bg-muted/40 ${selectedIds.has(s.store_id) ? "bg-primary/5" : ""} ${!phone ? "opacity-40" : ""}`}
+                                >
+                                  <td className="p-2"><Checkbox checked={selectedIds.has(s.store_id)} disabled={!phone} /></td>
+                                  <td className="p-2">{s.store_name || "—"}</td>
+                                  <td className="p-2 font-mono text-xs">{phone || <span className="text-destructive">no phone</span>}</td>
+                                  <td className="p-2"><Badge variant="outline" className={meta.color}>{meta.emoji} {meta.label}</Badge></td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      )}
+                    </ScrollArea>
+                  );
+                })()}
+              </div>
+            ) : audienceKey === "csv" ? (
               // CSV / Manual mode
               <div className="flex-1 flex flex-col gap-3 overflow-hidden">
                 <div className="flex gap-2">
