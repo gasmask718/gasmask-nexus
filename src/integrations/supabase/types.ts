@@ -113652,6 +113652,62 @@ export type Database = {
         }
         Relationships: []
       }
+      v_va_address_call_queue: {
+        Row: {
+          lifetime_tubes_delivered: number | null
+          phone: string | null
+          priority: number | null
+          reason: string | null
+          recent_notes_preview: string[] | null
+          status: string | null
+          store_id: string | null
+          store_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_capture_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_intelligence_v"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "field_capture_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_capture_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_field_capture_queue"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "field_capture_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_reactivation_data_gaps"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "field_capture_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_reactivation_targets"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "field_capture_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       v_va_directory: {
         Row: {
           avatar_url: string | null
