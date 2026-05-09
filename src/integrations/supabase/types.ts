@@ -219,6 +219,75 @@ export type Database = {
           },
         ]
       }
+      address_extraction_staging: {
+        Row: {
+          confidence: string | null
+          extracted_address: string | null
+          extracted_at: string
+          extracted_source: string | null
+          original_address: string | null
+          original_name: string | null
+          review_status: string | null
+          store_id: string
+        }
+        Insert: {
+          confidence?: string | null
+          extracted_address?: string | null
+          extracted_at?: string
+          extracted_source?: string | null
+          original_address?: string | null
+          original_name?: string | null
+          review_status?: string | null
+          store_id: string
+        }
+        Update: {
+          confidence?: string | null
+          extracted_address?: string | null
+          extracted_at?: string
+          extracted_source?: string | null
+          original_address?: string | null
+          original_name?: string | null
+          review_status?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "address_extraction_staging_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "store_intelligence_v"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "address_extraction_staging_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "address_extraction_staging_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_reactivation_data_gaps"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "address_extraction_staging_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_reactivation_targets"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "address_extraction_staging_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       admin_audit_log: {
         Row: {
           action: string
