@@ -301,6 +301,22 @@ export default function CampaignDialPage() {
           priority_score: Math.max(1, 1000 - i),
           status: "queued",
         }));
+      } else if (audienceKey === "prior_customers") {
+        const ids = selectedIds;
+        const fetched: AudienceRow[] = priorSegments
+          .filter(s => ids.has(s.store_id))
+          .map(s => ({ id: s.store_id, name: s.store_name || "Unknown", phone: ((s as any).phone as string | null) || null }));
+        queueItems = fetched
+          .map((r) => ({ ...r, e164: r.phone ? toE164(r.phone) : null }))
+          .filter((r) => r.e164)
+          .map((r, i) => ({
+            business_id: bizId,
+            campaign_id: campaign.id,
+            phone_number: r.e164!,
+            contact_name: r.name,
+            priority_score: Math.max(1, 1000 - i),
+            status: "queued",
+          }));
       } else {
         const ids = Array.from(selectedIds);
         const fetched: AudienceRow[] = [];
