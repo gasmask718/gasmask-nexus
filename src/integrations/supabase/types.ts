@@ -85953,6 +85953,7 @@ export type Database = {
           last_active_date: string | null
           last_classified_at: string | null
           last_performance_update: string | null
+          last_reactivation_attempt_at: string | null
           last_visit_date: string | null
           last_visit_driver_id: string | null
           lat: number | null
@@ -85972,6 +85973,9 @@ export type Database = {
           phone: string | null
           primary_contact_name: string | null
           prime_time_energy: boolean | null
+          reactivated_at: string | null
+          reactivation_attempts: number
+          reactivation_priority: string | null
           region_id: string | null
           responsiveness: Database["public"]["Enums"]["responsiveness"] | null
           rpa_status: string | null
@@ -86033,6 +86037,7 @@ export type Database = {
           last_active_date?: string | null
           last_classified_at?: string | null
           last_performance_update?: string | null
+          last_reactivation_attempt_at?: string | null
           last_visit_date?: string | null
           last_visit_driver_id?: string | null
           lat?: number | null
@@ -86052,6 +86057,9 @@ export type Database = {
           phone?: string | null
           primary_contact_name?: string | null
           prime_time_energy?: boolean | null
+          reactivated_at?: string | null
+          reactivation_attempts?: number
+          reactivation_priority?: string | null
           region_id?: string | null
           responsiveness?: Database["public"]["Enums"]["responsiveness"] | null
           rpa_status?: string | null
@@ -86113,6 +86121,7 @@ export type Database = {
           last_active_date?: string | null
           last_classified_at?: string | null
           last_performance_update?: string | null
+          last_reactivation_attempt_at?: string | null
           last_visit_date?: string | null
           last_visit_driver_id?: string | null
           lat?: number | null
@@ -86132,6 +86141,9 @@ export type Database = {
           phone?: string | null
           primary_contact_name?: string | null
           prime_time_energy?: boolean | null
+          reactivated_at?: string | null
+          reactivation_attempts?: number
+          reactivation_priority?: string | null
           region_id?: string | null
           responsiveness?: Database["public"]["Enums"]["responsiveness"] | null
           rpa_status?: string | null
@@ -114460,6 +114472,7 @@ export type Database = {
         | "dormant"
         | "lost"
         | "dead"
+        | "reactivation_target"
       store_type:
         | "bodega"
         | "smoke_shop"
@@ -115123,6 +115136,7 @@ export const Constants = {
         "dormant",
         "lost",
         "dead",
+        "reactivation_target",
       ],
       store_type: [
         "bodega",
