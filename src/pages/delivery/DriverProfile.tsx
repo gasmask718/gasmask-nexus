@@ -1,3 +1,9 @@
+/**
+ * @deprecated routes_generated is legacy as of 2026-05-09.
+ * Use the canonical `routes` table instead.
+ * This consumer is preserved for historical data access only.
+ * Do not write new logic against routes_generated.
+ */
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';

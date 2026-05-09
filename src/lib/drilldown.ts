@@ -1,3 +1,8 @@
+/**
+ * @deprecated driver_routes is legacy as of 2026-05-09.
+ * Superseded by canonical `routes` + `route_stops`.
+ * This consumer is preserved for historical data access only.
+ */
 // Drilldown URL builder and parser utilities
 
 export type DrillDownEntity = 'stores' | 'invoices' | 'deliveries' | 'inventory' | 'drivers' | 'routes' | 'orders' | 'ambassadors' | 'commissions' | 'companies';
