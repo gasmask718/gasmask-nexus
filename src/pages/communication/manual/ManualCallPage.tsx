@@ -584,6 +584,21 @@ const ManualCallPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      {scheduledCall && (
+        <SendToRouteModal
+          open={scheduleModalOpen}
+          onOpenChange={(o) => {
+            setScheduleModalOpen(o);
+            if (!o) setScheduledCall(null);
+          }}
+          storeId={scheduledCall.storeId}
+          storeName={scheduledCall.storeName}
+          sourceOutreach="manual_call"
+          sourceCallId={scheduledCall.id}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ['manual-call-history'] })}
+        />
+      )}
     </div>
   );
 };
