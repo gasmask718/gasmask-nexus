@@ -154,6 +154,45 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Step 5 — Structured outcome extraction from Bland AI persona
+    const blandOutcome = extractBlandOutcome(payload);
+    if (blandOutcome && call_id) {
+      const { error: outcomeErr } = await supabase
+        .from("bland_call_logs")
+        .update({
+          delivery_requested: blandOutcome.delivery_requested,
+          preferred_day: blandOutcome.preferred_day ?? null,
+          preferred_window: blandOutcome.preferred_window ?? null,
+          urgency: blandOutcome.urgency ?? null,
+          intent_summary: blandOutcome.intent_summary,
+          is_reactivation_lead: blandOutcome.is_reactivation_lead ?? false,
+          structured_outcome_received_at: new Date().toISOString(),
+        })
+        .eq("call_id", call_id);
+      if (outcomeErr) {
+        console.error("[bland-agent-webhook] structured outcome update failed:", outcomeErr);
+      } else {
+        console.log(
+          `[bland-agent-webhook] structured outcome received: delivery_requested=${blandOutcome.delivery_requested}, urgency=${blandOutcome.urgency}`
+        );
+        if (blandOutcome.delivery_requested) {
+          console.log(
+            `[bland-agent-webhook] DELIVERY REQUESTED for call ${call_id} — Step 6 will queue this`
+          );
+        }
+      }
+    } else if (
+      payload?.bland_outcome ||
+      payload?.analysis?.bland_outcome ||
+      payload?.metadata?.bland_outcome ||
+      payload?.extracted?.bland_outcome ||
+      payload?.summary?.bland_outcome
+    ) {
+      console.warn(
+        "[bland-agent-webhook] bland_outcome present but failed schema validation"
+      );
+    }
+
     if (queue_item_id) {
       const { error: qErr } = await supabase.from("outbound_call_queue").update({
         bland_call_id: call_id,
