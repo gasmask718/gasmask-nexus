@@ -15,6 +15,39 @@ import {
   logEvent,
   recordWebhookDelivery,
 } from "../_shared/dialer.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+
+const BlandOutcomeSchema = z.object({
+  delivery_requested: z.boolean(),
+  preferred_window: z.enum(['morning', 'afternoon', 'evening']).nullable().optional(),
+  preferred_day: z.enum(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']).nullable().optional(),
+  urgency: z.enum(['today', 'this_week', 'next_week', 'no_rush']).nullable().optional(),
+  intent_summary: z.string().max(500),
+  is_reactivation_lead: z.boolean().optional().default(false),
+});
+type BlandOutcome = z.infer<typeof BlandOutcomeSchema>;
+
+function extractBlandOutcome(payload: any): BlandOutcome | null {
+  const candidates = [
+    payload?.bland_outcome,
+    payload?.analysis?.bland_outcome,
+    payload?.metadata?.bland_outcome,
+    payload?.extracted?.bland_outcome,
+    payload?.summary?.bland_outcome,
+  ];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    let obj: any = candidate;
+    if (typeof candidate === 'string') {
+      try { obj = JSON.parse(candidate); } catch { continue; }
+    }
+    if (obj && typeof obj === 'object') {
+      const result = BlandOutcomeSchema.safeParse(obj);
+      if (result.success) return result.data;
+    }
+  }
+  return null;
+}
 
 const OUTCOME_TO_STATUS: Record<string, string> = {
   interested: "interested",
