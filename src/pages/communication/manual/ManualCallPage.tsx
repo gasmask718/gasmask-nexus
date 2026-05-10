@@ -51,6 +51,8 @@ const ManualCallPage = () => {
   const [callOutcome, setCallOutcome] = useState('');
   const [followUpNotes, setFollowUpNotes] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [scheduledCall, setScheduledCall] = useState<{ id: string; storeId: string; storeName: string } | null>(null);
 
   const tags = ['Store Issue', 'Order Missing', 'Upsell Opportunity', 'Payment Issue', 'General Inquiry', 'Complaint', 'Follow-up Required'];
 
