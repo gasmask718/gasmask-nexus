@@ -9,13 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Phone, PhoneCall, PhoneOff, Search, User, Clock, MessageSquare, Save, Tag, Store, Plus, History, Users, Sparkles } from 'lucide-react';
+import { Phone, PhoneCall, PhoneOff, Search, User, Clock, MessageSquare, Save, Tag, Store, Plus, History, Users, Sparkles, Package } from 'lucide-react';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { usePriorCustomerSegmentMap, FLOW_STATUS_META, FLOW_STATUS_ORDER, type FlowStatus } from '@/hooks/usePriorCustomerSegmentMap';
+import { SendToRouteModal } from '@/components/scheduling/SendToRouteModal';
 
 interface Contact {
   id: string;
