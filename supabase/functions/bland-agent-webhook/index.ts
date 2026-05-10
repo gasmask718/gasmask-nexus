@@ -15,6 +15,39 @@ import {
   logEvent,
   recordWebhookDelivery,
 } from "../_shared/dialer.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+
+const BlandOutcomeSchema = z.object({
+  delivery_requested: z.boolean(),
+  preferred_window: z.enum(['morning', 'afternoon', 'evening']).nullable().optional(),
+  preferred_day: z.enum(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']).nullable().optional(),
+  urgency: z.enum(['today', 'this_week', 'next_week', 'no_rush']).nullable().optional(),
+  intent_summary: z.string().max(500),
+  is_reactivation_lead: z.boolean().optional().default(false),
+});
+type BlandOutcome = z.infer<typeof BlandOutcomeSchema>;
+
+function extractBlandOutcome(payload: any): BlandOutcome | null {
+  const candidates = [
+    payload?.bland_outcome,
+    payload?.analysis?.bland_outcome,
+    payload?.metadata?.bland_outcome,
+    payload?.extracted?.bland_outcome,
+    payload?.summary?.bland_outcome,
+  ];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    let obj: any = candidate;
+    if (typeof candidate === 'string') {
+      try { obj = JSON.parse(candidate); } catch { continue; }
+    }
+    if (obj && typeof obj === 'object') {
+      const result = BlandOutcomeSchema.safeParse(obj);
+      if (result.success) return result.data;
+    }
+  }
+  return null;
+}
 
 const OUTCOME_TO_STATUS: Record<string, string> = {
   interested: "interested",
@@ -119,6 +152,45 @@ Deno.serve(async (req) => {
         event_type: "bland.persist_error", source: "bland", severity: "error",
         payload: { message: insertErr.message },
       });
+    }
+
+    // Step 5 — Structured outcome extraction from Bland AI persona
+    const blandOutcome = extractBlandOutcome(payload);
+    if (blandOutcome && call_id) {
+      const { error: outcomeErr } = await supabase
+        .from("bland_call_logs")
+        .update({
+          delivery_requested: blandOutcome.delivery_requested,
+          preferred_day: blandOutcome.preferred_day ?? null,
+          preferred_window: blandOutcome.preferred_window ?? null,
+          urgency: blandOutcome.urgency ?? null,
+          intent_summary: blandOutcome.intent_summary,
+          is_reactivation_lead: blandOutcome.is_reactivation_lead ?? false,
+          structured_outcome_received_at: new Date().toISOString(),
+        })
+        .eq("call_id", call_id);
+      if (outcomeErr) {
+        console.error("[bland-agent-webhook] structured outcome update failed:", outcomeErr);
+      } else {
+        console.log(
+          `[bland-agent-webhook] structured outcome received: delivery_requested=${blandOutcome.delivery_requested}, urgency=${blandOutcome.urgency}`
+        );
+        if (blandOutcome.delivery_requested) {
+          console.log(
+            `[bland-agent-webhook] DELIVERY REQUESTED for call ${call_id} — Step 6 will queue this`
+          );
+        }
+      }
+    } else if (
+      payload?.bland_outcome ||
+      payload?.analysis?.bland_outcome ||
+      payload?.metadata?.bland_outcome ||
+      payload?.extracted?.bland_outcome ||
+      payload?.summary?.bland_outcome
+    ) {
+      console.warn(
+        "[bland-agent-webhook] bland_outcome present but failed schema validation"
+      );
     }
 
     if (queue_item_id) {
