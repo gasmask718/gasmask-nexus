@@ -479,12 +479,19 @@ const ManualCallPage = () => {
                 <SelectContent>
                   <SelectItem value="answered">Answered — Resolved</SelectItem>
                   <SelectItem value="answered_followup">Answered — Needs Follow-up</SelectItem>
+                  <SelectItem value="schedule_delivery">📦 Schedule Delivery</SelectItem>
                   <SelectItem value="voicemail">Voicemail Left</SelectItem>
                   <SelectItem value="no_answer">No Answer</SelectItem>
                   <SelectItem value="busy">Busy</SelectItem>
                   <SelectItem value="wrong_number">Wrong Number</SelectItem>
                 </SelectContent>
               </Select>
+              {callOutcome === 'schedule_delivery' && selectedContact?.type !== 'store' && (
+                <p className="text-xs text-amber-400 flex items-center gap-1">
+                  <Package className="h-3 w-3" />
+                  Schedule Delivery requires a store contact.
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
