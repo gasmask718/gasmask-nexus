@@ -10108,33 +10108,54 @@ export type Database = {
           call_id: string | null
           call_outcome: string | null
           created_at: string
+          delivery_requested: boolean | null
           id: string
+          intent_summary: string | null
+          is_reactivation_lead: boolean | null
           lead_id: string | null
+          preferred_day: string | null
+          preferred_window: string | null
           raw_payload: Json | null
           recording_url: string | null
+          structured_outcome_received_at: string | null
           transcript: string | null
+          urgency: string | null
         }
         Insert: {
           agent_type?: string | null
           call_id?: string | null
           call_outcome?: string | null
           created_at?: string
+          delivery_requested?: boolean | null
           id?: string
+          intent_summary?: string | null
+          is_reactivation_lead?: boolean | null
           lead_id?: string | null
+          preferred_day?: string | null
+          preferred_window?: string | null
           raw_payload?: Json | null
           recording_url?: string | null
+          structured_outcome_received_at?: string | null
           transcript?: string | null
+          urgency?: string | null
         }
         Update: {
           agent_type?: string | null
           call_id?: string | null
           call_outcome?: string | null
           created_at?: string
+          delivery_requested?: boolean | null
           id?: string
+          intent_summary?: string | null
+          is_reactivation_lead?: boolean | null
           lead_id?: string | null
+          preferred_day?: string | null
+          preferred_window?: string | null
           raw_payload?: Json | null
           recording_url?: string | null
+          structured_outcome_received_at?: string | null
           transcript?: string | null
+          urgency?: string | null
         }
         Relationships: [
           {
