@@ -9,13 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Phone, PhoneCall, PhoneOff, Search, User, Clock, MessageSquare, Save, Tag, Store, Plus, History, Users, Sparkles } from 'lucide-react';
+import { Phone, PhoneCall, PhoneOff, Search, User, Clock, MessageSquare, Save, Tag, Store, Plus, History, Users, Sparkles, Package } from 'lucide-react';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { usePriorCustomerSegmentMap, FLOW_STATUS_META, FLOW_STATUS_ORDER, type FlowStatus } from '@/hooks/usePriorCustomerSegmentMap';
+import { SendToRouteModal } from '@/components/scheduling/SendToRouteModal';
 
 interface Contact {
   id: string;
@@ -50,6 +51,8 @@ const ManualCallPage = () => {
   const [callOutcome, setCallOutcome] = useState('');
   const [followUpNotes, setFollowUpNotes] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [scheduledCall, setScheduledCall] = useState<{ id: string; storeId: string; storeName: string } | null>(null);
 
   const tags = ['Store Issue', 'Order Missing', 'Upsell Opportunity', 'Payment Issue', 'General Inquiry', 'Complaint', 'Follow-up Required'];
 
@@ -190,11 +193,12 @@ const ManualCallPage = () => {
         return;
       }
 
-      const { error } = await supabase.from('communication_logs').insert({
+      const { data: inserted, error } = await supabase.from('communication_logs').insert({
         business_id: currentBusiness?.id || null,
         channel: 'call',
         direction: 'outbound',
         contact_id: selectedContact?.id || null,
+        store_id: selectedContact?.type === 'store' ? selectedContact.id : null,
         outcome: callOutcome || null,
         summary: callSummary,
         full_message: followUpNotes || null,
@@ -202,11 +206,21 @@ const ManualCallPage = () => {
         created_by: user.id,
         call_duration: callDuration > 0 ? callDuration : null,
         recipient_phone: phoneNumber || null,
-      });
+      }).select('id').single();
 
       if (error) throw error;
       toast.success('Call logged successfully');
       queryClient.invalidateQueries({ queryKey: ['manual-call-history'] });
+
+      // Schedule Delivery outcome → open the route modal pre-filled with this store
+      if (callOutcome === 'schedule_delivery' && selectedContact?.type === 'store' && inserted?.id) {
+        setScheduledCall({
+          id: inserted.id,
+          storeId: selectedContact.id,
+          storeName: selectedContact.name,
+        });
+        setScheduleModalOpen(true);
+      }
 
       // Reset
       setCallSummary('');
@@ -465,12 +479,19 @@ const ManualCallPage = () => {
                 <SelectContent>
                   <SelectItem value="answered">Answered — Resolved</SelectItem>
                   <SelectItem value="answered_followup">Answered — Needs Follow-up</SelectItem>
+                  <SelectItem value="schedule_delivery">📦 Schedule Delivery</SelectItem>
                   <SelectItem value="voicemail">Voicemail Left</SelectItem>
                   <SelectItem value="no_answer">No Answer</SelectItem>
                   <SelectItem value="busy">Busy</SelectItem>
                   <SelectItem value="wrong_number">Wrong Number</SelectItem>
                 </SelectContent>
               </Select>
+              {callOutcome === 'schedule_delivery' && selectedContact?.type !== 'store' && (
+                <p className="text-xs text-amber-400 flex items-center gap-1">
+                  <Package className="h-3 w-3" />
+                  Schedule Delivery requires a store contact.
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -563,6 +584,21 @@ const ManualCallPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      {scheduledCall && (
+        <SendToRouteModal
+          open={scheduleModalOpen}
+          onOpenChange={(o) => {
+            setScheduleModalOpen(o);
+            if (!o) setScheduledCall(null);
+          }}
+          storeId={scheduledCall.storeId}
+          storeName={scheduledCall.storeName}
+          sourceOutreach="manual_call"
+          sourceCallId={scheduledCall.id}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ['manual-call-history'] })}
+        />
+      )}
     </div>
   );
 };
