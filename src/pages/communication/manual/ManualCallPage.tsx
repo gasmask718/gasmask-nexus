@@ -193,11 +193,12 @@ const ManualCallPage = () => {
         return;
       }
 
-      const { error } = await supabase.from('communication_logs').insert({
+      const { data: inserted, error } = await supabase.from('communication_logs').insert({
         business_id: currentBusiness?.id || null,
         channel: 'call',
         direction: 'outbound',
         contact_id: selectedContact?.id || null,
+        store_id: selectedContact?.type === 'store' ? selectedContact.id : null,
         outcome: callOutcome || null,
         summary: callSummary,
         full_message: followUpNotes || null,
@@ -205,11 +206,21 @@ const ManualCallPage = () => {
         created_by: user.id,
         call_duration: callDuration > 0 ? callDuration : null,
         recipient_phone: phoneNumber || null,
-      });
+      }).select('id').single();
 
       if (error) throw error;
       toast.success('Call logged successfully');
       queryClient.invalidateQueries({ queryKey: ['manual-call-history'] });
+
+      // Schedule Delivery outcome → open the route modal pre-filled with this store
+      if (callOutcome === 'schedule_delivery' && selectedContact?.type === 'store' && inserted?.id) {
+        setScheduledCall({
+          id: inserted.id,
+          storeId: selectedContact.id,
+          storeName: selectedContact.name,
+        });
+        setScheduleModalOpen(true);
+      }
 
       // Reset
       setCallSummary('');
