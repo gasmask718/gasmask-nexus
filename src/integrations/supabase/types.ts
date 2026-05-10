@@ -30066,6 +30066,7 @@ export type Database = {
           recipient_email: string | null
           recipient_phone: string | null
           recording_url: string | null
+          scheduled_route_stop_id: string | null
           sender_email: string | null
           sender_phone: string | null
           store_id: string | null
@@ -30095,6 +30096,7 @@ export type Database = {
           recipient_email?: string | null
           recipient_phone?: string | null
           recording_url?: string | null
+          scheduled_route_stop_id?: string | null
           sender_email?: string | null
           sender_phone?: string | null
           store_id?: string | null
@@ -30124,6 +30126,7 @@ export type Database = {
           recipient_email?: string | null
           recipient_phone?: string | null
           recording_url?: string | null
+          scheduled_route_stop_id?: string | null
           sender_email?: string | null
           sender_phone?: string | null
           store_id?: string | null
@@ -30164,6 +30167,13 @@ export type Database = {
             columns: ["influencer_id"]
             isOneToOne: false
             referencedRelation: "influencers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_logs_scheduled_route_stop_id_fkey"
+            columns: ["scheduled_route_stop_id"]
+            isOneToOne: false
+            referencedRelation: "route_stops"
             referencedColumns: ["id"]
           },
           {
