@@ -186,7 +186,7 @@ export function SendToRouteModal({
     (async () => {
       try {
         const { data, error } = await supabase.functions.invoke('tube-replenishment-ai', {
-          body: { store_id: storeId },
+          body: { storeId },
         });
         if (error) throw error;
         const resp = data as AIResponse;
