@@ -244,6 +244,7 @@ const RouteOpsCenter = lazy(() => import('@/pages/RouteOpsCenter'));
 const RouteOpsCenterEnhanced = lazy(() => import('@/pages/delivery').then(m => ({ default: m.RouteOpsCenterEnhanced })));
 const OpsCommandCenter = lazy(() => import('@/pages/delivery').then(m => ({ default: m.OpsCommandCenter })));
 const RouteOptimizerPage = lazy(() => import('@/pages/delivery').then(m => ({ default: m.RouteOptimizerPage })));
+const PendingRouteStopsPage = lazy(() => import('@/pages/dispatch/PendingRouteStopsPage'));
 const MyRoute = lazy(() => import('@/pages/MyRoute'));
 const SidebarVisualTest = lazy(() => import('@/pages/SidebarVisualTest'));
 const SidebarDebug = lazy(() => import('@/pages/debug/SidebarDebug'));
@@ -1474,6 +1475,7 @@ export default function AppRoutes() {
         <Route path="/ops-command-center" element={<OpsCommandCenter />} />
         {/* Route Optimizer - Floor 4 Planning Intelligence */}
         <Route path="/route-optimizer" element={<RouteOptimizerPage />} />
+        <Route path="/dispatch/pending-stops" element={<PendingRouteStopsPage />} />
         <Route path="/routes/:id" element={<RouteDetail />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="/wholesale" element={<Wholesale />} />
