@@ -70,7 +70,7 @@ export default function VARosterPage() {
 
   // Pagination
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_TRANSFER_PAGE_SIZE);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   // Transfer panel state
   const [transferSourceVa, setTransferSourceVa] = useState<string>('');
@@ -524,8 +524,8 @@ export default function VARosterPage() {
       <Card>
         <CardHeader className="space-y-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Target className="h-4 w-4" /> Unassigned Leads ({filteredLeads.length}
-            {filteredLeads.length !== totalLeads && ` of ${totalLeads}`})
+            <Target className="h-4 w-4" /> Unassigned Leads ({leads.length}
+            {leads.length !== totalLeads && ` of ${totalLeads}`})
           </CardTitle>
 
           <div className="flex flex-wrap gap-2">
@@ -600,14 +600,14 @@ export default function VARosterPage() {
                     </td>
                   </tr>
                 )}
-                {!loading && filteredLeads.length === 0 && (
+                {!loading && leads.length === 0 && (
                   <tr>
                     <td colSpan={6} className="py-8 text-center text-muted-foreground">
                       No unassigned leads match the current filters.
                     </td>
                   </tr>
                 )}
-                {filteredLeads.map((lead) => {
+                {leads.map((lead) => {
                   const checked = selectedLeadIds.has(lead.id);
                   return (
                     <tr
