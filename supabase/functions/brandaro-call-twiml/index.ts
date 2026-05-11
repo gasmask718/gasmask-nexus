@@ -90,16 +90,22 @@ serve(async (req: Request) => {
     }
     console.log(`[brandaro-call-twiml] Dialing ${to} from ${callerId} (requested=${fromCallerId || "n/a"}), callLogId=${callLogId}`);
 
-    const statusCallbackUrl = `${SUPABASE_URL}/functions/v1/brandaro-call-status?callLogId=${callLogId}`;
+    const safeCallLogId = encodeURIComponent(callLogId || "");
+    const statusBase = `${SUPABASE_URL}/functions/v1/brandaro-call-status?callLogId=${safeCallLogId}`;
+    // XML attribute values MUST escape & as &amp; — unescaped & makes Twilio
+    // reject the TwiML with "an application error has occurred".
+    const recordingCb = `${statusBase}&amp;event=recording`;
+    const actionCb = `${statusBase}&amp;event=dial-complete`;
+    const numberCb = `${statusBase}&amp;event=number-status`;
 
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Dial callerId="${callerId}" record="record-from-answer-dual" timeout="30"
-    recordingStatusCallback="${SUPABASE_URL}/functions/v1/brandaro-call-status?callLogId=${callLogId}&event=recording"
+    recordingStatusCallback="${recordingCb}"
     recordingStatusCallbackMethod="POST"
-    action="${SUPABASE_URL}/functions/v1/brandaro-call-status?callLogId=${callLogId}&event=dial-complete"
+    action="${actionCb}"
     method="POST">
-    <Number statusCallback="${statusCallbackUrl}&event=number-status"
+    <Number statusCallback="${numberCb}"
       statusCallbackEvent="initiated ringing answered completed"
       statusCallbackMethod="POST">${to}</Number>
   </Dial>
