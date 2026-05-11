@@ -392,7 +392,7 @@ export function VAInvoiceModal({ open, onClose, lead, sendOnSave }: VAInvoiceMod
 
           <Button onClick={handleSave} disabled={saving || total <= 0} className="w-full bg-cyan-600 hover:bg-cyan-700">
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CreditCard className="h-4 w-4 mr-2" />}
-            {sendOnSave ? 'Save, Generate Stripe Link & Send' : 'Save & Generate Stripe Link'}
+            {sendOnSave ? `Save & Send via ${form.sendChannel === 'sms' ? 'SMS' : 'Email'}` : 'Save & Generate Stripe Link'}
           </Button>
         </div>
       </DialogContent>
