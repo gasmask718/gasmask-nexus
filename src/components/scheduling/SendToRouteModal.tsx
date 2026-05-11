@@ -119,6 +119,12 @@ export function SendToRouteModal({
   region,
   sourceOutreach,
   sourceCallId,
+  pendingStopId,
+  initialBoxes,
+  initialBrand,
+  initialDate,
+  initialTime,
+  initialNotes,
   onSuccess,
 }: SendToRouteModalProps) {
   const { buildRouteFromStores, saveRoute, loading: routeLoading } = useRouteBuilder();
@@ -131,19 +137,19 @@ export function SendToRouteModal({
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [selectedDriver, setSelectedDriver] = useState<string>('');
   const [scheduledDate, setScheduledDate] = useState<string>(
-    format(new Date(Date.now() + 86400000), 'yyyy-MM-dd')
+    initialDate || format(new Date(Date.now() + 86400000), 'yyyy-MM-dd')
   );
-  const [startTime, setStartTime] = useState<string>('10:00');
+  const [startTime, setStartTime] = useState<string>(initialTime || '10:00');
   const [routeName, setRouteName] = useState<string>('');
   const [taskOnly, setTaskOnly] = useState<boolean>(false);
-  const [notes, setNotes] = useState<string>('');
+  const [notes, setNotes] = useState<string>(initialNotes || '');
 
   // AI recommendation state (single-store mode)
   const [aiLoading, setAiLoading] = useState(false);
   const [aiData, setAiData] = useState<AIResponse | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [boxes, setBoxes] = useState<number>(1);
-  const [brandOverride, setBrandOverride] = useState<string>('');
+  const [boxes, setBoxes] = useState<number>(initialBoxes || 1);
+  const [brandOverride, setBrandOverride] = useState<string>(initialBrand || '');
 
   const loading = routeLoading || taskLoading;
   const topRec = aiData?.recommendations?.[0];
