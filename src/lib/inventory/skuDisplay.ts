@@ -53,6 +53,47 @@ export function brandDisplayName(raw: string | null | undefined): string {
   return BRAND_DISPLAY_MAP[key] || (raw || 'Unknown');
 }
 
+// ════════════════════════════════════════════════════════════════════
+// BRAND → DEFAULT SKU product_id resolver
+// When a writer only knows the brand string (legacy UI, Bland AI parser),
+// route the row to the canonical "default" SKU for that parent brand so
+// store_tube_inventory.product_id is always populated.
+// Default policy:
+//   gasmask family    → GasMask Tubes (most-stocked SKU)
+//   hotscalati family → HotScalati Mix Pack (entry SKU)
+//   hot mama / grabba → their single SKU
+// Specific tube variants (light / dark / bros) resolve to themselves.
+// ════════════════════════════════════════════════════════════════════
+export const BRAND_TO_DEFAULT_PRODUCT_ID: Record<string, string> = {
+  gasmask:              'dd5e14c0-d6c5-403a-a2d7-504181b0f4ea', // GasMask Tubes
+  gasmaskbags:          '170adb8f-ac4e-40f4-a283-38730d30c5de', // GasMask Bags
+  gasmasktubes:         'dd5e14c0-d6c5-403a-a2d7-504181b0f4ea', // GasMask Tubes
+  gasmaskredtops:       'e3eea682-831e-4913-8b0e-563bc1325a1f', // GasMask Redtops
+  hotscolatti:          '04336f6d-d69b-4ec8-8571-7088783b31d6', // HotScalati Mix Pack
+  hotscalati:           '04336f6d-d69b-4ec8-8571-7088783b31d6', // HotScalati Mix Pack
+  hotscalatimixpack:    '04336f6d-d69b-4ec8-8571-7088783b31d6',
+  'hotscolatti-dark':   '1c4f112e-97a1-4430-aae0-f1fcc0229a85', // HotScalati Dark
+  'hotscolatti-light':  '27e21aec-21a2-4ce7-9515-dbfd618a27c6', // HotScalati Light
+  hotscolattidark:      '1c4f112e-97a1-4430-aae0-f1fcc0229a85',
+  hotscolattilight:     '27e21aec-21a2-4ce7-9515-dbfd618a27c6',
+  hotscalatidark:       '1c4f112e-97a1-4430-aae0-f1fcc0229a85',
+  hotscalatilight:      '27e21aec-21a2-4ce7-9515-dbfd618a27c6',
+  hotscalatibros:       'fcfe5469-e9d3-40f3-8bf4-a4349086e1c3', // HotScalati Bros
+  hotscolattibros:      'fcfe5469-e9d3-40f3-8bf4-a4349086e1c3',
+  hotmama:              '2dfcbd00-0e44-4cd1-b80d-b00a33b123c5', // Hot Mama
+  grabba:               '2d28e463-5296-4d42-b548-896d18ee906e', // Grabba R Us
+  grabbarus:            '2d28e463-5296-4d42-b548-896d18ee906e',
+};
+
+export function resolveProductIdForBrand(brand: string | null | undefined): string | null {
+  if (!brand) return null;
+  // Preserve the original key (with hyphen) for variant lookups, then try collapsed.
+  const lower = brand.toLowerCase();
+  if (BRAND_TO_DEFAULT_PRODUCT_ID[lower]) return BRAND_TO_DEFAULT_PRODUCT_ID[lower];
+  const collapsed = lower.replace(/[\s-]+/g, '');
+  return BRAND_TO_DEFAULT_PRODUCT_ID[collapsed] ?? null;
+}
+
 export function getSkuStatusIcon(status: SkuStatus): string {
   return status === 'bought' ? '🟢' : status === 'staged' ? '🟡' : '🔴';
 }
