@@ -78,7 +78,7 @@ export default function LastUserLogsTable() {
                         {r.last_va_id ? (
                           <div>
                             <div className="text-sm font-medium">
-                              {r.va_name || r.va_email || 'Unknown VA'}
+                              {r.va_email || 'Unknown VA'}
                             </div>
                             <div className="text-[11px] text-muted-foreground font-mono">
                               {r.last_va_id.slice(0, 8)}…
