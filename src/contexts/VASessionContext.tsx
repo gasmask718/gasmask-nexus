@@ -149,23 +149,6 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
   // Cleanup on unmount / page close — use fetch with keepalive (sendBeacon alternative that supports headers)
   useEffect(() => {
     const cleanup = () => {
-      if (state.twilioNumberId) {
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brandaro_phone_numbers?id=eq.${state.twilioNumberId}`;
-        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        try {
-          fetch(url, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': anonKey,
-              'Authorization': `Bearer ${anonKey}`,
-              'Prefer': 'return=minimal',
-            },
-            body: JSON.stringify({ in_use: false, assigned_va_id: null }),
-            keepalive: true,
-          });
-        } catch (_) { /* best effort */ }
-      }
       if (state.sessionId) {
         const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/va_sessions?id=eq.${state.sessionId}`;
         const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
