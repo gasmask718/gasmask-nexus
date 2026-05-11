@@ -201,28 +201,8 @@ export default function VARosterPage() {
     fetchLeads();
   }, [fetchLeads]);
 
-  const filteredLeads = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return unassignedLeads.filter((l) => {
-      if (tierFilter !== 'all' && (l.priority_tier || 'new') !== tierFilter) return false;
-      if (stateFilter !== 'all' && l.state !== stateFilter) return false;
-      if (!q) return true;
-      return (
-        (l.business_name || '').toLowerCase().includes(q) ||
-        (l.city || '').toLowerCase().includes(q) ||
-        (l.state || '').toLowerCase().includes(q)
-      );
-    });
-  }, [unassignedLeads, search, tierFilter, stateFilter]);
-
-  const stateOptions = useMemo(() => {
-    const s = new Set<string>();
-    unassignedLeads.forEach((l) => l.state && s.add(l.state));
-    return Array.from(s).sort();
-  }, [unassignedLeads]);
-
   const allFilteredSelected =
-    filteredLeads.length > 0 && filteredLeads.every((l) => selectedLeadIds.has(l.id));
+    leads.length > 0 && leads.every((l) => selectedLeadIds.has(l.id));
 
   const toggleLead = (id: string) => {
     setSelectedLeadIds((prev) => {
@@ -236,13 +216,14 @@ export default function VARosterPage() {
     setSelectedLeadIds((prev) => {
       const next = new Set(prev);
       if (allFilteredSelected) {
-        filteredLeads.forEach((l) => next.delete(l.id));
+        leads.forEach((l) => next.delete(l.id));
       } else {
-        filteredLeads.forEach((l) => next.add(l.id));
+        leads.forEach((l) => next.add(l.id));
       }
       return next;
     });
   };
+
 
   const handleBulkAssign = async () => {
     if (!bulkTargetVa || selectedLeadIds.size === 0) return;
