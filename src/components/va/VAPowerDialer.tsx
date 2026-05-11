@@ -396,11 +396,15 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     setPhase('idle');
     setCurrentLead(null);
     setCallLogId(null);
+    try { voice.hangUp(); } catch (_) { /* no active call */ }
+    try { endActiveCall(); } catch (_) { /* no active call */ }
     toast.info('Auto dialer stopped');
-  }, []);
+  }, [voice, endActiveCall]);
 
   // ── Manual transitions ──────────────────────────────────────────────
   const handleCallDrop = () => {
+    try { voice.hangUp(); } catch (_) { /* no active call */ }
+    try { endActiveCall(); } catch (_) { /* no active call */ }
     setPhase('wrap_up');
     setDispositionCode('');
     setVaNotes('');
