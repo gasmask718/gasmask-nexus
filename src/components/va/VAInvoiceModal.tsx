@@ -216,6 +216,34 @@ export function VAInvoiceModal({ open, onClose, lead, sendOnSave }: VAInvoiceMod
             </Select>
           </div>
 
+          {/* Live packages from Scripts & Rebuttals → Services */}
+          {packages.length > 0 && (
+            <div>
+              <label className="text-xs text-slate-400 mb-2 flex items-center gap-1.5">
+                <Package className="h-3 w-3 text-cyan-300" />
+                Inline a Package (live from Scripts & Rebuttals)
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {packages.map((p: any) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => addPackage(p.id)}
+                    className="text-left p-2 rounded-lg border border-slate-700 hover:border-cyan-500/60 hover:bg-cyan-500/5 transition-all"
+                  >
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-sm font-bold text-white capitalize">{p.package_name}</span>
+                      <span className="text-cyan-300 font-bold text-xs">{p.price}</span>
+                    </div>
+                    {p.payment_terms && (
+                      <div className="text-[10px] text-slate-400 mt-0.5">{p.payment_terms}</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="text-xs text-slate-400 mb-2 block">{t('va.invoice.lineItems')}</label>
             {form.lineItems.map((item, i) => (
