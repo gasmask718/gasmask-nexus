@@ -190,9 +190,14 @@ serve(async (req: Request) => {
       }
 
       const smsBody =
-        `Invoice ${invoice.invoice_number || ""} from Brandaro\n` +
-        `Total: $${Number(invoice.total || 0).toFixed(2)}\n` +
-        (invoice.payment_link ? `Pay: ${invoice.payment_link}` : "");
+        invoice.payment_type === 'split' && (invoice.deposit_payment_link || invoice.final_payment_link)
+          ? `Invoice ${invoice.invoice_number || ""} from Brandaro\n` +
+            `Total: $${Number(invoice.total || 0).toFixed(2)}\n` +
+            (invoice.deposit_payment_link ? `Pay 50% deposit: ${invoice.deposit_payment_link}\n` : "") +
+            (invoice.final_payment_link ? `Pay final 50%: ${invoice.final_payment_link}` : "")
+          : `Invoice ${invoice.invoice_number || ""} from Brandaro\n` +
+            `Total: $${Number(invoice.total || 0).toFixed(2)}\n` +
+            (invoice.payment_link ? `Pay: ${invoice.payment_link}` : "");
 
       const twilioRes = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
