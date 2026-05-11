@@ -52,6 +52,14 @@ interface SendToRouteModalProps {
   region?: string;
   sourceOutreach?: SourceOutreach;
   sourceCallId?: string;
+  /** Step 6: link save-back to a pending_route_stops queue row. */
+  pendingStopId?: string;
+  /** Step 6: pre-fill overrides from queued recommendation. */
+  initialBoxes?: number;
+  initialBrand?: string;
+  initialDate?: string;     // yyyy-MM-dd
+  initialTime?: string;     // HH:mm
+  initialNotes?: string;
   onSuccess?: () => void;
 }
 
