@@ -521,6 +521,22 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
               />
             </div>
 
+            {/* Owner / Primary Contact Name (Layer 2 — saves to canonical store_contacts) */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <User className="h-4 w-4 text-primary" />
+                Owner Name
+              </Label>
+              <Input
+                value={formData.primary_contact_name}
+                onChange={(e) => setFormData({ ...formData, primary_contact_name: e.target.value })}
+                placeholder="e.g. John Smith"
+              />
+              <p className="text-xs text-muted-foreground">
+                Saved as the store's primary contact. Add managers, cell reps, or backups in the Store Contacts section below.
+              </p>
+            </div>
+
             <Separator />
 
             <div className="space-y-2">
