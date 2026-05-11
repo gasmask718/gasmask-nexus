@@ -4,8 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Clock } from 'lucide-react';
+import { Phone, Clock, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { VAInvoiceModal } from './VAInvoiceModal';
 
 interface Callback {
   id: string;
@@ -23,6 +24,9 @@ interface VACallbacksQueueProps {
 export function VACallbacksQueue({ onDialLead }: VACallbacksQueueProps) {
   const { user } = useAuth();
   const [callbacks, setCallbacks] = useState<Callback[]>([]);
+  const [invoiceLead, setInvoiceLead] = useState<{ id: string; business_name: string; phone?: string } | null>(null);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [sendMode, setSendMode] = useState(false);
 
   const fetchCallbacks = async () => {
     if (!user) return;
