@@ -86524,6 +86524,7 @@ export type Database = {
           id: string
           is_simulation: boolean
           last_updated: string | null
+          needs_operator_verification: boolean
           product_id: string | null
           store_id: string
         }
@@ -86534,6 +86535,7 @@ export type Database = {
           id?: string
           is_simulation?: boolean
           last_updated?: string | null
+          needs_operator_verification?: boolean
           product_id?: string | null
           store_id: string
         }
@@ -86544,6 +86546,7 @@ export type Database = {
           id?: string
           is_simulation?: boolean
           last_updated?: string | null
+          needs_operator_verification?: boolean
           product_id?: string | null
           store_id?: string
         }
