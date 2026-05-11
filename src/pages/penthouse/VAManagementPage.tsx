@@ -169,6 +169,21 @@ export default function VAManagementPage() {
     onError: (e: any) => toast.error(e.message ?? 'Failed to delete invite'),
   });
 
+  const assignCompanyMut = useMutation({
+    mutationFn: async ({ membership_id, company_id }: { membership_id: string; company_id: string }) => {
+      const { error } = await supabase
+        .from('va_company_memberships')
+        .update({ company_id })
+        .eq('id', membership_id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['va-directory'] });
+      toast.success('Company reassigned');
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Failed to reassign company'),
+  });
+
   // ---- Filters ----
   const [filterCompany, setFilterCompany] = useState<string>('all');
   const [filterRole, setFilterRole] = useState<string>('all');
