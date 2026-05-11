@@ -64303,6 +64303,83 @@ export type Database = {
           },
         ]
       }
+      pending_route_stops: {
+        Row: {
+          ai_payload: Json | null
+          approved_at: string | null
+          approved_by: string | null
+          bland_call_log_id: string | null
+          confidence_level: string | null
+          created_at: string
+          estimated_revenue: number | null
+          id: string
+          intent_summary: string | null
+          recommended_boxes: number | null
+          recommended_brand: string | null
+          rejection_reason: string | null
+          requested_day: string | null
+          requested_window: string | null
+          route_stop_id: string | null
+          status: string
+          store_id: string
+          store_name: string | null
+          updated_at: string
+          urgency: string | null
+        }
+        Insert: {
+          ai_payload?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          bland_call_log_id?: string | null
+          confidence_level?: string | null
+          created_at?: string
+          estimated_revenue?: number | null
+          id?: string
+          intent_summary?: string | null
+          recommended_boxes?: number | null
+          recommended_brand?: string | null
+          rejection_reason?: string | null
+          requested_day?: string | null
+          requested_window?: string | null
+          route_stop_id?: string | null
+          status?: string
+          store_id: string
+          store_name?: string | null
+          updated_at?: string
+          urgency?: string | null
+        }
+        Update: {
+          ai_payload?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          bland_call_log_id?: string | null
+          confidence_level?: string | null
+          created_at?: string
+          estimated_revenue?: number | null
+          id?: string
+          intent_summary?: string | null
+          recommended_boxes?: number | null
+          recommended_brand?: string | null
+          rejection_reason?: string | null
+          requested_day?: string | null
+          requested_window?: string | null
+          route_stop_id?: string | null
+          status?: string
+          store_id?: string
+          store_name?: string | null
+          updated_at?: string
+          urgency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_route_stops_bland_call_log_id_fkey"
+            columns: ["bland_call_log_id"]
+            isOneToOne: false
+            referencedRelation: "bland_call_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       people: {
         Row: {
           address_city: string | null

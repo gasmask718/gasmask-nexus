@@ -52,6 +52,14 @@ interface SendToRouteModalProps {
   region?: string;
   sourceOutreach?: SourceOutreach;
   sourceCallId?: string;
+  /** Step 6: link save-back to a pending_route_stops queue row. */
+  pendingStopId?: string;
+  /** Step 6: pre-fill overrides from queued recommendation. */
+  initialBoxes?: number;
+  initialBrand?: string;
+  initialDate?: string;     // yyyy-MM-dd
+  initialTime?: string;     // HH:mm
+  initialNotes?: string;
   onSuccess?: () => void;
 }
 
@@ -111,6 +119,12 @@ export function SendToRouteModal({
   region,
   sourceOutreach,
   sourceCallId,
+  pendingStopId,
+  initialBoxes,
+  initialBrand,
+  initialDate,
+  initialTime,
+  initialNotes,
   onSuccess,
 }: SendToRouteModalProps) {
   const { buildRouteFromStores, saveRoute, loading: routeLoading } = useRouteBuilder();
@@ -123,19 +137,19 @@ export function SendToRouteModal({
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [selectedDriver, setSelectedDriver] = useState<string>('');
   const [scheduledDate, setScheduledDate] = useState<string>(
-    format(new Date(Date.now() + 86400000), 'yyyy-MM-dd')
+    initialDate || format(new Date(Date.now() + 86400000), 'yyyy-MM-dd')
   );
-  const [startTime, setStartTime] = useState<string>('10:00');
+  const [startTime, setStartTime] = useState<string>(initialTime || '10:00');
   const [routeName, setRouteName] = useState<string>('');
   const [taskOnly, setTaskOnly] = useState<boolean>(false);
-  const [notes, setNotes] = useState<string>('');
+  const [notes, setNotes] = useState<string>(initialNotes || '');
 
   // AI recommendation state (single-store mode)
   const [aiLoading, setAiLoading] = useState(false);
   const [aiData, setAiData] = useState<AIResponse | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [boxes, setBoxes] = useState<number>(1);
-  const [brandOverride, setBrandOverride] = useState<string>('');
+  const [boxes, setBoxes] = useState<number>(initialBoxes || 1);
+  const [brandOverride, setBrandOverride] = useState<string>(initialBrand || '');
 
   const loading = routeLoading || taskLoading;
   const topRec = aiData?.recommendations?.[0];
@@ -193,9 +207,9 @@ export function SendToRouteModal({
         setAiData(resp);
         const top = resp?.recommendations?.[0];
         if (top) {
-          setBoxes(top.recommended_boxes);
-          setBrandOverride(top.brand);
-        } else {
+          if (initialBoxes == null) setBoxes(top.recommended_boxes);
+          if (!initialBrand) setBrandOverride(top.brand);
+        } else if (initialBoxes == null) {
           setBoxes(1);
         }
       } catch (err: any) {
@@ -281,6 +295,28 @@ export function SendToRouteModal({
         }
       } catch (err) {
         console.error('Failed to link call to route_stop', err);
+      }
+    }
+
+    // Step 6: mark queued pending stop as approved + link to route_stop
+    if (pendingStopId && savedRoute?.id) {
+      try {
+        const { data: stop } = await supabase
+          .from('route_stops')
+          .select('id')
+          .eq('route_id', savedRoute.id)
+          .eq('store_id', storeId as string)
+          .maybeSingle();
+        await (supabase as any)
+          .from('pending_route_stops')
+          .update({
+            status: 'approved',
+            approved_at: new Date().toISOString(),
+            route_stop_id: stop?.id ?? null,
+          })
+          .eq('id', pendingStopId);
+      } catch (err) {
+        console.error('Failed to mark pending stop approved', err);
       }
     }
 
