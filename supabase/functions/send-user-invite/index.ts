@@ -22,16 +22,16 @@ serve(async (req) => {
   }
 
   try {
-    const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
+    const GMAIL_USER = Deno.env.get("VA_GMAIL_USER");
+    const GMAIL_PASS = Deno.env.get("VA_GMAIL_APP_PASSWORD");
     const frontendBaseUrl = Deno.env.get("FRONTEND_BASE_URL") || "https://gasmask-os-nexus.lovable.app";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Validate SendGrid API key
-    if (!sendgridApiKey) {
-      console.error("❌ SENDGRID_API_KEY is not configured");
+    if (!GMAIL_USER || !GMAIL_PASS) {
+      console.error("❌ VA_GMAIL_USER or VA_GMAIL_APP_PASSWORD not configured");
       return new Response(
-        JSON.stringify({ error: "Email service not configured. Please add SENDGRID_API_KEY." }),
+        JSON.stringify({ error: "Email service not configured. Missing VA_GMAIL_USER or VA_GMAIL_APP_PASSWORD." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
