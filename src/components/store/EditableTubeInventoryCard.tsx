@@ -74,7 +74,7 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
           filter: `store_id=eq.${storeId}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
+          invalidateStoreInventoryQueries(queryClient, storeId);
         }
       )
       .subscribe();
