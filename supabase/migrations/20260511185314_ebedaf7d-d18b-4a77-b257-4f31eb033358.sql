@@ -1,0 +1,1 @@
+ALTER TABLE public.store_tube_inventory DROP CONSTRAINT IF EXISTS valid_tube_brands;
