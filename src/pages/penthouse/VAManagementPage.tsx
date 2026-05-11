@@ -405,20 +405,22 @@ export default function VAManagementPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
-                <TableHead>Company</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>Assigned Company</TableHead>
+                <TableHead>Membership Role</TableHead>
+                <TableHead>Profile Role</TableHead>
+                <TableHead>App Roles</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead>Active</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {dirLoading && (
-                <TableRow><TableCell colSpan={7} className="text-center py-8">
+                <TableRow><TableCell colSpan={9} className="text-center py-8">
                   <Loader2 className="h-5 w-5 animate-spin inline" />
                 </TableCell></TableRow>
               )}
               {!dirLoading && filtered.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center text-slate-500 py-8">
+                <TableRow><TableCell colSpan={9} className="text-center text-slate-500 py-8">
                   No VAs match these filters
                 </TableCell></TableRow>
               )}
@@ -428,12 +430,46 @@ export default function VAManagementPage() {
                   <TableCell>{r.email ?? '—'}</TableCell>
                   <TableCell>{r.phone ?? '—'}</TableCell>
                   <TableCell>
-                    <Badge style={{
-                      backgroundColor: (companyById[r.company_id]?.brand_color ?? '#06b6d4') + '33',
-                      color: companyById[r.company_id]?.brand_color ?? '#06b6d4',
-                    }}>{r.company_name}</Badge>
+                    <Select
+                      value={r.company_id}
+                      onValueChange={(v) => {
+                        if (v !== r.company_id) {
+                          assignCompanyMut.mutate({ membership_id: r.membership_id, company_id: v });
+                        }
+                      }}
+                      disabled={assignCompanyMut.isPending}
+                    >
+                      <SelectTrigger className="bg-slate-800 border-slate-700 text-white h-8 min-w-[150px]">
+                        <SelectValue>
+                          <span style={{ color: companyById[r.company_id]?.brand_color ?? '#06b6d4' }}>
+                            {r.company_name}
+                          </span>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {companies.map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </TableCell>
-                  <TableCell>{r.role}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{r.role}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {r.primary_role
+                      ? <Badge variant="secondary">{r.primary_role}</Badge>
+                      : <span className="text-xs text-slate-500">—</span>}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {(r.app_roles ?? []).length === 0
+                        ? <span className="text-xs text-slate-500">—</span>
+                        : r.app_roles!.map(role => (
+                            <Badge key={role} variant="outline" className="text-xs">{role}</Badge>
+                          ))}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-xs text-slate-400">
                     {new Date(r.joined_at).toLocaleDateString()}
                   </TableCell>
