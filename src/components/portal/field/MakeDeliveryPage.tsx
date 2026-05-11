@@ -25,6 +25,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useCall } from '@/components/communication/CallProvider';
 import { DeliveryTaskCard } from '@/components/delivery/DeliveryTaskCard';
+import { DeliveryStopIntelligenceCards } from '@/components/delivery/DeliveryStopIntelligenceCards';
 
 interface DeliveryItem {
   id: string;
