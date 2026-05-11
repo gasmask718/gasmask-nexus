@@ -1,94 +1,36 @@
+/**
+ * VAServicesPricing — DB-backed packages list.
+ * Single source of truth: brandaro_packages (same table powering the
+ * dashboard's Scripts & Rebuttals → Packages tab).
+ */
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
-import { Check, Zap, Crown, Rocket, DollarSign, Gift } from 'lucide-react';
-
-interface Tier {
-  name: string;
-  price: string;
-  cadence: string;
-  icon: any;
-  color: string;
-  border: string;
-  tagline: string;
-  features: string[];
-  bestFor: string;
-}
-
-const TIERS: Tier[] = [
-  {
-    name: 'Starter',
-    price: '$497',
-    cadence: '/month',
-    icon: Zap,
-    color: 'text-cyan-300',
-    border: 'border-cyan-500/40 bg-cyan-500/5',
-    tagline: 'Get found online — fast.',
-    bestFor: 'Solo owners, new businesses, single location',
-    features: [
-      'Google Business Profile setup & optimization',
-      'Local SEO foundation (citations + maps)',
-      'Reputation management (review requests)',
-      '1 social media platform managed',
-      'Monthly performance report',
-      'Dedicated VA support',
-    ],
-  },
-  {
-    name: 'Growth',
-    price: '$997',
-    cadence: '/month',
-    icon: Rocket,
-    color: 'text-emerald-300',
-    border: 'border-emerald-500/50 bg-emerald-500/10',
-    tagline: 'Most popular — built to scale leads.',
-    bestFor: 'Established businesses ready for more inquiries',
-    features: [
-      'Everything in Starter',
-      'Google Ads management ($500 ad spend included)',
-      'SEO content (4 blog posts/mo)',
-      '3 social platforms managed',
-      'Lead capture website / landing page',
-      'Bi-weekly strategy calls',
-      'AI-powered lead qualification',
-    ],
-  },
-  {
-    name: 'Domination',
-    price: '$2,497',
-    cadence: '/month',
-    icon: Crown,
-    color: 'text-amber-300',
-    border: 'border-amber-500/40 bg-amber-500/5',
-    tagline: 'Own your market.',
-    bestFor: 'Multi-location, high-ticket services, ready to dominate',
-    features: [
-      'Everything in Growth',
-      'Full website build & hosting',
-      'Google + Meta + TikTok ads ($1.5k spend)',
-      'Unlimited social platforms',
-      'Video content (4 short-form/mo)',
-      'CRM + automation setup',
-      'Dedicated account strategist',
-      'Weekly calls + 24/7 support',
-    ],
-  },
-];
-
-const ADD_ONS = [
-  { label: 'Logo + brand identity', price: '$497 one-time' },
-  { label: 'Photo / video shoot day', price: '$897 one-time' },
-  { label: 'Email marketing setup', price: '$297/mo' },
-  { label: 'SMS marketing automation', price: '$197/mo' },
-];
-
-const INCLUDED_BONUSES = [
-  'Free 30-min strategy call before signing',
-  'No long-term contract — month-to-month',
-  '90-day results guarantee on Growth & Domination',
-  'Dedicated US-based account manager',
-  'Free monthly strategy review',
-];
+import { Skeleton } from '@/components/ui/skeleton';
+import { DollarSign, Package } from 'lucide-react';
 
 export function VAServicesPricing() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['brandaro-packages'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('brandaro_packages')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
+      return data || [];
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-24 w-full bg-slate-700/40" />
+        <Skeleton className="h-24 w-full bg-slate-700/40" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="space-y-1">
@@ -97,84 +39,46 @@ export function VAServicesPricing() {
           Services & Pricing — What We Offer
         </h3>
         <p className="text-[11px] text-slate-400">
-          Reference instantly while on the call. Tap a tier to read aloud.
+          Reference instantly while on the call.
         </p>
       </div>
 
-      {/* Tiers */}
       <div className="space-y-2">
-        {TIERS.map(tier => {
-          const Icon = tier.icon;
-          return (
-            <div key={tier.name} className={`rounded-lg p-3 border ${tier.border}`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Icon className={`h-4 w-4 ${tier.color}`} />
-                  <span className={`text-sm font-bold ${tier.color}`}>{tier.name}</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-base font-bold text-white">{tier.price}</span>
-                  <span className="text-[10px] text-slate-400">{tier.cadence}</span>
-                </div>
+        {(data || []).map((p: any) => (
+          <div
+            key={p.id}
+            className={`rounded-lg p-3 border ${
+              p.is_target
+                ? 'border-cyan-400/60 bg-cyan-500/5'
+                : 'border-slate-700/50 bg-slate-900/40'
+            }`}
+          >
+            <div className="flex items-baseline justify-between gap-2 mb-1">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-cyan-300" />
+                <h4 className="text-sm font-bold text-white capitalize">{p.package_name}</h4>
+                {p.is_target && (
+                  <Badge className="bg-cyan-500 text-white text-[9px] px-1.5 py-0">TARGET</Badge>
+                )}
               </div>
-              <p className="text-xs italic text-slate-300 mb-2">"{tier.tagline}"</p>
-              <p className="text-[10px] uppercase tracking-wide text-slate-500 mb-2">
-                Best for: <span className="text-slate-300 normal-case">{tier.bestFor}</span>
-              </p>
-              <ul className="space-y-1">
-                {tier.features.map(f => (
-                  <li key={f} className="flex items-start gap-1.5 text-xs text-slate-300">
-                    <Check className={`h-3 w-3 mt-0.5 shrink-0 ${tier.color}`} />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
+              <span className="text-cyan-300 font-bold text-sm">{p.price}</span>
             </div>
-          );
-        })}
-      </div>
-
-      {/* Add-ons */}
-      <div className="rounded-lg p-3 border border-slate-700/60 bg-slate-900/40">
-        <p className="text-xs font-bold text-purple-300 mb-2 flex items-center gap-1.5">
-          <Zap className="h-3 w-3" /> Popular Add-Ons
-        </p>
-        <div className="space-y-1">
-          {ADD_ONS.map(a => (
-            <div key={a.label} className="flex justify-between text-xs">
-              <span className="text-slate-300">{a.label}</span>
-              <span className="text-purple-300 font-mono">{a.price}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* What's always included */}
-      <div className="rounded-lg p-3 border border-emerald-500/30 bg-emerald-500/5">
-        <p className="text-xs font-bold text-emerald-300 mb-2 flex items-center gap-1.5">
-          <Gift className="h-3 w-3" /> What's Always Included (Every Plan)
-        </p>
-        <ul className="space-y-1">
-          {INCLUDED_BONUSES.map(b => (
-            <li key={b} className="flex items-start gap-1.5 text-xs text-slate-300">
-              <Check className="h-3 w-3 mt-0.5 shrink-0 text-emerald-400" />
-              <span>{b}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Quick pitch line */}
-      <div className="rounded-lg p-3 border border-cyan-500/30 bg-cyan-500/5">
-        <p className="text-[10px] uppercase tracking-wide text-cyan-400 mb-1 font-bold">
-          Quick Pitch (read on call)
-        </p>
-        <p className="text-xs text-slate-200 italic leading-relaxed">
-          "Most of our clients start on the <strong className="text-emerald-300">Growth plan at $997</strong> —
-          it's our most popular because it includes Google Ads, SEO, social management, and a lead-capture
-          page. There's no contract, you can cancel anytime, and we guarantee results in the first 90 days.
-          Want me to walk you through what that would look like for your business?"
-        </p>
+            {p.payment_terms && (
+              <div className="text-[11px] text-slate-400 mb-1">{p.payment_terms}</div>
+            )}
+            {p.included_highlights && (
+              <div className="text-xs text-slate-200 leading-relaxed">{p.included_highlights}</div>
+            )}
+            {p.best_for && (
+              <div className="text-[11px] text-slate-500 italic mt-1">Best for: {p.best_for}</div>
+            )}
+          </div>
+        ))}
+        {(data || []).length === 0 && (
+          <div className="text-xs text-slate-400 text-center py-4">
+            No packages configured.
+          </div>
+        )}
       </div>
     </div>
   );
