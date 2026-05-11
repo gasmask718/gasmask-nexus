@@ -34,6 +34,7 @@ const SERVICE_TYPES = [
 ];
 
 type PaymentType = 'full' | 'split';
+type SendChannel = 'email' | 'sms';
 
 export function VAInvoiceModal({ open, onClose, lead, sendOnSave }: VAInvoiceModalProps) {
   const { t } = useVASession();
@@ -43,11 +44,13 @@ export function VAInvoiceModal({ open, onClose, lead, sendOnSave }: VAInvoiceMod
   const [form, setForm] = useState({
     customerName: '',
     customerEmail: '',
+    customerPhone: '',
     serviceType: '',
     dueDate: '',
     notes: '',
     paymentType: 'split' as PaymentType,
     depositPercent: 50,
+    sendChannel: 'email' as SendChannel,
     lineItems: [{ description: '', price: 0 }] as LineItem[],
   });
 
@@ -57,6 +60,7 @@ export function VAInvoiceModal({ open, onClose, lead, sendOnSave }: VAInvoiceMod
         ...f,
         customerName: lead.business_name || '',
         customerEmail: lead.email || f.customerEmail,
+        customerPhone: lead.phone || f.customerPhone,
       }));
     }
   }, [open, lead]);
