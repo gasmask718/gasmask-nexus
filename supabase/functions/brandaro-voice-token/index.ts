@@ -289,6 +289,11 @@ serve(async (req: Request) => {
       });
     }
 
+    // Self-heal TwiML App VoiceUrl so user-selected CallerId reaches <Dial>.
+    const SUPABASE_URL = readSecret("SUPABASE_URL")!;
+    const expectedVoiceUrl = `${SUPABASE_URL}/functions/v1/brandaro-call-twiml`;
+    await ensureTwimlAppVoiceUrl(accountSid, apiKeySid, apiKeySecret, twimlAppSid, expectedVoiceUrl, (appValidation as any).app);
+
     const token = createBrandaroToken(accountSid, apiKeySid, apiKeySecret, identity, twimlAppSid, ttl);
 
     return new Response(
