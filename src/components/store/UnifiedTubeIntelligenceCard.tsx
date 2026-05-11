@@ -227,8 +227,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
         'postgres_changes',
         { event: '*', schema: 'public', table: 'store_tube_inventory', filter: `store_id=eq.${storeId}` },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
-          queryClient.invalidateQueries({ queryKey: ['store-tube-kpi', storeId] });
+          invalidateStoreInventoryQueries(queryClient, storeId);
         }
       )
       .on(
