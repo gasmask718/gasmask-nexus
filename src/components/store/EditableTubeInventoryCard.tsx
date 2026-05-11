@@ -14,6 +14,7 @@ import { Package, Save, RefreshCw, Clock, Filter, AlertTriangle } from 'lucide-r
 import { formatDistanceToNow, format } from 'date-fns';
 import { dynastyDateTime } from '@/lib/dates';
 import { toast } from 'sonner';
+import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
 
 // AUTHORITATIVE TUBE BRANDS - only these are valid
 export const VALID_TUBE_BRANDS = [
@@ -73,7 +74,7 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
           filter: `store_id=eq.${storeId}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
+          invalidateStoreInventoryQueries(queryClient, storeId);
         }
       )
       .subscribe();
@@ -143,7 +144,7 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
     },
     simulationMessage: 'Saving inventory to simulation database...',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
+      invalidateStoreInventoryQueries(queryClient, storeId);
       toast.success(simulationMode ? 'Inventory updated (simulation)' : 'Tube inventory updated');
       setHasChanges(false);
     },

@@ -23,6 +23,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { dynastyDate } from '@/lib/dates';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TUBE_BRAND_COLORS } from '@/constants/tubeColors';
 import { UnifiedTubeSoldTable } from '@/components/store/UnifiedTubeSoldTable';
@@ -226,8 +227,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
         'postgres_changes',
         { event: '*', schema: 'public', table: 'store_tube_inventory', filter: `store_id=eq.${storeId}` },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
-          queryClient.invalidateQueries({ queryKey: ['store-tube-kpi', storeId] });
+          invalidateStoreInventoryQueries(queryClient, storeId);
         }
       )
       .on(
@@ -288,8 +288,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
     },
     simulationMessage: 'Saving inventory to simulation database...',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
-      queryClient.invalidateQueries({ queryKey: ['store-tube-kpi', storeId] });
+      invalidateStoreInventoryQueries(queryClient, storeId);
       toast.success(simulationMode ? 'Inventory updated (simulation)' : 'Tube inventory saved');
       setHasChanges(false);
     },

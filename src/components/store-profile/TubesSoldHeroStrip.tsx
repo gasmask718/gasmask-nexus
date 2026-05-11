@@ -1,12 +1,14 @@
-import { useState } from 'react';
-import { Flame, TrendingUp, TrendingDown, Minus, Snowflake, Boxes, Calendar, DollarSign, ChevronDown, ChevronUp, Package } from 'lucide-react';
+import { Flame, TrendingUp, TrendingDown, Minus, Snowflake, Boxes, Calendar, DollarSign, Package } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ProfileStatCard } from '@/components/profile/ProfileStatCard';
 import { useStoreTubeSummary } from '@/hooks/useStoreTubeSummary';
 import { useStoreTubeBrandsKpi } from '@/hooks/useStoreTubeBrandsKpi';
 import { useStoreInventoryByBrand } from '@/hooks/useStoreInventoryByBrand';
-import { dynastyRelative } from '@/lib/dates';
+import { useStoreLifetimeByBrand } from '@/hooks/useStoreLifetimeByBrand';
+import { useStoreSoldByBrandWindow } from '@/hooks/useStoreSoldByBrandWindow';
+import { useStoreRecentInvoices } from '@/hooks/useStoreRecentInvoices';
+import { ExpandableChipCard } from './ExpandableChipCard';
+import { dynastyDate, dynastyRelative } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 
 function getStockStatusDot(tubes: number) {
@@ -43,9 +45,11 @@ const fmt = (n: number | null | undefined) => Number(n || 0).toLocaleString();
 export function TubesSoldHeroStrip({ storeId }: Props) {
   const summary = useStoreTubeSummary(storeId);
   const brands = useStoreTubeBrandsKpi(storeId);
-  const [stockExpanded, setStockExpanded] = useState(false);
-  const { data: brandInventory } = useStoreInventoryByBrand(storeId);
-
+  const inventoryByBrand = useStoreInventoryByBrand(storeId);
+  const lifetimeByBrand = useStoreLifetimeByBrand(storeId);
+  const last30ByBrand = useStoreSoldByBrandWindow(storeId, 'last_30_days');
+  const priorMonthByBrand = useStoreSoldByBrandWindow(storeId, 'prior_month');
+  const recentInvoices = useStoreRecentInvoices(storeId, 5);
 
   if (summary.isLoading) {
     return (
@@ -69,6 +73,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
   const last30 = Number(s.tubes_last_30_days || 0);
   const onHand = Number(s.current_inventory_count || 0);
   const momPct = s.tubes_mom_delta_pct;
+  const priorMonthTotal = (priorMonthByBrand.data ?? []).reduce((a, b) => a + b.tubes, 0);
 
   // MoM subtitle
   let momLabel = 'no prior month data';
@@ -100,11 +105,23 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
   const brandRows = brands.data || [];
   const brandTotal = brandRows.reduce((acc, b) => acc + (b.sold_lifetime || 0), 0);
 
+  const brandInventory = inventoryByBrand.data ?? [];
+  const lifetimeRows = lifetimeByBrand.data ?? [];
+  const last30Rows = last30ByBrand.data ?? [];
+  const priorMonthRows = priorMonthByBrand.data ?? [];
+  const invoiceRows = recentInvoices.data ?? [];
+
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-        <Card>
-          <CardContent className="p-4">
+        {/* CHIP 1 — Lifetime Sold */}
+        <ExpandableChipCard
+          ariaLabel="Lifetime sold breakdown"
+          expandedTitle="Lifetime by Brand"
+          isLoading={lifetimeByBrand.isLoading}
+          isEmpty={!lifetimeByBrand.isLoading && lifetimeRows.length === 0}
+          emptyMessage="No invoiced tubes yet."
+          collapsedView={
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-red-500/15">
                 <Flame className="h-5 w-5 text-red-600" />
@@ -112,15 +129,40 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
               <div className="min-w-0">
                 <p className="text-2xl font-bold text-red-600">{fmt(lifetime)}</p>
                 <p className="text-xs text-muted-foreground truncate">
-                  Lifetime sold{s.top_brand ? ` • ${s.top_brand} primary` : ''}
+                  Lifetime sold{s.top_brand ? ` • ${s.top_brand}` : ''}
                 </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          }
+          expandedView={
+            <>
+              <div className="space-y-1.5">
+                {lifetimeRows.map(b => (
+                  <div key={b.brand} className="flex items-center justify-between text-xs">
+                    <span className="capitalize truncate max-w-[140px]">{b.brand}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="font-semibold tabular-nums text-red-600">{fmt(b.tubes)}</span>
+                      <span className="text-[10px] text-muted-foreground tabular-nums">{b.percentage}%</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-border pt-2 flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total</span>
+                <span className="text-sm font-bold text-red-600">{fmt(lifetime)}</span>
+              </div>
+            </>
+          }
+        />
 
-        <Card>
-          <CardContent className="p-4">
+        {/* CHIP 2 — This Month / MoM */}
+        <ExpandableChipCard
+          ariaLabel="Prior month sold breakdown"
+          expandedTitle="Prior Month by Brand"
+          isLoading={priorMonthByBrand.isLoading}
+          isEmpty={!priorMonthByBrand.isLoading && priorMonthRows.length === 0}
+          emptyMessage="No sales in prior month."
+          collapsedView={
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-red-500/10">
                 <Calendar className="h-5 w-5 text-red-500" />
@@ -132,11 +174,36 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
                 </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          }
+          expandedView={
+            <>
+              <div className="space-y-1.5">
+                {priorMonthRows.map(b => (
+                  <div key={b.brand} className="flex items-center justify-between text-xs">
+                    <span className="capitalize truncate max-w-[140px]">{b.brand}</span>
+                    <span className="font-semibold tabular-nums">{fmt(b.tubes)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-border pt-2 flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total</span>
+                <span className="text-sm font-bold">{fmt(priorMonthTotal)}</span>
+              </div>
+              {momPct != null && (
+                <p className={cn('text-[10px] italic', momClass)}>{momLabel}</p>
+              )}
+            </>
+          }
+        />
 
-        <Card>
-          <CardContent className="p-4">
+        {/* CHIP 3 — Last 30 Days */}
+        <ExpandableChipCard
+          ariaLabel="Last 30 days breakdown"
+          expandedTitle="Last 30 Days by Brand"
+          isLoading={last30ByBrand.isLoading}
+          isEmpty={!last30ByBrand.isLoading && last30Rows.length === 0}
+          emptyMessage="No deliveries in the last 30 days."
+          collapsedView={
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-red-500/10">
                 {last30 > 0 ? <Flame className="h-5 w-5 text-red-500" /> : <Snowflake className="h-5 w-5 text-muted-foreground" />}
@@ -146,82 +213,87 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
                 <p className={cn('text-xs', velClass)}>{velLabel} • last 30d</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className={cn(stockExpanded && 'md:col-span-2 lg:col-span-2')}>
-          <CardContent className="p-0">
-            <button
-              type="button"
-              onClick={() => setStockExpanded(v => !v)}
-              className="w-full text-left p-4 hover:bg-muted/40 transition-colors rounded-lg"
-              aria-expanded={stockExpanded}
-              aria-label={stockExpanded ? 'Collapse stock breakdown' : 'Expand stock breakdown'}
-            >
-              {!stockExpanded ? (
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-blue-500/15">
-                    <Boxes className="h-5 w-5 text-blue-600" />
+          }
+          expandedView={
+            <>
+              <div className="space-y-1.5">
+                {last30Rows.map(b => (
+                  <div key={b.brand} className="flex items-center justify-between text-xs">
+                    <span className="capitalize truncate max-w-[140px]">{b.brand}</span>
+                    <span className="font-semibold tabular-nums">{fmt(b.tubes)}</span>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-2xl font-bold text-blue-600">{fmt(onHand)}</p>
-                    <p className={cn('text-xs', restock.cls)}>{restock.label}</p>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                ))}
+              </div>
+              <div className="border-t border-border pt-2 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total</span>
+                  <span className="text-sm font-bold">{fmt(last30)}</span>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Package className="h-4 w-4 text-blue-600" />
-                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Stock Breakdown
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Status</span>
+                  <span className={cn('text-xs', velClass)}>{velLabel}</span>
+                </div>
+              </div>
+            </>
+          }
+        />
+
+        {/* CHIP 4 — On Hand / Stocked */}
+        <ExpandableChipCard
+          ariaLabel="Stock breakdown"
+          expandedTitle="Stock Breakdown"
+          isLoading={inventoryByBrand.isLoading}
+          isEmpty={!inventoryByBrand.isLoading && brandInventory.length === 0}
+          emptyMessage="No inventory data yet. Log via Tube Intelligence below ↓"
+          collapsedView={
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-blue-500/15">
+                <Boxes className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-2xl font-bold text-blue-600">{fmt(onHand)}</p>
+                <p className={cn('text-xs', restock.cls)}>{restock.label}</p>
+              </div>
+            </div>
+          }
+          expandedView={
+            <>
+              <div className="space-y-1.5">
+                {brandInventory.map(b => (
+                  <div key={b.brand} className="flex items-center justify-between text-xs">
+                    <span className="capitalize truncate max-w-[140px]">{b.brand}</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className={cn('font-semibold tabular-nums', getStockStatusColor(b.tubes_remaining))}>
+                        {b.tubes_remaining}
                       </span>
-                    </div>
-                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-[10px]">{getStockStatusDot(b.tubes_remaining)}</span>
+                    </span>
                   </div>
-
-                  {!brandInventory || brandInventory.length === 0 ? (
-                    <div className="py-2 text-xs text-muted-foreground">
-                      <p>No inventory data yet.</p>
-                      <p className="mt-1 italic">Log via Tube Intelligence below ↓</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="space-y-1.5">
-                        {brandInventory.map(b => (
-                          <div key={b.brand} className="flex items-center justify-between text-xs">
-                            <span className="capitalize truncate max-w-[140px]">{b.brand}</span>
-                            <span className="flex items-center gap-1.5">
-                              <span className={cn('font-semibold tabular-nums', getStockStatusColor(b.tubes_remaining))}>
-                                {b.tubes_remaining}
-                              </span>
-                              <span className="text-[10px]">{getStockStatusDot(b.tubes_remaining)}</span>
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="border-t border-border pt-2 space-y-0.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total</span>
-                          <span className="text-sm font-bold text-blue-600">{fmt(onHand)} tubes</span>
-                        </div>
-                        {brandInventory[0]?.last_updated && (
-                          <p className="text-[10px] text-muted-foreground">
-                            Updated {dynastyRelative(brandInventory[0].last_updated)}
-                          </p>
-                        )}
-                      </div>
-                    </>
-                  )}
+                ))}
+              </div>
+              <div className="border-t border-border pt-2 space-y-0.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total</span>
+                  <span className="text-sm font-bold text-blue-600">{fmt(onHand)} tubes</span>
                 </div>
-              )}
-            </button>
-          </CardContent>
-        </Card>
+                {brandInventory[0]?.last_updated && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Updated {dynastyRelative(brandInventory[0].last_updated)}
+                  </p>
+                )}
+              </div>
+            </>
+          }
+        />
 
-        <Card>
-          <CardContent className="p-4">
+        {/* CHIP 5 — Revenue / Recent Invoices */}
+        <ExpandableChipCard
+          ariaLabel="Recent invoices"
+          expandedTitle={`Recent Invoices${invoiceRows.length ? ` (${invoiceRows.length})` : ''}`}
+          isLoading={recentInvoices.isLoading}
+          isEmpty={!recentInvoices.isLoading && invoiceRows.length === 0}
+          emptyMessage="No invoices yet."
+          collapsedView={
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-emerald-500/15">
                 <DollarSign className="h-5 w-5 text-emerald-600" />
@@ -233,8 +305,39 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
                 </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          }
+          expandedView={
+            <>
+              <div className="space-y-1.5">
+                {invoiceRows.map(inv => (
+                  <div key={inv.id} className="flex items-center justify-between text-xs gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{dynastyDate(inv.created_at)}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {inv.boxes > 0 ? `${inv.boxes} box${inv.boxes === 1 ? '' : 'es'}` : '—'}
+                        {inv.brand ? ` • ${inv.brand}` : ''}
+                      </p>
+                    </div>
+                    <span className="font-semibold tabular-nums text-emerald-600 shrink-0">
+                      ${inv.total.toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-border pt-2 space-y-0.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Lifetime</span>
+                  <span className="text-sm font-bold text-emerald-600">${lifetimeRevenue.toLocaleString()}</span>
+                </div>
+                {invoiceCount > 0 && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Avg per invoice: ${Math.round(lifetimeRevenue / invoiceCount).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            </>
+          }
+        />
       </div>
 
       {brandTotal > 0 && (

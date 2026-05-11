@@ -16,6 +16,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Package } from 'lucide-react';
 import { VALID_TUBE_BRANDS } from './UnifiedTubeIntelligenceCard';
+import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
 
 interface UpdateInventoryModalProps {
   open: boolean;
@@ -100,7 +101,7 @@ export function UpdateInventoryModal({
     },
     onSuccess: () => {
       toast.success(`Inventory updated: ${tubeCount} ${brand} tubes`);
-      queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
+      invalidateStoreInventoryQueries(queryClient, storeId);
       setBrand('');
       setTubeCount('');
       setNotes('');
