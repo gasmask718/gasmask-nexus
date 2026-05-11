@@ -23,6 +23,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { dynastyDate } from '@/lib/dates';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TUBE_BRAND_COLORS } from '@/constants/tubeColors';
 import { UnifiedTubeSoldTable } from '@/components/store/UnifiedTubeSoldTable';
