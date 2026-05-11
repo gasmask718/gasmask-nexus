@@ -324,13 +324,44 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
           })
           .eq('id', lead.queue_id);
       }
+
+      // ── Place the actual browser-audio call (parity with Quick Dial) ──
+      // Mic permission must be requested in the user gesture chain that
+      // started the campaign. Pass the user-selected caller-ID under
+      // "CallerId" — Twilio overwrites the reserved "From" param.
+      try {
+        const placed = await voice.makeCall(lead.phone, {
+          Record: 'true',
+          CallerId: selectedNumber,
+          callLogId: data?.callLogId || '',
+        });
+        setVACallMetadata({
+          isVACall: true,
+          leadId: lead.store_id || null,
+          leadName: lead.business_name,
+          twilioNumber: selectedNumber,
+          callLogId: data?.callLogId || null,
+          direction: 'outbound',
+        });
+        if (!placed && !data?.callSid) {
+          // Browser SDK not ready — surface and skip
+          toast.error('Browser softphone unavailable — call not placed');
+          setPhase('idle');
+          return false;
+        }
+      } catch (err: any) {
+        toast.error('Failed to dial: ' + (err?.message || 'unknown'));
+        setPhase('idle');
+        return false;
+      }
+
       return true;
     } catch (err: any) {
       toast.error('Network error triggering call: ' + (err.message || 'unknown'));
       setPhase('idle');
       return false;
     }
-  }, [user, selectedNumber]);
+  }, [user, selectedNumber, voice, setVACallMetadata]);
 
   // ── Run one cycle of the loop ───────────────────────────────────────
   const runCycle = useCallback(async () => {
