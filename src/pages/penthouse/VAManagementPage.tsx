@@ -170,7 +170,24 @@ export default function VAManagementPage() {
   });
 
   const assignCompanyMut = useMutation({
-    mutationFn: async ({ membership_id, company_id }: { membership_id: string; company_id: string }) => {
+    mutationFn: async ({
+      membership_id, company_id, user_id, role,
+    }: { membership_id: string; company_id: string; user_id: string; role: string }) => {
+      // Synthetic IDs from v_va_directory for users with no real membership row
+      // are prefixed "profile:". In that case we need to INSERT, not UPDATE.
+      if (membership_id.startsWith('profile:')) {
+        const { error } = await supabase
+          .from('va_company_memberships')
+          .insert({
+            user_id,
+            company_id,
+            role: (role || 'va') as any,
+            is_active: true,
+            is_primary: true,
+          });
+        if (error) throw error;
+        return;
+      }
       const { error } = await supabase
         .from('va_company_memberships')
         .update({ company_id })
@@ -434,7 +451,12 @@ export default function VAManagementPage() {
                       value={r.company_id}
                       onValueChange={(v) => {
                         if (v !== r.company_id) {
-                          assignCompanyMut.mutate({ membership_id: r.membership_id, company_id: v });
+                          assignCompanyMut.mutate({
+                            membership_id: r.membership_id,
+                            company_id: v,
+                            user_id: r.user_id,
+                            role: r.role,
+                          });
                         }
                       }}
                       disabled={assignCompanyMut.isPending}
