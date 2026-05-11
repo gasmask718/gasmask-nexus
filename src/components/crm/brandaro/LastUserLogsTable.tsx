@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, History, Phone } from 'lucide-react';
+import { Loader2, History, Phone, PhoneOutgoing } from 'lucide-react';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import {
   useNumberLastSessions,
@@ -26,10 +26,10 @@ export default function LastUserLogsTable() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <History className="h-5 w-5 text-primary" />
-          Phone Number — Last User Audit Log
+          Phone Logs — Number Activity & Daily Dials
         </CardTitle>
         <p className="text-xs text-muted-foreground">
-          Most recent VA session per Twilio number. Active sessions show as “Currently Active”.
+          Most recent VA session per Twilio number, plus today's dial count (resets daily) and lifetime totals.
         </p>
       </CardHeader>
       <CardContent>
@@ -56,6 +56,8 @@ export default function LastUserLogsTable() {
                   <TableHead>Session Start</TableHead>
                   <TableHead>Session End</TableHead>
                   <TableHead className="text-right">Duration</TableHead>
+                  <TableHead className="text-right">Dialed Today</TableHead>
+                  <TableHead className="text-right">Total Dials</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -78,7 +80,7 @@ export default function LastUserLogsTable() {
                         {r.last_va_id ? (
                           <div>
                             <div className="text-sm font-medium">
-                              {r.va_email || 'Unknown VA'}
+                              {r.va_name || 'Unknown VA'}
                             </div>
                             <div className="text-[11px] text-muted-foreground font-mono">
                               {r.last_va_id.slice(0, 8)}…
@@ -101,6 +103,22 @@ export default function LastUserLogsTable() {
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm">
                         {r.session_id ? formatDuration(r.started_at, r.ended_at) : '—'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Badge
+                          variant="outline"
+                          className={
+                            r.today_dials > 0
+                              ? 'font-mono bg-cyan-500/10 text-cyan-600 border-cyan-500/30'
+                              : 'font-mono text-muted-foreground'
+                          }
+                        >
+                          <PhoneOutgoing className="h-3 w-3 mr-1" />
+                          {r.today_dials}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-sm text-muted-foreground">
+                        {r.total_dials}
                       </TableCell>
                     </TableRow>
                   );
