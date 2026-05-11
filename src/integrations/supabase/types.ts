@@ -102197,6 +102197,7 @@ export type Database = {
           created_at: string | null
           customer_email: string | null
           customer_name: string
+          customer_phone: string | null
           deposit_amount: number | null
           deposit_paid_at: string | null
           deposit_payment_link: string | null
@@ -102229,6 +102230,7 @@ export type Database = {
           created_at?: string | null
           customer_email?: string | null
           customer_name: string
+          customer_phone?: string | null
           deposit_amount?: number | null
           deposit_paid_at?: string | null
           deposit_payment_link?: string | null
@@ -102261,6 +102263,7 @@ export type Database = {
           created_at?: string | null
           customer_email?: string | null
           customer_name?: string
+          customer_phone?: string | null
           deposit_amount?: number | null
           deposit_paid_at?: string | null
           deposit_payment_link?: string | null

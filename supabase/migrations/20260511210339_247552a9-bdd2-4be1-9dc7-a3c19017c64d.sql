@@ -1,0 +1,1 @@
+ALTER TABLE public.va_invoices ADD COLUMN IF NOT EXISTS customer_phone TEXT;
