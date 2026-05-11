@@ -709,14 +709,29 @@ const StoreDetail = () => {
           <StoreContactInfoCard
             store={store}
             onUpdate={() => {
-              // Refetch store data - merge legacy into current state
+              // Refetch store data — sync header (name, owner) and contact fields after edit
               supabase
                 .from("stores")
                 .select("*")
                 .eq("id", id)
                 .single()
                 .then(({ data }) => {
-                  if (data && store) setStore(prev => prev ? { ...prev, ...{ phone: data.phone || prev.phone, alt_phone: data.alt_phone || prev.alt_phone, responsiveness: data.responsiveness || prev.responsiveness, payment_type: data.payment_type || prev.payment_type } } : prev);
+                  if (data && store)
+                    setStore((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            name: data.name || prev.name,
+                            phone: data.phone || prev.phone,
+                            alt_phone: data.alt_phone || prev.alt_phone,
+                            responsiveness: data.responsiveness || prev.responsiveness,
+                            payment_type: data.payment_type || prev.payment_type,
+                            // Trigger trg_sync_store_primary_contact_name keeps stores.primary_contact_name in sync
+                            primary_contact_name: data.primary_contact_name || prev.primary_contact_name,
+                            owner_name: data.primary_contact_name || prev.owner_name,
+                          }
+                        : prev,
+                    );
                 });
             }}
           />
