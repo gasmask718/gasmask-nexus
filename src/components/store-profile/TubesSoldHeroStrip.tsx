@@ -199,7 +199,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
         {/* CHIP 3 — Last 30 Days */}
         <ExpandableChipCard
           ariaLabel="Last 30 days breakdown"
-          expandedTitle="Last 30 Days by Brand"
+          expandedTitle="Last 30 Days by SKU"
           isLoading={last30ByBrand.isLoading}
           isEmpty={!last30ByBrand.isLoading && last30Rows.length === 0}
           emptyMessage="No deliveries in the last 30 days."
