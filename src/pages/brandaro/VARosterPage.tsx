@@ -46,8 +46,8 @@ interface LeadRow {
   assigned_va: string | null;
 }
 
-const DEFAULT_TRANSFER_PAGE_SIZE = 50;
-const TRANSFER_TRANSFER_PAGE_SIZE = 500;
+const DEFAULT_PAGE_SIZE = 50;
+const TRANSFER_PAGE_SIZE = 500;
 
 export default function VARosterPage() {
   const { toast } = useToast();
