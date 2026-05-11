@@ -288,8 +288,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
     },
     simulationMessage: 'Saving inventory to simulation database...',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
-      queryClient.invalidateQueries({ queryKey: ['store-tube-kpi', storeId] });
+      invalidateStoreInventoryQueries(queryClient, storeId);
       toast.success(simulationMode ? 'Inventory updated (simulation)' : 'Tube inventory saved');
       setHasChanges(false);
     },
