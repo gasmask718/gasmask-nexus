@@ -137,15 +137,7 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
       isOnboarded: false,
     });
 
-    // Release number
-    if (numberId) {
-      await (supabase as any)
-        .from('brandaro_phone_numbers')
-        .update({ in_use: false, assigned_va_id: null })
-        .eq('id', numberId);
-    }
-
-    // End session record
+    // End session record (release of caller-ID is implied by is_active=false).
     if (sessId) {
       await (supabase as any)
         .from('va_sessions')
