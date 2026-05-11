@@ -451,7 +451,12 @@ export default function VAManagementPage() {
                       value={r.company_id}
                       onValueChange={(v) => {
                         if (v !== r.company_id) {
-                          assignCompanyMut.mutate({ membership_id: r.membership_id, company_id: v });
+                          assignCompanyMut.mutate({
+                            membership_id: r.membership_id,
+                            company_id: v,
+                            user_id: r.user_id,
+                            role: r.role,
+                          });
                         }
                       }}
                       disabled={assignCompanyMut.isPending}
