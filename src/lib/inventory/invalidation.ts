@@ -12,7 +12,10 @@ export function invalidateStoreInventoryQueries(qc: QueryClient, storeId: string
   qc.invalidateQueries({ queryKey: ['store-inventory-by-brand', storeId] });
   qc.invalidateQueries({ queryKey: ['store-tube-kpi-batch'] });
   qc.invalidateQueries({ queryKey: ['store-lifetime-by-brand', storeId] });
+  qc.invalidateQueries({ queryKey: ['store-lifetime-by-sku', storeId] });
   qc.invalidateQueries({ queryKey: ['store-sold-by-brand-window', storeId] });
+  qc.invalidateQueries({ queryKey: ['store-sold-by-sku-window', storeId] });
   qc.invalidateQueries({ queryKey: ['store-recent-invoices', storeId] });
+  qc.invalidateQueries({ queryKey: ['store-recent-invoices-sku', storeId] });
   qc.invalidateQueries({ queryKey: ['tube-intelligence', storeId] });
 }
