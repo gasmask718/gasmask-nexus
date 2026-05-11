@@ -1,10 +1,26 @@
-import { Flame, TrendingUp, TrendingDown, Minus, Snowflake, Boxes, Calendar, DollarSign } from 'lucide-react';
+import { useState } from 'react';
+import { Flame, TrendingUp, TrendingDown, Minus, Snowflake, Boxes, Calendar, DollarSign, ChevronDown, ChevronUp, Package } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProfileStatCard } from '@/components/profile/ProfileStatCard';
 import { useStoreTubeSummary } from '@/hooks/useStoreTubeSummary';
 import { useStoreTubeBrandsKpi } from '@/hooks/useStoreTubeBrandsKpi';
+import { useStoreInventoryByBrand } from '@/hooks/useStoreInventoryByBrand';
+import { dynastyRelative } from '@/lib/dates';
 import { cn } from '@/lib/utils';
+
+function getStockStatusDot(tubes: number) {
+  if (tubes === 0) return '🔴';
+  if (tubes <= 50) return '🟡';
+  if (tubes <= 200) return '🟢';
+  return '🔵';
+}
+function getStockStatusColor(tubes: number) {
+  if (tubes === 0) return 'text-rose-500';
+  if (tubes <= 50) return 'text-amber-500';
+  if (tubes <= 200) return 'text-emerald-600';
+  return 'text-blue-600';
+}
 
 interface Props { storeId: string }
 
