@@ -44,15 +44,19 @@ import type { UpdateMethod } from '@/services/fieldGovernance/types';
 //   - Role-based write access via governance pipeline
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// AUTHORITATIVE TUBE BRANDS — names derived from canonical registry + tube variants
+// AUTHORITATIVE TUBE SKUs — the 9 canonical product SKUs operators count.
+// Each lane saves to its own product_id row in store_tube_inventory via resolveProductIdForBrand().
+// Brand strings here are stable keys used by KPI views, intel rows, and active-toggle mappings.
 export const VALID_TUBE_BRANDS = [
-  { id: 'gasmask', name: 'GasMask Bags', color: TUBE_BRAND_COLORS.gasmask.hex },
-  { id: 'gasmasktubes', name: 'GasMask Tubes', color: TUBE_BRAND_COLORS.gasmasktubes.hex },
-  { id: 'hotmama', name: TUBE_BRAND_COLORS.hotmama.name, color: TUBE_BRAND_COLORS.hotmama.hex },
-  { id: 'grabba', name: TUBE_BRAND_COLORS.grabba.name, color: TUBE_BRAND_COLORS.grabba.hex },
-  { id: 'hotscolatti-light', name: 'Hot Scolatti Light', color: TUBE_BRAND_COLORS['hotscolatti-light'].hex },
-  { id: 'hotscolatti-dark', name: 'Hot Scolatti Dark', color: TUBE_BRAND_COLORS['hotscolatti-dark'].hex },
-  { id: 'hotscalatibros', name: 'HotScalati Bros', color: TUBE_BRAND_COLORS.hotscalatibros.hex, isNew: true },
+  { id: 'gasmasktubes',       name: 'GasMask Tubes',        color: TUBE_BRAND_COLORS.gasmasktubes.hex },
+  { id: 'gasmask',            name: 'GasMask Bags',         color: TUBE_BRAND_COLORS.gasmask.hex },
+  { id: 'gasmaskredtops',     name: 'GasMask Redtops',      color: TUBE_BRAND_COLORS.gasmask.hex, isNew: true },
+  { id: 'hotscalatimixpack',  name: 'HotScalati Mix Pack',  color: TUBE_BRAND_COLORS['hotscolatti-light'].hex, isNew: true },
+  { id: 'hotscolatti-dark',   name: 'HotScalati Dark',      color: TUBE_BRAND_COLORS['hotscolatti-dark'].hex },
+  { id: 'hotscolatti-light',  name: 'HotScalati Light',     color: TUBE_BRAND_COLORS['hotscolatti-light'].hex },
+  { id: 'hotscalatibros',     name: 'HotScalati Bros',      color: TUBE_BRAND_COLORS.hotscalatibros.hex, isNew: true },
+  { id: 'hotmama',            name: TUBE_BRAND_COLORS.hotmama.name, color: TUBE_BRAND_COLORS.hotmama.hex },
+  { id: 'grabba',             name: TUBE_BRAND_COLORS.grabba.name,  color: TUBE_BRAND_COLORS.grabba.hex },
 ] as const;
 
 interface TubeInventoryRecord {
