@@ -2,13 +2,22 @@ import { useState, useEffect } from 'react';
 import { useVASession } from '@/contexts/VASessionContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Loader2, CreditCard, SplitSquareHorizontal } from 'lucide-react';
+import { Plus, Trash2, Loader2, CreditCard, SplitSquareHorizontal, Package } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Parse a package price string like "$1,500", "$2,997", "$5,000+" → number.
+// Returns 0 for non-numeric ("Custom") so the VA can fill it in manually.
+function parsePackagePrice(raw: string | null | undefined): number {
+  if (!raw) return 0;
+  const cleaned = String(raw).replace(/[^0-9.]/g, '');
+  const n = parseFloat(cleaned);
+  return Number.isFinite(n) ? n : 0;
+}
 
 interface LineItem { description: string; price: number; }
 
@@ -63,6 +72,49 @@ export function VAInvoiceModal({ open, onClose, lead, sendOnSave }: VAInvoiceMod
       ...f,
       lineItems: f.lineItems.map((item, i) => i === idx ? { ...item, [field]: value } : item),
     }));
+  };
+
+  // Pull live packages from the same DB-backed source as Scripts & Rebuttals → Services.
+  const { data: packages = [] } = useQuery({
+    queryKey: ['brandaro-packages-invoice'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('brandaro_packages')
+        .select('id, package_name, price, payment_terms, included_highlights, sort_order')
+        .eq('is_active', true)
+        .order('sort_order');
+      return data || [];
+    },
+    enabled: open,
+  });
+
+  const addPackage = (pkgId: string) => {
+    const pkg = packages.find((p: any) => p.id === pkgId);
+    if (!pkg) return;
+    const price = parsePackagePrice(pkg.price);
+    const desc = `${pkg.package_name} Package — ${pkg.included_highlights || ''}`.trim();
+    setForm(f => {
+      // If the only existing row is empty, replace it instead of appending.
+      const onlyEmpty =
+        f.lineItems.length === 1 && !f.lineItems[0].description && !f.lineItems[0].price;
+      const next = { description: desc, price };
+      const lineItems = onlyEmpty ? [next] : [...f.lineItems, next];
+      // Auto-align payment plan to the package's terms when split is implied.
+      const terms = (pkg.payment_terms || '').toLowerCase();
+      const looksSplit = terms.includes('deposit') || terms.includes('launch');
+      return {
+        ...f,
+        lineItems,
+        serviceType: f.serviceType || 'Website Design',
+        paymentType: looksSplit ? 'split' : f.paymentType,
+        depositPercent: looksSplit ? 50 : f.depositPercent,
+      };
+    });
+    if (price === 0) {
+      toast.info(`${pkg.package_name} added — enter a custom price (listed as "${pkg.price}").`);
+    } else {
+      toast.success(`${pkg.package_name} added · $${price.toLocaleString()}`);
+    }
   };
 
   const handleSave = async () => {
@@ -163,6 +215,34 @@ export function VAInvoiceModal({ open, onClose, lead, sendOnSave }: VAInvoiceMod
               </SelectContent>
             </Select>
           </div>
+
+          {/* Live packages from Scripts & Rebuttals → Services */}
+          {packages.length > 0 && (
+            <div>
+              <label className="text-xs text-slate-400 mb-2 flex items-center gap-1.5">
+                <Package className="h-3 w-3 text-cyan-300" />
+                Inline a Package (live from Scripts & Rebuttals)
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {packages.map((p: any) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => addPackage(p.id)}
+                    className="text-left p-2 rounded-lg border border-slate-700 hover:border-cyan-500/60 hover:bg-cyan-500/5 transition-all"
+                  >
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-sm font-bold text-white capitalize">{p.package_name}</span>
+                      <span className="text-cyan-300 font-bold text-xs">{p.price}</span>
+                    </div>
+                    {p.payment_terms && (
+                      <div className="text-[10px] text-slate-400 mt-0.5">{p.payment_terms}</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="text-xs text-slate-400 mb-2 block">{t('va.invoice.lineItems')}</label>
