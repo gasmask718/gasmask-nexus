@@ -295,6 +295,42 @@ export default function VARosterPage() {
     return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
   };
 
+  const handleBulkUnassign = async () => {
+    if (selectedLeadIds.size === 0) return;
+    setUnassigning(true);
+    const ids = Array.from(selectedLeadIds);
+    const { error, count } = await supabase
+      .from('brandaro_qualified_leads')
+      .update({ assigned_va: null } as any, { count: 'exact' })
+      .in('id', ids)
+      .not('assigned_va', 'is', null);
+
+    if (error) {
+      toast({ title: 'Unassign failed', description: error.message, variant: 'destructive' });
+    } else {
+      toast({
+        title: 'Leads unassigned',
+        description: `${count ?? ids.length} lead(s) released back to the unassigned pool.`,
+      });
+      setSelectedLeadIds(new Set());
+      await refreshAll();
+    }
+    setUnassigning(false);
+  };
+
+  const handleUnassignOne = async (leadId: string) => {
+    const { error } = await supabase
+      .from('brandaro_qualified_leads')
+      .update({ assigned_va: null } as any)
+      .eq('id', leadId);
+    if (error) {
+      toast({ title: 'Unassign failed', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Lead unassigned' });
+      await refreshAll();
+    }
+  };
+
   // ── Transfer: load leads assigned to source VA ──
   useEffect(() => {
     if (!transferSourceVa) {
