@@ -86524,6 +86524,7 @@ export type Database = {
           id: string
           is_simulation: boolean
           last_updated: string | null
+          product_id: string | null
           store_id: string
         }
         Insert: {
@@ -86533,6 +86534,7 @@ export type Database = {
           id?: string
           is_simulation?: boolean
           last_updated?: string | null
+          product_id?: string | null
           store_id: string
         }
         Update: {
@@ -86542,9 +86544,24 @@ export type Database = {
           id?: string
           is_simulation?: boolean
           last_updated?: string | null
+          product_id?: string | null
           store_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "store_tube_inventory_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_tube_inventory_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "store_tube_inventory_store_id_fkey"
             columns: ["store_id"]
