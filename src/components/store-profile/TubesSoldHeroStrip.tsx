@@ -10,7 +10,7 @@ import { useStoreRecentInvoices } from '@/hooks/useStoreRecentInvoices';
 import { ExpandableChipCard } from './ExpandableChipCard';
 import { dynastyDate, dynastyRelative } from '@/lib/dates';
 import { cn } from '@/lib/utils';
-import { getSkuStatusIcon, getSkuStatusLabel } from '@/lib/inventory/skuDisplay';
+import { getSkuStatusIcon, getSkuStatusLabel, brandDisplayName } from '@/lib/inventory/skuDisplay';
 
 function getStockStatusDot(tubes: number) {
   if (tubes === 0) return '🔴';
@@ -380,7 +380,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
                     key={b.brand_id || b.brand_name}
                     className={cn('h-full', color)}
                     style={{ width: `${pct}%` }}
-                    title={`${b.brand_name}: ${fmt(b.sold_lifetime)} (${pct.toFixed(1)}%)`}
+                    title={`${brandDisplayName(b.brand_name)}: ${fmt(b.sold_lifetime)} (${pct.toFixed(1)}%)`}
                   />
                 );
               })}
@@ -392,7 +392,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
                 return (
                   <span key={b.brand_id || b.brand_name} className="text-xs flex items-center gap-1.5">
                     <span className={cn('h-2 w-2 rounded-full', color)} />
-                    <span className="capitalize">{b.brand_name}</span>
+                    <span>{brandDisplayName(b.brand_name)}</span>
                     <span className="text-muted-foreground">{fmt(b.sold_lifetime)}</span>
                   </span>
                 );
