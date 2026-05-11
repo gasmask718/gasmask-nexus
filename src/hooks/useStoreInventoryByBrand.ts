@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { brandDisplayName } from '@/lib/inventory/skuDisplay';
 
 export interface BrandInventory {
-  brand: string;
+  brand: string; // canonical display label (e.g. "GasMask")
   tubes_remaining: number;
   last_updated: string | null;
 }
@@ -18,15 +19,15 @@ export function useStoreInventoryByBrand(storeId: string | null | undefined) {
       const { data, error } = await supabase
         .from('store_tube_inventory')
         .select('brand, current_tubes_left, last_updated')
-        .eq('store_id', storeId)
-        .neq('brand', 'hotscolatti');
+        .eq('store_id', storeId);
 
       if (error) throw error;
 
       const byBrand = new Map<string, BrandInventory>();
       for (const row of data ?? []) {
-        const existing = byBrand.get(row.brand) ?? {
-          brand: row.brand,
+        const display = brandDisplayName(row.brand);
+        const existing = byBrand.get(display) ?? {
+          brand: display,
           tubes_remaining: 0,
           last_updated: null as string | null,
         };
@@ -37,7 +38,7 @@ export function useStoreInventoryByBrand(storeId: string | null | undefined) {
         ) {
           existing.last_updated = row.last_updated;
         }
-        byBrand.set(row.brand, existing);
+        byBrand.set(display, existing);
       }
 
       return Array.from(byBrand.values()).sort(

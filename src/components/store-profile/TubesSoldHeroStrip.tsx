@@ -10,6 +10,7 @@ import { useStoreRecentInvoices } from '@/hooks/useStoreRecentInvoices';
 import { ExpandableChipCard } from './ExpandableChipCard';
 import { dynastyDate, dynastyRelative } from '@/lib/dates';
 import { cn } from '@/lib/utils';
+import { getSkuStatusIcon, getSkuStatusLabel } from '@/lib/inventory/skuDisplay';
 
 function getStockStatusDot(tubes: number) {
   if (tubes === 0) return '🔴';
@@ -74,6 +75,8 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
   const onHand = Number(s.current_inventory_count || 0);
   const momPct = s.tubes_mom_delta_pct;
   const priorMonthTotal = (priorMonthByBrand.data ?? []).reduce((a, b) => a + b.tubes, 0);
+  const lifetimeRowsTotal = (lifetimeByBrand.data ?? []).reduce((a, b) => a + b.tubes, 0);
+  const last30RowsTotal = (last30ByBrand.data ?? []).reduce((a, b) => a + b.tubes, 0);
 
   // MoM subtitle
   let momLabel = 'no prior month data';
@@ -138,18 +141,27 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
             <>
               <div className="space-y-1.5">
                 {lifetimeRows.map(b => (
-                  <div key={b.brand} className="flex items-center justify-between text-xs">
-                    <span className="capitalize truncate max-w-[140px]">{b.brand}</span>
-                    <span className="flex items-center gap-2">
-                      <span className="font-semibold tabular-nums text-red-600">{fmt(b.tubes)}</span>
-                      <span className="text-[10px] text-muted-foreground tabular-nums">{b.percentage}%</span>
+                  <div key={b.product_id} className="flex items-center justify-between text-xs gap-2">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[10px] shrink-0">{getSkuStatusIcon(b.status)}</span>
+                      <span className="truncate">{b.display}</span>
+                    </span>
+                    <span className="flex items-center gap-2 shrink-0">
+                      {b.tubes > 0 ? (
+                        <>
+                          <span className="font-semibold tabular-nums text-red-600">{fmt(b.tubes)}</span>
+                          <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">{b.percentage}%</span>
+                        </>
+                      ) : (
+                        <span className="text-[10px] italic text-muted-foreground">{getSkuStatusLabel(b.status, b.inventory_count)}</span>
+                      )}
                     </span>
                   </div>
                 ))}
               </div>
               <div className="border-t border-border pt-2 flex items-center justify-between">
                 <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total</span>
-                <span className="text-sm font-bold text-red-600">{fmt(lifetime)}</span>
+                <span className="text-sm font-bold text-red-600">{fmt(lifetimeRowsTotal)}</span>
               </div>
             </>
           }
@@ -179,9 +191,16 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
             <>
               <div className="space-y-1.5">
                 {priorMonthRows.map(b => (
-                  <div key={b.brand} className="flex items-center justify-between text-xs">
-                    <span className="capitalize truncate max-w-[140px]">{b.brand}</span>
-                    <span className="font-semibold tabular-nums">{fmt(b.tubes)}</span>
+                  <div key={b.product_id} className="flex items-center justify-between text-xs gap-2">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[10px] shrink-0">{getSkuStatusIcon(b.status)}</span>
+                      <span className="truncate">{b.display}</span>
+                    </span>
+                    {b.tubes > 0 ? (
+                      <span className="font-semibold tabular-nums">{fmt(b.tubes)}</span>
+                    ) : (
+                      <span className="text-[10px] italic text-muted-foreground">{getSkuStatusLabel(b.status, b.inventory_count)}</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -218,16 +237,23 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
             <>
               <div className="space-y-1.5">
                 {last30Rows.map(b => (
-                  <div key={b.brand} className="flex items-center justify-between text-xs">
-                    <span className="capitalize truncate max-w-[140px]">{b.brand}</span>
-                    <span className="font-semibold tabular-nums">{fmt(b.tubes)}</span>
+                  <div key={b.product_id} className="flex items-center justify-between text-xs gap-2">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[10px] shrink-0">{getSkuStatusIcon(b.status)}</span>
+                      <span className="truncate">{b.display}</span>
+                    </span>
+                    {b.tubes > 0 ? (
+                      <span className="font-semibold tabular-nums">{fmt(b.tubes)}</span>
+                    ) : (
+                      <span className="text-[10px] italic text-muted-foreground">{getSkuStatusLabel(b.status, b.inventory_count)}</span>
+                    )}
                   </div>
                 ))}
               </div>
               <div className="border-t border-border pt-2 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total</span>
-                  <span className="text-sm font-bold">{fmt(last30)}</span>
+                  <span className="text-sm font-bold">{fmt(last30RowsTotal)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Status</span>
