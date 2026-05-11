@@ -117,7 +117,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
         {/* CHIP 1 — Lifetime Sold */}
         <ExpandableChipCard
           ariaLabel="Lifetime sold breakdown"
-          expandedTitle="Lifetime by Brand"
+          expandedTitle="Lifetime by SKU"
           isLoading={lifetimeByBrand.isLoading}
           isEmpty={!lifetimeByBrand.isLoading && lifetimeRows.length === 0}
           emptyMessage="No invoiced tubes yet."
@@ -158,7 +158,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
         {/* CHIP 2 — This Month / MoM */}
         <ExpandableChipCard
           ariaLabel="Prior month sold breakdown"
-          expandedTitle="Prior Month by Brand"
+          expandedTitle="Prior Month by SKU"
           isLoading={priorMonthByBrand.isLoading}
           isEmpty={!priorMonthByBrand.isLoading && priorMonthRows.length === 0}
           emptyMessage="No sales in prior month."
@@ -199,7 +199,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
         {/* CHIP 3 — Last 30 Days */}
         <ExpandableChipCard
           ariaLabel="Last 30 days breakdown"
-          expandedTitle="Last 30 Days by Brand"
+          expandedTitle="Last 30 Days by SKU"
           isLoading={last30ByBrand.isLoading}
           isEmpty={!last30ByBrand.isLoading && last30Rows.length === 0}
           emptyMessage="No deliveries in the last 30 days."

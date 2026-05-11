@@ -1,19 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { skuDisplayName } from '@/lib/inventory/skuDisplay';
 
 export interface BrandWindowSold {
-  brand: string;
+  brand: string; // SKU display name
   tubes: number;
 }
 
 export type SalesWindow = 'last_30_days' | 'prior_month' | 'this_month';
 
+/**
+ * Tubes sold per SKU in a date window for a store.
+ * Source of truth: invoice_line_items.product_id (owner-approved SKU breakdown).
+ */
 export function useStoreSoldByBrandWindow(
   storeId: string | null | undefined,
   window: SalesWindow,
 ) {
   return useQuery({
-    queryKey: ['store-sold-by-brand-window', storeId, window],
+    queryKey: ['store-sold-by-sku-window', storeId, window],
     enabled: !!storeId,
     staleTime: 60_000,
     queryFn: async (): Promise<BrandWindowSold[]> => {
@@ -35,7 +40,7 @@ export function useStoreSoldByBrandWindow(
 
       const { data: invoices, error } = await supabase
         .from('invoices')
-        .select('id, brand, created_at')
+        .select('id')
         .eq('store_id', storeId)
         .is('deleted_at', null)
         .gte('created_at', startDate.toISOString())
@@ -44,22 +49,20 @@ export function useStoreSoldByBrandWindow(
       if (!invoices?.length) return [];
 
       const invoiceIds = invoices.map((i) => i.id);
-      const brandByInvoice = new Map<string, string>();
-      invoices.forEach((i) => brandByInvoice.set(i.id, i.brand || 'Unknown'));
-
-      const { data: tubeRows, error: tubeErr } = await supabase
-        .from('v_invoice_effective_tubes')
-        .select('invoice_id, tube_count')
+      const { data: lineItems, error: liErr } = await supabase
+        .from('invoice_line_items')
+        .select('product_id, product_name, product_name_snapshot, computed_tubes_total')
         .in('invoice_id', invoiceIds);
-      if (tubeErr) throw tubeErr;
+      if (liErr) throw liErr;
 
-      const byBrand = new Map<string, number>();
-      tubeRows?.forEach((tr) => {
-        const brand = brandByInvoice.get(tr.invoice_id as string) || 'Unknown';
-        byBrand.set(brand, (byBrand.get(brand) ?? 0) + Number(tr.tube_count ?? 0));
+      const bySku = new Map<string, number>();
+      lineItems?.forEach((li) => {
+        const key = skuDisplayName(li.product_id, li.product_name_snapshot ?? li.product_name);
+        bySku.set(key, (bySku.get(key) ?? 0) + Number(li.computed_tubes_total ?? 0));
       });
 
-      return Array.from(byBrand.entries())
+      return Array.from(bySku.entries())
+        .filter(([, tubes]) => tubes > 0)
         .map(([brand, tubes]) => ({ brand, tubes }))
         .sort((a, b) => b.tubes - a.tubes);
     },
