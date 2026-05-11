@@ -49,6 +49,16 @@ export const TUBE_BRAND_COLORS: Record<string, { hex: string; tailwind: string; 
     tailwind: 'text-blue-500',
     name: 'HotScalati Bros',
   },
+  hotscalatimixpack: {
+    hex: '#F59E0B',
+    tailwind: 'text-amber-500',
+    name: 'HotScalati Mix Pack',
+  },
+  gasmaskredtops: {
+    hex: '#DC2626',
+    tailwind: 'text-red-600',
+    name: 'GasMask Redtops',
+  },
   fronto: {
     hex: '#22C55E',
     tailwind: 'text-green-500',
