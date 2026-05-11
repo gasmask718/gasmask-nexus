@@ -59,13 +59,15 @@ export function brandDisplayName(raw: string | null | undefined): string {
 // route the row to the canonical "default" SKU for that parent brand so
 // store_tube_inventory.product_id is always populated.
 // Default policy:
-//   gasmask family    → GasMask Tubes (most-stocked SKU)
-//   hotscalati family → HotScalati Mix Pack (entry SKU)
-//   hot mama / grabba → their single SKU
+//   gasmask (bare)     → GasMask Bags (current operator UI label)
+//   gasmasktubes       → GasMask Tubes
+//   hotscalati family  → HotScalati Mix Pack (entry SKU)
+//   hot mama / grabba  → their single SKU
+// Specific tube variants (light / dark / bros / redtops) resolve to themselves.
 // Specific tube variants (light / dark / bros) resolve to themselves.
 // ════════════════════════════════════════════════════════════════════
 export const BRAND_TO_DEFAULT_PRODUCT_ID: Record<string, string> = {
-  gasmask:              'dd5e14c0-d6c5-403a-a2d7-504181b0f4ea', // GasMask Tubes
+  gasmask:              '170adb8f-ac4e-40f4-a283-38730d30c5de', // GasMask Bags (UI label)
   gasmaskbags:          '170adb8f-ac4e-40f4-a283-38730d30c5de', // GasMask Bags
   gasmasktubes:         'dd5e14c0-d6c5-403a-a2d7-504181b0f4ea', // GasMask Tubes
   gasmaskredtops:       'e3eea682-831e-4913-8b0e-563bc1325a1f', // GasMask Redtops
