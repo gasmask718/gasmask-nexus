@@ -1,50 +1,36 @@
-import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Package, Plus, RefreshCw, Clock, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { getTubeBrandColor } from '@/constants/tubeColors';
-
-interface TubeInventory {
-  id: string;
-  brand: string;
-  current_tubes_left: number;
-  last_updated: string;
-  created_by: string;
-  needs_operator_verification?: boolean;
-}
+import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
+import { getSkuStatusIcon, getSkuStatusLabel } from '@/lib/inventory/skuDisplay';
 
 interface StoreTubeInventoryCardProps {
   storeId: string;
   onAddCount: () => void;
 }
 
+// Map parent brand → tube color key for the canonical color dot.
+const BRAND_COLOR_KEY: Record<string, string> = {
+  GasMask: 'gasmask',
+  HotScalati: 'hotscolatti-light',
+  'Hot Mama': 'hotmama',
+  'Grabba R Us': 'grabba',
+};
+
 export function StoreTubeInventoryCard({ storeId, onAddCount }: StoreTubeInventoryCardProps) {
   const queryClient = useQueryClient();
-  
-  const { data: inventory, isLoading, refetch } = useQuery({
-    queryKey: ['store-tube-inventory', storeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('store_tube_inventory')
-        .select('*')
-        .eq('store_id', storeId)
-        .neq('brand', 'hotscolatti') // Exclude legacy hotscolatti, show only light/dark variants
-        .order('brand');
-      
-      if (error) throw error;
-      return data as TubeInventory[];
-    },
-    enabled: !!storeId,
-  });
+  const { data: skus, isLoading, refetch } = useStoreInventoryBySku(storeId);
 
-  // Set up realtime subscription for live updates
+  // Realtime: invalidate the SKU rollup when any row for this store changes.
   useEffect(() => {
     const channel = supabase
-      .channel(`store-tube-inventory-${storeId}`)
+      .channel(`store-tube-inventory-sku-${storeId}`)
       .on(
         'postgres_changes',
         {
@@ -53,28 +39,18 @@ export function StoreTubeInventoryCard({ storeId, onAddCount }: StoreTubeInvento
           table: 'store_tube_inventory',
           filter: `store_id=eq.${storeId}`,
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
-        }
+        () => queryClient.invalidateQueries({ queryKey: ['store-inventory-by-sku', storeId] }),
       )
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [storeId, queryClient]);
 
-  const totalTubes = inventory?.reduce((sum, item) => sum + (item.current_tubes_left || 0), 0) || 0;
-
-  const getLastUpdated = () => {
-    if (!inventory?.length) return null;
-    const sorted = [...inventory].sort(
-      (a, b) => new Date(b.last_updated).getTime() - new Date(a.last_updated).getTime()
-    );
-    return sorted[0]?.last_updated;
-  };
-
-  const lastUpdated = getLastUpdated();
+  const totalTubes = skus?.reduce((sum, s) => sum + s.tubes_remaining, 0) ?? 0;
+  const lastUpdated = skus
+    ?.map((s) => s.last_updated)
+    .filter((d): d is string => !!d)
+    .sort()
+    .reverse()[0] ?? null;
 
   return (
     <Card className="glass-card border-border/50">
@@ -84,12 +60,7 @@ export function StoreTubeInventoryCard({ storeId, onAddCount }: StoreTubeInvento
           Tube Inventory
         </CardTitle>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => refetch()}
-            className="h-8 w-8"
-          >
+          <Button variant="ghost" size="icon" onClick={() => refetch()} className="h-8 w-8">
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Button onClick={onAddCount} size="sm" className="gap-1">
@@ -103,51 +74,62 @@ export function StoreTubeInventoryCard({ storeId, onAddCount }: StoreTubeInvento
           <div className="flex items-center justify-center py-8">
             <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : inventory && inventory.length > 0 ? (
+        ) : (
           <>
-            {/* Total summary */}
+            {/* Total summary across all 9 SKUs */}
             <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
               <span className="font-medium">Total Tubes</span>
               <span className="text-2xl font-bold text-primary">{totalTubes.toLocaleString()}</span>
             </div>
 
-            {/* Brand breakdown */}
+            {/* All 9 canonical SKUs (always rendered, status icon shows pitch state) */}
             <div className="space-y-2">
-              {inventory.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-secondary/30"
-                >
-                  <div className="flex items-center gap-3">
-                     <div
-                       className="h-3 w-3 rounded-full"
-                       style={{ backgroundColor: getTubeBrandColor(item.brand).hex }}
-                     />
-                     <span className="font-medium capitalize">{item.brand}</span>
-                     {item.needs_operator_verification && (
-                       <Badge
-                         variant="outline"
-                         className="gap-1 border-amber-500/40 bg-amber-500/10 text-amber-600 text-[10px] px-1.5 py-0"
-                         title="Backfilled from ambiguous brand data — please verify the correct SKU during your next Tube Intelligence update."
-                       >
-                         <AlertTriangle className="h-2.5 w-2.5" />
-                         Verify SKU
-                       </Badge>
-                     )}
-                   </div>
-                  <div className="flex items-center gap-3">
+              {skus?.map((sku) => {
+                const colorKey = BRAND_COLOR_KEY[sku.parent_brand] ?? 'gasmask';
+                return (
+                  <div
+                    key={sku.product_id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-secondary/30"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-base leading-none" aria-hidden>
+                        {getSkuStatusIcon(sku.status)}
+                      </span>
+                      <div
+                        className="h-3 w-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: getTubeBrandColor(colorKey).hex }}
+                      />
+                      <span className="font-medium truncate">{sku.display}</span>
+                      {sku.needs_operator_verification && (
+                        <Badge
+                          variant="outline"
+                          className="gap-1 border-amber-500/40 bg-amber-500/10 text-amber-600 text-[10px] px-1.5 py-0"
+                          title="Backfilled from ambiguous brand data — please verify the correct SKU during your next Tube Intelligence update."
+                        >
+                          <AlertTriangle className="h-2.5 w-2.5" />
+                          Verify SKU
+                        </Badge>
+                      )}
+                    </div>
                     <Badge
-                      variant={item.current_tubes_left < 20 ? 'destructive' : item.current_tubes_left < 50 ? 'secondary' : 'default'}
+                      variant={
+                        sku.status === 'never_offered'
+                          ? 'destructive'
+                          : sku.tubes_remaining < 20
+                            ? 'destructive'
+                            : sku.tubes_remaining < 50
+                              ? 'secondary'
+                              : 'default'
+                      }
                       className="font-mono text-sm"
                     >
-                      {item.current_tubes_left} tubes
+                      {getSkuStatusLabel(sku.status, sku.tubes_remaining)}
                     </Badge>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            {/* Last updated */}
             {lastUpdated && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
                 <Clock className="h-3 w-3" />
@@ -157,15 +139,6 @@ export function StoreTubeInventoryCard({ storeId, onAddCount }: StoreTubeInvento
               </div>
             )}
           </>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <Package className="h-10 w-10 mx-auto mb-3 opacity-50" />
-            <p className="text-sm">No inventory records</p>
-            <Button onClick={onAddCount} variant="outline" size="sm" className="mt-3">
-              <Plus className="h-4 w-4 mr-1" />
-              Add First Count
-            </Button>
-          </div>
         )}
       </CardContent>
     </Card>
