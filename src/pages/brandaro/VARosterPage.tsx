@@ -506,12 +506,26 @@ export default function VARosterPage() {
               Auto-Distribute
             </Button>
 
+            <Button
+              variant="outline"
+              onClick={handleBulkUnassign}
+              disabled={selectedLeadIds.size === 0 || unassigning}
+              className="gap-2 border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
+            >
+              {unassigning ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <UserMinus className="h-4 w-4" />
+              )}
+              Unassign {selectedLeadIds.size > 0 ? `${selectedLeadIds.size} ` : ''}lead(s)
+            </Button>
+
             {selectedLeadIds.size > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSelectedLeadIds(new Set())}
-                disabled={assigning}
+                disabled={assigning || unassigning}
               >
                 Clear
               </Button>
