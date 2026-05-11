@@ -6,19 +6,59 @@
 // Owner-approved labels (Roso deferred — Mix Pack stays as-is for now).
 // ════════════════════════════════════════════════════════════════════
 
-export const SKU_DISPLAY_NAME: Record<string, string> = {
-  '170adb8f-ac4e-40f4-a283-38730d30c5de': 'GasMask Bags',
-  'e3eea682-831e-4913-8b0e-563bc1325a1f': 'GasMask Redtops',
-  'dd5e14c0-d6c5-403a-a2d7-504181b0f4ea': 'GasMask Tubes',
-  '2d28e463-5296-4d42-b548-896d18ee906e': 'Grabba R Us',
-  '2dfcbd00-0e44-4cd1-b80d-b00a33b123c5': 'Hot Mama',
-  'fcfe5469-e9d3-40f3-8bf4-a4349086e1c3': 'HotScalati Bros',
-  '27e21aec-21a2-4ce7-9515-dbfd618a27c6': 'HotScalati Light',
-  '04336f6d-d69b-4ec8-8571-7088783b31d6': 'HotScalati Mix Pack',
-  '1c4f112e-97a1-4430-aae0-f1fcc0229a85': 'HotScalati Dark',
-};
+export type SkuStatus = 'bought' | 'staged' | 'never_offered';
+
+export interface CanonicalSku {
+  product_id: string;
+  display: string;
+  parent_brand: string; // matches lowercase key after stripping spaces
+  inventory_keys: string[]; // raw store_tube_inventory.brand values that roll up to this parent
+  order: number;
+}
+
+export const CANONICAL_TUBE_SKUS: CanonicalSku[] = [
+  { product_id: 'dd5e14c0-d6c5-403a-a2d7-504181b0f4ea', display: 'GasMask Tubes',       parent_brand: 'GasMask',     inventory_keys: ['gasmask', 'gasmasktubes'], order: 1 },
+  { product_id: '170adb8f-ac4e-40f4-a283-38730d30c5de', display: 'GasMask Bags',        parent_brand: 'GasMask',     inventory_keys: ['gasmask', 'gasmasktubes'], order: 2 },
+  { product_id: 'e3eea682-831e-4913-8b0e-563bc1325a1f', display: 'GasMask Redtops',     parent_brand: 'GasMask',     inventory_keys: ['gasmask', 'gasmasktubes'], order: 3 },
+  { product_id: '04336f6d-d69b-4ec8-8571-7088783b31d6', display: 'HotScalati Mix Pack', parent_brand: 'HotScalati',  inventory_keys: ['hotscolatti', 'hotscalati'], order: 4 },
+  { product_id: '1c4f112e-97a1-4430-aae0-f1fcc0229a85', display: 'HotScalati Dark',     parent_brand: 'HotScalati',  inventory_keys: ['hotscolatti', 'hotscalati'], order: 5 },
+  { product_id: '27e21aec-21a2-4ce7-9515-dbfd618a27c6', display: 'HotScalati Light',    parent_brand: 'HotScalati',  inventory_keys: ['hotscolatti', 'hotscalati'], order: 6 },
+  { product_id: 'fcfe5469-e9d3-40f3-8bf4-a4349086e1c3', display: 'HotScalati Bros',     parent_brand: 'HotScalati',  inventory_keys: ['hotscolatti', 'hotscalati'], order: 7 },
+  { product_id: '2dfcbd00-0e44-4cd1-b80d-b00a33b123c5', display: 'Hot Mama',            parent_brand: 'Hot Mama',    inventory_keys: ['hotmama'], order: 8 },
+  { product_id: '2d28e463-5296-4d42-b548-896d18ee906e', display: 'Grabba R Us',         parent_brand: 'Grabba R Us', inventory_keys: ['grabba'], order: 9 },
+];
+
+export const SKU_DISPLAY_NAME: Record<string, string> = Object.fromEntries(
+  CANONICAL_TUBE_SKUS.map((s) => [s.product_id, s.display]),
+);
 
 export function skuDisplayName(productId: string | null | undefined, fallback?: string | null): string {
   if (productId && SKU_DISPLAY_NAME[productId]) return SKU_DISPLAY_NAME[productId];
   return (fallback?.trim() || 'Unknown SKU');
+}
+
+// Canonical parent-brand display names for the Stock chip and footer bar.
+// Maps raw store_tube_inventory.brand strings → operator-facing label.
+export const BRAND_DISPLAY_MAP: Record<string, string> = {
+  gasmask: 'GasMask',
+  gasmasktubes: 'GasMask',
+  hotscolatti: 'HotScalati',
+  hotscalati: 'HotScalati',
+  hotmama: 'Hot Mama',
+  grabba: 'Grabba R Us',
+};
+
+export function brandDisplayName(raw: string | null | undefined): string {
+  const key = (raw || '').toLowerCase().replace(/\s+/g, '');
+  return BRAND_DISPLAY_MAP[key] || (raw || 'Unknown');
+}
+
+export function getSkuStatusIcon(status: SkuStatus): string {
+  return status === 'bought' ? '🟢' : status === 'staged' ? '🟡' : '🔴';
+}
+
+export function getSkuStatusLabel(status: SkuStatus, inventoryCount?: number): string {
+  if (status === 'bought') return 'sold';
+  if (status === 'staged') return `stocked: ${inventoryCount ?? 0}`;
+  return 'pitch';
 }
