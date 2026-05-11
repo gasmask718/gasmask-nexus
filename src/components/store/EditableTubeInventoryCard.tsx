@@ -14,6 +14,7 @@ import { Package, Save, RefreshCw, Clock, Filter, AlertTriangle } from 'lucide-r
 import { formatDistanceToNow, format } from 'date-fns';
 import { dynastyDateTime } from '@/lib/dates';
 import { toast } from 'sonner';
+import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
 
 // AUTHORITATIVE TUBE BRANDS - only these are valid
 export const VALID_TUBE_BRANDS = [
