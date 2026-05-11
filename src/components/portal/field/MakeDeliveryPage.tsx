@@ -377,6 +377,9 @@ export function MakeDeliveryPage({ portalType }: MakeDeliveryPageProps) {
         </CardContent>
       </Card>
 
+      {/* Per-stop intelligence cards (Step 7) */}
+      <DeliveryStopIntelligenceCards storeId={stop.store_id} routeStopId={stop.id} />
+
       {/* Delivery Task Checklist — shown after arrival */}
       {stop.status !== 'pending' && (
         <>
