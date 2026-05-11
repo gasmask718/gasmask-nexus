@@ -207,9 +207,9 @@ export function SendToRouteModal({
         setAiData(resp);
         const top = resp?.recommendations?.[0];
         if (top) {
-          setBoxes(top.recommended_boxes);
-          setBrandOverride(top.brand);
-        } else {
+          if (initialBoxes == null) setBoxes(top.recommended_boxes);
+          if (!initialBrand) setBrandOverride(top.brand);
+        } else if (initialBoxes == null) {
           setBoxes(1);
         }
       } catch (err: any) {
@@ -295,6 +295,28 @@ export function SendToRouteModal({
         }
       } catch (err) {
         console.error('Failed to link call to route_stop', err);
+      }
+    }
+
+    // Step 6: mark queued pending stop as approved + link to route_stop
+    if (pendingStopId && savedRoute?.id) {
+      try {
+        const { data: stop } = await supabase
+          .from('route_stops')
+          .select('id')
+          .eq('route_id', savedRoute.id)
+          .eq('store_id', storeId as string)
+          .maybeSingle();
+        await (supabase as any)
+          .from('pending_route_stops')
+          .update({
+            status: 'approved',
+            approved_at: new Date().toISOString(),
+            route_stop_id: stop?.id ?? null,
+          })
+          .eq('id', pendingStopId);
+      } catch (err) {
+        console.error('Failed to mark pending stop approved', err);
       }
     }
 
