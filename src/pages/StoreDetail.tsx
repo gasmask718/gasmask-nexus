@@ -281,7 +281,8 @@ const StoreDetail = () => {
           sticker_status: l?.sticker_status || null,
           notes: m?.notes || l?.notes || '',
           tags: l?.tags || [],
-          primary_contact_name: m?.owner_name || l?.primary_contact_name || '',
+          // Prefer legacy mirror (auto-synced from store_contacts via trg_sync_store_primary_contact_name) over potentially stale store_master.owner_name
+          primary_contact_name: l?.primary_contact_name || m?.owner_name || '',
           created_at: m?.created_at || l?.created_at || '',
           updated_at: m?.updated_at || l?.updated_at || null,
           lat: l?.lat || null,
