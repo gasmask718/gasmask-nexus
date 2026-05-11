@@ -47,11 +47,9 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
   const startSession = useCallback(async (numberId: string, numberPhone: string, lang: VALanguage) => {
     if (!user) return;
 
-    // Mark number as in_use
-    await (supabase as any)
-      .from('brandaro_phone_numbers')
-      .update({ in_use: true, assigned_va_id: user.id })
-      .eq('id', numberId);
+    // Note: dc_phone_numbers does not track in_use; "currently active" is
+    // derived from va_sessions.is_active in the brandaro_number_last_sessions view.
+
 
     // Create session record
     const { data } = await (supabase as any)
