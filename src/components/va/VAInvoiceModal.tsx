@@ -74,7 +74,49 @@ export function VAInvoiceModal({ open, onClose, lead, sendOnSave }: VAInvoiceMod
     }));
   };
 
-  const handleSave = async () => {
+  // Pull live packages from the same DB-backed source as Scripts & Rebuttals → Services.
+  const { data: packages = [] } = useQuery({
+    queryKey: ['brandaro-packages-invoice'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('brandaro_packages')
+        .select('id, package_name, price, payment_terms, included_highlights, sort_order')
+        .eq('is_active', true)
+        .order('sort_order');
+      return data || [];
+    },
+    enabled: open,
+  });
+
+  const addPackage = (pkgId: string) => {
+    const pkg = packages.find((p: any) => p.id === pkgId);
+    if (!pkg) return;
+    const price = parsePackagePrice(pkg.price);
+    const desc = `${pkg.package_name} Package — ${pkg.included_highlights || ''}`.trim();
+    setForm(f => {
+      // If the only existing row is empty, replace it instead of appending.
+      const onlyEmpty =
+        f.lineItems.length === 1 && !f.lineItems[0].description && !f.lineItems[0].price;
+      const next = { description: desc, price };
+      const lineItems = onlyEmpty ? [next] : [...f.lineItems, next];
+      // Auto-align payment plan to the package's terms when split is implied.
+      const terms = (pkg.payment_terms || '').toLowerCase();
+      const looksSplit = terms.includes('deposit') || terms.includes('launch');
+      return {
+        ...f,
+        lineItems,
+        serviceType: f.serviceType || 'Website Design',
+        paymentType: looksSplit ? 'split' : f.paymentType,
+        depositPercent: looksSplit ? 50 : f.depositPercent,
+      };
+    });
+    if (price === 0) {
+      toast.info(`${pkg.package_name} added — enter a custom price (listed as "${pkg.price}").`);
+    } else {
+      toast.success(`${pkg.package_name} added · $${price.toLocaleString()}`);
+    }
+  };
+
     if (!form.customerName || form.lineItems.length === 0 || total <= 0) {
       toast.error('Customer name + at least one line item with a price are required.');
       return;
