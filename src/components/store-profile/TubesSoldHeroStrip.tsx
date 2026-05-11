@@ -380,7 +380,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
                     key={b.brand_id || b.brand_name}
                     className={cn('h-full', color)}
                     style={{ width: `${pct}%` }}
-                    title={`${b.brand_name}: ${fmt(b.sold_lifetime)} (${pct.toFixed(1)}%)`}
+                    title={`${brandDisplayName(b.brand_name)}: ${fmt(b.sold_lifetime)} (${pct.toFixed(1)}%)`}
                   />
                 );
               })}
