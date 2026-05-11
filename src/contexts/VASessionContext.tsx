@@ -18,6 +18,7 @@ interface VASessionContextType extends VASessionState {
   t: (key: string) => string;
   setLanguage: (lang: VALanguage) => void;
   startSession: (numberId: string, numberPhone: string, lang: VALanguage) => Promise<void>;
+  switchNumber: (numberId: string, numberPhone: string) => Promise<void>;
   endSession: () => Promise<void>;
 }
 
