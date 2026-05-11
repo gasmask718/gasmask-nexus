@@ -1,42 +1,25 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Package, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
+import { getSkuStatusIcon, getSkuStatusLabel } from '@/lib/inventory/skuDisplay';
+import { getTubeBrandColor } from '@/constants/tubeColors';
 
 interface StoreTubeIntelCardProps {
   storeId: string;
 }
 
-const brandColors: Record<string, string> = {
-  grabba: 'bg-orange-500',
-  gasmask: 'bg-purple-500',
-  fronto: 'bg-green-500',
-  'hotscolatti-light': 'bg-amber-400',
-  'hotscolatti-dark': 'bg-amber-800',
-  hotmama: 'bg-pink-500',
-  gasmasktubes: 'bg-purple-600',
+const BRAND_COLOR_KEY: Record<string, string> = {
+  GasMask: 'gasmask',
+  HotScalati: 'hotscolatti-light',
+  'Hot Mama': 'hotmama',
+  'Grabba R Us': 'grabba',
 };
 
 export function StoreTubeIntelCard({ storeId }: StoreTubeIntelCardProps) {
-  const { data: inventory, isLoading, refetch } = useQuery({
-    queryKey: ['store-tube-intel', storeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('store_tube_inventory')
-        .select('*')
-        .eq('store_id', storeId)
-        .neq('brand', 'hotscolatti') // Exclude legacy hotscolatti, show only light/dark variants
-        .order('brand');
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!storeId,
-  });
-
-  const totalTubes = inventory?.reduce((sum, item) => sum + (item.current_tubes_left || 0), 0) || 0;
+  const { data: skus, isLoading, refetch } = useStoreInventoryBySku(storeId);
+  const totalTubes = skus?.reduce((sum, s) => sum + s.tubes_remaining, 0) ?? 0;
 
   return (
     <Card>
@@ -54,49 +37,50 @@ export function StoreTubeIntelCard({ storeId }: StoreTubeIntelCardProps) {
           <div className="flex items-center justify-center py-4">
             <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : inventory && inventory.length > 0 ? (
+        ) : (
           <>
-            {/* Total summary */}
             <div className="flex items-center justify-between p-2 rounded-lg bg-primary/10 border border-primary/20">
               <span className="text-sm font-medium">Total Tubes</span>
               <span className="text-lg font-bold text-primary">{totalTubes.toLocaleString()}</span>
             </div>
 
-            {/* Brand breakdown with exact counts */}
-            <div className="space-y-2">
-              {inventory.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-2 rounded-lg bg-secondary/30"
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`h-2.5 w-2.5 rounded-full ${
-                        brandColors[item.brand?.toLowerCase()] || 'bg-muted-foreground'
-                      }`}
-                    />
-                    <span className="text-sm capitalize">{item.brand}</span>
-                  </div>
-                  <Badge
-                    variant={
-                      (item.current_tubes_left || 0) < 20 
-                        ? 'destructive' 
-                        : (item.current_tubes_left || 0) < 50 
-                          ? 'secondary' 
-                          : 'default'
-                    }
-                    className="font-mono"
+            <div className="space-y-1.5">
+              {skus?.map((sku) => {
+                const colorKey = BRAND_COLOR_KEY[sku.parent_brand] ?? 'gasmask';
+                return (
+                  <div
+                    key={sku.product_id}
+                    className="flex items-center justify-between p-2 rounded-lg bg-secondary/30"
                   >
-                    {item.current_tubes_left || 0}
-                  </Badge>
-                </div>
-              ))}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm leading-none" aria-hidden>
+                        {getSkuStatusIcon(sku.status)}
+                      </span>
+                      <div
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: getTubeBrandColor(colorKey).hex }}
+                      />
+                      <span className="text-sm truncate">{sku.display}</span>
+                    </div>
+                    <Badge
+                      variant={
+                        sku.status === 'never_offered'
+                          ? 'destructive'
+                          : sku.tubes_remaining < 20
+                            ? 'destructive'
+                            : sku.tubes_remaining < 50
+                              ? 'secondary'
+                              : 'default'
+                      }
+                      className="font-mono text-xs"
+                    >
+                      {getSkuStatusLabel(sku.status, sku.tubes_remaining)}
+                    </Badge>
+                  </div>
+                );
+              })}
             </div>
           </>
-        ) : (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No tube inventory data
-          </p>
         )}
       </CardContent>
     </Card>

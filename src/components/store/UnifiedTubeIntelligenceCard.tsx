@@ -24,6 +24,7 @@ import { dynastyDate } from '@/lib/dates';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
+import { resolveProductIdForBrand } from '@/lib/inventory/skuDisplay';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TUBE_BRAND_COLORS } from '@/constants/tubeColors';
 import { UnifiedTubeSoldTable } from '@/components/store/UnifiedTubeSoldTable';
@@ -43,15 +44,19 @@ import type { UpdateMethod } from '@/services/fieldGovernance/types';
 //   - Role-based write access via governance pipeline
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// AUTHORITATIVE TUBE BRANDS — names derived from canonical registry + tube variants
+// AUTHORITATIVE TUBE SKUs — the 9 canonical product SKUs operators count.
+// Each lane saves to its own product_id row in store_tube_inventory via resolveProductIdForBrand().
+// Brand strings here are stable keys used by KPI views, intel rows, and active-toggle mappings.
 export const VALID_TUBE_BRANDS = [
-  { id: 'gasmask', name: 'GasMask Bags', color: TUBE_BRAND_COLORS.gasmask.hex },
-  { id: 'gasmasktubes', name: 'GasMask Tubes', color: TUBE_BRAND_COLORS.gasmasktubes.hex },
-  { id: 'hotmama', name: TUBE_BRAND_COLORS.hotmama.name, color: TUBE_BRAND_COLORS.hotmama.hex },
-  { id: 'grabba', name: TUBE_BRAND_COLORS.grabba.name, color: TUBE_BRAND_COLORS.grabba.hex },
-  { id: 'hotscolatti-light', name: 'Hot Scolatti Light', color: TUBE_BRAND_COLORS['hotscolatti-light'].hex },
-  { id: 'hotscolatti-dark', name: 'Hot Scolatti Dark', color: TUBE_BRAND_COLORS['hotscolatti-dark'].hex },
-  { id: 'hotscalatibros', name: 'HotScalati Bros', color: TUBE_BRAND_COLORS.hotscalatibros.hex, isNew: true },
+  { id: 'gasmasktubes',       name: 'GasMask Tubes',        color: TUBE_BRAND_COLORS.gasmasktubes.hex },
+  { id: 'gasmask',            name: 'GasMask Bags',         color: TUBE_BRAND_COLORS.gasmask.hex },
+  { id: 'gasmaskredtops',     name: 'GasMask Redtops',      color: TUBE_BRAND_COLORS.gasmask.hex, isNew: true },
+  { id: 'hotscalatimixpack',  name: 'HotScalati Mix Pack',  color: TUBE_BRAND_COLORS['hotscolatti-light'].hex, isNew: true },
+  { id: 'hotscolatti-dark',   name: 'HotScalati Dark',      color: TUBE_BRAND_COLORS['hotscolatti-dark'].hex },
+  { id: 'hotscolatti-light',  name: 'HotScalati Light',     color: TUBE_BRAND_COLORS['hotscolatti-light'].hex },
+  { id: 'hotscalatibros',     name: 'HotScalati Bros',      color: TUBE_BRAND_COLORS.hotscalatibros.hex, isNew: true },
+  { id: 'hotmama',            name: TUBE_BRAND_COLORS.hotmama.name, color: TUBE_BRAND_COLORS.hotmama.hex },
+  { id: 'grabba',             name: TUBE_BRAND_COLORS.grabba.name,  color: TUBE_BRAND_COLORS.grabba.hex },
 ] as const;
 
 interface TubeInventoryRecord {
@@ -121,8 +126,10 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
     const mappings: Record<string, string> = {
       gasmask: 'gasmask',
       gasmasktubes: 'gasmask',
+      gasmaskredtops: 'gasmask',
       hotmama: 'hotmama',
       grabba: 'grabba_r_us',
+      hotscalatimixpack: 'hotscolatti',
       'hotscolatti-light': 'hotscolatti',
       'hotscolatti-dark': 'hotscolatti',
       hotscalatibros: 'hotscolatti',
@@ -136,8 +143,10 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
     const mappings: Record<string, string> = {
       gasmask: 'gasmask',
       gasmasktubes: 'gasmask',
+      gasmaskredtops: 'gasmask',
       hotmama: 'hotmama',
       grabba: 'grabba_r_us',
+      hotscalatimixpack: 'hotscolatti',
       'hotscolatti-light': 'hotscolatti',
       'hotscolatti-dark': 'hotscolatti',
       hotscalatibros: 'hotscolatti',
@@ -259,25 +268,45 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
     mutationFn: async (updates: { brand: string; count: number }[], isSimulation: boolean) => {
       const { data: { user } } = await supabase.auth.getUser();
       for (const update of updates) {
-        const { data: existing } = await supabase
-          .from('store_tube_inventory')
-          .select('id')
-          .eq('store_id', storeId)
-          .eq('brand', update.brand)
-          .order('last_updated', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        const productId = resolveProductIdForBrand(update.brand);
+
+        let existing: { id: string } | null = null;
+        if (productId) {
+          const { data } = await supabase
+            .from('store_tube_inventory')
+            .select('id')
+            .eq('store_id', storeId)
+            .eq('product_id', productId)
+            .eq('is_simulation', isSimulation)
+            .maybeSingle();
+          existing = data;
+        }
+        if (!existing) {
+          const { data } = await supabase
+            .from('store_tube_inventory')
+            .select('id')
+            .eq('store_id', storeId)
+            .eq('brand', update.brand)
+            .eq('is_simulation', isSimulation)
+            .order('last_updated', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          existing = data;
+        }
+
         if (existing) {
           await supabase.from('store_tube_inventory').update({
             current_tubes_left: update.count,
             last_updated: new Date().toISOString(),
             created_by: user?.id || 'system',
             is_simulation: isSimulation,
+            ...(productId ? { product_id: productId } : {}),
           }).eq('id', existing.id);
         } else if (update.count > 0) {
           await supabase.from('store_tube_inventory').insert({
             store_id: storeId,
             brand: update.brand,
+            product_id: productId,
             current_tubes_left: update.count,
             created_by: user?.id || 'system',
             is_simulation: isSimulation,

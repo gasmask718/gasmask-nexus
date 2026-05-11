@@ -15,6 +15,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { dynastyDateTime } from '@/lib/dates';
 import { toast } from 'sonner';
 import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
+import { resolveProductIdForBrand } from '@/lib/inventory/skuDisplay';
 
 // AUTHORITATIVE TUBE BRANDS - only these are valid
 export const VALID_TUBE_BRANDS = [
@@ -105,18 +106,35 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
   const saveMutation = useSimulationSafeMutation({
     mutationFn: async (updates: { brand: string; count: number }[], isSimulation: boolean) => {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       for (const update of updates) {
-        // Get existing record - use most recent if multiple records exist
-        const { data: existing } = await supabase
-          .from('store_tube_inventory')
-          .select('id')
-          .eq('store_id', storeId)
-          .eq('brand', update.brand)
-          .order('last_updated', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-          
+        const productId = resolveProductIdForBrand(update.brand);
+
+        // Prefer match by (store_id, product_id, is_simulation) — the canonical unique key.
+        let existing: { id: string } | null = null;
+        if (productId) {
+          const { data } = await supabase
+            .from('store_tube_inventory')
+            .select('id')
+            .eq('store_id', storeId)
+            .eq('product_id', productId)
+            .eq('is_simulation', isSimulation)
+            .maybeSingle();
+          existing = data;
+        }
+        if (!existing) {
+          const { data } = await supabase
+            .from('store_tube_inventory')
+            .select('id')
+            .eq('store_id', storeId)
+            .eq('brand', update.brand)
+            .eq('is_simulation', isSimulation)
+            .order('last_updated', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          existing = data;
+        }
+
         if (existing) {
           await supabase
             .from('store_tube_inventory')
@@ -125,15 +143,16 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
               last_updated: new Date().toISOString(),
               created_by: user?.id || 'system',
               is_simulation: isSimulation,
+              ...(productId ? { product_id: productId } : {}),
             })
             .eq('id', existing.id);
         } else if (update.count > 0) {
-          // Only create if count > 0
           await supabase
             .from('store_tube_inventory')
             .insert({
               store_id: storeId,
               brand: update.brand,
+              product_id: productId,
               current_tubes_left: update.count,
               created_by: user?.id || 'system',
               is_simulation: isSimulation,
