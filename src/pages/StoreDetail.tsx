@@ -321,7 +321,8 @@ const StoreDetail = () => {
           formality_level: m?.formality_level || null,
           preferred_channel: m?.preferred_channel || null,
           notes_for_tone: m?.notes_for_tone || null,
-          owner_name: m?.owner_name || l?.primary_contact_name || null,
+          // Header owner name: prefer canonical-synced legacy mirror over store_master snapshot
+          owner_name: l?.primary_contact_name || m?.owner_name || null,
           health_status: m?.health_status || null,
           sourced_by_ambassador_id: m?.sourced_by_ambassador_id || null,
           assigned_ambassador_id: m?.assigned_ambassador_id || null,
