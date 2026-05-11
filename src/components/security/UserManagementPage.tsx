@@ -123,7 +123,26 @@ export default function UserManagementPage() {
                   </TableCell>
                   <TableCell className="text-sm">{user.email || "—"}</TableCell>
                   <TableCell className="text-sm">{user.phone || "—"}</TableCell>
-                  <TableCell><Badge variant="outline" className="capitalize">{user.role}</Badge></TableCell>
+                  <TableCell>
+                    <Select
+                      value={user.role}
+                      onValueChange={(value) => {
+                        if (value !== user.role) {
+                          updateProfile.mutate({ id: user.id, role: value });
+                        }
+                      }}
+                      disabled={updateProfile.isPending}
+                    >
+                      <SelectTrigger className="h-8 w-[150px] capitalize text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {APP_ROLES.map(r => (
+                          <SelectItem key={r} value={r} className="capitalize">{r.replace(/_/g, ' ')}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {user.system_roles.length === 0 ? (
