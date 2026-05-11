@@ -74,6 +74,46 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
     });
   }, [user]);
 
+  // Swap the active caller-ID number mid-session without ending it.
+  // Releases the previously held number, locks the new one, and updates the
+  // active va_sessions row so server-side dialers see the new caller-ID.
+  const switchNumber = useCallback(async (numberId: string, numberPhone: string) => {
+    if (!user) return;
+    const prevId = state.twilioNumberId;
+    if (prevId === numberId) return;
+
+    try {
+      await (supabase as any)
+        .from('brandaro_phone_numbers')
+        .update({ in_use: true, assigned_va_id: user.id })
+        .eq('id', numberId);
+    } catch (_) { /* dc_phone_numbers fallback */ }
+
+    if (prevId) {
+      try {
+        await (supabase as any)
+          .from('brandaro_phone_numbers')
+          .update({ in_use: false, assigned_va_id: null })
+          .eq('id', prevId);
+      } catch (_) { /* best effort */ }
+    }
+
+    if (state.sessionId) {
+      try {
+        await (supabase as any)
+          .from('va_sessions')
+          .update({ twilio_number_id: numberId })
+          .eq('id', state.sessionId);
+      } catch (_) { /* best effort */ }
+    }
+
+    setState(prev => ({
+      ...prev,
+      twilioNumberId: numberId,
+      twilioNumber: numberPhone,
+    }));
+  }, [user, state.twilioNumberId, state.sessionId]);
+
   const endSession = useCallback(async () => {
     const numberId = state.twilioNumberId;
     const sessId = state.sessionId;
