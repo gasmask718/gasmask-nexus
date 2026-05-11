@@ -117,6 +117,7 @@ export function VAInvoiceModal({ open, onClose, lead, sendOnSave }: VAInvoiceMod
     }
   };
 
+  const handleSave = async () => {
     if (!form.customerName || form.lineItems.length === 0 || total <= 0) {
       toast.error('Customer name + at least one line item with a price are required.');
       return;
