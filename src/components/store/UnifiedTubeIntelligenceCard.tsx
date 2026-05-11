@@ -126,8 +126,10 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
     const mappings: Record<string, string> = {
       gasmask: 'gasmask',
       gasmasktubes: 'gasmask',
+      gasmaskredtops: 'gasmask',
       hotmama: 'hotmama',
       grabba: 'grabba_r_us',
+      hotscalatimixpack: 'hotscolatti',
       'hotscolatti-light': 'hotscolatti',
       'hotscolatti-dark': 'hotscolatti',
       hotscalatibros: 'hotscolatti',
@@ -141,8 +143,10 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
     const mappings: Record<string, string> = {
       gasmask: 'gasmask',
       gasmasktubes: 'gasmask',
+      gasmaskredtops: 'gasmask',
       hotmama: 'hotmama',
       grabba: 'grabba_r_us',
+      hotscalatimixpack: 'hotscolatti',
       'hotscolatti-light': 'hotscolatti',
       'hotscolatti-dark': 'hotscolatti',
       hotscalatibros: 'hotscolatti',
