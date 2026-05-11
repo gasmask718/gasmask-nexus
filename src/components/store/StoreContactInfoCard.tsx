@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -108,6 +108,7 @@ const createInitialFormData = (store: Store): ContactFormData => ({
 });
 
 export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardProps) {
+  const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<ContactFormData>(() => createInitialFormData(store));
@@ -163,8 +164,12 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
 
   useEffect(() => {
     if (!editOpen) return;
-    setFormData(createInitialFormData(store));
-  }, [store, editOpen]);
+    setFormData({
+      ...createInitialFormData(store),
+      // Prefer canonical primary contact from store_contacts over legacy mirror
+      primary_contact_name: ownerContact?.name || store.primary_contact_name || '',
+    });
+  }, [store, editOpen, ownerContact?.name]);
 
   // Tag handling now done via GlobalTagSelector component
 
@@ -217,6 +222,37 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
         .eq('id', store.id);
 
       if (error) throw error;
+
+      // ─── Canonical Owner Name persistence (Layer 2 → store_contacts) ───
+      // Save primary_contact_name through canonical store_contacts table.
+      // The trigger trg_sync_store_primary_contact_name mirrors this to stores.primary_contact_name.
+      const trimmedOwner = formData.primary_contact_name.trim();
+      const previousOwnerName = ownerContact?.name?.trim() || '';
+
+      if (trimmedOwner !== previousOwnerName) {
+        if (ownerContact) {
+          // Update existing primary contact name (and ensure is_primary)
+          const { error: updErr } = await supabase
+            .from('store_contacts')
+            .update({
+              name: trimmedOwner || ownerContact.name,
+              is_primary: true,
+            })
+            .eq('id', ownerContact.id);
+          if (updErr) throw updErr;
+        } else if (trimmedOwner) {
+          // No primary contact exists yet — create one
+          const { error: insErr } = await supabase.from('store_contacts').insert({
+            store_id: store.id,
+            name: trimmedOwner,
+            role: 'OWNER',
+            is_primary: true,
+            can_receive_sms: true,
+          });
+          if (insErr) throw insErr;
+        }
+        await queryClient.invalidateQueries({ queryKey: ['store-owner', store.id] });
+      }
 
       toast.success('Contact information updated');
       setEditOpen(false);
@@ -483,6 +519,22 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Store name"
               />
+            </div>
+
+            {/* Owner / Primary Contact Name (Layer 2 — saves to canonical store_contacts) */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <User className="h-4 w-4 text-primary" />
+                Owner Name
+              </Label>
+              <Input
+                value={formData.primary_contact_name}
+                onChange={(e) => setFormData({ ...formData, primary_contact_name: e.target.value })}
+                placeholder="e.g. John Smith"
+              />
+              <p className="text-xs text-muted-foreground">
+                Saved as the store's primary contact. Add managers, cell reps, or backups in the Store Contacts section below.
+              </p>
             </div>
 
             <Separator />

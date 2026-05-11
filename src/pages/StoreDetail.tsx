@@ -281,7 +281,8 @@ const StoreDetail = () => {
           sticker_status: l?.sticker_status || null,
           notes: m?.notes || l?.notes || '',
           tags: l?.tags || [],
-          primary_contact_name: m?.owner_name || l?.primary_contact_name || '',
+          // Prefer legacy mirror (auto-synced from store_contacts via trg_sync_store_primary_contact_name) over potentially stale store_master.owner_name
+          primary_contact_name: l?.primary_contact_name || m?.owner_name || '',
           created_at: m?.created_at || l?.created_at || '',
           updated_at: m?.updated_at || l?.updated_at || null,
           lat: l?.lat || null,
@@ -320,7 +321,8 @@ const StoreDetail = () => {
           formality_level: m?.formality_level || null,
           preferred_channel: m?.preferred_channel || null,
           notes_for_tone: m?.notes_for_tone || null,
-          owner_name: m?.owner_name || l?.primary_contact_name || null,
+          // Header owner name: prefer canonical-synced legacy mirror over store_master snapshot
+          owner_name: l?.primary_contact_name || m?.owner_name || null,
           health_status: m?.health_status || null,
           sourced_by_ambassador_id: m?.sourced_by_ambassador_id || null,
           assigned_ambassador_id: m?.assigned_ambassador_id || null,
@@ -707,14 +709,29 @@ const StoreDetail = () => {
           <StoreContactInfoCard
             store={store}
             onUpdate={() => {
-              // Refetch store data - merge legacy into current state
+              // Refetch store data — sync header (name, owner) and contact fields after edit
               supabase
                 .from("stores")
                 .select("*")
                 .eq("id", id)
                 .single()
                 .then(({ data }) => {
-                  if (data && store) setStore(prev => prev ? { ...prev, ...{ phone: data.phone || prev.phone, alt_phone: data.alt_phone || prev.alt_phone, responsiveness: data.responsiveness || prev.responsiveness, payment_type: data.payment_type || prev.payment_type } } : prev);
+                  if (data && store)
+                    setStore((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            name: data.name || prev.name,
+                            phone: data.phone || prev.phone,
+                            alt_phone: data.alt_phone || prev.alt_phone,
+                            responsiveness: data.responsiveness || prev.responsiveness,
+                            payment_type: data.payment_type || prev.payment_type,
+                            // Trigger trg_sync_store_primary_contact_name keeps stores.primary_contact_name in sync
+                            primary_contact_name: data.primary_contact_name || prev.primary_contact_name,
+                            owner_name: data.primary_contact_name || prev.owner_name,
+                          }
+                        : prev,
+                    );
                 });
             }}
           />

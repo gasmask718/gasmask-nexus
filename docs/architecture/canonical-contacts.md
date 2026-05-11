@@ -23,7 +23,14 @@
 
 - `/stores/:id` (`StoreDetail.tsx`) and `/grabba/store/:id` (`StoreMasterProfile.tsx`) both render `StoreContactsSection` (full CRUD: Add / Edit / Delete / is_primary toggle / role / SMS opt-in).
 - `StorePeopleSection` (read-only) is deprecated for these surfaces. Kept in repo for reference only.
-- `StoreContactInfoCard` "Edit Contact Information" modal handles **store-level fields only**: name, address, phone, alt_phone, email, tags, sticker fields, notes. The "Primary Contact Name" input was removed (2026-05-11) — primary contact is now set via `is_primary` toggle in `StoreContactsSection`.
+
+## Three-Layer Contact Pattern (2026-05-11)
+
+1. **Layer 1 — Profile Header** (`StoreDetail.tsx`): Store Name + Owner Name shown together at the top. Owner sourced from `stores.primary_contact_name` (canonical-synced via trigger), falling back to `store_master.owner_name`. The 90% glance.
+2. **Layer 2 — Edit Contact Info modal** (`StoreContactInfoCard.tsx`): Quick-edit "Owner Name" field. Writes to `store_contacts` (updates the existing `is_primary = true` row, or inserts a new OWNER+is_primary row if none exists). The `trg_sync_store_primary_contact_name` trigger then mirrors the change to `stores.primary_contact_name`. The 30% quick edit.
+3. **Layer 3 — Store Contacts section** (`StoreContactsSection`): Full CRUD for multiple contacts (manager, cell rep, backup, etc.) with role assignment, SMS opt-in, and responsiveness data. The 10% multi-decision-maker case.
+
+The Edit modal handles **store-level fields** (name, address, phone, alt_phone, email, tags, sticker fields, notes) plus the single-string Owner Name shortcut for Layer 2. Multi-contact management lives exclusively in `StoreContactsSection`.
 
 ## Migration Reference
 
