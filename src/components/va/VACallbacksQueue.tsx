@@ -99,15 +99,31 @@ export function VACallbacksQueue({ onDialLead }: VACallbacksQueueProps) {
                     )}
                   </div>
                 </div>
-                <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 gap-1"
-                  onClick={() => onDialLead({ id: cb.lead_id, business_name: cb.lead_name || '', phone: cb.lead_phone || '' })}>
-                  <Phone className="h-3 w-3" /> Call
-                </Button>
+                <div className="flex flex-col gap-1.5">
+                  <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 gap-1"
+                    onClick={() => onDialLead({ id: cb.lead_id, business_name: cb.lead_name || '', phone: cb.lead_phone || '' })}>
+                    <Phone className="h-3 w-3" /> Call
+                  </Button>
+                  <Button size="sm" variant="outline" className="border-cyan-500/40 text-cyan-300 gap-1 h-7 text-xs"
+                    onClick={() => {
+                      setInvoiceLead({ id: cb.lead_id, business_name: cb.lead_name || '', phone: cb.lead_phone || '' });
+                      setSendMode(true);
+                      setInvoiceOpen(true);
+                    }}>
+                    <FileText className="h-3 w-3" /> Invoice
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </CardContent>
+      <VAInvoiceModal
+        open={invoiceOpen}
+        onClose={() => { setInvoiceOpen(false); setSendMode(false); }}
+        lead={invoiceLead}
+        sendOnSave={sendMode}
+      />
     </Card>
   );
 }
