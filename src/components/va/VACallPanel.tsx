@@ -129,7 +129,7 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
       if (error) throw error;
       setCallLogId(data?.callLogId || null);
 
-      const call = await voice.makeCall(lead.phone, { Record: "true" });
+      const call = await voice.makeCall(lead.phone, { Record: "true", From: twilioNumber, callLogId: data?.callLogId || "" });
 
       setVACallMetadata({
         isVACall: true,
