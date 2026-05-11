@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "https://esm.sh/resend@2.0.0";
+import { sendEmail } from "../_shared/sendEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -148,19 +148,9 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const frontendBaseUrl = Deno.env.get("FRONTEND_BASE_URL") || "https://gasmask-os-nexus.lovable.app";
 
-    if (!resendApiKey) {
-      console.error("RESEND_API_KEY not configured");
-      return new Response(
-        JSON.stringify({ error: "Email service not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const resend = new Resend(resendApiKey);
 
     // Fetch pending events (batch of 50)
     const { data: events, error: fetchError } = await supabase
@@ -216,16 +206,16 @@ Deno.serve(async (req) => {
           frontendBaseUrl
         );
 
-        // Send via Resend
-        const { error: sendError } = await resend.emails.send({
-          from: "Dynasty Marketplace <onboarding@resend.dev>",
+        // Send via Gmail SMTP (nodemailer)
+        const sendResult = await sendEmail({
+          from: "Dynasty Marketplace <Sales@brandarodigital.com>",
           to: [profile.email],
           subject: template.subject,
           html: template.html,
         });
 
-        if (sendError) {
-          throw new Error(sendError.message || "Resend send failed");
+        if (!sendResult.success) {
+          throw new Error(sendResult.error || "nodemailer send failed");
         }
 
         // Mark sent

@@ -87,28 +87,24 @@ serve(async (req) => {
     }
 
     try {
-      const resendKey = Deno.env.get('RESEND_API_KEY')
-      if (resendKey) {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: 'Dynasty Recovery <info@dynastyrecoverygroup.com>',
-            to: ['anthony@dynastyrecoverygroup.com'],
-            reply_to: inquiry.email,
-            subject: `📨 ${inquiry.subject || 'General Inquiry'} — ${inquiry.name}`,
-            html: `
-              <h2>New Inquiry from ${inquiry.name}</h2>
-              <p><strong>Email:</strong> ${inquiry.email}</p>
-              ${inquiry.phone ? `<p><strong>Phone:</strong> ${inquiry.phone}</p>` : ''}
-              <p><strong>Subject:</strong> ${inquiry.subject || '—'}</p>
-              <div style="background:#f9f9f9;padding:12px;border-left:4px solid #0F6E56;">
-                <strong>Message:</strong><br/>${(inquiry.message || '').replace(/\n/g, '<br/>')}
-              </div>
-              <p style="font-size:12px;color:#666;">Reply directly to this email to respond.</p>
-            `,
-          }),
-        })
+      const { sendEmail } = await import('../_shared/sendEmail.ts')
+      const result = await sendEmail({
+        from: 'Dynasty Recovery <Sales@brandarodigital.com>',
+        to: ['anthony@dynastyrecoverygroup.com'],
+        replyTo: inquiry.email,
+        subject: `📨 ${inquiry.subject || 'General Inquiry'} — ${inquiry.name}`,
+        html: `
+          <h2>New Inquiry from ${inquiry.name}</h2>
+          <p><strong>Email:</strong> ${inquiry.email}</p>
+          ${inquiry.phone ? `<p><strong>Phone:</strong> ${inquiry.phone}</p>` : ''}
+          <p><strong>Subject:</strong> ${inquiry.subject || '—'}</p>
+          <div style="background:#f9f9f9;padding:12px;border-left:4px solid #0F6E56;">
+            <strong>Message:</strong><br/>${(inquiry.message || '').replace(/\n/g, '<br/>')}
+          </div>
+          <p style="font-size:12px;color:#666;">Reply directly to this email to respond.</p>
+        `,
+      })
+      if (result.success) {
         await supabase
           .from('surplus_funds_inquiries')
           .update({ email_notification_sent: true, email_notification_sent_at: new Date().toISOString() })

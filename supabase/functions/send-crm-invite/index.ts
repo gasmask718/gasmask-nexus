@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "https://esm.sh/resend@2.0.0";
+import { sendEmail } from "../_shared/sendEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,7 +25,6 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const frontendBaseUrl = Deno.env.get("FRONTEND_BASE_URL");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -182,55 +181,48 @@ serve(async (req) => {
     const normalizedBaseUrl = frontendBaseUrl.replace(/\/$/, ''); // Remove trailing slash if present
     const acceptUrl = `${normalizedBaseUrl}/crm/accept-invite?token=${invitation.invite_token}`;
 
-    // Send email if Resend API key is configured
+    // Send email via Gmail SMTP (nodemailer)
     let emailSent = false;
-    if (resendApiKey) {
-      try {
-        const resend = new Resend(resendApiKey);
-        
-        const { error: emailError } = await resend.emails.send({
-          from: "Lovable <onboarding@resend.dev>",
-          to: [email.toLowerCase()],
-          subject: "You've been invited to access CRM",
-          html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h1 style="color: #1a1a2e; font-size: 24px; margin-bottom: 20px;">You're Invited!</h1>
-              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.5;">
-                You have been invited to access the following CRM systems:
-              </p>
-              <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <strong style="color: #1a1a2e;">${crmNames}</strong>
-              </div>
-              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.5;">
-                Click the button below to accept your invitation and get started:
-              </p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${acceptUrl}" 
-                   style="display: inline-block; background: #3b82f6; color: white; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: 500;">
-                  Accept Invitation
-                </a>
-              </div>
-              <p style="color: #888; font-size: 14px; margin-top: 30px;">
-                This invitation will expire in 7 days.
-              </p>
-              <p style="color: #888; font-size: 12px;">
-                If you didn't expect this invitation, you can safely ignore this email.
-              </p>
+    try {
+      const result = await sendEmail({
+        from: "Brandaro <Sales@brandarodigital.com>",
+        to: [email.toLowerCase()],
+        subject: "You've been invited to access CRM",
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #1a1a2e; font-size: 24px; margin-bottom: 20px;">You're Invited!</h1>
+            <p style="color: #4a4a4a; font-size: 16px; line-height: 1.5;">
+              You have been invited to access the following CRM systems:
+            </p>
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <strong style="color: #1a1a2e;">${crmNames}</strong>
             </div>
-          `,
-        });
-
-        if (emailError) {
-          console.error("Email sending error:", emailError);
-        } else {
-          emailSent = true;
-          console.log(`📧 Email sent successfully to ${email}`);
-        }
-      } catch (emailErr) {
-        console.error("Failed to send email:", emailErr);
+            <p style="color: #4a4a4a; font-size: 16px; line-height: 1.5;">
+              Click the button below to accept your invitation and get started:
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${acceptUrl}"
+                 style="display: inline-block; background: #3b82f6; color: white; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: 500;">
+                Accept Invitation
+              </a>
+            </div>
+            <p style="color: #888; font-size: 14px; margin-top: 30px;">
+              This invitation will expire in 7 days.
+            </p>
+            <p style="color: #888; font-size: 12px;">
+              If you didn't expect this invitation, you can safely ignore this email.
+            </p>
+          </div>
+        `,
+      });
+      if (result.success) {
+        emailSent = true;
+        console.log(`📧 Email sent successfully to ${email}`);
+      } else {
+        console.error("Email sending error:", result.error);
       }
-    } else {
-      console.log("⚠️ RESEND_API_KEY not configured - email not sent");
+    } catch (emailErr) {
+      console.error("Failed to send email:", emailErr);
     }
 
     console.log(`✅ CRM Invite created for ${email}`);
@@ -253,7 +245,7 @@ serve(async (req) => {
         acceptUrl,
         message: emailSent 
           ? `Invitation email sent to ${email} for access to: ${crmNames}`
-          : `Invitation created for ${email}. Email not sent (Resend not configured). Share the link manually.`,
+          : `Invitation created for ${email}. Email failed to send. Share the link manually.`,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

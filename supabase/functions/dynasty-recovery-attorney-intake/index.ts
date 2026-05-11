@@ -104,47 +104,41 @@ serve(async (req) => {
     }
 
     try {
-      const resendKey = Deno.env.get('RESEND_API_KEY')
-      if (resendKey) {
-        const html = `
-          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
-            <div style="background:#7C2D12;color:#fff;padding:20px;border-radius:8px 8px 0 0;">
-              <h1 style="margin:0;">⚖️ NEW ATTORNEY APPLICATION</h1>
-            </div>
-            <div style="background:#f9f9f9;padding:20px;border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px;">
-              <h2 style="margin-top:0;">${formData.full_name}</h2>
-              <p style="color:#7C2D12;font-weight:bold;">${formData.firm_name}</p>
-              <table style="width:100%;border-collapse:collapse;">
-                <tr><td style="padding:6px;font-weight:bold;">States:</td><td>${(formData.bar_admissions || []).join(', ')}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold;">Bar #:</td><td>${formData.bar_number}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold;">Years:</td><td>${formData.years_practice || '—'}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold;">Email:</td><td>${formData.email}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold;">Phone:</td><td>${formData.phone}</td></tr>
-              </table>
-              ${formData.interest_reason ? `<p><strong>Interest:</strong><br/>${formData.interest_reason}</p>` : ''}
-              <div style="background:#fff;padding:12px;border-left:4px solid #7C2D12;margin-top:16px;">
-                <strong>NEXT STEPS:</strong>
-                <ol>
-                  <li>Verify bar status</li>
-                  <li>Verify malpractice insurance</li>
-                  <li>Verify IOLTA account</li>
-                  <li>Send Attorney Referral Agreement</li>
-                </ol>
-              </div>
+      const html = `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+          <div style="background:#7C2D12;color:#fff;padding:20px;border-radius:8px 8px 0 0;">
+            <h1 style="margin:0;">⚖️ NEW ATTORNEY APPLICATION</h1>
+          </div>
+          <div style="background:#f9f9f9;padding:20px;border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px;">
+            <h2 style="margin-top:0;">${formData.full_name}</h2>
+            <p style="color:#7C2D12;font-weight:bold;">${formData.firm_name}</p>
+            <table style="width:100%;border-collapse:collapse;">
+              <tr><td style="padding:6px;font-weight:bold;">States:</td><td>${(formData.bar_admissions || []).join(', ')}</td></tr>
+              <tr><td style="padding:6px;font-weight:bold;">Bar #:</td><td>${formData.bar_number}</td></tr>
+              <tr><td style="padding:6px;font-weight:bold;">Years:</td><td>${formData.years_practice || '—'}</td></tr>
+              <tr><td style="padding:6px;font-weight:bold;">Email:</td><td>${formData.email}</td></tr>
+              <tr><td style="padding:6px;font-weight:bold;">Phone:</td><td>${formData.phone}</td></tr>
+            </table>
+            ${formData.interest_reason ? `<p><strong>Interest:</strong><br/>${formData.interest_reason}</p>` : ''}
+            <div style="background:#fff;padding:12px;border-left:4px solid #7C2D12;margin-top:16px;">
+              <strong>NEXT STEPS:</strong>
+              <ol>
+                <li>Verify bar status</li>
+                <li>Verify malpractice insurance</li>
+                <li>Verify IOLTA account</li>
+                <li>Send Attorney Referral Agreement</li>
+              </ol>
             </div>
           </div>
-        `
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: 'Dynasty Recovery <attorneys@dynastyrecoverygroup.com>',
-            to: ['anthony@dynastyrecoverygroup.com'],
-            subject: `⚖️ Attorney Application: ${formData.full_name} — ${(formData.bar_admissions || []).join(',')}`,
-            html,
-          }),
-        })
-      }
+        </div>
+      `
+      const { sendEmail } = await import('../_shared/sendEmail.ts')
+      await sendEmail({
+        from: 'Dynasty Recovery <Sales@brandarodigital.com>',
+        to: ['anthony@dynastyrecoverygroup.com'],
+        subject: `⚖️ Attorney Application: ${formData.full_name} — ${(formData.bar_admissions || []).join(',')}`,
+        html,
+      })
     } catch (e) {
       console.error('Email error:', e)
     }

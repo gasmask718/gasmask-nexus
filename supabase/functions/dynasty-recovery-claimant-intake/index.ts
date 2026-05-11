@@ -109,51 +109,45 @@ serve(async (req) => {
       })
     }
 
-    // Email via Resend
+    // Email via Gmail SMTP (nodemailer)
     try {
-      const resendKey = Deno.env.get('RESEND_API_KEY')
-      if (resendKey) {
-        const submittedAt = new Date(lead.created_at).toLocaleString('en-US', { timeZone: 'America/New_York' })
-        const emailHtml = `
-          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
-            <div style="background:#0F6E56;color:#fff;padding:20px;border-radius:8px 8px 0 0;">
-              <h1 style="margin:0;">🔥 NEW WEBSITE LEAD</h1>
-              <p style="margin:4px 0 0;">Dynasty Recovery Group — Floor 1</p>
-            </div>
-            <div style="background:#f9f9f9;padding:20px;border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px;">
-              <h2 style="margin-top:0;">${formData.full_name}</h2>
-              <p style="color:#0F6E56;font-weight:bold;">⏱️ Bland AI calling within 2 minutes</p>
-              <table style="width:100%;border-collapse:collapse;">
-                <tr><td style="padding:6px;font-weight:bold;">Phone:</td><td>${formData.phone}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold;">Email:</td><td>${formData.email}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold;">Property:</td><td>${formData.property_address}, ${formData.city}, ${formData.state}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold;">Sale Type:</td><td>${formData.sale_type || '—'}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold;">Ownership:</td><td>${formData.ownership_type || '—'}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold;">Best Time:</td><td>${formData.best_time || 'Anytime'}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold;">Source:</td><td>${formData.utm_source || 'Direct'}</td></tr>
-              </table>
-              ${formData.notes ? `<p><strong>Notes:</strong><br/>${formData.notes}</p>` : ''}
-              <hr/>
-              <p style="font-size:12px;color:#666;">Lead ID: ${lead.id}<br/>Submitted: ${submittedAt} ET</p>
-            </div>
+      const submittedAt = new Date(lead.created_at).toLocaleString('en-US', { timeZone: 'America/New_York' })
+      const emailHtml = `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+          <div style="background:#0F6E56;color:#fff;padding:20px;border-radius:8px 8px 0 0;">
+            <h1 style="margin:0;">🔥 NEW WEBSITE LEAD</h1>
+            <p style="margin:4px 0 0;">Dynasty Recovery Group — Floor 1</p>
           </div>
-        `
-        const emailRes = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: 'Dynasty Recovery <leads@dynastyrecoverygroup.com>',
-            to: ['anthony@dynastyrecoverygroup.com'],
-            subject: `🔥 WEBSITE LEAD: ${formData.full_name} — ${formData.state}`,
-            html: emailHtml,
-          }),
-        })
-        if (emailRes.ok) {
-          await supabase
-            .from('surplus_funds_leads')
-            .update({ email_notification_sent: true, email_notification_sent_at: new Date().toISOString() })
-            .eq('id', lead.id)
-        }
+          <div style="background:#f9f9f9;padding:20px;border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px;">
+            <h2 style="margin-top:0;">${formData.full_name}</h2>
+            <p style="color:#0F6E56;font-weight:bold;">⏱️ Bland AI calling within 2 minutes</p>
+            <table style="width:100%;border-collapse:collapse;">
+              <tr><td style="padding:6px;font-weight:bold;">Phone:</td><td>${formData.phone}</td></tr>
+              <tr><td style="padding:6px;font-weight:bold;">Email:</td><td>${formData.email}</td></tr>
+              <tr><td style="padding:6px;font-weight:bold;">Property:</td><td>${formData.property_address}, ${formData.city}, ${formData.state}</td></tr>
+              <tr><td style="padding:6px;font-weight:bold;">Sale Type:</td><td>${formData.sale_type || '—'}</td></tr>
+              <tr><td style="padding:6px;font-weight:bold;">Ownership:</td><td>${formData.ownership_type || '—'}</td></tr>
+              <tr><td style="padding:6px;font-weight:bold;">Best Time:</td><td>${formData.best_time || 'Anytime'}</td></tr>
+              <tr><td style="padding:6px;font-weight:bold;">Source:</td><td>${formData.utm_source || 'Direct'}</td></tr>
+            </table>
+            ${formData.notes ? `<p><strong>Notes:</strong><br/>${formData.notes}</p>` : ''}
+            <hr/>
+            <p style="font-size:12px;color:#666;">Lead ID: ${lead.id}<br/>Submitted: ${submittedAt} ET</p>
+          </div>
+        </div>
+      `
+      const { sendEmail } = await import('../_shared/sendEmail.ts')
+      const result = await sendEmail({
+        from: 'Dynasty Recovery <Sales@brandarodigital.com>',
+        to: ['anthony@dynastyrecoverygroup.com'],
+        subject: `🔥 WEBSITE LEAD: ${formData.full_name} — ${formData.state}`,
+        html: emailHtml,
+      })
+      if (result.success) {
+        await supabase
+          .from('surplus_funds_leads')
+          .update({ email_notification_sent: true, email_notification_sent_at: new Date().toISOString() })
+          .eq('id', lead.id)
       }
     } catch (e) {
       console.error('Email error:', e)

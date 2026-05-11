@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
+import { sendEmail } from "../_shared/sendEmail.ts";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 
@@ -11,8 +12,6 @@ Deno.serve(async (req) => {
     if (!booking_id) return new Response(JSON.stringify({ error: "booking_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY not configured");
 
     // Fetch booking with vendor and customer
     const { data: booking } = await supabase.from("ut_bookings").select("*, ut_vendors(business_name, owner_id)").eq("id", booking_id).single();
@@ -44,19 +43,21 @@ Deno.serve(async (req) => {
 
     // Email to customer
     if (customer?.email) {
-      await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-        body: JSON.stringify({ from: "Unforgettable Times <no-reply@unforgettabletimes.com>", to: [customer.email], subject: "Your booking is confirmed!", html: emailHtml })
+      await sendEmail({
+        from: "Unforgettable Times <Sales@brandarodigital.com>",
+        to: [customer.email],
+        subject: "Your booking is confirmed!",
+        html: emailHtml,
       });
     }
 
     // Email to vendor
     if (vendor?.email) {
-      await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-        body: JSON.stringify({ from: "Unforgettable Times <no-reply@unforgettabletimes.com>", to: [vendor.email], subject: `New confirmed booking: ${booking.event_date}`, html: emailHtml })
+      await sendEmail({
+        from: "Unforgettable Times <Sales@brandarodigital.com>",
+        to: [vendor.email],
+        subject: `New confirmed booking: ${booking.event_date}`,
+        html: emailHtml,
       });
     }
 
