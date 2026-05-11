@@ -124,6 +124,16 @@ export function StoreTubeInventoryCard({ storeId, onAddCount }: StoreTubeInvento
                        style={{ backgroundColor: getTubeBrandColor(item.brand).hex }}
                      />
                      <span className="font-medium capitalize">{item.brand}</span>
+                     {item.needs_operator_verification && (
+                       <Badge
+                         variant="outline"
+                         className="gap-1 border-amber-500/40 bg-amber-500/10 text-amber-600 text-[10px] px-1.5 py-0"
+                         title="Backfilled from ambiguous brand data — please verify the correct SKU during your next Tube Intelligence update."
+                       >
+                         <AlertTriangle className="h-2.5 w-2.5" />
+                         Verify SKU
+                       </Badge>
+                     )}
                    </div>
                   <div className="flex items-center gap-3">
                     <Badge
