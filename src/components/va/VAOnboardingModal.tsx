@@ -5,7 +5,7 @@ import { useVASession } from '@/contexts/VASessionContext';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Loader2, Clock, User } from 'lucide-react';
+import { Phone, Loader2, Clock, User, PhoneOutgoing } from 'lucide-react';
 import {
   useNumberLastSessions,
   formatDateTime,
@@ -102,8 +102,9 @@ export function VAOnboardingModal() {
                 {numbers.map((num) => {
                   const sess = sessionsById?.get(num.id);
                   const isActive = !!sess?.session_active && !sess?.ended_at;
-                  const lastUserLabel = sess?.va_email
+                  const lastUserLabel = sess?.va_name
                     || (sess?.last_va_id ? `${sess.last_va_id.slice(0, 8)}…` : null);
+                  const todayDials = sess?.today_dials ?? 0;
                   return (
                     <div
                       key={num.id}
@@ -135,25 +136,26 @@ export function VAOnboardingModal() {
                           </Badge>
                         )}
                       </div>
-                      {sess?.session_id ? (
-                        <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-slate-400 pl-7">
-                          <div className="flex items-center gap-1 min-w-0">
-                            <User className="h-3 w-3 shrink-0" />
-                            <span className="truncate" title={lastUserLabel || ''}>
-                              {lastUserLabel || 'Unknown'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3 shrink-0" />
-                            <span>{formatDateTime(sess.started_at)}</span>
-                          </div>
-                          <div className="text-right font-mono">
-                            {formatDuration(sess.started_at, sess.ended_at)}
-                          </div>
+                      <div className="mt-2 grid grid-cols-4 gap-2 text-[11px] text-slate-400 pl-7">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <User className="h-3 w-3 shrink-0" />
+                          <span className="truncate" title={lastUserLabel || ''}>
+                            {lastUserLabel || 'Never used'}
+                          </span>
                         </div>
-                      ) : (
-                        <div className="mt-2 text-[11px] text-slate-500 pl-7">Never used</div>
-                      )}
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 shrink-0" />
+                          <span>{sess?.session_id ? formatDateTime(sess.started_at) : '—'}</span>
+                        </div>
+                        <div className="font-mono">
+                          {sess?.session_id ? formatDuration(sess.started_at, sess.ended_at) : '—'}
+                        </div>
+                        <div className="flex items-center justify-end gap-1 font-mono">
+                          <PhoneOutgoing className="h-3 w-3 text-cyan-400" />
+                          <span className="text-cyan-300">{todayDials}</span>
+                          <span className="text-slate-500">today</span>
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
