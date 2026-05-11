@@ -80,21 +80,32 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
     const prevId = state.twilioNumberId;
     if (prevId === numberId) return;
 
-    try {
-      await (supabase as any)
-        .from('brandaro_phone_numbers')
-        .update({ in_use: true, assigned_va_id: user.id })
-        .eq('id', numberId);
-    } catch (_) { /* dc_phone_numbers fallback */ }
-
-    if (prevId) {
+    // End any prior active session for this VA so the audit view reflects the swap.
+    if (state.sessionId) {
       try {
         await (supabase as any)
-          .from('brandaro_phone_numbers')
-          .update({ in_use: false, assigned_va_id: null })
-          .eq('id', prevId);
+          .from('va_sessions')
+          .update({ is_active: false, ended_at: new Date().toISOString() })
+          .eq('id', state.sessionId);
       } catch (_) { /* best effort */ }
     }
+
+    // Open a fresh session record on the new caller-ID so "Currently Active"
+    // and "Last user" both attribute correctly in the audit log.
+    let newSessionId: string | null = null;
+    try {
+      const { data } = await (supabase as any)
+        .from('va_sessions')
+        .insert({
+          va_id: user.id,
+          twilio_number_id: numberId,
+          language: state.language,
+          is_active: true,
+        })
+        .select('id')
+        .single();
+      newSessionId = data?.id ?? null;
+    } catch (_) { /* best effort */ }
 
     if (state.sessionId) {
       try {
