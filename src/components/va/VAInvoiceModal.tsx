@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Loader2, CreditCard, SplitSquareHorizontal, Package } from 'lucide-react';
+import { Plus, Trash2, Loader2, CreditCard, SplitSquareHorizontal, Package, Mail, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Parse a package price string like "$1,500", "$2,997", "$5,000+" → number.
