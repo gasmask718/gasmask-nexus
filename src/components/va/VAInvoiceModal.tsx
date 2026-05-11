@@ -220,6 +220,52 @@ export function VAInvoiceModal({ open, onClose, lead, sendOnSave }: VAInvoiceMod
           </div>
 
           <div>
+            <label className="text-xs text-slate-400">Customer Phone (for SMS)</label>
+            <Input type="tel" value={form.customerPhone} onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))}
+              placeholder="+15558675309" className="bg-slate-800 border-slate-700 text-white" />
+          </div>
+
+          {sendOnSave && (
+            <div>
+              <label className="text-xs text-slate-400 mb-2 block">Send Invoice Via</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, sendChannel: 'email' }))}
+                  className={`p-3 rounded-lg border text-left transition-all ${
+                    form.sendChannel === 'email'
+                      ? 'border-cyan-500 bg-cyan-500/10'
+                      : 'border-slate-700 hover:border-slate-500'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Mail className="h-4 w-4" /> Email
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-1 truncate">
+                    {form.customerEmail || 'Add email above'}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, sendChannel: 'sms' }))}
+                  className={`p-3 rounded-lg border text-left transition-all ${
+                    form.sendChannel === 'sms'
+                      ? 'border-cyan-500 bg-cyan-500/10'
+                      : 'border-slate-700 hover:border-slate-500'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <MessageSquare className="h-4 w-4" /> Text Message
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-1 truncate">
+                    {form.customerPhone || 'Add phone above'}
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div>
             <label className="text-xs text-slate-400">{t('va.invoice.serviceType')}</label>
             <Select value={form.serviceType} onValueChange={v => setForm(f => ({ ...f, serviceType: v }))}>
               <SelectTrigger className="bg-slate-800 border-slate-700 text-white"><SelectValue /></SelectTrigger>
