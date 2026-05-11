@@ -16,17 +16,19 @@ serve(async (req: Request) => {
 
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const brandароNumber = "+19292623850";
+    const DEFAULT_CALLER_ID = "+19292623850";
 
     // Parse form data from Twilio
     let to = "";
     let callLogId = "";
+    let fromCallerId = "";
 
     if (req.headers.get("content-type")?.includes("application/x-www-form-urlencoded")) {
       const formData = await req.formData();
       to = (formData.get("To") as string) || "";
       callLogId = (formData.get("callLogId") as string) || "";
-      
+      fromCallerId = (formData.get("From") as string) || "";
+
       // If To is not a phone number, check custom params
       if (!to.startsWith("+")) {
         to = (formData.get("phone") as string) || to;
@@ -35,6 +37,7 @@ serve(async (req: Request) => {
       const url = new URL(req.url);
       to = url.searchParams.get("To") || url.searchParams.get("phone") || "";
       callLogId = url.searchParams.get("callLogId") || "";
+      fromCallerId = url.searchParams.get("From") || "";
     }
 
     if (!to || !to.startsWith("+")) {
@@ -49,13 +52,17 @@ serve(async (req: Request) => {
       });
     }
 
-    console.log(`[brandaro-call-twiml] Dialing ${to} from ${brandароNumber}, callLogId=${callLogId}`);
+    // Use VA-selected From number when valid E.164, else fall back to default.
+    // Twilio's browser SDK auto-prefixes "client:" to identity-style From values
+    // — only honor numeric +E.164 strings as caller-ID.
+    const callerId = /^\+\d{8,16}$/.test(fromCallerId) ? fromCallerId : DEFAULT_CALLER_ID;
+    console.log(`[brandaro-call-twiml] Dialing ${to} from ${callerId} (requested=${fromCallerId || "n/a"}), callLogId=${callLogId}`);
 
     const statusCallbackUrl = `${SUPABASE_URL}/functions/v1/brandaro-call-status?callLogId=${callLogId}`;
 
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial callerId="${brandароNumber}" record="record-from-answer-dual" timeout="30"
+  <Dial callerId="${callerId}" record="record-from-answer-dual" timeout="30"
     recordingStatusCallback="${SUPABASE_URL}/functions/v1/brandaro-call-status?callLogId=${callLogId}&event=recording"
     recordingStatusCallbackMethod="POST"
     action="${SUPABASE_URL}/functions/v1/brandaro-call-status?callLogId=${callLogId}&event=dial-complete"
