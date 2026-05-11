@@ -10,7 +10,7 @@ import { useStoreRecentInvoices } from '@/hooks/useStoreRecentInvoices';
 import { ExpandableChipCard } from './ExpandableChipCard';
 import { dynastyDate, dynastyRelative } from '@/lib/dates';
 import { cn } from '@/lib/utils';
-import { getSkuStatusIcon, getSkuStatusLabel } from '@/lib/inventory/skuDisplay';
+import { getSkuStatusIcon, getSkuStatusLabel, brandDisplayName } from '@/lib/inventory/skuDisplay';
 
 function getStockStatusDot(tubes: number) {
   if (tubes === 0) return '🔴';
