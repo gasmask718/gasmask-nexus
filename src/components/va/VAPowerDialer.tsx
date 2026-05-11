@@ -14,6 +14,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { BrandaroCallScript } from './BrandaroCallScript';
+import { useVoiceDevice } from '@/contexts/VoiceDeviceProvider';
+import { useCall } from '@/components/communication/CallProvider';
+import { useVASession } from '@/contexts/VASessionContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VA Auto Dialer — Sequential Lead Processing State Machine
