@@ -1,12 +1,8 @@
 /**
  * useNumberLastSessions — fetches the most recent VA session per Twilio number
- * from the brandaro_number_last_sessions view (sourced from dc_phone_numbers
- * + va_sessions). Returns a Map keyed by number_id for O(1) lookup, plus the
- * raw rows for tabular views.
- *
- * Used by:
- *   - VAOnboardingModal (shows "Last used by", "Last used", "Duration", "Currently Active")
- *   - LastUserLogsTable (admin audit log on /crm/brandaro)
+ * from the brandaro_number_last_sessions view, plus today's & total dial
+ * counts (from va_call_logs aggregated in the view), and resolves the last
+ * VA's display name (profiles.name) for username display.
  */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +19,10 @@ export interface NumberLastSession {
   started_at: string | null;
   ended_at: string | null;
   session_active: boolean | null;
+  today_dials: number;
+  total_dials: number;
+  last_dialed_at: string | null;
+  va_name?: string | null;
   va_email?: string | null;
 }
 
@@ -40,19 +40,27 @@ export function useNumberLastSessions() {
       const base = (data ?? []) as NumberLastSession[];
       const vaIds = Array.from(new Set(base.map((r) => r.last_va_id).filter(Boolean))) as string[];
 
-      let emailMap = new Map<string, string | null>();
+      const profileMap = new Map<string, { name: string | null; email: string | null }>();
       if (vaIds.length) {
         const { data: profiles } = await (supabase as any)
           .from('profiles')
-          .select('id, email')
+          .select('id, name, email')
           .in('id', vaIds);
-        (profiles ?? []).forEach((p: any) => emailMap.set(p.id, p.email));
+        (profiles ?? []).forEach((p: any) =>
+          profileMap.set(p.id, { name: p.name ?? null, email: p.email ?? null }),
+        );
       }
 
-      const enriched = base.map((r) => ({
-        ...r,
-        va_email: r.last_va_id ? emailMap.get(r.last_va_id) ?? null : null,
-      }));
+      const enriched = base.map((r) => {
+        const p = r.last_va_id ? profileMap.get(r.last_va_id) : undefined;
+        return {
+          ...r,
+          today_dials: Number(r.today_dials ?? 0),
+          total_dials: Number(r.total_dials ?? 0),
+          va_name: p?.name ?? null,
+          va_email: p?.email ?? null,
+        };
+      });
 
       const byId = new Map<string, NumberLastSession>();
       enriched.forEach((r) => byId.set(r.number_id, r));
