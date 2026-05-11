@@ -53,7 +53,7 @@ export default function VAManagementPage() {
     },
   });
 
-  // ---- Directory ----
+  // ---- Directory (memberships + profiles + app roles) ----
   const { data: directory = [], isLoading: dirLoading } = useQuery({
     queryKey: ['va-directory'],
     queryFn: async () => {
@@ -62,7 +62,38 @@ export default function VAManagementPage() {
         .select('*')
         .order('joined_at', { ascending: false });
       if (error) throw error;
-      return ((data ?? []) as unknown) as DirRow[];
+      const rows = ((data ?? []) as unknown) as DirRow[];
+
+      const userIds = Array.from(new Set(rows.map(r => r.user_id))).filter(Boolean);
+      if (userIds.length === 0) return rows;
+
+      const [{ data: profiles }, { data: roles }] = await Promise.all([
+        supabase
+          .from('user_profiles')
+          .select('user_id, primary_role, extra_roles')
+          .in('user_id', userIds),
+        supabase
+          .from('user_roles')
+          .select('user_id, role')
+          .in('user_id', userIds),
+      ]);
+
+      const profileMap = new Map(
+        (profiles ?? []).map((p: any) => [p.user_id, p]),
+      );
+      const rolesMap = new Map<string, string[]>();
+      (roles ?? []).forEach((r: any) => {
+        const list = rolesMap.get(r.user_id) ?? [];
+        list.push(r.role);
+        rolesMap.set(r.user_id, list);
+      });
+
+      return rows.map(r => ({
+        ...r,
+        primary_role: profileMap.get(r.user_id)?.primary_role ?? null,
+        extra_roles: profileMap.get(r.user_id)?.extra_roles ?? null,
+        app_roles: rolesMap.get(r.user_id) ?? [],
+      }));
     },
   });
 
