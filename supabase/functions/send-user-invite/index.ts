@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import nodemailer from "npm:nodemailer@6.9.14";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,16 +22,16 @@ serve(async (req) => {
   }
 
   try {
-    const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
+    const GMAIL_USER = Deno.env.get("VA_GMAIL_USER");
+    const GMAIL_PASS = Deno.env.get("VA_GMAIL_APP_PASSWORD");
     const frontendBaseUrl = Deno.env.get("FRONTEND_BASE_URL") || "https://gasmask-os-nexus.lovable.app";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Validate SendGrid API key
-    if (!sendgridApiKey) {
-      console.error("❌ SENDGRID_API_KEY is not configured");
+    if (!GMAIL_USER || !GMAIL_PASS) {
+      console.error("❌ VA_GMAIL_USER or VA_GMAIL_APP_PASSWORD not configured");
       return new Response(
-        JSON.stringify({ error: "Email service not configured. Please add SENDGRID_API_KEY." }),
+        JSON.stringify({ error: "Email service not configured. Missing VA_GMAIL_USER or VA_GMAIL_APP_PASSWORD." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -223,57 +224,33 @@ If you didn't expect this invitation, you can safely ignore this email.
 
 © 2025 Dynasty OS. All rights reserved.`;
 
-    // Send email via SendGrid API
-    console.log(`📧 Sending invitation email via SendGrid to ${email}...`);
-    console.log(`   From: gasmaskapprovedllc@gmail.com`);
+    // Send email via Gmail SMTP (nodemailer)
+    console.log(`📧 Sending invitation email via nodemailer to ${email}...`);
+    console.log(`   From: ${GMAIL_USER}`);
     console.log(`   Role: ${roleDisplay}`);
     console.log(`   Accept URL: ${acceptUrl}`);
-    
-    const sendgridResponse = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${sendgridApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        personalizations: [
-          {
-            to: [{ email: email.toLowerCase() }],
-            subject: `You're Invited to Join Dynasty OS as a ${roleDisplay}`,
-          },
-        ],
-        from: {
-          email: "gasmaskapprovedllc@gmail.com",
-          name: "Dynasty OS",
-        },
-        content: [
-          {
-            type: "text/plain",
-            value: plainText,
-          },
-          {
-            type: "text/html",
-            value: emailHtml,
-          },
-        ],
-      }),
+
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: { user: GMAIL_USER, pass: GMAIL_PASS },
     });
 
-    // SendGrid returns 202 for successful queuing
-    if (!sendgridResponse.ok && sendgridResponse.status !== 202) {
-      const errorText = await sendgridResponse.text();
-      let errorDetails;
-      try {
-        errorDetails = JSON.parse(errorText);
-      } catch {
-        errorDetails = { message: errorText };
-      }
-      console.error("❌ SendGrid error:", errorDetails);
+    try {
+      const info = await transporter.sendMail({
+        from: `"Dynasty OS" <${GMAIL_USER}>`,
+        to: email.toLowerCase(),
+        subject: `You're Invited to Join Dynasty OS as a ${roleDisplay}`,
+        text: plainText,
+        html: emailHtml,
+      });
+      console.log(`✅ Invitation email sent to ${email} (id: ${info.messageId})`);
+    } catch (sendErr) {
+      const msg = sendErr instanceof Error ? sendErr.message : String(sendErr);
+      console.error("❌ nodemailer error:", msg);
       return new Response(
-        JSON.stringify({ 
-          error: `Failed to send email: ${errorDetails.errors?.[0]?.message || errorDetails.message || "Unknown error"}`,
-          details: errorDetails 
-        }),
+        JSON.stringify({ error: `Failed to send email: ${msg}` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
