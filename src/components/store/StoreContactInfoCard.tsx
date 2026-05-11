@@ -164,8 +164,12 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
 
   useEffect(() => {
     if (!editOpen) return;
-    setFormData(createInitialFormData(store));
-  }, [store, editOpen]);
+    setFormData({
+      ...createInitialFormData(store),
+      // Prefer canonical primary contact from store_contacts over legacy mirror
+      primary_contact_name: ownerContact?.name || store.primary_contact_name || '',
+    });
+  }, [store, editOpen, ownerContact?.name]);
 
   // Tag handling now done via GlobalTagSelector component
 
