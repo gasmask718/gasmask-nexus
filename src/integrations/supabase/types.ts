@@ -102653,13 +102653,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "va_sessions_twilio_number_id_fkey"
-            columns: ["twilio_number_id"]
-            isOneToOne: false
-            referencedRelation: "brandaro_phone_numbers"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "va_sessions_va_id_fkey"
             columns: ["va_id"]
             isOneToOne: false
