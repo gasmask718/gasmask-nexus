@@ -2,13 +2,22 @@ import { useState, useEffect } from 'react';
 import { useVASession } from '@/contexts/VASessionContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Loader2, CreditCard, SplitSquareHorizontal } from 'lucide-react';
+import { Plus, Trash2, Loader2, CreditCard, SplitSquareHorizontal, Package } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Parse a package price string like "$1,500", "$2,997", "$5,000+" → number.
+// Returns 0 for non-numeric ("Custom") so the VA can fill it in manually.
+function parsePackagePrice(raw: string | null | undefined): number {
+  if (!raw) return 0;
+  const cleaned = String(raw).replace(/[^0-9.]/g, '');
+  const n = parseFloat(cleaned);
+  return Number.isFinite(n) ? n : 0;
+}
 
 interface LineItem { description: string; price: number; }
 
