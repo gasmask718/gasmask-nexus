@@ -13,6 +13,7 @@ import { AlertTriangle, Plus, RefreshCw, CheckCircle2, Clock } from 'lucide-reac
 import { useStoreTubeSwitches, useLogTubeSwitch, type LogTubeSwitchInput } from '@/hooks/useStoreTubeSwitches';
 import { format } from 'date-fns';
 
+import { dynastyDate } from '@/lib/dates';
 const SWITCH_REASONS = [
   { value: 'damaged', label: 'Damaged' },
   { value: 'outdated_branding', label: 'Outdated Branding' },
@@ -90,7 +91,7 @@ export function TubeSwitchPanel({ storeId }: TubeSwitchPanelProps) {
           <Badge variant="outline">Total: {analytics.totalSwitches}</Badge>
           <Badge variant="outline">90d: {analytics.last90Days}</Badge>
           {analytics.lastSwitchDate && (
-            <Badge variant="outline">Last: {format(new Date(analytics.lastSwitchDate), 'MMM d, yyyy')}</Badge>
+            <Badge variant="outline">Last: {dynastyDate(analytics.lastSwitchDate)}</Badge>
           )}
         </div>
 
@@ -163,7 +164,7 @@ export function TubeSwitchPanel({ storeId }: TubeSwitchPanelProps) {
               <TableBody>
                 {records.map(r => (
                   <TableRow key={r.id}>
-                    <TableCell className="text-xs">{format(new Date(r.created_at), 'MMM d, yyyy')}</TableCell>
+                    <TableCell className="text-xs">{dynastyDate(r.created_at)}</TableCell>
                     <TableCell className="text-xs">{r.old_tube_type}</TableCell>
                     <TableCell className="text-xs">{r.estimated_old_tube_quantity}</TableCell>
                     <TableCell className="text-xs">{r.switched_quantity}</TableCell>

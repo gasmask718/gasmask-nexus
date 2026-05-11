@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { FileText, DollarSign, Calendar, Package, Plus, Loader2, MoreVertical, Edit, Trash2, Ban, Eye, Upload } from 'lucide-react';
 import { format } from 'date-fns';
+import { dynastyDate } from '@/lib/dates';
 import { toast } from 'sonner';
 import { EditStoreInvoiceModal } from './EditStoreInvoiceModal';
 import { BulkInvoiceUploader } from './BulkInvoiceUploader';
@@ -420,14 +421,14 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
                         <Calendar className="h-3 w-3" />
                         <span>
                           {invoice.created_at
-                            ? format(new Date(invoice.created_at), 'MMM d, yyyy')
+                            ? dynastyDate(invoice.created_at)
                             : 'N/A'}
                         </span>
                       </div>
                       {invoice.due_date && (
                         <div className="flex items-center gap-1">
                           <span>Due:</span>
-                          <span>{format(new Date(invoice.due_date), 'MMM d, yyyy')}</span>
+                          <span>{dynastyDate(invoice.due_date)}</span>
                         </div>
                       )}
                       {invoice.payment_method && (
@@ -439,7 +440,7 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
                       {invoice.paid_at && (
                         <div className="flex items-center gap-1">
                           <span>Paid:</span>
-                          <span>{format(new Date(invoice.paid_at), 'MMM d, yyyy')}</span>
+                          <span>{dynastyDate(invoice.paid_at)}</span>
                         </div>
                       )}
                     </div>

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Target, Plus, Clock, CheckCircle2, Circle, Sparkles, User } from 'lucide-react';
 import { format } from 'date-fns';
+import { dynastyDate } from '@/lib/dates';
 import { AddOpportunityModal } from './AddOpportunityModal';
 import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
 import { useAuth } from '@/contexts/AuthContext';
@@ -231,12 +232,12 @@ function OpportunityItem({ opportunity, onToggle, isToggling }: OpportunityItemP
           </Badge>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Clock className="h-3.5 w-3.5" />
-            <span>{format(new Date(opportunity.created_at), 'MMM d, yyyy')}</span>
+            <span>{dynastyDate(opportunity.created_at)}</span>
           </div>
           {opportunity.is_completed && opportunity.completed_at && (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-              <span>Completed {format(new Date(opportunity.completed_at), 'MMM d')}</span>
+              <span>Completed {dynastyDate(opportunity.completed_at)}</span>
             </div>
           )}
         </div>

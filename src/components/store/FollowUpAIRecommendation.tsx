@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Brain, MessageCircle, Calendar, RefreshCw, DollarSign, Target, Package, PhoneOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { dynastyDate } from '@/lib/dates';
 import { Link } from 'react-router-dom';
 
 interface FollowUpAIRecommendationProps {
@@ -336,7 +337,7 @@ export const FollowUpAIRecommendation = ({ storeId, onSendMessage }: FollowUpAIR
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <span className="text-muted-foreground">Suggested:</span>
           <span className="font-medium">
-            {format(new Date(recommendation.suggested_date), 'MMM d, yyyy')}
+            {dynastyDate(recommendation.suggested_date)}
           </span>
         </div>
 

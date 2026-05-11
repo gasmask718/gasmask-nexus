@@ -23,6 +23,7 @@ import {
 import { useAmbassadorOnlineSales } from "@/hooks/useAmbassadorOnlineSales";
 import { format } from "date-fns";
 
+import { dynastyDate } from '@/lib/dates';
 interface AmbassadorSalesMetricsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -266,7 +267,7 @@ export function AmbassadorSalesMetricsModal({
                               {getStatusBadge(sale.status)}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {sale.customer_name || "Anonymous"} • {format(new Date(sale.sale_date), "MMM dd, yyyy")}
+                              {sale.customer_name || "Anonymous"} • {dynastyDate(sale.sale_date)}
                             </div>
                           </div>
                           <div className="text-right">

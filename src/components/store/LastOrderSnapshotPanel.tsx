@@ -6,6 +6,7 @@ import { getBrandIdentity, CANONICAL_BRAND_IDS, normalizeBrandId, type Canonical
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
+import { dynastyDate } from '@/lib/dates';
 interface LastOrderSnapshotPanelProps {
   storeId: string;
 }
@@ -108,7 +109,7 @@ export function LastOrderSnapshotPanel({ storeId }: LastOrderSnapshotPanelProps)
                   <div>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Last Order</p>
                     <p className="text-sm font-medium">
-                      {format(new Date(snap.last_order_date), 'MMM d')}
+                      {dynastyDate(snap.last_order_date)}
                     </p>
                     <p className="text-[10px] text-muted-foreground">{snap.days_since_last_order}d ago</p>
                   </div>

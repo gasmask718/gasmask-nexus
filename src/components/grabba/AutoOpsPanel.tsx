@@ -30,6 +30,7 @@ import {
 import { useAutonomousOps, OpsLog } from '@/hooks/useAutonomousOps';
 import { formatDistanceToNow, format } from 'date-fns';
 
+import { dynastyDateTime } from '@/lib/dates';
 const CycleIcon = ({ type }: { type: string }) => {
   switch (type) {
     case 'morning':
@@ -304,7 +305,7 @@ export function AutoOpsPanel() {
                           {log.cycle_type} Cycle
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(log.run_at), 'MMM d, h:mm a')}
+                          {dynastyDateTime(log.run_at)}
                         </p>
                       </div>
                     </div>

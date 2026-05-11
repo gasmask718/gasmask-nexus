@@ -20,6 +20,7 @@ import {
   Power, Repeat
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import { dynastyDate } from '@/lib/dates';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -602,7 +603,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                             {t('card.tube_intel.last_order')}:{' '}
                             {los && !los.is_placeholder && los.last_order_date ? (
                               <span className="text-foreground">
-                                {format(new Date(los.last_order_date), 'MMM d')} · {los.last_order_size_label}
+                                {dynastyDate(los.last_order_date)} · {los.last_order_size_label}
                                 <span className="text-muted-foreground"> · {los.days_since_last_order}d ago</span>
                               </span>
                             ) : (
@@ -850,7 +851,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                             <Clock className="h-2.5 w-2.5" />
                             {intel.last_updated_at
                               ? <>
-                                  {format(new Date(intel.last_updated_at), 'MM/dd/yyyy')}
+                                  {dynastyDate(intel.last_updated_at)}
                                   <span className="opacity-70">
                                     ({formatDistanceToNow(new Date(intel.last_updated_at), { addSuffix: false })} ago)
                                   </span>

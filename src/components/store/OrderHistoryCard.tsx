@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Package, DollarSign, Calendar, ShoppingCart, Plus, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { dynastyDate } from '@/lib/dates';
 import { toast } from 'sonner';
 
 interface Order {
@@ -336,9 +337,9 @@ export function OrderHistoryCard({ storeId, onCreateOrder }: OrderHistoryCardPro
                       <Calendar className="h-3 w-3" />
                       <span>
                         {order.visit_datetime
-                          ? format(new Date(order.visit_datetime), 'MMM d, yyyy')
+                          ? dynastyDate(order.visit_datetime)
                           : order.created_at
-                          ? format(new Date(order.created_at), 'MMM d, yyyy')
+                          ? dynastyDate(order.created_at)
                           : 'N/A'}
                       </span>
                     </div>

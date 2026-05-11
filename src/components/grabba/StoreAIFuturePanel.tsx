@@ -14,6 +14,7 @@ import {
 import { useStoreAIInsights, useRefreshStoreAIInsights } from '@/hooks/useStoreAIInsights';
 import { format } from 'date-fns';
 
+import { dynastyDate } from '@/lib/dates';
 interface StoreAIFuturePanelProps {
   storeId: string;
 }
@@ -21,7 +22,7 @@ interface StoreAIFuturePanelProps {
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return 'No prediction';
   try {
-    return format(new Date(dateStr), 'MMM d, yyyy');
+    return dynastyDate(dateStr);
   } catch {
     return 'Invalid date';
   }

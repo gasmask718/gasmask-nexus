@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
+import { dynastyDate } from '@/lib/dates';
 type StickerType = 'door' | 'instore' | 'phone';
 
 interface StickerData {
@@ -340,7 +341,7 @@ export function StoreOperationsCard({ store, onUpdate }: StoreOperationsCardProp
                         <span className="text-muted-foreground">Last Put On:</span>
                         {stickerData.put_on_at ? (
                           <Badge variant="outline" className="text-xs">
-                            {format(new Date(stickerData.put_on_at), 'MMM d, yyyy')}
+                            {dynastyDate(stickerData.put_on_at)}
                           </Badge>
                         ) : (
                           <span className="text-muted-foreground/50">—</span>
@@ -349,7 +350,7 @@ export function StoreOperationsCard({ store, onUpdate }: StoreOperationsCardProp
                         <span className="text-muted-foreground">Last Seen:</span>
                         {stickerData.last_seen_at ? (
                           <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">
-                            {format(new Date(stickerData.last_seen_at), 'MMM d, yyyy')}
+                            {dynastyDate(stickerData.last_seen_at)}
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs text-muted-foreground">Never</Badge>
@@ -360,7 +361,7 @@ export function StoreOperationsCard({ store, onUpdate }: StoreOperationsCardProp
                           <AlertTriangle className="h-3 w-3 text-destructive" />
                           <span className="text-destructive">Taken Down:</span>
                           <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30">
-                            {format(new Date(stickerData.taken_down_at), 'MMM d, yyyy')}
+                            {dynastyDate(stickerData.taken_down_at)}
                           </Badge>
                         </div>
                       )}
