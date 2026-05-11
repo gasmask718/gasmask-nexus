@@ -109255,24 +109255,27 @@ export type Database = {
           ended_at: string | null
           friendly_name: string | null
           in_use: boolean | null
+          last_dialed_at: string | null
           last_va_id: string | null
           number_id: string | null
           phone_number: string | null
           session_active: boolean | null
           session_id: string | null
           started_at: string | null
+          today_dials: number | null
+          total_dials: number | null
         }
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
