@@ -35,7 +35,7 @@ interface VA {
   lead_count: number;
 }
 
-interface UnassignedLead {
+interface LeadRow {
   id: string;
   business_name: string;
   priority_tier: string | null;
@@ -43,16 +43,21 @@ interface UnassignedLead {
   state: string | null;
   phone_number: string | null;
   priority_score: number | null;
+  assigned_va: string | null;
 }
 
-const PAGE_SIZE = 500;
+const DEFAULT_PAGE_SIZE = 50;
+const TRANSFER_PAGE_SIZE = 500;
 
 export default function VARosterPage() {
   const { toast } = useToast();
   const [vas, setVas] = useState<VA[]>([]);
-  const [unassignedLeads, setUnassignedLeads] = useState<UnassignedLead[]>([]);
+  const [leads, setLeads] = useState<LeadRow[]>([]);
+  const [totalLeads, setTotalLeads] = useState(0);
+  const [unassignedTotal, setUnassignedTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
+  const [unassigning, setUnassigning] = useState(false);
 
   // Bulk-selection + filters
   const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
@@ -60,19 +65,29 @@ export default function VARosterPage() {
   const [search, setSearch] = useState('');
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [stateFilter, setStateFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'assigned' | 'unassigned'>('unassigned');
+  const [stateOptions, setStateOptions] = useState<string[]>([]);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   // Transfer panel state
   const [transferSourceVa, setTransferSourceVa] = useState<string>('');
   const [transferTargetVa, setTransferTargetVa] = useState<string>(''); // '' = unassign
-  const [transferLeads, setTransferLeads] = useState<UnassignedLead[]>([]);
+  const [transferLeads, setTransferLeads] = useState<LeadRow[]>([]);
   const [transferLoading, setTransferLoading] = useState(false);
   const [transferSelectedIds, setTransferSelectedIds] = useState<Set<string>>(new Set());
   const [transferSearch, setTransferSearch] = useState('');
   const [transferring, setTransferring] = useState(false);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const vaMap = useMemo(() => {
+    const m: Record<string, VA> = {};
+    vas.forEach((v) => (m[v.user_id] = v));
+    return m;
+  }, [vas]);
 
+  const fetchVAs = useCallback(async () => {
     const { data: vaRoles, error: roleErr } = await supabase
       .from('user_roles')
       .select('user_id')
@@ -80,57 +95,111 @@ export default function VARosterPage() {
 
     if (roleErr) {
       toast({ title: 'Failed to load VAs', description: roleErr.message, variant: 'destructive' });
+      return;
     }
 
-    if (vaRoles?.length) {
-      const vaIds = vaRoles.map((r) => r.user_id);
-
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, name, email')
-        .in('id', vaIds);
-
-      const { data: leadCounts } = await supabase
-        .from('brandaro_qualified_leads')
-        .select('assigned_va')
-        .in('assigned_va', vaIds);
-
-      const countMap: Record<string, number> = {};
-      leadCounts?.forEach((l) => {
-        if (l.assigned_va) countMap[l.assigned_va] = (countMap[l.assigned_va] || 0) + 1;
-      });
-
-      setVas(
-        (profiles || []).map((p) => ({
-          user_id: p.id,
-          name: p.name || p.email || 'Unknown VA',
-          email: p.email || '',
-          lead_count: countMap[p.id] || 0,
-        })),
-      );
-    } else {
+    if (!vaRoles?.length) {
       setVas([]);
+      return;
     }
 
-    const { data: leads, error: leadErr } = await supabase
+    const vaIds = vaRoles.map((r) => r.user_id);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, name, email')
+      .in('id', vaIds);
+
+    const { data: leadCounts } = await supabase
       .from('brandaro_qualified_leads')
-      .select('id, business_name, priority_tier, city, state, phone_number, priority_score')
-      .is('assigned_va', null)
-      .order('priority_score', { ascending: false })
-      .limit(PAGE_SIZE);
+      .select('assigned_va')
+      .in('assigned_va', vaIds);
 
-    if (leadErr) {
-      toast({ title: 'Failed to load leads', description: leadErr.message, variant: 'destructive' });
+    const countMap: Record<string, number> = {};
+    leadCounts?.forEach((l) => {
+      if (l.assigned_va) countMap[l.assigned_va] = (countMap[l.assigned_va] || 0) + 1;
+    });
+
+    setVas(
+      (profiles || []).map((p) => ({
+        user_id: p.id,
+        name: p.name || p.email || 'Unknown VA',
+        email: p.email || '',
+        lead_count: countMap[p.id] || 0,
+      })),
+    );
+  }, [toast]);
+
+  const fetchLeads = useCallback(async () => {
+    setLoading(true);
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let q = supabase
+      .from('brandaro_qualified_leads')
+      .select('id, business_name, priority_tier, city, state, phone_number, priority_score, assigned_va', { count: 'exact' })
+      .order('priority_score', { ascending: false, nullsFirst: false })
+      .range(from, to);
+
+    if (statusFilter === 'assigned') q = q.not('assigned_va', 'is', null);
+    if (statusFilter === 'unassigned') q = q.is('assigned_va', null);
+    if (tierFilter !== 'all') q = q.eq('priority_tier', tierFilter);
+    if (stateFilter !== 'all') q = q.eq('state', stateFilter);
+    if (search.trim()) {
+      const s = search.trim().replace(/%/g, '');
+      q = q.or(`business_name.ilike.%${s}%,city.ilike.%${s}%,state.ilike.%${s}%`);
     }
 
-    setUnassignedLeads((leads as UnassignedLead[]) || []);
-    setSelectedLeadIds(new Set());
+    const { data, error, count } = await q;
+    if (error) {
+      toast({ title: 'Failed to load leads', description: error.message, variant: 'destructive' });
+      setLeads([]);
+      setTotalLeads(0);
+    } else {
+      setLeads((data as LeadRow[]) || []);
+      setTotalLeads(count ?? 0);
+    }
     setLoading(false);
-  };
+  }, [page, pageSize, statusFilter, tierFilter, stateFilter, search, toast]);
+
+  // Refresh unassigned total badge whenever leads change
+  const fetchUnassignedTotal = useCallback(async () => {
+    const { count } = await supabase
+      .from('brandaro_qualified_leads')
+      .select('id', { count: 'exact', head: true })
+      .is('assigned_va', null);
+    setUnassignedTotal(count ?? 0);
+  }, []);
+
+  // Distinct states (one-time)
+  const fetchStateOptions = useCallback(async () => {
+    const { data } = await supabase
+      .from('brandaro_qualified_leads')
+      .select('state')
+      .not('state', 'is', null)
+      .limit(2000);
+    const set = new Set<string>();
+    (data || []).forEach((r: any) => r.state && set.add(r.state));
+    setStateOptions(Array.from(set).sort());
+  }, []);
+
+  const refreshAll = useCallback(async () => {
+    await Promise.all([fetchVAs(), fetchLeads(), fetchUnassignedTotal()]);
+  }, [fetchVAs, fetchLeads, fetchUnassignedTotal]);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchVAs();
+    fetchUnassignedTotal();
+    fetchStateOptions();
+  }, [fetchVAs, fetchUnassignedTotal, fetchStateOptions]);
+
+  // Reset page on filter change
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, tierFilter, stateFilter, search, pageSize]);
+
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
 
   const filteredLeads = useMemo(() => {
     const q = search.trim().toLowerCase();
