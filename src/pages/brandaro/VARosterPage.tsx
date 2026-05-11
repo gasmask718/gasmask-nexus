@@ -65,7 +65,7 @@ export default function VARosterPage() {
   const [search, setSearch] = useState('');
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [stateFilter, setStateFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'assigned' | 'unassigned'>('unassigned');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
   const [stateOptions, setStateOptions] = useState<string[]>([]);
 
   // Pagination
