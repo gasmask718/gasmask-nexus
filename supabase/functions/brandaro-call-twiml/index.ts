@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -62,10 +63,31 @@ serve(async (req: Request) => {
       });
     }
 
-    // Use VA-selected From number when valid E.164, else fall back to default.
-    // Twilio's browser SDK auto-prefixes "client:" to identity-style From values
-    // — only honor numeric +E.164 strings as caller-ID.
-    const callerId = /^\+\d{8,16}$/.test(fromCallerId) ? fromCallerId : DEFAULT_CALLER_ID;
+    // Use VA-selected From number when it's valid E.164 AND owned by us
+    // (verified against dc_phone_numbers). Twilio silently rewrites callerId
+    // to the account default if the value is not a verified/owned number.
+    let callerId = DEFAULT_CALLER_ID;
+    if (/^\+\d{8,16}$/.test(fromCallerId)) {
+      try {
+        const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        if (SERVICE_ROLE_KEY) {
+          const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+          const { data: owned } = await admin
+            .from("dc_phone_numbers")
+            .select("phone_number")
+            .eq("phone_number", fromCallerId)
+            .eq("is_active", true)
+            .maybeSingle();
+          if (owned) callerId = fromCallerId;
+          else console.warn(`[brandaro-call-twiml] CallerId ${fromCallerId} not in dc_phone_numbers, using default`);
+        } else {
+          callerId = fromCallerId;
+        }
+      } catch (e) {
+        console.warn(`[brandaro-call-twiml] Whitelist check failed, trusting requested CallerId:`, e);
+        callerId = fromCallerId;
+      }
+    }
     console.log(`[brandaro-call-twiml] Dialing ${to} from ${callerId} (requested=${fromCallerId || "n/a"}), callLogId=${callLogId}`);
 
     const statusCallbackUrl = `${SUPABASE_URL}/functions/v1/brandaro-call-status?callLogId=${callLogId}`;
