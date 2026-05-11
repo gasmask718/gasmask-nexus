@@ -158,7 +158,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
         {/* CHIP 2 — This Month / MoM */}
         <ExpandableChipCard
           ariaLabel="Prior month sold breakdown"
-          expandedTitle="Prior Month by Brand"
+          expandedTitle="Prior Month by SKU"
           isLoading={priorMonthByBrand.isLoading}
           isEmpty={!priorMonthByBrand.isLoading && priorMonthRows.length === 0}
           emptyMessage="No sales in prior month."
