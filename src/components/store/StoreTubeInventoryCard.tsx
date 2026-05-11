@@ -14,6 +14,7 @@ interface TubeInventory {
   current_tubes_left: number;
   last_updated: string;
   created_by: string;
+  needs_operator_verification?: boolean;
 }
 
 interface StoreTubeInventoryCardProps {
