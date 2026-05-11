@@ -28,6 +28,9 @@ interface DirRow {
   company_id: string;
   company_slug: string;
   company_name: string;
+  primary_role?: string | null;
+  extra_roles?: string[] | null;
+  app_roles?: string[];
 }
 interface Invite {
   id: string; email: string; role: string; status: string;
