@@ -445,7 +445,7 @@ export default function VARosterPage() {
           </p>
         </div>
         <Badge variant="outline" className="text-xs">
-          {vas.length} Active VAs · {totalLeads} Unassigned Leads
+          {vas.length} Active VAs · {unassignedTotal} Unassigned Leads
         </Badge>
       </div>
 
