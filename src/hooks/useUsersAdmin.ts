@@ -53,11 +53,12 @@ export function useUsersAdmin() {
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, name, email, phone }: { id: string; name?: string; email?: string; phone?: string }) => {
+    mutationFn: async ({ id, name, email, phone, role }: { id: string; name?: string; email?: string; phone?: string; role?: string }) => {
       const updates: Record<string, any> = {};
       if (name !== undefined) updates.name = name;
       if (email !== undefined) updates.email = email;
       if (phone !== undefined) updates.phone = phone;
+      if (role !== undefined) updates.role = role as any;
       const { error } = await supabase.from("profiles").update(updates).eq("id", id);
       if (error) throw error;
     },
