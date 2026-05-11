@@ -80,7 +80,7 @@ export function MakeDeliveryPage({ portalType }: MakeDeliveryPageProps) {
             id,
             status,
             store_id,
-            store_master:store_id (store_name, address, city, state, phone)
+            stores:store_id (name, address_street, address_city, boro, phone)
           `)
           .eq('id', stopId)
           .single();
@@ -93,13 +93,14 @@ export function MakeDeliveryPage({ portalType }: MakeDeliveryPageProps) {
             { id: '3', product_name: 'Rolling Papers', brand_name: 'Accessories', quantity: 20, confirmed: false },
           ];
 
+          const s = (routeStop.stores as any) || {};
           setStop({
             id: routeStop.id,
             store_id: routeStop.store_id,
-            store_name: (routeStop.store_master as any)?.store_name || 'Unknown Store',
-            address: `${(routeStop.store_master as any)?.address || ''}, ${(routeStop.store_master as any)?.city || ''}, ${(routeStop.store_master as any)?.state || ''}`,
-            phone: (routeStop.store_master as any)?.phone || '',
-            status: routeStop.status as DeliveryStop['status'] || 'pending',
+            store_name: s.name || 'Unknown Store',
+            address: [s.address_street, s.address_city, s.boro].filter(Boolean).join(', '),
+            phone: s.phone || '',
+            status: (routeStop.status as DeliveryStop['status']) || 'pending',
             items: sampleItems,
             instructions: '',
           });
