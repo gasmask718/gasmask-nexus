@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { Package } from 'lucide-react';
 import { VALID_TUBE_BRANDS } from './UnifiedTubeIntelligenceCard';
 import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
+import { resolveProductIdForBrand } from '@/lib/inventory/skuDisplay';
 
 interface UpdateInventoryModalProps {
   open: boolean;
@@ -55,37 +56,53 @@ export function UpdateInventoryModal({
         throw new Error('Invalid tube count');
       }
 
-      // Check if record exists for this brand
-      const { data: existing } = await supabase
-        .from('store_tube_inventory')
-        .select('id')
-        .eq('store_id', storeId)
-        .eq('brand', brand)
-        .single();
+      const productId = resolveProductIdForBrand(brand);
+
+      // Prefer matching by product_id (canonical SKU); fall back to brand for legacy rows.
+      let existing: { id: string } | null = null;
+      if (productId) {
+        const { data } = await supabase
+          .from('store_tube_inventory')
+          .select('id')
+          .eq('store_id', storeId)
+          .eq('product_id', productId)
+          .eq('is_simulation', false)
+          .maybeSingle();
+        existing = data;
+      }
+      if (!existing) {
+        const { data } = await supabase
+          .from('store_tube_inventory')
+          .select('id')
+          .eq('store_id', storeId)
+          .eq('brand', brand)
+          .order('last_updated', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        existing = data;
+      }
 
       if (existing) {
-        // Update existing record
         const { error } = await supabase
           .from('store_tube_inventory')
           .update({
             current_tubes_left: count,
             last_updated: new Date().toISOString(),
             created_by: 'manual_update',
+            ...(productId ? { product_id: productId } : {}),
           })
           .eq('id', existing.id);
-
         if (error) throw error;
       } else {
-        // Insert new record
         const { error } = await supabase
           .from('store_tube_inventory')
           .insert({
             store_id: storeId,
             brand,
+            product_id: productId,
             current_tubes_left: count,
             created_by: 'manual_update',
           });
-
         if (error) throw error;
       }
 
