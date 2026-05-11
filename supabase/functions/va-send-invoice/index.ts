@@ -45,7 +45,13 @@ function renderEmailHtml(invoice: any, lead: any): string {
       </tr></tfoot>
     </table>
     ${
-      invoice.payment_link
+      invoice.payment_type === 'split' && (invoice.deposit_payment_link || invoice.final_payment_link)
+        ? `<div style="text-align:center;margin:24px 0">
+        ${invoice.deposit_payment_link ? `<a href="${invoice.deposit_payment_link}" style="display:inline-block;background:#0891b2;color:white;padding:14px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin:4px">Pay 50% Deposit ($${Number(invoice.deposit_amount || 0).toFixed(2)})</a>` : ''}
+        ${invoice.final_payment_link ? `<a href="${invoice.final_payment_link}" style="display:inline-block;background:#0f172a;color:white;padding:14px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin:4px">Pay Final 50% ($${Number(invoice.final_amount || 0).toFixed(2)})</a>` : ''}
+        <p style="margin-top:8px;color:#475569;font-size:12px">Pay 50% now to start the project. Final 50% on completion.</p>
+      </div>`
+        : invoice.payment_link
         ? `<div style="text-align:center;margin:24px 0">
         <a href="${invoice.payment_link}" style="display:inline-block;background:#0891b2;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold">Pay Invoice</a>
       </div>`
@@ -125,7 +131,7 @@ serve(async (req: Request) => {
 
     let recipient = body.recipient || "";
     if (!recipient) {
-      if (channel === "email") recipient = lead?.email || "";
+      if (channel === "email") recipient = invoice.customer_email || lead?.email || "";
       else recipient = lead?.phone_number || "";
     }
 
@@ -184,9 +190,14 @@ serve(async (req: Request) => {
       }
 
       const smsBody =
-        `Invoice ${invoice.invoice_number || ""} from Brandaro\n` +
-        `Total: $${Number(invoice.total || 0).toFixed(2)}\n` +
-        (invoice.payment_link ? `Pay: ${invoice.payment_link}` : "");
+        invoice.payment_type === 'split' && (invoice.deposit_payment_link || invoice.final_payment_link)
+          ? `Invoice ${invoice.invoice_number || ""} from Brandaro\n` +
+            `Total: $${Number(invoice.total || 0).toFixed(2)}\n` +
+            (invoice.deposit_payment_link ? `Pay 50% deposit: ${invoice.deposit_payment_link}\n` : "") +
+            (invoice.final_payment_link ? `Pay final 50%: ${invoice.final_payment_link}` : "")
+          : `Invoice ${invoice.invoice_number || ""} from Brandaro\n` +
+            `Total: $${Number(invoice.total || 0).toFixed(2)}\n` +
+            (invoice.payment_link ? `Pay: ${invoice.payment_link}` : "");
 
       const twilioRes = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,

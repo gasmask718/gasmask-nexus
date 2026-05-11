@@ -102193,9 +102193,23 @@ export type Database = {
       }
       va_invoices: {
         Row: {
+          amount_paid: number
           created_at: string | null
+          customer_email: string | null
           customer_name: string
+          deposit_amount: number | null
+          deposit_paid_at: string | null
+          deposit_payment_link: string | null
+          deposit_percent: number
+          deposit_session_id: string | null
+          deposit_status: string
           due_date: string | null
+          final_amount: number | null
+          final_paid_at: string | null
+          final_payment_link: string | null
+          final_session_id: string | null
+          final_status: string
+          full_session_id: string | null
           id: string
           invoice_number: string | null
           last_send_error: string | null
@@ -102203,6 +102217,7 @@ export type Database = {
           line_items: Json
           notes: string | null
           payment_link: string | null
+          payment_type: string
           sent_at: string | null
           service_type: string | null
           status: string | null
@@ -102210,9 +102225,23 @@ export type Database = {
           va_id: string
         }
         Insert: {
+          amount_paid?: number
           created_at?: string | null
+          customer_email?: string | null
           customer_name: string
+          deposit_amount?: number | null
+          deposit_paid_at?: string | null
+          deposit_payment_link?: string | null
+          deposit_percent?: number
+          deposit_session_id?: string | null
+          deposit_status?: string
           due_date?: string | null
+          final_amount?: number | null
+          final_paid_at?: string | null
+          final_payment_link?: string | null
+          final_session_id?: string | null
+          final_status?: string
+          full_session_id?: string | null
           id?: string
           invoice_number?: string | null
           last_send_error?: string | null
@@ -102220,6 +102249,7 @@ export type Database = {
           line_items?: Json
           notes?: string | null
           payment_link?: string | null
+          payment_type?: string
           sent_at?: string | null
           service_type?: string | null
           status?: string | null
@@ -102227,9 +102257,23 @@ export type Database = {
           va_id: string
         }
         Update: {
+          amount_paid?: number
           created_at?: string | null
+          customer_email?: string | null
           customer_name?: string
+          deposit_amount?: number | null
+          deposit_paid_at?: string | null
+          deposit_payment_link?: string | null
+          deposit_percent?: number
+          deposit_session_id?: string | null
+          deposit_status?: string
           due_date?: string | null
+          final_amount?: number | null
+          final_paid_at?: string | null
+          final_payment_link?: string | null
+          final_session_id?: string | null
+          final_status?: string
+          full_session_id?: string | null
           id?: string
           invoice_number?: string | null
           last_send_error?: string | null
@@ -102237,6 +102281,7 @@ export type Database = {
           line_items?: Json
           notes?: string | null
           payment_link?: string | null
+          payment_type?: string
           sent_at?: string | null
           service_type?: string | null
           status?: string | null
