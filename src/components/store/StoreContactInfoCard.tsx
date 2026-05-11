@@ -223,6 +223,37 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
 
       if (error) throw error;
 
+      // ─── Canonical Owner Name persistence (Layer 2 → store_contacts) ───
+      // Save primary_contact_name through canonical store_contacts table.
+      // The trigger trg_sync_store_primary_contact_name mirrors this to stores.primary_contact_name.
+      const trimmedOwner = formData.primary_contact_name.trim();
+      const previousOwnerName = ownerContact?.name?.trim() || '';
+
+      if (trimmedOwner !== previousOwnerName) {
+        if (ownerContact) {
+          // Update existing primary contact name (and ensure is_primary)
+          const { error: updErr } = await supabase
+            .from('store_contacts')
+            .update({
+              name: trimmedOwner || ownerContact.name,
+              is_primary: true,
+            })
+            .eq('id', ownerContact.id);
+          if (updErr) throw updErr;
+        } else if (trimmedOwner) {
+          // No primary contact exists yet — create one
+          const { error: insErr } = await supabase.from('store_contacts').insert({
+            store_id: store.id,
+            name: trimmedOwner,
+            role: 'OWNER',
+            is_primary: true,
+            can_receive_sms: true,
+          });
+          if (insErr) throw insErr;
+        }
+        await queryClient.invalidateQueries({ queryKey: ['store-owner', store.id] });
+      }
+
       toast.success('Contact information updated');
       setEditOpen(false);
       onUpdate();
