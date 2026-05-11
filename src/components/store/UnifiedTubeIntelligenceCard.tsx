@@ -24,6 +24,7 @@ import { dynastyDate } from '@/lib/dates';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
+import { resolveProductIdForBrand } from '@/lib/inventory/skuDisplay';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TUBE_BRAND_COLORS } from '@/constants/tubeColors';
 import { UnifiedTubeSoldTable } from '@/components/store/UnifiedTubeSoldTable';
@@ -259,25 +260,45 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
     mutationFn: async (updates: { brand: string; count: number }[], isSimulation: boolean) => {
       const { data: { user } } = await supabase.auth.getUser();
       for (const update of updates) {
-        const { data: existing } = await supabase
-          .from('store_tube_inventory')
-          .select('id')
-          .eq('store_id', storeId)
-          .eq('brand', update.brand)
-          .order('last_updated', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        const productId = resolveProductIdForBrand(update.brand);
+
+        let existing: { id: string } | null = null;
+        if (productId) {
+          const { data } = await supabase
+            .from('store_tube_inventory')
+            .select('id')
+            .eq('store_id', storeId)
+            .eq('product_id', productId)
+            .eq('is_simulation', isSimulation)
+            .maybeSingle();
+          existing = data;
+        }
+        if (!existing) {
+          const { data } = await supabase
+            .from('store_tube_inventory')
+            .select('id')
+            .eq('store_id', storeId)
+            .eq('brand', update.brand)
+            .eq('is_simulation', isSimulation)
+            .order('last_updated', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          existing = data;
+        }
+
         if (existing) {
           await supabase.from('store_tube_inventory').update({
             current_tubes_left: update.count,
             last_updated: new Date().toISOString(),
             created_by: user?.id || 'system',
             is_simulation: isSimulation,
+            ...(productId ? { product_id: productId } : {}),
           }).eq('id', existing.id);
         } else if (update.count > 0) {
           await supabase.from('store_tube_inventory').insert({
             store_id: storeId,
             brand: update.brand,
+            product_id: productId,
             current_tubes_left: update.count,
             created_by: user?.id || 'system',
             is_simulation: isSimulation,
