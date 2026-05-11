@@ -101,7 +101,7 @@ export function UpdateInventoryModal({
     },
     onSuccess: () => {
       toast.success(`Inventory updated: ${tubeCount} ${brand} tubes`);
-      queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
+      invalidateStoreInventoryQueries(queryClient, storeId);
       setBrand('');
       setTubeCount('');
       setNotes('');
