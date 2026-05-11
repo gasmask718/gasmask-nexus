@@ -187,7 +187,7 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
   }, [state.twilioNumberId, state.sessionId]);
 
   return (
-    <VASessionContext.Provider value={{ ...state, t, setLanguage, startSession, endSession }}>
+    <VASessionContext.Provider value={{ ...state, t, setLanguage, startSession, switchNumber, endSession }}>
       {children}
     </VASessionContext.Provider>
   );
