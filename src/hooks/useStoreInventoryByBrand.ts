@@ -17,29 +17,25 @@ export function useStoreInventoryByBrand(storeId: string | null | undefined) {
 
       const { data, error } = await supabase
         .from('store_tube_inventory')
-        .select('brand, current_tubes_left, last_updated_at')
+        .select('brand, current_tubes_left, last_updated')
         .eq('store_id', storeId)
         .neq('brand', 'hotscolatti');
 
       if (error) throw error;
 
       const byBrand = new Map<string, BrandInventory>();
-      for (const row of (data ?? []) as Array<{
-        brand: string;
-        current_tubes_left: number | null;
-        last_updated_at: string | null;
-      }>) {
+      for (const row of data ?? []) {
         const existing = byBrand.get(row.brand) ?? {
           brand: row.brand,
           tubes_remaining: 0,
-          last_updated: null,
+          last_updated: null as string | null,
         };
         existing.tubes_remaining += Number(row.current_tubes_left ?? 0);
         if (
-          row.last_updated_at &&
-          (!existing.last_updated || row.last_updated_at > existing.last_updated)
+          row.last_updated &&
+          (!existing.last_updated || row.last_updated > existing.last_updated)
         ) {
-          existing.last_updated = row.last_updated_at;
+          existing.last_updated = row.last_updated;
         }
         byBrand.set(row.brand, existing);
       }
