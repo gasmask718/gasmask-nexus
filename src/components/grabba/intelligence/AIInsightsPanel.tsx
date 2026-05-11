@@ -5,6 +5,7 @@ import { Sparkles, TrendingUp, MapPin, DollarSign, Clock } from "lucide-react";
 import { useGrabbaIntelligence } from "@/hooks/useGrabbaIntelligence";
 import { format } from "date-fns";
 
+import { dynastyDateTime } from '@/lib/dates';
 const categoryIcons: Record<string, React.ElementType> = {
   'Brand Performance': TrendingUp,
   'Geographic Intelligence': MapPin,
@@ -88,7 +89,7 @@ export function AIInsightsPanel() {
                           {insight.insight}
                         </p>
                         <p className="text-xs text-muted-foreground mt-2">
-                          Based on {insight.dataPoints} data points • {format(insight.generatedAt, 'MMM d, h:mm a')}
+                          Based on {insight.dataPoints} data points • {dynastyDateTime(insight.generatedAt)}
                         </p>
                       </div>
                     </div>

@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { MapPin, Phone, MessageSquare, Monitor, AlertTriangle, Clock } from 'lucide-react';
 import { formatDistanceToNow, differenceInDays, format } from 'date-fns';
+import { dynastyDate } from '@/lib/dates';
 import type { TubeIntelSummary, UpdateMethod } from '@/hooks/useStoreTubeIntelSummary';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -126,8 +127,8 @@ export function TubeIntelAttribution({ summary, compact = false, className }: Tu
   const methodCfg = singleMethod ? METHOD_CONFIG[singleMethod] : null;
   const MethodIcon = methodCfg?.icon || Clock;
   const dateLabel = compact
-    ? format(mostRecent, 'MMM d')
-    : format(mostRecent, 'MMM d, yyyy');
+    ? dynastyDate(mostRecent)
+    : dynastyDate(mostRecent);
   const relativeLabel = formatDistanceToNow(mostRecent, { addSuffix: false });
 
   return (

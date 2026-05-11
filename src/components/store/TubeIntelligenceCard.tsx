@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Package, RefreshCw, Check, X, HelpCircle, ShoppingCart, FlaskConical, Gift, Calendar, ThumbsUp, ThumbsDown, Ban } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import { dynastyDate } from '@/lib/dates';
 import { 
   useTubeIntelligence, 
   TUBE_BRANDS, 
@@ -184,7 +185,7 @@ export function TubeIntelligenceCard({
                 {lastOrderDate && (
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Calendar className="h-3 w-3" />
-                    <span>Last: {format(new Date(lastOrderDate), 'MMM d, yyyy')}</span>
+                    <span>Last: {dynastyDate(lastOrderDate)}</span>
                   </div>
                 )}
               </div>

@@ -4,6 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import { Phone, MessageSquare, Mail, Users, ArrowUpRight, ArrowDownLeft, Clock, User, Target, MessageCircle, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
+import { dynastyDateTime } from '@/lib/dates';
 interface Interaction {
   id: string;
   channel: string;
@@ -160,7 +161,7 @@ export function InteractionDetailModal({ open, onOpenChange, interaction }: Inte
                 <Calendar className="h-4 w-4 text-amber-500" />
                 <span className="text-muted-foreground">Follow-up scheduled:</span>
                 <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30">
-                  {format(new Date(interaction.follow_up_at), 'MMM d, yyyy h:mm a')}
+                  {dynastyDateTime(interaction.follow_up_at)}
                 </Badge>
               </div>
             </>

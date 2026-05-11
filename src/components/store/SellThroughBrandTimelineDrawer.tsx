@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
+import { dynastyDate } from '@/lib/dates';
 import { ArrowDown, Calendar, Clock, Package, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useStoreBrandOrderTimeline, type BrandSellThroughSummary } from "@/hooks/useStoreSellThroughIntel";
@@ -74,7 +75,7 @@ export function SellThroughBrandTimelineDrawer({ open, onOpenChange, storeId, br
             <Clock className="h-4 w-4 inline mr-1 text-primary" />
             Expected reorder around:{" "}
             <span className="font-semibold">
-              {format(new Date(brand.projected_next_order), "MMM d, yyyy")}
+              {dynastyDate(brand.projected_next_order)}
             </span>
           </div>
         )}
@@ -96,7 +97,7 @@ export function SellThroughBrandTimelineDrawer({ open, onOpenChange, storeId, br
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium">
-                        {format(new Date(event.order_date), "MMM d, yyyy")}
+                        {dynastyDate(event.order_date)}
                       </span>
                       <span className="text-sm font-semibold">
                         ${(event.total_amount || 0).toLocaleString()}

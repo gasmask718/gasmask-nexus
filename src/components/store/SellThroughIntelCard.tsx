@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format, formatDistanceToNow } from "date-fns";
+import { dynastyDate } from '@/lib/dates';
 import {
   TrendingUp,
   Package,
@@ -142,7 +143,7 @@ export function SellThroughIntelCard({ storeId }: Props) {
                 label="Last Order"
                 value={
                   totals.lastOrderDate
-                    ? format(new Date(totals.lastOrderDate), "MMM d, yyyy")
+                    ? dynastyDate(totals.lastOrderDate)
                     : "—"
                 }
               />
@@ -207,7 +208,7 @@ export function SellThroughIntelCard({ storeId }: Props) {
                       </TableCell>
                       <TableCell className="text-right hidden md:table-cell">
                         {brand.last_order_date
-                          ? format(new Date(brand.last_order_date), "MMM d, yy")
+                          ? dynastyDate(brand.last_order_date)
                           : "—"}
                       </TableCell>
                       <TableCell className="text-right">

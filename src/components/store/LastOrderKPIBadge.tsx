@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ShoppingCart } from 'lucide-react';
 import { format } from 'date-fns';
+import { dynastyDate } from '@/lib/dates';
 import type { LastOrderSnapshot } from '@/hooks/useLastOrderSnapshot';
 import { getBrandIdentity } from '@/config/brands';
 
@@ -87,7 +88,7 @@ export function LastOrderKPIBadge({ snapshots, compact, className }: LastOrderKP
               <span>{latest.days_since_last_order}d · {latest.last_order_size_label}</span>
             ) : (
               <span>
-                {format(new Date(latest.last_order_date), 'MMM d')} · {latest.last_order_size_label}
+                {dynastyDate(latest.last_order_date)} · {latest.last_order_size_label}
                 <span className="text-muted-foreground ml-1">({latest.days_since_last_order}d)</span>
               </span>
             )}
@@ -108,7 +109,7 @@ export function LastOrderKPIBadge({ snapshots, compact, className }: LastOrderKP
                   <span className="text-muted-foreground">
                     {snap.is_placeholder
                       ? 'Never ordered'
-                      : `${format(new Date(snap.last_order_date), 'MMM d')} · ${snap.last_order_size_label} · ${snap.days_since_last_order}d ago`
+                      : `${dynastyDate(snap.last_order_date)} · ${snap.last_order_size_label} · ${snap.days_since_last_order}d ago`
                     }
                   </span>
                 </div>

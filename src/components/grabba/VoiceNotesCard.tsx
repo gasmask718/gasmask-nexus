@@ -10,6 +10,7 @@ import { Mic, Upload, Play, Pause, FileAudio, Loader2, Sparkles, RefreshCw } fro
 import { toast } from "sonner";
 import { format } from "date-fns";
 
+import { dynastyDateTime } from '@/lib/dates';
 interface VoiceNotesCardProps {
   storeId: string;
 }
@@ -225,7 +226,7 @@ export function VoiceNotesCard({ storeId }: VoiceNotesCardProps) {
                       )}
                     </Button>
                     <span className="text-xs text-muted-foreground">
-                      {format(new Date(note.created_at), "MMM d, h:mm a")}
+                      {dynastyDateTime(note.created_at)}
                     </span>
                     {note.sentiment && (
                       <span title={note.sentiment}>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
+import { dynastyDateTime } from '@/lib/dates';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -195,7 +196,7 @@ export function EntityNotesSection({ entityType, entityId, entityName }: EntityN
                       )}
                       <span>{note.creator_name}</span>
                       <span>•</span>
-                      <span>{format(new Date(note.created_at), 'MMM d, yyyy h:mm a')}</span>
+                      <span>{dynastyDateTime(note.created_at)}</span>
                     </div>
                   </>
                 )}

@@ -27,6 +27,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
+import { dynastyDate } from '@/lib/dates';
 import { 
   useBrandStickers, 
   STICKER_TYPES,
@@ -493,7 +494,7 @@ export function BrandStickersCard({
                                   <span>Put on:</span>
                                   {dates.putOnAt ? (
                                     <Badge variant="outline" className="text-xs py-0">
-                                      {format(new Date(dates.putOnAt), 'MMM d, yyyy')}
+                                      {dynastyDate(dates.putOnAt)}
                                     </Badge>
                                   ) : (
                                     <span className="text-muted-foreground/50">—</span>

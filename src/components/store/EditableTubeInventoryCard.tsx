@@ -12,6 +12,7 @@ import { useSimulationSafeMutation } from '@/hooks/useSimulationSafeMutation';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { Package, Save, RefreshCw, Clock, Filter, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
+import { dynastyDateTime } from '@/lib/dates';
 import { toast } from 'sonner';
 
 // AUTHORITATIVE TUBE BRANDS - only these are valid
@@ -297,7 +298,7 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
                         </span>
                         {originalItem?.last_updated && (
                           <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {format(new Date(originalItem.last_updated), 'MMM d, h:mm a')}
+                            {dynastyDateTime(originalItem.last_updated)}
                           </span>
                         )}
                       </div>
@@ -349,7 +350,7 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
                             </span>
                             {originalItem?.last_updated && (
                               <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                {format(new Date(originalItem.last_updated), 'MMM d, h:mm a')}
+                                {dynastyDateTime(originalItem.last_updated)}
                               </span>
                             )}
                           </div>

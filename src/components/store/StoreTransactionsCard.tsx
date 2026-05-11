@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { DollarSign, FileText, ChevronRight, Calendar, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 
+import { dynastyDate } from '@/lib/dates';
 interface StoreTransactionsCardProps {
   storeId: string;
   storeName?: string;
@@ -130,7 +131,7 @@ export function StoreTransactionsCard({ storeId, storeName }: StoreTransactionsC
               <span>Last Order</span>
             </div>
             <span className="font-medium">
-              {format(new Date(lastOrder.created_at), 'MMM d, yyyy')}
+              {dynastyDate(lastOrder.created_at)}
             </span>
           </div>
         )}
@@ -168,7 +169,7 @@ export function StoreTransactionsCard({ storeId, storeName }: StoreTransactionsC
                       )}
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {format(new Date(tx.date), 'MMM d, yyyy')}
+                      {dynastyDate(tx.date)}
                     </span>
                   </div>
                 </div>
