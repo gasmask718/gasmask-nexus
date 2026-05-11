@@ -203,7 +203,7 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
         sticker_instore: formData.sticker_instore,
         sticker_phone: formData.sticker_phone,
         sticker_taken_down: formData.sticker_taken_down,
-        primary_contact_name: formData.primary_contact_name || null,
+        // primary_contact_name is auto-synced from store_contacts (is_primary) via trg_sync_store_primary_contact_name; do not write here.
         notes: formData.notes || null,
       };
 
@@ -482,16 +482,6 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Store name"
-              />
-            </div>
-
-            {/* Primary Contact */}
-            <div className="space-y-2">
-              <Label>Primary Contact Name</Label>
-              <Input
-                value={formData.primary_contact_name}
-                onChange={(e) => setFormData({ ...formData, primary_contact_name: e.target.value })}
-                placeholder="Owner or main contact name"
               />
             </div>
 
