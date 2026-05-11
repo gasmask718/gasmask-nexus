@@ -392,7 +392,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
                 return (
                   <span key={b.brand_id || b.brand_name} className="text-xs flex items-center gap-1.5">
                     <span className={cn('h-2 w-2 rounded-full', color)} />
-                    <span className="capitalize">{b.brand_name}</span>
+                    <span>{brandDisplayName(b.brand_name)}</span>
                     <span className="text-muted-foreground">{fmt(b.sold_lifetime)}</span>
                   </span>
                 );
