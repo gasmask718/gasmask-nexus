@@ -107,7 +107,7 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
       newSessionId = data?.id ?? null;
     } catch (_) { /* best effort */ }
 
-    if (state.sessionId) {
+    if (state.sessionId && newSessionId == null) {
       try {
         await (supabase as any)
           .from('va_sessions')
@@ -120,8 +120,9 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
       ...prev,
       twilioNumberId: numberId,
       twilioNumber: numberPhone,
+      sessionId: newSessionId ?? prev.sessionId,
     }));
-  }, [user, state.twilioNumberId, state.sessionId]);
+  }, [user, state.twilioNumberId, state.sessionId, state.language]);
 
   const endSession = useCallback(async () => {
     const numberId = state.twilioNumberId;
