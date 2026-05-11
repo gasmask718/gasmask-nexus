@@ -722,7 +722,7 @@ const StoreDetail = () => {
           {/* ═══════════════════════════════════════════════════════════ */}
           {/* CANONICAL SHARED SECTIONS — Auto-synced with all profiles */}
           {/* ═══════════════════════════════════════════════════════════ */}
-          <StorePeopleSection storeId={id || ""} />
+          <StoreContactsSection storeId={id || ""} storeName={store.name} />
           <TubesSoldHeroStrip storeId={id || ""} />
           <EngagementBanner storeId={id || ""} />
           <SharedStoreCoreIntelligence
