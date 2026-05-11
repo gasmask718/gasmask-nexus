@@ -81,6 +81,9 @@ interface VAPowerDialerProps {
 
 export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPowerDialerProps) {
   const { user } = useAuth();
+  const voice = useVoiceDevice();
+  const { setVACallMetadata, endActiveCall } = useCall();
+  const { twilioNumber: sessionNumber } = useVASession();
 
   // ── Initialization data ─────────────────────────────────────────────
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -90,7 +93,17 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
 
   // ── Selections ──────────────────────────────────────────────────────
   const [selectedCampaign, setSelectedCampaign] = useState<string>('');
-  const [selectedNumber, setSelectedNumber] = useState<string>(initialCallerId || '');
+  const [selectedNumber, setSelectedNumber] = useState<string>(initialCallerId || sessionNumber || '');
+
+  // Keep dialer caller-ID in sync with the live VA-session active number.
+  // When the VA picks a different number from the topbar switcher, the
+  // campaign immediately uses it for the next dial.
+  useEffect(() => {
+    if (sessionNumber && sessionNumber !== selectedNumber) {
+      setSelectedNumber(sessionNumber);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionNumber]);
 
   // ── Session state ───────────────────────────────────────────────────
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
