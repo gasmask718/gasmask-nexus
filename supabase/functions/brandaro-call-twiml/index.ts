@@ -27,9 +27,15 @@ serve(async (req: Request) => {
       const formData = await req.formData();
       to = (formData.get("To") as string) || "";
       callLogId = (formData.get("callLogId") as string) || "";
-      fromCallerId = (formData.get("From") as string) || "";
+      // Prefer custom CallerId param (browser SDK passes user-selected number).
+      // "From" is overwritten by Twilio to "client:identity" for browser SDK calls,
+      // so we cannot rely on it as caller-ID source.
+      fromCallerId =
+        (formData.get("CallerId") as string) ||
+        (formData.get("callerId") as string) ||
+        (formData.get("From") as string) ||
+        "";
 
-      // If To is not a phone number, check custom params
       if (!to.startsWith("+")) {
         to = (formData.get("phone") as string) || to;
       }
@@ -37,7 +43,11 @@ serve(async (req: Request) => {
       const url = new URL(req.url);
       to = url.searchParams.get("To") || url.searchParams.get("phone") || "";
       callLogId = url.searchParams.get("callLogId") || "";
-      fromCallerId = url.searchParams.get("From") || "";
+      fromCallerId =
+        url.searchParams.get("CallerId") ||
+        url.searchParams.get("callerId") ||
+        url.searchParams.get("From") ||
+        "";
     }
 
     if (!to || !to.startsWith("+")) {

@@ -14,6 +14,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { BrandaroCallScript } from './BrandaroCallScript';
+import { useVoiceDevice } from '@/contexts/VoiceDeviceProvider';
+import { useCall } from '@/components/communication/CallProvider';
+import { useVASession } from '@/contexts/VASessionContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VA Auto Dialer — Sequential Lead Processing State Machine
@@ -78,6 +81,9 @@ interface VAPowerDialerProps {
 
 export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPowerDialerProps) {
   const { user } = useAuth();
+  const voice = useVoiceDevice();
+  const { setVACallMetadata, endActiveCall } = useCall();
+  const { twilioNumber: sessionNumber } = useVASession();
 
   // ── Initialization data ─────────────────────────────────────────────
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -87,7 +93,17 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
 
   // ── Selections ──────────────────────────────────────────────────────
   const [selectedCampaign, setSelectedCampaign] = useState<string>('');
-  const [selectedNumber, setSelectedNumber] = useState<string>(initialCallerId || '');
+  const [selectedNumber, setSelectedNumber] = useState<string>(initialCallerId || sessionNumber || '');
+
+  // Keep dialer caller-ID in sync with the live VA-session active number.
+  // When the VA picks a different number from the topbar switcher, the
+  // campaign immediately uses it for the next dial.
+  useEffect(() => {
+    if (sessionNumber && sessionNumber !== selectedNumber) {
+      setSelectedNumber(sessionNumber);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionNumber]);
 
   // ── Session state ───────────────────────────────────────────────────
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -308,13 +324,44 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
           })
           .eq('id', lead.queue_id);
       }
+
+      // ── Place the actual browser-audio call (parity with Quick Dial) ──
+      // Mic permission must be requested in the user gesture chain that
+      // started the campaign. Pass the user-selected caller-ID under
+      // "CallerId" — Twilio overwrites the reserved "From" param.
+      try {
+        const placed = await voice.makeCall(lead.phone, {
+          Record: 'true',
+          CallerId: selectedNumber,
+          callLogId: data?.callLogId || '',
+        });
+        setVACallMetadata({
+          isVACall: true,
+          leadId: lead.store_id || null,
+          leadName: lead.business_name,
+          twilioNumber: selectedNumber,
+          callLogId: data?.callLogId || null,
+          direction: 'outbound',
+        });
+        if (!placed && !data?.callSid) {
+          // Browser SDK not ready — surface and skip
+          toast.error('Browser softphone unavailable — call not placed');
+          setPhase('idle');
+          return false;
+        }
+      } catch (err: any) {
+        toast.error('Failed to dial: ' + (err?.message || 'unknown'));
+        setPhase('idle');
+        return false;
+      }
+
       return true;
     } catch (err: any) {
       toast.error('Network error triggering call: ' + (err.message || 'unknown'));
       setPhase('idle');
       return false;
     }
-  }, [user, selectedNumber]);
+  }, [user, selectedNumber, voice, setVACallMetadata]);
 
   // ── Run one cycle of the loop ───────────────────────────────────────
   const runCycle = useCallback(async () => {
@@ -349,11 +396,15 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     setPhase('idle');
     setCurrentLead(null);
     setCallLogId(null);
+    try { voice.hangUp(); } catch (_) { /* no active call */ }
+    try { endActiveCall(); } catch (_) { /* no active call */ }
     toast.info('Auto dialer stopped');
-  }, []);
+  }, [voice, endActiveCall]);
 
   // ── Manual transitions ──────────────────────────────────────────────
   const handleCallDrop = () => {
+    try { voice.hangUp(); } catch (_) { /* no active call */ }
+    try { endActiveCall(); } catch (_) { /* no active call */ }
     setPhase('wrap_up');
     setDispositionCode('');
     setVaNotes('');

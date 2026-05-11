@@ -129,7 +129,9 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
       if (error) throw error;
       setCallLogId(data?.callLogId || null);
 
-      const call = await voice.makeCall(lead.phone, { Record: "true", From: twilioNumber, callLogId: data?.callLogId || "" });
+      // Use custom param "CallerId" — Twilio overwrites "From" with the SDK identity,
+      // so the user-selected number must travel under a non-reserved key.
+      const call = await voice.makeCall(lead.phone, { Record: "true", CallerId: twilioNumber, callLogId: data?.callLogId || "" });
 
       setVACallMetadata({
         isVACall: true,
