@@ -1,0 +1,2 @@
+ALTER TABLE public.store_tube_inventory ADD COLUMN IF NOT EXISTS needs_operator_verification BOOLEAN NOT NULL DEFAULT false;
+COMMENT ON COLUMN public.store_tube_inventory.needs_operator_verification IS 'Path B audit flag: row was backfilled from ambiguous brand mapping and may need operator confirmation of correct SKU (Bags vs Tubes vs Redtops).';
