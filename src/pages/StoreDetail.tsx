@@ -24,7 +24,7 @@ import { StoreCallIntelligenceTab } from "@/components/store/StoreCallIntelligen
 import { StoreRevenueIntelligenceTab } from "@/components/revenue/StoreRevenueIntelligenceTab";
 import { Activity, Headphones, Flame } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { StorePeopleSection } from "@/components/store/StorePeopleSection";
+import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
 import { QuickStatsStickersSummary } from "@/components/store/QuickStatsStickersSummary";
 import { StoreHealthBadge } from "@/components/delivery/StoreHealthBadge";
@@ -722,7 +722,7 @@ const StoreDetail = () => {
           {/* ═══════════════════════════════════════════════════════════ */}
           {/* CANONICAL SHARED SECTIONS — Auto-synced with all profiles */}
           {/* ═══════════════════════════════════════════════════════════ */}
-          <StorePeopleSection storeId={id || ""} />
+          <StoreContactsSection storeId={id || ""} storeName={store.name} />
           <TubesSoldHeroStrip storeId={id || ""} />
           <EngagementBanner storeId={id || ""} />
           <SharedStoreCoreIntelligence
