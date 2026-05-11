@@ -28,6 +28,9 @@ interface DirRow {
   company_id: string;
   company_slug: string;
   company_name: string;
+  primary_role?: string | null;
+  extra_roles?: string[] | null;
+  app_roles?: string[];
 }
 interface Invite {
   id: string; email: string; role: string; status: string;
@@ -50,7 +53,7 @@ export default function VAManagementPage() {
     },
   });
 
-  // ---- Directory ----
+  // ---- Directory (memberships + profiles + app roles) ----
   const { data: directory = [], isLoading: dirLoading } = useQuery({
     queryKey: ['va-directory'],
     queryFn: async () => {
@@ -59,7 +62,38 @@ export default function VAManagementPage() {
         .select('*')
         .order('joined_at', { ascending: false });
       if (error) throw error;
-      return ((data ?? []) as unknown) as DirRow[];
+      const rows = ((data ?? []) as unknown) as DirRow[];
+
+      const userIds = Array.from(new Set(rows.map(r => r.user_id))).filter(Boolean);
+      if (userIds.length === 0) return rows;
+
+      const [{ data: profiles }, { data: roles }] = await Promise.all([
+        supabase
+          .from('user_profiles')
+          .select('user_id, primary_role, extra_roles')
+          .in('user_id', userIds),
+        supabase
+          .from('user_roles')
+          .select('user_id, role')
+          .in('user_id', userIds),
+      ]);
+
+      const profileMap = new Map(
+        (profiles ?? []).map((p: any) => [p.user_id, p]),
+      );
+      const rolesMap = new Map<string, string[]>();
+      (roles ?? []).forEach((r: any) => {
+        const list = rolesMap.get(r.user_id) ?? [];
+        list.push(r.role);
+        rolesMap.set(r.user_id, list);
+      });
+
+      return rows.map(r => ({
+        ...r,
+        primary_role: profileMap.get(r.user_id)?.primary_role ?? null,
+        extra_roles: profileMap.get(r.user_id)?.extra_roles ?? null,
+        app_roles: rolesMap.get(r.user_id) ?? [],
+      }));
     },
   });
 
@@ -133,6 +167,21 @@ export default function VAManagementPage() {
       toast.success('Invite deleted');
     },
     onError: (e: any) => toast.error(e.message ?? 'Failed to delete invite'),
+  });
+
+  const assignCompanyMut = useMutation({
+    mutationFn: async ({ membership_id, company_id }: { membership_id: string; company_id: string }) => {
+      const { error } = await supabase
+        .from('va_company_memberships')
+        .update({ company_id })
+        .eq('id', membership_id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['va-directory'] });
+      toast.success('Company reassigned');
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Failed to reassign company'),
   });
 
   // ---- Filters ----
@@ -356,20 +405,22 @@ export default function VAManagementPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
-                <TableHead>Company</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>Assigned Company</TableHead>
+                <TableHead>Membership Role</TableHead>
+                <TableHead>Profile Role</TableHead>
+                <TableHead>App Roles</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead>Active</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {dirLoading && (
-                <TableRow><TableCell colSpan={7} className="text-center py-8">
+                <TableRow><TableCell colSpan={9} className="text-center py-8">
                   <Loader2 className="h-5 w-5 animate-spin inline" />
                 </TableCell></TableRow>
               )}
               {!dirLoading && filtered.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center text-slate-500 py-8">
+                <TableRow><TableCell colSpan={9} className="text-center text-slate-500 py-8">
                   No VAs match these filters
                 </TableCell></TableRow>
               )}
@@ -379,12 +430,46 @@ export default function VAManagementPage() {
                   <TableCell>{r.email ?? '—'}</TableCell>
                   <TableCell>{r.phone ?? '—'}</TableCell>
                   <TableCell>
-                    <Badge style={{
-                      backgroundColor: (companyById[r.company_id]?.brand_color ?? '#06b6d4') + '33',
-                      color: companyById[r.company_id]?.brand_color ?? '#06b6d4',
-                    }}>{r.company_name}</Badge>
+                    <Select
+                      value={r.company_id}
+                      onValueChange={(v) => {
+                        if (v !== r.company_id) {
+                          assignCompanyMut.mutate({ membership_id: r.membership_id, company_id: v });
+                        }
+                      }}
+                      disabled={assignCompanyMut.isPending}
+                    >
+                      <SelectTrigger className="bg-slate-800 border-slate-700 text-white h-8 min-w-[150px]">
+                        <SelectValue>
+                          <span style={{ color: companyById[r.company_id]?.brand_color ?? '#06b6d4' }}>
+                            {r.company_name}
+                          </span>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {companies.map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </TableCell>
-                  <TableCell>{r.role}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{r.role}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {r.primary_role
+                      ? <Badge variant="secondary">{r.primary_role}</Badge>
+                      : <span className="text-xs text-slate-500">—</span>}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {(r.app_roles ?? []).length === 0
+                        ? <span className="text-xs text-slate-500">—</span>
+                        : r.app_roles!.map(role => (
+                            <Badge key={role} variant="outline" className="text-xs">{role}</Badge>
+                          ))}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-xs text-slate-400">
                     {new Date(r.joined_at).toLocaleDateString()}
                   </TableCell>
