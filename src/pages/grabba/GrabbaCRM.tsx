@@ -176,8 +176,10 @@ export default function GrabbaCRM() {
   const { data: stores, isLoading: storesLoading, refetch: refetchStores } = useQuery({
     queryKey: ["grabba-crm-stores", selectedBrand, simulationMode],
     queryFn: async () => {
+      // Canonical source: store_master. Aliased to the field shape the rest
+      // of this page expects (name, address_street/city/state/zip, etc.).
       const selectFields =
-        "id, name, phone, neighborhood, address_street, address_city, address_state, address_zip, companies(id, name), created_at, is_simulation";
+        "id, name:store_name, phone, address_street:address, address_city:city, address_state:state, address_zip:zip, created_at, is_simulation";
 
       // Fetch all stores using range-based pagination to bypass 1000-row default
       const PAGE = 1000;
@@ -186,15 +188,21 @@ export default function GrabbaCRM() {
       let hasMore = true;
       while (hasMore) {
         const { data } = await supabase
-          .from("stores")
+          .from("store_master")
           .select(selectFields)
           .is("deleted_at", null)
           .eq("is_simulation", simulationMode)
           .order("created_at", { ascending: false })
           .range(from, from + PAGE - 1);
-        
+
         if (data && data.length > 0) {
-          allData = allData.concat(data);
+          // store_master has no `neighborhood` or `companies` relation; fill nulls
+          const normalized = data.map((s: any) => ({
+            ...s,
+            neighborhood: null,
+            companies: null,
+          }));
+          allData = allData.concat(normalized);
           from += PAGE;
           hasMore = data.length === PAGE;
         } else {
