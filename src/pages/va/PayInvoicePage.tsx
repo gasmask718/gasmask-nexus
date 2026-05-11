@@ -1,13 +1,17 @@
-import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FileText, CheckCircle } from 'lucide-react';
+import { Loader2, FileText, CheckCircle, CreditCard, SplitSquareHorizontal } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function PayInvoicePage() {
   const { invoiceId } = useParams();
+  const [params, setParams] = useSearchParams();
+  const qc = useQueryClient();
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['pay-invoice', invoiceId],
@@ -20,7 +24,36 @@ export default function PayInvoicePage() {
       return data;
     },
     enabled: !!invoiceId,
+    refetchInterval: 10_000,
   });
+
+  // Verify Stripe payment when redirected back via success_url
+  useEffect(() => {
+    const paid = params.get('paid');
+    const sessionId = params.get('session_id');
+    if (!paid || !sessionId || !invoiceId) return;
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke('va-verify-payment', {
+          body: { invoice_id: invoiceId, session_id: sessionId, phase: paid },
+        });
+        if ((data as any)?.paid) {
+          toast.success(
+            paid === 'deposit'
+              ? 'Deposit received — thank you!'
+              : paid === 'final'
+                ? 'Final payment received — thank you!'
+                : 'Payment received — thank you!',
+          );
+          qc.invalidateQueries({ queryKey: ['pay-invoice', invoiceId] });
+        }
+      } finally {
+        params.delete('paid');
+        params.delete('session_id');
+        setParams(params, { replace: true });
+      }
+    })();
+  }, [params, invoiceId, qc, setParams]);
 
   if (isLoading) {
     return (
@@ -45,6 +78,11 @@ export default function PayInvoicePage() {
   }
 
   const lineItems = (invoice.line_items || []) as Array<{ description: string; price: number }>;
+  const total = parseFloat(invoice.total);
+  const isSplit = invoice.payment_type === 'split';
+  const depositPaid = invoice.deposit_status === 'paid';
+  const finalPaid = invoice.final_status === 'paid';
+  const fullyPaid = invoice.status === 'paid';
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
@@ -75,7 +113,7 @@ export default function PayInvoicePage() {
 
           <div className="border-t pt-3 flex justify-between font-bold text-lg">
             <span>Total</span>
-            <span>${parseFloat(invoice.total).toFixed(2)}</span>
+            <span>${total.toFixed(2)}</span>
           </div>
 
           {invoice.due_date && (
@@ -85,17 +123,60 @@ export default function PayInvoicePage() {
             </div>
           )}
 
-          <Badge className={
-            invoice.status === 'paid' ? 'bg-green-100 text-green-700' :
-            invoice.status === 'sent' ? 'bg-blue-100 text-blue-700' :
-            'bg-yellow-100 text-yellow-700'
-          }>
-            {invoice.status === 'paid' ? '✅ Paid' : invoice.status === 'sent' ? '📨 Sent' : '📋 Draft'}
-          </Badge>
+          <div className="flex justify-center">
+            <Badge className={
+              fullyPaid ? 'bg-green-100 text-green-700' :
+              invoice.status === 'partially_paid' ? 'bg-amber-100 text-amber-700' :
+              invoice.status === 'sent' ? 'bg-blue-100 text-blue-700' :
+              'bg-yellow-100 text-yellow-700'
+            }>
+              {fullyPaid ? '✅ Paid in Full'
+                : invoice.status === 'partially_paid' ? '🟡 50% Deposit Received'
+                : invoice.status === 'sent' ? '📨 Awaiting Payment'
+                : '📋 Draft'}
+            </Badge>
+          </div>
 
-          {invoice.status !== 'paid' && (
-            <Button className="w-full" size="lg">
-              <CheckCircle className="h-4 w-4 mr-2" /> Pay Now — ${parseFloat(invoice.total).toFixed(2)}
+          {!fullyPaid && isSplit && (
+            <div className="space-y-2">
+              <Button
+                className="w-full"
+                size="lg"
+                disabled={depositPaid || !invoice.deposit_payment_link}
+                onClick={() => invoice.deposit_payment_link && (window.location.href = invoice.deposit_payment_link)}
+              >
+                {depositPaid ? (
+                  <><CheckCircle className="h-4 w-4 mr-2" /> Deposit Paid</>
+                ) : (
+                  <><SplitSquareHorizontal className="h-4 w-4 mr-2" /> Pay 50% Deposit — ${Number(invoice.deposit_amount || 0).toFixed(2)}</>
+                )}
+              </Button>
+              <Button
+                className="w-full"
+                size="lg"
+                variant={depositPaid ? 'default' : 'outline'}
+                disabled={finalPaid || !invoice.final_payment_link}
+                onClick={() => invoice.final_payment_link && (window.location.href = invoice.final_payment_link)}
+              >
+                {finalPaid ? (
+                  <><CheckCircle className="h-4 w-4 mr-2" /> Final Paid</>
+                ) : (
+                  <><CreditCard className="h-4 w-4 mr-2" /> Pay Final 50% — ${Number(invoice.final_amount || 0).toFixed(2)}</>
+                )}
+              </Button>
+              <p className="text-[11px] text-muted-foreground text-center">
+                Pay 50% now to start the project. The final 50% is due on completion.
+              </p>
+            </div>
+          )}
+
+          {!fullyPaid && !isSplit && invoice.payment_link && (
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={() => (window.location.href = invoice.payment_link)}
+            >
+              <CreditCard className="h-4 w-4 mr-2" /> Pay Now — ${total.toFixed(2)}
             </Button>
           )}
 
