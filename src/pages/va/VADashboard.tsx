@@ -198,11 +198,7 @@ function VADashboardInner() {
               </span>
             </div>
             <div className="flex items-center gap-3">
-              {twilioNumber && (
-                <Badge className="bg-cyan-500/20 text-cyan-400 font-mono text-xs">
-                  📞 {twilioNumber}
-                </Badge>
-              )}
+              <VAActiveNumberSwitcher />
               <Badge className="bg-slate-700 text-slate-300 text-xs">
                 {language === 'en' ? '🇺🇸 EN' : '🇪🇸 ES'}
               </Badge>
