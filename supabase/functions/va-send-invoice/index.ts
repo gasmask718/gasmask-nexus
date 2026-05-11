@@ -131,7 +131,7 @@ serve(async (req: Request) => {
 
     let recipient = body.recipient || "";
     if (!recipient) {
-      if (channel === "email") recipient = lead?.email || "";
+      if (channel === "email") recipient = invoice.customer_email || lead?.email || "";
       else recipient = lead?.phone_number || "";
     }
 
