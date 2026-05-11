@@ -144,7 +144,7 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
     },
     simulationMessage: 'Saving inventory to simulation database...',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['store-tube-inventory', storeId] });
+      invalidateStoreInventoryQueries(queryClient, storeId);
       toast.success(simulationMode ? 'Inventory updated (simulation)' : 'Tube inventory updated');
       setHasChanges(false);
     },
