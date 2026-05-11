@@ -108,6 +108,7 @@ const createInitialFormData = (store: Store): ContactFormData => ({
 });
 
 export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardProps) {
+  const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<ContactFormData>(() => createInitialFormData(store));
