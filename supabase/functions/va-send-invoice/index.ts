@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import nodemailer from "npm:nodemailer@6.9.14";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -148,9 +149,10 @@ serve(async (req: Request) => {
     let sendResult: { ok: boolean; error?: string } = { ok: false };
 
     if (channel === "email") {
-      const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
-      if (!RESEND_KEY) {
-        return new Response(JSON.stringify({ error: "Email is not configured (RESEND_API_KEY missing)" }), {
+      const GMAIL_USER = Deno.env.get("VA_GMAIL_USER");
+      const GMAIL_PASS = Deno.env.get("VA_GMAIL_APP_PASSWORD");
+      if (!GMAIL_USER || !GMAIL_PASS) {
+        return new Response(JSON.stringify({ error: "Email is not configured (VA_GMAIL_USER / VA_GMAIL_APP_PASSWORD missing)" }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -158,25 +160,24 @@ serve(async (req: Request) => {
       const html = renderEmailHtml(invoice, lead);
       const subject = `Invoice ${invoice.invoice_number || ""} from Brandaro - $${Number(invoice.total || 0).toFixed(2)}`;
 
-      const resendRes = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${RESEND_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: "Brandaro <invoices@resend.dev>",
-          to: [recipient],
+      try {
+        const transporter = nodemailer.createTransport({
+          host: "smtp.gmail.com",
+          port: 465,
+          secure: true,
+          auth: { user: GMAIL_USER, pass: GMAIL_PASS },
+        });
+
+        const info = await transporter.sendMail({
+          from: `"Brandaro" <${GMAIL_USER}>`,
+          to: recipient,
           subject,
           html,
-        }),
-      });
-
-      if (!resendRes.ok) {
-        const errText = await resendRes.text();
-        sendResult = { ok: false, error: `Resend error: ${errText}` };
-      } else {
+        });
+        console.log("nodemailer sent:", info.messageId);
         sendResult = { ok: true };
+      } catch (e: any) {
+        sendResult = { ok: false, error: `Nodemailer error: ${e?.message || String(e)}` };
       }
     } else {
       const accountSid = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID");
