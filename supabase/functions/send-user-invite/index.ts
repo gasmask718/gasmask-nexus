@@ -224,57 +224,33 @@ If you didn't expect this invitation, you can safely ignore this email.
 
 © 2025 Dynasty OS. All rights reserved.`;
 
-    // Send email via SendGrid API
-    console.log(`📧 Sending invitation email via SendGrid to ${email}...`);
-    console.log(`   From: gasmaskapprovedllc@gmail.com`);
+    // Send email via Gmail SMTP (nodemailer)
+    console.log(`📧 Sending invitation email via nodemailer to ${email}...`);
+    console.log(`   From: ${GMAIL_USER}`);
     console.log(`   Role: ${roleDisplay}`);
     console.log(`   Accept URL: ${acceptUrl}`);
-    
-    const sendgridResponse = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${sendgridApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        personalizations: [
-          {
-            to: [{ email: email.toLowerCase() }],
-            subject: `You're Invited to Join Dynasty OS as a ${roleDisplay}`,
-          },
-        ],
-        from: {
-          email: "gasmaskapprovedllc@gmail.com",
-          name: "Dynasty OS",
-        },
-        content: [
-          {
-            type: "text/plain",
-            value: plainText,
-          },
-          {
-            type: "text/html",
-            value: emailHtml,
-          },
-        ],
-      }),
+
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: { user: GMAIL_USER, pass: GMAIL_PASS },
     });
 
-    // SendGrid returns 202 for successful queuing
-    if (!sendgridResponse.ok && sendgridResponse.status !== 202) {
-      const errorText = await sendgridResponse.text();
-      let errorDetails;
-      try {
-        errorDetails = JSON.parse(errorText);
-      } catch {
-        errorDetails = { message: errorText };
-      }
-      console.error("❌ SendGrid error:", errorDetails);
+    try {
+      const info = await transporter.sendMail({
+        from: `"Dynasty OS" <${GMAIL_USER}>`,
+        to: email.toLowerCase(),
+        subject: `You're Invited to Join Dynasty OS as a ${roleDisplay}`,
+        text: plainText,
+        html: emailHtml,
+      });
+      console.log(`✅ Invitation email sent to ${email} (id: ${info.messageId})`);
+    } catch (sendErr) {
+      const msg = sendErr instanceof Error ? sendErr.message : String(sendErr);
+      console.error("❌ nodemailer error:", msg);
       return new Response(
-        JSON.stringify({ 
-          error: `Failed to send email: ${errorDetails.errors?.[0]?.message || errorDetails.message || "Unknown error"}`,
-          details: errorDetails 
-        }),
+        JSON.stringify({ error: `Failed to send email: ${msg}` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
