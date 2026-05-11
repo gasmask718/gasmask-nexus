@@ -43,6 +43,9 @@ const fmt = (n: number | null | undefined) => Number(n || 0).toLocaleString();
 export function TubesSoldHeroStrip({ storeId }: Props) {
   const summary = useStoreTubeSummary(storeId);
   const brands = useStoreTubeBrandsKpi(storeId);
+  const [stockExpanded, setStockExpanded] = useState(false);
+  const { data: brandInventory } = useStoreInventoryByBrand(storeId);
+
 
   if (summary.isLoading) {
     return (
