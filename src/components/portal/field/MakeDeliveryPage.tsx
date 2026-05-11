@@ -51,7 +51,8 @@ interface MakeDeliveryPageProps {
 }
 
 export function MakeDeliveryPage({ portalType }: MakeDeliveryPageProps) {
-  const { stopId } = useParams<{ stopId: string }>();
+  const params = useParams<{ stopId?: string; deliveryId?: string }>();
+  const stopId = params.stopId ?? params.deliveryId;
   const navigate = useNavigate();
   const { toast } = useToast();
   const { initiateCall } = useCall();
