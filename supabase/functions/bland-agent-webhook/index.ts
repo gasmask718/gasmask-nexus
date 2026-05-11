@@ -177,8 +177,94 @@ Deno.serve(async (req) => {
         );
         if (blandOutcome.delivery_requested) {
           console.log(
-            `[bland-agent-webhook] DELIVERY REQUESTED for call ${call_id} — Step 6 will queue this`
+            `[bland-agent-webhook] DELIVERY REQUESTED for call ${call_id} — queueing pending_route_stops`
           );
+          // Step 6 — enqueue into pending_route_stops with AI enrichment
+          try {
+            const storeId =
+              meta.store_id ||
+              payload?.store_id ||
+              payload?.variables?.store_id ||
+              null;
+
+            // Look up bland_call_logs.id for FK
+            let blandLogId: string | null = null;
+            const { data: logRow } = await supabase
+              .from("bland_call_logs")
+              .select("id")
+              .eq("call_id", call_id)
+              .maybeSingle();
+            if ((logRow as any)?.id) blandLogId = (logRow as any).id;
+
+            let storeName: string | null = null;
+            let recommended_boxes: number | null = null;
+            let recommended_brand: string | null = null;
+            let estimated_revenue: number | null = null;
+            let confidence_level: string | null = null;
+            let aiPayload: any = null;
+
+            if (storeId) {
+              try {
+                const { data: aiResp, error: aiErr } = await supabase.functions.invoke(
+                  "tube-replenishment-ai",
+                  { body: { storeId } }
+                );
+                if (!aiErr && aiResp) {
+                  aiPayload = aiResp;
+                  storeName = (aiResp as any)?.store_name ?? null;
+                  const top = (aiResp as any)?.recommendations?.[0];
+                  if (top) {
+                    recommended_boxes = top.recommended_boxes ?? null;
+                    recommended_brand = top.brand ?? null;
+                    estimated_revenue = top.estimated_revenue ?? null;
+                  }
+                  confidence_level =
+                    (aiResp as any)?.analysis?.price_verification
+                      ?.verification_confidence ?? null;
+                }
+              } catch (aiE) {
+                console.error("[bland-agent-webhook] tube-replenishment-ai failed:", aiE);
+              }
+
+              if (!storeName) {
+                const { data: s } = await supabase
+                  .from("stores")
+                  .select("name")
+                  .eq("id", storeId)
+                  .maybeSingle();
+                storeName = (s as any)?.name ?? null;
+              }
+
+              const { error: queueErr } = await supabase
+                .from("pending_route_stops")
+                .insert({
+                  bland_call_log_id: blandLogId,
+                  store_id: storeId,
+                  store_name: storeName,
+                  requested_day: blandOutcome.preferred_day ?? null,
+                  requested_window: blandOutcome.preferred_window ?? null,
+                  urgency: blandOutcome.urgency ?? null,
+                  intent_summary: blandOutcome.intent_summary,
+                  recommended_boxes,
+                  recommended_brand,
+                  estimated_revenue,
+                  confidence_level,
+                  ai_payload: aiPayload,
+                  status: "pending_approval",
+                });
+              if (queueErr) {
+                console.error("[bland-agent-webhook] pending_route_stops insert failed:", queueErr);
+              } else {
+                console.log(`[bland-agent-webhook] queued pending stop for store ${storeId}`);
+              }
+            } else {
+              console.warn(
+                `[bland-agent-webhook] delivery_requested but no store_id available — cannot queue`
+              );
+            }
+          } catch (qE) {
+            console.error("[bland-agent-webhook] Step 6 enqueue error:", qE);
+          }
         }
       }
     } else if (
