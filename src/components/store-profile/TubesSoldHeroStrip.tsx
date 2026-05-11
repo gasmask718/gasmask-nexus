@@ -1,10 +1,26 @@
-import { Flame, TrendingUp, TrendingDown, Minus, Snowflake, Boxes, Calendar, DollarSign } from 'lucide-react';
+import { useState } from 'react';
+import { Flame, TrendingUp, TrendingDown, Minus, Snowflake, Boxes, Calendar, DollarSign, ChevronDown, ChevronUp, Package } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProfileStatCard } from '@/components/profile/ProfileStatCard';
 import { useStoreTubeSummary } from '@/hooks/useStoreTubeSummary';
 import { useStoreTubeBrandsKpi } from '@/hooks/useStoreTubeBrandsKpi';
+import { useStoreInventoryByBrand } from '@/hooks/useStoreInventoryByBrand';
+import { dynastyRelative } from '@/lib/dates';
 import { cn } from '@/lib/utils';
+
+function getStockStatusDot(tubes: number) {
+  if (tubes === 0) return '🔴';
+  if (tubes <= 50) return '🟡';
+  if (tubes <= 200) return '🟢';
+  return '🔵';
+}
+function getStockStatusColor(tubes: number) {
+  if (tubes === 0) return 'text-rose-500';
+  if (tubes <= 50) return 'text-amber-500';
+  if (tubes <= 200) return 'text-emerald-600';
+  return 'text-blue-600';
+}
 
 interface Props { storeId: string }
 
@@ -27,6 +43,9 @@ const fmt = (n: number | null | undefined) => Number(n || 0).toLocaleString();
 export function TubesSoldHeroStrip({ storeId }: Props) {
   const summary = useStoreTubeSummary(storeId);
   const brands = useStoreTubeBrandsKpi(storeId);
+  const [stockExpanded, setStockExpanded] = useState(false);
+  const { data: brandInventory } = useStoreInventoryByBrand(storeId);
+
 
   if (summary.isLoading) {
     return (
@@ -130,17 +149,74 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-blue-500/15">
-                <Boxes className="h-5 w-5 text-blue-600" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-2xl font-bold text-blue-600">{fmt(onHand)}</p>
-                <p className={cn('text-xs', restock.cls)}>{restock.label}</p>
-              </div>
-            </div>
+        <Card className={cn(stockExpanded && 'md:col-span-2 lg:col-span-2')}>
+          <CardContent className="p-0">
+            <button
+              type="button"
+              onClick={() => setStockExpanded(v => !v)}
+              className="w-full text-left p-4 hover:bg-muted/40 transition-colors rounded-lg"
+              aria-expanded={stockExpanded}
+              aria-label={stockExpanded ? 'Collapse stock breakdown' : 'Expand stock breakdown'}
+            >
+              {!stockExpanded ? (
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-blue-500/15">
+                    <Boxes className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-2xl font-bold text-blue-600">{fmt(onHand)}</p>
+                    <p className={cn('text-xs', restock.cls)}>{restock.label}</p>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4 text-blue-600" />
+                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Stock Breakdown
+                      </span>
+                    </div>
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  </div>
+
+                  {!brandInventory || brandInventory.length === 0 ? (
+                    <div className="py-2 text-xs text-muted-foreground">
+                      <p>No inventory data yet.</p>
+                      <p className="mt-1 italic">Log via Tube Intelligence below ↓</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-1.5">
+                        {brandInventory.map(b => (
+                          <div key={b.brand} className="flex items-center justify-between text-xs">
+                            <span className="capitalize truncate max-w-[140px]">{b.brand}</span>
+                            <span className="flex items-center gap-1.5">
+                              <span className={cn('font-semibold tabular-nums', getStockStatusColor(b.tubes_remaining))}>
+                                {b.tubes_remaining}
+                              </span>
+                              <span className="text-[10px]">{getStockStatusDot(b.tubes_remaining)}</span>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="border-t border-border pt-2 space-y-0.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total</span>
+                          <span className="text-sm font-bold text-blue-600">{fmt(onHand)} tubes</span>
+                        </div>
+                        {brandInventory[0]?.last_updated && (
+                          <p className="text-[10px] text-muted-foreground">
+                            Updated {dynastyRelative(brandInventory[0].last_updated)}
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </button>
           </CardContent>
         </Card>
 
