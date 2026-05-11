@@ -57,14 +57,55 @@ async function validateTwimlApp(accountSid: string, apiKeySid: string, apiKeySec
   });
 
   if (response.ok) {
-    return { ok: true as const, detail: "Brandaro TwiML app belongs to the same Twilio account" };
+    const body = await response.json().catch(() => null);
+    return { ok: true as const, detail: "Brandaro TwiML app belongs to the same Twilio account", app: body };
   }
 
   const detail = await response.text();
   return {
     ok: false as const,
     detail: `BRANDARO_TWILIO_TWIML_APP_SID is not accessible from ${accountSid}: HTTP ${response.status} ${detail.slice(0, 200)}`,
+    app: null,
   };
+}
+
+// Self-heal: ensure the TwiML App's VoiceUrl points at brandaro-call-twiml so
+// the user-selected CallerId param actually reaches <Dial callerId="...">.
+async function ensureTwimlAppVoiceUrl(
+  accountSid: string,
+  apiKeySid: string,
+  apiKeySecret: string,
+  twimlAppSid: string,
+  expectedVoiceUrl: string,
+  currentApp: any,
+) {
+  try {
+    const currentUrl: string = currentApp?.voice_url || "";
+    if (currentUrl === expectedVoiceUrl && (currentApp?.voice_method || "POST").toUpperCase() === "POST") {
+      return { updated: false };
+    }
+    const res = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Applications/${twimlAppSid}.json`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: twilioBasicAuth(apiKeySid, apiKeySecret),
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({ VoiceUrl: expectedVoiceUrl, VoiceMethod: "POST" }),
+      },
+    );
+    if (!res.ok) {
+      const txt = await res.text();
+      console.warn(`[brandaro-voice-token] Could not auto-update VoiceUrl: ${res.status} ${txt.slice(0, 200)}`);
+      return { updated: false, error: txt };
+    }
+    console.log(`[brandaro-voice-token] ✅ Updated TwiML App ${twimlAppSid} VoiceUrl: ${currentUrl || "(empty)"} → ${expectedVoiceUrl}`);
+    return { updated: true, previous: currentUrl };
+  } catch (e) {
+    console.warn(`[brandaro-voice-token] ensureTwimlAppVoiceUrl error:`, e);
+    return { updated: false };
+  }
 }
 
 function createBrandaroToken(
