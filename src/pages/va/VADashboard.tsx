@@ -24,6 +24,7 @@ import { VACallHistory } from '@/components/va/VACallHistory';
 import { VASessionSummary } from '@/components/va/VASessionSummary';
 import { VACoachingInbox } from '@/components/va/VACoachingInbox';
 import { VAAutoDialerSection } from '@/components/va/VAAutoDialerSection';
+import { VAActiveNumberSwitcher } from '@/components/va/VAActiveNumberSwitcher';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
