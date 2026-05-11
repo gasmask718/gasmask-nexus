@@ -5,15 +5,18 @@ import { useVASession } from '@/contexts/VASessionContext';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Loader2 } from 'lucide-react';
+import { Phone, Loader2, Clock, User } from 'lucide-react';
+import {
+  useNumberLastSessions,
+  formatDateTime,
+  formatDuration,
+} from '@/hooks/useNumberLastSessions';
 
 interface PhoneNumber {
   id: string;
   phone_number: string;
   friendly_name: string;
   business: string | null;
-  in_use: boolean;
-  assigned_va_id: string | null;
 }
 
 export function VAOnboardingModal() {
@@ -41,12 +44,15 @@ export function VAOnboardingModal() {
         phone_number: n.phone_number,
         friendly_name: n.friendly_name || n.phone_number,
         business: n.business,
-        in_use: false,
-        assigned_va_id: null,
       })) as PhoneNumber[];
     },
     enabled: step === 'number',
   });
+
+  // Last-session enrichment so each number row shows who last used it,
+  // when, how long, and whether it's currently held by another VA.
+  const { data: sessionData } = useNumberLastSessions();
+  const sessionsById = sessionData?.byId;
 
   const handleStart = async () => {
     if (!selectedNumber || !selectedLang) return;
@@ -62,7 +68,7 @@ export function VAOnboardingModal() {
 
   return (
     <Dialog open={!isOnboarded} onOpenChange={() => {}}>
-      <DialogContent className="max-w-lg bg-slate-900 border-cyan-500/20 text-white [&>button]:hidden" onInteractOutside={e => e.preventDefault()}>
+      <DialogContent className="max-w-xl bg-slate-900 border-cyan-500/20 text-white [&>button]:hidden" onInteractOutside={e => e.preventDefault()}>
         {step === 'language' ? (
           <div className="text-center space-y-6 py-4">
             <h2 className="text-xl font-bold">{t('va.onboarding.languageTitle')}</h2>
@@ -92,31 +98,65 @@ export function VAOnboardingModal() {
             {isLoading ? (
               <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-cyan-400" /></div>
             ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {numbers.map((num) => (
-                  <div
-                    key={num.id}
-                    className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                      selectedNumber?.id === num.id
-                        ? 'border-cyan-500 bg-cyan-500/10'
-                        : num.in_use
-                        ? 'border-slate-700 opacity-50'
-                        : 'border-slate-700 hover:border-slate-500 cursor-pointer'
-                    }`}
-                    onClick={() => !num.in_use && setSelectedNumber(num)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Phone className="h-4 w-4 text-slate-400" />
-                      <div>
-                        <p className="font-medium text-sm">{num.friendly_name}</p>
-                        <p className="text-xs text-slate-400 font-mono">{num.phone_number}</p>
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                {numbers.map((num) => {
+                  const sess = sessionsById?.get(num.id);
+                  const isActive = !!sess?.session_active && !sess?.ended_at;
+                  const lastUserLabel = sess?.va_email
+                    || (sess?.last_va_id ? `${sess.last_va_id.slice(0, 8)}…` : null);
+                  return (
+                    <div
+                      key={num.id}
+                      className={`p-3 rounded-lg border transition-all ${
+                        selectedNumber?.id === num.id
+                          ? 'border-cyan-500 bg-cyan-500/10'
+                          : isActive
+                          ? 'border-amber-500/40 bg-amber-500/5 opacity-80'
+                          : 'border-slate-700 hover:border-slate-500 cursor-pointer'
+                      }`}
+                      onClick={() => !isActive && setSelectedNumber(num)}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Phone className="h-4 w-4 text-slate-400 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm truncate">{num.friendly_name}</p>
+                            <p className="text-xs text-slate-400 font-mono">{num.phone_number}</p>
+                          </div>
+                        </div>
+                        {isActive ? (
+                          <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
+                            <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            Currently Active
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-slate-700/40 text-slate-300 border border-slate-600 shrink-0">
+                            🟢 {t('va.onboarding.available')}
+                          </Badge>
+                        )}
                       </div>
+                      {sess?.session_id ? (
+                        <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-slate-400 pl-7">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <User className="h-3 w-3 shrink-0" />
+                            <span className="truncate" title={lastUserLabel || ''}>
+                              {lastUserLabel || 'Unknown'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 shrink-0" />
+                            <span>{formatDateTime(sess.started_at)}</span>
+                          </div>
+                          <div className="text-right font-mono">
+                            {formatDuration(sess.started_at, sess.ended_at)}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-2 text-[11px] text-slate-500 pl-7">Never used</div>
+                      )}
                     </div>
-                    <Badge className={num.in_use ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}>
-                      {num.in_use ? `🔴 ${t('va.onboarding.inUse')}` : `🟢 ${t('va.onboarding.available')}`}
-                    </Badge>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             <Button

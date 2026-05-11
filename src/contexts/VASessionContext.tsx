@@ -47,11 +47,9 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
   const startSession = useCallback(async (numberId: string, numberPhone: string, lang: VALanguage) => {
     if (!user) return;
 
-    // Mark number as in_use
-    await (supabase as any)
-      .from('brandaro_phone_numbers')
-      .update({ in_use: true, assigned_va_id: user.id })
-      .eq('id', numberId);
+    // Note: dc_phone_numbers does not track in_use; "currently active" is
+    // derived from va_sessions.is_active in the brandaro_number_last_sessions view.
+
 
     // Create session record
     const { data } = await (supabase as any)
@@ -82,23 +80,34 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
     const prevId = state.twilioNumberId;
     if (prevId === numberId) return;
 
-    try {
-      await (supabase as any)
-        .from('brandaro_phone_numbers')
-        .update({ in_use: true, assigned_va_id: user.id })
-        .eq('id', numberId);
-    } catch (_) { /* dc_phone_numbers fallback */ }
-
-    if (prevId) {
+    // End any prior active session for this VA so the audit view reflects the swap.
+    if (state.sessionId) {
       try {
         await (supabase as any)
-          .from('brandaro_phone_numbers')
-          .update({ in_use: false, assigned_va_id: null })
-          .eq('id', prevId);
+          .from('va_sessions')
+          .update({ is_active: false, ended_at: new Date().toISOString() })
+          .eq('id', state.sessionId);
       } catch (_) { /* best effort */ }
     }
 
-    if (state.sessionId) {
+    // Open a fresh session record on the new caller-ID so "Currently Active"
+    // and "Last user" both attribute correctly in the audit log.
+    let newSessionId: string | null = null;
+    try {
+      const { data } = await (supabase as any)
+        .from('va_sessions')
+        .insert({
+          va_id: user.id,
+          twilio_number_id: numberId,
+          language: state.language,
+          is_active: true,
+        })
+        .select('id')
+        .single();
+      newSessionId = data?.id ?? null;
+    } catch (_) { /* best effort */ }
+
+    if (state.sessionId && newSessionId == null) {
       try {
         await (supabase as any)
           .from('va_sessions')
@@ -111,8 +120,9 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
       ...prev,
       twilioNumberId: numberId,
       twilioNumber: numberPhone,
+      sessionId: newSessionId ?? prev.sessionId,
     }));
-  }, [user, state.twilioNumberId, state.sessionId]);
+  }, [user, state.twilioNumberId, state.sessionId, state.language]);
 
   const endSession = useCallback(async () => {
     const numberId = state.twilioNumberId;
@@ -127,15 +137,7 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
       isOnboarded: false,
     });
 
-    // Release number
-    if (numberId) {
-      await (supabase as any)
-        .from('brandaro_phone_numbers')
-        .update({ in_use: false, assigned_va_id: null })
-        .eq('id', numberId);
-    }
-
-    // End session record
+    // End session record (release of caller-ID is implied by is_active=false).
     if (sessId) {
       await (supabase as any)
         .from('va_sessions')
@@ -147,23 +149,6 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
   // Cleanup on unmount / page close — use fetch with keepalive (sendBeacon alternative that supports headers)
   useEffect(() => {
     const cleanup = () => {
-      if (state.twilioNumberId) {
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brandaro_phone_numbers?id=eq.${state.twilioNumberId}`;
-        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        try {
-          fetch(url, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': anonKey,
-              'Authorization': `Bearer ${anonKey}`,
-              'Prefer': 'return=minimal',
-            },
-            body: JSON.stringify({ in_use: false, assigned_va_id: null }),
-            keepalive: true,
-          });
-        } catch (_) { /* best effort */ }
-      }
       if (state.sessionId) {
         const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/va_sessions?id=eq.${state.sessionId}`;
         const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;

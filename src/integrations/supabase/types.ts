@@ -16443,13 +16443,6 @@ export type Database = {
             foreignKeyName: "brandaro_number_sessions_number_id_fkey"
             columns: ["number_id"]
             isOneToOne: false
-            referencedRelation: "brandaro_number_last_sessions"
-            referencedColumns: ["number_id"]
-          },
-          {
-            foreignKeyName: "brandaro_number_sessions_number_id_fkey"
-            columns: ["number_id"]
-            isOneToOne: false
             referencedRelation: "brandaro_phone_numbers"
             referencedColumns: ["id"]
           },
@@ -102660,20 +102653,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "va_sessions_twilio_number_id_fkey"
-            columns: ["twilio_number_id"]
-            isOneToOne: false
-            referencedRelation: "brandaro_number_last_sessions"
-            referencedColumns: ["number_id"]
-          },
-          {
-            foreignKeyName: "va_sessions_twilio_number_id_fkey"
-            columns: ["twilio_number_id"]
-            isOneToOne: false
-            referencedRelation: "brandaro_phone_numbers"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "va_sessions_va_id_fkey"
             columns: ["va_id"]
             isOneToOne: false
@@ -109227,19 +109206,28 @@ export type Database = {
       brandaro_number_last_sessions: {
         Row: {
           assigned_va_id: string | null
+          business: string | null
           ended_at: string | null
           friendly_name: string | null
           in_use: boolean | null
           last_va_id: string | null
           number_id: string | null
           phone_number: string | null
+          session_active: boolean | null
           session_id: string | null
           started_at: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "brandaro_phone_numbers_assigned_va_id_fkey"
+            foreignKeyName: "va_sessions_va_id_fkey"
             columns: ["assigned_va_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "va_sessions_va_id_fkey"
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
