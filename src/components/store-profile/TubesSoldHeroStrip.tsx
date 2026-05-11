@@ -117,7 +117,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
         {/* CHIP 1 — Lifetime Sold */}
         <ExpandableChipCard
           ariaLabel="Lifetime sold breakdown"
-          expandedTitle="Lifetime by Brand"
+          expandedTitle="Lifetime by SKU"
           isLoading={lifetimeByBrand.isLoading}
           isEmpty={!lifetimeByBrand.isLoading && lifetimeRows.length === 0}
           emptyMessage="No invoiced tubes yet."
