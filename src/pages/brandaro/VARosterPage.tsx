@@ -46,8 +46,8 @@ interface LeadRow {
   assigned_va: string | null;
 }
 
-const DEFAULT_PAGE_SIZE = 50;
-const TRANSFER_PAGE_SIZE = 500;
+const DEFAULT_TRANSFER_PAGE_SIZE = 50;
+const TRANSFER_TRANSFER_PAGE_SIZE = 500;
 
 export default function VARosterPage() {
   const { toast } = useToast();
@@ -70,7 +70,7 @@ export default function VARosterPage() {
 
   // Pagination
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [pageSize, setPageSize] = useState(DEFAULT_TRANSFER_PAGE_SIZE);
 
   // Transfer panel state
   const [transferSourceVa, setTransferSourceVa] = useState<string>('');
@@ -242,7 +242,7 @@ export default function VARosterPage() {
         title: 'Leads assigned',
         description: `${count ?? ids.length} lead(s) assigned to ${vaName}.`,
       });
-      await fetchData();
+      await refreshAll();
     }
     setAssigning(false);
   };
@@ -285,7 +285,7 @@ export default function VARosterPage() {
         description: `${totalAssigned} lead(s) round-robined across ${sortedVas.length} VAs.`,
       });
     }
-    await fetchData();
+    await refreshAll();
     setAssigning(false);
   };
 
@@ -310,13 +310,13 @@ export default function VARosterPage() {
         .select('id, business_name, priority_tier, city, state, phone_number, priority_score')
         .eq('assigned_va', transferSourceVa)
         .order('priority_score', { ascending: false })
-        .limit(PAGE_SIZE);
+        .limit(TRANSFER_PAGE_SIZE);
       if (cancelled) return;
       if (error) {
         toast({ title: 'Failed to load VA leads', description: error.message, variant: 'destructive' });
         setTransferLeads([]);
       } else {
-        setTransferLeads((data as UnassignedLead[]) || []);
+        setTransferLeads((data as LeadRow[]) || []);
       }
       setTransferSelectedIds(new Set());
       setTransferLoading(false);
@@ -389,10 +389,10 @@ export default function VARosterPage() {
         .select('id, business_name, priority_tier, city, state, phone_number, priority_score')
         .eq('assigned_va', transferSourceVa)
         .order('priority_score', { ascending: false })
-        .limit(PAGE_SIZE);
-      setTransferLeads((refreshed as UnassignedLead[]) || []);
+        .limit(TRANSFER_PAGE_SIZE);
+      setTransferLeads((refreshed as LeadRow[]) || []);
       setTransferSelectedIds(new Set());
-      await fetchData();
+      await refreshAll();
     }
     setTransferring(false);
   };
@@ -409,7 +409,7 @@ export default function VARosterPage() {
           </p>
         </div>
         <Badge variant="outline" className="text-xs">
-          {vas.length} Active VAs · {unassignedLeads.length} Unassigned Leads
+          {vas.length} Active VAs · {totalLeads} Unassigned Leads
         </Badge>
       </div>
 
@@ -525,7 +525,7 @@ export default function VARosterPage() {
         <CardHeader className="space-y-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Target className="h-4 w-4" /> Unassigned Leads ({filteredLeads.length}
-            {filteredLeads.length !== unassignedLeads.length && ` of ${unassignedLeads.length}`})
+            {filteredLeads.length !== totalLeads && ` of ${totalLeads}`})
           </CardTitle>
 
           <div className="flex flex-wrap gap-2">
