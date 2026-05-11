@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ import {
   UserMinus,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { DataTablePagination } from '@/components/crud/DataTablePagination';
 
 interface VA {
   user_id: string;
@@ -34,7 +35,7 @@ interface VA {
   lead_count: number;
 }
 
-interface UnassignedLead {
+interface LeadRow {
   id: string;
   business_name: string;
   priority_tier: string | null;
@@ -42,16 +43,21 @@ interface UnassignedLead {
   state: string | null;
   phone_number: string | null;
   priority_score: number | null;
+  assigned_va: string | null;
 }
 
-const PAGE_SIZE = 500;
+const DEFAULT_PAGE_SIZE = 50;
+const TRANSFER_PAGE_SIZE = 500;
 
 export default function VARosterPage() {
   const { toast } = useToast();
   const [vas, setVas] = useState<VA[]>([]);
-  const [unassignedLeads, setUnassignedLeads] = useState<UnassignedLead[]>([]);
+  const [leads, setLeads] = useState<LeadRow[]>([]);
+  const [totalLeads, setTotalLeads] = useState(0);
+  const [unassignedTotal, setUnassignedTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
+  const [unassigning, setUnassigning] = useState(false);
 
   // Bulk-selection + filters
   const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
@@ -59,19 +65,29 @@ export default function VARosterPage() {
   const [search, setSearch] = useState('');
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [stateFilter, setStateFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'assigned' | 'unassigned'>('unassigned');
+  const [stateOptions, setStateOptions] = useState<string[]>([]);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   // Transfer panel state
   const [transferSourceVa, setTransferSourceVa] = useState<string>('');
   const [transferTargetVa, setTransferTargetVa] = useState<string>(''); // '' = unassign
-  const [transferLeads, setTransferLeads] = useState<UnassignedLead[]>([]);
+  const [transferLeads, setTransferLeads] = useState<LeadRow[]>([]);
   const [transferLoading, setTransferLoading] = useState(false);
   const [transferSelectedIds, setTransferSelectedIds] = useState<Set<string>>(new Set());
   const [transferSearch, setTransferSearch] = useState('');
   const [transferring, setTransferring] = useState(false);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const vaMap = useMemo(() => {
+    const m: Record<string, VA> = {};
+    vas.forEach((v) => (m[v.user_id] = v));
+    return m;
+  }, [vas]);
 
+  const fetchVAs = useCallback(async () => {
     const { data: vaRoles, error: roleErr } = await supabase
       .from('user_roles')
       .select('user_id')
@@ -79,80 +95,114 @@ export default function VARosterPage() {
 
     if (roleErr) {
       toast({ title: 'Failed to load VAs', description: roleErr.message, variant: 'destructive' });
+      return;
     }
 
-    if (vaRoles?.length) {
-      const vaIds = vaRoles.map((r) => r.user_id);
-
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, name, email')
-        .in('id', vaIds);
-
-      const { data: leadCounts } = await supabase
-        .from('brandaro_qualified_leads')
-        .select('assigned_va')
-        .in('assigned_va', vaIds);
-
-      const countMap: Record<string, number> = {};
-      leadCounts?.forEach((l) => {
-        if (l.assigned_va) countMap[l.assigned_va] = (countMap[l.assigned_va] || 0) + 1;
-      });
-
-      setVas(
-        (profiles || []).map((p) => ({
-          user_id: p.id,
-          name: p.name || p.email || 'Unknown VA',
-          email: p.email || '',
-          lead_count: countMap[p.id] || 0,
-        })),
-      );
-    } else {
+    if (!vaRoles?.length) {
       setVas([]);
+      return;
     }
 
-    const { data: leads, error: leadErr } = await supabase
+    const vaIds = vaRoles.map((r) => r.user_id);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, name, email')
+      .in('id', vaIds);
+
+    const { data: leadCounts } = await supabase
       .from('brandaro_qualified_leads')
-      .select('id, business_name, priority_tier, city, state, phone_number, priority_score')
-      .is('assigned_va', null)
-      .order('priority_score', { ascending: false })
-      .limit(PAGE_SIZE);
+      .select('assigned_va')
+      .in('assigned_va', vaIds);
 
-    if (leadErr) {
-      toast({ title: 'Failed to load leads', description: leadErr.message, variant: 'destructive' });
+    const countMap: Record<string, number> = {};
+    leadCounts?.forEach((l) => {
+      if (l.assigned_va) countMap[l.assigned_va] = (countMap[l.assigned_va] || 0) + 1;
+    });
+
+    setVas(
+      (profiles || []).map((p) => ({
+        user_id: p.id,
+        name: p.name || p.email || 'Unknown VA',
+        email: p.email || '',
+        lead_count: countMap[p.id] || 0,
+      })),
+    );
+  }, [toast]);
+
+  const fetchLeads = useCallback(async () => {
+    setLoading(true);
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let q = supabase
+      .from('brandaro_qualified_leads')
+      .select('id, business_name, priority_tier, city, state, phone_number, priority_score, assigned_va', { count: 'exact' })
+      .order('priority_score', { ascending: false, nullsFirst: false })
+      .range(from, to);
+
+    if (statusFilter === 'assigned') q = q.not('assigned_va', 'is', null);
+    if (statusFilter === 'unassigned') q = q.is('assigned_va', null);
+    if (tierFilter !== 'all') q = q.eq('priority_tier', tierFilter);
+    if (stateFilter !== 'all') q = q.eq('state', stateFilter);
+    if (search.trim()) {
+      const s = search.trim().replace(/%/g, '');
+      q = q.or(`business_name.ilike.%${s}%,city.ilike.%${s}%,state.ilike.%${s}%`);
     }
 
-    setUnassignedLeads((leads as UnassignedLead[]) || []);
-    setSelectedLeadIds(new Set());
+    const { data, error, count } = await q;
+    if (error) {
+      toast({ title: 'Failed to load leads', description: error.message, variant: 'destructive' });
+      setLeads([]);
+      setTotalLeads(0);
+    } else {
+      setLeads((data as LeadRow[]) || []);
+      setTotalLeads(count ?? 0);
+    }
     setLoading(false);
-  };
+  }, [page, pageSize, statusFilter, tierFilter, stateFilter, search, toast]);
 
-  useEffect(() => {
-    fetchData();
+  // Refresh unassigned total badge whenever leads change
+  const fetchUnassignedTotal = useCallback(async () => {
+    const { count } = await supabase
+      .from('brandaro_qualified_leads')
+      .select('id', { count: 'exact', head: true })
+      .is('assigned_va', null);
+    setUnassignedTotal(count ?? 0);
   }, []);
 
-  const filteredLeads = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return unassignedLeads.filter((l) => {
-      if (tierFilter !== 'all' && (l.priority_tier || 'new') !== tierFilter) return false;
-      if (stateFilter !== 'all' && l.state !== stateFilter) return false;
-      if (!q) return true;
-      return (
-        (l.business_name || '').toLowerCase().includes(q) ||
-        (l.city || '').toLowerCase().includes(q) ||
-        (l.state || '').toLowerCase().includes(q)
-      );
-    });
-  }, [unassignedLeads, search, tierFilter, stateFilter]);
+  // Distinct states (one-time)
+  const fetchStateOptions = useCallback(async () => {
+    const { data } = await supabase
+      .from('brandaro_qualified_leads')
+      .select('state')
+      .not('state', 'is', null)
+      .limit(2000);
+    const set = new Set<string>();
+    (data || []).forEach((r: any) => r.state && set.add(r.state));
+    setStateOptions(Array.from(set).sort());
+  }, []);
 
-  const stateOptions = useMemo(() => {
-    const s = new Set<string>();
-    unassignedLeads.forEach((l) => l.state && s.add(l.state));
-    return Array.from(s).sort();
-  }, [unassignedLeads]);
+  const refreshAll = useCallback(async () => {
+    await Promise.all([fetchVAs(), fetchLeads(), fetchUnassignedTotal()]);
+  }, [fetchVAs, fetchLeads, fetchUnassignedTotal]);
+
+  useEffect(() => {
+    fetchVAs();
+    fetchUnassignedTotal();
+    fetchStateOptions();
+  }, [fetchVAs, fetchUnassignedTotal, fetchStateOptions]);
+
+  // Reset page on filter change
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, tierFilter, stateFilter, search, pageSize]);
+
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
 
   const allFilteredSelected =
-    filteredLeads.length > 0 && filteredLeads.every((l) => selectedLeadIds.has(l.id));
+    leads.length > 0 && leads.every((l) => selectedLeadIds.has(l.id));
 
   const toggleLead = (id: string) => {
     setSelectedLeadIds((prev) => {
@@ -166,13 +216,14 @@ export default function VARosterPage() {
     setSelectedLeadIds((prev) => {
       const next = new Set(prev);
       if (allFilteredSelected) {
-        filteredLeads.forEach((l) => next.delete(l.id));
+        leads.forEach((l) => next.delete(l.id));
       } else {
-        filteredLeads.forEach((l) => next.add(l.id));
+        leads.forEach((l) => next.add(l.id));
       }
       return next;
     });
   };
+
 
   const handleBulkAssign = async () => {
     if (!bulkTargetVa || selectedLeadIds.size === 0) return;
@@ -191,7 +242,7 @@ export default function VARosterPage() {
         title: 'Leads assigned',
         description: `${count ?? ids.length} lead(s) assigned to ${vaName}.`,
       });
-      await fetchData();
+      await refreshAll();
     }
     setAssigning(false);
   };
@@ -234,7 +285,7 @@ export default function VARosterPage() {
         description: `${totalAssigned} lead(s) round-robined across ${sortedVas.length} VAs.`,
       });
     }
-    await fetchData();
+    await refreshAll();
     setAssigning(false);
   };
 
@@ -242,6 +293,42 @@ export default function VARosterPage() {
     if (tier === 'hot') return 'bg-red-500/20 text-red-400 border-red-500/30';
     if (tier === 'warm') return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
     return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+  };
+
+  const handleBulkUnassign = async () => {
+    if (selectedLeadIds.size === 0) return;
+    setUnassigning(true);
+    const ids = Array.from(selectedLeadIds);
+    const { error, count } = await supabase
+      .from('brandaro_qualified_leads')
+      .update({ assigned_va: null } as any, { count: 'exact' })
+      .in('id', ids)
+      .not('assigned_va', 'is', null);
+
+    if (error) {
+      toast({ title: 'Unassign failed', description: error.message, variant: 'destructive' });
+    } else {
+      toast({
+        title: 'Leads unassigned',
+        description: `${count ?? ids.length} lead(s) released back to the unassigned pool.`,
+      });
+      setSelectedLeadIds(new Set());
+      await refreshAll();
+    }
+    setUnassigning(false);
+  };
+
+  const handleUnassignOne = async (leadId: string) => {
+    const { error } = await supabase
+      .from('brandaro_qualified_leads')
+      .update({ assigned_va: null } as any)
+      .eq('id', leadId);
+    if (error) {
+      toast({ title: 'Unassign failed', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Lead unassigned' });
+      await refreshAll();
+    }
   };
 
   // ── Transfer: load leads assigned to source VA ──
@@ -259,13 +346,13 @@ export default function VARosterPage() {
         .select('id, business_name, priority_tier, city, state, phone_number, priority_score')
         .eq('assigned_va', transferSourceVa)
         .order('priority_score', { ascending: false })
-        .limit(PAGE_SIZE);
+        .limit(TRANSFER_PAGE_SIZE);
       if (cancelled) return;
       if (error) {
         toast({ title: 'Failed to load VA leads', description: error.message, variant: 'destructive' });
         setTransferLeads([]);
       } else {
-        setTransferLeads((data as UnassignedLead[]) || []);
+        setTransferLeads((data as LeadRow[]) || []);
       }
       setTransferSelectedIds(new Set());
       setTransferLoading(false);
@@ -338,10 +425,10 @@ export default function VARosterPage() {
         .select('id, business_name, priority_tier, city, state, phone_number, priority_score')
         .eq('assigned_va', transferSourceVa)
         .order('priority_score', { ascending: false })
-        .limit(PAGE_SIZE);
-      setTransferLeads((refreshed as UnassignedLead[]) || []);
+        .limit(TRANSFER_PAGE_SIZE);
+      setTransferLeads((refreshed as LeadRow[]) || []);
       setTransferSelectedIds(new Set());
-      await fetchData();
+      await refreshAll();
     }
     setTransferring(false);
   };
@@ -358,7 +445,7 @@ export default function VARosterPage() {
           </p>
         </div>
         <Badge variant="outline" className="text-xs">
-          {vas.length} Active VAs · {unassignedLeads.length} Unassigned Leads
+          {vas.length} Active VAs · {unassignedTotal} Unassigned Leads
         </Badge>
       </div>
 
@@ -455,12 +542,26 @@ export default function VARosterPage() {
               Auto-Distribute
             </Button>
 
+            <Button
+              variant="outline"
+              onClick={handleBulkUnassign}
+              disabled={selectedLeadIds.size === 0 || unassigning}
+              className="gap-2 border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
+            >
+              {unassigning ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <UserMinus className="h-4 w-4" />
+              )}
+              Unassign {selectedLeadIds.size > 0 ? `${selectedLeadIds.size} ` : ''}lead(s)
+            </Button>
+
             {selectedLeadIds.size > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSelectedLeadIds(new Set())}
-                disabled={assigning}
+                disabled={assigning || unassigning}
               >
                 Clear
               </Button>
@@ -469,12 +570,14 @@ export default function VARosterPage() {
         </CardContent>
       </Card>
 
-      {/* Unassigned Leads Table */}
+      {/* All Leads Table */}
       <Card>
         <CardHeader className="space-y-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Target className="h-4 w-4" /> Unassigned Leads ({filteredLeads.length}
-            {filteredLeads.length !== unassignedLeads.length && ` of ${unassignedLeads.length}`})
+            <Target className="h-4 w-4" /> Leads — showing {leads.length} of {totalLeads}
+            <Badge variant="outline" className="ml-2 text-[10px]">
+              {unassignedTotal} unassigned in pool
+            </Badge>
           </CardTitle>
 
           <div className="flex flex-wrap gap-2">
@@ -487,6 +590,19 @@ export default function VARosterPage() {
                 className="pl-8"
               />
             </div>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as 'all' | 'assigned' | 'unassigned')}
+            >
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                <SelectItem value="assigned">Assigned</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={tierFilter} onValueChange={setTierFilter}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Tier" />
@@ -517,7 +633,7 @@ export default function VARosterPage() {
               ) : (
                 <Square className="h-4 w-4" />
               )}
-              {allFilteredSelected ? 'Unselect all' : 'Select all filtered'}
+              {allFilteredSelected ? 'Unselect page' : 'Select page'}
             </Button>
           </div>
         </CardHeader>
@@ -534,30 +650,33 @@ export default function VARosterPage() {
                     />
                   </th>
                   <th className="pb-2 font-medium">Business</th>
+                  <th className="pb-2 font-medium">Status</th>
                   <th className="pb-2 font-medium">Location</th>
                   <th className="pb-2 font-medium">Priority</th>
                   <th className="pb-2 font-medium">Score</th>
                   <th className="pb-2 font-medium">Phone</th>
+                  <th className="pb-2 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading && (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                    <td colSpan={8} className="py-8 text-center text-muted-foreground">
                       <Loader2 className="h-5 w-5 animate-spin inline mr-2" />
                       Loading leads…
                     </td>
                   </tr>
                 )}
-                {!loading && filteredLeads.length === 0 && (
+                {!loading && leads.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                      No unassigned leads match the current filters.
+                    <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                      No leads match the current filters.
                     </td>
                   </tr>
                 )}
-                {filteredLeads.map((lead) => {
+                {leads.map((lead) => {
                   const checked = selectedLeadIds.has(lead.id);
+                  const assignedVa = lead.assigned_va ? vaMap[lead.assigned_va] : null;
                   return (
                     <tr
                       key={lead.id}
@@ -575,6 +694,17 @@ export default function VARosterPage() {
                         />
                       </td>
                       <td className="py-2 font-medium">{lead.business_name}</td>
+                      <td className="py-2">
+                        {lead.assigned_va ? (
+                          <Badge className="text-[10px] border bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                            ASSIGNED{assignedVa ? ` · ${assignedVa.name}` : ''}
+                          </Badge>
+                        ) : (
+                          <Badge className="text-[10px] border bg-slate-500/15 text-slate-300 border-slate-500/30">
+                            UNASSIGNED
+                          </Badge>
+                        )}
+                      </td>
                       <td className="py-2 text-muted-foreground">
                         {lead.city}
                         {lead.city && lead.state ? ', ' : ''}
@@ -598,12 +728,37 @@ export default function VARosterPage() {
                           '—'
                         )}
                       </td>
+                      <td className="py-2 text-right">
+                        {lead.assigned_va && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-amber-400 hover:bg-amber-500/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnassignOne(lead.id);
+                            }}
+                          >
+                            <UserMinus className="h-3.5 w-3.5 mr-1" />
+                            Unassign
+                          </Button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
+          <DataTablePagination
+            currentPage={page}
+            totalPages={Math.max(1, Math.ceil(totalLeads / pageSize))}
+            pageSize={pageSize}
+            totalItems={totalLeads}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[25, 50, 100, 250]}
+          />
         </CardContent>
       </Card>
 
