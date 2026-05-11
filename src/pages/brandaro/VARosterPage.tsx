@@ -570,12 +570,14 @@ export default function VARosterPage() {
         </CardContent>
       </Card>
 
-      {/* Unassigned Leads Table */}
+      {/* All Leads Table */}
       <Card>
         <CardHeader className="space-y-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Target className="h-4 w-4" /> Unassigned Leads ({leads.length}
-            {leads.length !== totalLeads && ` of ${totalLeads}`})
+            <Target className="h-4 w-4" /> Leads — showing {leads.length} of {totalLeads}
+            <Badge variant="outline" className="ml-2 text-[10px]">
+              {unassignedTotal} unassigned in pool
+            </Badge>
           </CardTitle>
 
           <div className="flex flex-wrap gap-2">
@@ -588,6 +590,19 @@ export default function VARosterPage() {
                 className="pl-8"
               />
             </div>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as 'all' | 'assigned' | 'unassigned')}
+            >
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                <SelectItem value="assigned">Assigned</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={tierFilter} onValueChange={setTierFilter}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Tier" />
@@ -618,7 +633,7 @@ export default function VARosterPage() {
               ) : (
                 <Square className="h-4 w-4" />
               )}
-              {allFilteredSelected ? 'Unselect all' : 'Select all filtered'}
+              {allFilteredSelected ? 'Unselect page' : 'Select page'}
             </Button>
           </div>
         </CardHeader>
@@ -635,16 +650,18 @@ export default function VARosterPage() {
                     />
                   </th>
                   <th className="pb-2 font-medium">Business</th>
+                  <th className="pb-2 font-medium">Status</th>
                   <th className="pb-2 font-medium">Location</th>
                   <th className="pb-2 font-medium">Priority</th>
                   <th className="pb-2 font-medium">Score</th>
                   <th className="pb-2 font-medium">Phone</th>
+                  <th className="pb-2 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading && (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                    <td colSpan={8} className="py-8 text-center text-muted-foreground">
                       <Loader2 className="h-5 w-5 animate-spin inline mr-2" />
                       Loading leads…
                     </td>
@@ -652,13 +669,14 @@ export default function VARosterPage() {
                 )}
                 {!loading && leads.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                      No unassigned leads match the current filters.
+                    <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                      No leads match the current filters.
                     </td>
                   </tr>
                 )}
                 {leads.map((lead) => {
                   const checked = selectedLeadIds.has(lead.id);
+                  const assignedVa = lead.assigned_va ? vaMap[lead.assigned_va] : null;
                   return (
                     <tr
                       key={lead.id}
@@ -676,6 +694,17 @@ export default function VARosterPage() {
                         />
                       </td>
                       <td className="py-2 font-medium">{lead.business_name}</td>
+                      <td className="py-2">
+                        {lead.assigned_va ? (
+                          <Badge className="text-[10px] border bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                            ASSIGNED{assignedVa ? ` · ${assignedVa.name}` : ''}
+                          </Badge>
+                        ) : (
+                          <Badge className="text-[10px] border bg-slate-500/15 text-slate-300 border-slate-500/30">
+                            UNASSIGNED
+                          </Badge>
+                        )}
+                      </td>
                       <td className="py-2 text-muted-foreground">
                         {lead.city}
                         {lead.city && lead.state ? ', ' : ''}
@@ -699,12 +728,37 @@ export default function VARosterPage() {
                           '—'
                         )}
                       </td>
+                      <td className="py-2 text-right">
+                        {lead.assigned_va && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-amber-400 hover:bg-amber-500/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnassignOne(lead.id);
+                            }}
+                          >
+                            <UserMinus className="h-3.5 w-3.5 mr-1" />
+                            Unassign
+                          </Button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
+          <DataTablePagination
+            currentPage={page}
+            totalPages={Math.max(1, Math.ceil(totalLeads / pageSize))}
+            pageSize={pageSize}
+            totalItems={totalLeads}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[25, 50, 100, 250]}
+          />
         </CardContent>
       </Card>
 
