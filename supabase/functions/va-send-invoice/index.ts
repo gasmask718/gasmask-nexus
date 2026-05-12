@@ -216,6 +216,10 @@ serve(async (req: Request) => {
             `Total: $${Number(invoice.total || 0).toFixed(2)}\n` +
             (invoice.payment_link ? `Pay: ${invoice.payment_link}` : "");
 
+      const twilioParams: Record<string, string> = { To: recipient, Body: smsBody };
+      if (messagingServiceSid && !fromNumber) twilioParams.MessagingServiceSid = messagingServiceSid;
+      else if (fromNumber) twilioParams.From = fromNumber;
+
       const twilioRes = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
         {
@@ -224,11 +228,7 @@ serve(async (req: Request) => {
             "Authorization": "Basic " + btoa(`${accountSid}:${authToken}`),
             "Content-Type": "application/x-www-form-urlencoded",
           },
-          body: new URLSearchParams({
-            To: recipient,
-            From: fromNumber,
-            Body: smsBody,
-          }),
+          body: new URLSearchParams(twilioParams),
         },
       );
 
