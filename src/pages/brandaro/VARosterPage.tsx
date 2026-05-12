@@ -631,6 +631,18 @@ export default function VARosterPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Select
+              value={languageFilter}
+              onValueChange={(v) => setLanguageFilter(v as 'all' | 'spanish')}
+            >
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All languages</SelectItem>
+                <SelectItem value="spanish">🇲🇽 Spanish only</SelectItem>
+              </SelectContent>
+            </Select>
             <Button variant="outline" onClick={toggleAllFiltered} className="gap-2">
               {allFilteredSelected ? (
                 <CheckSquare className="h-4 w-4" />
