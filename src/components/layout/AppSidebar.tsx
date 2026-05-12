@@ -99,7 +99,7 @@ export default function AppSidebar() {
     id: string, 
     title: string, 
     emoji: string, 
-    items: { path: string; label: string; emoji?: string }[],
+    items: { path: string; label: string; emoji?: string; badge?: number }[],
     titleClass?: string
   ) => {
     const isOpen = openSections.includes(id);
@@ -134,7 +134,12 @@ export default function AppSidebar() {
                 )}
               >
                 {item.emoji && <span>{item.emoji}</span>}
-                <span className="truncate">{item.label}</span>
+                <span className="truncate flex-1">{item.label}</span>
+                {item.badge && item.badge > 0 ? (
+                  <Badge variant="destructive" className="h-5 px-1.5 text-xs">
+                    {item.badge}
+                  </Badge>
+                ) : null}
               </Link>
             ))}
           </div>
