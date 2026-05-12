@@ -65,26 +65,9 @@ Analyze and respond with ONLY a compact JSON object — no prose, no markdown:
   "key_signal": "<short observation about what just happened>"
 }`;
 
-    const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5",
-        max_tokens: 220,
-        temperature: 0.1,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-
-    if (!claudeRes.ok) {
-      // Fallback to sonnet model name if haiku id rejected
-      const errText = await claudeRes.text();
-      console.error("Claude err:", claudeRes.status, errText);
-      const retry = await fetch("https://api.anthropic.com/v1/messages", {
+    // Use claude-3-5-haiku — fastest model, ~700ms typical latency
+    async function callClaude(model: string) {
+      return fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -92,20 +75,25 @@ Analyze and respond with ONLY a compact JSON object — no prose, no markdown:
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-3-5-haiku-20241022",
-          max_tokens: 220,
+          model,
+          max_tokens: 200,
           temperature: 0.1,
+          system: "You are a real-time sales coach. Respond ONLY with the requested JSON object — no prose.",
           messages: [{ role: "user", content: prompt }],
         }),
       });
-      if (!retry.ok) {
-        const t = await retry.text();
-        throw new Error(`Claude failed: ${retry.status} ${t}`);
-      }
-      const data = await retry.json();
-      return await persistAndReturn(data);
     }
 
+    let claudeRes = await callClaude("claude-3-5-haiku-20241022");
+    if (!claudeRes.ok) {
+      const errText = await claudeRes.text();
+      console.error("Claude haiku err:", claudeRes.status, errText);
+      claudeRes = await callClaude("claude-3-5-sonnet-20241022");
+      if (!claudeRes.ok) {
+        const t = await claudeRes.text();
+        throw new Error(`Claude failed: ${claudeRes.status} ${t}`);
+      }
+    }
     const data = await claudeRes.json();
     return await persistAndReturn(data);
 
