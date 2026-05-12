@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
 import { Navigate, NavLink, Outlet, useSearchParams } from "react-router-dom";
-import { useIsDPAdmin } from "@/hooks/useDPAdmin";
+import { useDPAdminStatus } from "@/hooks/useDPAdmin";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Users, TrendingUp, Layers, Megaphone,
