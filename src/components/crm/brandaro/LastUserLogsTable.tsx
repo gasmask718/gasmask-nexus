@@ -41,7 +41,7 @@ export default function LastUserLogsTable() {
         r.number_id === numberId ? { ...r, ...patch } : r
       );
       const byId = new Map(prev.byId ?? []);
-      const existing = byId.get(numberId);
+      const existing: any = byId.get(numberId);
       if (existing) byId.set(numberId, { ...existing, ...patch });
       return { rows, byId };
     });
