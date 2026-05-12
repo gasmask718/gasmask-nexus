@@ -221,7 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [qc]);
 
   const signOut = async () => {
     manualSignOut.current = true;
