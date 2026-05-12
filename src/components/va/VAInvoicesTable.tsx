@@ -1,16 +1,15 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Send, Copy, Loader2, FileText } from 'lucide-react';
+import { Eye, Send, Copy, Loader2, FileText, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { VAInvoiceDetailDialog } from './VAInvoiceDetailDialog';
-import { SendInvoiceDialog } from '@/components/invoice/SendInvoiceDialog';
 
 type FilterKey = 'all' | 'draft' | 'sent' | 'paid';
 
@@ -23,10 +22,11 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 
 export function VAInvoicesTable() {
   const { user } = useAuth();
+  const qc = useQueryClient();
   const [filter, setFilter] = useState<FilterKey>('all');
   const [selected, setSelected] = useState<any | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [sendInvoice, setSendInvoice] = useState<any | null>(null);
+  const [sendingId, setSendingId] = useState<string | null>(null);
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['va-invoices', user?.id],
@@ -40,6 +40,24 @@ export function VAInvoicesTable() {
     },
     enabled: !!user,
     refetchInterval: 10000,
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const { data, error } = await supabase.functions.invoke('va-send-invoice', {
+        body: { invoice_id: invoiceId, channel: 'email' },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return data;
+    },
+    onMutate: (id) => setSendingId(id),
+    onSettled: () => setSendingId(null),
+    onSuccess: (data: any) => {
+      toast.success(`Invoice sent to ${data?.sent_to || 'customer'}`);
+      qc.invalidateQueries({ queryKey: ['va-invoices', user?.id] });
+    },
+    onError: (e: any) => toast.error(e.message || 'Failed to send invoice'),
   });
 
   const filtered = invoices.filter((i: any) => filter === 'all' || i.status === filter);
@@ -147,9 +165,16 @@ export function VAInvoicesTable() {
                         size="sm"
                         variant="ghost"
                         className="h-7 text-xs text-cyan-300 hover:bg-cyan-500/10"
-                        onClick={() => setSendInvoice(inv)}
+                        disabled={sendingId === inv.id}
+                        onClick={() => sendMutation.mutate(inv.id)}
                       >
-                        <Send className="h-3 w-3 mr-1" />
+                        {sendingId === inv.id ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : inv.status === 'draft' ? (
+                          <Send className="h-3 w-3 mr-1" />
+                        ) : (
+                          <Mail className="h-3 w-3 mr-1" />
+                        )}
                         {inv.status === 'draft' ? 'Send' : 'Resend'}
                       </Button>
                       {inv.payment_link && (
@@ -175,13 +200,6 @@ export function VAInvoicesTable() {
         invoice={selected}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
-      />
-
-      <SendInvoiceDialog
-        open={!!sendInvoice}
-        invoice={sendInvoice}
-        onClose={() => setSendInvoice(null)}
-        invalidateKeys={[['va-invoices', user?.id]]}
       />
     </div>
   );

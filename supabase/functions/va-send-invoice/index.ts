@@ -180,31 +180,15 @@ serve(async (req: Request) => {
         sendResult = { ok: false, error: `Nodemailer error: ${e?.message || String(e)}` };
       }
     } else {
-      const accountSid = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID") || Deno.env.get("TWILIO_ACCOUNT_SID");
-      const authToken = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN") || Deno.env.get("TWILIO_AUTH_TOKEN");
-      const fromNumber =
-        Deno.env.get("BRANDARO_TWILIO_NUMBER") ||
-        Deno.env.get("TWILIO_FROM_NUMBER") ||
-        Deno.env.get("TWILIO_PHONE_NUMBER");
-      const messagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID");
+      const accountSid = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID");
+      const authToken = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN");
+      const fromNumber = Deno.env.get("BRANDARO_TWILIO_NUMBER");
 
-      if (!accountSid || !authToken || (!fromNumber && !messagingServiceSid)) {
-        const errMsg = "Twilio SMS not configured (need ACCOUNT_SID + AUTH_TOKEN + (FROM number or MESSAGING_SERVICE_SID))";
-        await supabase.from("va_invoices").update({ last_send_error: errMsg }).eq("id", invoice.id);
-        return new Response(JSON.stringify({ error: errMsg }), {
+      if (!accountSid || !authToken || !fromNumber) {
+        return new Response(JSON.stringify({ error: "Brandaro Twilio not configured for SMS" }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
-      // Normalize recipient to E.164 (default US +1 if 10 digits)
-      let toNumber = String(recipient).trim();
-      if (!toNumber.startsWith("+")) {
-        const digits = toNumber.replace(/\D/g, "");
-        if (digits.length === 10) toNumber = `+1${digits}`;
-        else if (digits.length === 11 && digits.startsWith("1")) toNumber = `+${digits}`;
-        else toNumber = `+${digits}`;
-      }
-      recipient = toNumber;
 
       const smsBody =
         invoice.payment_type === 'split' && (invoice.deposit_payment_link || invoice.final_payment_link)
@@ -216,10 +200,6 @@ serve(async (req: Request) => {
             `Total: $${Number(invoice.total || 0).toFixed(2)}\n` +
             (invoice.payment_link ? `Pay: ${invoice.payment_link}` : "");
 
-      const twilioParams: Record<string, string> = { To: recipient, Body: smsBody };
-      if (messagingServiceSid && !fromNumber) twilioParams.MessagingServiceSid = messagingServiceSid;
-      else if (fromNumber) twilioParams.From = fromNumber;
-
       const twilioRes = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
         {
@@ -228,7 +208,11 @@ serve(async (req: Request) => {
             "Authorization": "Basic " + btoa(`${accountSid}:${authToken}`),
             "Content-Type": "application/x-www-form-urlencoded",
           },
-          body: new URLSearchParams(twilioParams),
+          body: new URLSearchParams({
+            To: recipient,
+            From: fromNumber,
+            Body: smsBody,
+          }),
         },
       );
 

@@ -37,24 +37,10 @@ serve(async (req) => {
     if (callErr) throw callErr;
     if (!call) throw new Error("Call log not found");
 
-    // Pull any live Claude coaching captured during the call
-    const { data: liveRows } = await supabase
-      .from("va_live_call_analysis")
-      .select("created_at, sentiment, buyer_intent, coaching_tip, next_best_action, objection_detected, transcript_chunk")
-      .eq("call_log_id", call_log_id)
-      .order("created_at", { ascending: true });
-
-    const liveHistory = (liveRows || []).map((r: any, i: number) =>
-      `[${i + 1}] intent=${r.buyer_intent ?? "?"} sentiment=${r.sentiment ?? "?"}` +
-      (r.objection_detected ? ` objection="${r.objection_detected}"` : "") +
-      (r.coaching_tip ? `\n   tip: ${r.coaching_tip}` : "") +
-      (r.next_best_action ? `\n   next: ${r.next_best_action}` : "")
-    ).join("\n");
-
     const inputText = (call.transcript || "").trim() || (call.va_notes || "").trim();
-    if (!inputText && !liveHistory) {
+    if (!inputText) {
       return new Response(
-        JSON.stringify({ error: "No transcript, notes, or live analysis available for this call" }),
+        JSON.stringify({ error: "No transcript or notes available for this call" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -78,7 +64,7 @@ Be specific, reference moments from the transcript when possible, and write in p
           {
             role: "user",
             content:
-              `Call duration: ${call.duration_seconds ?? "unknown"}s\nDisposition: ${call.disposition ?? "n/a"}\nStatus: ${call.call_status ?? "n/a"}\n\nTRANSCRIPT / NOTES:\n${inputText || "(no transcript captured)"}\n\nLIVE AI COACHING HISTORY DURING CALL:\n${liveHistory || "(none)"}`,
+              `Call duration: ${call.duration_seconds ?? "unknown"}s\nDisposition: ${call.disposition ?? "n/a"}\nStatus: ${call.call_status ?? "n/a"}\n\nTRANSCRIPT / NOTES:\n${inputText}`,
           },
         ],
         tools: [
@@ -163,15 +149,6 @@ Be specific, reference moments from the transcript when possible, and write in p
     const analysis = JSON.parse(toolCall.function.arguments);
     analysis.analyzed_at = new Date().toISOString();
     analysis.model = "google/gemini-3-flash-preview";
-    analysis.live_coaching_count = (liveRows || []).length;
-    analysis.live_coaching_history = (liveRows || []).map((r: any) => ({
-      at: r.created_at,
-      sentiment: r.sentiment,
-      buyer_intent: r.buyer_intent,
-      coaching_tip: r.coaching_tip,
-      next_best_action: r.next_best_action,
-      objection_detected: r.objection_detected,
-    }));
 
     const { error: updateErr } = await supabase
       .from("va_call_logs")
