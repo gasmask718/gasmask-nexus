@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, Mail, Phone, Globe, Save, Loader2, ArrowLeft, Shield } from 'lucide-react';
+import { User, Mail, Phone, Globe, Save, Loader2, ArrowLeft, Shield, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
