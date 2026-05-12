@@ -269,6 +269,25 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
         setDeviceState("registered");
         setRegisteredAt(new Date().toISOString());
         signalingRetryRef.current = 0;
+
+        void (async () => {
+          try {
+            await device.audio?.setAudioConstraints?.({
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            });
+
+            const defaultInput = device.audio?.availableInputDevices?.get("default")
+              || Array.from(device.audio?.availableInputDevices?.values?.() || [])[0];
+
+            if (defaultInput?.deviceId) {
+              await device.audio?.setInputDevice?.(defaultInput.deviceId);
+            }
+          } catch (audioErr) {
+            console.warn("[VoiceDevice] Failed to prime microphone input:", audioErr);
+          }
+        })();
       });
 
       device.on("unregistered", () => {
@@ -355,7 +374,16 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
     try {
       setIsConnecting(true);
       setCallStatus("connecting");
-      const call = await deviceRef.current.connect({ params: { To: to, ...params } });
+      const call = await deviceRef.current.connect({
+        params: { To: to, ...params },
+        rtcConstraints: {
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        },
+      });
       setupCallHandlers(call);
       return call;
     } catch (err: unknown) {
