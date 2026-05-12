@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStoreTubeSummary } from '@/hooks/useStoreTubeSummary';
 import { useStoreTubeBrandsKpi } from '@/hooks/useStoreTubeBrandsKpi';
-import { useStoreInventoryByBrand } from '@/hooks/useStoreInventoryByBrand';
+import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
 import { useStoreLifetimeByBrand } from '@/hooks/useStoreLifetimeByBrand';
 import { useStoreSoldByBrandWindow } from '@/hooks/useStoreSoldByBrandWindow';
 import { useStoreRecentInvoices } from '@/hooks/useStoreRecentInvoices';
