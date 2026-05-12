@@ -39,6 +39,7 @@ export default function BrandaroCRMDashboard() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [tab, setTab] = useState<'leads' | 'invoices' | 'activity'>('leads');
 
   const { data: business } = useQuery({
     queryKey: ['business-brandaro'],
