@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
 import { Navigate, NavLink, Outlet, useSearchParams } from "react-router-dom";
-import { useIsDPAdmin } from "@/hooks/useDPAdmin";
+import { useDPAdminStatus } from "@/hooks/useDPAdmin";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Users, TrendingUp, Layers, Megaphone,
@@ -55,7 +55,8 @@ function ImpersonationBanner() {
 
 export default function DPAdminLayout({ children }: { children?: ReactNode }) {
   const { user, loading } = useAuth();
-  const { data: isAdmin, isLoading: roleLoading } = useIsDPAdmin();
+  const { data: adminStatus, isLoading: roleLoading } = useDPAdminStatus();
+  const isAdmin = adminStatus?.state === "admin";
   const queryClient = useQueryClient();
   const [debugAdminCheck, setDebugAdminCheck] = useState<boolean | null>(null);
   const [refreshingSession, setRefreshingSession] = useState(false);
@@ -105,6 +106,24 @@ export default function DPAdminLayout({ children }: { children?: ReactNode }) {
     );
   }
   if (!user) return <Navigate to="/auth" replace />;
+  if (adminStatus?.state === "schema_pending") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-md text-center space-y-3">
+          <Shield className="h-12 w-12 text-amber-500 mx-auto" />
+          <h1 className="text-2xl font-bold">Backend setup pending</h1>
+          <p className="text-muted-foreground">
+            The Dynasty Partners backend schema is not yet exposed. This is a
+            one-time configuration step. Please contact support to enable it,
+            then reload this page.
+          </p>
+          <p className="text-xs text-muted-foreground/70 font-mono">
+            {adminStatus.message}
+          </p>
+        </div>
+      </div>
+    );
+  }
   if (!isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
