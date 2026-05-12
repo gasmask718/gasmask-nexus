@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, Mail, Phone, Globe, Save, Loader2, ArrowLeft, Shield } from 'lucide-react';
+import { User, Mail, Phone, Globe, Save, Loader2, ArrowLeft, Shield, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -23,6 +23,49 @@ function VAProfileInner() {
     email: '',
     preferred_language: 'en',
   });
+  const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' });
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
+
+  const handleChangePassword = async () => {
+    if (!user?.email) return;
+    if (pwd.next.length < 8) {
+      toast.error('New password must be at least 8 characters');
+      return;
+    }
+    if (pwd.next !== pwd.confirm) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    setPwdSaving(true);
+    try {
+      // Re-verify current password
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: pwd.current,
+      });
+      if (signInErr) throw new Error('Current password is incorrect');
+
+      const { error } = await supabase.auth.updateUser({ password: pwd.next });
+      if (error) throw error;
+
+      // Audit log (best effort)
+      try {
+        await (supabase as any).from('user_audit_log').insert({
+          user_id: user.id,
+          event: 'password_changed',
+          metadata: { source: 'va_profile' },
+        });
+      } catch (_) { /* table may not exist; ignore */ }
+
+      toast.success('Password updated successfully');
+      setPwd({ current: '', next: '', confirm: '' });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update password');
+    } finally {
+      setPwdSaving(false);
+    }
+  };
 
   // Fetch profile
   const { data: profile, isLoading, refetch } = useQuery({
@@ -258,6 +301,70 @@ function VAProfileInner() {
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save Changes
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Change Password */}
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white text-lg flex items-center gap-2">
+              <Lock className="h-5 w-5 text-cyan-400" /> Change Password
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Current Password</label>
+              <Input
+                type={showPwd ? 'text' : 'password'}
+                value={pwd.current}
+                onChange={e => setPwd(p => ({ ...p, current: e.target.value }))}
+                placeholder="Enter current password"
+                className="bg-slate-700 border-slate-600 text-white"
+                autoComplete="current-password"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">New Password</label>
+              <Input
+                type={showPwd ? 'text' : 'password'}
+                value={pwd.next}
+                onChange={e => setPwd(p => ({ ...p, next: e.target.value }))}
+                placeholder="At least 8 characters"
+                className="bg-slate-700 border-slate-600 text-white"
+                autoComplete="new-password"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Confirm New Password</label>
+              <Input
+                type={showPwd ? 'text' : 'password'}
+                value={pwd.confirm}
+                onChange={e => setPwd(p => ({ ...p, confirm: e.target.value }))}
+                placeholder="Re-enter new password"
+                className="bg-slate-700 border-slate-600 text-white"
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPwd(s => !s)}
+                className="text-slate-400 hover:text-white gap-1"
+              >
+                {showPwd ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                {showPwd ? 'Hide' : 'Show'} passwords
+              </Button>
+              <Button
+                onClick={handleChangePassword}
+                disabled={pwdSaving || !pwd.current || !pwd.next || !pwd.confirm}
+                className="bg-cyan-600 hover:bg-cyan-700 gap-2"
+              >
+                {pwdSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                Update Password
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
