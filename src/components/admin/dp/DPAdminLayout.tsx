@@ -106,6 +106,24 @@ export default function DPAdminLayout({ children }: { children?: ReactNode }) {
     );
   }
   if (!user) return <Navigate to="/auth" replace />;
+  if (adminStatus?.state === "schema_pending") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-md text-center space-y-3">
+          <Shield className="h-12 w-12 text-amber-500 mx-auto" />
+          <h1 className="text-2xl font-bold">Backend setup pending</h1>
+          <p className="text-muted-foreground">
+            The Dynasty Partners backend schema is not yet exposed. This is a
+            one-time configuration step. Please contact support to enable it,
+            then reload this page.
+          </p>
+          <p className="text-xs text-muted-foreground/70 font-mono">
+            {adminStatus.message}
+          </p>
+        </div>
+      </div>
+    );
+  }
   if (!isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
