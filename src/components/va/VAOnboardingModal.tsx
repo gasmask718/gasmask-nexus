@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useVASession } from '@/contexts/VASessionContext';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Loader2, Clock, User, PhoneOutgoing } from 'lucide-react';
+import { Phone, Loader2, Clock, User, PhoneOutgoing, Unlock } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   useNumberLastSessions,
   formatDateTime,
@@ -25,6 +26,24 @@ export function VAOnboardingModal() {
   const [selectedLang, setSelectedLang] = useState<'en' | 'es' | null>(null);
   const [selectedNumber, setSelectedNumber] = useState<PhoneNumber | null>(null);
   const [loading, setLoading] = useState(false);
+  const [releasingId, setReleasingId] = useState<string | null>(null);
+  const qc = useQueryClient();
+
+  const handleForceRelease = async (numberId: string, label: string) => {
+    setReleasingId(numberId);
+    try {
+      const { data, error } = await (supabase as any).rpc('force_release_va_number', {
+        p_number_id: numberId,
+      });
+      if (error) throw error;
+      toast.success(`Released ${label} (${data ?? 0} session${data === 1 ? '' : 's'} closed)`);
+      await qc.invalidateQueries({ queryKey: ['brandaro-number-last-sessions'] });
+    } catch (e: any) {
+      toast.error(`Force release failed: ${e?.message || 'unknown error'}`);
+    } finally {
+      setReleasingId(null);
+    }
+  };
 
   // Pull numbers from /communication/provision-numbers source of truth (dc_phone_numbers).
   // Exclude toll-free + Brandaro AI Agent numbers (cannot be used as VA caller-ID).
@@ -126,10 +145,24 @@ export function VAOnboardingModal() {
                           </div>
                         </div>
                         {isActive ? (
-                          <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
-                            <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            Currently Active
-                          </Badge>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              Currently Active
+                            </Badge>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleForceRelease(num.id, num.friendly_name); }}
+                              disabled={releasingId === num.id}
+                              title="Force release this number (use if a previous session never closed)"
+                              className="inline-flex items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300 hover:bg-amber-500/20 disabled:opacity-50"
+                            >
+                              {releasingId === num.id
+                                ? <Loader2 className="h-3 w-3 animate-spin" />
+                                : <Unlock className="h-3 w-3" />}
+                              Force release
+                            </button>
+                          </div>
                         ) : (
                           <Badge className="bg-slate-700/40 text-slate-300 border border-slate-600 shrink-0">
                             🟢 {t('va.onboarding.available')}

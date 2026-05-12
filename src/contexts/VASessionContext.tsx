@@ -146,6 +146,24 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
     }
   }, [state.twilioNumberId, state.sessionId]);
 
+  // Heartbeat: keep last_seen_at fresh so the server-side staleness check
+  // (15-min window in brandaro_number_last_sessions) doesn't expire a real
+  // active session. Without this, server treats the number as released.
+  useEffect(() => {
+    if (!state.sessionId) return;
+    const ping = async () => {
+      try {
+        await (supabase as any)
+          .from('va_sessions')
+          .update({ last_seen_at: new Date().toISOString() })
+          .eq('id', state.sessionId);
+      } catch (_) { /* best effort */ }
+    };
+    ping();
+    const id = window.setInterval(ping, 60_000);
+    return () => window.clearInterval(id);
+  }, [state.sessionId]);
+
   // Cleanup on unmount / page close — use fetch with keepalive (sendBeacon alternative that supports headers)
   useEffect(() => {
     const cleanup = () => {
