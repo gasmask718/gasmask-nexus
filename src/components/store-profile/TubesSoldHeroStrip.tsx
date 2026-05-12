@@ -46,7 +46,7 @@ const fmt = (n: number | null | undefined) => Number(n || 0).toLocaleString();
 export function TubesSoldHeroStrip({ storeId }: Props) {
   const summary = useStoreTubeSummary(storeId);
   const brands = useStoreTubeBrandsKpi(storeId);
-  const inventoryByBrand = useStoreInventoryByBrand(storeId);
+  const inventoryByBrand = useStoreInventoryBySku(storeId);
   const lifetimeByBrand = useStoreLifetimeByBrand(storeId);
   const last30ByBrand = useStoreSoldByBrandWindow(storeId, 'last_30_days');
   const priorMonthByBrand = useStoreSoldByBrandWindow(storeId, 'prior_month');
