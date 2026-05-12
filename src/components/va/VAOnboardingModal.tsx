@@ -26,6 +26,24 @@ export function VAOnboardingModal() {
   const [selectedLang, setSelectedLang] = useState<'en' | 'es' | null>(null);
   const [selectedNumber, setSelectedNumber] = useState<PhoneNumber | null>(null);
   const [loading, setLoading] = useState(false);
+  const [releasingId, setReleasingId] = useState<string | null>(null);
+  const qc = useQueryClient();
+
+  const handleForceRelease = async (numberId: string, label: string) => {
+    setReleasingId(numberId);
+    try {
+      const { data, error } = await (supabase as any).rpc('force_release_va_number', {
+        p_number_id: numberId,
+      });
+      if (error) throw error;
+      toast.success(`Released ${label} (${data ?? 0} session${data === 1 ? '' : 's'} closed)`);
+      await qc.invalidateQueries({ queryKey: ['brandaro-number-last-sessions'] });
+    } catch (e: any) {
+      toast.error(`Force release failed: ${e?.message || 'unknown error'}`);
+    } finally {
+      setReleasingId(null);
+    }
+  };
 
   // Pull numbers from /communication/provision-numbers source of truth (dc_phone_numbers).
   // Exclude toll-free + Brandaro AI Agent numbers (cannot be used as VA caller-ID).
