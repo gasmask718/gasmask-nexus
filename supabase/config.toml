@@ -505,3 +505,6 @@ verify_jwt = false
 [functions.va-send-email]
 verify_jwt = false
 
+
+[functions.brandaro-recording-proxy]
+verify_jwt = false
