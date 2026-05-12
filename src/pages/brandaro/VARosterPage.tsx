@@ -27,6 +27,8 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
+import { spanishOrFilter } from '@/lib/spanishLeadFilter';
+import { isSpanishLead } from '@/lib/spanishLeadDetector';
 
 interface VA {
   user_id: string;
