@@ -55,7 +55,8 @@ function ImpersonationBanner() {
 
 export default function DPAdminLayout({ children }: { children?: ReactNode }) {
   const { user, loading } = useAuth();
-  const { data: isAdmin, isLoading: roleLoading } = useIsDPAdmin();
+  const { data: adminStatus, isLoading: roleLoading } = useDPAdminStatus();
+  const isAdmin = adminStatus?.state === "admin";
   const queryClient = useQueryClient();
   const [debugAdminCheck, setDebugAdminCheck] = useState<boolean | null>(null);
   const [refreshingSession, setRefreshingSession] = useState(false);
