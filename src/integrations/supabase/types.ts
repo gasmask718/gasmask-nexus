@@ -87228,8 +87228,14 @@ export type Database = {
           address_street: string | null
           address_zip: string | null
           alt_phone: string | null
+          approval_status: string | null
+          approved_at: string | null
+          approved_by_user_id: string | null
           assigned_ambassador_id: string | null
           boro: string | null
+          captured_at: string | null
+          captured_by_user_id: string | null
+          captured_role: Database["public"]["Enums"]["app_role"] | null
           company_id: string | null
           connected_group_id: string | null
           created_at: string | null
@@ -87271,6 +87277,7 @@ export type Database = {
           reactivation_attempts: number
           reactivation_priority: string | null
           region_id: string | null
+          rejection_reason: string | null
           responsiveness: Database["public"]["Enums"]["responsiveness"] | null
           rpa_status: string | null
           sells_flowers: boolean | null
@@ -87297,6 +87304,7 @@ export type Database = {
           sticker_taken_down: boolean | null
           sticker_taken_down_at: string | null
           store_code: string | null
+          storefront_photo_url: string | null
           tags: string[] | null
           type: Database["public"]["Enums"]["store_type"]
           updated_at: string | null
@@ -87312,8 +87320,14 @@ export type Database = {
           address_street?: string | null
           address_zip?: string | null
           alt_phone?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by_user_id?: string | null
           assigned_ambassador_id?: string | null
           boro?: string | null
+          captured_at?: string | null
+          captured_by_user_id?: string | null
+          captured_role?: Database["public"]["Enums"]["app_role"] | null
           company_id?: string | null
           connected_group_id?: string | null
           created_at?: string | null
@@ -87355,6 +87369,7 @@ export type Database = {
           reactivation_attempts?: number
           reactivation_priority?: string | null
           region_id?: string | null
+          rejection_reason?: string | null
           responsiveness?: Database["public"]["Enums"]["responsiveness"] | null
           rpa_status?: string | null
           sells_flowers?: boolean | null
@@ -87381,6 +87396,7 @@ export type Database = {
           sticker_taken_down?: boolean | null
           sticker_taken_down_at?: string | null
           store_code?: string | null
+          storefront_photo_url?: string | null
           tags?: string[] | null
           type: Database["public"]["Enums"]["store_type"]
           updated_at?: string | null
@@ -87396,8 +87412,14 @@ export type Database = {
           address_street?: string | null
           address_zip?: string | null
           alt_phone?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by_user_id?: string | null
           assigned_ambassador_id?: string | null
           boro?: string | null
+          captured_at?: string | null
+          captured_by_user_id?: string | null
+          captured_role?: Database["public"]["Enums"]["app_role"] | null
           company_id?: string | null
           connected_group_id?: string | null
           created_at?: string | null
@@ -87439,6 +87461,7 @@ export type Database = {
           reactivation_attempts?: number
           reactivation_priority?: string | null
           region_id?: string | null
+          rejection_reason?: string | null
           responsiveness?: Database["public"]["Enums"]["responsiveness"] | null
           rpa_status?: string | null
           sells_flowers?: boolean | null
@@ -87465,6 +87488,7 @@ export type Database = {
           sticker_taken_down?: boolean | null
           sticker_taken_down_at?: string | null
           store_code?: string | null
+          storefront_photo_url?: string | null
           tags?: string[] | null
           type?: Database["public"]["Enums"]["store_type"]
           updated_at?: string | null
@@ -116124,6 +116148,7 @@ export type Database = {
         | "dead"
         | "reactivation_target"
         | "test"
+        | "pending"
       store_type:
         | "bodega"
         | "smoke_shop"
@@ -116789,6 +116814,7 @@ export const Constants = {
         "dead",
         "reactivation_target",
         "test",
+        "pending",
       ],
       store_type: [
         "bodega",
