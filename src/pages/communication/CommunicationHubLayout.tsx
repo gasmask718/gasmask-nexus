@@ -96,6 +96,7 @@ const FLOOR_4_VOICE: FloorSection = {
   icon: Radio,
   items: [
     { path: "agents", label: "AI Agents", icon: Bot },
+    { path: "bland-dial", label: "Bland AI Dial", icon: Bot, highlight: true },
     { path: "voice-matrix", label: "Voice Matrix", icon: Radio },
     { path: "language", label: "Language", icon: Languages },
   ],
