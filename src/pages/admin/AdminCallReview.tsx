@@ -501,15 +501,22 @@ export default function AdminCallReview() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <audio controls className="w-full" src={selectedCall.recording_url} />
-                      <a
-                        href={selectedCall.recording_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 mt-2"
-                      >
-                        <Download className="h-3 w-3" /> Download Recording
-                      </a>
+                      {(() => {
+                        const proxied = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/brandaro-recording-proxy?url=${encodeURIComponent(selectedCall.recording_url)}`;
+                        return (
+                          <>
+                            <audio controls className="w-full" src={proxied} />
+                            <a
+                              href={proxied}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 mt-2"
+                            >
+                              <Download className="h-3 w-3" /> Download Recording
+                            </a>
+                          </>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
                 ) : selectedCall.call_sid ? (
