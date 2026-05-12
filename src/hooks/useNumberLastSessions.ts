@@ -52,12 +52,23 @@ export function useNumberLastSessions() {
         );
       }
 
+      const numIds = base.map((r) => r.number_id).filter(Boolean) as string[];
+      const activeMap = new Map<string, boolean>();
+      if (numIds.length) {
+        const { data: nums } = await (supabase as any)
+          .from('brandaro_phone_numbers')
+          .select('id, is_active')
+          .in('id', numIds);
+        (nums ?? []).forEach((n: any) => activeMap.set(n.id, !!n.is_active));
+      }
+
       const enriched = base.map((r) => {
         const p = r.last_va_id ? profileMap.get(r.last_va_id) : undefined;
         return {
           ...r,
           today_dials: Number(r.today_dials ?? 0),
           total_dials: Number(r.total_dials ?? 0),
+          is_active: activeMap.get(r.number_id) ?? true,
           va_name: p?.name ?? null,
           va_email: p?.email ?? null,
         };
