@@ -6,7 +6,7 @@ import { VAOnboardingModal } from '@/components/va/VAOnboardingModal';
 import { VALeadsTable } from '@/components/va/VALeadsTable';
 import { VACallPanel } from '@/components/va/VACallPanel';
 import { VAInvoiceModal } from '@/components/va/VAInvoiceModal';
-import { VAInvoicesTable } from '@/components/va/VAInvoicesTable';
+import { BrandaroInvoicesDataTable } from '@/components/invoice/BrandaroInvoicesDataTable';
 import { VAScripts } from '@/components/va/VAScripts';
 import { VARebuttals } from '@/components/va/VARebuttals';
 import { VAFAQs } from '@/components/va/VAFAQs';
