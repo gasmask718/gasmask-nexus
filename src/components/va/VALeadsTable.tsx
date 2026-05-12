@@ -166,6 +166,15 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
             className="pl-9 bg-secondary border-border text-foreground text-sm h-9"
           />
         </div>
+        <Select value={languageFilter} onValueChange={(v) => setLanguageFilter(v as 'all' | 'spanish')}>
+          <SelectTrigger className="w-[160px] h-9 bg-secondary border-border text-foreground text-sm">
+            <SelectValue placeholder="Language" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All languages</SelectItem>
+            <SelectItem value="spanish">🇲🇽 Spanish ({spanishCount})</SelectItem>
+          </SelectContent>
+        </Select>
         {onStartCampaign && (
           <Button
             size="sm"
