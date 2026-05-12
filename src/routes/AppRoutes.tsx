@@ -1100,6 +1100,19 @@ const BrandPlaceholder = lazy(() => import('@/pages/BrandPlaceholder'));
 const GovernanceCommandCenter = lazy(() => import('@/pages/admin/GovernanceCommandCenter'));
 const Floor9Observation = lazy(() => import('@/pages/floor9/Floor9Observation'));
 
+// Dynasty Partners Admin
+const DPAdminLayout = lazy(() => import('@/components/admin/dp/DPAdminLayout'));
+const DPDashboard = lazy(() => import('@/pages/admin/dp/DPDashboard'));
+const DPPartners = lazy(() => import('@/pages/admin/dp/DPPartners'));
+const DPMrr = lazy(() => import('@/pages/admin/dp/DPMrr'));
+const DPPlatforms = lazy(() => import('@/pages/admin/dp/DPPlatforms'));
+const DPRecruitment = lazy(() => import('@/pages/admin/dp/DPRecruitment'));
+const DPFinancials = lazy(() => import('@/pages/admin/dp/DPFinancials'));
+const DPControls = lazy(() => import('@/pages/admin/dp/DPControls'));
+const DPActivity = lazy(() => import('@/pages/admin/dp/DPActivity'));
+const DPManual = lazy(() => import('@/pages/admin/dp/DPManual'));
+const DPNotifications = lazy(() => import('@/pages/admin/dp/DPNotifications'));
+
 /**
  * ProtectedLayout - Wraps all protected routes with auth and layout
  */
