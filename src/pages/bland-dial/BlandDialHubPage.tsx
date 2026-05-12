@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,8 +11,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Bot, Phone, MessageSquare, History, Send, ChevronLeft, ChevronRight, ExternalLink, Loader2 } from "lucide-react";
+import { Bot, Phone, MessageSquare, History, Send, ChevronLeft, ChevronRight, ExternalLink, Loader2, Search, X, SkipForward, StopCircle, CheckCircle2, PhoneCall } from "lucide-react";
 
 const PAGE_SIZE = 20;
 const BRANDARO_SITE = "https://www.brandarodigital.com";
