@@ -131,26 +131,6 @@ export function VALiveAnalysisModal({ active, callLogId, leadId, leadName, start
     }
   }, [active]);
 
-  useEffect(() => {
-    if (!active) return;
-
-    const interval = window.setInterval(() => {
-      const cumulative = cumulativeRef.current.trim();
-      if (!cumulative || inFlightRef.current) return;
-
-      const sent = lastSentRef.current;
-      if (cumulative === sent) return;
-
-      const chunk = cumulative.slice(sent.length).trim();
-      if (chunk.length < 12) return;
-
-      lastSentRef.current = cumulative;
-      void askClaude(chunk, cumulative);
-    }, 6000);
-
-    return () => window.clearInterval(interval);
-  }, [active, askClaude]);
-
   const askClaude = useCallback(async (text: string, cumulativeOverride?: string) => {
     const chunk = text.trim();
     if (!chunk || inFlightRef.current) return;
@@ -181,6 +161,26 @@ export function VALiveAnalysisModal({ active, callLogId, leadId, leadName, start
       inFlightRef.current = false;
     }
   }, [transcript, callLogId, leadId, leadName, startedAt]);
+
+  useEffect(() => {
+    if (!active) return;
+
+    const interval = window.setInterval(() => {
+      const cumulative = cumulativeRef.current.trim();
+      if (!cumulative || inFlightRef.current) return;
+
+      const sent = lastSentRef.current;
+      if (cumulative === sent) return;
+
+      const chunk = cumulative.slice(sent.length).trim();
+      if (chunk.length < 12) return;
+
+      lastSentRef.current = cumulative;
+      void askClaude(chunk, cumulative);
+    }, 6000);
+
+    return () => window.clearInterval(interval);
+  }, [active, askClaude]);
 
   // Script search
   const { data: scripts = [] } = useQuery({
