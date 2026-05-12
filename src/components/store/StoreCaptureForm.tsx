@@ -15,7 +15,17 @@ interface StoreCaptureFormProps {
   onCancel?: () => void;
   defaultName?: string;
   defaultAddress?: string;
+  /** If provided, the new store is written with this connected_group_id immediately. */
+  connectedGroupId?: string | null;
 }
+
+const STORE_TYPE_OPTIONS = [
+  { value: 'bodega', label: 'Bodega / Deli' },
+  { value: 'smoke_shop', label: 'Smoke Shop' },
+  { value: 'gas_station', label: 'Gas Station' },
+  { value: 'wholesaler', label: 'Wholesaler' },
+  { value: 'other', label: 'Other' },
+] as const;
 
 type AppRoleString =
   | 'owner'
