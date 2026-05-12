@@ -286,15 +286,14 @@ serve(async (req: Request) => {
       }
       recipient = toNumber;
 
-      const smsBody =
-        invoice.payment_type === 'split' && (invoice.deposit_payment_link || invoice.final_payment_link)
-          ? `Invoice ${invoice.invoice_number || ""} from Brandaro\n` +
-            `Total: $${Number(invoice.total || 0).toFixed(2)}\n` +
-            (invoice.deposit_payment_link ? `Pay 50% deposit: ${invoice.deposit_payment_link}\n` : "") +
-            (invoice.final_payment_link ? `Pay final 50%: ${invoice.final_payment_link}` : "")
-          : `Invoice ${invoice.invoice_number || ""} from Brandaro\n` +
-            `Total: $${Number(invoice.total || 0).toFixed(2)}\n` +
-            (invoice.payment_link ? `Pay: ${invoice.payment_link}` : "");
+      const total = fmtMoney(invoice.total);
+      const link =
+        invoice.payment_type === 'split'
+          ? (invoice.deposit_payment_link || invoice.final_payment_link || invoice.payment_link)
+          : invoice.payment_link;
+      const smsBody = link
+        ? `Brandaro: $${total} invoice ready. Pay: ${link}`
+        : `Brandaro: $${total} invoice ${invoice.invoice_number || ""} ready.`;
 
       const twilioParams: Record<string, string> = { To: recipient, Body: smsBody };
       if (messagingServiceSid && !fromNumber) twilioParams.MessagingServiceSid = messagingServiceSid;
