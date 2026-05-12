@@ -12119,8 +12119,11 @@ export type Database = {
           lead_id: string | null
           notes: string | null
           paid_at: string | null
+          payment_link: string | null
+          payment_link_created_at: string | null
           status: string
           stripe_invoice_id: string | null
+          stripe_session_id: string | null
           subtotal: number
           tax: number
           total: number
@@ -12138,8 +12141,11 @@ export type Database = {
           lead_id?: string | null
           notes?: string | null
           paid_at?: string | null
+          payment_link?: string | null
+          payment_link_created_at?: string | null
           status?: string
           stripe_invoice_id?: string | null
+          stripe_session_id?: string | null
           subtotal?: number
           tax?: number
           total?: number
@@ -12157,8 +12163,11 @@ export type Database = {
           lead_id?: string | null
           notes?: string | null
           paid_at?: string | null
+          payment_link?: string | null
+          payment_link_created_at?: string | null
           status?: string
           stripe_invoice_id?: string | null
+          stripe_session_id?: string | null
           subtotal?: number
           tax?: number
           total?: number
