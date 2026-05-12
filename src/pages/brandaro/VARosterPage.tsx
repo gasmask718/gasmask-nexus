@@ -712,7 +712,16 @@ export default function VARosterPage() {
                           aria-label={`Select ${lead.business_name}`}
                         />
                       </td>
-                      <td className="py-2 font-medium">{lead.business_name}</td>
+                      <td className="py-2 font-medium">
+                        <span className="inline-flex items-center gap-1.5">
+                          {lead.business_name}
+                          {isSpanishLead(lead) && (
+                            <Badge className="text-[9px] px-1.5 py-0 border bg-amber-500/15 text-amber-500 border-amber-500/30">
+                              🇲🇽 ES
+                            </Badge>
+                          )}
+                        </span>
+                      </td>
                       <td className="py-2">
                         {lead.assigned_va ? (
                           <Badge className="text-[10px] border bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
