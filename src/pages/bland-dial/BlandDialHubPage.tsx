@@ -133,7 +133,7 @@ function DialPanel() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("brandaro_qualified_leads")
-        .select("id, business_name, phone_number, email, industry, city, state, lead_status, priority_tier, priority_score, has_website")
+        .select("id, business_name, phone_number, email, industry, category, subtypes, city, state, lead_status, priority_tier, priority_score, has_website")
         .not("phone_number", "is", null)
         .order("priority_score", { ascending: false, nullsFirst: false })
         .limit(2000);
@@ -144,6 +144,8 @@ function DialPanel() {
         phone: r.phone_number,
         email: r.email,
         industry: r.industry,
+        category: r.category,
+        subtypes: r.subtypes,
         location: [r.city, r.state].filter(Boolean).join(", ") || null,
         status: r.lead_status ?? r.priority_tier ?? null,
         intent_score: r.priority_score != null ? Math.round(Number(r.priority_score)) : null,
