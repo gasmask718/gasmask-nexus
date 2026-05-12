@@ -113,6 +113,7 @@ function DialPanel() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [languageFilter, setLanguageFilter] = useState<"all" | "spanish">("all");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [queue, setQueue] = useState<BrandaroLead[]>([]);
   const [phase, setPhase] = useState<CallPhase>("idle");
