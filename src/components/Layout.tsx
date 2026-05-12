@@ -187,6 +187,22 @@ const DYNASTY_NAVIGATION = {
       { path: '/admin/merge-dry-run', label: 'Data Quality — Merge Dry-Run', icon: Database, adminOnly: true },
     ],
   },
+  dynastyPartners: {
+    id: 'dynasty-partners',
+    name: '🤝 Dynasty Partners Hub',
+    items: [
+      { path: '/admin', label: 'Partners Dashboard', icon: Building, adminOnly: true },
+      { path: '/admin/partners', label: 'Partners', icon: Users, adminOnly: true },
+      { path: '/admin/mrr', label: 'MRR', icon: TrendingUp, adminOnly: true },
+      { path: '/admin/platforms', label: 'Platforms', icon: Layers, adminOnly: true },
+      { path: '/admin/recruitment', label: 'Recruitment', icon: Megaphone, adminOnly: true },
+      { path: '/admin/financials', label: 'Financials', icon: DollarSign, adminOnly: true },
+      { path: '/admin/controls', label: 'Kill Switches', icon: Power, adminOnly: true },
+      { path: '/admin/activity', label: 'Activity', icon: Activity, adminOnly: true },
+      { path: '/admin/manual', label: 'Manual Tools', icon: Wrench, adminOnly: true },
+      { path: '/admin/notifications', label: 'Notifications', icon: Bell, adminOnly: true },
+    ],
+  },
   grabbaSkyscraper: [
     {
       id: 'grabba-command',
