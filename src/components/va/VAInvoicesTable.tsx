@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Send, Copy, Loader2, FileText, Mail } from 'lucide-react';
+import { Eye, Send, Copy, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { VAInvoiceDetailDialog } from './VAInvoiceDetailDialog';
+import { SendInvoiceDialog } from '@/components/invoice/SendInvoiceDialog';
 
 type FilterKey = 'all' | 'draft' | 'sent' | 'paid';
 
