@@ -275,7 +275,16 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
                         />
                       </td>
                     )}
-                    <td className="p-3 font-medium">{lead.business_name || '—'}</td>
+                    <td className="p-3 font-medium">
+                      <span className="inline-flex items-center gap-1.5">
+                        {lead.business_name || '—'}
+                        {isSpanishLead(lead) && (
+                          <Badge className="text-[9px] px-1.5 py-0 border bg-amber-500/15 text-amber-500 border-amber-500/30">
+                            🇲🇽 ES
+                          </Badge>
+                        )}
+                      </span>
+                    </td>
                     <td className="p-3 font-mono text-xs text-muted-foreground">{lead.phone || '—'}</td>
                     <td className="p-3 text-xs text-muted-foreground hidden md:table-cell">{lead.email || '—'}</td>
                     <td className="p-3">
