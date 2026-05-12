@@ -59,9 +59,9 @@ export function NoteDetailModal({ open, onOpenChange, note }: NoteDetailModalPro
               <FileText className="h-4 w-4 text-primary" />
               Note Content
             </div>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/30 p-3 rounded-lg">
+            <div className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg max-h-[60vh] overflow-y-auto break-words whitespace-pre-wrap min-w-0">
               {note.note_text}
-            </p>
+            </div>
           </div>
 
           <Separator />
