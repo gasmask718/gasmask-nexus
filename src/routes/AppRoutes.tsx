@@ -3231,6 +3231,15 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
 
+      {/* Pending Store Captures — Approval Queue */}
+      <Route path="/admin/captures" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']}>
+            <Layout><PendingCaptures /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
       {/* QA Command Center - Production Readiness */}
       <Route path="/admin/qa-command-center" element={
         <ProtectedRoute>
