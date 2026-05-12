@@ -1,7 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import nodemailer from "npm:nodemailer@6.9.14";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -23,6 +21,72 @@ function escapeHtml(s: any): string {
 
 function fmtMoney(n: any): string {
   return Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+async function sendInvoiceEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const sendGridApiKey = Deno.env.get("SENDGRID_API_KEY");
+
+  if (sendGridApiKey) {
+    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${sendGridApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: { email: "hello@brandaro.com", name: "Brandaro" },
+        reply_to: { email: "hello@brandaro.com", name: "Brandaro" },
+        personalizations: [{ to: [{ email: params.to }], subject: params.subject }],
+        content: [
+          { type: "text/plain", value: params.text },
+          { type: "text/html", value: params.html },
+        ],
+      }),
+    });
+
+    if (response.ok) {
+      const messageId = response.headers.get("X-Message-Id");
+      console.log("sendgrid sent:", messageId || "ok");
+      return { ok: true };
+    }
+
+    const errText = await response.text();
+    return { ok: false, error: `SendGrid error [${response.status}]: ${errText}` };
+  }
+
+  const gmailUser = Deno.env.get("VA_GMAIL_USER");
+  const gmailPass = Deno.env.get("VA_GMAIL_APP_PASSWORD");
+  if (!gmailUser || !gmailPass) {
+    return { ok: false, error: "Email is not configured (SENDGRID_API_KEY or VA_GMAIL_USER / VA_GMAIL_APP_PASSWORD required)" };
+  }
+
+  const { default: nodemailer } = await import("npm:nodemailer@6.9.14");
+  try {
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: { user: gmailUser, pass: gmailPass },
+    });
+
+    const info = await transporter.sendMail({
+      from: `"Brandaro" <${gmailUser}>`,
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+      text: params.text,
+    });
+
+    console.log("nodemailer sent:", info.messageId);
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: `Nodemailer error: ${e?.message || String(e)}` };
+  }
 }
 
 function renderEmailHtml(invoice: any, lead: any): string {
@@ -229,36 +293,20 @@ serve(async (req: Request) => {
     let sendResult: { ok: boolean; error?: string } = { ok: false };
 
     if (channel === "email") {
-      const GMAIL_USER = Deno.env.get("VA_GMAIL_USER");
-      const GMAIL_PASS = Deno.env.get("VA_GMAIL_APP_PASSWORD");
-      if (!GMAIL_USER || !GMAIL_PASS) {
-        return new Response(JSON.stringify({ error: "Email is not configured (VA_GMAIL_USER / VA_GMAIL_APP_PASSWORD missing)" }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
       const html = renderEmailHtml(invoice, lead);
       const subject = `Invoice ${invoice.invoice_number || ""} from Brandaro - $${Number(invoice.total || 0).toFixed(2)}`;
-
-      try {
-        const transporter = nodemailer.createTransport({
-          host: "smtp.gmail.com",
-          port: 465,
-          secure: true,
-          auth: { user: GMAIL_USER, pass: GMAIL_PASS },
-        });
-
-        const info = await transporter.sendMail({
-          from: `"Brandaro" <${GMAIL_USER}>`,
-          to: recipient,
-          subject,
-          html,
-        });
-        console.log("nodemailer sent:", info.messageId);
-        sendResult = { ok: true };
-      } catch (e: any) {
-        sendResult = { ok: false, error: `Nodemailer error: ${e?.message || String(e)}` };
-      }
+      const plainLines = [
+        `Brandaro invoice ${invoice.invoice_number || ""}`.trim(),
+        `Amount due: $${fmtMoney(invoice.total)}`,
+        invoice.due_date ? `Due: ${new Date(invoice.due_date).toLocaleDateString("en-US")}` : "",
+        invoice.payment_link ? `Pay here: ${invoice.payment_link}` : "",
+      ].filter(Boolean);
+      sendResult = await sendInvoiceEmail({
+        to: recipient,
+        subject,
+        html,
+        text: plainLines.join("\n"),
+      });
     } else {
       const accountSid = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID") || Deno.env.get("TWILIO_ACCOUNT_SID");
       const authToken = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN") || Deno.env.get("TWILIO_AUTH_TOKEN");
