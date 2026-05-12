@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { 
   ChevronDown, ChevronRight, Menu, X, LogOut, User, Settings,
   Crown, Building2, MessageSquare, Package, Truck, FileText, 
@@ -15,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DYNASTY OS — COMPLETE EMPIRE NAVIGATION (FULLY RESTORED)
