@@ -97,6 +97,9 @@ import {
   Lock,
   Unlock,
   Shield,
+  Megaphone,
+  Power,
+  Wrench,
   ShieldCheck,
   Key,
   User,
@@ -185,6 +188,22 @@ const DYNASTY_NAVIGATION = {
       { path: '/admin/store-deduplication', label: 'Data Quality — Store Dedup', icon: Database, adminOnly: true },
       { path: '/admin/store-merge-preview', label: 'Data Quality — Store Merge Preview', icon: Database, adminOnly: true },
       { path: '/admin/merge-dry-run', label: 'Data Quality — Merge Dry-Run', icon: Database, adminOnly: true },
+    ],
+  },
+  dynastyPartners: {
+    id: 'dynasty-partners',
+    name: '🤝 Dynasty Partners Hub',
+    items: [
+      { path: '/admin', label: 'Partners Dashboard', icon: Building, adminOnly: true },
+      { path: '/admin/partners', label: 'Partners', icon: Users, adminOnly: true },
+      { path: '/admin/mrr', label: 'MRR', icon: TrendingUp, adminOnly: true },
+      { path: '/admin/platforms', label: 'Platforms', icon: Layers, adminOnly: true },
+      { path: '/admin/recruitment', label: 'Recruitment', icon: Megaphone, adminOnly: true },
+      { path: '/admin/financials', label: 'Financials', icon: DollarSign, adminOnly: true },
+      { path: '/admin/controls', label: 'Kill Switches', icon: Power, adminOnly: true },
+      { path: '/admin/activity', label: 'Activity', icon: Activity, adminOnly: true },
+      { path: '/admin/manual', label: 'Manual Tools', icon: Wrench, adminOnly: true },
+      { path: '/admin/notifications', label: 'Notifications', icon: Bell, adminOnly: true },
     ],
   },
   grabbaSkyscraper: [
@@ -801,6 +820,20 @@ const Layout = ({ children }: LayoutProps) => {
             DYNASTY_NAVIGATION.securityGovernance.id,
             DYNASTY_NAVIGATION.securityGovernance.name,
             DYNASTY_NAVIGATION.securityGovernance.items
+          )}
+        </div>
+      )}
+
+      {/* 🤝 DYNASTY PARTNERS HUB — Admin operator console */}
+      {['owner', 'admin', 'ceo'].includes(role || '') && (
+        <div className="pt-2 border-t border-rose-500/30">
+          <div className="px-3 py-1 text-[10px] font-semibold uppercase text-rose-400/80 tracking-wider">
+            🤝 Dynasty Partners
+          </div>
+          {renderSection(
+            DYNASTY_NAVIGATION.dynastyPartners.id,
+            DYNASTY_NAVIGATION.dynastyPartners.name,
+            DYNASTY_NAVIGATION.dynastyPartners.items
           )}
         </div>
       )}
