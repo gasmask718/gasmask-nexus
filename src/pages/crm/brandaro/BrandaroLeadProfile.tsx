@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft, Loader2, Sparkles, Package, FileText, Target, Wrench,
-  Plus, CheckCircle2, AlertTriangle,
+  Plus, CheckCircle2, AlertTriangle, CreditCard, Copy, ExternalLink,
 } from 'lucide-react';
 
 type Lead = any;
