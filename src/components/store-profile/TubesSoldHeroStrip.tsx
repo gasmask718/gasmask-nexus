@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStoreTubeSummary } from '@/hooks/useStoreTubeSummary';
 import { useStoreTubeBrandsKpi } from '@/hooks/useStoreTubeBrandsKpi';
-import { useStoreInventoryByBrand } from '@/hooks/useStoreInventoryByBrand';
+import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
 import { useStoreLifetimeByBrand } from '@/hooks/useStoreLifetimeByBrand';
 import { useStoreSoldByBrandWindow } from '@/hooks/useStoreSoldByBrandWindow';
 import { useStoreRecentInvoices } from '@/hooks/useStoreRecentInvoices';
@@ -46,7 +46,7 @@ const fmt = (n: number | null | undefined) => Number(n || 0).toLocaleString();
 export function TubesSoldHeroStrip({ storeId }: Props) {
   const summary = useStoreTubeSummary(storeId);
   const brands = useStoreTubeBrandsKpi(storeId);
-  const inventoryByBrand = useStoreInventoryByBrand(storeId);
+  const inventoryByBrand = useStoreInventoryBySku(storeId);
   const lifetimeByBrand = useStoreLifetimeByBrand(storeId);
   const last30ByBrand = useStoreSoldByBrandWindow(storeId, 'last_30_days');
   const priorMonthByBrand = useStoreSoldByBrandWindow(storeId, 'prior_month');
@@ -269,7 +269,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
           ariaLabel="Stock breakdown"
           expandedTitle="Stock Breakdown"
           isLoading={inventoryByBrand.isLoading}
-          isEmpty={!inventoryByBrand.isLoading && brandInventory.length === 0}
+          isEmpty={!inventoryByBrand.isLoading && brandInventory.every(b => b.status === 'never_offered')}
           emptyMessage="No inventory data yet. Log via Tube Intelligence below ↓"
           collapsedView={
             <div className="flex items-center gap-3">
@@ -286,8 +286,11 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
             <>
               <div className="space-y-1.5">
                 {brandInventory.map(b => (
-                  <div key={b.brand} className="flex items-center justify-between text-xs">
-                    <span className="capitalize truncate max-w-[140px]">{b.brand}</span>
+                  <div key={b.product_id} className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[10px] shrink-0">{getSkuStatusIcon(b.status)}</span>
+                      <span className="truncate max-w-[140px]">{b.display}</span>
+                    </span>
                     <span className="flex items-center gap-1.5">
                       <span className={cn('font-semibold tabular-nums', getStockStatusColor(b.tubes_remaining))}>
                         {b.tubes_remaining}
@@ -302,11 +305,12 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total</span>
                   <span className="text-sm font-bold text-blue-600">{fmt(onHand)} tubes</span>
                 </div>
-                {brandInventory[0]?.last_updated && (
-                  <p className="text-[10px] text-muted-foreground">
-                    Updated {dynastyRelative(brandInventory[0].last_updated)}
-                  </p>
-                )}
+                {(() => {
+                  const latest = brandInventory.map(b => b.last_updated).filter((d): d is string => !!d).sort().reverse()[0];
+                  return latest ? (
+                    <p className="text-[10px] text-muted-foreground">Updated {dynastyRelative(latest)}</p>
+                  ) : null;
+                })()}
               </div>
             </>
           }

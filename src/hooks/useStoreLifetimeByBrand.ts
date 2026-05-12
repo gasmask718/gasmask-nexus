@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { CANONICAL_TUBE_SKUS, type SkuStatus } from '@/lib/inventory/skuDisplay';
+import { CANONICAL_TUBE_SKUS, resolveProductIdForBrand, type SkuStatus } from '@/lib/inventory/skuDisplay';
 
 export interface BrandLifetime {
   product_id: string;
@@ -65,24 +65,25 @@ export function useStoreLifetimeByBrand(storeId: string | null | undefined) {
         });
       }
 
-      // 3. Pull inventory (brand-level until Session 8 adds product_id)
+      // 3. Pull inventory rolled up by product_id (brand string is fallback)
       const { data: inventory } = await supabase
         .from('store_tube_inventory')
-        .select('brand, current_tubes_left')
-        .eq('store_id', storeId);
+        .select('product_id, brand, current_tubes_left')
+        .eq('store_id', storeId)
+        .eq('is_simulation', false);
 
-      const brandInv = new Map<string, number>();
+      const invByProductId = new Map<string, number>();
       inventory?.forEach((inv) => {
-        const key = (inv.brand || '').toLowerCase().replace(/\s+/g, '');
-        brandInv.set(key, (brandInv.get(key) ?? 0) + Number(inv.current_tubes_left ?? 0));
+        const pid = inv.product_id ?? resolveProductIdForBrand(inv.brand);
+        if (!pid) return;
+        invByProductId.set(pid, (invByProductId.get(pid) ?? 0) + Number(inv.current_tubes_left ?? 0));
       });
 
-      // 4. Compute percentages + statuses
+      // 4. Compute percentages + statuses (per product_id, not brand string)
       const total = Array.from(result.values()).reduce((s, r) => s + r.tubes, 0);
       result.forEach((row) => {
         row.percentage = total > 0 ? Math.round((row.tubes / total) * 100) : 0;
-        const sku = CANONICAL_TUBE_SKUS.find((s) => s.product_id === row.product_id)!;
-        row.inventory_count = sku.inventory_keys.reduce((sum, k) => sum + (brandInv.get(k) ?? 0), 0);
+        row.inventory_count = invByProductId.get(row.product_id) ?? 0;
         row.status = row.tubes > 0 ? 'bought' : row.inventory_count > 0 ? 'staged' : 'never_offered';
       });
 
