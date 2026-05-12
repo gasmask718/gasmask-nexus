@@ -19,6 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import CRMLayout from '../CRMLayout';
 import LastUserLogsTable from '@/components/crm/brandaro/LastUserLogsTable';
+import { BrandaroInvoicesDataTable } from '@/components/invoice/BrandaroInvoicesDataTable';
 
 const PAGE_SIZE = 25;
 
@@ -245,6 +246,11 @@ export default function BrandaroCRMDashboard() {
             </CardContent>
           </Card>
         )}
+
+        <BrandaroInvoicesDataTable
+          title="Brandaro Invoices"
+          description="All invoices issued across Brandaro VAs — paid & unpaid tracking."
+        />
 
         <LastUserLogsTable />
       </div>
