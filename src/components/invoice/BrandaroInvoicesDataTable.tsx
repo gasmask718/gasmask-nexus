@@ -4,7 +4,7 @@
  * Surfaces paid / unpaid statuses, search, pagination, and quick actions.
  */
 import { useMemo, useState } from 'react';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,13 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import {
-  Eye, Send, Copy, Loader2, FileText, Mail, Search,
+  Eye, Send, Copy, Loader2, FileText, Search,
   CheckCircle2, AlertCircle, DollarSign, Receipt,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { VAInvoiceDetailDialog } from '@/components/va/VAInvoiceDetailDialog';
+import { SendInvoiceDialog } from '@/components/invoice/SendInvoiceDialog';
 
 type FilterKey = 'all' | 'paid' | 'unpaid' | 'draft' | 'sent';
 
@@ -51,14 +52,13 @@ export function BrandaroInvoicesDataTable({
   title = 'Invoices',
   description = 'All Brandaro invoices — paid & unpaid tracking.',
 }: Props) {
-  const qc = useQueryClient();
   const [filter, setFilter] = useState<FilterKey>('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE_DEFAULT);
   const [selected, setSelected] = useState<any | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [sendInvoice, setSendInvoice] = useState<any | null>(null);
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['brandaro-invoices-table', vaId ?? 'all'],
@@ -74,24 +74,6 @@ export function BrandaroInvoicesDataTable({
       return data || [];
     },
     refetchInterval: 15000,
-  });
-
-  const sendMutation = useMutation({
-    mutationFn: async (invoiceId: string) => {
-      const { data, error } = await supabase.functions.invoke('va-send-invoice', {
-        body: { invoice_id: invoiceId, channel: 'email' },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      return data;
-    },
-    onMutate: (id) => setSendingId(id),
-    onSettled: () => setSendingId(null),
-    onSuccess: (data: any) => {
-      toast.success(`Invoice sent to ${data?.sent_to || 'customer'}`);
-      qc.invalidateQueries({ queryKey: ['brandaro-invoices-table'] });
-    },
-    onError: (e: any) => toast.error(e.message || 'Failed to send invoice'),
   });
 
   const counts = useMemo(() => {
@@ -303,16 +285,9 @@ export function BrandaroInvoicesDataTable({
                                 size="sm"
                                 variant="ghost"
                                 className="h-7 text-xs text-cyan-600 hover:bg-cyan-500/10"
-                                disabled={sendingId === inv.id}
-                                onClick={() => sendMutation.mutate(inv.id)}
+                                onClick={() => setSendInvoice(inv)}
                               >
-                                {sendingId === inv.id ? (
-                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                ) : inv.status === 'draft' ? (
-                                  <Send className="h-3 w-3 mr-1" />
-                                ) : (
-                                  <Mail className="h-3 w-3 mr-1" />
-                                )}
+                                <Send className="h-3 w-3 mr-1" />
                                 {inv.status === 'draft' ? 'Send' : 'Resend'}
                               </Button>
                             )}
@@ -350,6 +325,13 @@ export function BrandaroInvoicesDataTable({
         invoice={selected}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
+      />
+
+      <SendInvoiceDialog
+        open={!!sendInvoice}
+        invoice={sendInvoice}
+        onClose={() => setSendInvoice(null)}
+        invalidateKeys={[['brandaro-invoices-table'], ['brandaro-invoices-table', vaId ?? 'all']]}
       />
     </Card>
   );
