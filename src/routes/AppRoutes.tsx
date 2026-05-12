@@ -1112,6 +1112,7 @@ const DPControls = lazy(() => import('@/pages/admin/dp/DPControls'));
 const DPActivity = lazy(() => import('@/pages/admin/dp/DPActivity'));
 const DPManual = lazy(() => import('@/pages/admin/dp/DPManual'));
 const DPNotifications = lazy(() => import('@/pages/admin/dp/DPNotifications'));
+const AdminDebug = lazy(() => import('@/pages/admin/dp/AdminDebug'));
 
 /**
  * ProtectedLayout - Wraps all protected routes with auth and layout
@@ -1226,6 +1227,7 @@ export default function AppRoutes() {
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* DYNASTY PARTNERS — ADMIN PANEL (David's view, RLS-gated by partner_admins)   */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route path="/admin-debug" element={<AdminDebug />} />
       <Route path="/admin" element={<DPAdminLayout />}>
         <Route index element={<DPDashboard />} />
         <Route path="partners" element={<DPPartners />} />
