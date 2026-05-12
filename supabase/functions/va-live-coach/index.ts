@@ -74,8 +74,8 @@ Analyze and respond with ONLY a compact JSON object — no prose, no markdown:
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5",
-        max_tokens: 400,
-        temperature: 0.2,
+        max_tokens: 220,
+        temperature: 0.1,
         messages: [{ role: "user", content: prompt }],
       }),
     });
@@ -93,8 +93,8 @@ Analyze and respond with ONLY a compact JSON object — no prose, no markdown:
         },
         body: JSON.stringify({
           model: "claude-3-5-haiku-20241022",
-          max_tokens: 400,
-          temperature: 0.2,
+          max_tokens: 220,
+          temperature: 0.1,
           messages: [{ role: "user", content: prompt }],
         }),
       });
