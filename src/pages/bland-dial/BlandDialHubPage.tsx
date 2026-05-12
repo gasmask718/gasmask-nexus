@@ -78,54 +78,450 @@ export default function BlandDialHubPage() {
   );
 }
 
-// ─────────────────── Dial Panel ───────────────────
-function DialPanel() {
-  const [phone, setPhone] = useState("");
-  const [name, setName] = useState("");
-  const [business, setBusiness] = useState("");
-  const [context, setContext] = useState("");
-  const [busy, setBusy] = useState(false);
-  const qc = useQueryClient();
+// ─────────────────── Dial Panel — Brandaro Lead Sequential Dialer ───────────────────
+const LEAD_STATUS_OPTIONS = [
+  { value: "interested", label: "Interested" },
+  { value: "callback", label: "Call Back" },
+  { value: "no_answer", label: "No Answer" },
+  { value: "call_again", label: "Call Again" },
+  { value: "voicemail", label: "Voicemail Left" },
+  { value: "wrong_number", label: "Wrong Number" },
+  { value: "not_interested", label: "Not Interested" },
+  { value: "qualified", label: "Qualified" },
+  { value: "won", label: "Won" },
+  { value: "dnc", label: "Do Not Call" },
+];
 
-  const start = async () => {
-    if (!phone.trim()) return toast.error("Phone number is required");
-    setBusy(true);
+interface BrandaroLead {
+  id: string;
+  business_name: string | null;
+  phone: string | null;
+  email: string | null;
+  industry: string | null;
+  location: string | null;
+  status: string | null;
+  intent_score: number | null;
+  has_website: boolean | null;
+}
+
+type CallPhase = "idle" | "dialing" | "in_call" | "review" | "saving";
+
+function DialPanel() {
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [queue, setQueue] = useState<BrandaroLead[]>([]);
+  const [phase, setPhase] = useState<CallPhase>("idle");
+  const [activeLead, setActiveLead] = useState<BrandaroLead | null>(null);
+  const [activeCallId, setActiveCallId] = useState<string | null>(null);
+  const [activeLogId, setActiveLogId] = useState<string | null>(null);
+  const [activeLog, setActiveLog] = useState<any>(null);
+  const [newStatus, setNewStatus] = useState<string>("callback");
+  const [statusNote, setStatusNote] = useState("");
+  const [elapsed, setElapsed] = useState(0);
+  const pollRef = useRef<number | null>(null);
+  const timerRef = useRef<number | null>(null);
+
+  // Brandaro leads (only with phone numbers)
+  const { data: leads = [], isLoading } = useQuery({
+    queryKey: ["brandaro-leads-dialer"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("brandaro_leads_master")
+        .select("id, business_name, phone, email, industry, location, status, intent_score, has_website")
+        .not("phone", "is", null)
+        .order("intent_score", { ascending: false, nullsFirst: false })
+        .limit(2000);
+      if (error) throw error;
+      return (data ?? []) as BrandaroLead[];
+    },
+    staleTime: 30_000,
+  });
+
+  const statuses = useMemo(
+    () => Array.from(new Set(leads.map((l) => l.status).filter(Boolean) as string[])),
+    [leads],
+  );
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return leads.filter((l) => {
+      const matchesSearch = !q
+        || l.business_name?.toLowerCase().includes(q)
+        || l.phone?.includes(q)
+        || l.email?.toLowerCase().includes(q)
+        || l.location?.toLowerCase().includes(q);
+      const matchesStatus = statusFilter === "all" || l.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [leads, search, statusFilter]);
+
+  const toggle = (id: string) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const toggleAllVisible = () => {
+    const ids = filtered.map((l) => l.id);
+    const allSel = ids.every((id) => selectedIds.includes(id));
+    setSelectedIds((prev) =>
+      allSel ? prev.filter((id) => !ids.includes(id)) : Array.from(new Set([...prev, ...ids])),
+    );
+  };
+
+  const stopPolling = () => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+  };
+  useEffect(() => () => stopPolling(), []);
+
+  const startQueue = () => {
+    if (selectedIds.length === 0) return toast.error("Select at least one Brandaro lead");
+    const selected = leads.filter((l) => selectedIds.includes(l.id) && l.phone);
+    if (selected.length === 0) return toast.error("None of the selected leads have a phone number");
+    setQueue(selected);
+    setSelectedIds([]);
+    void dialNext(selected);
+  };
+
+  const dialNext = async (q?: BrandaroLead[]) => {
+    const remaining = q ?? queue;
+    if (remaining.length === 0) {
+      setPhase("idle");
+      setActiveLead(null);
+      toast.success("Queue complete", { description: "All selected leads have been called." });
+      return;
+    }
+    const next = remaining[0];
+    setQueue(remaining.slice(1));
+    setActiveLead(next);
+    setActiveCallId(null);
+    setActiveLogId(null);
+    setActiveLog(null);
+    setNewStatus("callback");
+    setStatusNote("");
+    setElapsed(0);
+    setPhase("dialing");
+
     try {
+      const phoneRaw = (next.phone ?? "").trim();
+      const phone = phoneRaw.startsWith("+") ? phoneRaw : `+1${phoneRaw.replace(/\D/g, "")}`;
       const { data, error } = await supabase.functions.invoke("bland-start-call", {
-        body: { phone_number: phone.trim(), name: name.trim() || undefined, business_name: business.trim() || undefined, context: context.trim() || undefined },
+        body: {
+          phone_number: phone,
+          name: next.business_name ?? undefined,
+          business_name: next.business_name ?? undefined,
+          context: [
+            next.industry ? `Industry: ${next.industry}` : null,
+            next.location ? `Location: ${next.location}` : null,
+            next.has_website === false ? "They have NO website yet — strong lead." : null,
+            next.intent_score ? `Intent score: ${next.intent_score}` : null,
+          ].filter(Boolean).join(" · "),
+        },
       });
       if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success("Call initiated", { description: `Call ID ${(data as any)?.call_id ?? "(pending)"}. Brandaro link will be sent via SMS.` });
-      setPhone(""); setName(""); setBusiness(""); setContext("");
-      qc.invalidateQueries({ queryKey: ["bland-call-logs"] });
+      const d = data as any;
+      if (d?.error) throw new Error(d.error);
+      const callId = d.call_id as string | null;
+      if (!callId) throw new Error("Bland did not return a call_id");
+      setActiveCallId(callId);
+      setPhase("in_call");
+      toast.success(`Calling ${next.business_name ?? phone}`);
+
+      // Elapsed timer
+      timerRef.current = window.setInterval(() => setElapsed((s) => s + 1), 1000);
+
+      // Poll bland_call_logs for completion
+      pollRef.current = window.setInterval(async () => {
+        const { data: logs } = await supabase
+          .from("bland_call_logs")
+          .select("id, call_outcome, transcript, recording_url, intent_summary, urgency, raw_payload, structured_outcome_received_at, created_at")
+          .eq("call_id", callId)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        const log = logs?.[0];
+        if (!log) return;
+        setActiveLogId(log.id);
+        const done =
+          log.structured_outcome_received_at != null
+          || (log.call_outcome && log.call_outcome !== "in_progress")
+          || !!log.transcript;
+        if (done) {
+          stopPolling();
+          setActiveLog(log);
+          setNewStatus(suggestStatus(log));
+          setPhase("review");
+        }
+      }, 5000);
     } catch (e: any) {
-      toast.error("Failed to start call", { description: e?.message ?? String(e) });
-    } finally {
-      setBusy(false);
+      toast.error("Call failed to start", { description: e?.message ?? String(e) });
+      setPhase("idle");
+      setActiveLead(null);
     }
   };
+
+  const suggestStatus = (log: any): string => {
+    const o = (log?.call_outcome ?? "").toLowerCase();
+    if (o.includes("interest")) return "interested";
+    if (o.includes("callback")) return "callback";
+    if (o.includes("voicemail")) return "voicemail";
+    if (o.includes("no_answer") || o.includes("no answer")) return "no_answer";
+    if (o.includes("not_interested") || o.includes("not interested")) return "not_interested";
+    if (o.includes("wrong")) return "wrong_number";
+    return "callback";
+  };
+
+  const saveAndNext = async () => {
+    if (!activeLead) return;
+    setPhase("saving");
+    try {
+      const updates: any = {
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = await supabase
+        .from("brandaro_leads_master")
+        .update(updates)
+        .eq("id", activeLead.id);
+      if (error) throw error;
+
+      // Optional note appended to bland_call_logs raw_payload.notes
+      if (statusNote.trim() && activeLogId) {
+        await supabase
+          .from("bland_call_logs")
+          .update({ raw_payload: { ...(activeLog?.raw_payload ?? {}), operator_note: statusNote.trim(), operator_status: newStatus } })
+          .eq("id", activeLogId);
+      }
+
+      toast.success(`Status updated → ${newStatus}`);
+      qc.invalidateQueries({ queryKey: ["brandaro-leads-dialer"] });
+      qc.invalidateQueries({ queryKey: ["bland-call-logs"] });
+      void dialNext();
+    } catch (e: any) {
+      toast.error("Could not save status", { description: e?.message ?? String(e) });
+      setPhase("review");
+    }
+  };
+
+  const skipCurrent = () => {
+    stopPolling();
+    toast.info("Skipped — moving to next");
+    void dialNext();
+  };
+  const endQueue = () => {
+    stopPolling();
+    setQueue([]);
+    setActiveLead(null);
+    setActiveCallId(null);
+    setActiveLog(null);
+    setPhase("idle");
+    toast.info("Queue ended");
+  };
+
+  const fmtMMSS = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+  // ── UI ──
+  if (phase !== "idle") {
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <PhoneCall className={`h-5 w-5 ${phase === "in_call" || phase === "dialing" ? "text-green-500 animate-pulse" : "text-primary"}`} />
+                <div>
+                  <CardTitle className="text-lg">{activeLead?.business_name ?? "Active Call"}</CardTitle>
+                  <CardDescription className="font-mono text-xs">{activeLead?.phone}</CardDescription>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{queue.length} remaining</Badge>
+                <Button variant="ghost" size="sm" onClick={endQueue}><StopCircle className="h-4 w-4 mr-1" />End</Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {phase === "dialing" && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Dialing via Bland AI…
+              </div>
+            )}
+            {phase === "in_call" && (
+              <div className="flex items-center justify-between rounded-lg border bg-green-500/5 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
+                  <div>
+                    <p className="text-sm font-medium">Aria is on the call</p>
+                    <p className="text-xs text-muted-foreground font-mono">Bland call ID: {activeCallId}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-sm">{fmtMMSS(elapsed)}</span>
+                  <Button size="sm" variant="outline" onClick={skipCurrent}><SkipForward className="h-4 w-4 mr-1" />Skip</Button>
+                </div>
+              </div>
+            )}
+
+            {phase === "review" && activeLog && (
+              <div className="space-y-4">
+                <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <p className="text-sm font-medium">Call complete · Duration {fmtMMSS(elapsed)}</p>
+                    {outcomeBadge(activeLog.call_outcome)}
+                  </div>
+                  {activeLog.recording_url && (
+                    <div>
+                      <Label className="text-xs uppercase text-muted-foreground">Recording</Label>
+                      <audio controls src={activeLog.recording_url} className="w-full mt-1" />
+                    </div>
+                  )}
+                  {activeLog.intent_summary && (
+                    <div>
+                      <Label className="text-xs uppercase text-muted-foreground">Summary</Label>
+                      <p className="text-sm whitespace-pre-wrap mt-1">{activeLog.intent_summary}</p>
+                    </div>
+                  )}
+                  {activeLog.transcript && (
+                    <details>
+                      <summary className="text-xs cursor-pointer text-muted-foreground">View transcript</summary>
+                      <pre className="text-xs whitespace-pre-wrap mt-2 max-h-64 overflow-auto bg-background rounded p-3 border">{activeLog.transcript}</pre>
+                    </details>
+                  )}
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-[200px_1fr]">
+                  <div>
+                    <Label>Set Lead Status</Label>
+                    <Select value={newStatus} onValueChange={setNewStatus}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {LEAD_STATUS_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Note (optional)</Label>
+                    <Input value={statusNote} onChange={(e) => setStatusNote(e.target.value)} placeholder="Best callback Tue 2pm…" />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2">
+                  <Button variant="ghost" onClick={skipCurrent}>Skip without saving</Button>
+                  <Button onClick={saveAndNext} disabled={(phase as CallPhase) === "saving"}>
+                    {(phase as CallPhase) === "saving" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                    Save & Call Next ({queue.length})
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {queue.length > 0 && phase !== "review" && (
+              <div>
+                <Label className="text-xs uppercase text-muted-foreground">Up next</Label>
+                <ScrollArea className="h-32 mt-1 border rounded-md">
+                  <div className="p-2 space-y-1">
+                    {queue.map((l, i) => (
+                      <div key={l.id} className="flex items-center justify-between text-xs px-2 py-1">
+                        <span><span className="text-muted-foreground mr-2">{i + 1}.</span>{l.business_name ?? "—"}</span>
+                        <span className="font-mono text-muted-foreground">{l.phone}</span>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Launch AI Call</CardTitle>
-        <CardDescription>
-          Aria — Brandaro's AI rep — calls the prospect, pitches the agency, and texts them <span className="font-mono">{BRANDARO_SITE}</span> after the call.
-          Transcript, recording and summary land in Call History automatically.
-        </CardDescription>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <CardTitle>Select Brandaro Leads to Dial</CardTitle>
+            <CardDescription>
+              Pick one or many Brandaro leads. Aria calls them one at a time — after each call you'll see the summary, recording, transcript, and can set the lead's new status before auto-advancing.
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">{leads.length} leads w/ phone</Badge>
+            <Badge className="bg-primary/10 text-primary border-primary/30">{selectedIds.length} selected</Badge>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div><Label>Phone (E.164) *</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+15551234567" /></div>
-          <div><Label>Prospect Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Owner" /></div>
-          <div className="md:col-span-2"><Label>Business Name</Label><Input value={business} onChange={(e) => setBusiness(e.target.value)} placeholder="Acme Pizzeria" /></div>
-          <div className="md:col-span-2"><Label>Operator Context (optional)</Label><Textarea value={context} onChange={(e) => setContext(e.target.value)} placeholder="Cold lead from Yelp scrape, no current website" rows={3} /></div>
+        <div className="grid gap-2 md:grid-cols-[1fr_220px_auto]">
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search business / phone / email / location" className="pl-9" />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              {statuses.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {selectedIds.length > 0 && (
+            <Button variant="ghost" onClick={() => setSelectedIds([])}><X className="h-4 w-4 mr-1" />Clear</Button>
+          )}
         </div>
-        <Button onClick={start} disabled={busy} className="w-full md:w-auto">
-          {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Phone className="h-4 w-4 mr-2" />}
-          Start Bland AI Call
-        </Button>
+
+        {isLoading ? (
+          <Skeleton className="h-72 w-full" />
+        ) : (
+          <div className="border rounded-md">
+            <ScrollArea className="h-[420px]">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={filtered.length > 0 && filtered.every((l) => selectedIds.includes(l.id))}
+                        onCheckedChange={toggleAllVisible}
+                      />
+                    </TableHead>
+                    <TableHead>Business</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead className="hidden md:table-cell">Industry</TableHead>
+                    <TableHead className="hidden lg:table-cell">Location</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Intent</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.length === 0 ? (
+                    <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">No matching Brandaro leads.</TableCell></TableRow>
+                  ) : filtered.slice(0, 500).map((l) => (
+                    <TableRow key={l.id} className="cursor-pointer hover:bg-muted/40" onClick={() => toggle(l.id)}>
+                      <TableCell><Checkbox checked={selectedIds.includes(l.id)} onCheckedChange={() => toggle(l.id)} /></TableCell>
+                      <TableCell className="font-medium">{l.business_name ?? "—"}</TableCell>
+                      <TableCell className="font-mono text-xs">{l.phone}</TableCell>
+                      <TableCell className="hidden md:table-cell text-xs text-muted-foreground">{l.industry ?? "—"}</TableCell>
+                      <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">{l.location ?? "—"}</TableCell>
+                      <TableCell>{l.status ? <Badge variant="outline" className="text-[10px]">{l.status}</Badge> : "—"}</TableCell>
+                      <TableCell className="text-right font-bold text-primary">{l.intent_score ?? 0}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            Showing {Math.min(filtered.length, 500)} of {filtered.length} filtered · Calls run sequentially (one at a time).
+          </p>
+          <Button onClick={startQueue} disabled={selectedIds.length === 0}>
+            <PhoneCall className="h-4 w-4 mr-2" />
+            Start Sequential Calls ({selectedIds.length})
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
