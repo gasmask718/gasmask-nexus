@@ -88,7 +88,7 @@ Analyze and respond with ONLY a compact JSON object — no prose, no markdown:
     if (!claudeRes.ok) {
       const errText = await claudeRes.text();
       console.error("Claude haiku err:", claudeRes.status, errText);
-      claudeRes = await callClaude("claude-3-5-sonnet-20241022");
+      claudeRes = await callClaude("claude-sonnet-4-5");
       if (!claudeRes.ok) {
         const t = await claudeRes.text();
         throw new Error(`Claude failed: ${claudeRes.status} ${t}`);
