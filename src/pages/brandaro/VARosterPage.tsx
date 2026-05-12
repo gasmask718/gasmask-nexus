@@ -46,6 +46,9 @@ interface LeadRow {
   phone_number: string | null;
   priority_score: number | null;
   assigned_va: string | null;
+  industry?: string | null;
+  category?: string | null;
+  subtypes?: string | null;
 }
 
 const DEFAULT_PAGE_SIZE = 50;
