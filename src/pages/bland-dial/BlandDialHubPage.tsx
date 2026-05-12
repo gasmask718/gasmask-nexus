@@ -160,6 +160,8 @@ function DialPanel() {
     [leads],
   );
 
+  const spanishCount = useMemo(() => leads.filter(isSpanishLead).length, [leads]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return leads.filter((l) => {
@@ -169,9 +171,10 @@ function DialPanel() {
         || l.email?.toLowerCase().includes(q)
         || l.location?.toLowerCase().includes(q);
       const matchesStatus = statusFilter === "all" || l.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesLanguage = languageFilter === "all" || isSpanishLead(l);
+      return matchesSearch && matchesStatus && matchesLanguage;
     });
-  }, [leads, search, statusFilter]);
+  }, [leads, search, statusFilter, languageFilter]);
 
   const toggle = (id: string) =>
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
