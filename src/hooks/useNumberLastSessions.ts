@@ -22,6 +22,7 @@ export interface NumberLastSession {
   today_dials: number;
   total_dials: number;
   last_dialed_at: string | null;
+  is_active?: boolean | null;
   va_name?: string | null;
   va_email?: string | null;
 }
