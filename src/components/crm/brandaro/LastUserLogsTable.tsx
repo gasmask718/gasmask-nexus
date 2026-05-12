@@ -33,6 +33,20 @@ export default function LastUserLogsTable() {
     queryClient.invalidateQueries({ queryKey: ['admin-phone-numbers'] });
   };
 
+  // Optimistically patch a row in the cached query data so the UI updates instantly.
+  const patchRow = (numberId: string, patch: Record<string, any>) => {
+    queryClient.setQueryData<any>(['brandaro-number-last-sessions'], (prev: any) => {
+      if (!prev?.rows) return prev;
+      const rows = prev.rows.map((r: any) =>
+        r.number_id === numberId ? { ...r, ...patch } : r
+      );
+      const byId = new Map(prev.byId ?? []);
+      const existing = byId.get(numberId);
+      if (existing) byId.set(numberId, { ...existing, ...patch });
+      return { rows, byId };
+    });
+  };
+
   const forceRelease = async (numberId: string) => {
     if (!confirm('Force-release this number? Any active VA session will be ended.')) return;
     setBusyId(numberId);
@@ -48,6 +62,14 @@ export default function LastUserLogsTable() {
         .eq('number_id', numberId)
         .is('ended_at', null);
       if (e2) throw e2;
+      // Optimistic UI: clear active session markers immediately.
+      patchRow(numberId, {
+        in_use: false,
+        assigned_va_id: null,
+        session_id: null,
+        ended_at: new Date().toISOString(),
+        session_active: false,
+      });
       toast.success('Number released');
       invalidate();
     } catch (err: any) {
@@ -58,6 +80,8 @@ export default function LastUserLogsTable() {
   };
 
   const toggleActive = async (numberId: string, next: boolean) => {
+    // Optimistic flip first so the switch reflects instantly.
+    patchRow(numberId, { is_active: next });
     setBusyId(numberId);
     try {
       const { error } = await (supabase as any)
@@ -68,6 +92,8 @@ export default function LastUserLogsTable() {
       toast.success(next ? 'Number activated' : 'Number deactivated');
       invalidate();
     } catch (err: any) {
+      // Roll back on failure.
+      patchRow(numberId, { is_active: !next });
       toast.error(err.message ?? 'Failed to update number');
     } finally {
       setBusyId(null);
