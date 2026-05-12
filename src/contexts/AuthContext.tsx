@@ -8,6 +8,7 @@ import {
 } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
@@ -65,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [backendUnreachable, setBackendUnreachable] = useState(false);
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
   const initialized = useRef(false);
   const manualSignIn = useRef(false);
@@ -185,6 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(newSession?.user ?? null);
           setBackendUnreachable(false);
           if (newSession?.user) fetchUserRole(newSession.user.id);
+          qc.invalidateQueries({ queryKey: ["dp-is-admin"] });
           if (manualSignIn.current) {
             manualSignIn.current = false;
           }
@@ -194,6 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(newSession);
           setUser(newSession?.user ?? null);
           setBackendUnreachable(false);
+          qc.invalidateQueries({ queryKey: ["dp-is-admin"] });
           break;
         }
         case "SIGNED_OUT": {
