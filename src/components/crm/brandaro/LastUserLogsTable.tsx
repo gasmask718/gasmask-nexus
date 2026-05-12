@@ -6,8 +6,13 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, History, Phone, PhoneOutgoing } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Loader2, History, Phone, PhoneOutgoing, Unlock } from 'lucide-react';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   useNumberLastSessions,
   formatDateTime,
