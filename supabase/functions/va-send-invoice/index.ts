@@ -15,53 +15,133 @@ interface Body {
   recipient?: string;
 }
 
+function escapeHtml(s: any): string {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function fmtMoney(n: any): string {
+  return Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function renderEmailHtml(invoice: any, lead: any): string {
-  const lineItemsHtml = (invoice.line_items || [])
+  const items = invoice.line_items || [];
+  const lineItemsHtml = items
     .map(
-      (i: any) =>
-        `<tr><td style="padding:8px;border-bottom:1px solid #e5e7eb">${i.description || ""}</td>` +
-        `<td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right">$${Number(i.price || 0).toFixed(2)}</td></tr>`,
+      (i: any, idx: number) => `
+        <tr>
+          <td style="padding:14px 16px;border-bottom:1px solid #eef2f7;color:#0f172a;font-size:14px;line-height:1.4">${escapeHtml(i.description || `Item ${idx + 1}`)}</td>
+          <td style="padding:14px 16px;border-bottom:1px solid #eef2f7;color:#0f172a;font-size:14px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums">$${fmtMoney(i.price)}</td>
+        </tr>`,
     )
     .join("");
 
+  const billTo = escapeHtml(invoice.customer_name || lead?.business_name || lead?.full_name || "Customer");
+  const invNum = escapeHtml(invoice.invoice_number || "");
+  const dueDate = invoice.due_date
+    ? new Date(invoice.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : "";
+  const issueDate = new Date(invoice.created_at || Date.now()).toLocaleDateString("en-US", {
+    month: "short", day: "numeric", year: "numeric",
+  });
+
+  const ctaButton = (href: string, label: string, primary = true) => `
+    <a href="${escapeHtml(href)}"
+       style="display:inline-block;background:${primary ? "#0f172a" : "#ffffff"};color:${primary ? "#ffffff" : "#0f172a"};border:1px solid #0f172a;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;margin:6px 4px">
+      ${escapeHtml(label)}
+    </a>`;
+
+  const ctaBlock =
+    invoice.payment_type === "split" && (invoice.deposit_payment_link || invoice.final_payment_link)
+      ? `<div style="text-align:center;padding:8px 0 4px">
+          ${invoice.deposit_payment_link ? ctaButton(invoice.deposit_payment_link, `Pay 50% Deposit — $${fmtMoney(invoice.deposit_amount)}`, true) : ""}
+          ${invoice.final_payment_link ? ctaButton(invoice.final_payment_link, `Pay Final 50% — $${fmtMoney(invoice.final_amount)}`, false) : ""}
+          <p style="margin:12px 0 0;color:#64748b;font-size:12px;line-height:1.5">50% deposit starts the work. Final 50% due on completion.</p>
+        </div>`
+      : invoice.payment_link
+      ? `<div style="text-align:center;padding:8px 0 4px">
+          ${ctaButton(invoice.payment_link, `Pay $${fmtMoney(invoice.total)}`, true)}
+          <p style="margin:12px 0 0;color:#64748b;font-size:12px">Secure payment powered by Stripe</p>
+        </div>`
+      : "";
+
   return `<!DOCTYPE html>
-<html><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#0f172a">
-  <div style="background:linear-gradient(135deg,#0891b2,#0e7490);color:white;padding:24px;border-radius:12px 12px 0 0">
-    <h1 style="margin:0;font-size:22px">Invoice ${invoice.invoice_number || ""}</h1>
-    <p style="margin:4px 0 0;opacity:.9">From Brandaro</p>
-  </div>
-  <div style="background:#f8fafc;padding:20px;border:1px solid #e2e8f0;border-top:none">
-    <p style="margin:0 0 8px"><strong>Bill to:</strong> ${invoice.customer_name || lead?.business_name || ""}</p>
-    ${invoice.service_type ? `<p style="margin:0 0 8px"><strong>Service:</strong> ${invoice.service_type}</p>` : ""}
-    ${invoice.due_date ? `<p style="margin:0 0 8px"><strong>Due:</strong> ${new Date(invoice.due_date).toLocaleDateString()}</p>` : ""}
-    <table style="width:100%;border-collapse:collapse;margin-top:16px;background:white;border-radius:8px;overflow:hidden">
-      <thead><tr style="background:#0f172a;color:white">
-        <th style="padding:10px;text-align:left">Description</th>
-        <th style="padding:10px;text-align:right">Price</th>
-      </tr></thead>
-      <tbody>${lineItemsHtml}</tbody>
-      <tfoot><tr style="background:#f1f5f9">
-        <td style="padding:12px;font-weight:bold">Total</td>
-        <td style="padding:12px;text-align:right;font-weight:bold;font-size:18px;color:#0891b2">$${Number(invoice.total || 0).toFixed(2)}</td>
-      </tr></tfoot>
-    </table>
-    ${
-      invoice.payment_type === 'split' && (invoice.deposit_payment_link || invoice.final_payment_link)
-        ? `<div style="text-align:center;margin:24px 0">
-        ${invoice.deposit_payment_link ? `<a href="${invoice.deposit_payment_link}" style="display:inline-block;background:#0891b2;color:white;padding:14px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin:4px">Pay 50% Deposit ($${Number(invoice.deposit_amount || 0).toFixed(2)})</a>` : ''}
-        ${invoice.final_payment_link ? `<a href="${invoice.final_payment_link}" style="display:inline-block;background:#0f172a;color:white;padding:14px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin:4px">Pay Final 50% ($${Number(invoice.final_amount || 0).toFixed(2)})</a>` : ''}
-        <p style="margin-top:8px;color:#475569;font-size:12px">Pay 50% now to start the project. Final 50% on completion.</p>
-      </div>`
-        : invoice.payment_link
-        ? `<div style="text-align:center;margin:24px 0">
-        <a href="${invoice.payment_link}" style="display:inline-block;background:#0891b2;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold">Pay Invoice</a>
-      </div>`
-        : ""
-    }
-    ${invoice.notes ? `<p style="margin-top:16px;color:#475569;font-size:14px"><em>${invoice.notes}</em></p>` : ""}
-  </div>
-  <p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:16px">Powered by Brandaro</p>
-</body></html>`;
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Invoice ${invNum}</title>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0">Invoice ${invNum} from Brandaro — $${fmtMoney(invoice.total)} due ${dueDate || "soon"}.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,0.06)">
+
+        <!-- Header -->
+        <tr><td style="padding:28px 32px 20px;border-bottom:1px solid #eef2f7">
+          <table role="presentation" width="100%"><tr>
+            <td style="font-size:18px;font-weight:700;letter-spacing:-0.01em;color:#0f172a">Brandaro</td>
+            <td align="right" style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Invoice</td>
+          </tr></table>
+        </td></tr>
+
+        <!-- Amount + Meta -->
+        <tr><td style="padding:28px 32px 20px">
+          <p style="margin:0;color:#64748b;font-size:13px">Amount due</p>
+          <p style="margin:4px 0 18px;font-size:36px;font-weight:700;letter-spacing:-0.02em;color:#0f172a;font-variant-numeric:tabular-nums">$${fmtMoney(invoice.total)}</p>
+          <table role="presentation" width="100%" style="font-size:13px;color:#475569">
+            <tr>
+              <td style="padding:4px 0"><span style="color:#94a3b8">Invoice</span> &nbsp;<strong style="color:#0f172a">#${invNum || "—"}</strong></td>
+              <td align="right" style="padding:4px 0"><span style="color:#94a3b8">Issued</span> &nbsp;${escapeHtml(issueDate)}</td>
+            </tr>
+            <tr>
+              <td style="padding:4px 0"><span style="color:#94a3b8">Bill to</span> &nbsp;<strong style="color:#0f172a">${billTo}</strong></td>
+              ${dueDate ? `<td align="right" style="padding:4px 0"><span style="color:#94a3b8">Due</span> &nbsp;<strong style="color:#0f172a">${escapeHtml(dueDate)}</strong></td>` : "<td></td>"}
+            </tr>
+            ${invoice.service_type ? `<tr><td colspan="2" style="padding:4px 0"><span style="color:#94a3b8">Service</span> &nbsp;${escapeHtml(invoice.service_type)}</td></tr>` : ""}
+          </table>
+        </td></tr>
+
+        <!-- Line items -->
+        ${items.length ? `<tr><td style="padding:0 32px 20px">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eef2f7;border-radius:10px;overflow:hidden">
+            <thead>
+              <tr style="background:#f8fafc">
+                <th align="left" style="padding:10px 16px;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;font-weight:600">Description</th>
+                <th align="right" style="padding:10px 16px;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;font-weight:600">Amount</th>
+              </tr>
+            </thead>
+            <tbody>${lineItemsHtml}</tbody>
+            <tfoot>
+              <tr style="background:#f8fafc">
+                <td style="padding:14px 16px;font-weight:600;color:#0f172a;font-size:14px">Total</td>
+                <td style="padding:14px 16px;text-align:right;font-weight:700;color:#0f172a;font-size:16px;font-variant-numeric:tabular-nums">$${fmtMoney(invoice.total)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </td></tr>` : ""}
+
+        <!-- CTA -->
+        ${ctaBlock ? `<tr><td style="padding:8px 32px 24px">${ctaBlock}</td></tr>` : ""}
+
+        <!-- Notes -->
+        ${invoice.notes ? `<tr><td style="padding:0 32px 24px">
+          <div style="background:#f8fafc;border-left:3px solid #0f172a;padding:12px 16px;border-radius:6px;color:#475569;font-size:13px;line-height:1.55">${escapeHtml(invoice.notes)}</div>
+        </td></tr>` : ""}
+
+        <!-- Footer -->
+        <tr><td style="padding:20px 32px 28px;border-top:1px solid #eef2f7;text-align:center;color:#94a3b8;font-size:12px;line-height:1.5">
+          Questions? Just reply to this email.<br>
+          <span style="color:#cbd5e1">Sent by Brandaro</span>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
 }
 
 serve(async (req: Request) => {
@@ -206,15 +286,14 @@ serve(async (req: Request) => {
       }
       recipient = toNumber;
 
-      const smsBody =
-        invoice.payment_type === 'split' && (invoice.deposit_payment_link || invoice.final_payment_link)
-          ? `Invoice ${invoice.invoice_number || ""} from Brandaro\n` +
-            `Total: $${Number(invoice.total || 0).toFixed(2)}\n` +
-            (invoice.deposit_payment_link ? `Pay 50% deposit: ${invoice.deposit_payment_link}\n` : "") +
-            (invoice.final_payment_link ? `Pay final 50%: ${invoice.final_payment_link}` : "")
-          : `Invoice ${invoice.invoice_number || ""} from Brandaro\n` +
-            `Total: $${Number(invoice.total || 0).toFixed(2)}\n` +
-            (invoice.payment_link ? `Pay: ${invoice.payment_link}` : "");
+      const total = fmtMoney(invoice.total);
+      const link =
+        invoice.payment_type === 'split'
+          ? (invoice.deposit_payment_link || invoice.final_payment_link || invoice.payment_link)
+          : invoice.payment_link;
+      const smsBody = link
+        ? `Brandaro: $${total} invoice ready. Pay: ${link}`
+        : `Brandaro: $${total} invoice ${invoice.invoice_number || ""} ready.`;
 
       const twilioParams: Record<string, string> = { To: recipient, Body: smsBody };
       if (messagingServiceSid && !fromNumber) twilioParams.MessagingServiceSid = messagingServiceSid;
