@@ -160,9 +160,15 @@ export function VAInvoiceModal({ open, onClose, lead, sendOnSave }: VAInvoiceMod
       if (error) throw error;
       const invoiceId = inserted?.id;
 
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error('Your session expired. Please sign in again.');
       const { data: stripeData, error: stripeErr } = await supabase.functions.invoke(
         'va-stripe-checkout',
-        { body: { invoice_id: invoiceId } },
+        {
+          body: { invoice_id: invoiceId },
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
       );
       if (stripeErr || (stripeData as any)?.error) {
         throw new Error(stripeErr?.message || (stripeData as any)?.error || 'Stripe checkout failed');
