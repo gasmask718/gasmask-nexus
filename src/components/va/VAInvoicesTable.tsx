@@ -147,16 +147,9 @@ export function VAInvoicesTable() {
                         size="sm"
                         variant="ghost"
                         className="h-7 text-xs text-cyan-300 hover:bg-cyan-500/10"
-                        disabled={sendingId === inv.id}
-                        onClick={() => sendMutation.mutate(inv.id)}
+                        onClick={() => setSendInvoice(inv)}
                       >
-                        {sendingId === inv.id ? (
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                        ) : inv.status === 'draft' ? (
-                          <Send className="h-3 w-3 mr-1" />
-                        ) : (
-                          <Mail className="h-3 w-3 mr-1" />
-                        )}
+                        <Send className="h-3 w-3 mr-1" />
                         {inv.status === 'draft' ? 'Send' : 'Resend'}
                       </Button>
                       {inv.payment_link && (
@@ -182,6 +175,13 @@ export function VAInvoicesTable() {
         invoice={selected}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
+      />
+
+      <SendInvoiceDialog
+        open={!!sendInvoice}
+        invoice={sendInvoice}
+        onClose={() => setSendInvoice(null)}
+        invalidateKeys={[['va-invoices', user?.id]]}
       />
     </div>
   );
