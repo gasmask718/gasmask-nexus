@@ -304,6 +304,70 @@ function VAProfileInner() {
           </CardContent>
         </Card>
 
+        {/* Change Password */}
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white text-lg flex items-center gap-2">
+              <Lock className="h-5 w-5 text-cyan-400" /> Change Password
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Current Password</label>
+              <Input
+                type={showPwd ? 'text' : 'password'}
+                value={pwd.current}
+                onChange={e => setPwd(p => ({ ...p, current: e.target.value }))}
+                placeholder="Enter current password"
+                className="bg-slate-700 border-slate-600 text-white"
+                autoComplete="current-password"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">New Password</label>
+              <Input
+                type={showPwd ? 'text' : 'password'}
+                value={pwd.next}
+                onChange={e => setPwd(p => ({ ...p, next: e.target.value }))}
+                placeholder="At least 8 characters"
+                className="bg-slate-700 border-slate-600 text-white"
+                autoComplete="new-password"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Confirm New Password</label>
+              <Input
+                type={showPwd ? 'text' : 'password'}
+                value={pwd.confirm}
+                onChange={e => setPwd(p => ({ ...p, confirm: e.target.value }))}
+                placeholder="Re-enter new password"
+                className="bg-slate-700 border-slate-600 text-white"
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPwd(s => !s)}
+                className="text-slate-400 hover:text-white gap-1"
+              >
+                {showPwd ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                {showPwd ? 'Hide' : 'Show'} passwords
+              </Button>
+              <Button
+                onClick={handleChangePassword}
+                disabled={pwdSaving || !pwd.current || !pwd.next || !pwd.confirm}
+                className="bg-cyan-600 hover:bg-cyan-700 gap-2"
+              >
+                {pwdSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                Update Password
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Account Info */}
         <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4">
