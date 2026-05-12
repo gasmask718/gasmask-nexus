@@ -325,7 +325,13 @@ function VADashboardInner() {
               </div>
             )}
             {view === 'faqs' && <div className="max-w-2xl"><VAFAQs /></div>}
-            {view === 'invoices' && <VAInvoicesTable />}
+            {view === 'invoices' && user && (
+              <BrandaroInvoicesDataTable
+                vaId={user.id}
+                title="My Invoices"
+                description="Your issued invoices — paid & unpaid tracking."
+              />
+            )}
             {view === 'settings' && (
               <div className="text-center text-slate-400 py-16">
                 <Settings className="h-12 w-12 mx-auto text-slate-600 mb-3" />
