@@ -1100,6 +1100,19 @@ const BrandPlaceholder = lazy(() => import('@/pages/BrandPlaceholder'));
 const GovernanceCommandCenter = lazy(() => import('@/pages/admin/GovernanceCommandCenter'));
 const Floor9Observation = lazy(() => import('@/pages/floor9/Floor9Observation'));
 
+// Dynasty Partners Admin
+const DPAdminLayout = lazy(() => import('@/components/admin/dp/DPAdminLayout'));
+const DPDashboard = lazy(() => import('@/pages/admin/dp/DPDashboard'));
+const DPPartners = lazy(() => import('@/pages/admin/dp/DPPartners'));
+const DPMrr = lazy(() => import('@/pages/admin/dp/DPMrr'));
+const DPPlatforms = lazy(() => import('@/pages/admin/dp/DPPlatforms'));
+const DPRecruitment = lazy(() => import('@/pages/admin/dp/DPRecruitment'));
+const DPFinancials = lazy(() => import('@/pages/admin/dp/DPFinancials'));
+const DPControls = lazy(() => import('@/pages/admin/dp/DPControls'));
+const DPActivity = lazy(() => import('@/pages/admin/dp/DPActivity'));
+const DPManual = lazy(() => import('@/pages/admin/dp/DPManual'));
+const DPNotifications = lazy(() => import('@/pages/admin/dp/DPNotifications'));
+
 /**
  * ProtectedLayout - Wraps all protected routes with auth and layout
  */
@@ -1209,6 +1222,22 @@ export default function AppRoutes() {
       <Route path="/admin/call-review" element={<Navigate to="/brandaro/admin-call-review" replace />} />
       <Route path="/admin/monitor" element={<Navigate to="/brandaro/admin-monitor" replace />} />
       <Route path="/admin/dnc" element={<Navigate to="/brandaro/admin-dnc" replace />} />
+
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* DYNASTY PARTNERS — ADMIN PANEL (David's view, RLS-gated by partner_admins)   */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route path="/admin" element={<DPAdminLayout />}>
+        <Route index element={<DPDashboard />} />
+        <Route path="partners" element={<DPPartners />} />
+        <Route path="mrr" element={<DPMrr />} />
+        <Route path="platforms" element={<DPPlatforms />} />
+        <Route path="recruitment" element={<DPRecruitment />} />
+        <Route path="financials" element={<DPFinancials />} />
+        <Route path="controls" element={<DPControls />} />
+        <Route path="activity" element={<DPActivity />} />
+        <Route path="manual" element={<DPManual />} />
+        <Route path="notifications" element={<DPNotifications />} />
+      </Route>
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PROTECTED ROUTES (Authentication required)                                   */}
