@@ -145,10 +145,24 @@ export function VAOnboardingModal() {
                           </div>
                         </div>
                         {isActive ? (
-                          <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
-                            <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            Currently Active
-                          </Badge>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              Currently Active
+                            </Badge>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleForceRelease(num.id, num.friendly_name); }}
+                              disabled={releasingId === num.id}
+                              title="Force release this number (use if a previous session never closed)"
+                              className="inline-flex items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300 hover:bg-amber-500/20 disabled:opacity-50"
+                            >
+                              {releasingId === num.id
+                                ? <Loader2 className="h-3 w-3 animate-spin" />
+                                : <Unlock className="h-3 w-3" />}
+                              Force release
+                            </button>
+                          </div>
                         ) : (
                           <Badge className="bg-slate-700/40 text-slate-300 border border-slate-600 shrink-0">
                             🟢 {t('va.onboarding.available')}
