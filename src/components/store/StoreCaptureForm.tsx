@@ -186,7 +186,7 @@ export function StoreCaptureForm({
 
       const insertPayload: Record<string, unknown> = {
         name: name.trim(),
-        type: 'other',
+        type: storeType,
         address_street: address.trim(),
         phone: phone.trim() || null,
         notes: composedNotes,
@@ -200,6 +200,7 @@ export function StoreCaptureForm({
         captured_role: captureRole,
         approved_by_user_id: willAutoApprove ? user.id : null,
         approved_at: willAutoApprove ? new Date().toISOString() : null,
+        connected_group_id: connectedGroupId ?? null,
       };
 
       const { data, error } = await supabase
