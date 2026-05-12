@@ -145,6 +145,7 @@ export default function VARosterPage() {
     if (statusFilter === 'unassigned') q = q.is('assigned_va', null);
     if (tierFilter !== 'all') q = q.eq('priority_tier', tierFilter);
     if (stateFilter !== 'all') q = q.eq('state', stateFilter);
+    if (languageFilter === 'spanish') q = q.or(spanishOrFilter());
     if (search.trim()) {
       const s = search.trim().replace(/%/g, '');
       q = q.or(`business_name.ilike.%${s}%,city.ilike.%${s}%,state.ilike.%${s}%`);
@@ -160,7 +161,7 @@ export default function VARosterPage() {
       setTotalLeads(count ?? 0);
     }
     setLoading(false);
-  }, [page, pageSize, statusFilter, tierFilter, stateFilter, search, toast]);
+  }, [page, pageSize, statusFilter, tierFilter, stateFilter, languageFilter, search, toast]);
 
   // Refresh unassigned total badge whenever leads change
   const fetchUnassignedTotal = useCallback(async () => {
