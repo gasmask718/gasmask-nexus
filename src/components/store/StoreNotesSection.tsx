@@ -8,6 +8,7 @@ import { FileText, Plus, User, Clock, Pencil, Trash2, Upload } from 'lucide-reac
 import { format } from 'date-fns';
 import { dynastyDate } from '@/lib/dates';
 import { AddNoteModal } from './AddNoteModal';
+import { NoteContentDisplay } from './NoteContentDisplay';
 import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
 import { toast } from 'sonner';
 import {
@@ -187,11 +188,10 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
                   key={note.id}
                   className="p-4 rounded-lg bg-muted/30 border border-border/30 space-y-3"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div 
-                      className="text-base flex-1 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5" 
-                      dangerouslySetInnerHTML={{ __html: note.note_text }} 
-                    />
+                  <div className="flex items-start justify-between gap-2 min-w-0">
+                    <div className="flex-1 min-w-0 text-base">
+                      <NoteContentDisplay content={note.note_text} asHtml collapsedLines={4} className="text-base" />
+                    </div>
                     <div className="flex gap-1 flex-shrink-0">
                       <Button
                         variant="ghost"

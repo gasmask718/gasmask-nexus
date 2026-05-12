@@ -130,9 +130,9 @@ export function InteractionDetailModal({ open, onOpenChange, interaction }: Inte
                   <MessageCircle className="h-4 w-4 text-primary" />
                   Summary
                 </div>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/30 p-3 rounded-lg">
+                <div className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg max-h-72 overflow-y-auto break-words whitespace-pre-wrap min-w-0">
                   {interaction.summary}
-                </p>
+                </div>
               </div>
             </>
           )}

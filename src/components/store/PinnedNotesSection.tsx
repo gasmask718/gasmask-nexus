@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { NoteContentDisplay } from './NoteContentDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -112,7 +113,7 @@ export function PinnedNotesSection({ storeId, readOnly = false }: PinnedNotesSec
             >
               <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">{note.note_text}</p>
+                <NoteContentDisplay content={note.note_text} collapsedLines={3} className="text-sm font-medium" />
                 <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
                   <span>Pinned by {note.pinner_name}</span>
                   <span>·</span>
