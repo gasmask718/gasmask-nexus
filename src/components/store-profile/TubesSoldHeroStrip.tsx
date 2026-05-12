@@ -269,7 +269,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
           ariaLabel="Stock breakdown"
           expandedTitle="Stock Breakdown"
           isLoading={inventoryByBrand.isLoading}
-          isEmpty={!inventoryByBrand.isLoading && brandInventory.length === 0}
+          isEmpty={!inventoryByBrand.isLoading && brandInventory.every(b => b.status === 'never_offered')}
           emptyMessage="No inventory data yet. Log via Tube Intelligence below ↓"
           collapsedView={
             <div className="flex items-center gap-3">
