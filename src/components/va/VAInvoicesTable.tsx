@@ -23,11 +23,10 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 
 export function VAInvoicesTable() {
   const { user } = useAuth();
-  const qc = useQueryClient();
   const [filter, setFilter] = useState<FilterKey>('all');
   const [selected, setSelected] = useState<any | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [sendInvoice, setSendInvoice] = useState<any | null>(null);
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['va-invoices', user?.id],
@@ -41,24 +40,6 @@ export function VAInvoicesTable() {
     },
     enabled: !!user,
     refetchInterval: 10000,
-  });
-
-  const sendMutation = useMutation({
-    mutationFn: async (invoiceId: string) => {
-      const { data, error } = await supabase.functions.invoke('va-send-invoice', {
-        body: { invoice_id: invoiceId, channel: 'email' },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      return data;
-    },
-    onMutate: (id) => setSendingId(id),
-    onSettled: () => setSendingId(null),
-    onSuccess: (data: any) => {
-      toast.success(`Invoice sent to ${data?.sent_to || 'customer'}`);
-      qc.invalidateQueries({ queryKey: ['va-invoices', user?.id] });
-    },
-    onError: (e: any) => toast.error(e.message || 'Failed to send invoice'),
   });
 
   const filtered = invoices.filter((i: any) => filter === 'all' || i.status === filter);
