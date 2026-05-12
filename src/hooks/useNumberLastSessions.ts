@@ -3,6 +3,8 @@
  * from the brandaro_number_last_sessions view, plus today's & total dial
  * counts (from va_call_logs aggregated in the view), and resolves the last
  * VA's display name (profiles.name) for username display.
+ * Active/inactive state is resolved from dc_phone_numbers, which is the same
+ * source used by VA caller-ID selection and admin phone provisioning.
  */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,7 +58,7 @@ export function useNumberLastSessions() {
       const activeMap = new Map<string, boolean>();
       if (numIds.length) {
         const { data: nums } = await (supabase as any)
-          .from('brandaro_phone_numbers')
+          .from('dc_phone_numbers')
           .select('id, is_active')
           .in('id', numIds);
         (nums ?? []).forEach((n: any) => activeMap.set(n.id, !!n.is_active));

@@ -1,6 +1,7 @@
 /**
- * LastUserLogsTable — Admin audit view of the most recent VA session per Brandaro phone number.
- * Reads from the `brandaro_number_last_sessions` view (RLS gated to admins).
+ * LastUserLogsTable — Admin audit view of the most recent VA session per caller-ID number.
+ * Reads session state from the shared `brandaro_number_last_sessions` view and writes
+ * mutations back to the same source of truth used by VA calling flows (`dc_phone_numbers` + `va_sessions`).
  */
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +32,7 @@ export default function LastUserLogsTable() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['brandaro-number-last-sessions'] });
     queryClient.invalidateQueries({ queryKey: ['admin-phone-numbers'] });
+    queryClient.invalidateQueries({ queryKey: ['va-phone-numbers-dc'] });
   };
 
   // Optimistically patch a row in the cached query data so the UI updates instantly.
@@ -51,23 +53,20 @@ export default function LastUserLogsTable() {
     if (!confirm('Force-release this number? Any active VA session will be ended.')) return;
     setBusyId(numberId);
     try {
-      const { error: e1 } = await (supabase as any)
-        .from('brandaro_phone_numbers')
-        .update({ in_use: false, assigned_va_id: null })
-        .eq('id', numberId);
-      if (e1) throw e1;
-      const { error: e2 } = await (supabase as any)
-        .from('brandaro_number_sessions')
-        .update({ ended_at: new Date().toISOString() })
-        .eq('number_id', numberId)
+      const endedAt = new Date().toISOString();
+      const { error } = await (supabase as any)
+        .from('va_sessions')
+        .update({ is_active: false, ended_at: endedAt })
+        .eq('twilio_number_id', numberId)
+        .eq('is_active', true)
         .is('ended_at', null);
-      if (e2) throw e2;
+      if (error) throw error;
       // Optimistic UI: clear active session markers immediately.
       patchRow(numberId, {
         in_use: false,
         assigned_va_id: null,
         session_id: null,
-        ended_at: new Date().toISOString(),
+        ended_at: endedAt,
         session_active: false,
       });
       toast.success('Number released');
@@ -85,7 +84,7 @@ export default function LastUserLogsTable() {
     setBusyId(numberId);
     try {
       const { error } = await (supabase as any)
-        .from('brandaro_phone_numbers')
+        .from('dc_phone_numbers')
         .update({ is_active: next })
         .eq('id', numberId);
       if (error) throw error;
@@ -143,7 +142,7 @@ export default function LastUserLogsTable() {
               </TableHeader>
               <TableBody>
                 {paginated.map((r) => {
-                  const active = !!r.session_id && !r.ended_at;
+                  const active = !!r.session_active && !r.ended_at;
                   return (
                     <TableRow key={r.number_id}>
                       <TableCell>
