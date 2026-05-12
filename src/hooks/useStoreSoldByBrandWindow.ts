@@ -80,22 +80,23 @@ export function useStoreSoldByBrandWindow(
         });
       }
 
-      // Inventory for staged status
+      // Inventory rolled up by product_id (brand string is fallback)
       const { data: inventory } = await supabase
         .from('store_tube_inventory')
-        .select('brand, current_tubes_left')
-        .eq('store_id', storeId);
-      const brandInv = new Map<string, number>();
+        .select('product_id, brand, current_tubes_left')
+        .eq('store_id', storeId)
+        .eq('is_simulation', false);
+      const invByProductId = new Map<string, number>();
       inventory?.forEach((inv) => {
-        const key = (inv.brand || '').toLowerCase().replace(/\s+/g, '');
-        brandInv.set(key, (brandInv.get(key) ?? 0) + Number(inv.current_tubes_left ?? 0));
+        const pid = inv.product_id ?? resolveProductIdForBrand(inv.brand);
+        if (!pid) return;
+        invByProductId.set(pid, (invByProductId.get(pid) ?? 0) + Number(inv.current_tubes_left ?? 0));
       });
 
       const total = Array.from(result.values()).reduce((s, r) => s + r.tubes, 0);
       result.forEach((row) => {
         row.percentage = total > 0 ? Math.round((row.tubes / total) * 100) : 0;
-        const sku = CANONICAL_TUBE_SKUS.find((s) => s.product_id === row.product_id)!;
-        row.inventory_count = sku.inventory_keys.reduce((sum, k) => sum + (brandInv.get(k) ?? 0), 0);
+        row.inventory_count = invByProductId.get(row.product_id) ?? 0;
         row.status = row.tubes > 0 ? 'bought' : row.inventory_count > 0 ? 'staged' : 'never_offered';
       });
 
