@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { InteractionDetailModal } from "@/components/store/InteractionDetailModal";
 import { NoteDetailModal } from "@/components/store/NoteDetailModal";
 import { VisitDetailModal } from "@/components/store/VisitDetailModal";
+import { NoteContentDisplay } from "@/components/store/NoteContentDisplay";
 
 // Helper function to determine source from role
 const getSourceFromRole = (role?: string | null): string => {
@@ -387,11 +388,11 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
                   return (
                     <div
                       key={note.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30 cursor-pointer hover:bg-muted/50 transition-colors group"
+                      className="flex items-start justify-between gap-3 p-3 rounded-lg bg-muted/30 border border-border/30 cursor-pointer hover:bg-muted/50 transition-colors group"
                       onClick={() => handleInteractionClick(item)}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-primary/10">
+                      <div className="flex min-w-0 flex-1 items-start gap-3">
+                        <div className="shrink-0 p-2 rounded-lg bg-primary/10">
                           <FileText className="h-4 w-4 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -399,16 +400,19 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
                             <span className="font-medium text-sm">Note</span>
                             <Badge variant="outline" className="text-xs">Note</Badge>
                           </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {note.note_text}
-                          </div>
+                          <NoteContentDisplay
+                            content={note.note_text}
+                            collapsedLines={2}
+                            asHtml={false}
+                            className="mt-0.5 text-xs text-muted-foreground"
+                          />
                           <div className="text-xs text-muted-foreground mt-1">
                             {(note.profile as any)?.name || 'System'} • {getSourceFromRole((note.profile as any)?.role)} •{" "}
                             {format(new Date(note.created_at), "MMM d, h:mm a")}
                           </div>
                         </div>
                       </div>
-                      <Eye className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <Eye className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   );
                 } else if (item.type === 'visit') {
