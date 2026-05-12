@@ -286,8 +286,11 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
             <>
               <div className="space-y-1.5">
                 {brandInventory.map(b => (
-                  <div key={b.brand} className="flex items-center justify-between text-xs">
-                    <span className="capitalize truncate max-w-[140px]">{b.brand}</span>
+                  <div key={b.product_id} className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[10px] shrink-0">{getSkuStatusIcon(b.status)}</span>
+                      <span className="truncate max-w-[140px]">{b.display}</span>
+                    </span>
                     <span className="flex items-center gap-1.5">
                       <span className={cn('font-semibold tabular-nums', getStockStatusColor(b.tubes_remaining))}>
                         {b.tubes_remaining}
