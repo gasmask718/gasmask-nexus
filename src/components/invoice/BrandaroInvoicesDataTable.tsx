@@ -52,14 +52,13 @@ export function BrandaroInvoicesDataTable({
   title = 'Invoices',
   description = 'All Brandaro invoices — paid & unpaid tracking.',
 }: Props) {
-  const qc = useQueryClient();
   const [filter, setFilter] = useState<FilterKey>('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE_DEFAULT);
   const [selected, setSelected] = useState<any | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [sendInvoice, setSendInvoice] = useState<any | null>(null);
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['brandaro-invoices-table', vaId ?? 'all'],
@@ -75,24 +74,6 @@ export function BrandaroInvoicesDataTable({
       return data || [];
     },
     refetchInterval: 15000,
-  });
-
-  const sendMutation = useMutation({
-    mutationFn: async (invoiceId: string) => {
-      const { data, error } = await supabase.functions.invoke('va-send-invoice', {
-        body: { invoice_id: invoiceId, channel: 'email' },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      return data;
-    },
-    onMutate: (id) => setSendingId(id),
-    onSettled: () => setSendingId(null),
-    onSuccess: (data: any) => {
-      toast.success(`Invoice sent to ${data?.sent_to || 'customer'}`);
-      qc.invalidateQueries({ queryKey: ['brandaro-invoices-table'] });
-    },
-    onError: (e: any) => toast.error(e.message || 'Failed to send invoice'),
   });
 
   const counts = useMemo(() => {
