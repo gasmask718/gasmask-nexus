@@ -167,6 +167,7 @@ export function StoreCaptureForm({
 
       const insertPayload: Record<string, unknown> = {
         name: name.trim(),
+        type: 'other',
         address_street: address.trim(),
         phone: phone.trim() || null,
         notes: composedNotes,
