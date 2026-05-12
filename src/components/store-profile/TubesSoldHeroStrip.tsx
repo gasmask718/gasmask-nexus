@@ -305,11 +305,12 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total</span>
                   <span className="text-sm font-bold text-blue-600">{fmt(onHand)} tubes</span>
                 </div>
-                {brandInventory[0]?.last_updated && (
-                  <p className="text-[10px] text-muted-foreground">
-                    Updated {dynastyRelative(brandInventory[0].last_updated)}
-                  </p>
-                )}
+                {(() => {
+                  const latest = brandInventory.map(b => b.last_updated).filter((d): d is string => !!d).sort().reverse()[0];
+                  return latest ? (
+                    <p className="text-[10px] text-muted-foreground">Updated {dynastyRelative(latest)}</p>
+                  ) : null;
+                })()}
               </div>
             </>
           }
