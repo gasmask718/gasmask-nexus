@@ -11,9 +11,11 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ArrowLeft, Search, Loader2, Sparkles,
   Users, Target, Flame, TrendingUp,
+  Receipt, Activity,
 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
@@ -37,6 +39,7 @@ export default function BrandaroCRMDashboard() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [tab, setTab] = useState<'leads' | 'invoices' | 'activity'>('leads');
 
   const { data: business } = useQuery({
     queryKey: ['business-brandaro'],
@@ -126,133 +129,162 @@ export default function BrandaroCRMDashboard() {
           <KpiCard label="Has Website" value={kpis.withWebsite} icon={TrendingUp} color="text-amber-500" />
         </div>
 
-        {/* Filters */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="grid gap-3 md:grid-cols-[1fr_220px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by business, email, phone, location..."
-                  value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                  className="pl-9"
-                />
+        {/* Tabs */}
+        <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="space-y-4">
+          <TabsList className="grid w-full max-w-xl grid-cols-3">
+            <TabsTrigger value="leads" className="gap-2">
+              <Users className="h-4 w-4" /> Leads
+              <Badge variant="secondary" className="ml-1">{leads.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="invoices" className="gap-2">
+              <Receipt className="h-4 w-4" /> Invoices
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="gap-2">
+              <Activity className="h-4 w-4" /> Activity
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="leads" className="space-y-4 mt-0">
+            {/* Filters */}
+            <Card className="border-border/60 shadow-sm">
+              <CardContent className="p-4">
+                <div className="grid gap-3 md:grid-cols-[1fr_220px]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by business, email, phone, location..."
+                      value={search}
+                      onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                      className="pl-9"
+                    />
+                  </div>
+                  <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Filter status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      {statuses.map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {isLoading ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  {statuses.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+            ) : filtered.length === 0 ? (
+              <Card>
+                <CardContent className="py-16 text-center text-muted-foreground">
+                  No Brandaro leads match your filters.
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-border/60 shadow-sm overflow-hidden">
+                <CardHeader className="py-3 border-b bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-semibold">
+                      Showing {paginated.length} of {filtered.length} leads
+                    </CardTitle>
+                    <Badge variant="outline" className="text-[10px]">Sorted by Intent</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/40 hover:bg-muted/40">
+                          <TableHead>Business Name</TableHead>
+                          <TableHead>Industry</TableHead>
+                          <TableHead>Location</TableHead>
+                          <TableHead>Phone</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Website</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Pipeline</TableHead>
+                          <TableHead className="text-right">Intent</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginated.map((lead: any) => (
+                          <TableRow
+                            key={lead.id}
+                            className="cursor-pointer hover:bg-muted/30 transition-colors"
+                            onClick={() => navigate(`/crm/brandaro/${lead.id}`)}
+                          >
+                            <TableCell>
+                              <div className="font-medium">{lead.business_name || 'Unnamed lead'}</div>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {lead.priority_tier && (
+                                  <Badge variant="outline" className="text-[10px]">{lead.priority_tier}</Badge>
+                                )}
+                                {lead.has_website === false && (
+                                  <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600">
+                                    No website
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{lead.industry || '—'}</TableCell>
+                            <TableCell className="text-sm">{lead.location || '—'}</TableCell>
+                            <TableCell className="text-sm font-mono">{lead.phone || '—'}</TableCell>
+                            <TableCell className="text-sm">{lead.email || '—'}</TableCell>
+                            <TableCell className="text-sm max-w-[180px] truncate">
+                              {lead.website ? (
+                                <a
+                                  href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-sky-600 hover:underline"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {lead.website}
+                                </a>
+                              ) : '—'}
+                            </TableCell>
+                            <TableCell>
+                              {lead.status ? (
+                                <Badge variant="outline" className={STATUS_COLORS[lead.status] || ''}>
+                                  {lead.status}
+                                </Badge>
+                              ) : '—'}
+                            </TableCell>
+                            <TableCell className="text-sm">{lead.pipeline || 'inbound'}</TableCell>
+                            <TableCell className="text-right">
+                              <span className="text-base font-bold text-sky-500">{lead.intent_score ?? 0}</span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <DataTablePagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    pageSize={PAGE_SIZE}
+                    totalItems={filtered.length}
+                    onPageChange={setPage}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
-        {/* Leads */}
-        {isLoading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <Card>
-            <CardContent className="py-16 text-center text-muted-foreground">
-              No Brandaro leads match your filters.
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardContent className="p-0">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/40">
-                      <TableHead>Business Name</TableHead>
-                      <TableHead>Industry</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Website</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Pipeline</TableHead>
-                      <TableHead className="text-right">Intent</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginated.map((lead: any) => (
-                      <TableRow
-                        key={lead.id}
-                        className="cursor-pointer"
-                        onClick={() => navigate(`/crm/brandaro/${lead.id}`)}
-                      >
-                        <TableCell>
-                          <div className="font-medium">{lead.business_name || 'Unnamed lead'}</div>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {lead.priority_tier && (
-                              <Badge variant="outline" className="text-[10px]">{lead.priority_tier}</Badge>
-                            )}
-                            {lead.has_website === false && (
-                              <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600">
-                                No website
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{lead.industry || '—'}</TableCell>
-                        <TableCell className="text-sm">{lead.location || '—'}</TableCell>
-                        <TableCell className="text-sm font-mono">{lead.phone || '—'}</TableCell>
-                        <TableCell className="text-sm">{lead.email || '—'}</TableCell>
-                        <TableCell className="text-sm max-w-[180px] truncate">
-                          {lead.website ? (
-                            <a
-                              href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-sky-600 hover:underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {lead.website}
-                            </a>
-                          ) : '—'}
-                        </TableCell>
-                        <TableCell>
-                          {lead.status ? (
-                            <Badge variant="outline" className={STATUS_COLORS[lead.status] || ''}>
-                              {lead.status}
-                            </Badge>
-                          ) : '—'}
-                        </TableCell>
-                        <TableCell className="text-sm">{lead.pipeline || 'inbound'}</TableCell>
-                        <TableCell className="text-right">
-                          <span className="text-base font-bold text-sky-500">{lead.intent_score ?? 0}</span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              <DataTablePagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                pageSize={PAGE_SIZE}
-                totalItems={filtered.length}
-                onPageChange={setPage}
-              />
-            </CardContent>
-          </Card>
-        )}
+          <TabsContent value="invoices" className="mt-0">
+            <BrandaroInvoicesDataTable
+              title="Brandaro Invoices"
+              description="All invoices issued across Brandaro VAs — paid & unpaid tracking."
+            />
+          </TabsContent>
 
-        <BrandaroInvoicesDataTable
-          title="Brandaro Invoices"
-          description="All invoices issued across Brandaro VAs — paid & unpaid tracking."
-        />
-
-        <LastUserLogsTable />
+          <TabsContent value="activity" className="mt-0">
+            <LastUserLogsTable />
+          </TabsContent>
+        </Tabs>
       </div>
     </CRMLayout>
   );
