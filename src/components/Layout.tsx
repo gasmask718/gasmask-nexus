@@ -824,6 +824,20 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       )}
 
+      {/* 🤝 DYNASTY PARTNERS HUB — Admin operator console */}
+      {['owner', 'admin', 'ceo'].includes(role || '') && (
+        <div className="pt-2 border-t border-rose-500/30">
+          <div className="px-3 py-1 text-[10px] font-semibold uppercase text-rose-400/80 tracking-wider">
+            🤝 Dynasty Partners
+          </div>
+          {renderSection(
+            DYNASTY_NAVIGATION.dynastyPartners.id,
+            DYNASTY_NAVIGATION.dynastyPartners.name,
+            DYNASTY_NAVIGATION.dynastyPartners.items
+          )}
+        </div>
+      )}
+
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 🌍 TERRITORY INTELLIGENCE — FLOOR 0 (Constitutional — All Roles) */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
