@@ -30,6 +30,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useResolvedData } from "@/hooks/useResolvedData";
 import { useSimulationMode, SimulationBadge } from "@/contexts/SimulationModeContext";
 import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { StoreCaptureForm } from "@/components/store/StoreCaptureForm";
 
 // Simulation data
 const SIMULATION_TASKS = [
