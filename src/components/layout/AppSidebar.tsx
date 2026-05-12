@@ -74,6 +74,22 @@ export default function AppSidebar() {
   const isAdmin = ['owner', 'admin', 'ceo', 'va'].includes(normalizedRole);
   const canAccessRealEstateHub = ['owner', 'admin', 'ceo', 'va', 'realestate_worker'].includes(normalizedRole);
   const canAccessSolarHub = ['owner', 'admin', 'ceo', 'va', 'solar_worker', 'solar_manager', 'solar_closer', 'solar_qa'].includes(normalizedRole);
+  const canSeePendingCaptures = ['owner', 'admin', 'ceo'].includes(normalizedRole);
+
+  // Pending captures badge count (admin/owner only)
+  const { data: pendingCapturesCount = 0 } = useQuery({
+    queryKey: ['pending-captures-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('stores')
+        .select('*', { count: 'exact', head: true })
+        .eq('approval_status', 'pending')
+        .is('deleted_at', null);
+      return count ?? 0;
+    },
+    enabled: canSeePendingCaptures,
+    refetchInterval: 30_000,
+  });
 
   // Floor 0 presence check (silent)
   useEffect(() => {
