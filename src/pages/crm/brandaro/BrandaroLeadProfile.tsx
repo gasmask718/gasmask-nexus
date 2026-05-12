@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft, Loader2, Sparkles, Package, FileText, Target, Wrench,
-  Plus, CheckCircle2, AlertTriangle,
+  Plus, CheckCircle2, AlertTriangle, CreditCard, Copy, ExternalLink,
 } from 'lucide-react';
 
 type Lead = any;
@@ -117,6 +117,32 @@ export default function BrandaroLeadProfile() {
         .eq('invoice_id', invoiceDetail!.id);
       if (error) throw error;
       return data;
+    },
+  });
+
+  const genPaymentLink = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const { data, error } = await supabase.functions.invoke('brandaro-invoice-checkout', {
+        body: { invoice_id: invoiceId },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to create payment link');
+      return data;
+    },
+    onSuccess: async (data) => {
+      toast({ title: 'Payment link ready', description: 'Funds will route to your Stripe account.' });
+      try { await navigator.clipboard.writeText(data.payment_link); } catch (_) {}
+      queryClient.invalidateQueries({ queryKey: ['brandaro-invoices', leadId] });
+      // Refresh modal contents
+      const { data: fresh } = await supabase
+        .from('brandaro_client_invoices')
+        .select('*')
+        .eq('id', (invoiceDetail as any)?.id)
+        .single();
+      if (fresh) setInvoiceDetail(fresh);
+    },
+    onError: (err: any) => {
+      toast({ title: 'Failed to create payment link', description: err.message, variant: 'destructive' });
     },
   });
 
@@ -488,6 +514,47 @@ export default function BrandaroLeadProfile() {
                   <div><span className="text-muted-foreground mr-4">Paid:</span>{fmt(invoiceDetail.amount_paid)}</div>
                 </div>
               </div>
+
+              {/* Stripe payment link */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-semibold flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" /> Stripe Payment Link
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={invoiceDetail.payment_link ? 'outline' : 'default'}
+                    disabled={genPaymentLink.isPending || invoiceDetail.status === 'paid'}
+                    onClick={() => genPaymentLink.mutate(invoiceDetail.id)}
+                  >
+                    {genPaymentLink.isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                    ) : (
+                      <CreditCard className="h-3.5 w-3.5 mr-1.5" />
+                    )}
+                    {invoiceDetail.payment_link ? 'Regenerate' : 'Generate Payment Link'}
+                  </Button>
+                </div>
+                {invoiceDetail.payment_link ? (
+                  <div className="flex items-center gap-2 bg-muted/50 rounded p-2">
+                    <code className="text-xs flex-1 truncate">{invoiceDetail.payment_link}</code>
+                    <Button size="sm" variant="ghost" className="h-7" onClick={() => {
+                      navigator.clipboard.writeText(invoiceDetail.payment_link);
+                      toast({ title: 'Payment link copied' });
+                    }}><Copy className="h-3 w-3" /></Button>
+                    <Button size="sm" variant="ghost" className="h-7" asChild>
+                      <a href={invoiceDetail.payment_link} target="_blank" rel="noreferrer">
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Generate a Stripe-hosted checkout link. Funds settle into your connected Stripe account.
+                  </p>
+                )}
+              </div>
+
               {invoiceDetail.notes && <p className="text-sm text-muted-foreground border-t pt-2">{invoiceDetail.notes}</p>}
             </div>
           )}
