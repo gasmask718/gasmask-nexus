@@ -23,8 +23,56 @@ const PAGE_SIZE = 25;
 
 export default function LastUserLogsTable() {
   const [page, setPage] = useState(1);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const { data, isLoading } = useNumberLastSessions();
+  const queryClient = useQueryClient();
   const rows = data?.rows ?? [];
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['brandaro-number-last-sessions'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-phone-numbers'] });
+  };
+
+  const forceRelease = async (numberId: string) => {
+    if (!confirm('Force-release this number? Any active VA session will be ended.')) return;
+    setBusyId(numberId);
+    try {
+      const { error: e1 } = await (supabase as any)
+        .from('brandaro_phone_numbers')
+        .update({ in_use: false, assigned_va_id: null })
+        .eq('id', numberId);
+      if (e1) throw e1;
+      const { error: e2 } = await (supabase as any)
+        .from('brandaro_number_sessions')
+        .update({ ended_at: new Date().toISOString() })
+        .eq('number_id', numberId)
+        .is('ended_at', null);
+      if (e2) throw e2;
+      toast.success('Number released');
+      invalidate();
+    } catch (err: any) {
+      toast.error(err.message ?? 'Failed to release number');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const toggleActive = async (numberId: string, next: boolean) => {
+    setBusyId(numberId);
+    try {
+      const { error } = await (supabase as any)
+        .from('brandaro_phone_numbers')
+        .update({ is_active: next })
+        .eq('id', numberId);
+      if (error) throw error;
+      toast.success(next ? 'Number activated' : 'Number deactivated');
+      invalidate();
+    } catch (err: any) {
+      toast.error(err.message ?? 'Failed to update number');
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <Card>
