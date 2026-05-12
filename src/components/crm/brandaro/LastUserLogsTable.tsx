@@ -175,6 +175,35 @@ export default function LastUserLogsTable() {
                       <TableCell className="text-right font-mono text-sm text-muted-foreground">
                         {r.total_dials}
                       </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Switch
+                            checked={r.is_active !== false}
+                            disabled={busyId === r.number_id}
+                            onCheckedChange={(v) => toggleActive(r.number_id, v)}
+                          />
+                          <span className="text-[11px] text-muted-foreground">
+                            {r.is_active !== false ? 'On' : 'Off'}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1"
+                          disabled={!active || busyId === r.number_id}
+                          onClick={() => forceRelease(r.number_id)}
+                          title={active ? 'Force release VA from this number' : 'No active session'}
+                        >
+                          {busyId === r.number_id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Unlock className="h-3 w-3" />
+                          )}
+                          Force Release
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
