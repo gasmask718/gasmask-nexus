@@ -284,16 +284,22 @@ function DialPanel() {
     setPhase("saving");
     try {
       const updates: any = {
-        status: newStatus,
+        lead_status: newStatus,
+        last_call_at: new Date().toISOString(),
+        last_called_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
+      if (statusNote.trim()) updates.call_notes = statusNote.trim();
+      if (newStatus === "callback" || newStatus === "call_again") {
+        // default callback +1 day if operator chose callback
+        updates.next_callback_at = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      }
       const { error } = await supabase
-        .from("brandaro_leads_master")
+        .from("brandaro_qualified_leads")
         .update(updates)
         .eq("id", activeLead.id);
       if (error) throw error;
 
-      // Optional note appended to bland_call_logs raw_payload.notes
       if (statusNote.trim() && activeLogId) {
         await supabase
           .from("bland_call_logs")
@@ -302,7 +308,7 @@ function DialPanel() {
       }
 
       toast.success(`Status updated → ${newStatus}`);
-      qc.invalidateQueries({ queryKey: ["brandaro-leads-dialer"] });
+      qc.invalidateQueries({ queryKey: ["brandaro-qualified-leads-dialer"] });
       qc.invalidateQueries({ queryKey: ["bland-call-logs"] });
       void dialNext();
     } catch (e: any) {
