@@ -199,7 +199,7 @@ export default function VARosterPage() {
   // Reset page on filter change
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, tierFilter, stateFilter, search, pageSize]);
+  }, [statusFilter, tierFilter, stateFilter, languageFilter, search, pageSize]);
 
   useEffect(() => {
     fetchLeads();
