@@ -293,6 +293,24 @@ export function StoreCaptureForm({
             />
           </div>
 
+          <div className="space-y-1.5">
+            <Label htmlFor="cap-type">
+              Store type <span className="text-destructive">*</span>
+            </Label>
+            <Select value={storeType} onValueChange={setStoreType}>
+              <SelectTrigger id="cap-type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STORE_TYPE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="cap-phone">Phone</Label>
