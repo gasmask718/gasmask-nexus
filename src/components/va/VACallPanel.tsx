@@ -14,7 +14,7 @@ import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
 import { VAServicesPricing } from './VAServicesPricing';
 import { VAInvoiceModal } from './VAInvoiceModal';
-import { VALiveCoachPanel } from './VALiveCoachPanel';
+import { VALiveAnalysisModal } from './VALiveAnalysisModal';
 import { VACallWrapUpModal } from './VACallWrapUpModal';
 import { useQuery } from '@tanstack/react-query';
 import { History, RotateCcw } from 'lucide-react';
@@ -326,8 +326,8 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
         </AnimatePresence>
       </div>
 
-      {/* Live Claude Coach */}
-      <VALiveCoachPanel
+      {/* Live Claude Analysis Modal — auto opens during call */}
+      <VALiveAnalysisModal
         active={callStatus === 'connected'}
         callLogId={callLogId}
         leadId={lead.id}
