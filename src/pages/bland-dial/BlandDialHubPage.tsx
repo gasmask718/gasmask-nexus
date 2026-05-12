@@ -16,6 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Bot, Phone, MessageSquare, History, Send, ChevronLeft, ChevronRight, ExternalLink, Loader2, Search, X, SkipForward, StopCircle, CheckCircle2, PhoneCall } from "lucide-react";
+import { isSpanishLead } from "@/lib/spanishLeadDetector";
 
 const PAGE_SIZE = 20;
 const BRANDARO_SITE = "https://www.brandarodigital.com";
