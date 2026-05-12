@@ -30,6 +30,8 @@ async function sendInvoiceEmail(params: {
   text: string;
 }): Promise<{ ok: boolean; error?: string }> {
   const sendGridApiKey = Deno.env.get("SENDGRID_API_KEY");
+  const resendApiKey = Deno.env.get("RESEND_API_KEY");
+  const sender = "Brandaro <hello@brandaro.com>";
 
   if (sendGridApiKey) {
     const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
@@ -56,7 +58,37 @@ async function sendInvoiceEmail(params: {
     }
 
     const errText = await response.text();
-    return { ok: false, error: `SendGrid error [${response.status}]: ${errText}` };
+    if (!resendApiKey) {
+      return { ok: false, error: `SendGrid error [${response.status}]: ${errText}` };
+    }
+    console.warn("SendGrid failed, falling back to Resend:", errText);
+  }
+
+  if (resendApiKey) {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: sender,
+        to: [params.to],
+        subject: params.subject,
+        html: params.html,
+        text: params.text,
+        reply_to: "hello@brandaro.com",
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log("resend sent:", data?.id || "ok");
+      return { ok: true };
+    }
+
+    const errText = await response.text();
+    return { ok: false, error: `Resend error [${response.status}]: ${errText}` };
   }
 
   const gmailUser = Deno.env.get("VA_GMAIL_USER");
