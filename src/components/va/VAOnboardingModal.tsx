@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useVASession } from '@/contexts/VASessionContext';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Loader2, Clock, User, PhoneOutgoing } from 'lucide-react';
+import { Phone, Loader2, Clock, User, PhoneOutgoing, Unlock } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   useNumberLastSessions,
   formatDateTime,
