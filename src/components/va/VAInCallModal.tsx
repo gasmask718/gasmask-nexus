@@ -12,6 +12,7 @@ import { VAScripts } from './VAScripts';
 import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
 import { VAServicesPricing } from './VAServicesPricing';
+import { VALiveCoachPanel } from './VALiveCoachPanel';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -45,7 +46,14 @@ export function VAInCallModal({
   const [notes, setNotes] = useState('');
   const [callbackDate, setCallbackDate] = useState('');
   const [showDisposition, setShowDisposition] = useState(false);
+  const [callStartedAt, setCallStartedAt] = useState<number | undefined>(undefined);
   const notesTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Track when call connects to anchor live coach timing
+  useEffect(() => {
+    if (callStatus === 'connected' && !callStartedAt) setCallStartedAt(Date.now());
+    if (!open) setCallStartedAt(undefined);
+  }, [callStatus, open, callStartedAt]);
 
   // Show disposition when call ends
   useEffect(() => {
@@ -226,9 +234,17 @@ export function VAInCallModal({
             )}
           </div>
 
-          {/* Right: Scripts/FAQs */}
+          {/* Right: Live Coach + Scripts/FAQs */}
           <div className="w-[45%] flex flex-col bg-slate-800/50">
-            <Tabs defaultValue="services" className="flex-1 flex flex-col">
+            <div className="p-3 border-b border-slate-700 shrink-0 max-h-[40%] overflow-y-auto">
+              <VALiveCoachPanel
+                active={callStatus === 'connected'}
+                callLogId={callLogId}
+                leadName={leadName}
+                startedAt={callStartedAt}
+              />
+            </div>
+            <Tabs defaultValue="services" className="flex-1 flex flex-col min-h-0">
               <TabsList className="w-full bg-slate-800 rounded-none border-b border-slate-700 shrink-0">
                 <TabsTrigger value="services" className="flex-1 text-xs">Services</TabsTrigger>
                 <TabsTrigger value="faqs" className="flex-1 text-xs">FAQs</TabsTrigger>

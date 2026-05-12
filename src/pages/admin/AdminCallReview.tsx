@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { VACoachingReport } from '@/components/va/VACoachingReport';
 import { VACallWrapUpModal } from '@/components/va/VACallWrapUpModal';
+import { VALiveAnalysisHistory } from '@/components/va/VALiveAnalysisHistory';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -501,15 +502,22 @@ export default function AdminCallReview() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <audio controls className="w-full" src={selectedCall.recording_url} />
-                      <a
-                        href={selectedCall.recording_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 mt-2"
-                      >
-                        <Download className="h-3 w-3" /> Download Recording
-                      </a>
+                      {(() => {
+                        const proxied = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/brandaro-recording-proxy?url=${encodeURIComponent(selectedCall.recording_url)}`;
+                        return (
+                          <>
+                            <audio controls className="w-full" src={proxied} />
+                            <a
+                              href={proxied}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 mt-2"
+                            >
+                              <Download className="h-3 w-3" /> Download Recording
+                            </a>
+                          </>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
                 ) : selectedCall.call_sid ? (
@@ -595,6 +603,8 @@ export default function AdminCallReview() {
                 {selectedCall.ai_analysis && (
                   <VACoachingReport data={selectedCall.ai_analysis} onClose={() => {}} />
                 )}
+
+                <VALiveAnalysisHistory callLogId={selectedCall.id} />
 
                 {/* Post-Call Wrap-Up */}
                 <Card className="bg-slate-800/50 border-slate-700">
