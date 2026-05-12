@@ -479,7 +479,7 @@ function DialPanel() {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="grid gap-2 md:grid-cols-[1fr_220px_auto]">
+        <div className="grid gap-2 md:grid-cols-[1fr_180px_180px_auto]">
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search business / phone / email / location" className="pl-9" />
@@ -489,6 +489,13 @@ function DialPanel() {
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
               {statuses.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={languageFilter} onValueChange={(v) => setLanguageFilter(v as "all" | "spanish")}>
+            <SelectTrigger><SelectValue placeholder="Language" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All languages</SelectItem>
+              <SelectItem value="spanish">🇲🇽 Spanish ({spanishCount})</SelectItem>
             </SelectContent>
           </Select>
           {selectedIds.length > 0 && (
