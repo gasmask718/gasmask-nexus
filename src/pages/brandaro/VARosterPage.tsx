@@ -139,7 +139,7 @@ export default function VARosterPage() {
 
     let q = supabase
       .from('brandaro_qualified_leads')
-      .select('id, business_name, priority_tier, city, state, phone_number, priority_score, assigned_va', { count: 'exact' })
+      .select('id, business_name, priority_tier, city, state, phone_number, priority_score, assigned_va, industry, category, subtypes', { count: 'exact' })
       .order('priority_score', { ascending: false, nullsFirst: false })
       .range(from, to);
 
