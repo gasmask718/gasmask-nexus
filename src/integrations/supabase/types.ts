@@ -102714,6 +102714,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           language: string
+          last_seen_at: string | null
           pause_reason: string | null
           paused_at: string | null
           paused_by: string | null
@@ -102726,6 +102727,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           language?: string
+          last_seen_at?: string | null
           pause_reason?: string | null
           paused_at?: string | null
           paused_by?: string | null
@@ -102738,6 +102740,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           language?: string
+          last_seen_at?: string | null
           pause_reason?: string | null
           paused_at?: string | null
           paused_by?: string | null
@@ -114750,6 +114753,10 @@ export type Database = {
       force_portal_logout: {
         Args: { _reason?: string; _target_user_id: string }
         Returns: boolean
+      }
+      force_release_va_number: {
+        Args: { p_number_id: string }
+        Returns: number
       }
       forecast_revenue_trajectory: {
         Args: { p_business_id: string; p_window_days?: number }
