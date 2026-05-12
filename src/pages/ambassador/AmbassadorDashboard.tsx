@@ -9,7 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Store, DollarSign, TrendingUp, Package, Users, 
   ArrowRight, Phone, MessageSquare, MapPin, AlertTriangle,
-  Plus, Calendar, BarChart3, Clock, ShoppingCart, UserPlus
+  Plus, Calendar, BarChart3, Clock, ShoppingCart, UserPlus,
+  Camera
 } from 'lucide-react';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
@@ -28,6 +29,15 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { PortfolioSection } from '@/components/ambassador/PortfolioSection';
 import { InviteAmbassadorCard } from '@/components/ambassador/InviteAmbassadorCard';
 import { DashboardPurchasesCard } from '@/components/ambassador/purchases/DashboardPurchasesCard';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
+import { StoreCaptureForm } from '@/components/store/StoreCaptureForm';
 
 // MASTER GENIUS ARCHITECT: Lead KPI config - all lead types must be represented
 const LEAD_KPI_CONFIG = {
@@ -116,6 +126,7 @@ function DashboardContent() {
   const { data: commissionTotals, isLoading: totalsLoading } = useCommissionTotals();
   const { data: recentLedger, isLoading: ledgerLoading } = useCommissionLedger({ limit: 5 });
   const [selectedKpi, setSelectedKpi] = useState<string | null>(null);
+  const [captureOpen, setCaptureOpen] = useState(false);
   
   // MASTER GENIUS ARCHITECT: Fetch lead counts by type for KPI cards
   // CRITICAL: Use 'assigned_to' column (created_by does NOT exist in sales_prospects)
@@ -406,6 +417,32 @@ function DashboardContent() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Store Capture FAB */}
+      <Sheet open={captureOpen} onOpenChange={setCaptureOpen}>
+        <SheetTrigger asChild>
+          <Button
+            className="fixed bottom-6 right-6 h-14 rounded-full shadow-lg gap-2 z-50"
+          >
+            <Camera className="h-5 w-5" />
+            <span className="hidden sm:inline">Capture New Store</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="bottom" className="h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Capture New Store</SheetTitle>
+            <SheetDescription>
+              Found a new shop? Add it here. Owner will review before it goes live.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4">
+            <StoreCaptureForm
+              onCaptured={() => setCaptureOpen(false)}
+              onCancel={() => setCaptureOpen(false)}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
