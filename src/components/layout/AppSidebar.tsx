@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { 
   ChevronDown, ChevronRight, Menu, X, LogOut, User, Settings,
   Crown, Building2, MessageSquare, Package, Truck, FileText, 
@@ -15,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DYNASTY OS — COMPLETE EMPIRE NAVIGATION (FULLY RESTORED)
@@ -72,6 +74,22 @@ export default function AppSidebar() {
   const isAdmin = ['owner', 'admin', 'ceo', 'va'].includes(normalizedRole);
   const canAccessRealEstateHub = ['owner', 'admin', 'ceo', 'va', 'realestate_worker'].includes(normalizedRole);
   const canAccessSolarHub = ['owner', 'admin', 'ceo', 'va', 'solar_worker', 'solar_manager', 'solar_closer', 'solar_qa'].includes(normalizedRole);
+  const canSeePendingCaptures = ['owner', 'admin', 'ceo'].includes(normalizedRole);
+
+  // Pending captures badge count (admin/owner only)
+  const { data: pendingCapturesCount = 0 } = useQuery({
+    queryKey: ['pending-captures-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('stores')
+        .select('*', { count: 'exact', head: true })
+        .eq('approval_status', 'pending')
+        .is('deleted_at', null);
+      return count ?? 0;
+    },
+    enabled: canSeePendingCaptures,
+    refetchInterval: 30_000,
+  });
 
   // Floor 0 presence check (silent)
   useEffect(() => {
@@ -97,7 +115,7 @@ export default function AppSidebar() {
     id: string, 
     title: string, 
     emoji: string, 
-    items: { path: string; label: string; emoji?: string }[],
+    items: { path: string; label: string; emoji?: string; badge?: number }[],
     titleClass?: string
   ) => {
     const isOpen = openSections.includes(id);
@@ -132,7 +150,12 @@ export default function AppSidebar() {
                 )}
               >
                 {item.emoji && <span>{item.emoji}</span>}
-                <span className="truncate">{item.label}</span>
+                <span className="truncate flex-1">{item.label}</span>
+                {item.badge && item.badge > 0 ? (
+                  <Badge variant="destructive" className="h-5 px-1.5 text-xs">
+                    {item.badge}
+                  </Badge>
+                ) : null}
               </Link>
             ))}
           </div>
@@ -222,6 +245,7 @@ export default function AppSidebar() {
                 { path: '/security/audit', label: 'Audit Logs', emoji: '📋' },
                 { path: '/security/ambassador-requests', label: 'Ambassador Requests', emoji: '👥' },
                 { path: '/admin/deleted-records', label: 'Deleted Records', emoji: '🗑️' },
+                { path: '/admin/captures', label: 'Pending Captures', emoji: '📸', badge: pendingCapturesCount },
               ], "bg-gradient-to-r from-emerald-500/20 to-green-500/10 text-emerald-300 hover:from-emerald-500/30")}
             </div>
           )}
