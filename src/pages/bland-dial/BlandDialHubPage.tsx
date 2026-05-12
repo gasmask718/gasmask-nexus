@@ -99,6 +99,8 @@ interface BrandaroLead {
   phone: string | null;
   email: string | null;
   industry: string | null;
+  category?: string | null;
+  subtypes?: string | null;
   location: string | null;
   status: string | null;
   intent_score: number | null;
