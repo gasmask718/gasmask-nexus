@@ -338,10 +338,7 @@ function NotesList({
                 <Badge className={`${brandConfig.color} text-xs mb-2 border-0`}>
                   {brandConfig.icon} {brandConfig.label}
                 </Badge>
-                <div
-                  className="text-base [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
-                  dangerouslySetInnerHTML={{ __html: note.note_text }}
-                />
+                <NoteContentDisplay content={note.note_text} asHtml collapsedLines={4} className="text-base" />
               </div>
               <div className="flex gap-1 flex-shrink-0">
                 <Button variant="ghost" size="lg" className="h-10 w-10 p-0" onClick={() => onEdit(note)} title="Edit note">

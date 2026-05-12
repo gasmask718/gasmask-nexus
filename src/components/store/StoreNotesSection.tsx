@@ -8,6 +8,7 @@ import { FileText, Plus, User, Clock, Pencil, Trash2, Upload } from 'lucide-reac
 import { format } from 'date-fns';
 import { dynastyDate } from '@/lib/dates';
 import { AddNoteModal } from './AddNoteModal';
+import { NoteContentDisplay } from './NoteContentDisplay';
 import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
 import { toast } from 'sonner';
 import {
