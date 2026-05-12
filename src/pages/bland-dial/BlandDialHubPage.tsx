@@ -531,7 +531,16 @@ function DialPanel() {
                   ) : filtered.slice(0, 500).map((l) => (
                     <TableRow key={l.id} className="cursor-pointer hover:bg-muted/40" onClick={() => toggle(l.id)}>
                       <TableCell><Checkbox checked={selectedIds.includes(l.id)} onCheckedChange={() => toggle(l.id)} /></TableCell>
-                      <TableCell className="font-medium">{l.business_name ?? "—"}</TableCell>
+                      <TableCell className="font-medium">
+                        <span className="inline-flex items-center gap-1.5">
+                          {l.business_name ?? "—"}
+                          {isSpanishLead(l) && (
+                            <Badge className="text-[9px] px-1.5 py-0 border bg-amber-500/15 text-amber-500 border-amber-500/30">
+                              🇲🇽 ES
+                            </Badge>
+                          )}
+                        </span>
+                      </TableCell>
                       <TableCell className="font-mono text-xs">{l.phone}</TableCell>
                       <TableCell className="hidden md:table-cell text-xs text-muted-foreground">{l.industry ?? "—"}</TableCell>
                       <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">{l.location ?? "—"}</TableCell>
