@@ -1,15 +1,16 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Navigate, NavLink, Outlet, useSearchParams } from "react-router-dom";
 import { useIsDPAdmin } from "@/hooks/useDPAdmin";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Users, TrendingUp, Layers, Megaphone,
-  DollarSign, Power, Activity, Wrench, Bell, Shield, ArrowLeft,
+  DollarSign, Power, Activity, Wrench, Bell, Shield, ArrowLeft, RefreshCw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { dp } from "@/lib/dpClient";
-import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const NAV = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -55,6 +56,46 @@ function ImpersonationBanner() {
 export default function DPAdminLayout({ children }: { children?: ReactNode }) {
   const { user, loading } = useAuth();
   const { data: isAdmin, isLoading: roleLoading } = useIsDPAdmin();
+  const queryClient = useQueryClient();
+  const [debugAdminCheck, setDebugAdminCheck] = useState<boolean | null>(null);
+  const [refreshingSession, setRefreshingSession] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkAdminDirectly = async () => {
+      if (!user?.id || isAdmin !== false) {
+        if (!cancelled) setDebugAdminCheck(null);
+        return;
+      }
+
+      const { data, error } = await dp()
+        .from("partner_admins")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!cancelled) {
+        setDebugAdminCheck(!error && !!data);
+      }
+    };
+
+    void checkAdminDirectly();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, isAdmin]);
+
+  const handleRefreshSession = async () => {
+    setRefreshingSession(true);
+    try {
+      await supabase.auth.refreshSession();
+      await queryClient.invalidateQueries({ queryKey: ["dp-is-admin"] });
+    } finally {
+      setRefreshingSession(false);
+    }
+  };
 
   if (loading || roleLoading) {
     return (
@@ -74,6 +115,12 @@ export default function DPAdminLayout({ children }: { children?: ReactNode }) {
             Your account is not in <code className="text-xs">partners.partner_admins</code>.
             Ask David to grant you access.
           </p>
+          {debugAdminCheck ? (
+            <Button onClick={handleRefreshSession} disabled={refreshingSession}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshingSession ? "animate-spin" : ""}`} />
+              Refresh session
+            </Button>
+          ) : null}
         </div>
       </div>
     );
