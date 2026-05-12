@@ -1211,6 +1211,22 @@ export default function AppRoutes() {
       <Route path="/admin/dnc" element={<Navigate to="/brandaro/admin-dnc" replace />} />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* DYNASTY PARTNERS — ADMIN PANEL (David's view, RLS-gated by partner_admins)   */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route path="/admin" element={<DPAdminLayout />}>
+        <Route index element={<DPDashboard />} />
+        <Route path="partners" element={<DPPartners />} />
+        <Route path="mrr" element={<DPMrr />} />
+        <Route path="platforms" element={<DPPlatforms />} />
+        <Route path="recruitment" element={<DPRecruitment />} />
+        <Route path="financials" element={<DPFinancials />} />
+        <Route path="controls" element={<DPControls />} />
+        <Route path="activity" element={<DPActivity />} />
+        <Route path="manual" element={<DPManual />} />
+        <Route path="notifications" element={<DPNotifications />} />
+      </Route>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PROTECTED ROUTES (Authentication required)                                   */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
