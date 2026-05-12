@@ -4,7 +4,7 @@
  * Surfaces paid / unpaid statuses, search, pagination, and quick actions.
  */
 import { useMemo, useState } from 'react';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,13 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import {
-  Eye, Send, Copy, Loader2, FileText, Mail, Search,
+  Eye, Send, Copy, Loader2, FileText, Search,
   CheckCircle2, AlertCircle, DollarSign, Receipt,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { VAInvoiceDetailDialog } from '@/components/va/VAInvoiceDetailDialog';
+import { SendInvoiceDialog } from '@/components/invoice/SendInvoiceDialog';
 
 type FilterKey = 'all' | 'paid' | 'unpaid' | 'draft' | 'sent';
 
