@@ -10200,6 +10200,50 @@ export type Database = {
         }
         Relationships: []
       }
+      bland_sms_log: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          lead_id: string | null
+          message: string
+          phone_number: string
+          source: string | null
+          status: string
+          twilio_sid: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          lead_id?: string | null
+          message: string
+          phone_number: string
+          source?: string | null
+          status?: string
+          twilio_sid?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          lead_id?: string | null
+          message?: string
+          phone_number?: string
+          source?: string | null
+          status?: string
+          twilio_sid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bland_sms_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "bland_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_addons: {
         Row: {
           addon_id: string

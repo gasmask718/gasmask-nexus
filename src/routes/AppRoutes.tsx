@@ -208,6 +208,7 @@ const VADashboard = lazy(() => import('@/pages/va/VADashboard'));
 const VAProfilePage = lazy(() => import('@/pages/va/VAProfilePage'));
 const VAManagementPage = lazy(() => import('@/pages/penthouse/VAManagementPage'));
 const AdminNumbersPage = lazy(() => import('@/pages/va/AdminNumbersPage'));
+const BlandDialHubPage = lazy(() => import('@/pages/bland-dial/BlandDialHubPage'));
 const PayInvoicePage = lazy(() => import('@/pages/va/PayInvoicePage'));
 const AdminLeaderboardPage = lazy(() => import('@/pages/admin/AdminLeaderboard'));
 const AdminCallReviewPage = lazy(() => import('@/pages/admin/AdminCallReview'));
@@ -2199,6 +2200,7 @@ export default function AppRoutes() {
           <Route path="missed-calls" element={<MissedCallsDashboardPage />} />
           <Route path="unresolved-queue" element={<UnresolvedCallsQueuePage />} />
           <Route path="field-submissions" element={<FieldSubmissionsPage />} />
+          <Route path="bland-dial" element={<BlandDialHubPage />} />
 
           {/* ═══ FLOOR 2: AUTOMATION ENGINE ═══ */}
           <Route path="outbound-growth" element={<OutboundGrowthPage />} />
@@ -3381,6 +3383,7 @@ export default function AppRoutes() {
 
           {/* ── Admin / Operations ── */}
           <Route path="admin-numbers" element={<AdminNumbersPage />} />
+          <Route path="bland-dial" element={<BlandDialHubPage />} />
           <Route path="admin-leaderboard" element={<AdminLeaderboardPage />} />
           <Route path="admin-call-review" element={<AdminCallReviewPage />} />
           <Route path="admin-monitor" element={<AdminVAMonitorPage />} />

@@ -30,6 +30,7 @@ const hubNav = [
     { title: "VA Performance", path: "/brandaro/va-performance", icon: BarChart3 },
     { title: "AI Distribution", path: "/brandaro/ai-distribution", icon: Brain },
     { title: "Closer AI", path: "/brandaro/closer-ai", icon: Flame },
+    { title: "Bland AI Dial", path: "/brandaro/bland-dial", icon: Bot },
   ]},
   { section: "Pipeline", items: [
     { title: "CRM Pipeline", path: "/brandaro/crm-pipeline", icon: Target },
