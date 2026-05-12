@@ -6,6 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
@@ -15,7 +22,17 @@ interface StoreCaptureFormProps {
   onCancel?: () => void;
   defaultName?: string;
   defaultAddress?: string;
+  /** If provided, the new store is written with this connected_group_id immediately. */
+  connectedGroupId?: string | null;
 }
+
+const STORE_TYPE_OPTIONS = [
+  { value: 'bodega', label: 'Bodega / Deli' },
+  { value: 'smoke_shop', label: 'Smoke Shop' },
+  { value: 'gas_station', label: 'Gas Station' },
+  { value: 'wholesaler', label: 'Wholesaler' },
+  { value: 'other', label: 'Other' },
+] as const;
 
 type AppRoleString =
   | 'owner'
@@ -54,6 +71,7 @@ export function StoreCaptureForm({
   onCancel,
   defaultName = '',
   defaultAddress = '',
+  connectedGroupId,
 }: StoreCaptureFormProps) {
   const { roles, loading: roleLoading } = useUserRole();
   const captureRole = pickCaptureRole(roles);
@@ -64,6 +82,7 @@ export function StoreCaptureForm({
 
   const [name, setName] = useState(defaultName);
   const [address, setAddress] = useState(defaultAddress);
+  const [storeType, setStoreType] = useState<string>('bodega');
   const [phone, setPhone] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [notes, setNotes] = useState('');
@@ -167,7 +186,7 @@ export function StoreCaptureForm({
 
       const insertPayload: Record<string, unknown> = {
         name: name.trim(),
-        type: 'other',
+        type: storeType,
         address_street: address.trim(),
         phone: phone.trim() || null,
         notes: composedNotes,
@@ -181,6 +200,7 @@ export function StoreCaptureForm({
         captured_role: captureRole,
         approved_by_user_id: willAutoApprove ? user.id : null,
         approved_at: willAutoApprove ? new Date().toISOString() : null,
+        connected_group_id: connectedGroupId ?? null,
       };
 
       const { data, error } = await supabase
@@ -271,6 +291,24 @@ export function StoreCaptureForm({
               placeholder="565 Lenox Ave, New York, NY"
               required
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="cap-type">
+              Store type <span className="text-destructive">*</span>
+            </Label>
+            <Select value={storeType} onValueChange={setStoreType}>
+              <SelectTrigger id="cap-type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STORE_TYPE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
