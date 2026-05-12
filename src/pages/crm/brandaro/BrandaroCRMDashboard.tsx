@@ -247,6 +247,11 @@ export default function BrandaroCRMDashboard() {
           </Card>
         )}
 
+        <BrandaroInvoicesDataTable
+          title="Brandaro Invoices"
+          description="All invoices issued across Brandaro VAs — paid & unpaid tracking."
+        />
+
         <LastUserLogsTable />
       </div>
     </CRMLayout>
