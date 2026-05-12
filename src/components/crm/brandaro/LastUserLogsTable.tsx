@@ -111,6 +111,8 @@ export default function LastUserLogsTable() {
                   <TableHead className="text-right">Duration</TableHead>
                   <TableHead className="text-right">Dialed Today</TableHead>
                   <TableHead className="text-right">Total Dials</TableHead>
+                  <TableHead className="text-center">Active</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
