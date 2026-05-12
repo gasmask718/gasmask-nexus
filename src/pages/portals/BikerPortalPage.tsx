@@ -30,6 +30,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useResolvedData } from "@/hooks/useResolvedData";
 import { useSimulationMode, SimulationBadge } from "@/contexts/SimulationModeContext";
 import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { StoreCaptureForm } from "@/components/store/StoreCaptureForm";
 
 // Simulation data
 const SIMULATION_TASKS = [
@@ -114,6 +123,7 @@ function BikerPortalContent() {
   const { simulationMode } = useSimulationMode();
   
   const [selectedKpi, setSelectedKpi] = useState<string | null>(null);
+  const [captureOpen, setCaptureOpen] = useState(false);
 
   const { data: tasks, isSimulated: tasksSimulated } = useResolvedData([], SIMULATION_TASKS);
   const { data: storesChecked, isSimulated: storesSimulated } = useResolvedData([], SIMULATION_STORES_CHECKED);
@@ -372,6 +382,32 @@ function BikerPortalContent() {
             </HudCard>
           </div>
         </div>
+
+        {/* Store Capture FAB */}
+        <Sheet open={captureOpen} onOpenChange={setCaptureOpen}>
+          <SheetTrigger asChild>
+            <Button
+              className="fixed bottom-6 right-6 h-14 rounded-full shadow-lg gap-2 z-50"
+            >
+              <Camera className="h-5 w-5" />
+              <span className="hidden sm:inline">Capture New Store</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Capture New Store</SheetTitle>
+              <SheetDescription>
+                Found a new shop? Add it here. Owner will review before it goes live.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="mt-4">
+              <StoreCaptureForm
+                onCaptured={() => setCaptureOpen(false)}
+                onCancel={() => setCaptureOpen(false)}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </EnhancedPortalLayout>
   );
