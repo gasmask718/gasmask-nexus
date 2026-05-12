@@ -11,6 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Phone, FileText, Send, Search, Loader2, Users, Zap, PhoneCall } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { isSpanishLead } from '@/lib/spanishLeadDetector';
 
 interface Lead {
   id: string;
@@ -20,6 +22,9 @@ interface Lead {
   status: string;
   created_at: string;
   assigned_va: string | null;
+  industry?: string | null;
+  category?: string | null;
+  subtypes?: string | null;
 }
 
 interface CampaignLead {
