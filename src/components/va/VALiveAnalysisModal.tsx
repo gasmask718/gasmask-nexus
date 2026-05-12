@@ -46,28 +46,115 @@ const QUICK_PROMPTS = [
 
 export function VALiveAnalysisModal({ active, callLogId, leadId, leadName, startedAt }: Props) {
   const [open, setOpen] = useState(false);
+  const [supported, setSupported] = useState(true);
+  const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [snippet, setSnippet] = useState('');
+  const [pendingSnippet, setPendingSnippet] = useState('');
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [history, setHistory] = useState<Analysis[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [scriptQuery, setScriptQuery] = useState('');
   const inFlightRef = useRef(false);
+  const recognitionRef = useRef<any>(null);
+  const cumulativeRef = useRef('');
+  const lastSentRef = useRef('');
+
+  useEffect(() => {
+    const W: any = window;
+    const SpeechRecognition = W.SpeechRecognition || W.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setSupported(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event: any) => {
+      let finalText = '';
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) finalText += `${result[0].transcript} `;
+        else interim += result[0].transcript;
+      }
+
+      if (finalText) {
+        cumulativeRef.current += finalText;
+        setTranscript(cumulativeRef.current.trim());
+        setPendingSnippet('');
+      } else {
+        setPendingSnippet(interim);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.warn('live-coach speech error', event?.error);
+      if (active && event?.error !== 'not-allowed') {
+        try { recognition.start(); } catch {}
+      }
+    };
+
+    recognition.onend = () => {
+      if (active) {
+        try { recognition.start(); } catch {}
+      } else {
+        setListening(false);
+      }
+    };
+
+    recognitionRef.current = recognition;
+  }, [active]);
 
   // Auto open when call connects, reset state
   useEffect(() => {
     if (active) {
       setOpen(true);
-      setTranscript(''); setSnippet(''); setAnalysis(null); setHistory([]);
+      cumulativeRef.current = '';
+      lastSentRef.current = '';
+      setTranscript('');
+      setSnippet('');
+      setPendingSnippet('');
+      setAnalysis(null);
+      setHistory([]);
+      try {
+        recognitionRef.current?.start();
+        setListening(true);
+      } catch {}
     } else {
       setOpen(false);
+      try { recognitionRef.current?.stop(); } catch {}
+      setListening(false);
     }
   }, [active]);
 
-  const askClaude = useCallback(async (text: string) => {
+  useEffect(() => {
+    if (!active) return;
+
+    const interval = window.setInterval(() => {
+      const cumulative = cumulativeRef.current.trim();
+      if (!cumulative || inFlightRef.current) return;
+
+      const sent = lastSentRef.current;
+      if (cumulative === sent) return;
+
+      const chunk = cumulative.slice(sent.length).trim();
+      if (chunk.length < 12) return;
+
+      lastSentRef.current = cumulative;
+      void askClaude(chunk, cumulative);
+    }, 6000);
+
+    return () => window.clearInterval(interval);
+  }, [active, askClaude]);
+
+  const askClaude = useCallback(async (text: string, cumulativeOverride?: string) => {
     const chunk = text.trim();
     if (!chunk || inFlightRef.current) return;
-    const next = (transcript ? transcript + '\n' : '') + chunk;
+    const next = cumulativeOverride ?? ((transcript ? `${transcript}\n` : '') + chunk);
     setTranscript(next);
     setSnippet('');
     inFlightRef.current = true;
@@ -151,6 +238,9 @@ export function VALiveAnalysisModal({ active, callLogId, leadId, leadName, start
                 {leadName && <span className="text-cyan-300 font-normal text-sm">— {leadName}</span>}
               </DialogTitle>
               <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={`text-[10px] gap-1 border-slate-700 ${listening ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-400'}`}>
+                    <Zap className="h-3 w-3" /> {supported ? (listening ? 'auto listening' : 'idle') : 'manual only'}
+                  </Badge>
                 {analyzing && (
                   <Badge variant="outline" className="text-[10px] gap-1 text-cyan-400 border-cyan-500/30 bg-cyan-500/10 animate-pulse">
                     <Zap className="h-3 w-3" /> analyzing
@@ -162,7 +252,7 @@ export function VALiveAnalysisModal({ active, callLogId, leadId, leadName, start
               </div>
             </div>
             <DialogDescription className="text-slate-500 text-xs mt-0.5">
-              Type what was just said or tap a quick prompt — Claude responds in ~1s with what to say next.
+              Live coaching now listens automatically during the call. You can still type or search scripts anytime.
             </DialogDescription>
           </DialogHeader>
 
@@ -289,6 +379,9 @@ export function VALiveAnalysisModal({ active, callLogId, leadId, leadName, start
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
+                {pendingSnippet && (
+                  <p className="text-[11px] text-slate-500 italic">Listening: {pendingSnippet}</p>
+                )}
               </div>
             </TabsContent>
 
