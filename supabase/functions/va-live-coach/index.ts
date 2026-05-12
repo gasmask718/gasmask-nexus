@@ -84,7 +84,7 @@ Analyze and respond with ONLY a compact JSON object — no prose, no markdown:
       });
     }
 
-    let claudeRes = await callClaude("claude-3-5-haiku-20241022");
+    let claudeRes = await callClaude("claude-haiku-4-5");
     if (!claudeRes.ok) {
       const errText = await claudeRes.text();
       console.error("Claude haiku err:", claudeRes.status, errText);
