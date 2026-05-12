@@ -120,6 +120,32 @@ export default function BrandaroLeadProfile() {
     },
   });
 
+  const genPaymentLink = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const { data, error } = await supabase.functions.invoke('brandaro-invoice-checkout', {
+        body: { invoice_id: invoiceId },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to create payment link');
+      return data;
+    },
+    onSuccess: async (data) => {
+      toast({ title: 'Payment link ready', description: 'Funds will route to your Stripe account.' });
+      try { await navigator.clipboard.writeText(data.payment_link); } catch (_) {}
+      queryClient.invalidateQueries({ queryKey: ['brandaro-invoices', leadId] });
+      // Refresh modal contents
+      const { data: fresh } = await supabase
+        .from('brandaro_client_invoices')
+        .select('*')
+        .eq('id', (invoiceDetail as any)?.id)
+        .single();
+      if (fresh) setInvoiceDetail(fresh);
+    },
+    onError: (err: any) => {
+      toast({ title: 'Failed to create payment link', description: err.message, variant: 'destructive' });
+    },
+  });
+
   const { data: upsells = [] } = useQuery({
     queryKey: ['brandaro-upsells', leadId],
     enabled: !!leadId,
