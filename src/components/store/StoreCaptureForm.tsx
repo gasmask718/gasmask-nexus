@@ -71,6 +71,7 @@ export function StoreCaptureForm({
   onCancel,
   defaultName = '',
   defaultAddress = '',
+  connectedGroupId,
 }: StoreCaptureFormProps) {
   const { roles, loading: roleLoading } = useUserRole();
   const captureRole = pickCaptureRole(roles);
@@ -81,6 +82,7 @@ export function StoreCaptureForm({
 
   const [name, setName] = useState(defaultName);
   const [address, setAddress] = useState(defaultAddress);
+  const [storeType, setStoreType] = useState<string>('bodega');
   const [phone, setPhone] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [notes, setNotes] = useState('');
