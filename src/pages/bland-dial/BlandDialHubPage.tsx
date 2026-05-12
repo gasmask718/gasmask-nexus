@@ -123,18 +123,28 @@ function DialPanel() {
   const pollRef = useRef<number | null>(null);
   const timerRef = useRef<number | null>(null);
 
-  // Brandaro leads (only with phone numbers)
+  // Brandaro leads — sourced from VA Roster (brandaro_qualified_leads), phone-only
   const { data: leads = [], isLoading } = useQuery({
-    queryKey: ["brandaro-leads-dialer"],
+    queryKey: ["brandaro-qualified-leads-dialer"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("brandaro_leads_master")
-        .select("id, business_name, phone, email, industry, location, status, intent_score, has_website")
-        .not("phone", "is", null)
-        .order("intent_score", { ascending: false, nullsFirst: false })
+        .from("brandaro_qualified_leads")
+        .select("id, business_name, phone_number, email, industry, city, state, lead_status, priority_tier, priority_score, has_website")
+        .not("phone_number", "is", null)
+        .order("priority_score", { ascending: false, nullsFirst: false })
         .limit(2000);
       if (error) throw error;
-      return (data ?? []) as BrandaroLead[];
+      return (data ?? []).map((r: any) => ({
+        id: r.id,
+        business_name: r.business_name,
+        phone: r.phone_number,
+        email: r.email,
+        industry: r.industry,
+        location: [r.city, r.state].filter(Boolean).join(", ") || null,
+        status: r.lead_status ?? r.priority_tier ?? null,
+        intent_score: r.priority_score != null ? Math.round(Number(r.priority_score)) : null,
+        has_website: r.has_website,
+      })) as BrandaroLead[];
     },
     staleTime: 30_000,
   });
