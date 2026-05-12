@@ -23,6 +23,49 @@ function VAProfileInner() {
     email: '',
     preferred_language: 'en',
   });
+  const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' });
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
+
+  const handleChangePassword = async () => {
+    if (!user?.email) return;
+    if (pwd.next.length < 8) {
+      toast.error('New password must be at least 8 characters');
+      return;
+    }
+    if (pwd.next !== pwd.confirm) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    setPwdSaving(true);
+    try {
+      // Re-verify current password
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: pwd.current,
+      });
+      if (signInErr) throw new Error('Current password is incorrect');
+
+      const { error } = await supabase.auth.updateUser({ password: pwd.next });
+      if (error) throw error;
+
+      // Audit log (best effort)
+      try {
+        await (supabase as any).from('user_audit_log').insert({
+          user_id: user.id,
+          event: 'password_changed',
+          metadata: { source: 'va_profile' },
+        });
+      } catch (_) { /* table may not exist; ignore */ }
+
+      toast.success('Password updated successfully');
+      setPwd({ current: '', next: '', confirm: '' });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update password');
+    } finally {
+      setPwdSaving(false);
+    }
+  };
 
   // Fetch profile
   const { data: profile, isLoading, refetch } = useQuery({
