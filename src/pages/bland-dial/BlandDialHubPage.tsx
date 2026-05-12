@@ -16,6 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Bot, Phone, MessageSquare, History, Send, ChevronLeft, ChevronRight, ExternalLink, Loader2, Search, X, SkipForward, StopCircle, CheckCircle2, PhoneCall } from "lucide-react";
+import { isSpanishLead } from "@/lib/spanishLeadDetector";
 
 const PAGE_SIZE = 20;
 const BRANDARO_SITE = "https://www.brandarodigital.com";
@@ -98,6 +99,8 @@ interface BrandaroLead {
   phone: string | null;
   email: string | null;
   industry: string | null;
+  category?: string | null;
+  subtypes?: string | null;
   location: string | null;
   status: string | null;
   intent_score: number | null;
@@ -110,6 +113,7 @@ function DialPanel() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [languageFilter, setLanguageFilter] = useState<"all" | "spanish">("all");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [queue, setQueue] = useState<BrandaroLead[]>([]);
   const [phase, setPhase] = useState<CallPhase>("idle");
@@ -129,7 +133,7 @@ function DialPanel() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("brandaro_qualified_leads")
-        .select("id, business_name, phone_number, email, industry, city, state, lead_status, priority_tier, priority_score, has_website")
+        .select("id, business_name, phone_number, email, industry, category, subtypes, city, state, lead_status, priority_tier, priority_score, has_website")
         .not("phone_number", "is", null)
         .order("priority_score", { ascending: false, nullsFirst: false })
         .limit(2000);
@@ -140,6 +144,8 @@ function DialPanel() {
         phone: r.phone_number,
         email: r.email,
         industry: r.industry,
+        category: r.category,
+        subtypes: r.subtypes,
         location: [r.city, r.state].filter(Boolean).join(", ") || null,
         status: r.lead_status ?? r.priority_tier ?? null,
         intent_score: r.priority_score != null ? Math.round(Number(r.priority_score)) : null,
@@ -154,6 +160,8 @@ function DialPanel() {
     [leads],
   );
 
+  const spanishCount = useMemo(() => leads.filter(isSpanishLead).length, [leads]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return leads.filter((l) => {
@@ -163,9 +171,10 @@ function DialPanel() {
         || l.email?.toLowerCase().includes(q)
         || l.location?.toLowerCase().includes(q);
       const matchesStatus = statusFilter === "all" || l.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesLanguage = languageFilter === "all" || isSpanishLead(l);
+      return matchesSearch && matchesStatus && matchesLanguage;
     });
-  }, [leads, search, statusFilter]);
+  }, [leads, search, statusFilter, languageFilter]);
 
   const toggle = (id: string) =>
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -470,7 +479,7 @@ function DialPanel() {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="grid gap-2 md:grid-cols-[1fr_220px_auto]">
+        <div className="grid gap-2 md:grid-cols-[1fr_180px_180px_auto]">
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search business / phone / email / location" className="pl-9" />
@@ -480,6 +489,13 @@ function DialPanel() {
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
               {statuses.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={languageFilter} onValueChange={(v) => setLanguageFilter(v as "all" | "spanish")}>
+            <SelectTrigger><SelectValue placeholder="Language" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All languages</SelectItem>
+              <SelectItem value="spanish">🇲🇽 Spanish ({spanishCount})</SelectItem>
             </SelectContent>
           </Select>
           {selectedIds.length > 0 && (
@@ -515,7 +531,16 @@ function DialPanel() {
                   ) : filtered.slice(0, 500).map((l) => (
                     <TableRow key={l.id} className="cursor-pointer hover:bg-muted/40" onClick={() => toggle(l.id)}>
                       <TableCell><Checkbox checked={selectedIds.includes(l.id)} onCheckedChange={() => toggle(l.id)} /></TableCell>
-                      <TableCell className="font-medium">{l.business_name ?? "—"}</TableCell>
+                      <TableCell className="font-medium">
+                        <span className="inline-flex items-center gap-1.5">
+                          {l.business_name ?? "—"}
+                          {isSpanishLead(l) && (
+                            <Badge className="text-[9px] px-1.5 py-0 border bg-amber-500/15 text-amber-500 border-amber-500/30">
+                              🇲🇽 ES
+                            </Badge>
+                          )}
+                        </span>
+                      </TableCell>
                       <TableCell className="font-mono text-xs">{l.phone}</TableCell>
                       <TableCell className="hidden md:table-cell text-xs text-muted-foreground">{l.industry ?? "—"}</TableCell>
                       <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">{l.location ?? "—"}</TableCell>

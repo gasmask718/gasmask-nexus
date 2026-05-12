@@ -27,6 +27,8 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
+import { spanishOrFilter } from '@/lib/spanishLeadFilter';
+import { isSpanishLead } from '@/lib/spanishLeadDetector';
 
 interface VA {
   user_id: string;
@@ -44,6 +46,9 @@ interface LeadRow {
   phone_number: string | null;
   priority_score: number | null;
   assigned_va: string | null;
+  industry?: string | null;
+  category?: string | null;
+  subtypes?: string | null;
 }
 
 const DEFAULT_PAGE_SIZE = 50;
@@ -66,6 +71,7 @@ export default function VARosterPage() {
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [stateFilter, setStateFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
+  const [languageFilter, setLanguageFilter] = useState<'all' | 'spanish'>('all');
   const [stateOptions, setStateOptions] = useState<string[]>([]);
 
   // Pagination
@@ -136,7 +142,7 @@ export default function VARosterPage() {
 
     let q = supabase
       .from('brandaro_qualified_leads')
-      .select('id, business_name, priority_tier, city, state, phone_number, priority_score, assigned_va', { count: 'exact' })
+      .select('id, business_name, priority_tier, city, state, phone_number, priority_score, assigned_va, industry, category, subtypes', { count: 'exact' })
       .order('priority_score', { ascending: false, nullsFirst: false })
       .range(from, to);
 
@@ -144,6 +150,7 @@ export default function VARosterPage() {
     if (statusFilter === 'unassigned') q = q.is('assigned_va', null);
     if (tierFilter !== 'all') q = q.eq('priority_tier', tierFilter);
     if (stateFilter !== 'all') q = q.eq('state', stateFilter);
+    if (languageFilter === 'spanish') q = q.or(spanishOrFilter());
     if (search.trim()) {
       const s = search.trim().replace(/%/g, '');
       q = q.or(`business_name.ilike.%${s}%,city.ilike.%${s}%,state.ilike.%${s}%`);
@@ -159,7 +166,7 @@ export default function VARosterPage() {
       setTotalLeads(count ?? 0);
     }
     setLoading(false);
-  }, [page, pageSize, statusFilter, tierFilter, stateFilter, search, toast]);
+  }, [page, pageSize, statusFilter, tierFilter, stateFilter, languageFilter, search, toast]);
 
   // Refresh unassigned total badge whenever leads change
   const fetchUnassignedTotal = useCallback(async () => {
@@ -195,7 +202,7 @@ export default function VARosterPage() {
   // Reset page on filter change
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, tierFilter, stateFilter, search, pageSize]);
+  }, [statusFilter, tierFilter, stateFilter, languageFilter, search, pageSize]);
 
   useEffect(() => {
     fetchLeads();
@@ -627,6 +634,18 @@ export default function VARosterPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Select
+              value={languageFilter}
+              onValueChange={(v) => setLanguageFilter(v as 'all' | 'spanish')}
+            >
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All languages</SelectItem>
+                <SelectItem value="spanish">🇲🇽 Spanish only</SelectItem>
+              </SelectContent>
+            </Select>
             <Button variant="outline" onClick={toggleAllFiltered} className="gap-2">
               {allFilteredSelected ? (
                 <CheckSquare className="h-4 w-4" />
@@ -693,7 +712,16 @@ export default function VARosterPage() {
                           aria-label={`Select ${lead.business_name}`}
                         />
                       </td>
-                      <td className="py-2 font-medium">{lead.business_name}</td>
+                      <td className="py-2 font-medium">
+                        <span className="inline-flex items-center gap-1.5">
+                          {lead.business_name}
+                          {isSpanishLead(lead) && (
+                            <Badge className="text-[9px] px-1.5 py-0 border bg-amber-500/15 text-amber-500 border-amber-500/30">
+                              🇲🇽 ES
+                            </Badge>
+                          )}
+                        </span>
+                      </td>
                       <td className="py-2">
                         {lead.assigned_va ? (
                           <Badge className="text-[10px] border bg-emerald-500/15 text-emerald-400 border-emerald-500/30">

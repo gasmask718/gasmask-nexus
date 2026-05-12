@@ -11,6 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Phone, FileText, Send, Search, Loader2, Users, Zap, PhoneCall } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { isSpanishLead } from '@/lib/spanishLeadDetector';
 
 interface Lead {
   id: string;
@@ -20,6 +22,9 @@ interface Lead {
   status: string;
   created_at: string;
   assigned_va: string | null;
+  industry?: string | null;
+  category?: string | null;
+  subtypes?: string | null;
 }
 
 interface CampaignLead {
@@ -52,13 +57,14 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [quickPhone, setQuickPhone] = useState('');
   const [quickName, setQuickName] = useState('');
+  const [languageFilter, setLanguageFilter] = useState<'all' | 'spanish'>('all');
 
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ['va-leads', user?.id],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('brandaro_qualified_leads')
-        .select('id, business_name, phone_number, email, lead_status, created_at, assigned_va')
+        .select('id, business_name, phone_number, email, lead_status, created_at, assigned_va, industry, category, subtypes')
         .eq('assigned_va', user!.id)
         .order('created_at', { ascending: false })
         .limit(200);
@@ -72,15 +78,21 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
   });
 
   const filtered = useMemo(() => {
-    if (!search) return leads;
-    const q = search.toLowerCase();
-    return leads.filter(
-      l =>
-        l.business_name?.toLowerCase().includes(q) ||
-        l.phone?.includes(q) ||
-        l.email?.toLowerCase().includes(q),
-    );
-  }, [leads, search]);
+    let rows = leads;
+    if (languageFilter === 'spanish') rows = rows.filter(isSpanishLead);
+    if (search) {
+      const q = search.toLowerCase();
+      rows = rows.filter(
+        l =>
+          l.business_name?.toLowerCase().includes(q) ||
+          l.phone?.includes(q) ||
+          l.email?.toLowerCase().includes(q),
+      );
+    }
+    return rows;
+  }, [leads, search, languageFilter]);
+
+  const spanishCount = useMemo(() => leads.filter(isSpanishLead).length, [leads]);
 
   const dialableFiltered = useMemo(() => filtered.filter(l => !!l.phone), [filtered]);
   const allDialableSelected = dialableFiltered.length > 0 && dialableFiltered.every(l => selected.has(l.id));
@@ -154,6 +166,15 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
             className="pl-9 bg-secondary border-border text-foreground text-sm h-9"
           />
         </div>
+        <Select value={languageFilter} onValueChange={(v) => setLanguageFilter(v as 'all' | 'spanish')}>
+          <SelectTrigger className="w-[160px] h-9 bg-secondary border-border text-foreground text-sm">
+            <SelectValue placeholder="Language" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All languages</SelectItem>
+            <SelectItem value="spanish">🇲🇽 Spanish ({spanishCount})</SelectItem>
+          </SelectContent>
+        </Select>
         {onStartCampaign && (
           <Button
             size="sm"
@@ -254,7 +275,16 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
                         />
                       </td>
                     )}
-                    <td className="p-3 font-medium">{lead.business_name || '—'}</td>
+                    <td className="p-3 font-medium">
+                      <span className="inline-flex items-center gap-1.5">
+                        {lead.business_name || '—'}
+                        {isSpanishLead(lead) && (
+                          <Badge className="text-[9px] px-1.5 py-0 border bg-amber-500/15 text-amber-500 border-amber-500/30">
+                            🇲🇽 ES
+                          </Badge>
+                        )}
+                      </span>
+                    </td>
                     <td className="p-3 font-mono text-xs text-muted-foreground">{lead.phone || '—'}</td>
                     <td className="p-3 text-xs text-muted-foreground hidden md:table-cell">{lead.email || '—'}</td>
                     <td className="p-3">
