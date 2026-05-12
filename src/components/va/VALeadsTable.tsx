@@ -57,13 +57,14 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [quickPhone, setQuickPhone] = useState('');
   const [quickName, setQuickName] = useState('');
+  const [languageFilter, setLanguageFilter] = useState<'all' | 'spanish'>('all');
 
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ['va-leads', user?.id],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('brandaro_qualified_leads')
-        .select('id, business_name, phone_number, email, lead_status, created_at, assigned_va')
+        .select('id, business_name, phone_number, email, lead_status, created_at, assigned_va, industry, category, subtypes')
         .eq('assigned_va', user!.id)
         .order('created_at', { ascending: false })
         .limit(200);
@@ -77,15 +78,21 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
   });
 
   const filtered = useMemo(() => {
-    if (!search) return leads;
-    const q = search.toLowerCase();
-    return leads.filter(
-      l =>
-        l.business_name?.toLowerCase().includes(q) ||
-        l.phone?.includes(q) ||
-        l.email?.toLowerCase().includes(q),
-    );
-  }, [leads, search]);
+    let rows = leads;
+    if (languageFilter === 'spanish') rows = rows.filter(isSpanishLead);
+    if (search) {
+      const q = search.toLowerCase();
+      rows = rows.filter(
+        l =>
+          l.business_name?.toLowerCase().includes(q) ||
+          l.phone?.includes(q) ||
+          l.email?.toLowerCase().includes(q),
+      );
+    }
+    return rows;
+  }, [leads, search, languageFilter]);
+
+  const spanishCount = useMemo(() => leads.filter(isSpanishLead).length, [leads]);
 
   const dialableFiltered = useMemo(() => filtered.filter(l => !!l.phone), [filtered]);
   const allDialableSelected = dialableFiltered.length > 0 && dialableFiltered.every(l => selected.has(l.id));
