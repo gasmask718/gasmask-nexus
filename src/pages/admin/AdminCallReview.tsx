@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { VACoachingReport } from '@/components/va/VACoachingReport';
 import { VACallWrapUpModal } from '@/components/va/VACallWrapUpModal';
+import { VALiveAnalysisHistory } from '@/components/va/VALiveAnalysisHistory';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -602,6 +603,8 @@ export default function AdminCallReview() {
                 {selectedCall.ai_analysis && (
                   <VACoachingReport data={selectedCall.ai_analysis} onClose={() => {}} />
                 )}
+
+                <VALiveAnalysisHistory callLogId={selectedCall.id} />
 
                 {/* Post-Call Wrap-Up */}
                 <Card className="bg-slate-800/50 border-slate-700">
