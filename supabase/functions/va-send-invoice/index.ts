@@ -398,14 +398,14 @@ serve(async (req: Request) => {
           p_expires_at: null,
         });
         if (!shortErr && shortCode) {
-          smsLink = `${siteBase.replace(/\/$/, "")}/p/${shortCode}`;
+          smsLink = `${siteBase.replace(/\/$/, "")}/brandaro/pay/${shortCode}`;
         } else if (shortErr) {
           console.warn("create_short_link failed, falling back to long link:", shortErr.message);
         }
       }
 
       const smsBody = smsLink
-        ? `Brandaro: $${total} invoice ready. Pay: ${smsLink}`
+        ? `Brandaro: $${total} invoice ready. Secure pay: ${smsLink}`
         : `Brandaro: $${total} invoice ${invoice.invoice_number || ""} ready.`;
 
       const twilioParams: Record<string, string> = { To: recipient, Body: smsBody };
