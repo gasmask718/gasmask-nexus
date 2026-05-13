@@ -381,32 +381,36 @@ serve(async (req: Request) => {
           ? (invoice.deposit_payment_link || invoice.final_payment_link || invoice.payment_link)
           : invoice.payment_link;
 
-      // Send the Stripe checkout link directly in the SMS so the recipient
-      // lands straight on the secure Stripe payment page (no redirect hop).
-      // We still log the send + click context via va_invoice_logs below.
-      const smsLink: string | null = longLink || null;
-
-      // Best-effort: record that this Stripe link was dispatched via SMS for
-      // attribution/analytics. Failure here must not block the SMS send.
-      if (smsLink) {
+      // Wrap the Stripe checkout URL in a branded short link so the SMS shows
+      // a clean "Brandaro Digital" URL that redirects to Stripe on click.
+      // The /p/:code redirect is handled by ShortLinkRedirect.tsx via the
+      // resolve_short_link RPC, which also tracks click attribution.
+      let smsLink: string | null = null;
+      if (longLink) {
         try {
-          await supabase.rpc("create_short_link", {
-            p_target_url: smsLink,
+          const { data: shortCode, error: slErr } = await supabase.rpc("create_short_link", {
+            p_target_url: longLink,
             p_kind: "invoice_payment_stripe_direct",
             p_invoice_id: invoice.id,
             p_lead_id: invoice.lead_id || null,
             p_session_id: null,
-            p_context: { source: "va-send-invoice", channel: "sms", va_id: userId, direct_stripe: true },
+            p_context: { source: "va-send-invoice", channel: "sms", va_id: userId, direct_stripe: true, brand: "Brandaro Digital" },
             p_expires_at: null,
           });
+          if (slErr) throw slErr;
+          if (shortCode) {
+            const origin = Deno.env.get("PUBLIC_APP_ORIGIN") || "https://gasmask-os-nexus.lovable.app";
+            smsLink = `${origin}/p/${shortCode}`;
+          }
         } catch (e) {
-          console.warn("create_short_link tracking failed (non-fatal):", (e as Error).message);
+          console.warn("create_short_link failed, falling back to direct Stripe URL:", (e as Error).message);
+          smsLink = longLink;
         }
       }
 
       const smsBody = smsLink
-        ? `Brandaro Digital: $${total} invoice ready. Secure pay: ${smsLink}`
-        : `Brandaro Digital: $${total} invoice ${invoice.invoice_number || ""} ready.`;
+        ? `Brandaro Digital — $${total} invoice ready. Pay securely: ${smsLink}`
+        : `Brandaro Digital — $${total} invoice ${invoice.invoice_number || ""} ready.`;
 
       const twilioParams: Record<string, string> = { To: recipient, Body: smsBody };
       if (messagingServiceSid && !fromNumber) twilioParams.MessagingServiceSid = messagingServiceSid;
