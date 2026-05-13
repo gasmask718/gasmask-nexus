@@ -138,6 +138,7 @@ function BikerPortalContent() {
   };
 
   return (
+    <>
     <EnhancedPortalLayout
       title="Biker Portal"
       subtitle="Field checks & store visits"
