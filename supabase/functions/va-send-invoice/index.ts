@@ -47,8 +47,8 @@ async function sendInvoiceEmail(params: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: { email: "hello@brandaro.com", name: "Brandaro" },
-        reply_to: { email: "hello@brandaro.com", name: "Brandaro" },
+        from: { email: fromEmail, name: fromName },
+        reply_to: { email: replyTo, name: fromName },
         personalizations: [{ to: [{ email: params.to }], subject: params.subject }],
         content: [
           { type: "text/plain", value: params.text },
