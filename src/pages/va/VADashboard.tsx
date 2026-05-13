@@ -254,6 +254,15 @@ function VADashboardInner() {
                 </div>
               </div>
             )}
+            {view === 'intake' && (
+              <div className="max-w-3xl">
+                <BrandaroLeadIntakeModal
+                  variant="embedded"
+                  assignToSelf
+                  onCreated={() => setView('leads')}
+                />
+              </div>
+            )}
             {view === 'discovery' && <VALeadDiscovery />}
             {view === 'dialer' && (
               <div className="flex gap-4 h-[calc(100vh-8rem)]">
