@@ -78,7 +78,8 @@ function DriverPortalContent() {
   };
 
   return (
-    <EnhancedPortalLayout 
+    <>
+    <EnhancedPortalLayout
       title="Driver Portal" 
       subtitle="Daily operations & earnings"
       portalIcon={<Truck className="h-4 w-4 text-primary-foreground" />}
