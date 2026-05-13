@@ -20,6 +20,7 @@ const StorePerformance = () => {
         .from('stores')
         .select('*')
         .eq('status', 'active')
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .order('performance_score', { ascending: false });
       
       if (error) throw error;
