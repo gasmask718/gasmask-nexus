@@ -129,6 +129,7 @@ function MyCapturedStores() {
         .from('stores')
         .select('id, name, address_street, address_city, address_state, type, captured_at, status')
         .eq('captured_by_user_id', user!.id)
+        .eq('captured_role', 'ambassador')
         .order('captured_at', { ascending: false });
       if (error) throw error;
       return data ?? [];
