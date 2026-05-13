@@ -41,13 +41,14 @@ type AppRoleString =
   | 'biker'
   | 'ambassador';
 
-const AUTO_APPROVE_ROLES: AppRoleString[] = ['owner', 'admin'];
+// All authorized roles auto-approve captures.
+// Owner reviews via the Recently Added dashboard post-hoc, not as a gate.
 const ALLOWED_CAPTURE_ROLES: AppRoleString[] = [
   'owner',
   'admin',
+  'ambassador',
   'driver',
   'biker',
-  'ambassador',
 ];
 
 function pickCaptureRole(roles: string[] | null | undefined): AppRoleString | null {
