@@ -81331,6 +81331,54 @@ export type Database = {
           },
         ]
       }
+      short_links: {
+        Row: {
+          click_count: number
+          code: string
+          context: Json
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          invoice_id: string | null
+          kind: string
+          last_clicked_at: string | null
+          lead_id: string | null
+          session_id: string | null
+          target_url: string
+        }
+        Insert: {
+          click_count?: number
+          code: string
+          context?: Json
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          kind?: string
+          last_clicked_at?: string | null
+          lead_id?: string | null
+          session_id?: string | null
+          target_url: string
+        }
+        Update: {
+          click_count?: number
+          code?: string
+          context?: Json
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          kind?: string
+          last_clicked_at?: string | null
+          lead_id?: string | null
+          session_id?: string | null
+          target_url?: string
+        }
+        Relationships: []
+      }
       simulation_feedback: {
         Row: {
           actual_outcome: Json | null
@@ -114625,6 +114673,18 @@ export type Database = {
         }
         Returns: string
       }
+      create_short_link: {
+        Args: {
+          p_context?: Json
+          p_expires_at?: string
+          p_invoice_id?: string
+          p_kind?: string
+          p_lead_id?: string
+          p_session_id?: string
+          p_target_url: string
+        }
+        Returns: string
+      }
       current_ambassador_id: { Args: never; Returns: string }
       detect_data_duplicates_in_group: {
         Args: { p_group_id: number }
@@ -115507,6 +115567,7 @@ export type Database = {
         }[]
       }
       resolve_previous_customers_count: { Args: never; Returns: number }
+      resolve_short_link: { Args: { p_code: string }; Returns: string }
       restore_deleted: {
         Args: { _record_id: string; _table_name: string }
         Returns: undefined
