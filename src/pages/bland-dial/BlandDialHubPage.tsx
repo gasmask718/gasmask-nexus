@@ -65,15 +65,17 @@ export default function BlandDialHubPage() {
       </div>
 
       <Tabs defaultValue="dial" className="w-full">
-        <TabsList className="grid grid-cols-3 w-full max-w-xl">
+        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
           <TabsTrigger value="dial"><Phone className="h-4 w-4 mr-2" />Dial Now</TabsTrigger>
           <TabsTrigger value="sms"><MessageSquare className="h-4 w-4 mr-2" />Send SMS</TabsTrigger>
           <TabsTrigger value="history"><History className="h-4 w-4 mr-2" />Call History</TabsTrigger>
+          <TabsTrigger value="texts"><MessageSquare className="h-4 w-4 mr-2" />Text History</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dial" className="mt-4"><DialPanel /></TabsContent>
         <TabsContent value="sms" className="mt-4"><SmsPanel /></TabsContent>
         <TabsContent value="history" className="mt-4"><HistoryPanel /></TabsContent>
+        <TabsContent value="texts" className="mt-4"><TextHistoryPanel /></TabsContent>
       </Tabs>
     </div>
   );
