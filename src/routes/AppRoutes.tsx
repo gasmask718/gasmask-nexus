@@ -3233,11 +3233,18 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      {/* Pending Store Captures — Approval Queue */}
+      {/* Recently Added Stores — owner visibility surface (auto-approved captures) */}
       <Route path="/admin/captures" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'owner']}>
-            <Layout><PendingCaptures /></Layout>
+            <Layout><RecentlyAddedStores /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/recently-added" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']}>
+            <Layout><RecentlyAddedStores /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
