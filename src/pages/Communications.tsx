@@ -80,7 +80,8 @@ export default function Communications() {
       const { data: allStores } = await supabase
         .from('stores')
         .select('id, name')
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .eq('approval_status', 'approved'); // Phase 7: exclude pending captures
 
       const inactiveStores = allStores?.filter(s => !recentStoreIds.has(s.id)) || [];
 
