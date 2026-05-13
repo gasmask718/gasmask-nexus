@@ -29,6 +29,7 @@ export default function Territories() {
       const { data, error } = await supabase
         .from('stores')
         .select('*')
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .not('lat', 'is', null)
         .not('lng', 'is', null);
 
