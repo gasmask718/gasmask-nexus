@@ -52,6 +52,7 @@ export function GlobalSearch({ className, placeholder = "Search across all entit
       const { data: stores } = await supabase
         .from("stores")
         .select("id, name, neighborhood")
+        .eq("approval_status", "approved") // Phase 7: exclude pending captures
         .ilike("name", searchTerm)
         .limit(5);
       
