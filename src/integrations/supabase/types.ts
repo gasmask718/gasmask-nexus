@@ -84288,6 +84288,9 @@ export type Database = {
           last_text_sent_at: string | null
           name: string
           notes: string | null
+          opted_out: boolean
+          opted_out_at: string | null
+          opted_out_method: string | null
           original_store_id: string | null
           phone: string | null
           preferred_sms_provider: string | null
@@ -84330,6 +84333,9 @@ export type Database = {
           last_text_sent_at?: string | null
           name: string
           notes?: string | null
+          opted_out?: boolean
+          opted_out_at?: string | null
+          opted_out_method?: string | null
           original_store_id?: string | null
           phone?: string | null
           preferred_sms_provider?: string | null
@@ -84372,6 +84378,9 @@ export type Database = {
           last_text_sent_at?: string | null
           name?: string
           notes?: string | null
+          opted_out?: boolean
+          opted_out_at?: string | null
+          opted_out_method?: string | null
           original_store_id?: string | null
           phone?: string | null
           preferred_sms_provider?: string | null
