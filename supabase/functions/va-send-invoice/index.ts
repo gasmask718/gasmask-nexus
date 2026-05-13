@@ -32,6 +32,9 @@ async function sendInvoiceEmail(params: {
   const sendGridApiKey = Deno.env.get("SENDGRID_API_KEY");
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
   const fromAddress = Deno.env.get("BRANDARO_EMAIL_FROM") || "Brandaro <onboarding@resend.dev>";
+  // If sender is the Resend sandbox, SendGrid will reject it (domain not verified there).
+  // In that case, skip SendGrid entirely and go straight to Resend.
+  const senderIsResendSandbox = /@resend\.dev>?\s*$/i.test(fromAddress);
   const replyTo = Deno.env.get("BRANDARO_EMAIL_REPLY_TO") || "hello@brandaro.com";
   // Parse "Name <email>" format for SendGrid
   const fromMatch = fromAddress.match(/^\s*(.*?)\s*<(.+?)>\s*$/);
@@ -39,7 +42,7 @@ async function sendInvoiceEmail(params: {
   const fromEmail = fromMatch?.[2] || fromAddress.trim();
   const sender = fromAddress;
 
-  if (sendGridApiKey) {
+  if (sendGridApiKey && !senderIsResendSandbox) {
     const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
       headers: {
