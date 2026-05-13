@@ -74,20 +74,23 @@ export default function AppSidebar() {
   const isAdmin = ['owner', 'admin', 'ceo', 'va'].includes(normalizedRole);
   const canAccessRealEstateHub = ['owner', 'admin', 'ceo', 'va', 'realestate_worker'].includes(normalizedRole);
   const canAccessSolarHub = ['owner', 'admin', 'ceo', 'va', 'solar_worker', 'solar_manager', 'solar_closer', 'solar_qa'].includes(normalizedRole);
-  const canSeePendingCaptures = ['owner', 'admin', 'ceo'].includes(normalizedRole);
+  const canSeeRecentlyAdded = ['owner', 'admin', 'ceo'].includes(normalizedRole);
 
-  // Pending captures badge count (admin/owner only)
-  const { data: pendingCapturesCount = 0 } = useQuery({
-    queryKey: ['pending-captures-count'],
+  // Recently Added badge: count of captures in last 7 days (operator-relevant timeframe)
+  const { data: recentlyAddedCount = 0 } = useQuery({
+    queryKey: ['recently-added-count'],
     queryFn: async () => {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const { count } = await supabase
         .from('stores')
         .select('*', { count: 'exact', head: true })
-        .eq('approval_status', 'pending')
+        .not('captured_at', 'is', null)
+        .gte('captured_at', sevenDaysAgo.toISOString())
         .is('deleted_at', null);
       return count ?? 0;
     },
-    enabled: canSeePendingCaptures,
+    enabled: canSeeRecentlyAdded,
     refetchInterval: 30_000,
   });
 
