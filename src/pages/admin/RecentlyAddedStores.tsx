@@ -159,7 +159,7 @@ export default function RecentlyAddedStores() {
               key={capture.id}
               capture={capture}
               onTypeChange={(type) => updateTypeMutation.mutate({ storeId: capture.id, type })}
-              onFlag={(reason) => flagMutation.mutate({ storeId: capture.id, reason })}
+              onFlag={(reason) => flagMutation.mutate({ storeId: capture.id, reason, currentNotes: capture.notes })}
               onDelete={() => deleteMutation.mutate(capture.id)}
               busy={updateTypeMutation.isPending || flagMutation.isPending || deleteMutation.isPending}
             />
