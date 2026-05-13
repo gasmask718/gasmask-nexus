@@ -58,3 +58,5 @@ behaves. Slated for a dedicated session — too broad to patch mid-feature.
   cross-table parity; silencing them in one path causes drift.
 - Do not "fix" by defaulting `type` in the form. The form already passes the
   user's selection correctly; the loss happens server-side.
+
+## TRG-001 → see also docs/architecture/store-capture-system.md
