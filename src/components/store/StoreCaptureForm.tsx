@@ -78,8 +78,6 @@ export function StoreCaptureForm({
   const captureRole = pickCaptureRole(roles);
   const isAuthorized =
     !!captureRole && ALLOWED_CAPTURE_ROLES.includes(captureRole);
-  const willAutoApprove =
-    !!captureRole && AUTO_APPROVE_ROLES.includes(captureRole);
 
   const [name, setName] = useState(defaultName);
   const [address, setAddress] = useState(defaultAddress);
