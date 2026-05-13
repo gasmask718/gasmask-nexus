@@ -90,22 +90,19 @@ export default function RecentlyAddedStores() {
   });
 
   const flagMutation = useMutation({
-    mutationFn: async ({ storeId, reason }: { storeId: string; reason: string }) => {
-      const { data: u } = await supabase.auth.getUser();
+    mutationFn: async ({ storeId, reason, currentNotes }: { storeId: string; reason: string; currentNotes: string | null }) => {
+      const stamp = new Date().toISOString();
+      const flagLine = `🚩 FLAGGED ${stamp}: ${reason}`;
+      const newNotes = currentNotes ? `${flagLine}\n${currentNotes}` : flagLine;
       const { error } = await supabase
         .from('stores')
-        .update({
-          flagged_at: new Date().toISOString(),
-          flagged_by_user_id: u.user?.id,
-          flagged_reason: reason,
-        } as any)
+        .update({ notes: newNotes } as any)
         .eq('id', storeId);
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success('Store flagged for review');
       qc.invalidateQueries({ queryKey: ['recently-added-captures'] });
-      qc.invalidateQueries({ queryKey: ['recently-added-count'] });
     },
     onError: (err: any) => toast.error('Flag failed', { description: err.message }),
   });
