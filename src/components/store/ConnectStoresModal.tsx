@@ -73,6 +73,7 @@ export function ConnectStoresModal({
         .select('id, name, address_street, address_city, address_state, connected_group_id')
         .neq('id', storeId)
         .is('deleted_at', null)
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .order('name');
 
       if (error) throw error;
