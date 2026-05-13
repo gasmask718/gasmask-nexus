@@ -118,6 +118,80 @@ function StoreCard({ store, onClick }: { store: PortfolioStore; onClick: () => v
   );
 }
 
+function MyCapturedStores() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { data: myStores } = useQuery({
+    queryKey: ['ambassador-captured-stores', user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id, name, address_street, address_city, address_state, type, captured_at, status')
+        .eq('captured_by_user_id', user!.id)
+        .order('captured_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  if (!myStores || myStores.length === 0) {
+    return (
+      <Card className="border-dashed">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Store className="h-4 w-4" />
+            My Stores
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Stores you capture will appear here. Tap the Capture New Store button to add your first.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Store className="h-4 w-4" />
+          My Stores
+          <Badge variant="secondary" className="ml-1">{myStores.length}</Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ScrollArea className="max-h-72">
+          <div className="space-y-2">
+            {myStores.map((store: any) => (
+              <button
+                key={store.id}
+                onClick={() => navigate(`/ambassador/stores/${store.id}`)}
+                className="w-full text-left flex items-start justify-between gap-3 p-3 rounded-lg border hover:border-primary/50 hover:bg-muted/30 transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{store.name}</p>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    <span className="truncate">
+                      {[store.address_street, store.address_city, store.address_state].filter(Boolean).join(', ')}
+                    </span>
+                  </div>
+                </div>
+                <Badge variant="outline" className="text-xs shrink-0">
+                  {String(store.type || '').replace('_', ' ')}
+                </Badge>
+              </button>
+            ))}
+          </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+}
+
 function DashboardContent() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -207,6 +281,9 @@ function DashboardContent() {
           </p>
         </div>
       </div>
+
+      {/* My Captured Stores - portfolio of stores ambassador captured */}
+      <MyCapturedStores />
 
       {/* MASTER GENIUS ARCHITECT: Lead KPI Cards - ALWAYS render, never conditional */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

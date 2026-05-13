@@ -211,3 +211,31 @@ This system establishes the "FIELD CAPTURE → REVIEW QUEUE → APPROVED ACTIVE"
 - Any operator-submitted data needing review
 
 The verification flag pattern (TRG-001 workaround via type dropdown) extends this with "system suggests, operator confirms" — applicable to any LLM/automation ingestion path.
+
+## Ownership Model (Phase 2)
+
+### Current State (Session 8 — 2026-05-11)
+Tonight's implementation uses `captured_by_user_id` as the SIMPLE ownership signal:
+- Ambassador "My Stores" view filters by `captured_by_user_id = current_user`
+- This works for attribution, not for transferable ownership
+
+### Future State (Next Session)
+Full ownership model deferred to next focused session:
+
+REQUIRED COLUMNS:
+- `owned_by_user_id` (UUID, FK auth.users) — current primary owner (maintains relationship)
+- `assigned_at` (timestamptz) — when ownership assigned
+
+WORKFLOWS NEEDED:
+- Default: captures set owned_by_user_id = captured_by_user_id on insert
+- Reassignment: owner can transfer store ownership via admin UI
+- Departure: when ambassador leaves, owner reassigns their portfolio
+- Cross-ownership: drivers/bikers reference stores but don't "own" them
+
+QUESTIONS FOR NEXT SESSION:
+- Can ambassadors transfer stores between each other directly?
+- Should AI Sara agent route based on ownership?
+- Do comms (calls/SMS) belong to owner or whoever sent?
+- Multiple owners per store (regional + local)?
+
+ESTIMATED EFFORT: 60-90 min focused work
