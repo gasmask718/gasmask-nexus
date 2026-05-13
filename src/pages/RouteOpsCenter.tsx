@@ -26,7 +26,8 @@ const RouteOpsCenter = () => {
       const { data, error } = await supabase
         .from('stores')
         .select('id, name, status, last_visit_date, visit_risk_level, last_visit_driver_id')
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .eq('approval_status', 'approved'); // Phase 7: exclude pending captures
       
       if (error) throw error;
       return data;
