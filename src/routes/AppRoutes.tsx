@@ -210,6 +210,7 @@ const VAManagementPage = lazy(() => import('@/pages/penthouse/VAManagementPage')
 const AdminNumbersPage = lazy(() => import('@/pages/va/AdminNumbersPage'));
 const BlandDialHubPage = lazy(() => import('@/pages/bland-dial/BlandDialHubPage'));
 const PayInvoicePage = lazy(() => import('@/pages/va/PayInvoicePage'));
+const ShortLinkRedirect = lazy(() => import('@/pages/ShortLinkRedirect'));
 const AdminLeaderboardPage = lazy(() => import('@/pages/admin/AdminLeaderboard'));
 const AdminCallReviewPage = lazy(() => import('@/pages/admin/AdminCallReview'));
 const AdminVAMonitorPage = lazy(() => import('@/pages/admin/AdminVAMonitor'));
@@ -1209,6 +1210,7 @@ export default function AppRoutes() {
       <Route path="/va/auth" element={<VAAuthPage />} />
       <Route path="/va/accept-invite/:token" element={<VAAcceptInvitePage />} />
       <Route path="/pay/:invoiceId" element={<PayInvoicePage />} />
+      <Route path="/p/:code" element={<ShortLinkRedirect />} />
 
       {/* VA Portal — Protected routes */}
       <Route path="/va/dashboard" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
