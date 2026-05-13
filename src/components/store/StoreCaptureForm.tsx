@@ -80,7 +80,9 @@ export function StoreCaptureForm({
     !!captureRole && ALLOWED_CAPTURE_ROLES.includes(captureRole);
 
   const [name, setName] = useState(defaultName);
-  const [address, setAddress] = useState(defaultAddress);
+  const [addressStreet, setAddressStreet] = useState(defaultAddress);
+  const [addressCity, setAddressCity] = useState('');
+  const [addressState, setAddressState] = useState('NY');
   const [storeType, setStoreType] = useState<string>('bodega');
   const [phone, setPhone] = useState('');
   const [ownerName, setOwnerName] = useState('');
