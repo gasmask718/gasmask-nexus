@@ -246,9 +246,7 @@ export function StoreCaptureForm({
       <CardHeader className="space-y-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Capture New Store</CardTitle>
-          <Badge variant={willAutoApprove ? 'default' : 'secondary'}>
-            {willAutoApprove ? 'Auto-approve' : 'Pending review'}
-          </Badge>
+          <Badge variant="default">Auto-approve</Badge>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <MapPin className="h-3 w-3" />
