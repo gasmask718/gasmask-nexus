@@ -38,7 +38,7 @@ export function useGrabbaIntelligence() {
         communicationRes,
         inventoryRes,
       ] = await Promise.all([
-        supabase.from('stores').select('id, name, neighborhood').limit(500),
+        supabase.from('stores').select('id, name, neighborhood').eq('approval_status', 'approved').limit(500), // Phase 7: exclude pending captures
         supabase.from('wholesale_orders').select('*').in('brand', [...GRABBA_BRAND_IDS]).order('created_at', { ascending: false }).limit(1000),
         supabase.from('store_payments').select('*').limit(500),
         supabase.from('grabba_drivers').select('*'),
