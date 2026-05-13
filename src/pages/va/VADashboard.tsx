@@ -35,12 +35,12 @@ import {
 } from '@/components/ui/sidebar';
 import {
   Users, Phone, BookOpen, HelpCircle, FileText, Settings, LogOut, Headset, PanelLeft,
-  Search, ArrowLeft, Zap, Trophy, Clock, UserCircle, Sparkles, Building2, History,
+  Search, ArrowLeft, Zap, Trophy, Clock, UserCircle, Sparkles, Building2, History, UserPlus,
 } from 'lucide-react';
 import { useVAActiveCompany } from '@/hooks/useVAActiveCompany';
 import { BrandaroLeadIntakeModal } from '@/components/brandaro/BrandaroLeadIntakeModal';
 
-type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'autodialer' | 'leaderboard' | 'callbacks' | 'coaching' | 'history';
+type VAView = 'leads' | 'intake' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'autodialer' | 'leaderboard' | 'callbacks' | 'coaching' | 'history';
 
 function VADashboardInner() {
   const navigate = useNavigate();
@@ -116,6 +116,7 @@ function VADashboardInner() {
 
   const navItems = [
     { key: 'leads' as VAView, label: t('va.nav.leads'), icon: Users },
+    { key: 'intake' as VAView, label: 'New Lead Intake', icon: UserPlus },
     { key: 'discovery' as VAView, label: t('va.nav.discovery'), icon: Search },
     { key: 'dialer' as VAView, label: 'Power Dialer', icon: Zap },
     { key: 'autodialer' as VAView, label: 'Auto Dialer', icon: Sparkles },
@@ -253,6 +254,15 @@ function VADashboardInner() {
                 </div>
               </div>
             )}
+            {view === 'intake' && (
+              <div className="max-w-3xl">
+                <BrandaroLeadIntakeModal
+                  variant="embedded"
+                  assignToSelf
+                  onCreated={() => setView('leads')}
+                />
+              </div>
+            )}
             {view === 'discovery' && <VALeadDiscovery />}
             {view === 'dialer' && (
               <div className="flex gap-4 h-[calc(100vh-8rem)]">
@@ -349,7 +359,7 @@ function VADashboardInner() {
           sendOnSave={invoiceSendMode}
         />
 
-        <BrandaroLeadIntakeModal variant="fab" assignToSelf />
+        
 
         {showSessionSummary && (
           <VASessionSummary
