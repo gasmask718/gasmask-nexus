@@ -137,9 +137,13 @@ serve(async (req: Request) => {
         }
       }
 
-      // Send payment link via SMS
-      const paymentMessage = message
+      // Send payment link via SMS. If caller supplied a custom message that embeds
+      // the long URL, swap it for the short one so SMS bodies stay compact.
+      let paymentMessage = message
         || `Your custom quote is ready! Complete your payment here: ${shortPaymentUrl || "[link]"}\n\nLock in your spot today 🔥`;
+      if (message && payment_url && shortPaymentUrl && shortPaymentUrl !== payment_url) {
+        paymentMessage = paymentMessage.split(payment_url).join(shortPaymentUrl);
+      }
 
       const twilioApiUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
       const formData = new URLSearchParams({
