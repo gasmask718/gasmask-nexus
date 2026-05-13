@@ -38,6 +38,7 @@ import {
   Search, ArrowLeft, Zap, Trophy, Clock, UserCircle, Sparkles, Building2, History,
 } from 'lucide-react';
 import { useVAActiveCompany } from '@/hooks/useVAActiveCompany';
+import { BrandaroLeadIntakeModal } from '@/components/brandaro/BrandaroLeadIntakeModal';
 
 type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'autodialer' | 'leaderboard' | 'callbacks' | 'coaching' | 'history';
 
@@ -347,6 +348,8 @@ function VADashboardInner() {
           lead={invoiceLead}
           sendOnSave={invoiceSendMode}
         />
+
+        <BrandaroLeadIntakeModal variant="fab" assignToSelf />
 
         {showSessionSummary && (
           <VASessionSummary
