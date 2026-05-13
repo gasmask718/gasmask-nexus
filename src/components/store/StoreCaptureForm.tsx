@@ -147,8 +147,8 @@ export function StoreCaptureForm({
       toast.error('You do not have permission to capture stores');
       return;
     }
-    if (!name.trim() || !address.trim()) {
-      toast.error('Name and address are required');
+    if (!name.trim() || !addressStreet.trim() || !addressCity.trim() || !addressState.trim()) {
+      toast.error('Name, street, city, and state are required');
       return;
     }
 
@@ -188,7 +188,9 @@ export function StoreCaptureForm({
       const insertPayload: Record<string, unknown> = {
         name: name.trim(),
         type: storeType,
-        address_street: address.trim(),
+        address_street: addressStreet.trim(),
+        address_city: addressCity.trim(),
+        address_state: addressState.trim(),
         phone: phone.trim() || null,
         notes: composedNotes,
         lat: coords?.lat ?? null,
@@ -276,16 +278,46 @@ export function StoreCaptureForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="cap-address">
-              Address <span className="text-destructive">*</span>
+            <Label htmlFor="cap-street">
+              Street Address <span className="text-destructive">*</span>
             </Label>
             <Input
-              id="cap-address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="565 Lenox Ave, New York, NY"
+              id="cap-street"
+              value={addressStreet}
+              onChange={(e) => setAddressStreet(e.target.value)}
+              placeholder="e.g. 565 Lenox Ave"
               required
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="cap-city">
+                City <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="cap-city"
+                value={addressCity}
+                onChange={(e) => setAddressCity(e.target.value)}
+                placeholder="e.g. Brooklyn"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cap-state">
+                State <span className="text-destructive">*</span>
+              </Label>
+              <Select value={addressState} onValueChange={setAddressState}>
+                <SelectTrigger id="cap-state">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {['NY','NJ','CT','PA','MA','FL','GA','TX','OH','IL','CA','NC','SC','VA','MD','DC','DE','RI','VT','NH','ME','MI','IN','TN','AL','MS','LA','AR','MO','KY','WV','WI','MN','IA','KS','NE','SD','ND','MT','WY','CO','NM','AZ','UT','NV','ID','OR','WA','OK','HI','AK'].map(s => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-1.5">
