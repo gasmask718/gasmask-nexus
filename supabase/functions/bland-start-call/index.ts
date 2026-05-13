@@ -52,8 +52,10 @@ Deno.serve(async (req) => {
     const business_name: string | undefined = body?.business_name;
     const context: string | undefined = body?.context;
     const voice: string = body?.voice || "maya";
-    const bland_agent_id: string | undefined =
-      body?.bland_agent_id || Deno.env.get("BRANDARO_SALES_AGENT_ID") || undefined;
+    // Only use the agent endpoint when an ID is explicitly passed in the request.
+    // Falling back to BRANDARO_SALES_AGENT_ID env caused 404s when that ID was a
+    // pathway/web-agent (not valid for POST /v1/agents/{id}/calls).
+    const bland_agent_id: string | undefined = body?.bland_agent_id || undefined;
     const auto_sms: boolean = body?.auto_sms !== false; // default true
 
     if (!phone_number || !/^\+?[1-9]\d{6,14}$/.test(phone_number.replace(/\s/g, ""))) {
