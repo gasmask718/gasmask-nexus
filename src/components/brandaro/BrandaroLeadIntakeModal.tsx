@@ -133,8 +133,106 @@ export function BrandaroLeadIntakeModal({
     </Button>
   );
 
+  // Embedded variant — renders the form inline (no dialog, no trigger).
+  // Used by the VA Dashboard "Intake" tab so the form lives as a full surface
+  // instead of behind a floating bubble.
+  if (variant === 'embedded') {
+    return (
+      <div className={cn('rounded-xl border border-slate-700 bg-slate-900/40 p-5', className)}>
+        <div className="mb-4">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <UserPlus className="h-5 w-5 text-cyan-400" /> New Lead Intake
+          </h2>
+          <p className="text-xs text-slate-400 mt-1">
+            Capture a new prospect into the Brandaro pipeline. Saves to{' '}
+            <code className="text-[10px]">brandaro_qualified_leads</code>
+            {assignToSelf ? ' and assigns it to you.' : '.'}
+          </p>
+        </div>
+
+        <form onSubmit={submit} className="space-y-4">
+          <div>
+            <Label htmlFor="business_name">Business Name *</Label>
+            <Input
+              id="business_name"
+              value={form.business_name}
+              onChange={(e) => setField('business_name', e.target.value)}
+              placeholder="Acme Corp"
+              maxLength={200}
+              autoFocus
+            />
+            {errors.business_name && <p className="text-xs text-destructive mt-1">{errors.business_name}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="full_name">Contact Name</Label>
+              <Input id="full_name" value={form.full_name}
+                onChange={(e) => setField('full_name', e.target.value)} placeholder="Jane Doe" maxLength={150} />
+            </div>
+            <div>
+              <Label htmlFor="phone_number">Phone</Label>
+              <Input id="phone_number" type="tel" value={form.phone_number}
+                onChange={(e) => setField('phone_number', e.target.value)} placeholder="+1 555 123 4567" maxLength={40} />
+              {errors.phone_number && <p className="text-xs text-destructive mt-1">{errors.phone_number}</p>}
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" value={form.email}
+                onChange={(e) => setField('email', e.target.value)} placeholder="contact@business.com" maxLength={255} />
+              {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
+            </div>
+            <div>
+              <Label htmlFor="city">City</Label>
+              <Input id="city" value={form.city}
+                onChange={(e) => setField('city', e.target.value)} maxLength={100} />
+            </div>
+            <div>
+              <Label htmlFor="state">State</Label>
+              <Input id="state" value={form.state}
+                onChange={(e) => setField('state', e.target.value)} maxLength={60} />
+            </div>
+            <div>
+              <Label htmlFor="industry">Industry</Label>
+              <Input id="industry" value={form.industry}
+                onChange={(e) => setField('industry', e.target.value)} placeholder="Restaurant, Retail, etc."
+                maxLength={100} />
+            </div>
+            <div>
+              <Label htmlFor="service_interest">Service Interest</Label>
+              <Input id="service_interest" value={form.service_interest}
+                onChange={(e) => setField('service_interest', e.target.value)}
+                placeholder="Web design, AI, branding..." maxLength={200} />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="call_notes">Notes</Label>
+            <Textarea id="call_notes" value={form.call_notes} rows={3}
+              onChange={(e) => setField('call_notes', e.target.value)}
+              placeholder="Source, context, anything useful for the next call..." maxLength={2000} />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { setForm(EMPTY); setErrors({}); }}
+              disabled={create.isPending}
+            >
+              Reset
+            </Button>
+            <Button type="submit" disabled={create.isPending} className="gap-2">
+              {create.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {create.isPending ? 'Saving...' : 'Add Lead'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
