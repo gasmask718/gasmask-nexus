@@ -1211,6 +1211,7 @@ export default function AppRoutes() {
       <Route path="/va/accept-invite/:token" element={<VAAcceptInvitePage />} />
       <Route path="/pay/:invoiceId" element={<PayInvoicePage />} />
       <Route path="/p/:code" element={<ShortLinkRedirect />} />
+      <Route path="/brandaro/pay/:code" element={<ShortLinkRedirect />} />
 
       {/* VA Portal — Protected routes */}
       <Route path="/va/dashboard" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
