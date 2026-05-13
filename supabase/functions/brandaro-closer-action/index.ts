@@ -114,8 +114,32 @@ serve(async (req: Request) => {
       console.log(`✅ Call initiated to ${e164}`);
 
     } else if (action === "payment_link") {
+      // Shorten the payment URL so the SMS body stays compact and trackable.
+      let shortPaymentUrl: string | null = payment_url || null;
+      if (payment_url) {
+        const siteBase =
+          Deno.env.get("PUBLIC_SITE_URL") ||
+          Deno.env.get("SITE_URL") ||
+          "https://gasmask-os-nexus.lovable.app";
+        const { data: shortCode, error: shortErr } = await supabase.rpc("create_short_link", {
+          p_target_url: payment_url,
+          p_kind: "closer_payment",
+          p_invoice_id: null,
+          p_lead_id: lead_id || null,
+          p_session_id: session_id || null,
+          p_context: { source: "brandaro-closer-action" },
+          p_expires_at: null,
+        });
+        if (!shortErr && shortCode) {
+          shortPaymentUrl = `${siteBase.replace(/\/$/, "")}/p/${shortCode}`;
+        } else if (shortErr) {
+          console.warn("create_short_link failed, using original URL:", shortErr.message);
+        }
+      }
+
       // Send payment link via SMS
-      const paymentMessage = message || `Your custom quote is ready! Complete your payment here: ${payment_url || "[link]"}\n\nLock in your spot today 🔥`;
+      const paymentMessage = message
+        || `Your custom quote is ready! Complete your payment here: ${shortPaymentUrl || "[link]"}\n\nLock in your spot today 🔥`;
 
       const twilioApiUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
       const formData = new URLSearchParams({
