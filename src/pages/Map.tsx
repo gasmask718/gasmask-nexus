@@ -67,6 +67,7 @@ const Map = () => {
     const { data, error } = await supabase
       .from('stores')
       .select('id, name, lat, lng, status, type, phone, address_street, address_city')
+      .eq('approval_status', 'approved') // Phase 7: exclude pending captures
       .not('lat', 'is', null)
       .not('lng', 'is', null);
 
