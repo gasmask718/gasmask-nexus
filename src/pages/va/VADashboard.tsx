@@ -40,7 +40,7 @@ import {
 import { useVAActiveCompany } from '@/hooks/useVAActiveCompany';
 import { BrandaroLeadIntakeModal } from '@/components/brandaro/BrandaroLeadIntakeModal';
 
-type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'autodialer' | 'leaderboard' | 'callbacks' | 'coaching' | 'history';
+type VAView = 'leads' | 'intake' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'autodialer' | 'leaderboard' | 'callbacks' | 'coaching' | 'history';
 
 function VADashboardInner() {
   const navigate = useNavigate();
