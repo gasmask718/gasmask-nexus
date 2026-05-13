@@ -381,26 +381,26 @@ serve(async (req: Request) => {
           ? (invoice.deposit_payment_link || invoice.final_payment_link || invoice.payment_link)
           : invoice.payment_link;
 
-      // Mint a short link so the SMS stays compact and trackable.
-      let smsLink: string | null = longLink || null;
-      if (longLink) {
-        const siteBase =
-          Deno.env.get("PUBLIC_SITE_URL") ||
-          Deno.env.get("SITE_URL") ||
-          "https://gasmask-os-nexus.lovable.app";
-        const { data: shortCode, error: shortErr } = await supabase.rpc("create_short_link", {
-          p_target_url: longLink,
-          p_kind: "invoice_payment",
-          p_invoice_id: invoice.id,
-          p_lead_id: invoice.lead_id || null,
-          p_session_id: null,
-          p_context: { source: "va-send-invoice", channel: "sms", va_id: userId },
-          p_expires_at: null,
-        });
-        if (!shortErr && shortCode) {
-          smsLink = `${siteBase.replace(/\/$/, "")}/brandaro/pay/${shortCode}`;
-        } else if (shortErr) {
-          console.warn("create_short_link failed, falling back to long link:", shortErr.message);
+      // Send the Stripe checkout link directly in the SMS so the recipient
+      // lands straight on the secure Stripe payment page (no redirect hop).
+      // We still log the send + click context via va_invoice_logs below.
+      const smsLink: string | null = longLink || null;
+
+      // Best-effort: record that this Stripe link was dispatched via SMS for
+      // attribution/analytics. Failure here must not block the SMS send.
+      if (smsLink) {
+        try {
+          await supabase.rpc("create_short_link", {
+            p_target_url: smsLink,
+            p_kind: "invoice_payment_stripe_direct",
+            p_invoice_id: invoice.id,
+            p_lead_id: invoice.lead_id || null,
+            p_session_id: null,
+            p_context: { source: "va-send-invoice", channel: "sms", va_id: userId, direct_stripe: true },
+            p_expires_at: null,
+          });
+        } catch (e) {
+          console.warn("create_short_link tracking failed (non-fatal):", (e as Error).message);
         }
       }
 
