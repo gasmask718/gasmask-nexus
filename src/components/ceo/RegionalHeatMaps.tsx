@@ -35,6 +35,7 @@ export function RegionalHeatMaps() {
       const { data, error } = await supabase
         .from('stores')
         .select('id, name, address_city, address_state, neighborhood, boro, status, sells_flowers, prime_time_energy, rpa_status, health_score, region_id')
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .limit(200);
       
       if (error) throw error;
