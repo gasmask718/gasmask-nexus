@@ -36,7 +36,8 @@ const Analytics = () => {
       // Fetch stores data
       const { data: stores } = await supabase
         .from('stores')
-        .select('id, name, address_city, status, tags');
+        .select('id, name, address_city, status, tags')
+        .eq('approval_status', 'approved'); // Phase 7: exclude pending captures
 
       if (stores) {
         // Group by borough

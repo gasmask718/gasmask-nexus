@@ -51,7 +51,7 @@ export function CreateOrderModal({ isOpen, onClose, onSubmit, initialData, isLoa
   const { data: stores } = useQuery({
     queryKey: ['stores-list'],
     queryFn: async () => {
-      const { data } = await supabase.from('stores').select('id, name').limit(100);
+      const { data } = await supabase.from('stores').select('id, name').eq('approval_status', 'approved').limit(100); // Phase 7: exclude pending captures
       return data || [];
     },
     enabled: isOpen,

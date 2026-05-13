@@ -136,6 +136,7 @@ export default function MultiBrandDelivery() {
         .from('stores')
         .select('id, name, address_street, address_city, address_state, phone, status, health_score, last_visit_date, primary_contact_name, boro')
         .is('deleted_at', null)
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .order('name')
         .limit(500);
 

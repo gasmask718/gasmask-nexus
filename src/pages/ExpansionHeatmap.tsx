@@ -28,7 +28,8 @@ export default function ExpansionHeatmap() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('stores')
-        .select('state, city, region_id, store_health_score');
+        .select('state, city, region_id, store_health_score')
+        .eq('approval_status', 'approved'); // Phase 7: exclude pending captures
       
       if (error) throw error;
       return data;

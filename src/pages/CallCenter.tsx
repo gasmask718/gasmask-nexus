@@ -31,6 +31,7 @@ const CallCenter = () => {
         .from('stores')
         .select('id, name')
         .eq('status', 'active')
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .order('name');
       if (error) throw error;
       return data;

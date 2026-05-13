@@ -36,6 +36,7 @@ export const BulkCommunicationLogModal = ({ open, onOpenChange, onSuccess }: Bul
       const { data, error } = await supabase
         .from('stores')
         .select('id, name')
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .order('name');
       if (error) throw error;
       return data;

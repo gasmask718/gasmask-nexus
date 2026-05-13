@@ -200,7 +200,7 @@ export function useGrabbaPenthouseStats() {
     queryKey: ['grabba-penthouse-stats'],
     queryFn: async () => {
       const [stores, wholesalers, ambassadors, drivers, orders, payments] = await Promise.all([
-        supabase.from('stores').select('id', { count: 'exact', head: true }),
+        supabase.from('stores').select('id', { count: 'exact', head: true }).eq('approval_status', 'approved'), // Phase 7: exclude pending captures
         supabase.from('wholesalers').select('id', { count: 'exact', head: true }),
         supabase.from('ambassadors').select('id', { count: 'exact', head: true }),
         supabase.from('grabba_drivers').select('id', { count: 'exact', head: true }),

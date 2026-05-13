@@ -45,6 +45,7 @@ export default function GrabbaTextCenter() {
         .from('stores')
         .select('id, name, phone')
         .eq('status', 'active')
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .not('phone', 'is', null)
         .order('name');
       if (error) throw error;
