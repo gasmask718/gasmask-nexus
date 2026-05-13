@@ -367,12 +367,36 @@ serve(async (req: Request) => {
       recipient = toNumber;
 
       const total = fmtMoney(invoice.total);
-      const link =
+      const longLink =
         invoice.payment_type === 'split'
           ? (invoice.deposit_payment_link || invoice.final_payment_link || invoice.payment_link)
           : invoice.payment_link;
-      const smsBody = link
-        ? `Brandaro: $${total} invoice ready. Pay: ${link}`
+
+      // Mint a short link so the SMS stays compact and trackable.
+      let smsLink: string | null = longLink || null;
+      if (longLink) {
+        const siteBase =
+          Deno.env.get("PUBLIC_SITE_URL") ||
+          Deno.env.get("SITE_URL") ||
+          "https://gasmask-os-nexus.lovable.app";
+        const { data: shortCode, error: shortErr } = await supabase.rpc("create_short_link", {
+          p_target_url: longLink,
+          p_kind: "invoice_payment",
+          p_invoice_id: invoice.id,
+          p_lead_id: invoice.lead_id || null,
+          p_session_id: null,
+          p_context: { source: "va-send-invoice", channel: "sms", va_id: userId },
+          p_expires_at: null,
+        });
+        if (!shortErr && shortCode) {
+          smsLink = `${siteBase.replace(/\/$/, "")}/p/${shortCode}`;
+        } else if (shortErr) {
+          console.warn("create_short_link failed, falling back to long link:", shortErr.message);
+        }
+      }
+
+      const smsBody = smsLink
+        ? `Brandaro: $${total} invoice ready. Pay: ${smsLink}`
         : `Brandaro: $${total} invoice ${invoice.invoice_number || ""} ready.`;
 
       const twilioParams: Record<string, string> = { To: recipient, Body: smsBody };
