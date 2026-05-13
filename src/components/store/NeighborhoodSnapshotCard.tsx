@@ -21,6 +21,7 @@ export function NeighborhoodSnapshotCard({ storeId, neighborhood, borough }: Nei
       let query = supabase
         .from('stores')
         .select('id, status, type')
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .neq('id', storeId);
 
       if (neighborhood) {

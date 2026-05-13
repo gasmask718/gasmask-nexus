@@ -61,6 +61,7 @@ export const RouteTemplateManager: React.FC = () => {
         .from('stores')
         .select('id, name, address_street, address_city, boro')
         .is('deleted_at', null)
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .order('name')
         .limit(50);
       if (storeSearch) query = query.ilike('name', `%${storeSearch}%`);

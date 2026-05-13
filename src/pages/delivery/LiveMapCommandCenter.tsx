@@ -78,6 +78,7 @@ export default function LiveMapCommandCenter() {
       const { data, error } = await supabase
         .from('stores')
         .select('id, name, lat, lng, address_street, address_city, address_state, phone, status, health_score, type')
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .not('lat', 'is', null)
         .not('lng', 'is', null);
       if (error) throw error;

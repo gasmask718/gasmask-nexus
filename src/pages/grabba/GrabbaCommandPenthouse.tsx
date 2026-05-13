@@ -608,7 +608,8 @@ const NeighborhoodPerformance = () => {
     queryFn: async () => {
       const { data: stores } = await supabase
         .from('stores')
-        .select('id, neighborhood, boro');
+        .select('id, neighborhood, boro')
+        .eq('approval_status', 'approved'); // Phase 7: exclude pending captures
       
       const { data: orders } = await supabase
         .from('wholesale_orders')

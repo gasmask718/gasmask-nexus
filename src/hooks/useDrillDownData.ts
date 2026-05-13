@@ -62,6 +62,7 @@ async function fetchStores(filters: DrillDownFilters): Promise<DrillDownResult[]
   let query = client
     .from('stores')
     .select('*, company:companies(name, neighborhood, boro)')
+    .eq('approval_status', 'approved') // Phase 7: exclude pending captures
     .order('name');
 
   if (filters.brand) {

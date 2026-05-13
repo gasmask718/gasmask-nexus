@@ -245,6 +245,7 @@ export const useStoreQualityScores = () => {
       const { data: stores } = await supabase
         .from('stores')
         .select('id, name')
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .limit(20);
 
       if (!stores) return [];

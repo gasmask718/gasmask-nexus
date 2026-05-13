@@ -86,6 +86,7 @@ export default function TubeTerritoryPage() {
         const { data, error } = await supabase
           .from('stores')
           .select('id, name, lat, lng, neighborhood, boro')
+          .eq('approval_status', 'approved') // Phase 7: exclude pending captures
           .not('lat', 'is', null)
           .not('lng', 'is', null)
           .range(from, from + PAGE - 1);
