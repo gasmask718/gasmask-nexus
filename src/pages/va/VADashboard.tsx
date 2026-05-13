@@ -359,7 +359,7 @@ function VADashboardInner() {
           sendOnSave={invoiceSendMode}
         />
 
-        <BrandaroLeadIntakeModal variant="fab" assignToSelf />
+        
 
         {showSessionSummary && (
           <VASessionSummary
