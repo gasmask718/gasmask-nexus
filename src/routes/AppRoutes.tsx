@@ -238,7 +238,7 @@ const RolesPermissionsPage = lazy(() => import('@/components/security/RolesPermi
 const StoreDeduplicationPage = lazy(() => import('@/pages/admin/StoreDeduplicationPage'));
 const StoreMergePreview = lazy(() => import('@/pages/admin/StoreMergePreview'));
 const MergeDryRun = lazy(() => import('@/pages/admin/MergeDryRun'));
-const PendingCaptures = lazy(() => import('@/pages/admin/PendingCaptures'));
+const RecentlyAddedStores = lazy(() => import('@/pages/admin/RecentlyAddedStores'));
 const UserManagementPage = lazy(() => import('@/components/security/UserManagementPage'));
 const MessagesPage = lazy(() => import('@/pages/Messages'));
 const CommunicationInsights = lazy(() => import('@/pages/CommunicationInsights'));
