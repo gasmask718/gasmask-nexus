@@ -41,13 +41,14 @@ type AppRoleString =
   | 'biker'
   | 'ambassador';
 
-const AUTO_APPROVE_ROLES: AppRoleString[] = ['owner', 'admin'];
+// All authorized roles auto-approve captures.
+// Owner reviews via the Recently Added dashboard post-hoc, not as a gate.
 const ALLOWED_CAPTURE_ROLES: AppRoleString[] = [
   'owner',
   'admin',
+  'ambassador',
   'driver',
   'biker',
-  'ambassador',
 ];
 
 function pickCaptureRole(roles: string[] | null | undefined): AppRoleString | null {
@@ -77,8 +78,6 @@ export function StoreCaptureForm({
   const captureRole = pickCaptureRole(roles);
   const isAuthorized =
     !!captureRole && ALLOWED_CAPTURE_ROLES.includes(captureRole);
-  const willAutoApprove =
-    !!captureRole && AUTO_APPROVE_ROLES.includes(captureRole);
 
   const [name, setName] = useState(defaultName);
   const [address, setAddress] = useState(defaultAddress);
@@ -177,9 +176,9 @@ export function StoreCaptureForm({
         storefrontPhotoUrl = urlData.publicUrl;
       }
 
-      // 2. Build store row
-      const approvalStatus = willAutoApprove ? 'approved' : 'pending';
-      const storeStatus = willAutoApprove ? 'prospect' : 'pending';
+      // 2. Build store row — auto-approve all captures.
+      // Owner reviews via Recently Added dashboard, not as a gate.
+      const nowIso = new Date().toISOString();
       const composedNotes = ownerName.trim()
         ? `Owner: ${ownerName.trim()}${notes.trim() ? `\n${notes.trim()}` : ''}`
         : notes.trim() || null;
@@ -193,13 +192,13 @@ export function StoreCaptureForm({
         lat: coords?.lat ?? null,
         lng: coords?.lng ?? null,
         storefront_photo_url: storefrontPhotoUrl,
-        status: storeStatus,
-        approval_status: approvalStatus,
+        status: 'prospect',
+        approval_status: 'approved',
         captured_by_user_id: user.id,
-        captured_at: new Date().toISOString(),
+        captured_at: nowIso,
         captured_role: captureRole,
-        approved_by_user_id: willAutoApprove ? user.id : null,
-        approved_at: willAutoApprove ? new Date().toISOString() : null,
+        approved_by_user_id: user.id,
+        approved_at: nowIso,
         connected_group_id: connectedGroupId ?? null,
       };
 
@@ -211,12 +210,8 @@ export function StoreCaptureForm({
 
       if (error) throw error;
 
-      toast.success(
-        willAutoApprove
-          ? 'Store captured & auto-approved'
-          : 'Store captured — pending review',
-      );
-      onCaptured?.(data.id, willAutoApprove);
+      toast.success('Store captured & added to network');
+      onCaptured?.(data.id, true);
     } catch (err: any) {
       console.error('[StoreCaptureForm] submit error:', err);
       toast.error(err.message || 'Failed to capture store');
@@ -251,9 +246,7 @@ export function StoreCaptureForm({
       <CardHeader className="space-y-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Capture New Store</CardTitle>
-          <Badge variant={willAutoApprove ? 'default' : 'secondary'}>
-            {willAutoApprove ? 'Auto-approve' : 'Pending review'}
-          </Badge>
+          <Badge variant="default">Auto-approve</Badge>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <MapPin className="h-3 w-3" />
@@ -413,10 +406,7 @@ export function StoreCaptureForm({
           </div>
 
           <p className="text-xs text-muted-foreground pt-1">
-            Captured as <strong>{captureRole}</strong>.{' '}
-            {willAutoApprove
-              ? 'Will be added directly as a prospect.'
-              : 'Will appear in the admin review queue.'}
+            Captured as <strong>{captureRole}</strong>. Store added immediately to network.
           </p>
         </form>
       </CardContent>
