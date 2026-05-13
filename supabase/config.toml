@@ -281,6 +281,9 @@ verify_jwt = false
 [functions.twilio-recording-callback]
 verify_jwt = false
 
+[functions.twilio-recording-webhook]
+verify_jwt = false
+
 [functions.brandaro-track-lead-event]
 verify_jwt = false
 
