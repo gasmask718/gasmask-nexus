@@ -65,15 +65,17 @@ export default function BlandDialHubPage() {
       </div>
 
       <Tabs defaultValue="dial" className="w-full">
-        <TabsList className="grid grid-cols-3 w-full max-w-xl">
+        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
           <TabsTrigger value="dial"><Phone className="h-4 w-4 mr-2" />Dial Now</TabsTrigger>
           <TabsTrigger value="sms"><MessageSquare className="h-4 w-4 mr-2" />Send SMS</TabsTrigger>
           <TabsTrigger value="history"><History className="h-4 w-4 mr-2" />Call History</TabsTrigger>
+          <TabsTrigger value="texts"><MessageSquare className="h-4 w-4 mr-2" />Text History</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dial" className="mt-4"><DialPanel /></TabsContent>
         <TabsContent value="sms" className="mt-4"><SmsPanel /></TabsContent>
         <TabsContent value="history" className="mt-4"><HistoryPanel /></TabsContent>
+        <TabsContent value="texts" className="mt-4"><TextHistoryPanel /></TabsContent>
       </Tabs>
     </div>
   );
@@ -769,5 +771,242 @@ function Field({ label, value, mono }: { label: string; value: string; mono?: bo
       <Label className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
       <p className={mono ? "font-mono text-xs mt-0.5" : "mt-0.5"}>{value}</p>
     </div>
+  );
+}
+
+// ============================================================
+// TEXT HISTORY PANEL — bland_sms_log feed
+// ============================================================
+interface SmsLogRow {
+  id: string;
+  lead_id: string | null;
+  phone_number: string;
+  message: string;
+  source: string | null;
+  twilio_sid: string | null;
+  status: string;
+  error: string | null;
+  created_at: string;
+  lead?: { id: string; name: string | null; phone_number: string } | null;
+}
+
+const smsStatusBadge = (status: string, hasError: boolean) => {
+  const v = (status || "").toLowerCase();
+  if (hasError || v === "failed" || v === "error") {
+    return <Badge variant="outline" className="bg-red-500/10 text-red-700 border-red-500/30">{status || "failed"}</Badge>;
+  }
+  if (v === "delivered") {
+    return <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/30">delivered</Badge>;
+  }
+  if (v === "sent" || v === "queued") {
+    return <Badge variant="outline" className="bg-blue-500/10 text-blue-700 border-blue-500/30">{status}</Badge>;
+  }
+  return <Badge variant="outline">{status || "—"}</Badge>;
+};
+
+function TextHistoryPanel() {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selected, setSelected] = useState<SmsLogRow | null>(null);
+
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ["bland-sms-log", page, search, statusFilter],
+    queryFn: async () => {
+      const from = (page - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      let q = supabase
+        .from("bland_sms_log")
+        .select("*, lead:bland_leads(id, name, phone_number)", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(from, to);
+
+      if (search.trim()) {
+        const s = search.trim();
+        q = q.or(`phone_number.ilike.%${s}%,message.ilike.%${s}%`);
+      }
+      if (statusFilter !== "all") {
+        if (statusFilter === "failed") q = q.or("status.eq.failed,status.eq.error,error.not.is.null");
+        else q = q.eq("status", statusFilter);
+      }
+
+      const { data, count, error } = await q;
+      if (error) throw error;
+      return { rows: (data || []) as SmsLogRow[], count: count || 0 };
+    },
+    refetchInterval: 30000,
+  });
+
+  // Realtime: refresh on insert/update
+  useEffect(() => {
+    const channel = supabase
+      .channel("bland_sms_log_feed")
+      .on("postgres_changes", { event: "*", schema: "public", table: "bland_sms_log" }, () => refetch())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [refetch]);
+
+  const rows = data?.rows || [];
+  const total = data?.count || 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const sentCount = rows.filter(r => !r.error && r.status !== "failed").length;
+  const failedCount = rows.filter(r => r.error || r.status === "failed").length;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" /> Text Message History
+            </CardTitle>
+            <CardDescription>
+              Every SMS sent through Bland Dial — live from <code className="text-xs">bland_sms_log</code>.
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/30">
+              ✓ {sentCount} on page
+            </Badge>
+            {failedCount > 0 && (
+              <Badge variant="outline" className="bg-red-500/10 text-red-700 border-red-500/30">
+                ✗ {failedCount} failed
+              </Badge>
+            )}
+            <Badge variant="outline">{total.toLocaleString()} total</Badge>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 mt-4">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search phone or message..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              className="pl-8"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All status</SelectItem>
+              <SelectItem value="sent">Sent</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="queued">Queued</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+            {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
+          </Button>
+        </div>
+      </CardHeader>
+
+      <CardContent>
+        <div className="rounded-md border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[140px]">When</TableHead>
+                <TableHead>Recipient</TableHead>
+                <TableHead className="min-w-[280px]">Message</TableHead>
+                <TableHead className="w-[110px]">Source</TableHead>
+                <TableHead className="w-[120px]">Status</TableHead>
+                <TableHead className="w-[70px] text-right">View</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell colSpan={6}><Skeleton className="h-6 w-full" /></TableCell>
+                  </TableRow>
+                ))
+              ) : rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    No text messages yet. Send your first SMS from the "Send SMS" tab.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rows.map((row) => (
+                  <TableRow key={row.id} className="hover:bg-muted/40">
+                    <TableCell className="text-xs whitespace-nowrap">{fmtDate(row.created_at)}</TableCell>
+                    <TableCell>
+                      <div className="font-medium text-sm">{row.lead?.name || "—"}</div>
+                      <div className="text-xs text-muted-foreground font-mono">{row.phone_number}</div>
+                    </TableCell>
+                    <TableCell className="max-w-[420px]">
+                      <p className="text-sm line-clamp-2 whitespace-pre-wrap">{row.message}</p>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{row.source || "—"}</TableCell>
+                    <TableCell>{smsStatusBadge(row.status, !!row.error)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" onClick={() => setSelected(row)}>
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4">
+            <p className="text-xs text-muted-foreground">
+              Page {page} of {totalPages} · {total.toLocaleString()} messages
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+
+      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" /> Text Message
+            </DialogTitle>
+          </DialogHeader>
+          {selected && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Sent" value={fmtDate(selected.created_at)} />
+                <Field label="Status" value={selected.status} />
+                <Field label="Recipient" value={selected.lead?.name || "—"} />
+                <Field label="Phone" value={selected.phone_number} mono />
+                <Field label="Source" value={selected.source || "—"} />
+                <Field label="Twilio SID" value={selected.twilio_sid || "—"} mono />
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">Message</Label>
+                <ScrollArea className="h-40 mt-1 rounded-md border p-3">
+                  <p className="text-sm whitespace-pre-wrap">{selected.message}</p>
+                </ScrollArea>
+              </div>
+              {selected.error && (
+                <div>
+                  <Label className="text-xs uppercase tracking-wide text-red-600">Error</Label>
+                  <p className="text-sm mt-1 p-2 rounded-md bg-red-500/10 border border-red-500/30 text-red-700">
+                    {selected.error}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </Card>
   );
 }
