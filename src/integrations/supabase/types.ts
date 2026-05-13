@@ -30112,6 +30112,7 @@ export type Database = {
       communication_logs: {
         Row: {
           ai_confidence_score: number | null
+          bland_ai_handled: boolean
           brand: string | null
           business_id: string | null
           call_duration: number | null
@@ -30128,6 +30129,7 @@ export type Database = {
           id: string
           influencer_id: string | null
           message_content: string | null
+          operator_id: string | null
           outcome: string | null
           performed_by: string | null
           recipient_email: string | null
@@ -30138,10 +30140,14 @@ export type Database = {
           sender_phone: string | null
           store_id: string | null
           summary: string
+          thread_id: string | null
+          transcription: string | null
+          twilio_sid: string | null
           wholesaler_id: string | null
         }
         Insert: {
           ai_confidence_score?: number | null
+          bland_ai_handled?: boolean
           brand?: string | null
           business_id?: string | null
           call_duration?: number | null
@@ -30158,6 +30164,7 @@ export type Database = {
           id?: string
           influencer_id?: string | null
           message_content?: string | null
+          operator_id?: string | null
           outcome?: string | null
           performed_by?: string | null
           recipient_email?: string | null
@@ -30168,10 +30175,14 @@ export type Database = {
           sender_phone?: string | null
           store_id?: string | null
           summary: string
+          thread_id?: string | null
+          transcription?: string | null
+          twilio_sid?: string | null
           wholesaler_id?: string | null
         }
         Update: {
           ai_confidence_score?: number | null
+          bland_ai_handled?: boolean
           brand?: string | null
           business_id?: string | null
           call_duration?: number | null
@@ -30188,6 +30199,7 @@ export type Database = {
           id?: string
           influencer_id?: string | null
           message_content?: string | null
+          operator_id?: string | null
           outcome?: string | null
           performed_by?: string | null
           recipient_email?: string | null
@@ -30198,6 +30210,9 @@ export type Database = {
           sender_phone?: string | null
           store_id?: string | null
           summary?: string
+          thread_id?: string | null
+          transcription?: string | null
+          twilio_sid?: string | null
           wholesaler_id?: string | null
         }
         Relationships: [
@@ -30270,6 +30285,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_store_tube_summary"
             referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "communication_logs_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "communication_threads"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "communication_logs_wholesaler_id_fkey"
@@ -30714,6 +30736,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      communication_threads: {
+        Row: {
+          contact_id: string | null
+          created_at: string
+          id: string
+          last_activity_at: string
+          last_channel: string | null
+          last_direction: string | null
+          last_message_preview: string | null
+          last_operator_id: string | null
+          message_count: number
+          participating_operator_ids: string[]
+          store_id: string
+          unread_count: number
+          updated_at: string
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          last_activity_at?: string
+          last_channel?: string | null
+          last_direction?: string | null
+          last_message_preview?: string | null
+          last_operator_id?: string | null
+          message_count?: number
+          participating_operator_ids?: string[]
+          store_id: string
+          unread_count?: number
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          last_activity_at?: string
+          last_channel?: string | null
+          last_direction?: string | null
+          last_message_preview?: string | null
+          last_operator_id?: string | null
+          message_count?: number
+          participating_operator_ids?: string[]
+          store_id?: string
+          unread_count?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       communication_trend_snapshots: {
         Row: {
