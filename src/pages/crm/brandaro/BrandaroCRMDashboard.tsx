@@ -22,6 +22,7 @@ import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import CRMLayout from '../CRMLayout';
 import LastUserLogsTable from '@/components/crm/brandaro/LastUserLogsTable';
 import { BrandaroInvoicesDataTable } from '@/components/invoice/BrandaroInvoicesDataTable';
+import { BrandaroLeadIntakeModal } from '@/components/brandaro/BrandaroLeadIntakeModal';
 
 const PAGE_SIZE = 25;
 
@@ -286,6 +287,7 @@ export default function BrandaroCRMDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+      <BrandaroLeadIntakeModal variant="fab" assignToSelf={false} />
     </CRMLayout>
   );
 }
