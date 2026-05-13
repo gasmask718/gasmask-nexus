@@ -109,13 +109,9 @@ export default function RecentlyAddedStores() {
 
   const deleteMutation = useMutation({
     mutationFn: async (storeId: string) => {
-      const { data: u } = await supabase.auth.getUser();
       const { error } = await supabase
         .from('stores')
-        .update({
-          deleted_at: new Date().toISOString(),
-          deleted_by_user_id: u.user?.id,
-        } as any)
+        .update({ deleted_at: new Date().toISOString() } as any)
         .eq('id', storeId);
       if (error) throw error;
     },
