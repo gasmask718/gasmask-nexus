@@ -43,6 +43,7 @@ const EmailCenter = () => {
         .from('stores')
         .select('id, name, email')
         .eq('status', 'active')
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .not('email', 'is', null)
         .order('name');
       if (error) throw error;
