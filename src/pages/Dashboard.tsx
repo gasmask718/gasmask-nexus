@@ -47,7 +47,7 @@ const Dashboard = () => {
       // Live mode: fetch from database
       try {
         const [storesRes, productsRes, routesRes] = await Promise.all([
-          supabase.from('stores').select('id, status', { count: 'exact' }),
+          supabase.from('stores').select('id, status', { count: 'exact' }).eq('approval_status', 'approved'), // Phase 7: exclude pending captures
           supabase.from('products').select('id', { count: 'exact' }),
           supabase.from('routes').select('id', { count: 'exact' })
         ]);
