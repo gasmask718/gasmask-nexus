@@ -54,6 +54,7 @@ export default function GrabbaInventory() {
       const { data } = await supabase
         .from("stores")
         .select("id, name")
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .order("name");
       return data || [];
     },
@@ -160,7 +161,7 @@ export default function GrabbaInventory() {
     queryFn: async () => {
       const brandsToQuery = getBrandQuery();
       
-      const { data: stores } = await supabase.from("stores").select("neighborhood, id, name");
+      const { data: stores } = await supabase.from("stores").select("neighborhood, id, name").eq('approval_status', 'approved'); // Phase 7: exclude pending captures
       const { data: orders } = await supabase
         .from("wholesale_orders")
         .select("store_id, tubes_total, boxes, brand")

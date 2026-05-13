@@ -253,6 +253,7 @@ export const taskExecutors: Record<string, (task: AITask) => Promise<Record<stri
     const { data: stores } = await supabase
       .from('stores')
       .select('id, name, created_at')
+      .eq('approval_status', 'approved') // Phase 7: exclude pending captures
       .limit(50);
     
     return {

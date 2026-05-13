@@ -139,6 +139,7 @@ export default function RouteOptimizerPage() {
           store_product_state(urgency_score, tubes_left, eta_stockout)
         `)
         .eq('status', 'active')
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .not('lat', 'is', null)
         .not('lng', 'is', null);
       

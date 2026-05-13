@@ -45,6 +45,7 @@ export default function PortalWholesale() {
         const { data: storesData } = await supabase
           .from('stores')
           .select('id, name, address_city, address_state, type, status')
+          .eq('approval_status', 'approved') // Phase 7: exclude pending captures
           .limit(10);
 
         setStores(storesData || []);

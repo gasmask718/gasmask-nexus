@@ -121,6 +121,7 @@ export function ConnectedStoresCard({
       let query = supabase
         .from('stores')
         .select('id, name, address_street, address_city, address_state, address_zip, phone, primary_contact_name, connected_group_id')
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .neq('id', storeId); // Exclude current store
 
       // Find connected stores by group_id or owner name

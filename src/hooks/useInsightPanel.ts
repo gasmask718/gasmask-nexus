@@ -82,6 +82,7 @@ export function useInsightData(filter: InsightFilter | null) {
             const { data } = await (supabase as any)
               .from('stores')
               .select('id, name, phone, address, city')
+              .eq('approval_status', 'approved') // Phase 7: exclude pending captures
               .limit(limit);
             
             // In real app, would filter by unpaid balance
@@ -121,6 +122,7 @@ export function useInsightData(filter: InsightFilter | null) {
             const { data } = await (supabase as any)
               .from('stores')
               .select('id, name, phone, address, created_at')
+              .eq('approval_status', 'approved') // Phase 7: exclude pending captures
               .order('created_at', { ascending: false })
               .limit(limit);
             
@@ -195,6 +197,7 @@ export function useInsightData(filter: InsightFilter | null) {
             const { data } = await (supabase as any)
               .from('stores')
               .select('id, name, phone, last_contact_date')
+              .eq('approval_status', 'approved') // Phase 7: exclude pending captures
               .limit(limit);
             
             for (const store of data || []) {
@@ -221,6 +224,7 @@ export function useInsightData(filter: InsightFilter | null) {
             const { data } = await (supabase as any)
               .from('stores')
               .select('id, name, phone, address')
+              .eq('approval_status', 'approved') // Phase 7: exclude pending captures
               .limit(10);
             
             for (const store of data || []) {

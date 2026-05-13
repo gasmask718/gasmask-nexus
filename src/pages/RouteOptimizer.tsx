@@ -28,6 +28,7 @@ export default function RouteOptimizer() {
       const { data, error } = await supabase
         .from("stores")
         .select("id, name, address_city, address_state, lat, lng, status")
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .order("name");
       if (error) throw error;
       return data;

@@ -68,7 +68,8 @@ export function BrandBreakdownCards({ companyId }: BrandBreakdownCardsProps) {
       const { data: stores } = await supabase
         .from("stores")
         .select("id")
-        .eq("company_id", companyId);
+        .eq("company_id", companyId)
+        .eq('approval_status', 'approved'); // Phase 7: exclude pending captures
       
       const storeIds = stores?.map(s => s.id) || [];
 

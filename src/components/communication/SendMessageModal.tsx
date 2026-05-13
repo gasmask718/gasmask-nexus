@@ -36,7 +36,7 @@ export function SendMessageModal({
     queryKey: ["entities", entityType],
     queryFn: async () => {
       if (entityType === "store") {
-        const { data } = await supabase.from("stores").select("id, name").order("name");
+        const { data } = await supabase.from("stores").select("id, name").eq('approval_status', 'approved').order("name"); // Phase 7: exclude pending captures
         return data;
       } else if (entityType === "customer") {
         const { data } = await supabase.from("crm_customers").select("id, name").order("name");

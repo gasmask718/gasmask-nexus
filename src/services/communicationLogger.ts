@@ -92,6 +92,7 @@ export const matchIncomingMessage = async (
       const { data: stores } = await supabase
         .from('stores')
         .select('id, phone')
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .ilike('phone', `%${cleanPhone.slice(-10)}%`)
         .limit(1);
 

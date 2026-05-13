@@ -227,7 +227,8 @@ export default function CompanyProfile() {
         .from('stores')
         .select('id, name')
         .eq('company_id', id!)
-        .eq('is_simulation', simulationMode);
+        .eq('is_simulation', simulationMode)
+        .eq('approval_status', 'approved'); // Phase 7: exclude pending captures
 
       const storeIds = storesForCompany?.map(s => s.id) || [];
 

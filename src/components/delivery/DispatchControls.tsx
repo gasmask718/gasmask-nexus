@@ -97,6 +97,7 @@ export function DispatchControls({
       const { data, error } = await supabase
         .from('stores')
         .select('id, name, address_city')
+        .eq('approval_status', 'approved') // Phase 7: exclude pending captures
         .limit(50);
       if (error) throw error;
       return data;
