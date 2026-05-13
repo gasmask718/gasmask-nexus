@@ -34,7 +34,7 @@ const EMPTY: IntakeForm = {
 };
 
 interface Props {
-  variant?: 'fab' | 'inline';
+  variant?: 'fab' | 'inline' | 'embedded';
   className?: string;
   assignToSelf?: boolean;
   onCreated?: (id: string) => void;
