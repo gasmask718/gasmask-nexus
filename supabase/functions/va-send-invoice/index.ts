@@ -42,7 +42,7 @@ async function sendInvoiceEmail(params: {
   const fromEmail = fromMatch?.[2] || fromAddress.trim();
   const sender = fromAddress;
 
-  if (sendGridApiKey) {
+  if (sendGridApiKey && !senderIsResendSandbox) {
     const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
       headers: {
