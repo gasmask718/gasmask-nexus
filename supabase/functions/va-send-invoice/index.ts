@@ -31,7 +31,13 @@ async function sendInvoiceEmail(params: {
 }): Promise<{ ok: boolean; error?: string }> {
   const sendGridApiKey = Deno.env.get("SENDGRID_API_KEY");
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
-  const sender = "Brandaro <hello@brandaro.com>";
+  const fromAddress = Deno.env.get("BRANDARO_EMAIL_FROM") || "Brandaro <onboarding@resend.dev>";
+  const replyTo = Deno.env.get("BRANDARO_EMAIL_REPLY_TO") || "hello@brandaro.com";
+  // Parse "Name <email>" format for SendGrid
+  const fromMatch = fromAddress.match(/^\s*(.*?)\s*<(.+?)>\s*$/);
+  const fromName = fromMatch?.[1] || "Brandaro";
+  const fromEmail = fromMatch?.[2] || fromAddress.trim();
+  const sender = fromAddress;
 
   if (sendGridApiKey) {
     const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
@@ -41,8 +47,8 @@ async function sendInvoiceEmail(params: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: { email: "hello@brandaro.com", name: "Brandaro" },
-        reply_to: { email: "hello@brandaro.com", name: "Brandaro" },
+        from: { email: fromEmail, name: fromName },
+        reply_to: { email: replyTo, name: fromName },
         personalizations: [{ to: [{ email: params.to }], subject: params.subject }],
         content: [
           { type: "text/plain", value: params.text },
@@ -77,7 +83,7 @@ async function sendInvoiceEmail(params: {
         subject: params.subject,
         html: params.html,
         text: params.text,
-        reply_to: "hello@brandaro.com",
+        reply_to: replyTo,
       }),
     });
 
