@@ -176,9 +176,9 @@ export function StoreCaptureForm({
         storefrontPhotoUrl = urlData.publicUrl;
       }
 
-      // 2. Build store row
-      const approvalStatus = willAutoApprove ? 'approved' : 'pending';
-      const storeStatus = willAutoApprove ? 'prospect' : 'pending';
+      // 2. Build store row — auto-approve all captures.
+      // Owner reviews via Recently Added dashboard, not as a gate.
+      const nowIso = new Date().toISOString();
       const composedNotes = ownerName.trim()
         ? `Owner: ${ownerName.trim()}${notes.trim() ? `\n${notes.trim()}` : ''}`
         : notes.trim() || null;
@@ -192,13 +192,13 @@ export function StoreCaptureForm({
         lat: coords?.lat ?? null,
         lng: coords?.lng ?? null,
         storefront_photo_url: storefrontPhotoUrl,
-        status: storeStatus,
-        approval_status: approvalStatus,
+        status: 'prospect',
+        approval_status: 'approved',
         captured_by_user_id: user.id,
-        captured_at: new Date().toISOString(),
+        captured_at: nowIso,
         captured_role: captureRole,
-        approved_by_user_id: willAutoApprove ? user.id : null,
-        approved_at: willAutoApprove ? new Date().toISOString() : null,
+        approved_by_user_id: user.id,
+        approved_at: nowIso,
         connected_group_id: connectedGroupId ?? null,
       };
 
@@ -210,12 +210,8 @@ export function StoreCaptureForm({
 
       if (error) throw error;
 
-      toast.success(
-        willAutoApprove
-          ? 'Store captured & auto-approved'
-          : 'Store captured — pending review',
-      );
-      onCaptured?.(data.id, willAutoApprove);
+      toast.success('Store captured & added to network');
+      onCaptured?.(data.id, true);
     } catch (err: any) {
       console.error('[StoreCaptureForm] submit error:', err);
       toast.error(err.message || 'Failed to capture store');
