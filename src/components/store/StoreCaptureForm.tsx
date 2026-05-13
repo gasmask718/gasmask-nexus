@@ -406,10 +406,7 @@ export function StoreCaptureForm({
           </div>
 
           <p className="text-xs text-muted-foreground pt-1">
-            Captured as <strong>{captureRole}</strong>.{' '}
-            {willAutoApprove
-              ? 'Will be added directly as a prospect.'
-              : 'Will appear in the admin review queue.'}
+            Captured as <strong>{captureRole}</strong>. Store added immediately to network.
           </p>
         </form>
       </CardContent>
