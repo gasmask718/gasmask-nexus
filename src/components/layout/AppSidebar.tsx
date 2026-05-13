@@ -248,7 +248,7 @@ export default function AppSidebar() {
                 { path: '/security/audit', label: 'Audit Logs', emoji: '📋' },
                 { path: '/security/ambassador-requests', label: 'Ambassador Requests', emoji: '👥' },
                 { path: '/admin/deleted-records', label: 'Deleted Records', emoji: '🗑️' },
-                { path: '/admin/captures', label: 'Pending Captures', emoji: '📸', badge: pendingCapturesCount },
+                { path: '/admin/captures', label: 'Recently Added', emoji: '📸', badge: recentlyAddedCount },
               ], "bg-gradient-to-r from-emerald-500/20 to-green-500/10 text-emerald-300 hover:from-emerald-500/30")}
             </div>
           )}
