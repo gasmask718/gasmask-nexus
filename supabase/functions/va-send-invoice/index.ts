@@ -160,14 +160,14 @@ function renderEmailHtml(invoice: any, lead: any): string {
   const ctaBlock =
     invoice.payment_type === "split" && (invoice.deposit_payment_link || invoice.final_payment_link)
       ? `<div style="text-align:center;padding:8px 0 4px">
-          ${invoice.deposit_payment_link ? ctaButton(invoice.deposit_payment_link, `Pay 50% Deposit — $${fmtMoney(invoice.deposit_amount)}`, true) : ""}
-          ${invoice.final_payment_link ? ctaButton(invoice.final_payment_link, `Pay Final 50% — $${fmtMoney(invoice.final_amount)}`, false) : ""}
+          ${invoice.deposit_payment_link ? ctaButton(invoice.deposit_payment_link, `Brandaro Digital Pay — 50% Deposit ($${fmtMoney(invoice.deposit_amount)})`, true) : ""}
+          ${invoice.final_payment_link ? ctaButton(invoice.final_payment_link, `Brandaro Digital Pay — Final 50% ($${fmtMoney(invoice.final_amount)})`, false) : ""}
           <p style="margin:12px 0 0;color:#64748b;font-size:12px;line-height:1.5">50% deposit starts the work. Final 50% due on completion.</p>
         </div>`
       : invoice.payment_link
       ? `<div style="text-align:center;padding:8px 0 4px">
-          ${ctaButton(invoice.payment_link, `Pay $${fmtMoney(invoice.total)}`, true)}
-          <p style="margin:12px 0 0;color:#64748b;font-size:12px">Secure payment powered by Stripe</p>
+          ${ctaButton(invoice.payment_link, `Brandaro Digital Pay — $${fmtMoney(invoice.total)}`, true)}
+          <p style="margin:12px 0 0;color:#64748b;font-size:12px">Powered by Brandaro Digital Pay · Secure checkout</p>
         </div>`
       : "";
 
@@ -340,7 +340,7 @@ serve(async (req: Request) => {
         `Brandaro invoice ${invoice.invoice_number || ""}`.trim(),
         `Amount due: $${fmtMoney(invoice.total)}`,
         invoice.due_date ? `Due: ${new Date(invoice.due_date).toLocaleDateString("en-US")}` : "",
-        invoice.payment_link ? `Pay here: ${invoice.payment_link}` : "",
+        invoice.payment_link ? `Brandaro Digital Pay: ${invoice.payment_link}` : "",
       ].filter(Boolean);
       sendResult = await sendInvoiceEmail({
         to: recipient,
@@ -409,8 +409,8 @@ serve(async (req: Request) => {
       }
 
       const smsBody = smsLink
-        ? `Brandaro Digital — $${total} invoice ready. Pay securely: ${smsLink}`
-        : `Brandaro Digital — $${total} invoice ${invoice.invoice_number || ""} ready.`;
+        ? `Brandaro Digital Pay — $${total} invoice ready. Tap to pay securely: ${smsLink}`
+        : `Brandaro Digital Pay — $${total} invoice ${invoice.invoice_number || ""} ready.`;
 
       const twilioParams: Record<string, string> = { To: recipient, Body: smsBody };
       if (messagingServiceSid && !fromNumber) twilioParams.MessagingServiceSid = messagingServiceSid;
