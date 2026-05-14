@@ -63,9 +63,13 @@ export function VAAICoachingHub() {
   const [search, setSearch] = useState('');
   const [dispo, setDispo] = useState<string>('all');
   const [mood, setMood] = useState<string>('all');
+  const [aiFilter, setAiFilter] = useState<string>('all');
   const [selected, setSelected] = useState<CallRow | null>(null);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysis, setAnalysis] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [showFeedbackOnOpen, setShowFeedbackOnOpen] = useState(false);
 
   const { data: calls = [], isLoading } = useQuery({
     queryKey: ['va-call-summaries', user?.id],
