@@ -191,7 +191,7 @@ export function CallTimelineDrawer({ queueItemId, onClose }: Props) {
       const { data, error } = await supabase
         .from("outbound_call_queue")
         .select(
-          "id, status, phone_number, contact_name, twilio_call_sid, bland_call_id, bland_recording_url, bland_transcript, bridge_attempted_at, bridge_failed_reason, bridged_at, ended_at, dialing_started_at, answered_at, answered_by, dial_status, attempt_count, voicemail_left, last_error_severity, notes",
+          "id, status, phone_number, contact_name, twilio_call_sid, bland_call_id, bland_recording_url, bland_transcript, bridge_attempted_at, bridge_failed_reason, bridged_at, ended_at, dialing_started_at, answered_at, answered_by, dial_status, attempt_count, voicemail_left, last_error_severity, notes, follow_up_status, call_summary, next_call_context, follow_up_at, wrap_up_completed_at, ai_analysis",
         )
         .eq("id", queueItemId!)
         .maybeSingle();
