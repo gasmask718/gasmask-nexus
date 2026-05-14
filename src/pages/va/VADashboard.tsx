@@ -25,6 +25,7 @@ import { VACoachingInbox } from '@/components/va/VACoachingInbox';
 import { VAAICoachingHub } from '@/components/va/VAAICoachingHub';
 import { VAAutoDialerSection } from '@/components/va/VAAutoDialerSection';
 import { VAActiveNumberSwitcher } from '@/components/va/VAActiveNumberSwitcher';
+import { AutoTranslateRoot } from '@/components/va/AutoTranslateRoot';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
