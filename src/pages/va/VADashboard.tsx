@@ -92,7 +92,7 @@ function VADashboardInner() {
 
   const handleStartDialer = () => {
     setDialerLeads(allLeads);
-    setView('dialer');
+    setView('autodialer');
   };
 
   const handleEndDialerSession = () => {
