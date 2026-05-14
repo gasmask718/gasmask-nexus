@@ -61872,6 +61872,7 @@ export type Database = {
       }
       outbound_call_queue: {
         Row: {
+          ai_analysis: Json | null
           answered_at: string | null
           answered_by: string | null
           assigned_agent_id: string | null
@@ -61886,6 +61887,7 @@ export type Database = {
           bridged_at: string | null
           business_id: string | null
           call_session_id: string | null
+          call_summary: string | null
           campaign_id: string | null
           claim_expires_at: string | null
           claim_token: string | null
@@ -61901,9 +61903,12 @@ export type Database = {
           ended_at: string | null
           entity_id: string | null
           entity_type: string | null
+          follow_up_at: string | null
+          follow_up_status: string | null
           id: string
           last_attempt_at: string | null
           last_error_severity: string | null
+          next_call_context: string | null
           next_retry_at: string | null
           notes: string | null
           phone_number: string
@@ -61916,8 +61921,10 @@ export type Database = {
           voice_mode: string | null
           voice_provider: string | null
           voicemail_left: boolean | null
+          wrap_up_completed_at: string | null
         }
         Insert: {
+          ai_analysis?: Json | null
           answered_at?: string | null
           answered_by?: string | null
           assigned_agent_id?: string | null
@@ -61932,6 +61939,7 @@ export type Database = {
           bridged_at?: string | null
           business_id?: string | null
           call_session_id?: string | null
+          call_summary?: string | null
           campaign_id?: string | null
           claim_expires_at?: string | null
           claim_token?: string | null
@@ -61947,9 +61955,12 @@ export type Database = {
           ended_at?: string | null
           entity_id?: string | null
           entity_type?: string | null
+          follow_up_at?: string | null
+          follow_up_status?: string | null
           id?: string
           last_attempt_at?: string | null
           last_error_severity?: string | null
+          next_call_context?: string | null
           next_retry_at?: string | null
           notes?: string | null
           phone_number: string
@@ -61962,8 +61973,10 @@ export type Database = {
           voice_mode?: string | null
           voice_provider?: string | null
           voicemail_left?: boolean | null
+          wrap_up_completed_at?: string | null
         }
         Update: {
+          ai_analysis?: Json | null
           answered_at?: string | null
           answered_by?: string | null
           assigned_agent_id?: string | null
@@ -61978,6 +61991,7 @@ export type Database = {
           bridged_at?: string | null
           business_id?: string | null
           call_session_id?: string | null
+          call_summary?: string | null
           campaign_id?: string | null
           claim_expires_at?: string | null
           claim_token?: string | null
@@ -61993,9 +62007,12 @@ export type Database = {
           ended_at?: string | null
           entity_id?: string | null
           entity_type?: string | null
+          follow_up_at?: string | null
+          follow_up_status?: string | null
           id?: string
           last_attempt_at?: string | null
           last_error_severity?: string | null
+          next_call_context?: string | null
           next_retry_at?: string | null
           notes?: string | null
           phone_number?: string
@@ -62008,6 +62025,7 @@ export type Database = {
           voice_mode?: string | null
           voice_provider?: string | null
           voicemail_left?: boolean | null
+          wrap_up_completed_at?: string | null
         }
         Relationships: [
           {
@@ -114565,6 +114583,7 @@ export type Database = {
       claim_dialer_queue_items: {
         Args: { p_campaign_id: string; p_limit: number }
         Returns: {
+          ai_analysis: Json | null
           answered_at: string | null
           answered_by: string | null
           assigned_agent_id: string | null
@@ -114579,6 +114598,7 @@ export type Database = {
           bridged_at: string | null
           business_id: string | null
           call_session_id: string | null
+          call_summary: string | null
           campaign_id: string | null
           claim_expires_at: string | null
           claim_token: string | null
@@ -114594,9 +114614,12 @@ export type Database = {
           ended_at: string | null
           entity_id: string | null
           entity_type: string | null
+          follow_up_at: string | null
+          follow_up_status: string | null
           id: string
           last_attempt_at: string | null
           last_error_severity: string | null
+          next_call_context: string | null
           next_retry_at: string | null
           notes: string | null
           phone_number: string
@@ -114609,6 +114632,7 @@ export type Database = {
           voice_mode: string | null
           voice_provider: string | null
           voicemail_left: boolean | null
+          wrap_up_completed_at: string | null
         }[]
         SetofOptions: {
           from: "*"
@@ -114626,6 +114650,7 @@ export type Database = {
               p_max_attempts?: number
             }
             Returns: {
+              ai_analysis: Json | null
               answered_at: string | null
               answered_by: string | null
               assigned_agent_id: string | null
@@ -114640,6 +114665,7 @@ export type Database = {
               bridged_at: string | null
               business_id: string | null
               call_session_id: string | null
+              call_summary: string | null
               campaign_id: string | null
               claim_expires_at: string | null
               claim_token: string | null
@@ -114655,9 +114681,12 @@ export type Database = {
               ended_at: string | null
               entity_id: string | null
               entity_type: string | null
+              follow_up_at: string | null
+              follow_up_status: string | null
               id: string
               last_attempt_at: string | null
               last_error_severity: string | null
+              next_call_context: string | null
               next_retry_at: string | null
               notes: string | null
               phone_number: string
@@ -114670,6 +114699,7 @@ export type Database = {
               voice_mode: string | null
               voice_provider: string | null
               voicemail_left: boolean | null
+              wrap_up_completed_at: string | null
             }[]
             SetofOptions: {
               from: "*"
@@ -114687,6 +114717,7 @@ export type Database = {
               p_max_attempts?: number
             }
             Returns: {
+              ai_analysis: Json | null
               answered_at: string | null
               answered_by: string | null
               assigned_agent_id: string | null
@@ -114701,6 +114732,7 @@ export type Database = {
               bridged_at: string | null
               business_id: string | null
               call_session_id: string | null
+              call_summary: string | null
               campaign_id: string | null
               claim_expires_at: string | null
               claim_token: string | null
@@ -114716,9 +114748,12 @@ export type Database = {
               ended_at: string | null
               entity_id: string | null
               entity_type: string | null
+              follow_up_at: string | null
+              follow_up_status: string | null
               id: string
               last_attempt_at: string | null
               last_error_severity: string | null
+              next_call_context: string | null
               next_retry_at: string | null
               notes: string | null
               phone_number: string
@@ -114731,6 +114766,7 @@ export type Database = {
               voice_mode: string | null
               voice_provider: string | null
               voicemail_left: boolean | null
+              wrap_up_completed_at: string | null
             }[]
             SetofOptions: {
               from: "*"

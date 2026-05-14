@@ -11,7 +11,7 @@
 // Renders three tabs: Timeline · Transcript · Summary.
 // Realtime: re-fetches all three when new rows land.
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -22,12 +22,32 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertCircle, AlertTriangle, CheckCircle2, Info, Loader2,
-  Phone, PhoneForwarded, Bot, User, Mic, XCircle,
+  Phone, PhoneForwarded, Bot, User, Mic, XCircle, Sparkles, Save, RotateCcw,
 } from "lucide-react";
+import { toast } from "sonner";
+
+type FollowUpStatus =
+  | "won_back" | "closed_deal" | "callback_needed" | "follow_up_later"
+  | "nurture" | "no_answer" | "not_interested";
+
+const FOLLOWUP_OPTIONS: { value: FollowUpStatus; label: string }[] = [
+  { value: "won_back",        label: "🏆 Won back the customer" },
+  { value: "closed_deal",     label: "✅ Closed deal" },
+  { value: "callback_needed", label: "📞 Need to call again" },
+  { value: "follow_up_later", label: "🗓 Follow up later" },
+  { value: "nurture",         label: "🌱 Nurture / long-term" },
+  { value: "no_answer",       label: "📵 No answer / voicemail" },
+  { value: "not_interested",  label: "❌ Not interested" },
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -64,6 +84,12 @@ interface QueueRow {
   voicemail_left: boolean | null;
   last_error_severity: string | null;
   notes: string | null;
+  follow_up_status: string | null;
+  call_summary: string | null;
+  next_call_context: string | null;
+  follow_up_at: string | null;
+  wrap_up_completed_at: string | null;
+  ai_analysis: any | null;
 }
 
 interface Utterance {
@@ -165,7 +191,7 @@ export function CallTimelineDrawer({ queueItemId, onClose }: Props) {
       const { data, error } = await supabase
         .from("outbound_call_queue")
         .select(
-          "id, status, phone_number, contact_name, twilio_call_sid, bland_call_id, bland_recording_url, bland_transcript, bridge_attempted_at, bridge_failed_reason, bridged_at, ended_at, dialing_started_at, answered_at, answered_by, dial_status, attempt_count, voicemail_left, last_error_severity, notes",
+          "id, status, phone_number, contact_name, twilio_call_sid, bland_call_id, bland_recording_url, bland_transcript, bridge_attempted_at, bridge_failed_reason, bridged_at, ended_at, dialing_started_at, answered_at, answered_by, dial_status, attempt_count, voicemail_left, last_error_severity, notes, follow_up_status, call_summary, next_call_context, follow_up_at, wrap_up_completed_at, ai_analysis",
         )
         .eq("id", queueItemId!)
         .maybeSingle();
@@ -260,6 +286,76 @@ export function CallTimelineDrawer({ queueItemId, onClose }: Props) {
     };
   }, [callSid, qc]);
 
+  // ─── Wrap-Up state ─────────────────────────────────────────────────────────
+  const [wuStatus, setWuStatus] = useState<FollowUpStatus | "">("");
+  const [wuSummary, setWuSummary] = useState("");
+  const [wuNextContext, setWuNextContext] = useState("");
+  const [wuFollowUpAt, setWuFollowUpAt] = useState("");
+  const [wuSaving, setWuSaving] = useState(false);
+  const [wuGenerating, setWuGenerating] = useState(false);
+
+  // Hydrate wrap-up form whenever a queue row is loaded for a different call.
+  useEffect(() => {
+    if (!queueRow) return;
+    setWuStatus((queueRow.follow_up_status as FollowUpStatus) || "");
+    setWuSummary(queueRow.call_summary ?? queueRow.ai_analysis?.summary ?? "");
+    setWuNextContext(queueRow.next_call_context ?? queueRow.ai_analysis?.next_call_context ?? "");
+    setWuFollowUpAt(queueRow.follow_up_at ? new Date(queueRow.follow_up_at).toISOString().slice(0, 16) : "");
+  }, [queueRow?.id]);
+
+  const generateAnalysis = async () => {
+    if (!queueItemId) return;
+    setWuGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-dialer-call", {
+        body: { queue_item_id: queueItemId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const a = (data as any)?.analysis;
+      if (a) {
+        if (!wuSummary && a.summary) setWuSummary(a.summary);
+        if (!wuStatus && a.outcome) setWuStatus(a.outcome as FollowUpStatus);
+        if (!wuNextContext && a.next_call_context) setWuNextContext(a.next_call_context);
+        if (!wuFollowUpAt && a.recommended_followup_at) {
+          try { setWuFollowUpAt(new Date(a.recommended_followup_at).toISOString().slice(0, 16)); } catch { /* ignore */ }
+        }
+      }
+      qc.invalidateQueries({ queryKey: ["dialer-call-row", queueItemId] });
+      toast.success("AI analysis generated");
+    } catch (e: any) {
+      toast.error("AI analysis failed: " + (e?.message || "unknown"));
+    } finally {
+      setWuGenerating(false);
+    }
+  };
+
+  const saveWrapUp = async () => {
+    if (!queueItemId) return;
+    if (!wuStatus) { toast.error("Pick an outcome status"); return; }
+    setWuSaving(true);
+    try {
+      const { error } = await supabase
+        .from("outbound_call_queue")
+        .update({
+          follow_up_status: wuStatus,
+          call_summary: wuSummary.trim() || null,
+          next_call_context: wuNextContext.trim() || null,
+          follow_up_at: wuFollowUpAt ? new Date(wuFollowUpAt).toISOString() : null,
+          wrap_up_completed_at: new Date().toISOString(),
+        })
+        .eq("id", queueItemId);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["dialer-call-row", queueItemId] });
+      qc.invalidateQueries({ queryKey: ["campaign-dial:live"] });
+      toast.success("Wrap-up saved");
+    } catch (e: any) {
+      toast.error("Save failed: " + (e?.message || "unknown"));
+    } finally {
+      setWuSaving(false);
+    }
+  };
+
   // ─── render ────────────────────────────────────────────────────────────────
   const status = queueRow?.status || "queued";
   const statusTone = STATUS_TONE[status] || "bg-muted text-muted-foreground";
@@ -320,11 +416,14 @@ export function CallTimelineDrawer({ queueItemId, onClose }: Props) {
           </div>
         </SheetHeader>
 
-        <Tabs defaultValue="timeline" className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="mx-6 mt-3 grid grid-cols-3">
+        <Tabs defaultValue={queueRow?.ended_at ? "wrapup" : "timeline"} className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="mx-6 mt-3 grid grid-cols-4">
             <TabsTrigger value="timeline">Timeline ({events.length})</TabsTrigger>
             <TabsTrigger value="transcript">
               Transcript ({utterances.length || (queueRow?.bland_transcript ? "✓" : 0)})
+            </TabsTrigger>
+            <TabsTrigger value="wrapup">
+              Wrap-Up{queueRow?.wrap_up_completed_at ? " ✓" : ""}
             </TabsTrigger>
             <TabsTrigger value="summary">Summary</TabsTrigger>
           </TabsList>
@@ -450,6 +549,123 @@ export function CallTimelineDrawer({ queueItemId, onClose }: Props) {
                   </pre>
                 </div>
               )}
+            </ScrollArea>
+          </TabsContent>
+
+          {/* ── Wrap-Up ─────────────────────────────────────────────────── */}
+          <TabsContent value="wrapup" className="flex-1 overflow-hidden mt-3 px-6 pb-6">
+            <ScrollArea className="h-full pr-3">
+              <div className="space-y-4">
+                {/* Recording */}
+                {queueRow?.bland_recording_url && (
+                  <div className="rounded-lg border bg-muted/30 p-3">
+                    <div className="text-xs text-muted-foreground mb-2">Recording</div>
+                    <audio controls className="w-full" src={queueRow.bland_recording_url} />
+                  </div>
+                )}
+
+                {/* AI analysis */}
+                <div className="rounded-lg border border-purple-500/30 bg-purple-500/5 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Sparkles className="h-4 w-4 text-purple-500" /> AI Conversation Overview
+                    </div>
+                    <Button
+                      size="sm" variant="outline"
+                      className="h-7 gap-1"
+                      disabled={wuGenerating || (!queueRow?.bland_transcript && !queueRow?.bland_recording_url && utterances.length === 0)}
+                      onClick={generateAnalysis}
+                    >
+                      <Sparkles className={`h-3 w-3 ${wuGenerating ? "animate-pulse" : ""}`} />
+                      {queueRow?.ai_analysis ? "Re-generate" : "Generate"}
+                    </Button>
+                  </div>
+                  {queueRow?.ai_analysis ? (
+                    <div className="space-y-2 text-xs">
+                      {queueRow.ai_analysis.summary && <p>{queueRow.ai_analysis.summary}</p>}
+                      {queueRow.ai_analysis.overall_score != null && (
+                        <Badge variant="outline">Score: {queueRow.ai_analysis.overall_score}/10</Badge>
+                      )}
+                      {queueRow.ai_analysis.coaching_note && (
+                        <p className="italic text-purple-700 dark:text-purple-300">💡 {queueRow.ai_analysis.coaching_note}</p>
+                      )}
+                      {Array.isArray(queueRow.ai_analysis.next_steps) && queueRow.ai_analysis.next_steps.length > 0 && (
+                        <ul className="list-disc pl-4 text-muted-foreground">
+                          {queueRow.ai_analysis.next_steps.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                        </ul>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Click <strong>Generate</strong> to have AI summarize this call. Requires transcript or recording.</p>
+                  )}
+                </div>
+
+                {/* Status */}
+                <div>
+                  <Label className="text-sm">Outcome / Status *</Label>
+                  <Select value={wuStatus} onValueChange={(v) => setWuStatus(v as FollowUpStatus)}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select an outcome…" /></SelectTrigger>
+                    <SelectContent>
+                      {FOLLOWUP_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Summary */}
+                <div>
+                  <Label className="text-sm">What was the call about?</Label>
+                  <Textarea
+                    value={wuSummary}
+                    onChange={(e) => setWuSummary(e.target.value)}
+                    placeholder="Quick overview of the conversation…"
+                    className="mt-1 min-h-[70px]"
+                  />
+                </div>
+
+                {/* Next call context */}
+                <div>
+                  <Label className="text-sm flex items-center gap-1">
+                    <RotateCcw className="h-3 w-3" /> Context for the next call
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground mb-1">
+                    Surfaces the next time anyone calls this lead.
+                  </p>
+                  <Textarea
+                    value={wuNextContext}
+                    onChange={(e) => setWuNextContext(e.target.value)}
+                    placeholder="e.g. Owner asked us to call back Friday after 2pm. Pricing concerns."
+                    className="min-h-[80px]"
+                  />
+                </div>
+
+                {/* Follow up datetime */}
+                {(wuStatus === "callback_needed" || wuStatus === "follow_up_later" || wuStatus === "won_back") && (
+                  <div>
+                    <Label className="text-sm">Schedule follow-up</Label>
+                    <Input
+                      type="datetime-local"
+                      value={wuFollowUpAt}
+                      onChange={(e) => setWuFollowUpAt(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button onClick={saveWrapUp} disabled={wuSaving || !wuStatus} className="gap-1.5">
+                    <Save className="h-4 w-4" />
+                    {wuSaving ? "Saving…" : queueRow?.wrap_up_completed_at ? "Update Wrap-Up" : "Save Wrap-Up"}
+                  </Button>
+                </div>
+
+                {queueRow?.wrap_up_completed_at && (
+                  <p className="text-[11px] text-muted-foreground text-right">
+                    Last saved {new Date(queueRow.wrap_up_completed_at).toLocaleString()}
+                  </p>
+                )}
+              </div>
             </ScrollArea>
           </TabsContent>
 
