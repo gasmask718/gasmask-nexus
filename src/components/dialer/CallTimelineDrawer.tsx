@@ -416,11 +416,14 @@ export function CallTimelineDrawer({ queueItemId, onClose }: Props) {
           </div>
         </SheetHeader>
 
-        <Tabs defaultValue="timeline" className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="mx-6 mt-3 grid grid-cols-3">
+        <Tabs defaultValue={queueRow?.ended_at ? "wrapup" : "timeline"} className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="mx-6 mt-3 grid grid-cols-4">
             <TabsTrigger value="timeline">Timeline ({events.length})</TabsTrigger>
             <TabsTrigger value="transcript">
               Transcript ({utterances.length || (queueRow?.bland_transcript ? "✓" : 0)})
+            </TabsTrigger>
+            <TabsTrigger value="wrapup">
+              Wrap-Up{queueRow?.wrap_up_completed_at ? " ✓" : ""}
             </TabsTrigger>
             <TabsTrigger value="summary">Summary</TabsTrigger>
           </TabsList>
