@@ -74,10 +74,13 @@ export function useAllVAPerformance() {
 }
 
 // ── Leaderboard ──
-export type LeaderboardPeriod = "today" | "week" | "month" | "last_month";
+export type LeaderboardPeriod = "today" | "week" | "month" | "last_month" | "all_time";
 
 function periodRange(period: LeaderboardPeriod): { startISO: string; endISO?: string } {
   const now = new Date();
+  if (period === "all_time") {
+    return { startISO: new Date(2000, 0, 1).toISOString() };
+  }
   if (period === "today") {
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     return { startISO: start.toISOString() };

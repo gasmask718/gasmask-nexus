@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, ArrowLeft, Flame, Calendar } from 'lucide-react';
+import { Trophy, ArrowLeft, Flame, Infinity as InfinityIcon, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useVALeaderboard } from '@/hooks/useBrandaroVAPerformance';
 
@@ -41,17 +41,49 @@ function BoardRow({ va, i }: { va: any; i: number }) {
   );
 }
 
+function ChampionCard({ va, label, accent }: { va?: any; label: string; accent: string }) {
+  if (!va) {
+    return (
+      <Card className="border-dashed border-slate-800 bg-slate-900/40">
+        <CardContent className="py-6 text-center text-sm text-slate-500">
+          No {label.toLowerCase()} champion yet
+        </CardContent>
+      </Card>
+    );
+  }
+  return (
+    <Card
+      className="overflow-hidden"
+      style={{ borderColor: `${accent}55`, background: `linear-gradient(135deg, ${accent}15, transparent 70%)` }}
+    >
+      <CardContent className="p-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: `${accent}25`, border: `1px solid ${accent}50` }}
+          >
+            <Crown className="h-5 w-5" style={{ color: accent }} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: accent }}>
+              #1 {label} Champion
+            </p>
+            <p className="text-base font-bold text-white truncate">{va.name}</p>
+            <p className="text-xs text-slate-400">
+              {va.calls} calls · {va.closes} closes
+            </p>
+          </div>
+        </div>
+        <Badge className="bg-amber-500 text-black hover:bg-amber-400">{va.score} pts</Badge>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AdminLeaderboard() {
   const navigate = useNavigate();
-  const { data: todayBoard = [] } = useVALeaderboard('today');
-  const { data: monthBoard = [] } = useVALeaderboard('month');
-  const { data: lastMonthBoard = [] } = useVALeaderboard('last_month');
-
-  const lastMonthLabel = new Date(
-    new Date().getFullYear(),
-    new Date().getMonth() - 1,
-    1,
-  ).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  const { data: dailyBoard = [] } = useVALeaderboard('today');
+  const { data: allTimeBoard = [] } = useVALeaderboard('all_time');
 
   return (
     <div className="min-h-screen bg-slate-950 p-6">
@@ -66,52 +98,19 @@ export default function AdminLeaderboard() {
           </div>
         </div>
 
-        {/* Last Month's Champion */}
-        {lastMonthBoard[0] && (
-          <Card className="border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2 text-white">
-                <Trophy className="h-4 w-4 text-amber-400" />
-                Last Month's Champion
-                <Badge
-                  variant="outline"
-                  className="ml-auto text-[10px] border-amber-500/30 text-amber-300"
-                >
-                  {lastMonthLabel}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-300 font-bold">
-                    #1
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold text-white">
-                      {(lastMonthBoard[0] as any).name}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {(lastMonthBoard[0] as any).calls} calls ·{' '}
-                      {(lastMonthBoard[0] as any).closes} closes
-                    </p>
-                  </div>
-                </div>
-                <Badge className="bg-amber-500 text-black hover:bg-amber-400">
-                  {(lastMonthBoard[0] as any).score} pts
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Champion banners */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ChampionCard va={dailyBoard[0]} label="Daily" accent="#f59e0b" />
+          <ChampionCard va={allTimeBoard[0]} label="All-Time" accent="#06b6d4" />
+        </div>
 
-        {/* Today + This Month side by side */}
+        {/* Daily + All-Time side by side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card className="bg-slate-900 border-slate-800">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm flex items-center gap-2 text-white">
                 <Flame className="h-4 w-4 text-orange-400" />
-                Today's Leaderboard
+                Daily Leaderboard
               </CardTitle>
               <Badge variant="outline" className="text-[10px]">
                 {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -119,12 +118,12 @@ export default function AdminLeaderboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {todayBoard.length === 0 && (
+                {dailyBoard.length === 0 && (
                   <p className="text-sm text-slate-500 text-center py-8">
                     No call activity today yet
                   </p>
                 )}
-                {todayBoard.slice(0, 10).map((va: any, i: number) => (
+                {dailyBoard.slice(0, 10).map((va: any, i: number) => (
                   <BoardRow key={va.va_user_id} va={va} i={i} />
                 ))}
               </div>
@@ -134,21 +133,19 @@ export default function AdminLeaderboard() {
           <Card className="bg-slate-900 border-slate-800">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm flex items-center gap-2 text-white">
-                <Calendar className="h-4 w-4 text-cyan-400" />
-                This Month's Leaderboard
+                <InfinityIcon className="h-4 w-4 text-cyan-400" />
+                All-Time Leaderboard
               </CardTitle>
-              <Badge variant="outline" className="text-[10px]">
-                {new Date().toLocaleString('en-US', { month: 'long' })}
-              </Badge>
+              <Badge variant="outline" className="text-[10px]">All-time</Badge>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {monthBoard.length === 0 && (
+                {allTimeBoard.length === 0 && (
                   <p className="text-sm text-slate-500 text-center py-8">
-                    No activity this month yet
+                    No call history recorded yet
                   </p>
                 )}
-                {monthBoard.slice(0, 10).map((va: any, i: number) => (
+                {allTimeBoard.slice(0, 10).map((va: any, i: number) => (
                   <BoardRow key={va.va_user_id} va={va} i={i} />
                 ))}
               </div>
