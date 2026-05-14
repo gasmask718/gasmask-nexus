@@ -112,13 +112,36 @@ export function VAAICoachingHub() {
     return calls.filter((c) => {
       if (dispo !== 'all' && c.disposition !== dispo) return false;
       if (mood !== 'all' && c.excitement_level !== mood) return false;
+      if (aiFilter === 'with' && !c.ai_analysis) return false;
+      if (aiFilter === 'without' && c.ai_analysis) return false;
       if (q) {
         const hay = `${c.call_summary || ''} ${c.va_notes || ''} ${c.disposition || ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
-  }, [calls, search, dispo, mood]);
+  }, [calls, search, dispo, mood, aiFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = useMemo(
+    () => filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filtered, currentPage, pageSize]
+  );
+
+  const stats = useMemo(() => {
+    const total = calls.length;
+    const analyzed = calls.filter((c) => c.ai_analysis).length;
+    const avgScore = (() => {
+      const scores = calls
+        .map((c) => c.ai_analysis?.score)
+        .filter((s): s is number => typeof s === 'number');
+      if (!scores.length) return null;
+      return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    })();
+    const closed = calls.filter((c) => c.disposition === 'closed').length;
+    return { total, analyzed, avgScore, closed };
+  }, [calls]);
 
   const analyzeMutation = useMutation({
     mutationFn: async () => {
