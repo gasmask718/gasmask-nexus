@@ -160,8 +160,8 @@ function renderEmailHtml(invoice: any, lead: any): string {
   const ctaBlock =
     invoice.payment_type === "split" && (invoice.deposit_payment_link || invoice.final_payment_link)
       ? `<div style="text-align:center;padding:8px 0 4px">
-          ${invoice.deposit_payment_link ? ctaButton(invoice.deposit_payment_link, `Pay 50% Deposit — $${fmtMoney(invoice.deposit_amount)}`, true) : ""}
-          ${invoice.final_payment_link ? ctaButton(invoice.final_payment_link, `Pay Final 50% — $${fmtMoney(invoice.final_amount)}`, false) : ""}
+          ${invoice.deposit_payment_link ? ctaButton(invoice.deposit_payment_link, `Brandaro Digital Pay — 50% Deposit ($${fmtMoney(invoice.deposit_amount)})`, true) : ""}
+          ${invoice.final_payment_link ? ctaButton(invoice.final_payment_link, `Brandaro Digital Pay — Final 50% ($${fmtMoney(invoice.final_amount)})`, false) : ""}
           <p style="margin:12px 0 0;color:#64748b;font-size:12px;line-height:1.5">50% deposit starts the work. Final 50% due on completion.</p>
         </div>`
       : invoice.payment_link
