@@ -807,6 +807,51 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
           </Button>
         </div>
       </CardContent>
+
+      {/* Reference modal also available during wrap-up */}
+      <ReferenceModal open={referenceOpen} onOpenChange={setReferenceOpen} />
+
+      {/* Post-call summary modal — parity with Active Call wrap-up */}
+      <VACallWrapUpModal
+        open={summaryOpen}
+        onClose={() => setSummaryOpen(false)}
+        callLogId={summaryCallLogId}
+        leadName={summaryLead?.business_name || ''}
+        leadId={summaryLead?.store_id || ''}
+        durationSeconds={summaryDuration}
+      />
     </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reference Modal — Scripts · FAQs · Rebuttals · Services & Pricing
+// Single source of truth: same DB-backed components used in the Active Call.
+// ─────────────────────────────────────────────────────────────────────────────
+function ReferenceModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl bg-slate-900 border-slate-700 text-white max-h-[85vh] overflow-hidden flex flex-col p-0">
+        <DialogHeader className="px-5 pt-5 pb-2">
+          <DialogTitle className="text-cyan-300 flex items-center gap-2 text-base">
+            <BookOpen className="h-4 w-4" /> Call Reference
+          </DialogTitle>
+        </DialogHeader>
+        <Tabs defaultValue="services" className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="mx-5 bg-slate-800 border border-slate-700">
+            <TabsTrigger value="services" className="flex-1 text-xs">Services & Pricing</TabsTrigger>
+            <TabsTrigger value="faqs" className="flex-1 text-xs">FAQs</TabsTrigger>
+            <TabsTrigger value="scripts" className="flex-1 text-xs">Scripts</TabsTrigger>
+            <TabsTrigger value="rebuttals" className="flex-1 text-xs">Rebuttals</TabsTrigger>
+          </TabsList>
+          <div className="flex-1 overflow-y-auto px-5 pb-5 mt-3">
+            <TabsContent value="services" className="mt-0"><VAServicesPricing /></TabsContent>
+            <TabsContent value="faqs" className="mt-0"><VAFAQs /></TabsContent>
+            <TabsContent value="scripts" className="mt-0"><VAScripts /></TabsContent>
+            <TabsContent value="rebuttals" className="mt-0"><VARebuttals /></TabsContent>
+          </div>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
   );
 }
