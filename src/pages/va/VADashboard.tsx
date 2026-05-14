@@ -25,6 +25,7 @@ import { VACoachingInbox } from '@/components/va/VACoachingInbox';
 import { VAAICoachingHub } from '@/components/va/VAAICoachingHub';
 import { VAAutoDialerSection } from '@/components/va/VAAutoDialerSection';
 import { VAActiveNumberSwitcher } from '@/components/va/VAActiveNumberSwitcher';
+import { AutoTranslateRoot } from '@/components/va/AutoTranslateRoot';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
@@ -132,6 +133,7 @@ function VADashboardInner() {
 
   return (
     <SidebarProvider>
+      <AutoTranslateRoot>
       <div className="min-h-screen flex w-full" style={{ background: 'hsl(222 47% 11%)' }}>
         <VAOnboardingModal />
 
@@ -344,6 +346,7 @@ function VADashboardInner() {
           />
         )}
       </div>
+      </AutoTranslateRoot>
     </SidebarProvider>
   );
 }

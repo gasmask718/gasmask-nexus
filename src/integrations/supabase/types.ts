@@ -103055,6 +103055,33 @@ export type Database = {
           },
         ]
       }
+      va_ui_translations: {
+        Row: {
+          created_at: string
+          id: string
+          source_hash: string | null
+          source_text: string
+          target_lang: string
+          translated_text: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source_hash?: string | null
+          source_text: string
+          target_lang: string
+          translated_text: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source_hash?: string | null
+          source_text?: string
+          target_lang?: string
+          translated_text?: string
+        }
+        Relationships: []
+      }
       va_voicemail_templates: {
         Row: {
           audio_url: string
