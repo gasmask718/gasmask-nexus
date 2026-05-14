@@ -137,6 +137,14 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   // Stop flag (lets us break out of the auto-loop cleanly)
   const stopFlagRef = useRef(false);
 
+  // UI: reference modal (Scripts / FAQs / Rebuttals / Services & Pricing)
+  const [referenceOpen, setReferenceOpen] = useState(false);
+  // UI: post-call summary modal (parity with Active Call wrap-up)
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryLead, setSummaryLead] = useState<QueueLead | null>(null);
+  const [summaryCallLogId, setSummaryCallLogId] = useState<string | null>(null);
+  const [summaryDuration, setSummaryDuration] = useState(0);
+
   // ── Phase 1: Initialization ─────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
