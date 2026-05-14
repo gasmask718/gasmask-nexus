@@ -102313,6 +102313,69 @@ export type Database = {
           },
         ]
       }
+      va_intake_invites: {
+        Row: {
+          accessed_at: string | null
+          business_name: string | null
+          created_at: string
+          destination_url: string
+          email: string | null
+          email_error: string | null
+          email_status: string | null
+          id: string
+          owner_name: string | null
+          phone: string | null
+          sent_via: string[]
+          sms_error: string | null
+          sms_status: string | null
+          status: string
+          submitted_at: string | null
+          token: string
+          updated_at: string
+          va_id: string
+        }
+        Insert: {
+          accessed_at?: string | null
+          business_name?: string | null
+          created_at?: string
+          destination_url?: string
+          email?: string | null
+          email_error?: string | null
+          email_status?: string | null
+          id?: string
+          owner_name?: string | null
+          phone?: string | null
+          sent_via?: string[]
+          sms_error?: string | null
+          sms_status?: string | null
+          status?: string
+          submitted_at?: string | null
+          token: string
+          updated_at?: string
+          va_id: string
+        }
+        Update: {
+          accessed_at?: string | null
+          business_name?: string | null
+          created_at?: string
+          destination_url?: string
+          email?: string | null
+          email_error?: string | null
+          email_status?: string | null
+          id?: string
+          owner_name?: string | null
+          phone?: string | null
+          sent_via?: string[]
+          sms_error?: string | null
+          sms_status?: string | null
+          status?: string
+          submitted_at?: string | null
+          token?: string
+          updated_at?: string
+          va_id?: string
+        }
+        Relationships: []
+      }
       va_invites: {
         Row: {
           accepted_at: string | null
