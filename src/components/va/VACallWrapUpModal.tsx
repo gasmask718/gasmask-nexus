@@ -182,7 +182,11 @@ export function VACallWrapUpModal({
               <span className="text-sm font-medium">Recording</span>
             </div>
             {recordingUrl ? (
-              <audio controls src={recordingUrl} className="w-full" />
+              <audio
+                controls
+                src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/play-twilio-recording?url=${encodeURIComponent(recordingUrl)}`}
+                className="w-full"
+              />
             ) : (
               <p className="text-xs text-slate-500">
                 {loadingCall ? 'Loading…' : 'Recording will appear after Twilio finishes processing (usually 1–2 min). Refresh the call list to fetch it.'}
