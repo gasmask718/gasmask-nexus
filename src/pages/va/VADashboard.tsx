@@ -279,8 +279,8 @@ function VADashboardInner() {
               </div>
             )}
             {view === 'coaching' && (
-              <div className="max-w-3xl">
-                <VACoachingInbox />
+              <div className="max-w-5xl">
+                <VAAICoachingHub />
               </div>
             )}
             {view === 'history' && (
