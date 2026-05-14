@@ -110,7 +110,9 @@ serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
     const token = crypto.randomUUID().replace(/-/g, "");
-    const link = `${INTAKE_BASE_URL}?ref=${token}`;
+    // Public-facing link is the clean homepage URL (no query params).
+    // The token is still persisted on va_intake_invites for analytics / matching.
+    const link = INTAKE_BASE_URL;
 
     // Create invite row first
     const { data: invite, error: insErr } = await admin
