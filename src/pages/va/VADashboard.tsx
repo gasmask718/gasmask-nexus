@@ -133,6 +133,7 @@ function VADashboardInner() {
 
   return (
     <SidebarProvider>
+      <AutoTranslateRoot>
       <div className="min-h-screen flex w-full" style={{ background: 'hsl(222 47% 11%)' }}>
         <VAOnboardingModal />
 
