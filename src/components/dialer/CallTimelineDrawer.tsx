@@ -286,6 +286,76 @@ export function CallTimelineDrawer({ queueItemId, onClose }: Props) {
     };
   }, [callSid, qc]);
 
+  // ─── Wrap-Up state ─────────────────────────────────────────────────────────
+  const [wuStatus, setWuStatus] = useState<FollowUpStatus | "">("");
+  const [wuSummary, setWuSummary] = useState("");
+  const [wuNextContext, setWuNextContext] = useState("");
+  const [wuFollowUpAt, setWuFollowUpAt] = useState("");
+  const [wuSaving, setWuSaving] = useState(false);
+  const [wuGenerating, setWuGenerating] = useState(false);
+
+  // Hydrate wrap-up form whenever a queue row is loaded for a different call.
+  useEffect(() => {
+    if (!queueRow) return;
+    setWuStatus((queueRow.follow_up_status as FollowUpStatus) || "");
+    setWuSummary(queueRow.call_summary ?? queueRow.ai_analysis?.summary ?? "");
+    setWuNextContext(queueRow.next_call_context ?? queueRow.ai_analysis?.next_call_context ?? "");
+    setWuFollowUpAt(queueRow.follow_up_at ? new Date(queueRow.follow_up_at).toISOString().slice(0, 16) : "");
+  }, [queueRow?.id]);
+
+  const generateAnalysis = async () => {
+    if (!queueItemId) return;
+    setWuGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-dialer-call", {
+        body: { queue_item_id: queueItemId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const a = (data as any)?.analysis;
+      if (a) {
+        if (!wuSummary && a.summary) setWuSummary(a.summary);
+        if (!wuStatus && a.outcome) setWuStatus(a.outcome as FollowUpStatus);
+        if (!wuNextContext && a.next_call_context) setWuNextContext(a.next_call_context);
+        if (!wuFollowUpAt && a.recommended_followup_at) {
+          try { setWuFollowUpAt(new Date(a.recommended_followup_at).toISOString().slice(0, 16)); } catch { /* ignore */ }
+        }
+      }
+      qc.invalidateQueries({ queryKey: ["dialer-call-row", queueItemId] });
+      toast.success("AI analysis generated");
+    } catch (e: any) {
+      toast.error("AI analysis failed: " + (e?.message || "unknown"));
+    } finally {
+      setWuGenerating(false);
+    }
+  };
+
+  const saveWrapUp = async () => {
+    if (!queueItemId) return;
+    if (!wuStatus) { toast.error("Pick an outcome status"); return; }
+    setWuSaving(true);
+    try {
+      const { error } = await supabase
+        .from("outbound_call_queue")
+        .update({
+          follow_up_status: wuStatus,
+          call_summary: wuSummary.trim() || null,
+          next_call_context: wuNextContext.trim() || null,
+          follow_up_at: wuFollowUpAt ? new Date(wuFollowUpAt).toISOString() : null,
+          wrap_up_completed_at: new Date().toISOString(),
+        })
+        .eq("id", queueItemId);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["dialer-call-row", queueItemId] });
+      qc.invalidateQueries({ queryKey: ["campaign-dial:live"] });
+      toast.success("Wrap-up saved");
+    } catch (e: any) {
+      toast.error("Save failed: " + (e?.message || "unknown"));
+    } finally {
+      setWuSaving(false);
+    }
+  };
+
   // ─── render ────────────────────────────────────────────────────────────────
   const status = queueRow?.status || "queued";
   const statusTone = STATUS_TONE[status] || "bg-muted text-muted-foreground";
