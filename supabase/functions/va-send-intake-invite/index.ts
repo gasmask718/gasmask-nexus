@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const INTAKE_BASE_URL = "https://www.brandarodigital.com/intake";
+const INTAKE_BASE_URL = "https://www.brandarodigital.com/";
 
 interface Body {
   business_name?: string;
@@ -110,7 +110,9 @@ serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
     const token = crypto.randomUUID().replace(/-/g, "");
-    const link = `${INTAKE_BASE_URL}?ref=${token}`;
+    // Public-facing link is the clean homepage URL (no query params).
+    // The token is still persisted on va_intake_invites for analytics / matching.
+    const link = INTAKE_BASE_URL;
 
     // Create invite row first
     const { data: invite, error: insErr } = await admin
