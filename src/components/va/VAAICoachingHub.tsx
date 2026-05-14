@@ -72,7 +72,7 @@ export function VAAICoachingHub() {
     queryFn: async (): Promise<CallRow[]> => {
       const { data, error } = await supabase
         .from('va_call_logs' as any)
-        .select('id, called_at, duration_seconds, disposition, excitement_level, call_summary, va_notes, ai_analysis')
+        .select('id, called_at, duration_seconds, disposition, excitement_level, call_summary, va_notes, transcript, recording_url, recording_sid, ai_analysis')
         .eq('va_id', user!.id)
         .order('called_at', { ascending: false })
         .limit(200);
@@ -80,6 +80,27 @@ export function VAAICoachingHub() {
       return (data || []) as any;
     },
     enabled: !!user,
+  });
+
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const analyzeOneMutation = useMutation({
+    mutationFn: async (callId: string) => {
+      setAnalyzingId(callId);
+      const { data, error } = await supabase.functions.invoke('va-analyze-single-call', {
+        body: { call_log_id: callId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return data as { analysis: any; source: string };
+    },
+    onSuccess: (data, callId) => {
+      qc.invalidateQueries({ queryKey: ['va-call-summaries', user?.id] });
+      const updated = calls.find((c) => c.id === callId);
+      if (updated) setSelected({ ...updated, ai_analysis: data.analysis });
+      toast.success(`Analysis complete (source: ${data.source})`);
+    },
+    onError: (e: any) => toast.error(e.message || 'Analysis failed'),
+    onSettled: () => setAnalyzingId(null),
   });
 
   const filtered = useMemo(() => {
