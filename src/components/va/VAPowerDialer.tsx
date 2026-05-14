@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Phone, PhoneOff, SkipForward, X, Loader2, PlayCircle, AlertTriangle, PhoneCall,
+  Phone, PhoneOff, SkipForward, X, Loader2, PlayCircle, AlertTriangle, PhoneCall, BookOpen,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -17,6 +17,14 @@ import { BrandaroCallScript } from './BrandaroCallScript';
 import { useVoiceDevice } from '@/contexts/VoiceDeviceProvider';
 import { useCall } from '@/components/communication/CallProvider';
 import { useVASession } from '@/contexts/VASessionContext';
+import { VALiveAnalysisModal } from './VALiveAnalysisModal';
+import { VACallWrapUpModal } from './VACallWrapUpModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { VAScripts } from './VAScripts';
+import { VARebuttals } from './VARebuttals';
+import { VAFAQs } from './VAFAQs';
+import { VAServicesPricing } from './VAServicesPricing';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VA Auto Dialer — Sequential Lead Processing State Machine
