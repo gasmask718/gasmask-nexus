@@ -10,7 +10,6 @@ import { BrandaroInvoicesDataTable } from '@/components/invoice/BrandaroInvoices
 import { VAScripts } from '@/components/va/VAScripts';
 import { VARebuttals } from '@/components/va/VARebuttals';
 import { VAFAQs } from '@/components/va/VAFAQs';
-import { VALeadDiscovery } from '@/components/va/VALeadDiscovery';
 import { VAPowerDialer } from '@/components/va/VAPowerDialer';
 import { UnifiedCallActions } from '@/components/communication/UnifiedCallActions';
 import { ManualCallActions } from '@/components/communication/ManualCallActions';
