@@ -16,7 +16,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sparkles, Brain, Search, Loader2, Target, Lightbulb, TrendingUp, FileText } from 'lucide-react';
+import { Sparkles, Brain, Search, Loader2, Target, Lightbulb, TrendingUp, FileText, Eye, ChevronLeft, ChevronRight, CheckCircle2, Phone, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { VACoachingInbox } from './VACoachingInbox';
