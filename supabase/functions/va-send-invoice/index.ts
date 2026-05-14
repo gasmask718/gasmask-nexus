@@ -166,8 +166,8 @@ function renderEmailHtml(invoice: any, lead: any): string {
         </div>`
       : invoice.payment_link
       ? `<div style="text-align:center;padding:8px 0 4px">
-          ${ctaButton(invoice.payment_link, `Pay $${fmtMoney(invoice.total)}`, true)}
-          <p style="margin:12px 0 0;color:#64748b;font-size:12px">Secure payment powered by Stripe</p>
+          ${ctaButton(invoice.payment_link, `Brandaro Digital Pay — $${fmtMoney(invoice.total)}`, true)}
+          <p style="margin:12px 0 0;color:#64748b;font-size:12px">Powered by Brandaro Digital Pay · Secure checkout</p>
         </div>`
       : "";
 
