@@ -11,7 +11,7 @@
 // Renders three tabs: Timeline · Transcript · Summary.
 // Realtime: re-fetches all three when new rows land.
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -22,12 +22,32 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertCircle, AlertTriangle, CheckCircle2, Info, Loader2,
-  Phone, PhoneForwarded, Bot, User, Mic, XCircle,
+  Phone, PhoneForwarded, Bot, User, Mic, XCircle, Sparkles, Save, RotateCcw,
 } from "lucide-react";
+import { toast } from "sonner";
+
+type FollowUpStatus =
+  | "won_back" | "closed_deal" | "callback_needed" | "follow_up_later"
+  | "nurture" | "no_answer" | "not_interested";
+
+const FOLLOWUP_OPTIONS: { value: FollowUpStatus; label: string }[] = [
+  { value: "won_back",        label: "🏆 Won back the customer" },
+  { value: "closed_deal",     label: "✅ Closed deal" },
+  { value: "callback_needed", label: "📞 Need to call again" },
+  { value: "follow_up_later", label: "🗓 Follow up later" },
+  { value: "nurture",         label: "🌱 Nurture / long-term" },
+  { value: "no_answer",       label: "📵 No answer / voicemail" },
+  { value: "not_interested",  label: "❌ Not interested" },
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
