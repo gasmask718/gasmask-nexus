@@ -16,7 +16,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sparkles, Brain, Search, Loader2, Target, Lightbulb, TrendingUp, FileText } from 'lucide-react';
+import { Sparkles, Brain, Search, Loader2, Target, Lightbulb, TrendingUp, FileText, Eye, ChevronLeft, ChevronRight, CheckCircle2, Phone, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { VACoachingInbox } from './VACoachingInbox';
@@ -63,9 +63,13 @@ export function VAAICoachingHub() {
   const [search, setSearch] = useState('');
   const [dispo, setDispo] = useState<string>('all');
   const [mood, setMood] = useState<string>('all');
+  const [aiFilter, setAiFilter] = useState<string>('all');
   const [selected, setSelected] = useState<CallRow | null>(null);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysis, setAnalysis] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [showFeedbackOnOpen, setShowFeedbackOnOpen] = useState(false);
 
   const { data: calls = [], isLoading } = useQuery({
     queryKey: ['va-call-summaries', user?.id],
@@ -108,13 +112,36 @@ export function VAAICoachingHub() {
     return calls.filter((c) => {
       if (dispo !== 'all' && c.disposition !== dispo) return false;
       if (mood !== 'all' && c.excitement_level !== mood) return false;
+      if (aiFilter === 'with' && !c.ai_analysis) return false;
+      if (aiFilter === 'without' && c.ai_analysis) return false;
       if (q) {
         const hay = `${c.call_summary || ''} ${c.va_notes || ''} ${c.disposition || ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
-  }, [calls, search, dispo, mood]);
+  }, [calls, search, dispo, mood, aiFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = useMemo(
+    () => filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filtered, currentPage, pageSize]
+  );
+
+  const stats = useMemo(() => {
+    const total = calls.length;
+    const analyzed = calls.filter((c) => c.ai_analysis).length;
+    const avgScore = (() => {
+      const scores = calls
+        .map((c) => c.ai_analysis?.score)
+        .filter((s): s is number => typeof s === 'number');
+      if (!scores.length) return null;
+      return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    })();
+    const closed = calls.filter((c) => c.disposition === 'closed').length;
+    return { total, analyzed, avgScore, closed };
+  }, [calls]);
 
   const analyzeMutation = useMutation({
     mutationFn: async () => {
@@ -158,27 +185,46 @@ export function VAAICoachingHub() {
             )}
           </Button>
         </CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="rounded-md border bg-background/60 p-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground"><Phone className="h-3.5 w-3.5" /> Total calls</div>
+            <div className="text-2xl font-semibold mt-1">{stats.total}</div>
+          </div>
+          <div className="rounded-md border bg-background/60 p-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground"><Brain className="h-3.5 w-3.5" /> AI analyzed</div>
+            <div className="text-2xl font-semibold mt-1">{stats.analyzed}</div>
+          </div>
+          <div className="rounded-md border bg-background/60 p-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground"><TrendingUp className="h-3.5 w-3.5" /> Avg score</div>
+            <div className="text-2xl font-semibold mt-1">{stats.avgScore != null ? `${stats.avgScore}/100` : '—'}</div>
+          </div>
+          <div className="rounded-md border bg-background/60 p-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground"><CheckCircle2 className="h-3.5 w-3.5" /> Closed</div>
+            <div className="text-2xl font-semibold mt-1">{stats.closed}</div>
+          </div>
+        </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2 space-y-0">
           <CardTitle className="text-base flex items-center gap-2">
-            <FileText className="h-4 w-4" /> Call Summaries ({filtered.length})
+            <FileText className="h-4 w-4" /> Call Summaries
+            <Badge variant="outline" className="ml-1">{filtered.length}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex flex-col md:flex-row gap-2">
-            <div className="relative flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+            <div className="relative md:col-span-5">
               <Search className="h-4 w-4 absolute left-2.5 top-3 text-muted-foreground" />
               <Input
                 placeholder="Search summary or notes…"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 className="pl-8"
               />
             </div>
-            <Select value={dispo} onValueChange={setDispo}>
-              <SelectTrigger className="md:w-44"><SelectValue placeholder="Disposition" /></SelectTrigger>
+            <Select value={dispo} onValueChange={(v) => { setDispo(v); setPage(1); }}>
+              <SelectTrigger className="md:col-span-3"><SelectValue placeholder="Disposition" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All dispositions</SelectItem>
                 <SelectItem value="closed">Closed</SelectItem>
@@ -189,13 +235,21 @@ export function VAAICoachingHub() {
                 <SelectItem value="dnc">DNC</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={mood} onValueChange={setMood}>
-              <SelectTrigger className="md:w-36"><SelectValue placeholder="Mood" /></SelectTrigger>
+            <Select value={mood} onValueChange={(v) => { setMood(v); setPage(1); }}>
+              <SelectTrigger className="md:col-span-2"><SelectValue placeholder="Mood" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All moods</SelectItem>
                 <SelectItem value="hot">Hot</SelectItem>
                 <SelectItem value="warm">Warm</SelectItem>
                 <SelectItem value="cold">Cold</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={aiFilter} onValueChange={(v) => { setAiFilter(v); setPage(1); }}>
+              <SelectTrigger className="md:col-span-2"><SelectValue placeholder="AI feedback" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All calls</SelectItem>
+                <SelectItem value="with">With AI feedback</SelectItem>
+                <SelectItem value="without">Needs analysis</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -204,72 +258,139 @@ export function VAAICoachingHub() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[150px]">When</TableHead>
+                  <TableHead className="w-[140px]">When</TableHead>
                   <TableHead className="w-[80px]">Duration</TableHead>
-                  <TableHead className="w-[130px]">Disposition</TableHead>
-                  <TableHead className="w-[90px]">Mood</TableHead>
+                  <TableHead className="w-[120px]">Disposition</TableHead>
+                  <TableHead className="w-[80px]">Mood</TableHead>
                   <TableHead>Summary</TableHead>
-                  <TableHead className="w-[120px] text-right">Actions</TableHead>
+                  <TableHead className="w-[110px]">AI Feedback</TableHead>
+                  <TableHead className="w-[200px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading && (
-                  <TableRow><TableCell colSpan={6}><Skeleton className="h-20 w-full" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7}><Skeleton className="h-20 w-full" /></TableCell></TableRow>
                 )}
                 {!isLoading && filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8 text-sm">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8 text-sm">
                       No calls match your filters yet.
                     </TableCell>
                   </TableRow>
                 )}
-                {filtered.map((c) => (
-                  <TableRow
-                    key={c.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => setSelected(c)}
-                  >
-                    <TableCell className="text-xs">
-                      {formatDistanceToNow(new Date(c.called_at), { addSuffix: true })}
-                    </TableCell>
-                    <TableCell className="text-xs font-mono">{fmtDur(c.duration_seconds)}</TableCell>
-                    <TableCell>
-                      {c.disposition ? (
-                        <Badge variant="outline" className={dispoColor[c.disposition] || ''}>
-                          {c.disposition}
-                        </Badge>
-                      ) : <span className="text-xs text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell>
-                      {c.excitement_level ? (
-                        <Badge variant="outline" className="capitalize">{c.excitement_level}</Badge>
-                      ) : <span className="text-xs text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell className="text-xs max-w-md truncate">
-                      {c.call_summary || c.va_notes || <span className="italic text-muted-foreground">No summary</span>}
-                    </TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={analyzingId === c.id}
-                        onClick={() => analyzeOneMutation.mutate(c.id)}
-                        className="h-7 px-2 text-xs"
-                      >
-                        {analyzingId === c.id ? (
-                          <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Analyzing</>
-                        ) : c.ai_analysis ? (
-                          <><Brain className="h-3 w-3 mr-1" /> Re-analyze</>
+                {pageItems.map((c) => {
+                  const hasAi = !!c.ai_analysis;
+                  const score = c.ai_analysis?.score;
+                  return (
+                    <TableRow
+                      key={c.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => { setShowFeedbackOnOpen(false); setSelected(c); }}
+                    >
+                      <TableCell className="text-xs">
+                        {formatDistanceToNow(new Date(c.called_at), { addSuffix: true })}
+                      </TableCell>
+                      <TableCell className="text-xs font-mono">{fmtDur(c.duration_seconds)}</TableCell>
+                      <TableCell>
+                        {c.disposition ? (
+                          <Badge variant="outline" className={dispoColor[c.disposition] || ''}>
+                            {c.disposition}
+                          </Badge>
+                        ) : <span className="text-xs text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell>
+                        {c.excitement_level ? (
+                          <Badge variant="outline" className="capitalize text-[10px]">{c.excitement_level}</Badge>
+                        ) : <span className="text-xs text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-xs max-w-md truncate">
+                        {c.call_summary || c.va_notes || <span className="italic text-muted-foreground">No summary</span>}
+                      </TableCell>
+                      <TableCell>
+                        {hasAi ? (
+                          <Badge className="bg-purple-500/15 text-purple-600 border border-purple-500/30 text-[10px]">
+                            {typeof score === 'number' ? `Score ${score}` : 'Ready'}
+                          </Badge>
                         ) : (
-                          <><Brain className="h-3 w-3 mr-1" /> Analyze</>
+                          <Badge variant="outline" className="text-[10px] text-muted-foreground">None</Badge>
                         )}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-end gap-1.5">
+                          {hasAi && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => { setShowFeedbackOnOpen(true); setSelected(c); }}
+                              className="h-7 px-2 text-xs text-purple-600 hover:text-purple-700"
+                            >
+                              <Eye className="h-3 w-3 mr-1" /> Feedback
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={analyzingId === c.id}
+                            onClick={() => analyzeOneMutation.mutate(c.id)}
+                            className="h-7 px-2 text-xs"
+                          >
+                            {analyzingId === c.id ? (
+                              <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Analyzing</>
+                            ) : hasAi ? (
+                              <><Brain className="h-3 w-3 mr-1" /> Re-run</>
+                            ) : (
+                              <><Brain className="h-3 w-3 mr-1" /> Analyze</>
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
+
+          {filtered.length > 0 && (
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3 pt-1">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                Showing {(currentPage - 1) * pageSize + 1}-
+                {Math.min(currentPage * pageSize, filtered.length)} of {filtered.length}
+                <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
+                  <SelectTrigger className="h-7 w-[80px] ml-2"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[10, 25, 50, 100].map((n) => (
+                      <SelectItem key={n} value={String(n)}>{n} / page</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" /> Prev
+                </Button>
+                <span className="text-xs text-muted-foreground px-2">
+                  Page {currentPage} / {totalPages}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Next <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
