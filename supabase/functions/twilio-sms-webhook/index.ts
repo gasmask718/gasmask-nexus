@@ -128,7 +128,8 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   let store_id: string | null = contact?.store_id ?? null;
-  let contact_id: string | null = contact?.id ?? null;
+  // store_contacts.id is NOT FK-compatible with communication_logs.contact_id (which references `people`)
+  let contact_id: string | null = null;
 
   // Fallback: stores.phone
   if (!store_id) {
