@@ -466,8 +466,14 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       }
 
       toast.success('Disposition saved — fetching next lead');
+      // Open post-call summary modal (parity with Active Call wrap-up)
+      setSummaryLead(currentLead);
+      setSummaryCallLogId(callLogId);
+      setSummaryDuration(callStartedAt ? Math.round((Date.now() - callStartedAt) / 1000) : 0);
+      setSummaryOpen(true);
       setCallLogId(null);
       setCurrentLead(null);
+      setCallStartedAt(null);
 
       // 4. Advance list pointer (list-mode) and loop
       if (listMode) setLeadIndex((i) => i + 1);
