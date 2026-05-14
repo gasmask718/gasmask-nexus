@@ -115204,6 +115204,11 @@ export type Database = {
         Args: { p_order_id: string; p_reason: string }
         Returns: undefined
       }
+      handle_sms_opt_in: { Args: { p_phone: string }; Returns: string }
+      handle_sms_opt_out: {
+        Args: { p_method?: string; p_phone: string }
+        Returns: string
+      }
       has_audit_engine_access: { Args: { _user_id: string }; Returns: boolean }
       has_finance_access: { Args: { _user_id: string }; Returns: boolean }
       has_org_role: {

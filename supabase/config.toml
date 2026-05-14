@@ -284,6 +284,15 @@ verify_jwt = false
 [functions.twilio-recording-webhook]
 verify_jwt = false
 
+[functions.twilio-sms-webhook]
+verify_jwt = false
+
+[functions.twilio-voice-webhook]
+verify_jwt = false
+
+[functions.bland-context-api]
+verify_jwt = false
+
 [functions.brandaro-track-lead-event]
 verify_jwt = false
 
