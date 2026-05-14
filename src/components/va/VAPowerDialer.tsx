@@ -61,6 +61,18 @@ interface Disposition {
   category: string | null;
   marks_do_not_call: boolean;
 }
+
+// Built-in dispositions aligned with the va_call_logs.disposition CHECK constraint.
+// These are ALWAYS available so the VA can set a status even if the
+// dialer_disposition_codes table is empty / RLS-restricted.
+const BUILTIN_DISPOSITIONS: Disposition[] = [
+  { id: 'builtin-closed',         code: 'closed',         label: '✅ Closed / Won',          category: 'positive', marks_do_not_call: false },
+  { id: 'builtin-callback',       code: 'callback',       label: '📅 Callback Scheduled',    category: 'neutral',  marks_do_not_call: false },
+  { id: 'builtin-no_answer',      code: 'no_answer',      label: '📵 No Answer',             category: 'neutral',  marks_do_not_call: false },
+  { id: 'builtin-voicemail',      code: 'voicemail',      label: '📨 Voicemail Left',        category: 'neutral',  marks_do_not_call: false },
+  { id: 'builtin-not_interested', code: 'not_interested', label: '❌ Not Interested',        category: 'negative', marks_do_not_call: false },
+  { id: 'builtin-dnc',            code: 'dnc',            label: '🚫 Do Not Call',           category: 'admin',    marks_do_not_call: true  },
+];
 interface QueueLead {
   queue_id: string;
   store_id: string;
