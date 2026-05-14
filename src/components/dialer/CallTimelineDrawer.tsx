@@ -552,6 +552,123 @@ export function CallTimelineDrawer({ queueItemId, onClose }: Props) {
             </ScrollArea>
           </TabsContent>
 
+          {/* ── Wrap-Up ─────────────────────────────────────────────────── */}
+          <TabsContent value="wrapup" className="flex-1 overflow-hidden mt-3 px-6 pb-6">
+            <ScrollArea className="h-full pr-3">
+              <div className="space-y-4">
+                {/* Recording */}
+                {queueRow?.bland_recording_url && (
+                  <div className="rounded-lg border bg-muted/30 p-3">
+                    <div className="text-xs text-muted-foreground mb-2">Recording</div>
+                    <audio controls className="w-full" src={queueRow.bland_recording_url} />
+                  </div>
+                )}
+
+                {/* AI analysis */}
+                <div className="rounded-lg border border-purple-500/30 bg-purple-500/5 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Sparkles className="h-4 w-4 text-purple-500" /> AI Conversation Overview
+                    </div>
+                    <Button
+                      size="sm" variant="outline"
+                      className="h-7 gap-1"
+                      disabled={wuGenerating || (!queueRow?.bland_transcript && !queueRow?.bland_recording_url && utterances.length === 0)}
+                      onClick={generateAnalysis}
+                    >
+                      <Sparkles className={`h-3 w-3 ${wuGenerating ? "animate-pulse" : ""}`} />
+                      {queueRow?.ai_analysis ? "Re-generate" : "Generate"}
+                    </Button>
+                  </div>
+                  {queueRow?.ai_analysis ? (
+                    <div className="space-y-2 text-xs">
+                      {queueRow.ai_analysis.summary && <p>{queueRow.ai_analysis.summary}</p>}
+                      {queueRow.ai_analysis.overall_score != null && (
+                        <Badge variant="outline">Score: {queueRow.ai_analysis.overall_score}/10</Badge>
+                      )}
+                      {queueRow.ai_analysis.coaching_note && (
+                        <p className="italic text-purple-700 dark:text-purple-300">💡 {queueRow.ai_analysis.coaching_note}</p>
+                      )}
+                      {Array.isArray(queueRow.ai_analysis.next_steps) && queueRow.ai_analysis.next_steps.length > 0 && (
+                        <ul className="list-disc pl-4 text-muted-foreground">
+                          {queueRow.ai_analysis.next_steps.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                        </ul>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Click <strong>Generate</strong> to have AI summarize this call. Requires transcript or recording.</p>
+                  )}
+                </div>
+
+                {/* Status */}
+                <div>
+                  <Label className="text-sm">Outcome / Status *</Label>
+                  <Select value={wuStatus} onValueChange={(v) => setWuStatus(v as FollowUpStatus)}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select an outcome…" /></SelectTrigger>
+                    <SelectContent>
+                      {FOLLOWUP_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Summary */}
+                <div>
+                  <Label className="text-sm">What was the call about?</Label>
+                  <Textarea
+                    value={wuSummary}
+                    onChange={(e) => setWuSummary(e.target.value)}
+                    placeholder="Quick overview of the conversation…"
+                    className="mt-1 min-h-[70px]"
+                  />
+                </div>
+
+                {/* Next call context */}
+                <div>
+                  <Label className="text-sm flex items-center gap-1">
+                    <RotateCcw className="h-3 w-3" /> Context for the next call
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground mb-1">
+                    Surfaces the next time anyone calls this lead.
+                  </p>
+                  <Textarea
+                    value={wuNextContext}
+                    onChange={(e) => setWuNextContext(e.target.value)}
+                    placeholder="e.g. Owner asked us to call back Friday after 2pm. Pricing concerns."
+                    className="min-h-[80px]"
+                  />
+                </div>
+
+                {/* Follow up datetime */}
+                {(wuStatus === "callback_needed" || wuStatus === "follow_up_later" || wuStatus === "won_back") && (
+                  <div>
+                    <Label className="text-sm">Schedule follow-up</Label>
+                    <Input
+                      type="datetime-local"
+                      value={wuFollowUpAt}
+                      onChange={(e) => setWuFollowUpAt(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button onClick={saveWrapUp} disabled={wuSaving || !wuStatus} className="gap-1.5">
+                    <Save className="h-4 w-4" />
+                    {wuSaving ? "Saving…" : queueRow?.wrap_up_completed_at ? "Update Wrap-Up" : "Save Wrap-Up"}
+                  </Button>
+                </div>
+
+                {queueRow?.wrap_up_completed_at && (
+                  <p className="text-[11px] text-muted-foreground text-right">
+                    Last saved {new Date(queueRow.wrap_up_completed_at).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
           {/* ── Summary ──────────────────────────────────────────────────── */}
           <TabsContent value="summary" className="flex-1 overflow-hidden mt-3 px-6 pb-6">
             <ScrollArea className="h-full pr-3">
