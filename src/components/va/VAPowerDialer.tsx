@@ -61,6 +61,18 @@ interface Disposition {
   category: string | null;
   marks_do_not_call: boolean;
 }
+
+// Built-in dispositions aligned with the va_call_logs.disposition CHECK constraint.
+// These are ALWAYS available so the VA can set a status even if the
+// dialer_disposition_codes table is empty / RLS-restricted.
+const BUILTIN_DISPOSITIONS: Disposition[] = [
+  { id: 'builtin-closed',         code: 'closed',         label: '✅ Closed / Won',          category: 'positive', marks_do_not_call: false },
+  { id: 'builtin-callback',       code: 'callback',       label: '📅 Callback Scheduled',    category: 'neutral',  marks_do_not_call: false },
+  { id: 'builtin-no_answer',      code: 'no_answer',      label: '📵 No Answer',             category: 'neutral',  marks_do_not_call: false },
+  { id: 'builtin-voicemail',      code: 'voicemail',      label: '📨 Voicemail Left',        category: 'neutral',  marks_do_not_call: false },
+  { id: 'builtin-not_interested', code: 'not_interested', label: '❌ Not Interested',        category: 'negative', marks_do_not_call: false },
+  { id: 'builtin-dnc',            code: 'dnc',            label: '🚫 Do Not Call',           category: 'admin',    marks_do_not_call: true  },
+];
 interface QueueLead {
   queue_id: string;
   store_id: string;
@@ -175,10 +187,19 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
         if (cancelled) return;
         setCampaigns(campRes.data || []);
         setNumbers(numRes.data || []);
-        setDispositions(dispRes.data || []);
+        // Merge DB-configured codes (if any) with the built-in safe list so the
+        // dropdown is never empty and saves always satisfy the DB CHECK constraint.
+        const dbDisp = (dispRes.data || []) as Disposition[];
+        const merged = [...BUILTIN_DISPOSITIONS];
+        for (const d of dbDisp) {
+          if (!merged.find(m => m.code.toLowerCase() === d.code.toLowerCase())) {
+            merged.push(d);
+          }
+        }
+        setDispositions(merged);
         if (campRes.error) console.warn('[AutoDialer] campaigns:', campRes.error);
         if (numRes.error) console.warn('[AutoDialer] numbers:', numRes.error);
-        if (dispRes.error) console.warn('[AutoDialer] dispositions:', dispRes.error);
+        if (dispRes.error) console.warn('[AutoDialer] dispositions (using built-ins):', dispRes.error);
       } catch (err: any) {
         toast.error('Failed to load dialer config: ' + err.message);
       } finally {
@@ -432,20 +453,48 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
 
     const dispObj = dispositions.find(d => d.code === dispositionCode);
 
+    // Map any non-built-in code to a value that satisfies the
+    // va_call_logs.disposition CHECK constraint.
+    const VALID = ['closed','not_interested','callback','no_answer','voicemail','dnc'];
+    const safeDisp = VALID.includes(dispositionCode)
+      ? dispositionCode
+      : (dispObj?.category === 'positive' ? 'closed'
+        : dispObj?.category === 'negative' ? 'not_interested'
+        : dispObj?.marks_do_not_call ? 'dnc'
+        : 'callback');
+
     try {
-      // 1. Persist disposition via backend (writes va_call_logs)
+      // 1a. Preferred path — backend writes va_call_logs + side-effects.
       if (callLogId) {
         const { error } = await supabase.functions.invoke('va-power-dialer', {
           body: {
             vaId: user.id,
             action: 'disposition',
             callLogId,
-            disposition: dispositionCode,
+            disposition: safeDisp,
             notes: vaNotes,
             leadId: currentLead.store_id,
           },
         });
         if (error) throw error;
+      } else {
+        // 1b. No callLog yet (e.g. quick-dial / call dropped before log row
+        // was created) — insert a minimal row directly so the status is
+        // never lost.
+        const { error: insErr } = await (supabase as any)
+          .from('va_call_logs')
+          .insert({
+            va_id: user.id,
+            lead_id: currentLead.store_id || null,
+            twilio_number: selectedNumber || 'unknown',
+            disposition: safeDisp,
+            va_notes: vaNotes,
+            call_status: 'completed',
+            duration_seconds: callStartedAt ? Math.round((Date.now() - callStartedAt) / 1000) : 0,
+            direction: 'outbound',
+            wrap_up_completed_at: new Date().toISOString(),
+          });
+        if (insErr) throw insErr;
       }
 
       // 2. Close the queue item (auto-loop only)
@@ -485,7 +534,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     } catch (err: any) {
       toast.error('Failed to save disposition: ' + (err.message || 'unknown'));
     }
-  }, [user, currentLead, dispositionCode, vaNotes, callLogId, callStartedAt, dispositions, sessionRunning, runCycle, listMode]);
+  }, [user, currentLead, dispositionCode, vaNotes, callLogId, callStartedAt, dispositions, sessionRunning, runCycle, listMode, selectedNumber]);
 
   const skipCurrent = async () => {
     if (!currentLead) return;
