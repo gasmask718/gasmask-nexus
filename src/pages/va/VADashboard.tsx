@@ -346,6 +346,7 @@ function VADashboardInner() {
           />
         )}
       </div>
+      </AutoTranslateRoot>
     </SidebarProvider>
   );
 }
