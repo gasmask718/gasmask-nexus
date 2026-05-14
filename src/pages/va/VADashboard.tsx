@@ -117,8 +117,6 @@ function VADashboardInner() {
   const navItems = [
     { key: 'leads' as VAView, label: t('va.nav.leads'), icon: Users },
     { key: 'intake' as VAView, label: 'New Lead Intake', icon: UserPlus },
-    { key: 'discovery' as VAView, label: t('va.nav.discovery'), icon: Search },
-    { key: 'dialer' as VAView, label: 'Power Dialer', icon: Zap },
     { key: 'autodialer' as VAView, label: 'Auto Dialer', icon: Sparkles },
     { key: 'leaderboard' as VAView, label: 'Leaderboard', icon: Trophy },
     { key: 'callbacks' as VAView, label: 'Callbacks', icon: Clock },
