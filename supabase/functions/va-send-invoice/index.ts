@@ -340,7 +340,7 @@ serve(async (req: Request) => {
         `Brandaro invoice ${invoice.invoice_number || ""}`.trim(),
         `Amount due: $${fmtMoney(invoice.total)}`,
         invoice.due_date ? `Due: ${new Date(invoice.due_date).toLocaleDateString("en-US")}` : "",
-        invoice.payment_link ? `Pay here: ${invoice.payment_link}` : "",
+        invoice.payment_link ? `Brandaro Digital Pay: ${invoice.payment_link}` : "",
       ].filter(Boolean);
       sendResult = await sendInvoiceEmail({
         to: recipient,
