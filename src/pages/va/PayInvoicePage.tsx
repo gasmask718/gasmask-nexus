@@ -176,7 +176,7 @@ export default function PayInvoicePage() {
               size="lg"
               onClick={() => (window.location.href = invoice.payment_link)}
             >
-              <CreditCard className="h-4 w-4 mr-2" /> Pay Now — ${total.toFixed(2)}
+              <CreditCard className="h-4 w-4 mr-2" /> Brandaro Digital Pay — ${total.toFixed(2)}
             </Button>
           )}
 
