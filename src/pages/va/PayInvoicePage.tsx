@@ -148,7 +148,7 @@ export default function PayInvoicePage() {
                 {depositPaid ? (
                   <><CheckCircle className="h-4 w-4 mr-2" /> Deposit Paid</>
                 ) : (
-                  <><SplitSquareHorizontal className="h-4 w-4 mr-2" /> Pay 50% Deposit — ${Number(invoice.deposit_amount || 0).toFixed(2)}</>
+                  <><SplitSquareHorizontal className="h-4 w-4 mr-2" /> Brandaro Digital Pay — 50% Deposit (${Number(invoice.deposit_amount || 0).toFixed(2)})</>
                 )}
               </Button>
               <Button
@@ -161,7 +161,7 @@ export default function PayInvoicePage() {
                 {finalPaid ? (
                   <><CheckCircle className="h-4 w-4 mr-2" /> Final Paid</>
                 ) : (
-                  <><CreditCard className="h-4 w-4 mr-2" /> Pay Final 50% — ${Number(invoice.final_amount || 0).toFixed(2)}</>
+                  <><CreditCard className="h-4 w-4 mr-2" /> Brandaro Digital Pay — Final 50% (${Number(invoice.final_amount || 0).toFixed(2)})</>
                 )}
               </Button>
               <p className="text-[11px] text-muted-foreground text-center">
