@@ -257,11 +257,7 @@ function VADashboardInner() {
             )}
             {view === 'intake' && (
               <div className="max-w-3xl">
-                <BrandaroLeadIntakeModal
-                  variant="embedded"
-                  assignToSelf
-                  onCreated={() => setView('leads')}
-                />
+                <VANewLeadIntakeForm onCreated={() => setView('leads')} />
               </div>
             )}
             {view === 'discovery' && <VALeadDiscovery />}
