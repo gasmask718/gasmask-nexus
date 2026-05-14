@@ -22,6 +22,7 @@ import { VARecentCalls } from '@/components/va/VARecentCalls';
 import { VACallHistory } from '@/components/va/VACallHistory';
 import { VASessionSummary } from '@/components/va/VASessionSummary';
 import { VACoachingInbox } from '@/components/va/VACoachingInbox';
+import { VAAICoachingHub } from '@/components/va/VAAICoachingHub';
 import { VAAutoDialerSection } from '@/components/va/VAAutoDialerSection';
 import { VAActiveNumberSwitcher } from '@/components/va/VAActiveNumberSwitcher';
 import { Button } from '@/components/ui/button';
@@ -278,8 +279,8 @@ function VADashboardInner() {
               </div>
             )}
             {view === 'coaching' && (
-              <div className="max-w-3xl">
-                <VACoachingInbox />
+              <div className="max-w-5xl">
+                <VAAICoachingHub />
               </div>
             )}
             {view === 'history' && (
