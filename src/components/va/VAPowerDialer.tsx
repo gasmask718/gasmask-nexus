@@ -711,6 +711,17 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
             </Button>
           </div>
 
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setReferenceOpen(true)}
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-2 border-cyan-500/40 text-cyan-300 hover:text-cyan-200"
+            >
+              <BookOpen className="h-4 w-4" /> Scripts · FAQs · Rebuttals · Pricing
+            </Button>
+          </div>
+
           <Button onClick={stopDialer} variant="ghost" size="sm" className="w-full text-red-400 hover:text-red-300 gap-2">
             <X className="h-4 w-4" /> Stop Dialer
           </Button>
@@ -720,6 +731,18 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
             <BrandaroCallScript businessName={currentLead?.business_name} />
           </div>
         </CardContent>
+
+        {/* AI Live Coach — auto-opens while connected (parity with Active Call) */}
+        <VALiveAnalysisModal
+          active={phase === 'connected'}
+          callLogId={callLogId}
+          leadId={currentLead?.store_id || null}
+          leadName={currentLead?.business_name}
+          startedAt={callStartedAt ?? undefined}
+        />
+
+        {/* Reference modal */}
+        <ReferenceModal open={referenceOpen} onOpenChange={setReferenceOpen} />
       </Card>
     );
   }
