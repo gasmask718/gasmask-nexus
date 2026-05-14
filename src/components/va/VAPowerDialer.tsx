@@ -187,10 +187,19 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
         if (cancelled) return;
         setCampaigns(campRes.data || []);
         setNumbers(numRes.data || []);
-        setDispositions(dispRes.data || []);
+        // Merge DB-configured codes (if any) with the built-in safe list so the
+        // dropdown is never empty and saves always satisfy the DB CHECK constraint.
+        const dbDisp = (dispRes.data || []) as Disposition[];
+        const merged = [...BUILTIN_DISPOSITIONS];
+        for (const d of dbDisp) {
+          if (!merged.find(m => m.code.toLowerCase() === d.code.toLowerCase())) {
+            merged.push(d);
+          }
+        }
+        setDispositions(merged);
         if (campRes.error) console.warn('[AutoDialer] campaigns:', campRes.error);
         if (numRes.error) console.warn('[AutoDialer] numbers:', numRes.error);
-        if (dispRes.error) console.warn('[AutoDialer] dispositions:', dispRes.error);
+        if (dispRes.error) console.warn('[AutoDialer] dispositions (using built-ins):', dispRes.error);
       } catch (err: any) {
         toast.error('Failed to load dialer config: ' + err.message);
       } finally {
