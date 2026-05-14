@@ -52,7 +52,7 @@ function VADashboardInner() {
   const companyName = activeCompany?.company_name ?? 'No company assigned';
   const companyColor = activeCompany?.brand_color ?? '#06b6d4';
 
-  const initialView = location.pathname.includes('lead-discovery') ? 'discovery' : 'leads';
+  const initialView: VAView = 'leads';
   const [view, setView] = useState<VAView>(initialView);
   const [callLead, setCallLead] = useState<any>(null);
   const [invoiceLead, setInvoiceLead] = useState<any>(null);
