@@ -257,28 +257,6 @@ function VADashboardInner() {
                 <VANewLeadIntakeForm onCreated={() => setView('leads')} />
               </div>
             )}
-            {view === 'discovery' && <VALeadDiscovery />}
-            {view === 'dialer' && (
-              <div className="flex gap-4 h-[calc(100vh-8rem)]">
-                {/* Left: Persistent manual-call controls + full Auto-Dialer engine
-                    (same CampaignDialPage that powers /communication/campaign-dial:
-                     7 audience sources, Bland AI agents, server dispatcher,
-                     realtime queue monitor, recover-stuck, history). */}
-                <div className="flex-1 flex flex-col gap-3 min-w-0">
-                  <div className="space-y-3">
-                    <UnifiedCallActions businessUnit={activeCompany?.company_slug ?? null} />
-                    <ManualCallActions businessUnit={activeCompany?.company_slug ?? null} />
-                  </div>
-                  <div className="flex-1 min-h-0 rounded-xl border border-slate-700 bg-slate-900/40 overflow-hidden">
-                    <VAAutoDialerSection />
-                  </div>
-                </div>
-                {/* Right: Scripts & Rebuttals (tabbed reference, never obscures dialer) */}
-                <div className="w-[34%] min-w-0 rounded-xl border border-slate-700 overflow-hidden">
-                  <VAScriptsRebuttalsPanel />
-                </div>
-              </div>
-            )}
             {view === 'autodialer' && (
               <div className="max-w-3xl">
                 <VAPowerDialer
