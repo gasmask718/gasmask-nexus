@@ -40,7 +40,7 @@ import {
 } from 'lucide-react';
 import { useVAActiveCompany } from '@/hooks/useVAActiveCompany';
 import { BrandaroLeadIntakeModal } from '@/components/brandaro/BrandaroLeadIntakeModal';
-import { VANewLeadIntakeForm } from '@/components/va/VANewLeadIntakeForm';
+import { VAIntakeInvitesPanel } from '@/components/va/VAIntakeInvitesPanel';
 
 type VAView = 'leads' | 'intake' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'autodialer' | 'leaderboard' | 'callbacks' | 'coaching' | 'history';
 
@@ -256,8 +256,8 @@ function VADashboardInner() {
               </div>
             )}
             {view === 'intake' && (
-              <div className="max-w-3xl">
-                <VANewLeadIntakeForm onCreated={() => setView('leads')} />
+              <div className="max-w-6xl">
+                <VAIntakeInvitesPanel />
               </div>
             )}
             {view === 'autodialer' && (
