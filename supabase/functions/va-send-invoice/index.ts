@@ -409,8 +409,8 @@ serve(async (req: Request) => {
       }
 
       const smsBody = smsLink
-        ? `Brandaro Digital — $${total} invoice ready. Pay securely: ${smsLink}`
-        : `Brandaro Digital — $${total} invoice ${invoice.invoice_number || ""} ready.`;
+        ? `Brandaro Digital Pay — $${total} invoice ready. Tap to pay securely: ${smsLink}`
+        : `Brandaro Digital Pay — $${total} invoice ${invoice.invoice_number || ""} ready.`;
 
       const twilioParams: Record<string, string> = { To: recipient, Body: smsBody };
       if (messagingServiceSid && !fromNumber) twilioParams.MessagingServiceSid = messagingServiceSid;
