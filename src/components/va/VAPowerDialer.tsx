@@ -453,20 +453,48 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
 
     const dispObj = dispositions.find(d => d.code === dispositionCode);
 
+    // Map any non-built-in code to a value that satisfies the
+    // va_call_logs.disposition CHECK constraint.
+    const VALID = ['closed','not_interested','callback','no_answer','voicemail','dnc'];
+    const safeDisp = VALID.includes(dispositionCode)
+      ? dispositionCode
+      : (dispObj?.category === 'positive' ? 'closed'
+        : dispObj?.category === 'negative' ? 'not_interested'
+        : dispObj?.marks_do_not_call ? 'dnc'
+        : 'callback');
+
     try {
-      // 1. Persist disposition via backend (writes va_call_logs)
+      // 1a. Preferred path — backend writes va_call_logs + side-effects.
       if (callLogId) {
         const { error } = await supabase.functions.invoke('va-power-dialer', {
           body: {
             vaId: user.id,
             action: 'disposition',
             callLogId,
-            disposition: dispositionCode,
+            disposition: safeDisp,
             notes: vaNotes,
             leadId: currentLead.store_id,
           },
         });
         if (error) throw error;
+      } else {
+        // 1b. No callLog yet (e.g. quick-dial / call dropped before log row
+        // was created) — insert a minimal row directly so the status is
+        // never lost.
+        const { error: insErr } = await (supabase as any)
+          .from('va_call_logs')
+          .insert({
+            va_id: user.id,
+            lead_id: currentLead.store_id || null,
+            twilio_number: selectedNumber || 'unknown',
+            disposition: safeDisp,
+            va_notes: vaNotes,
+            call_status: 'completed',
+            duration_seconds: callStartedAt ? Math.round((Date.now() - callStartedAt) / 1000) : 0,
+            direction: 'outbound',
+            wrap_up_completed_at: new Date().toISOString(),
+          });
+        if (insErr) throw insErr;
       }
 
       // 2. Close the queue item (auto-loop only)
