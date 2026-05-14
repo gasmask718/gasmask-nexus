@@ -321,35 +321,53 @@ export function VANewLeadIntakeForm({ onCreated }: Props) {
       .slice(0, 1500);
   };
 
-  const handleSendSms = async () => {
-    if (!form.phone.trim()) {
+  const sendIntakeInvite = async (channels: ("sms" | "email")[]) => {
+    if (!form.businessName.trim()) {
+      toast.error("Business name is required.");
+      return;
+    }
+    if (channels.includes("sms") && !form.phone.trim()) {
       toast.error("Phone number is required to send SMS.");
       return;
     }
-    if (!form.businessName.trim()) {
-      toast.error("Business name is required to send SMS.");
+    if (channels.includes("email") && !form.email.trim()) {
+      toast.error("Email is required to send the intake link by email.");
       return;
     }
     setSmsSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-sms", {
+      const { data, error } = await supabase.functions.invoke("va-send-intake-invite", {
         body: {
-          to_number: form.phone,
-          message_body: buildSmsBody(),
-          idempotency_key: `va-intake-${Date.now()}-${crypto.randomUUID()}`,
+          business_name: form.businessName,
+          owner_name: form.ownerName,
+          phone: form.phone,
+          email: form.email,
+          channels,
         },
       });
       if (error) throw error;
-      if (data && data.success === false) {
-        throw new Error(data.error_message || "SMS failed");
+      if (data?.error) throw new Error(data.error);
+      const r = data?.results || {};
+      const okParts: string[] = [];
+      const failParts: string[] = [];
+      if (channels.includes("sms")) {
+        r.sms?.ok ? okParts.push("SMS") : failParts.push(`SMS (${r.sms?.error || "failed"})`);
       }
-      toast.success(`SMS sent to ${form.phone}`);
+      if (channels.includes("email")) {
+        r.email?.ok ? okParts.push("Email") : failParts.push(`Email (${r.email?.error || "failed"})`);
+      }
+      if (okParts.length) toast.success(`Intake link sent via ${okParts.join(" + ")}`);
+      if (failParts.length) toast.error(`Failed: ${failParts.join(", ")}`);
     } catch (e: any) {
-      toast.error(e.message || "Failed to send SMS");
+      toast.error(e.message || "Failed to send intake link");
     } finally {
       setSmsSending(false);
     }
   };
+
+  const handleSendSms = () => sendIntakeInvite(["sms"]);
+  const handleSendEmail = () => sendIntakeInvite(["email"]);
+  const handleSendBoth = () => sendIntakeInvite(["sms", "email"]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
