@@ -29,8 +29,18 @@ interface CallRow {
   excitement_level: string | null;
   call_summary: string | null;
   va_notes: string | null;
+  transcript: string | null;
+  recording_url: string | null;
+  recording_sid: string | null;
   ai_analysis: any;
 }
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const recordingProxyUrl = (row: CallRow): string | null => {
+  if (row.recording_sid) return `${SUPABASE_URL}/functions/v1/play-twilio-recording?sid=${encodeURIComponent(row.recording_sid)}&fmt=mp3`;
+  if (row.recording_url) return `${SUPABASE_URL}/functions/v1/play-twilio-recording?url=${encodeURIComponent(row.recording_url)}`;
+  return null;
+};
 
 const fmtDur = (s: number | null) => {
   if (!s) return '—';
