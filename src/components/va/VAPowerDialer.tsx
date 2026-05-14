@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Phone, PhoneOff, SkipForward, X, Loader2, PlayCircle, AlertTriangle, PhoneCall,
+  Phone, PhoneOff, SkipForward, X, Loader2, PlayCircle, AlertTriangle, PhoneCall, BookOpen,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -17,6 +17,14 @@ import { BrandaroCallScript } from './BrandaroCallScript';
 import { useVoiceDevice } from '@/contexts/VoiceDeviceProvider';
 import { useCall } from '@/components/communication/CallProvider';
 import { useVASession } from '@/contexts/VASessionContext';
+import { VALiveAnalysisModal } from './VALiveAnalysisModal';
+import { VACallWrapUpModal } from './VACallWrapUpModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { VAScripts } from './VAScripts';
+import { VARebuttals } from './VARebuttals';
+import { VAFAQs } from './VAFAQs';
+import { VAServicesPricing } from './VAServicesPricing';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VA Auto Dialer — Sequential Lead Processing State Machine
@@ -128,6 +136,14 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
 
   // Stop flag (lets us break out of the auto-loop cleanly)
   const stopFlagRef = useRef(false);
+
+  // UI: reference modal (Scripts / FAQs / Rebuttals / Services & Pricing)
+  const [referenceOpen, setReferenceOpen] = useState(false);
+  // UI: post-call summary modal (parity with Active Call wrap-up)
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryLead, setSummaryLead] = useState<QueueLead | null>(null);
+  const [summaryCallLogId, setSummaryCallLogId] = useState<string | null>(null);
+  const [summaryDuration, setSummaryDuration] = useState(0);
 
   // ── Phase 1: Initialization ─────────────────────────────────────────
   useEffect(() => {
@@ -450,8 +466,14 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       }
 
       toast.success('Disposition saved — fetching next lead');
+      // Open post-call summary modal (parity with Active Call wrap-up)
+      setSummaryLead(currentLead);
+      setSummaryCallLogId(callLogId);
+      setSummaryDuration(callStartedAt ? Math.round((Date.now() - callStartedAt) / 1000) : 0);
+      setSummaryOpen(true);
       setCallLogId(null);
       setCurrentLead(null);
+      setCallStartedAt(null);
 
       // 4. Advance list pointer (list-mode) and loop
       if (listMode) setLeadIndex((i) => i + 1);
@@ -463,7 +485,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     } catch (err: any) {
       toast.error('Failed to save disposition: ' + (err.message || 'unknown'));
     }
-  }, [user, currentLead, dispositionCode, vaNotes, callLogId, dispositions, sessionRunning, runCycle, listMode]);
+  }, [user, currentLead, dispositionCode, vaNotes, callLogId, callStartedAt, dispositions, sessionRunning, runCycle, listMode]);
 
   const skipCurrent = async () => {
     if (!currentLead) return;
@@ -689,6 +711,17 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
             </Button>
           </div>
 
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setReferenceOpen(true)}
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-2 border-cyan-500/40 text-cyan-300 hover:text-cyan-200"
+            >
+              <BookOpen className="h-4 w-4" /> Scripts · FAQs · Rebuttals · Pricing
+            </Button>
+          </div>
+
           <Button onClick={stopDialer} variant="ghost" size="sm" className="w-full text-red-400 hover:text-red-300 gap-2">
             <X className="h-4 w-4" /> Stop Dialer
           </Button>
@@ -698,6 +731,18 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
             <BrandaroCallScript businessName={currentLead?.business_name} />
           </div>
         </CardContent>
+
+        {/* AI Live Coach — auto-opens while connected (parity with Active Call) */}
+        <VALiveAnalysisModal
+          active={phase === 'connected'}
+          callLogId={callLogId}
+          leadId={currentLead?.store_id || null}
+          leadName={currentLead?.business_name}
+          startedAt={callStartedAt ?? undefined}
+        />
+
+        {/* Reference modal */}
+        <ReferenceModal open={referenceOpen} onOpenChange={setReferenceOpen} />
       </Card>
     );
   }
@@ -762,6 +807,51 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
           </Button>
         </div>
       </CardContent>
+
+      {/* Reference modal also available during wrap-up */}
+      <ReferenceModal open={referenceOpen} onOpenChange={setReferenceOpen} />
+
+      {/* Post-call summary modal — parity with Active Call wrap-up */}
+      <VACallWrapUpModal
+        open={summaryOpen}
+        onClose={() => setSummaryOpen(false)}
+        callLogId={summaryCallLogId}
+        leadName={summaryLead?.business_name || ''}
+        leadId={summaryLead?.store_id || ''}
+        durationSeconds={summaryDuration}
+      />
     </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reference Modal — Scripts · FAQs · Rebuttals · Services & Pricing
+// Single source of truth: same DB-backed components used in the Active Call.
+// ─────────────────────────────────────────────────────────────────────────────
+function ReferenceModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl bg-slate-900 border-slate-700 text-white max-h-[85vh] overflow-hidden flex flex-col p-0">
+        <DialogHeader className="px-5 pt-5 pb-2">
+          <DialogTitle className="text-cyan-300 flex items-center gap-2 text-base">
+            <BookOpen className="h-4 w-4" /> Call Reference
+          </DialogTitle>
+        </DialogHeader>
+        <Tabs defaultValue="services" className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="mx-5 bg-slate-800 border border-slate-700">
+            <TabsTrigger value="services" className="flex-1 text-xs">Services & Pricing</TabsTrigger>
+            <TabsTrigger value="faqs" className="flex-1 text-xs">FAQs</TabsTrigger>
+            <TabsTrigger value="scripts" className="flex-1 text-xs">Scripts</TabsTrigger>
+            <TabsTrigger value="rebuttals" className="flex-1 text-xs">Rebuttals</TabsTrigger>
+          </TabsList>
+          <div className="flex-1 overflow-y-auto px-5 pb-5 mt-3">
+            <TabsContent value="services" className="mt-0"><VAServicesPricing /></TabsContent>
+            <TabsContent value="faqs" className="mt-0"><VAFAQs /></TabsContent>
+            <TabsContent value="scripts" className="mt-0"><VAScripts /></TabsContent>
+            <TabsContent value="rebuttals" className="mt-0"><VARebuttals /></TabsContent>
+          </div>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
   );
 }

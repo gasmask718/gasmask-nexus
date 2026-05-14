@@ -10,7 +10,6 @@ import { BrandaroInvoicesDataTable } from '@/components/invoice/BrandaroInvoices
 import { VAScripts } from '@/components/va/VAScripts';
 import { VARebuttals } from '@/components/va/VARebuttals';
 import { VAFAQs } from '@/components/va/VAFAQs';
-import { VALeadDiscovery } from '@/components/va/VALeadDiscovery';
 import { VAPowerDialer } from '@/components/va/VAPowerDialer';
 import { UnifiedCallActions } from '@/components/communication/UnifiedCallActions';
 import { ManualCallActions } from '@/components/communication/ManualCallActions';
@@ -41,7 +40,7 @@ import { useVAActiveCompany } from '@/hooks/useVAActiveCompany';
 import { BrandaroLeadIntakeModal } from '@/components/brandaro/BrandaroLeadIntakeModal';
 import { VANewLeadIntakeForm } from '@/components/va/VANewLeadIntakeForm';
 
-type VAView = 'leads' | 'intake' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'autodialer' | 'leaderboard' | 'callbacks' | 'coaching' | 'history';
+type VAView = 'leads' | 'intake' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'autodialer' | 'leaderboard' | 'callbacks' | 'coaching' | 'history';
 
 function VADashboardInner() {
   const navigate = useNavigate();
@@ -53,7 +52,7 @@ function VADashboardInner() {
   const companyName = activeCompany?.company_name ?? 'No company assigned';
   const companyColor = activeCompany?.brand_color ?? '#06b6d4';
 
-  const initialView = location.pathname.includes('lead-discovery') ? 'discovery' : 'leads';
+  const initialView: VAView = 'leads';
   const [view, setView] = useState<VAView>(initialView);
   const [callLead, setCallLead] = useState<any>(null);
   const [invoiceLead, setInvoiceLead] = useState<any>(null);
@@ -93,7 +92,7 @@ function VADashboardInner() {
 
   const handleStartDialer = () => {
     setDialerLeads(allLeads);
-    setView('dialer');
+    setView('autodialer');
   };
 
   const handleEndDialerSession = () => {
@@ -118,8 +117,6 @@ function VADashboardInner() {
   const navItems = [
     { key: 'leads' as VAView, label: t('va.nav.leads'), icon: Users },
     { key: 'intake' as VAView, label: 'New Lead Intake', icon: UserPlus },
-    { key: 'discovery' as VAView, label: t('va.nav.discovery'), icon: Search },
-    { key: 'dialer' as VAView, label: 'Power Dialer', icon: Zap },
     { key: 'autodialer' as VAView, label: 'Auto Dialer', icon: Sparkles },
     { key: 'leaderboard' as VAView, label: 'Leaderboard', icon: Trophy },
     { key: 'callbacks' as VAView, label: 'Callbacks', icon: Clock },
@@ -258,28 +255,6 @@ function VADashboardInner() {
             {view === 'intake' && (
               <div className="max-w-3xl">
                 <VANewLeadIntakeForm onCreated={() => setView('leads')} />
-              </div>
-            )}
-            {view === 'discovery' && <VALeadDiscovery />}
-            {view === 'dialer' && (
-              <div className="flex gap-4 h-[calc(100vh-8rem)]">
-                {/* Left: Persistent manual-call controls + full Auto-Dialer engine
-                    (same CampaignDialPage that powers /communication/campaign-dial:
-                     7 audience sources, Bland AI agents, server dispatcher,
-                     realtime queue monitor, recover-stuck, history). */}
-                <div className="flex-1 flex flex-col gap-3 min-w-0">
-                  <div className="space-y-3">
-                    <UnifiedCallActions businessUnit={activeCompany?.company_slug ?? null} />
-                    <ManualCallActions businessUnit={activeCompany?.company_slug ?? null} />
-                  </div>
-                  <div className="flex-1 min-h-0 rounded-xl border border-slate-700 bg-slate-900/40 overflow-hidden">
-                    <VAAutoDialerSection />
-                  </div>
-                </div>
-                {/* Right: Scripts & Rebuttals (tabbed reference, never obscures dialer) */}
-                <div className="w-[34%] min-w-0 rounded-xl border border-slate-700 overflow-hidden">
-                  <VAScriptsRebuttalsPanel />
-                </div>
               </div>
             )}
             {view === 'autodialer' && (
