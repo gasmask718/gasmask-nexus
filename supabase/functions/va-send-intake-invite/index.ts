@@ -134,17 +134,55 @@ serve(async (req) => {
 
     if (channels.includes("sms")) {
       try {
-        const { data: smsData, error: smsErr } = await admin.functions.invoke("send-sms", {
-          body: {
-            to_number: body.phone,
-            message_body: buildSmsBody(body.owner_name || "", link),
-            idempotency_key: `intake-invite-${invite.id}`,
+        const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
+        const tkn = Deno.env.get("TWILIO_AUTH_TOKEN");
+        const from = Deno.env.get("TWILIO_PHONE_NUMBER") || "+18484004179";
+        if (!sid || !tkn) throw new Error("Twilio credentials not configured");
+
+        // Normalize phone to E.164
+        const raw = (body.phone || "").trim();
+        let digits = raw.replace(/\D/g, "");
+        let to = raw;
+        if (digits.length === 10) to = `+1${digits}`;
+        else if (digits.length === 11 && digits.startsWith("1")) to = `+${digits}`;
+        else if (!raw.startsWith("+")) to = `+${digits}`;
+
+        const msg = buildSmsBody(body.owner_name || "", link);
+        const form = new URLSearchParams();
+        form.append("To", to);
+        form.append("From", from);
+        form.append("Body", msg);
+
+        const twRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${btoa(`${sid}:${tkn}`)}`,
+            "Content-Type": "application/x-www-form-urlencoded",
           },
+          body: form,
         });
-        if (smsErr) throw smsErr;
-        if (smsData && smsData.success === false) throw new Error(smsData.error_message || "SMS failed");
+        const twData = await twRes.json();
+        if (!twRes.ok) throw new Error(twData?.message || `Twilio error ${twRes.status}`);
+
+        // Best-effort log to outbound_messages (non-fatal)
+        try {
+          await admin.from("outbound_messages").insert({
+            idempotency_key: `intake-invite-${invite.id}`,
+            to_number: to,
+            message_body: msg,
+            provider: "twilio",
+            status: "sent",
+            provider_message_id: twData?.sid || null,
+            created_by: user.id,
+            metadata: { source: "va_intake_invite", invite_id: invite.id },
+          });
+        } catch (logErr) {
+          console.warn("outbound_messages log failed (non-fatal):", logErr);
+        }
+
         results.sms = { ok: true };
       } catch (e: any) {
+        console.error("Intake SMS failed:", e?.message || e);
         results.sms = { ok: false, error: e?.message || String(e) };
       }
     }
