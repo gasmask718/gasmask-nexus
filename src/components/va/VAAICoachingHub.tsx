@@ -29,8 +29,18 @@ interface CallRow {
   excitement_level: string | null;
   call_summary: string | null;
   va_notes: string | null;
+  transcript: string | null;
+  recording_url: string | null;
+  recording_sid: string | null;
   ai_analysis: any;
 }
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const recordingProxyUrl = (row: CallRow): string | null => {
+  if (row.recording_sid) return `${SUPABASE_URL}/functions/v1/play-twilio-recording?sid=${encodeURIComponent(row.recording_sid)}&fmt=mp3`;
+  if (row.recording_url) return `${SUPABASE_URL}/functions/v1/play-twilio-recording?url=${encodeURIComponent(row.recording_url)}`;
+  return null;
+};
 
 const fmtDur = (s: number | null) => {
   if (!s) return '—';
@@ -62,7 +72,7 @@ export function VAAICoachingHub() {
     queryFn: async (): Promise<CallRow[]> => {
       const { data, error } = await supabase
         .from('va_call_logs' as any)
-        .select('id, called_at, duration_seconds, disposition, excitement_level, call_summary, va_notes, ai_analysis')
+        .select('id, called_at, duration_seconds, disposition, excitement_level, call_summary, va_notes, transcript, recording_url, recording_sid, ai_analysis')
         .eq('va_id', user!.id)
         .order('called_at', { ascending: false })
         .limit(200);
@@ -70,6 +80,27 @@ export function VAAICoachingHub() {
       return (data || []) as any;
     },
     enabled: !!user,
+  });
+
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const analyzeOneMutation = useMutation({
+    mutationFn: async (callId: string) => {
+      setAnalyzingId(callId);
+      const { data, error } = await supabase.functions.invoke('va-analyze-single-call', {
+        body: { call_log_id: callId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return data as { analysis: any; source: string };
+    },
+    onSuccess: (data, callId) => {
+      qc.invalidateQueries({ queryKey: ['va-call-summaries', user?.id] });
+      const updated = calls.find((c) => c.id === callId);
+      if (updated) setSelected({ ...updated, ai_analysis: data.analysis });
+      toast.success(`Analysis complete (source: ${data.source})`);
+    },
+    onError: (e: any) => toast.error(e.message || 'Analysis failed'),
+    onSettled: () => setAnalyzingId(null),
   });
 
   const filtered = useMemo(() => {
@@ -178,15 +209,16 @@ export function VAAICoachingHub() {
                   <TableHead className="w-[130px]">Disposition</TableHead>
                   <TableHead className="w-[90px]">Mood</TableHead>
                   <TableHead>Summary</TableHead>
+                  <TableHead className="w-[120px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading && (
-                  <TableRow><TableCell colSpan={5}><Skeleton className="h-20 w-full" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6}><Skeleton className="h-20 w-full" /></TableCell></TableRow>
                 )}
                 {!isLoading && filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8 text-sm">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8 text-sm">
                       No calls match your filters yet.
                     </TableCell>
                   </TableRow>
@@ -216,6 +248,23 @@ export function VAAICoachingHub() {
                     <TableCell className="text-xs max-w-md truncate">
                       {c.call_summary || c.va_notes || <span className="italic text-muted-foreground">No summary</span>}
                     </TableCell>
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={analyzingId === c.id}
+                        onClick={() => analyzeOneMutation.mutate(c.id)}
+                        className="h-7 px-2 text-xs"
+                      >
+                        {analyzingId === c.id ? (
+                          <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Analyzing</>
+                        ) : c.ai_analysis ? (
+                          <><Brain className="h-3 w-3 mr-1" /> Re-analyze</>
+                        ) : (
+                          <><Brain className="h-3 w-3 mr-1" /> Analyze</>
+                        )}
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -227,12 +276,12 @@ export function VAAICoachingHub() {
       <VACoachingInbox />
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Call Summary</DialogTitle>
+            <DialogTitle>Call Detail</DialogTitle>
           </DialogHeader>
           {selected && (
-            <div className="space-y-3 text-sm">
+            <div className="space-y-4 text-sm">
               <div className="flex flex-wrap gap-2 text-xs">
                 <Badge variant="outline">{new Date(selected.called_at).toLocaleString()}</Badge>
                 <Badge variant="outline">Duration: {fmtDur(selected.duration_seconds)}</Badge>
@@ -245,6 +294,14 @@ export function VAAICoachingHub() {
                   <Badge variant="outline" className="capitalize">{selected.excitement_level}</Badge>
                 )}
               </div>
+
+              {recordingProxyUrl(selected) && (
+                <div>
+                  <p className="text-xs uppercase text-muted-foreground mb-1">Recording</p>
+                  <audio controls preload="none" className="w-full h-10" src={recordingProxyUrl(selected)!} />
+                </div>
+              )}
+
               {selected.call_summary && (
                 <div>
                   <p className="text-xs uppercase text-muted-foreground mb-1">Summary</p>
@@ -257,12 +314,88 @@ export function VAAICoachingHub() {
                   <p className="whitespace-pre-wrap">{selected.va_notes}</p>
                 </div>
               )}
-              {selected.ai_analysis && (
-                <div>
-                  <p className="text-xs uppercase text-muted-foreground mb-1">AI Analysis</p>
-                  <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
-                    {JSON.stringify(selected.ai_analysis, null, 2)}
+              {selected.transcript && (
+                <details>
+                  <summary className="text-xs uppercase text-muted-foreground cursor-pointer">Transcript</summary>
+                  <pre className="text-xs bg-muted p-2 rounded mt-1 max-h-60 overflow-y-auto whitespace-pre-wrap">
+                    {selected.transcript}
                   </pre>
+                </details>
+              )}
+
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  disabled={analyzingId === selected.id}
+                  onClick={() => analyzeOneMutation.mutate(selected.id)}
+                  className="bg-gradient-to-r from-purple-600 to-cyan-600 text-white"
+                >
+                  {analyzingId === selected.id ? (
+                    <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Analyzing…</>
+                  ) : (
+                    <><Brain className="h-3 w-3 mr-1" /> {selected.ai_analysis ? 'Re-analyze with Claude' : 'Analyze this call'}</>
+                  )}
+                </Button>
+              </div>
+
+              {selected.ai_analysis && (
+                <div className="space-y-3 border-t pt-3">
+                  <p className="text-xs uppercase text-muted-foreground">AI Analysis</p>
+                  {selected.ai_analysis.summary && (
+                    <p className="text-sm">{selected.ai_analysis.summary}</p>
+                  )}
+                  <div className="flex flex-wrap gap-2 text-[10px]">
+                    {selected.ai_analysis.score != null && (
+                      <Badge className="bg-purple-500/15 text-purple-600 border-purple-500/30">
+                        Score {selected.ai_analysis.score}/100
+                      </Badge>
+                    )}
+                    {selected.ai_analysis.sentiment && <Badge variant="outline">Sentiment: {selected.ai_analysis.sentiment}</Badge>}
+                    {selected.ai_analysis.buyer_intent && <Badge variant="outline">Intent: {selected.ai_analysis.buyer_intent}</Badge>}
+                    {selected.ai_analysis.source && <Badge variant="outline">Source: {selected.ai_analysis.source}</Badge>}
+                  </div>
+                  {selected.ai_analysis.what_went_well?.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-emerald-600 mb-1">What went well</p>
+                      <ul className="space-y-1">
+                        {selected.ai_analysis.what_went_well.map((s: string, i: number) => (
+                          <li key={i} className="text-xs flex gap-2"><span>✓</span><span>{s}</span></li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {selected.ai_analysis.what_to_improve?.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-amber-600 mb-1">What to improve</p>
+                      <ul className="space-y-1">
+                        {selected.ai_analysis.what_to_improve.map((s: string, i: number) => (
+                          <li key={i} className="text-xs flex gap-2"><span>→</span><span>{s}</span></li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {selected.ai_analysis.objections?.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-red-600 mb-1">Objections</p>
+                      <ul className="space-y-1">
+                        {selected.ai_analysis.objections.map((s: string, i: number) => (
+                          <li key={i} className="text-xs flex gap-2"><span>!</span><span>{s}</span></li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {selected.ai_analysis.next_best_action && (
+                    <div>
+                      <p className="text-xs font-medium text-cyan-600 mb-1">Next best action</p>
+                      <p className="text-xs italic">{selected.ai_analysis.next_best_action}</p>
+                    </div>
+                  )}
+                  {selected.ai_analysis.recommended_script && (
+                    <div className="bg-cyan-500/5 border border-cyan-500/20 rounded p-2">
+                      <p className="text-xs font-medium text-cyan-700 mb-1">Recommended script</p>
+                      <p className="text-xs italic">"{selected.ai_analysis.recommended_script}"</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

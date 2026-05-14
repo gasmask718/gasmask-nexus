@@ -328,12 +328,12 @@ export function VACallHistory() {
                   </div>
                 </div>
 
-                {/* Recording */}
+                {/* Recording (proxied through backend so users never see Twilio auth) */}
                 {c.recording_url && (
                   <audio
                     controls
                     preload="none"
-                    src={c.recording_url}
+                    src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/play-twilio-recording?url=${encodeURIComponent(c.recording_url)}`}
                     className="w-full h-9 mt-3"
                   />
                 )}
