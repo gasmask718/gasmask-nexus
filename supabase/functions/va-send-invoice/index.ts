@@ -29,105 +29,48 @@ async function sendInvoiceEmail(params: {
   html: string;
   text: string;
 }): Promise<{ ok: boolean; error?: string }> {
-  const sendGridApiKey = Deno.env.get("SENDGRID_API_KEY");
-  const resendApiKey = Deno.env.get("RESEND_API_KEY");
-  const fromAddress = Deno.env.get("BRANDARO_EMAIL_FROM") || "Brandaro <onboarding@resend.dev>";
-  // If sender is the Resend sandbox, SendGrid will reject it (domain not verified there).
-  // In that case, skip SendGrid entirely and go straight to Resend.
-  const senderIsResendSandbox = /@resend\.dev>?\s*$/i.test(fromAddress);
+  const gmailUser = Deno.env.get("VA_GMAIL_USER");
+  const gmailPass = Deno.env.get("VA_GMAIL_APP_PASSWORD");
   const replyTo = Deno.env.get("BRANDARO_EMAIL_REPLY_TO") || "hello@brandaro.com";
-  // Parse "Name <email>" format for SendGrid
-  const fromMatch = fromAddress.match(/^\s*(.*?)\s*<(.+?)>\s*$/);
-  const fromName = fromMatch?.[1] || "Brandaro";
-  const fromEmail = fromMatch?.[2] || fromAddress.trim();
-  const sender = fromAddress;
+  const fromOverride = Deno.env.get("BRANDARO_EMAIL_FROM");
+  const senderIsResendSandbox = fromOverride ? /@resend\.dev>?\s*$/i.test(fromOverride) : true;
 
-  if (sendGridApiKey && !senderIsResendSandbox) {
-    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${sendGridApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: { email: fromEmail, name: fromName },
-        reply_to: { email: replyTo, name: fromName },
-        personalizations: [{ to: [{ email: params.to }], subject: params.subject }],
-        content: [
-          { type: "text/plain", value: params.text },
-          { type: "text/html", value: params.html },
-        ],
-      }),
-    });
+  // PRIMARY: Nodemailer via Gmail SMTP
+  if (gmailUser && gmailPass) {
+    try {
+      const { default: nodemailer } = await import("npm:nodemailer@6.9.14");
+      const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: { user: gmailUser, pass: gmailPass },
+      });
 
-    if (response.ok) {
-      const messageId = response.headers.get("X-Message-Id");
-      console.log("sendgrid sent:", messageId || "ok");
-      return { ok: true };
-    }
+      const fromHeader = fromOverride && !senderIsResendSandbox
+        ? fromOverride
+        : `"Brandaro" <${gmailUser}>`;
 
-    const errText = await response.text();
-    if (!resendApiKey) {
-      return { ok: false, error: `SendGrid error [${response.status}]: ${errText}` };
-    }
-    console.warn("SendGrid failed, falling back to Resend:", errText);
-  }
-
-  if (resendApiKey) {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: sender,
-        to: [params.to],
+      const info = await transporter.sendMail({
+        from: fromHeader,
+        to: params.to,
+        replyTo,
         subject: params.subject,
         html: params.html,
         text: params.text,
-        reply_to: replyTo,
-      }),
-    });
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      console.log("resend sent:", data?.id || "ok");
+      console.log("nodemailer sent:", info.messageId);
       return { ok: true };
+    } catch (e: any) {
+      console.error("Nodemailer send failed:", e?.message || e);
+      return { ok: false, error: `Nodemailer error: ${e?.message || String(e)}` };
     }
-
-    const errText = await response.text();
-    return { ok: false, error: `Resend error [${response.status}]: ${errText}` };
   }
 
-  const gmailUser = Deno.env.get("VA_GMAIL_USER");
-  const gmailPass = Deno.env.get("VA_GMAIL_APP_PASSWORD");
-  if (!gmailUser || !gmailPass) {
-    return { ok: false, error: "Email is not configured (SENDGRID_API_KEY or VA_GMAIL_USER / VA_GMAIL_APP_PASSWORD required)" };
-  }
-
-  const { default: nodemailer } = await import("npm:nodemailer@6.9.14");
-  try {
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      auth: { user: gmailUser, pass: gmailPass },
-    });
-
-    const info = await transporter.sendMail({
-      from: `"Brandaro" <${gmailUser}>`,
-      to: params.to,
-      subject: params.subject,
-      html: params.html,
-      text: params.text,
-    });
-
-    console.log("nodemailer sent:", info.messageId);
-    return { ok: true };
-  } catch (e: any) {
-    return { ok: false, error: `Nodemailer error: ${e?.message || String(e)}` };
-  }
+  return {
+    ok: false,
+    error: "Email not configured. Set VA_GMAIL_USER and VA_GMAIL_APP_PASSWORD secrets to send invoices via Nodemailer (Gmail SMTP).",
+  };
 }
 
 function renderEmailHtml(invoice: any, lead: any): string {
