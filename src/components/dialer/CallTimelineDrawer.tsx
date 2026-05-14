@@ -84,6 +84,12 @@ interface QueueRow {
   voicemail_left: boolean | null;
   last_error_severity: string | null;
   notes: string | null;
+  follow_up_status: string | null;
+  call_summary: string | null;
+  next_call_context: string | null;
+  follow_up_at: string | null;
+  wrap_up_completed_at: string | null;
+  ai_analysis: any | null;
 }
 
 interface Utterance {
