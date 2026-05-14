@@ -336,6 +336,7 @@ export function VANewLeadIntakeForm({ onCreated }: Props) {
         body: {
           to_number: form.phone,
           message_body: buildSmsBody(),
+          idempotency_key: `va-intake-${Date.now()}-${crypto.randomUUID()}`,
         },
       });
       if (error) throw error;
