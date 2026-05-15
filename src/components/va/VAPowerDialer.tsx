@@ -442,99 +442,68 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   const handleCallDrop = () => {
     try { voice.hangUp(); } catch (_) { /* no active call */ }
     try { endActiveCall(); } catch (_) { /* no active call */ }
+    // Single unified wrap-up surface — open the modal directly with whatever
+    // call_log row exists. The modal owns disposition + summary + AI + save.
+    setSummaryLead(currentLead);
+    setSummaryCallLogId(callLogId);
+    setSummaryDuration(callStartedAt ? Math.round((Date.now() - callStartedAt) / 1000) : 0);
+    setSummaryOpen(true);
     setPhase('wrap_up');
-    setDispositionCode('');
-    setVaNotes('');
   };
 
-  const submitDisposition = useCallback(async () => {
-    if (!user || !currentLead) return;
-    if (!dispositionCode) { toast.error('Pick a disposition'); return; }
-
-    const dispObj = dispositions.find(d => d.code === dispositionCode);
-
-    // Map any non-built-in code to a value that satisfies the
-    // va_call_logs.disposition CHECK constraint.
-    const VALID = ['closed','not_interested','callback','no_answer','voicemail','dnc'];
-    const safeDisp = VALID.includes(dispositionCode)
-      ? dispositionCode
-      : (dispObj?.category === 'positive' ? 'closed'
-        : dispObj?.category === 'negative' ? 'not_interested'
-        : dispObj?.marks_do_not_call ? 'dnc'
-        : 'callback');
-
+  // Fired after the unified VACallWrapUpModal saves successfully (or is
+  // skipped). Handles queue close, DNC stamping, and advancing the loop.
+  // The modal already wrote disposition + summary + follow-up to va_call_logs.
+  const finishWrapUp = useCallback(async (resolvedDisposition: string | null) => {
+    if (!user) return;
+    const lead = summaryLead;
+    const logId = summaryCallLogId;
     try {
-      // 1a. Preferred path — backend writes va_call_logs + side-effects.
-      if (callLogId) {
-        const { error } = await supabase.functions.invoke('va-power-dialer', {
-          body: {
-            vaId: user.id,
-            action: 'disposition',
-            callLogId,
-            disposition: safeDisp,
-            notes: vaNotes,
-            leadId: currentLead.store_id,
-          },
+      // Fallback insert: if no call_log existed yet, persist a minimal row
+      // so the disposition the VA picked is never lost.
+      if (!logId && lead && resolvedDisposition) {
+        await (supabase as any).from('va_call_logs').insert({
+          va_id: user.id,
+          lead_id: lead.store_id || null,
+          twilio_number: selectedNumber || 'unknown',
+          disposition: resolvedDisposition,
+          call_status: 'completed',
+          duration_seconds: summaryDuration,
+          direction: 'outbound',
+          wrap_up_completed_at: new Date().toISOString(),
         });
-        if (error) throw error;
-      } else {
-        // 1b. No callLog yet (e.g. quick-dial / call dropped before log row
-        // was created) — insert a minimal row directly so the status is
-        // never lost.
-        const { error: insErr } = await (supabase as any)
-          .from('va_call_logs')
-          .insert({
-            va_id: user.id,
-            lead_id: currentLead.store_id || null,
-            twilio_number: selectedNumber || 'unknown',
-            disposition: safeDisp,
-            va_notes: vaNotes,
-            call_status: 'completed',
-            duration_seconds: callStartedAt ? Math.round((Date.now() - callStartedAt) / 1000) : 0,
-            direction: 'outbound',
-            wrap_up_completed_at: new Date().toISOString(),
-          });
-        if (insErr) throw insErr;
       }
 
-      // 2. Close the queue item (auto-loop only)
-      if (currentLead.queue_id) {
+      // Close the queue item (auto-loop only)
+      if (lead?.queue_id) {
         await (supabase as any).from('campaign_call_queue')
-          .update({
-            status: 'completed',
-            completed_at: new Date().toISOString(),
-          })
-          .eq('id', currentLead.queue_id);
+          .update({ status: 'completed', completed_at: new Date().toISOString() })
+          .eq('id', lead.queue_id);
       }
 
-      // 3. Stamp DNC if disposition demands
-      if (dispObj?.marks_do_not_call && currentLead.store_id) {
+      // Stamp DNC if disposition demands
+      if (resolvedDisposition === 'dnc' && lead?.store_id) {
         await (supabase as any).from('stores')
           .update({ do_not_call: true })
-          .eq('id', currentLead.store_id);
+          .eq('id', lead.store_id);
       }
-
-      toast.success('Disposition saved — fetching next lead');
-      // Open post-call summary modal (parity with Active Call wrap-up)
-      setSummaryLead(currentLead);
-      setSummaryCallLogId(callLogId);
-      setSummaryDuration(callStartedAt ? Math.round((Date.now() - callStartedAt) / 1000) : 0);
-      setSummaryOpen(true);
+    } catch (err: any) {
+      toast.error('Post-wrap-up sync failed: ' + (err.message || 'unknown'));
+    } finally {
       setCallLogId(null);
       setCurrentLead(null);
       setCallStartedAt(null);
+      setSummaryLead(null);
+      setSummaryCallLogId(null);
 
-      // 4. Advance list pointer (list-mode) and loop
       if (listMode) setLeadIndex((i) => i + 1);
       if (sessionRunning && !stopFlagRef.current) {
         setTimeout(() => runCycle(), 300);
       } else {
         setPhase('idle');
       }
-    } catch (err: any) {
-      toast.error('Failed to save disposition: ' + (err.message || 'unknown'));
     }
-  }, [user, currentLead, dispositionCode, vaNotes, callLogId, callStartedAt, dispositions, sessionRunning, runCycle, listMode, selectedNumber]);
+  }, [user, summaryLead, summaryCallLogId, summaryDuration, selectedNumber, sessionRunning, runCycle, listMode]);
 
   const skipCurrent = async () => {
     if (!currentLead) return;
@@ -797,59 +766,35 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   }
 
   // ── Wrap-up ─────────────────────────────────────────────────────────
+  // Single unified surface: VACallWrapUpModal owns disposition (via status),
+  // notes (via summary/next-context), AI summary, recording playback, and
+  // follow-up scheduling. The thin Card behind it just shows context while
+  // the modal is open so the dialer view stays grounded.
   return (
     <Card className="bg-slate-900/60 border-slate-700">
       <CardHeader>
         <CardTitle className="text-white text-base flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-amber-400" /> Wrap-up
+          <AlertTriangle className="h-4 w-4 text-amber-400" /> Wrap-up in progress…
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         <div className="text-xs text-slate-400">
-          {currentLead?.business_name} · {currentLead?.phone}
-          {callStartedAt && (
-            <span className="ml-2 font-mono text-slate-500">
-              ({Math.round((Date.now() - callStartedAt) / 1000)}s)
-            </span>
-          )}
+          {summaryLead?.business_name || currentLead?.business_name} ·{' '}
+          {summaryLead?.phone || currentLead?.phone}
+          {summaryDuration ? (
+            <span className="ml-2 font-mono text-slate-500">({summaryDuration}s)</span>
+          ) : null}
         </div>
-
-        <div>
-          <label className="text-xs text-slate-400 mb-1 block">Disposition</label>
-          <Select value={dispositionCode} onValueChange={setDispositionCode}>
-            <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-              <SelectValue placeholder="Pick an outcome…" />
-            </SelectTrigger>
-            <SelectContent>
-              {dispositions.length === 0 && (
-                <SelectItem value="__none" disabled>No dispositions configured</SelectItem>
-              )}
-              {dispositions.map(d => (
-                <SelectItem key={d.id} value={d.code}>
-                  {d.label}{d.category ? ` · ${d.category}` : ''}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <label className="text-xs text-slate-400 mb-1 block">VA Notes</label>
-          <Textarea
-            value={vaNotes}
-            onChange={e => setVaNotes(e.target.value)}
-            placeholder="Outcome notes, callback context, objections…"
-            className="bg-slate-800 border-slate-700 text-white min-h-[90px]"
-          />
-        </div>
-
+        <p className="text-xs text-slate-500">
+          Capture the call outcome in the wrap-up modal to continue.
+        </p>
         <div className="flex gap-2">
           <Button
-            onClick={submitDisposition}
-            disabled={!dispositionCode}
-            className="bg-emerald-600 hover:bg-emerald-700 gap-2 flex-1"
+            onClick={() => setSummaryOpen(true)}
+            variant="outline"
+            className="gap-2 text-cyan-300 border-cyan-500/40 flex-1"
           >
-            <SkipForward className="h-4 w-4" /> Save & Next Lead
+            Re-open wrap-up
           </Button>
           <Button onClick={stopDialer} variant="outline" className="gap-2 text-red-400">
             <X className="h-4 w-4" /> Stop
@@ -860,10 +805,19 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       {/* Reference modal also available during wrap-up */}
       <ReferenceModal open={referenceOpen} onOpenChange={setReferenceOpen} />
 
-      {/* Post-call summary modal — parity with Active Call wrap-up */}
+      {/* THE wrap-up surface (single source of truth). */}
       <VACallWrapUpModal
         open={summaryOpen}
-        onClose={() => setSummaryOpen(false)}
+        onClose={() => {
+          setSummaryOpen(false);
+          // Treat dismiss as "skip" — still advance the loop so the dialer
+          // doesn't get stuck on a finished call.
+          finishWrapUp(null);
+        }}
+        onSaved={(disp) => {
+          setSummaryOpen(false);
+          finishWrapUp(disp);
+        }}
         callLogId={summaryCallLogId}
         leadName={summaryLead?.business_name || ''}
         leadId={summaryLead?.store_id || ''}

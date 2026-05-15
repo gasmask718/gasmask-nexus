@@ -41,10 +41,12 @@ interface VACallWrapUpModalProps {
   leadName?: string;
   leadId?: string | null;
   durationSeconds?: number;
+  /** Fires after a successful save with the resolved disposition code. */
+  onSaved?: (resolvedDisposition: string | null) => void;
 }
 
 export function VACallWrapUpModal({
-  open, onClose, callLogId, leadName, leadId, durationSeconds,
+  open, onClose, callLogId, leadName, leadId, durationSeconds, onSaved,
 }: VACallWrapUpModalProps) {
   const [summary, setSummary] = useState('');
   const [status, setStatus] = useState<FollowUpStatus | ''>('');
@@ -119,7 +121,18 @@ export function VACallWrapUpModal({
   };
 
   const handleSave = async () => {
-    if (!callLogId) return;
+    if (!callLogId) {
+      // No call log yet — still surface the chosen status to the caller.
+      const resolved =
+        status === 'callback_needed' || status === 'follow_up_later' ? 'callback'
+        : status === 'closed_deal' || status === 'won_back' ? 'closed'
+        : status === 'not_interested' ? 'not_interested'
+        : status === 'no_answer' ? 'no_answer'
+        : null;
+      onSaved?.(resolved);
+      onClose();
+      return;
+    }
     setSaving(true);
     try {
       const update: any = {
@@ -130,10 +143,12 @@ export function VACallWrapUpModal({
         wrap_up_completed_at: new Date().toISOString(),
       };
       // Mirror to disposition for back-compat
-      if (status === 'callback_needed' || status === 'follow_up_later') update.disposition = 'callback';
-      if (status === 'closed_deal' || status === 'won_back') update.disposition = 'closed';
-      if (status === 'not_interested') update.disposition = 'not_interested';
-      if (status === 'no_answer') update.disposition = 'no_answer';
+      let resolvedDisp: string | null = null;
+      if (status === 'callback_needed' || status === 'follow_up_later') resolvedDisp = 'callback';
+      if (status === 'closed_deal' || status === 'won_back') resolvedDisp = 'closed';
+      if (status === 'not_interested') resolvedDisp = 'not_interested';
+      if (status === 'no_answer') resolvedDisp = 'no_answer';
+      if (resolvedDisp) update.disposition = resolvedDisp;
 
       const { error } = await (supabase as any)
         .from('va_call_logs')
@@ -141,6 +156,7 @@ export function VACallWrapUpModal({
         .eq('id', callLogId);
       if (error) throw error;
       toast.success('Wrap-up saved — next call will have this context');
+      onSaved?.(resolvedDisp);
       onClose();
     } catch (err: any) {
       toast.error('Save failed: ' + (err.message || 'unknown'));
