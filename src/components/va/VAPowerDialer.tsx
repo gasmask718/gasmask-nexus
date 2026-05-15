@@ -766,59 +766,35 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   }
 
   // ── Wrap-up ─────────────────────────────────────────────────────────
+  // Single unified surface: VACallWrapUpModal owns disposition (via status),
+  // notes (via summary/next-context), AI summary, recording playback, and
+  // follow-up scheduling. The thin Card behind it just shows context while
+  // the modal is open so the dialer view stays grounded.
   return (
     <Card className="bg-slate-900/60 border-slate-700">
       <CardHeader>
         <CardTitle className="text-white text-base flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-amber-400" /> Wrap-up
+          <AlertTriangle className="h-4 w-4 text-amber-400" /> Wrap-up in progress…
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         <div className="text-xs text-slate-400">
-          {currentLead?.business_name} · {currentLead?.phone}
-          {callStartedAt && (
-            <span className="ml-2 font-mono text-slate-500">
-              ({Math.round((Date.now() - callStartedAt) / 1000)}s)
-            </span>
-          )}
+          {summaryLead?.business_name || currentLead?.business_name} ·{' '}
+          {summaryLead?.phone || currentLead?.phone}
+          {summaryDuration ? (
+            <span className="ml-2 font-mono text-slate-500">({summaryDuration}s)</span>
+          ) : null}
         </div>
-
-        <div>
-          <label className="text-xs text-slate-400 mb-1 block">Disposition</label>
-          <Select value={dispositionCode} onValueChange={setDispositionCode}>
-            <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-              <SelectValue placeholder="Pick an outcome…" />
-            </SelectTrigger>
-            <SelectContent>
-              {dispositions.length === 0 && (
-                <SelectItem value="__none" disabled>No dispositions configured</SelectItem>
-              )}
-              {dispositions.map(d => (
-                <SelectItem key={d.id} value={d.code}>
-                  {d.label}{d.category ? ` · ${d.category}` : ''}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <label className="text-xs text-slate-400 mb-1 block">VA Notes</label>
-          <Textarea
-            value={vaNotes}
-            onChange={e => setVaNotes(e.target.value)}
-            placeholder="Outcome notes, callback context, objections…"
-            className="bg-slate-800 border-slate-700 text-white min-h-[90px]"
-          />
-        </div>
-
+        <p className="text-xs text-slate-500">
+          Capture the call outcome in the wrap-up modal to continue.
+        </p>
         <div className="flex gap-2">
           <Button
-            onClick={submitDisposition}
-            disabled={!dispositionCode}
-            className="bg-emerald-600 hover:bg-emerald-700 gap-2 flex-1"
+            onClick={() => setSummaryOpen(true)}
+            variant="outline"
+            className="gap-2 text-cyan-300 border-cyan-500/40 flex-1"
           >
-            <SkipForward className="h-4 w-4" /> Save & Next Lead
+            Re-open wrap-up
           </Button>
           <Button onClick={stopDialer} variant="outline" className="gap-2 text-red-400">
             <X className="h-4 w-4" /> Stop
@@ -829,10 +805,19 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       {/* Reference modal also available during wrap-up */}
       <ReferenceModal open={referenceOpen} onOpenChange={setReferenceOpen} />
 
-      {/* Post-call summary modal — parity with Active Call wrap-up */}
+      {/* THE wrap-up surface (single source of truth). */}
       <VACallWrapUpModal
         open={summaryOpen}
-        onClose={() => setSummaryOpen(false)}
+        onClose={() => {
+          setSummaryOpen(false);
+          // Treat dismiss as "skip" — still advance the loop so the dialer
+          // doesn't get stuck on a finished call.
+          finishWrapUp(null);
+        }}
+        onSaved={(disp) => {
+          setSummaryOpen(false);
+          finishWrapUp(disp);
+        }}
         callLogId={summaryCallLogId}
         leadName={summaryLead?.business_name || ''}
         leadId={summaryLead?.store_id || ''}
