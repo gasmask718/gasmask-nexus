@@ -41,10 +41,12 @@ interface VACallWrapUpModalProps {
   leadName?: string;
   leadId?: string | null;
   durationSeconds?: number;
+  /** Fires after a successful save with the resolved disposition code. */
+  onSaved?: (resolvedDisposition: string | null) => void;
 }
 
 export function VACallWrapUpModal({
-  open, onClose, callLogId, leadName, leadId, durationSeconds,
+  open, onClose, callLogId, leadName, leadId, durationSeconds, onSaved,
 }: VACallWrapUpModalProps) {
   const [summary, setSummary] = useState('');
   const [status, setStatus] = useState<FollowUpStatus | ''>('');
