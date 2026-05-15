@@ -451,94 +451,59 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     setPhase('wrap_up');
   };
 
-  const submitDisposition = useCallback(async () => {
-    if (!user || !currentLead) return;
-    if (!dispositionCode) { toast.error('Pick a disposition'); return; }
-
-    const dispObj = dispositions.find(d => d.code === dispositionCode);
-
-    // Map any non-built-in code to a value that satisfies the
-    // va_call_logs.disposition CHECK constraint.
-    const VALID = ['closed','not_interested','callback','no_answer','voicemail','dnc'];
-    const safeDisp = VALID.includes(dispositionCode)
-      ? dispositionCode
-      : (dispObj?.category === 'positive' ? 'closed'
-        : dispObj?.category === 'negative' ? 'not_interested'
-        : dispObj?.marks_do_not_call ? 'dnc'
-        : 'callback');
-
+  // Fired after the unified VACallWrapUpModal saves successfully (or is
+  // skipped). Handles queue close, DNC stamping, and advancing the loop.
+  // The modal already wrote disposition + summary + follow-up to va_call_logs.
+  const finishWrapUp = useCallback(async (resolvedDisposition: string | null) => {
+    if (!user) return;
+    const lead = summaryLead;
+    const logId = summaryCallLogId;
     try {
-      // 1a. Preferred path — backend writes va_call_logs + side-effects.
-      if (callLogId) {
-        const { error } = await supabase.functions.invoke('va-power-dialer', {
-          body: {
-            vaId: user.id,
-            action: 'disposition',
-            callLogId,
-            disposition: safeDisp,
-            notes: vaNotes,
-            leadId: currentLead.store_id,
-          },
+      // Fallback insert: if no call_log existed yet, persist a minimal row
+      // so the disposition the VA picked is never lost.
+      if (!logId && lead && resolvedDisposition) {
+        await (supabase as any).from('va_call_logs').insert({
+          va_id: user.id,
+          lead_id: lead.store_id || null,
+          twilio_number: selectedNumber || 'unknown',
+          disposition: resolvedDisposition,
+          call_status: 'completed',
+          duration_seconds: summaryDuration,
+          direction: 'outbound',
+          wrap_up_completed_at: new Date().toISOString(),
         });
-        if (error) throw error;
-      } else {
-        // 1b. No callLog yet (e.g. quick-dial / call dropped before log row
-        // was created) — insert a minimal row directly so the status is
-        // never lost.
-        const { error: insErr } = await (supabase as any)
-          .from('va_call_logs')
-          .insert({
-            va_id: user.id,
-            lead_id: currentLead.store_id || null,
-            twilio_number: selectedNumber || 'unknown',
-            disposition: safeDisp,
-            va_notes: vaNotes,
-            call_status: 'completed',
-            duration_seconds: callStartedAt ? Math.round((Date.now() - callStartedAt) / 1000) : 0,
-            direction: 'outbound',
-            wrap_up_completed_at: new Date().toISOString(),
-          });
-        if (insErr) throw insErr;
       }
 
-      // 2. Close the queue item (auto-loop only)
-      if (currentLead.queue_id) {
+      // Close the queue item (auto-loop only)
+      if (lead?.queue_id) {
         await (supabase as any).from('campaign_call_queue')
-          .update({
-            status: 'completed',
-            completed_at: new Date().toISOString(),
-          })
-          .eq('id', currentLead.queue_id);
+          .update({ status: 'completed', completed_at: new Date().toISOString() })
+          .eq('id', lead.queue_id);
       }
 
-      // 3. Stamp DNC if disposition demands
-      if (dispObj?.marks_do_not_call && currentLead.store_id) {
+      // Stamp DNC if disposition demands
+      if (resolvedDisposition === 'dnc' && lead?.store_id) {
         await (supabase as any).from('stores')
           .update({ do_not_call: true })
-          .eq('id', currentLead.store_id);
+          .eq('id', lead.store_id);
       }
-
-      toast.success('Disposition saved — fetching next lead');
-      // Open post-call summary modal (parity with Active Call wrap-up)
-      setSummaryLead(currentLead);
-      setSummaryCallLogId(callLogId);
-      setSummaryDuration(callStartedAt ? Math.round((Date.now() - callStartedAt) / 1000) : 0);
-      setSummaryOpen(true);
+    } catch (err: any) {
+      toast.error('Post-wrap-up sync failed: ' + (err.message || 'unknown'));
+    } finally {
       setCallLogId(null);
       setCurrentLead(null);
       setCallStartedAt(null);
+      setSummaryLead(null);
+      setSummaryCallLogId(null);
 
-      // 4. Advance list pointer (list-mode) and loop
       if (listMode) setLeadIndex((i) => i + 1);
       if (sessionRunning && !stopFlagRef.current) {
         setTimeout(() => runCycle(), 300);
       } else {
         setPhase('idle');
       }
-    } catch (err: any) {
-      toast.error('Failed to save disposition: ' + (err.message || 'unknown'));
     }
-  }, [user, currentLead, dispositionCode, vaNotes, callLogId, callStartedAt, dispositions, sessionRunning, runCycle, listMode, selectedNumber]);
+  }, [user, summaryLead, summaryCallLogId, summaryDuration, selectedNumber, sessionRunning, runCycle, listMode]);
 
   const skipCurrent = async () => {
     if (!currentLead) return;
