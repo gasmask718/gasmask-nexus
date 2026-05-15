@@ -442,9 +442,13 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   const handleCallDrop = () => {
     try { voice.hangUp(); } catch (_) { /* no active call */ }
     try { endActiveCall(); } catch (_) { /* no active call */ }
+    // Single unified wrap-up surface — open the modal directly with whatever
+    // call_log row exists. The modal owns disposition + summary + AI + save.
+    setSummaryLead(currentLead);
+    setSummaryCallLogId(callLogId);
+    setSummaryDuration(callStartedAt ? Math.round((Date.now() - callStartedAt) / 1000) : 0);
+    setSummaryOpen(true);
     setPhase('wrap_up');
-    setDispositionCode('');
-    setVaNotes('');
   };
 
   const submitDisposition = useCallback(async () => {
