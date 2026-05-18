@@ -129,8 +129,11 @@ export function VACallWrapUpModal({
         : status === 'not_interested' ? 'not_interested'
         : status === 'no_answer' ? 'no_answer'
         : null;
-      onSaved?.(resolved);
-      onClose();
+      // Single completion signal — parent advances the loop. Do NOT also
+      // call onClose() here: that would fire finishWrapUp twice and skip
+      // the next lead in the campaign.
+      if (onSaved) onSaved(resolved);
+      else onClose();
       return;
     }
     setSaving(true);
@@ -155,9 +158,10 @@ export function VACallWrapUpModal({
         .update(update)
         .eq('id', callLogId);
       if (error) throw error;
-      toast.success('Wrap-up saved — next call will have this context');
-      onSaved?.(resolvedDisp);
-      onClose();
+      toast.success('Wrap-up saved — dialing next lead');
+      // Single completion signal — see note above.
+      if (onSaved) onSaved(resolvedDisp);
+      else onClose();
     } catch (err: any) {
       toast.error('Save failed: ' + (err.message || 'unknown'));
     } finally {
