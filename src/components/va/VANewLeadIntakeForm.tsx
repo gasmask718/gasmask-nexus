@@ -466,7 +466,7 @@ export function VANewLeadIntakeForm({ onCreated, mode = "va", inviteToken, initi
         // and marks the invite as submitted.
         const { data, error } = await supabase.functions.invoke("submit-public-intake", {
           body: {
-            token: inviteToken,
+            token: inviteToken ?? null,
             form: { ...form, integrations },
             uploadedFiles,
             scopeAccepted,
