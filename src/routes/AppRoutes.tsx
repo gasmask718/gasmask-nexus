@@ -1186,6 +1186,7 @@ export default function AppRoutes() {
       <Route path="/twl-landing" element={<TWLLanding />} />
       <Route path="/partner/respond/:token" element={<PartnerRespond />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/auth/intake/:token" element={<PublicIntakePage />} />
       <Route path="/portal/login" element={<PortalLogin />} />
       <Route path="/portal" element={<FundingClientPortal />} />
       <Route path="/portal/register" element={<PortalRegister />} />
