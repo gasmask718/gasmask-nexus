@@ -391,10 +391,8 @@ export function VANewLeadIntakeForm({ onCreated, mode = "va", inviteToken, initi
       toast.error("Not signed in.");
       return;
     }
-    if (isPublic && !inviteToken) {
-      toast.error("This intake link is invalid.");
-      return;
-    }
+    // Public mode is allowed without a token (open intake at /auth/intake).
+    // When a token IS present, the edge function will validate it.
 
     setLoading(true);
     const integrations =
