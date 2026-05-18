@@ -916,7 +916,7 @@ export function VANewLeadIntakeForm({ onCreated }: Props) {
               onClick={handleSendSms}
               disabled={smsSending || !form.phone || !form.businessName}
               variant="outline"
-              title="Sends https://www.brandarodigital.com/intake link via SMS"
+              title="Sends https://www.brandarodigital.com/#contact link via SMS"
               className="gap-2 border-cyan-500/50 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20 hover:text-cyan-100"
             >
               {smsSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
@@ -927,7 +927,7 @@ export function VANewLeadIntakeForm({ onCreated }: Props) {
               onClick={handleSendEmail}
               disabled={smsSending || !form.email || !form.businessName}
               variant="outline"
-              title="Sends https://www.brandarodigital.com/intake link via Email"
+              title="Sends https://www.brandarodigital.com/#contact link via Email"
               className="gap-2 border-purple-500/50 bg-purple-500/10 text-purple-200 hover:bg-purple-500/20 hover:text-purple-100"
             >
               {smsSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
