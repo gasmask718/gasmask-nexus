@@ -459,6 +459,9 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   // The modal already wrote disposition + summary + follow-up to va_call_logs.
   const finishWrapUp = useCallback(async (resolvedDisposition: string | null) => {
     if (!user) return;
+    // Idempotency: ignore subsequent calls until the next wrap-up begins.
+    if (wrapUpInFlightRef.current) return;
+    wrapUpInFlightRef.current = true;
     const lead = summaryLead;
     const logId = summaryCallLogId;
     try {
