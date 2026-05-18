@@ -74,9 +74,9 @@ serve(async (req) => {
       : integrations;
 
     const intakePayload = {
-      form_type: "brandaro_public_intake",
+      form_type: invite ? "brandaro_public_intake" : "brandaro_open_intake",
       submitted_at: new Date().toISOString(),
-      invite_id: invite.id,
+      invite_id: invite?.id ?? null,
       contact: {
         businessName: f.businessName, ownerName: f.ownerName, email: f.email, phone: f.phone, city: f.city,
         businessType: f.businessType, yearsInBusiness: f.yearsInBusiness, teamSize: f.teamSize,
@@ -93,7 +93,7 @@ serve(async (req) => {
       scopeAccepted: true,
     };
 
-    const callNotes = `[Public Brandaro Intake]\n${JSON.stringify(intakePayload, null, 2)}`;
+    const callNotes = `[${invite ? "Public Brandaro Intake" : "Open Brandaro Intake"}]\n${JSON.stringify(intakePayload, null, 2)}`;
 
     const { data: lead, error: leadErr } = await supabase
       .from("brandaro_qualified_leads")
@@ -102,9 +102,9 @@ serve(async (req) => {
         phone_number: f.phone || null,
         city: f.city || null,
         industry: f.businessType || null,
-        assigned_va: invite.va_id,
+        assigned_va: invite?.va_id ?? null,
         lead_status: "new",
-        source: "public_intake",
+        source: invite ? "public_intake" : "open_intake",
         call_notes: callNotes,
         service_interest: f.services || null,
         website_status: f.existingWebsite ? "has_site" : "unknown",
@@ -114,10 +114,12 @@ serve(async (req) => {
       .single();
     if (leadErr) throw leadErr;
 
-    await supabase
-      .from("va_intake_invites")
-      .update({ submitted_at: new Date().toISOString(), status: "submitted", updated_at: new Date().toISOString() })
-      .eq("id", invite.id);
+    if (invite) {
+      await supabase
+        .from("va_intake_invites")
+        .update({ submitted_at: new Date().toISOString(), status: "submitted", updated_at: new Date().toISOString() })
+        .eq("id", invite.id);
+    }
 
     return new Response(JSON.stringify({ success: true, lead_id: lead.id }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
