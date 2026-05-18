@@ -15,7 +15,7 @@ export default function PublicIntakePage() {
   const [prefill, setPrefill] = useState<any>(null);
 
   useEffect(() => {
-    if (!token) { setState("invalid"); return; }
+    if (!token) { setState("ok"); return; }
     (async () => {
       const { data, error } = await supabase.rpc("get_public_intake_invite", { _token: token });
       const row = Array.isArray(data) ? data[0] : data;
