@@ -148,6 +148,8 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
 
   // Stop flag (lets us break out of the auto-loop cleanly)
   const stopFlagRef = useRef(false);
+  // Guards finishWrapUp against double-fire (e.g., onSaved + backdrop dismiss).
+  const wrapUpInFlightRef = useRef(false);
 
   // UI: reference modal (Scripts / FAQs / Rebuttals / Services & Pricing)
   const [referenceOpen, setReferenceOpen] = useState(false);
