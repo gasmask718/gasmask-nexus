@@ -113,9 +113,11 @@ serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
     const token = crypto.randomUUID().replace(/-/g, "");
-    // Build the token-gated link to the public intake form in THIS app.
+    // Build the link to the open intake form at /auth/intake, with the
+    // token passed as a query param so the form can attribute the lead
+    // back to this VA on submission.
     const baseUrl = (Deno.env.get("PUBLIC_APP_URL") || req.headers.get("origin") || FALLBACK_APP_URL).replace(/\/$/, "");
-    const link = `${baseUrl}/auth/intake/${token}`;
+    const link = `${baseUrl}/auth/intake?t=${token}`;
 
     // Create invite row first
     const { data: invite, error: insErr } = await admin
