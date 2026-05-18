@@ -113,9 +113,9 @@ serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
     const token = crypto.randomUUID().replace(/-/g, "");
-    // Public-facing link is the clean homepage URL (no query params).
-    // The token is still persisted on va_intake_invites for analytics / matching.
-    const link = INTAKE_BASE_URL;
+    // Build the token-gated link to the public intake form in THIS app.
+    const baseUrl = (Deno.env.get("PUBLIC_APP_URL") || req.headers.get("origin") || FALLBACK_APP_URL).replace(/\/$/, "");
+    const link = `${baseUrl}/auth/intake/${token}`;
 
     // Create invite row first
     const { data: invite, error: insErr } = await admin
