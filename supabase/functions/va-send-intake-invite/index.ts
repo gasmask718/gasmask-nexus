@@ -115,7 +115,7 @@ serve(async (req) => {
     const token = crypto.randomUUID().replace(/-/g, "");
     // The customer-facing intake form lives on the Brandaro marketing site.
     // We still create a tracked invite row (with token) for VA attribution.
-    const link = "https://www.brandarodigital.com/#contact";
+    const link = "https://www.brandarodigital.com/intake-form";
 
     // Create invite row first
     const { data: invite, error: insErr } = await admin
