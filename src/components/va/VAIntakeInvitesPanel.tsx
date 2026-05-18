@@ -187,7 +187,7 @@ export function VAIntakeInvitesPanel() {
           </CardTitle>
           <p className="text-xs text-slate-400">
             Sends a tracked link to the prospect. They fill out the discovery form on
-            <span className="text-cyan-300"> brandarodigital.com/#contact</span>.
+            <span className="text-cyan-300"> brandarodigital.com/intake-form</span>.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
