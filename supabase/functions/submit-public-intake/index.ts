@@ -12,7 +12,7 @@ const corsHeaders = {
 };
 
 interface SubmitBody {
-  token: string;
+  token?: string | null;
   form: Record<string, any>;
   uploadedFiles?: Array<{ name: string; url: string; size: number; type: string; category: string }>;
   scopeAccepted?: boolean;
@@ -28,11 +28,6 @@ serve(async (req) => {
 
   try {
     const body = (await req.json()) as SubmitBody;
-    if (!body?.token || typeof body.token !== "string") {
-      return new Response(JSON.stringify({ error: "Missing token" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
     if (!body.scopeAccepted) {
       return new Response(JSON.stringify({ error: "Scope agreement required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -50,22 +45,27 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Validate invite
-    const { data: invite, error: invErr } = await supabase
-      .from("va_intake_invites")
-      .select("id, va_id, submitted_at")
-      .eq("token", body.token)
-      .maybeSingle();
-    if (invErr) throw invErr;
-    if (!invite) {
-      return new Response(JSON.stringify({ error: "Invalid intake link" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (invite.submitted_at) {
-      return new Response(JSON.stringify({ error: "This intake has already been submitted." }), {
-        status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Validate invite only if a token was provided (token-gated flow).
+    // When no token is present, treat this as an open public intake.
+    let invite: { id: string; va_id: string | null; submitted_at: string | null } | null = null;
+    if (body.token && typeof body.token === "string") {
+      const { data: inv, error: invErr } = await supabase
+        .from("va_intake_invites")
+        .select("id, va_id, submitted_at")
+        .eq("token", body.token)
+        .maybeSingle();
+      if (invErr) throw invErr;
+      if (!inv) {
+        return new Response(JSON.stringify({ error: "Invalid intake link" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (inv.submitted_at) {
+        return new Response(JSON.stringify({ error: "This intake has already been submitted." }), {
+          status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      invite = inv as any;
     }
 
     const integrations: string[] = Array.isArray(f.integrations) ? f.integrations : [];
