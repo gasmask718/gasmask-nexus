@@ -148,6 +148,8 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
 
   // Stop flag (lets us break out of the auto-loop cleanly)
   const stopFlagRef = useRef(false);
+  // Guards finishWrapUp against double-fire (e.g., onSaved + backdrop dismiss).
+  const wrapUpInFlightRef = useRef(false);
 
   // UI: reference modal (Scripts / FAQs / Rebuttals / Services & Pricing)
   const [referenceOpen, setReferenceOpen] = useState(false);
@@ -444,6 +446,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     try { endActiveCall(); } catch (_) { /* no active call */ }
     // Single unified wrap-up surface — open the modal directly with whatever
     // call_log row exists. The modal owns disposition + summary + AI + save.
+    wrapUpInFlightRef.current = false;
     setSummaryLead(currentLead);
     setSummaryCallLogId(callLogId);
     setSummaryDuration(callStartedAt ? Math.round((Date.now() - callStartedAt) / 1000) : 0);
@@ -456,6 +459,9 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   // The modal already wrote disposition + summary + follow-up to va_call_logs.
   const finishWrapUp = useCallback(async (resolvedDisposition: string | null) => {
     if (!user) return;
+    // Idempotency: ignore subsequent calls until the next wrap-up begins.
+    if (wrapUpInFlightRef.current) return;
+    wrapUpInFlightRef.current = true;
     const lead = summaryLead;
     const logId = summaryCallLogId;
     try {
