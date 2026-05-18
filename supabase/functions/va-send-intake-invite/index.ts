@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const INTAKE_BASE_URL = "https://www.brandarodigital.com/";
+const INTAKE_BASE_URL = "https://www.brandarodigital.com/#contact";
 
 interface Body {
   business_name?: string;
