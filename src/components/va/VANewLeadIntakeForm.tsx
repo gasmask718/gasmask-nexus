@@ -462,23 +462,39 @@ export function VANewLeadIntakeForm({ onCreated, mode = "va", inviteToken, initi
     const callNotes = `[VA Discovery Intake]\n${JSON.stringify(intakePayload, null, 2)}`;
 
     try {
-      const { error: insertError } = await (supabase as any)
-        .from("brandaro_qualified_leads")
-        .insert({
-          business_name: form.businessName,
-          phone_number: form.phone,
-          city: form.city,
-          state: null,
-          industry: form.businessType || null,
-          assigned_va: user.id,
-          lead_status: "new",
-          source: "va_intake",
-          call_notes: callNotes,
-          service_interest: form.services || null,
-          has_website: !!form.existingWebsite,
-          website_status: form.existingWebsite ? "has_site" : "unknown",
+      if (isPublic) {
+        // Public submission — anonymous user. Route through edge function
+        // which validates the token, assigns the lead to the inviting VA,
+        // and marks the invite as submitted.
+        const { data, error } = await supabase.functions.invoke("submit-public-intake", {
+          body: {
+            token: inviteToken,
+            form: { ...form, integrations },
+            uploadedFiles,
+            scopeAccepted,
+          },
         });
-      if (insertError) throw insertError;
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+      } else {
+        const { error: insertError } = await (supabase as any)
+          .from("brandaro_qualified_leads")
+          .insert({
+            business_name: form.businessName,
+            phone_number: form.phone,
+            city: form.city,
+            state: null,
+            industry: form.businessType || null,
+            assigned_va: user!.id,
+            lead_status: "new",
+            source: "va_intake",
+            call_notes: callNotes,
+            service_interest: form.services || null,
+            has_website: !!form.existingWebsite,
+            website_status: form.existingWebsite ? "has_site" : "unknown",
+          });
+        if (insertError) throw insertError;
+      }
 
       setSubmitted(true);
       toast.success("Discovery form submitted.");
