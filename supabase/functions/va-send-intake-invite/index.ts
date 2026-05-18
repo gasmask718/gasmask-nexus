@@ -6,7 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const INTAKE_BASE_URL = "https://www.brandarodigital.com/#contact";
+// Public intake form served from THIS app (token-gated).
+// Override via PUBLIC_APP_URL env if you want to force a domain (e.g. published URL).
+// Falls back to the request's Origin header so preview / production both work.
+const FALLBACK_APP_URL = "https://gasmask-os-nexus.lovable.app";
 
 interface Body {
   business_name?: string;
