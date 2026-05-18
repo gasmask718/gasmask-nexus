@@ -191,12 +191,23 @@ const fieldClass =
 
 interface Props {
   onCreated?: () => void;
+  /**
+   * "va"     — VA-facing form (default). Requires auth; shows SMS/Email invite buttons.
+   * "public" — Public, token-gated form rendered from a link the prospect received.
+   *            Skips auth, hides invite-send buttons, submits via edge function.
+   */
+  mode?: "va" | "public";
+  /** Required when mode==="public". The token from va_intake_invites. */
+  inviteToken?: string;
+  /** Optional pre-fill (typically loaded from get_public_intake_invite RPC). */
+  initialPrefill?: Partial<FormState>;
 }
 
-export function VANewLeadIntakeForm({ onCreated }: Props) {
+export function VANewLeadIntakeForm({ onCreated, mode = "va", inviteToken, initialPrefill }: Props) {
   const { user } = useAuth();
+  const isPublic = mode === "public";
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState<FormState>(initialForm);
+  const [form, setForm] = useState<FormState>({ ...initialForm, ...(initialPrefill || {}) });
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploadingCategory, setUploadingCategory] = useState<UploadCategory | null>(null);
   const [scopeAccepted, setScopeAccepted] = useState(false);
