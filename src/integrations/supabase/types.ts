@@ -115286,6 +115286,18 @@ export type Database = {
         Args: { p_provider_id: string }
         Returns: Json
       }
+      get_public_intake_invite: {
+        Args: { _token: string }
+        Returns: {
+          business_name: string
+          email: string
+          id: string
+          owner_name: string
+          phone: string
+          status: string
+          submitted_at: string
+        }[]
+      }
       get_rolling_connect_rate: {
         Args: { p_business_id: string; p_window?: number }
         Returns: number
@@ -115974,6 +115986,19 @@ export type Database = {
       submit_payout_batch_for_review: {
         Args: { p_batch_id: string }
         Returns: undefined
+      }
+      submit_public_intake: {
+        Args: {
+          _business_name: string
+          _call_notes: string
+          _city: string
+          _existing_website: string
+          _industry: string
+          _phone: string
+          _service_interest: string
+          _token: string
+        }
+        Returns: string
       }
       update_contact_responsiveness: {
         Args: { p_contact_id: string }
