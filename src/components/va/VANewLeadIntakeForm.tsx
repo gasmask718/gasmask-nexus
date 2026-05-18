@@ -386,8 +386,13 @@ export function VANewLeadIntakeForm({ onCreated, mode = "va", inviteToken, initi
       toast.error("Please confirm the project scope agreement before submitting.");
       return;
     }
-    if (!user) {
+    // VA mode requires an authenticated VA; public mode requires a token.
+    if (!isPublic && !user) {
       toast.error("Not signed in.");
+      return;
+    }
+    if (isPublic && !inviteToken) {
+      toast.error("This intake link is invalid.");
       return;
     }
 
