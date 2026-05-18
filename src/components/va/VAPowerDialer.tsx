@@ -446,6 +446,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     try { endActiveCall(); } catch (_) { /* no active call */ }
     // Single unified wrap-up surface — open the modal directly with whatever
     // call_log row exists. The modal owns disposition + summary + AI + save.
+    wrapUpInFlightRef.current = false;
     setSummaryLead(currentLead);
     setSummaryCallLogId(callLogId);
     setSummaryDuration(callStartedAt ? Math.round((Date.now() - callStartedAt) / 1000) : 0);
