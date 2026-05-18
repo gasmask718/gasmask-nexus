@@ -6,7 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const INTAKE_BASE_URL = "https://www.brandarodigital.com/#contact";
+// Public intake form served from THIS app (token-gated).
+// Override via PUBLIC_APP_URL env if you want to force a domain (e.g. published URL).
+// Falls back to the request's Origin header so preview / production both work.
+const FALLBACK_APP_URL = "https://gasmask-os-nexus.lovable.app";
 
 interface Body {
   business_name?: string;
@@ -110,9 +113,9 @@ serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
     const token = crypto.randomUUID().replace(/-/g, "");
-    // Public-facing link is the clean homepage URL (no query params).
-    // The token is still persisted on va_intake_invites for analytics / matching.
-    const link = INTAKE_BASE_URL;
+    // Build the token-gated link to the public intake form in THIS app.
+    const baseUrl = (Deno.env.get("PUBLIC_APP_URL") || req.headers.get("origin") || FALLBACK_APP_URL).replace(/\/$/, "");
+    const link = `${baseUrl}/auth/intake/${token}`;
 
     // Create invite row first
     const { data: invite, error: insErr } = await admin

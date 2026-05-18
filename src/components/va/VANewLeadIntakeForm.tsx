@@ -191,12 +191,23 @@ const fieldClass =
 
 interface Props {
   onCreated?: () => void;
+  /**
+   * "va"     — VA-facing form (default). Requires auth; shows SMS/Email invite buttons.
+   * "public" — Public, token-gated form rendered from a link the prospect received.
+   *            Skips auth, hides invite-send buttons, submits via edge function.
+   */
+  mode?: "va" | "public";
+  /** Required when mode==="public". The token from va_intake_invites. */
+  inviteToken?: string;
+  /** Optional pre-fill (typically loaded from get_public_intake_invite RPC). */
+  initialPrefill?: Partial<FormState>;
 }
 
-export function VANewLeadIntakeForm({ onCreated }: Props) {
+export function VANewLeadIntakeForm({ onCreated, mode = "va", inviteToken, initialPrefill }: Props) {
   const { user } = useAuth();
+  const isPublic = mode === "public";
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState<FormState>(initialForm);
+  const [form, setForm] = useState<FormState>({ ...initialForm, ...(initialPrefill || {}) });
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploadingCategory, setUploadingCategory] = useState<UploadCategory | null>(null);
   const [scopeAccepted, setScopeAccepted] = useState(false);
@@ -375,8 +386,13 @@ export function VANewLeadIntakeForm({ onCreated }: Props) {
       toast.error("Please confirm the project scope agreement before submitting.");
       return;
     }
-    if (!user) {
+    // VA mode requires an authenticated VA; public mode requires a token.
+    if (!isPublic && !user) {
       toast.error("Not signed in.");
+      return;
+    }
+    if (isPublic && !inviteToken) {
+      toast.error("This intake link is invalid.");
       return;
     }
 
@@ -446,23 +462,39 @@ export function VANewLeadIntakeForm({ onCreated }: Props) {
     const callNotes = `[VA Discovery Intake]\n${JSON.stringify(intakePayload, null, 2)}`;
 
     try {
-      const { error: insertError } = await (supabase as any)
-        .from("brandaro_qualified_leads")
-        .insert({
-          business_name: form.businessName,
-          phone_number: form.phone,
-          city: form.city,
-          state: null,
-          industry: form.businessType || null,
-          assigned_va: user.id,
-          lead_status: "new",
-          source: "va_intake",
-          call_notes: callNotes,
-          service_interest: form.services || null,
-          has_website: !!form.existingWebsite,
-          website_status: form.existingWebsite ? "has_site" : "unknown",
+      if (isPublic) {
+        // Public submission — anonymous user. Route through edge function
+        // which validates the token, assigns the lead to the inviting VA,
+        // and marks the invite as submitted.
+        const { data, error } = await supabase.functions.invoke("submit-public-intake", {
+          body: {
+            token: inviteToken,
+            form: { ...form, integrations },
+            uploadedFiles,
+            scopeAccepted,
+          },
         });
-      if (insertError) throw insertError;
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+      } else {
+        const { error: insertError } = await (supabase as any)
+          .from("brandaro_qualified_leads")
+          .insert({
+            business_name: form.businessName,
+            phone_number: form.phone,
+            city: form.city,
+            state: null,
+            industry: form.businessType || null,
+            assigned_va: user!.id,
+            lead_status: "new",
+            source: "va_intake",
+            call_notes: callNotes,
+            service_interest: form.services || null,
+            has_website: !!form.existingWebsite,
+            website_status: form.existingWebsite ? "has_site" : "unknown",
+          });
+        if (insertError) throw insertError;
+      }
 
       setSubmitted(true);
       toast.success("Discovery form submitted.");
@@ -911,38 +943,22 @@ export function VANewLeadIntakeForm({ onCreated }: Props) {
           </Button>
 
           <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              onClick={handleSendSms}
-              disabled={smsSending || !form.phone || !form.businessName}
-              variant="outline"
-              title="Sends https://www.brandarodigital.com/#contact link via SMS"
-              className="gap-2 border-cyan-500/50 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20 hover:text-cyan-100"
-            >
-              {smsSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
-              Send Intake Link (SMS)
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSendEmail}
-              disabled={smsSending || !form.email || !form.businessName}
-              variant="outline"
-              title="Sends https://www.brandarodigital.com/#contact link via Email"
-              className="gap-2 border-purple-500/50 bg-purple-500/10 text-purple-200 hover:bg-purple-500/20 hover:text-purple-100"
-            >
-              {smsSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Send Intake Link (Email)
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSendBoth}
-              disabled={smsSending || !form.businessName || (!form.phone && !form.email)}
-              variant="outline"
-              className="gap-2 border-emerald-500/50 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20 hover:text-emerald-100"
-            >
-              {smsSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Send via SMS + Email
-            </Button>
+            {!isPublic && (
+              <>
+                <Button type="button" onClick={handleSendSms} disabled={smsSending || !form.phone || !form.businessName} variant="outline" className="gap-2 border-cyan-500/50 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20 hover:text-cyan-100">
+                  {smsSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
+                  Send Intake Link (SMS)
+                </Button>
+                <Button type="button" onClick={handleSendEmail} disabled={smsSending || !form.email || !form.businessName} variant="outline" className="gap-2 border-purple-500/50 bg-purple-500/10 text-purple-200 hover:bg-purple-500/20 hover:text-purple-100">
+                  {smsSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Send Intake Link (Email)
+                </Button>
+                <Button type="button" onClick={handleSendBoth} disabled={smsSending || !form.businessName || (!form.phone && !form.email)} variant="outline" className="gap-2 border-emerald-500/50 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20 hover:text-emerald-100">
+                  {smsSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Send via SMS + Email
+                </Button>
+              </>
+            )}
 
             {step < steps.length - 1 ? (
               <Button

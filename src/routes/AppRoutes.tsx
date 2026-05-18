@@ -44,6 +44,7 @@ const PortalRegister = lazy(() => import('@/pages/portal/PortalRegister'));
 const DriverLogin = lazy(() => import('@/pages/portal/DriverLogin'));
 const BikerLogin = lazy(() => import('@/pages/portal/BikerLogin'));
 const InviteSignup = lazy(() => import('@/pages/auth/InviteSignup'));
+const PublicIntakePage = lazy(() => import('@/pages/auth/PublicIntakePage'));
 const UserInvitations = lazy(() => import('@/pages/security/UserInvitations'));
 const InviteLanding = lazy(() => import('@/pages/portal/InviteLanding'));
 const InstallPwa = lazy(() => import('@/pages/InstallPwa'));
@@ -1185,6 +1186,7 @@ export default function AppRoutes() {
       <Route path="/twl-landing" element={<TWLLanding />} />
       <Route path="/partner/respond/:token" element={<PartnerRespond />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/auth/intake/:token" element={<PublicIntakePage />} />
       <Route path="/portal/login" element={<PortalLogin />} />
       <Route path="/portal" element={<FundingClientPortal />} />
       <Route path="/portal/register" element={<PortalRegister />} />
