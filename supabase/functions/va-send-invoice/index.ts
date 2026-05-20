@@ -556,6 +556,14 @@ serve(async (req: Request) => {
       });
     }
 
+    // Sync to Stripe as a real Customer + Invoice (record-of-truth in Stripe).
+    // For full-pay invoices this also swaps payment_link to the hosted Stripe URL.
+    // Non-fatal: if Stripe sync fails we still send using the Checkout link.
+    const synced = await syncInvoiceToStripe(supabase, invoice);
+    if (synced.error) {
+      console.warn("[va-send-invoice] Stripe sync warning:", synced.error);
+    }
+
     let recipient = body.recipient || "";
     if (!recipient) {
       if (channel === "email") recipient = invoice.customer_email || lead?.email || "";
