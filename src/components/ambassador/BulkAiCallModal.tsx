@@ -55,7 +55,7 @@ export function BulkAiCallModal({ open, onOpenChange, ambassadorId, ambassadorNa
   useEffect(() => {
     if (!open) return;
     (async () => {
-      const { data } = await supabase.from('ambassador_call_scripts').select('*').eq('is_active', true);
+      const { data } = await (supabase as any).from('ambassador_call_scripts').select('*').eq('is_active', true);
       setScripts(data || []);
     })();
     (async () => {
