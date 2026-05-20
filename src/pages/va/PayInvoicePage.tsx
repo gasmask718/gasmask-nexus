@@ -23,6 +23,7 @@ export default function PayInvoicePage() {
   const [params, setParams] = useSearchParams();
   const qc = useQueryClient();
   const [busy, setBusy] = useState<null | 'full' | 'deposit' | 'final'>(null);
+  const [autoRedirected, setAutoRedirected] = useState(false);
 
   const launch = async (phase: 'full' | 'deposit' | 'final') => {
     if (!invoiceId) return;
@@ -32,6 +33,7 @@ export default function PayInvoicePage() {
     } catch (e: any) {
       toast.error(e?.message || 'Could not open secure checkout');
       setBusy(null);
+      setAutoRedirected(false);
     }
   };
 
@@ -48,6 +50,19 @@ export default function PayInvoicePage() {
     enabled: !!invoiceId,
     refetchInterval: 10_000,
   });
+
+  // Auto-redirect straight to Stripe for full-payment unpaid invoices
+  useEffect(() => {
+    if (!invoice || autoRedirected) return;
+    if (params.get('paid') || params.get('cancelled')) return;
+    const isSplit = invoice.payment_type === 'split';
+    const fullyPaid = invoice.status === 'paid';
+    if (!isSplit && !fullyPaid) {
+      setAutoRedirected(true);
+      launch('full');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoice]);
 
   // Verify Stripe payment when redirected back via success_url
   useEffect(() => {
