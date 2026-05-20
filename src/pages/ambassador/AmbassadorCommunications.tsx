@@ -458,6 +458,16 @@ export default function AmbassadorCommunications() {
                   </div>
                 )}
               </Card>
+
+              {/* Store context sidebar */}
+              {sidebarOpen && selected && (
+                <StoreContextSidebar
+                  storeId={selected.store_id}
+                  open={sidebarOpen}
+                  onClose={() => setSidebarOpen(false)}
+                  onCall={() => openCallDialog(selected)}
+                />
+              )}
             </div>
           </TabsContent>
 
