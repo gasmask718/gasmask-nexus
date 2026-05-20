@@ -583,6 +583,9 @@ serve(async (req: Request) => {
 
     let sendResult: { ok: boolean; error?: string } = { ok: false };
 
+    // Customer-facing pay page (never expires; mints fresh Stripe session on click).
+    const payPageUrl = `${origin.replace(/\/$/, "")}/pay/${invoice.id}`;
+
     if (channel === "email") {
       const html = renderEmailHtml(invoice, lead);
       const subject = `Invoice ${invoice.invoice_number || ""} from Brandaro - $${Number(invoice.total || 0).toFixed(2)}`;
@@ -590,7 +593,7 @@ serve(async (req: Request) => {
         `Brandaro invoice ${invoice.invoice_number || ""}`.trim(),
         `Amount due: $${fmtMoney(invoice.total)}`,
         invoice.due_date ? `Due: ${new Date(invoice.due_date).toLocaleDateString("en-US")}` : "",
-        invoice.payment_link ? `Brandaro Digital Pay: ${invoice.payment_link}` : "",
+        `Brandaro Digital Pay: ${payPageUrl}`,
       ].filter(Boolean);
       sendResult = await sendInvoiceEmail({
         to: recipient,
