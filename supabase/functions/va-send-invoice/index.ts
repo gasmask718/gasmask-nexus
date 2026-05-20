@@ -639,8 +639,13 @@ serve(async (req: Request) => {
       // opens a payable Stripe page on click.
       const smsLink = directStripePayUrl;
 
+      // SMS is plain text — most carriers auto-linkify the URL using the
+      // text immediately preceding it as the preview label. Placing the
+      // label "Brandaro Digital Pay" right before the URL ensures the
+      // tappable link is presented as "Brandaro Digital Pay" to the
+      // recipient instead of the raw checkout.stripe.com URL.
       const smsBody = smsLink
-        ? `Brandaro Digital Pay — $${total} invoice ready. Tap to pay securely: ${smsLink}`
+        ? `Your $${total} invoice ${invoice.invoice_number || ""} is ready.\nBrandaro Digital Pay: ${smsLink}`
         : `Brandaro Digital Pay — $${total} invoice ${invoice.invoice_number || ""} ready.`;
 
       const twilioParams: Record<string, string> = { To: recipient, Body: smsBody };
