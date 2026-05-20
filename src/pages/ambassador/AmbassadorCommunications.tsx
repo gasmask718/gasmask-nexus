@@ -3,7 +3,7 @@
  * Tabs: Messages | Call Log | Templates
  * Every assigned store is always shown (no more "No conversations yet").
  */
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
