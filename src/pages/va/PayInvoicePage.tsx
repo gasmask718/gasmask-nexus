@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,6 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, FileText, CheckCircle, CreditCard, SplitSquareHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
+
+async function startCheckout(invoiceId: string, phase: 'full' | 'deposit' | 'final') {
+  const { data, error } = await supabase.functions.invoke('va-create-pay-session', {
+    body: { invoice_id: invoiceId, phase },
+  });
+  if (error) throw new Error(error.message || 'Could not start checkout');
+  const url = (data as any)?.url;
+  if (!url) throw new Error((data as any)?.error || 'No payment URL returned');
+  window.location.href = url;
+}
 
 export default function PayInvoicePage() {
   const { invoiceId } = useParams();
