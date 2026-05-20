@@ -485,7 +485,15 @@ export default function AmbassadorCommunications() {
                 ) : (
                   <div className="divide-y">
                     {callLogs.map((c) => (
-                      <div key={c.id} className="flex items-center gap-4 p-4 hover:bg-muted/50">
+                      <div
+                        key={c.id}
+                        className="flex items-center gap-4 p-4 hover:bg-muted/50 cursor-pointer"
+                        onClick={() => {
+                          setSelectedId(c.store_id);
+                          setSidebarOpen(true);
+                          setTab('messages');
+                        }}
+                      >
                         <div className="p-2 rounded-full bg-muted">
                           {c.type === 'inbound' ? <PhoneIncoming className="h-4 w-4 text-green-500" />
                             : c.type === 'missed' ? <PhoneMissed className="h-4 w-4 text-red-500" />
