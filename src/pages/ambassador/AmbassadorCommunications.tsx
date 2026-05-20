@@ -76,17 +76,20 @@ function AdminAmbassadorPicker() {
     !q.trim() || (a.name || '').toLowerCase().includes(q.toLowerCase())
   );
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center gap-2 text-sm font-medium">
+    <div className="p-6 space-y-4 bg-amber-50 dark:bg-amber-950/20 border-2 border-dashed border-amber-400 rounded-lg">
+      <div className="flex items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
         <Eye className="h-4 w-4" />
-        View Ambassador Portal as…
+        ADMIN MODE — Pick an ambassador to view their portal
       </div>
+      <p className="text-xs text-amber-800/80 dark:text-amber-300/80">
+        This list shows <strong>ambassadors</strong>, not stores. Select one to load their assigned stores, messages, and call log.
+      </p>
       <Input
-        placeholder="Search ambassadors"
+        placeholder="Search ambassadors by name"
         value={q}
         onChange={(e) => setQ(e.target.value)}
       />
-      <ScrollArea className="h-[420px] border rounded-md">
+      <ScrollArea className="h-[420px] border rounded-md bg-background">
         {isLoading ? (
           <div className="p-4 space-y-2">
             {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12" />)}
@@ -102,9 +105,9 @@ function AdminAmbassadorPicker() {
             >
               <div>
                 <div className="text-sm font-medium">{a.name || 'Unnamed ambassador'}</div>
-                <div className="text-xs text-muted-foreground">{a.twilio_number || 'no Twilio #'}</div>
+                <div className="text-xs text-muted-foreground">Ambassador · {a.twilio_number || 'no Twilio #'}</div>
               </div>
-              <Badge variant="outline">View</Badge>
+              <Badge variant="outline">View as</Badge>
             </button>
           ))
         )}
