@@ -631,22 +631,36 @@ serve(async (req: Request) => {
 
       const total = fmtMoney(invoice.total);
 
-      // Send the SMS recipient straight to Stripe Checkout — no /p short-link
-      // and no internal /pay interstitial. The URL persisted on va_invoices
-      // (payment_link / deposit_payment_link / final_payment_link) is the
-      // real cs_live_… Stripe Checkout Session URL guaranteed by
-      // ensureStripePaymentLinks above, so this is database-backed and
-      // opens a payable Stripe page on click.
-      const smsLink = directStripePayUrl;
+      // For SMS, shorten the Stripe Checkout URL through the
+      // create_short_link RPC so the recipient sees a compact
+      // branded link instead of the full cs_live_… URL. Falls back
+      // to the direct Stripe URL if shortening fails.
+      let smsLink = directStripePayUrl;
+      if (smsLink) {
+        try {
+          const { data: shortCode, error: shortErr } = await supabase.rpc("create_short_link", {
+            p_url: smsLink,
+            p_purpose: "invoice_payment",
+            p_invoice_id: invoice.id,
+          });
+          if (!shortErr && shortCode) {
+            const base = Deno.env.get("PUBLIC_APP_URL") || "https://gasmask-os-nexus.lovable.app";
+            smsLink = `${base.replace(/\/$/, "")}/p/${shortCode}`;
+          }
+        } catch (_e) {
+          // keep direct Stripe URL on failure
+        }
+      }
 
       // SMS is plain text — most carriers auto-linkify the URL using the
       // text immediately preceding it as the preview label. Placing the
       // label "Brandaro Digital Pay" right before the URL ensures the
       // tappable link is presented as "Brandaro Digital Pay" to the
-      // recipient instead of the raw checkout.stripe.com URL.
+      // recipient instead of the raw URL.
       const smsBody = smsLink
         ? `Your $${total} invoice ${invoice.invoice_number || ""} is ready.\nBrandaro Digital Pay: ${smsLink}`
         : `Brandaro Digital Pay — $${total} invoice ${invoice.invoice_number || ""} ready.`;
+
 
       const twilioParams: Record<string, string> = { To: recipient, Body: smsBody };
       if (messagingServiceSid && !fromNumber) twilioParams.MessagingServiceSid = messagingServiceSid;
