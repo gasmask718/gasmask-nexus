@@ -154,47 +154,88 @@ export default function AmbassadorCommunications() {
     setTemplatePickerOpen(false);
   };
 
-  const openCallDialog = (thread: MessageThread) => {
+  const openCallDialog = async (thread: MessageThread) => {
     setCallTarget(thread);
+    setCallMode('choose');
     setCallDialogOpen(true);
+    // Lazy-load scripts on first open
+    if (aiScripts.length === 0) {
+      const { data } = await (await import('@/integrations/supabase/client')).supabase
+        .from('ambassador_call_scripts' as any)
+        .select('id,name,objective,language,opening_line,voice_persona_id,max_duration_seconds,is_global,usage_count')
+        .order('is_global', { ascending: false })
+        .order('usage_count', { ascending: false });
+      setAiScripts((data as any[]) || []);
+    }
   };
 
   const startDirectCall = async () => {
-    if (!callTarget) return;
+    if (!callTarget || isPlacing) return;
+    setIsPlacing(true);
     try {
-      await logCall.mutateAsync({
-        storeId: callTarget.store_id,
-        phone: callTarget.contact_phone || '',
-        type: 'outbound',
-        outcome: 'attempted',
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.functions.invoke('ambassador-direct-call', {
+        body: { store_id: callTarget.store_id },
       });
-      if (callTarget.contact_phone) {
-        initiateCall({
-          destinationPhone: callTarget.contact_phone,
-          entityType: 'store',
-          entityId: callTarget.store_id,
-          entityName: callTarget.store_name,
-        });
+      if (error || data?.error) {
+        const code = (data as any)?.code || '';
+        if (code === 'NO_PERSONAL_PHONE') {
+          setCallDialogOpen(false);
+          setPersonalPhoneOpen(true);
+          return;
+        }
+        throw new Error(data?.error || error?.message || 'Failed to place call');
       }
-    } finally {
+      toast.success('📞 Your phone is ringing — answer to connect');
       setCallDialogOpen(false);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setIsPlacing(false);
     }
   };
 
   const startAiCall = async () => {
-    if (!callTarget) return;
-    await logCall.mutateAsync({
-      storeId: callTarget.store_id,
-      phone: callTarget.contact_phone || '',
-      type: 'outbound',
-      outcome: 'ai_scheduled',
-      aiAssisted: true,
-    });
-    toast.success('AI call queued');
-    setCallDialogOpen(false);
+    if (!callTarget || !selectedScriptId || isPlacing) return;
+    setIsPlacing(true);
+    try {
+      const script = aiScripts.find((s) => s.id === selectedScriptId);
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.functions.invoke('ambassador-ai-call', {
+        body: { store_id: callTarget.store_id, script_template_id: selectedScriptId, objective: script?.objective },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message || 'AI call failed');
+      toast.success('🤖 AI call queued — you\'ll be notified when it completes');
+      setCallDialogOpen(false);
+      setCallMode('choose');
+      setSelectedScriptId('');
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setIsPlacing(false);
+    }
   };
 
-  const unreadCount = 0; // realtime hook may surface this later
+  const savePersonalPhone = async () => {
+    if (!/^\+\d{10,15}$/.test(personalPhoneInput)) {
+      toast.error('Use E.164 format, e.g. +12125551234');
+      return;
+    }
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { error } = await supabase.from('ambassadors' as any)
+        .update({ personal_phone: personalPhoneInput } as any)
+        .eq('id', (ambassador as any)?.id);
+      if (error) throw error;
+      toast.success('Personal phone saved');
+      setPersonalPhoneOpen(false);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const unreadCount = 0;
+
 
   return (
     <AmbassadorLayout
