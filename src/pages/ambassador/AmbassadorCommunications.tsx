@@ -31,6 +31,11 @@ import {
 } from '@/hooks/useAmbassadorComms';
 import { useStoreContext } from '@/hooks/useStoreContext';
 import { StoreContextSidebar } from '@/components/ambassador/StoreContextSidebar';
+import { BulkSmsModal } from '@/components/ambassador/BulkSmsModal';
+import { BulkAiCallModal } from '@/components/ambassador/BulkAiCallModal';
+import { BulkJobsPanel } from '@/components/ambassador/BulkJobsPanel';
+import { useBulkJobKpis } from '@/hooks/useBulkOutreach';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format, formatDistanceToNow } from 'date-fns';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { toast } from 'sonner';
