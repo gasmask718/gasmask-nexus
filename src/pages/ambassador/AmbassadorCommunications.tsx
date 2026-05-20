@@ -56,6 +56,63 @@ const QUICK_REPLIES = [
   { en: 'Friendly payment reminder', ar: 'تذكير ودي بشأن الدفع' },
 ];
 
+/** Admin-only picker shown when an admin lands on the ambassador portal without impersonating. */
+function AdminAmbassadorPicker() {
+  const { startViewAs } = useViewAs();
+  const [q, setQ] = useState('');
+  const { data: ambassadors = [], isLoading } = useQuery({
+    queryKey: ['admin-ambassador-picker'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ambassadors')
+        .select('id, name, user_id, is_active, twilio_number')
+        .eq('is_active', true)
+        .order('name', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const filtered = ambassadors.filter((a: any) =>
+    !q.trim() || (a.name || '').toLowerCase().includes(q.toLowerCase())
+  );
+  return (
+    <div className="p-6 space-y-4">
+      <div className="flex items-center gap-2 text-sm font-medium">
+        <Eye className="h-4 w-4" />
+        View Ambassador Portal as…
+      </div>
+      <Input
+        placeholder="Search ambassadors"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+      />
+      <ScrollArea className="h-[420px] border rounded-md">
+        {isLoading ? (
+          <div className="p-4 space-y-2">
+            {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12" />)}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-6 text-sm text-muted-foreground text-center">No ambassadors found</div>
+        ) : (
+          filtered.map((a: any) => (
+            <button
+              key={a.id}
+              onClick={() => startViewAs({ id: a.id, name: a.name, user_id: a.user_id })}
+              className="w-full text-left px-3 py-2 border-b hover:bg-muted/60 transition-colors flex items-center justify-between"
+            >
+              <div>
+                <div className="text-sm font-medium">{a.name || 'Unnamed ambassador'}</div>
+                <div className="text-xs text-muted-foreground">{a.twilio_number || 'no Twilio #'}</div>
+              </div>
+              <Badge variant="outline">View</Badge>
+            </button>
+          ))
+        )}
+      </ScrollArea>
+    </div>
+  );
+}
+
 export default function AmbassadorCommunications() {
   const [tab, setTab] = useState('messages');
   const [searchQuery, setSearchQuery] = useState('');
