@@ -70,6 +70,12 @@ export default function AmbassadorCommunications() {
   const [personalPhoneOpen, setPersonalPhoneOpen] = useState(false);
   const [personalPhoneInput, setPersonalPhoneInput] = useState('');
   const [isPlacing, setIsPlacing] = useState(false);
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const [selectedStoreIds, setSelectedStoreIds] = useState<Set<string>>(new Set());
+  const [bulkSmsOpen, setBulkSmsOpen] = useState(false);
+  const [bulkAiOpen, setBulkAiOpen] = useState(false);
+  const [jobsPanelOpen, setJobsPanelOpen] = useState(false);
+  const [smartFilter, setSmartFilter] = useState<string | null>(null);
 
 
   // Persist sidebar open state per ambassador in localStorage
