@@ -164,11 +164,13 @@ export default function PayInvoicePage() {
               <Button
                 className="w-full"
                 size="lg"
-                disabled={depositPaid || !invoice.deposit_payment_link}
-                onClick={() => invoice.deposit_payment_link && (window.location.href = invoice.deposit_payment_link)}
+                disabled={depositPaid || busy !== null}
+                onClick={() => launch('deposit')}
               >
                 {depositPaid ? (
                   <><CheckCircle className="h-4 w-4 mr-2" /> Deposit Paid</>
+                ) : busy === 'deposit' ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Opening secure checkout…</>
                 ) : (
                   <><SplitSquareHorizontal className="h-4 w-4 mr-2" /> Brandaro Digital Pay — 50% Deposit (${Number(invoice.deposit_amount || 0).toFixed(2)})</>
                 )}
@@ -177,11 +179,13 @@ export default function PayInvoicePage() {
                 className="w-full"
                 size="lg"
                 variant={depositPaid ? 'default' : 'outline'}
-                disabled={finalPaid || !invoice.final_payment_link}
-                onClick={() => invoice.final_payment_link && (window.location.href = invoice.final_payment_link)}
+                disabled={finalPaid || busy !== null}
+                onClick={() => launch('final')}
               >
                 {finalPaid ? (
                   <><CheckCircle className="h-4 w-4 mr-2" /> Final Paid</>
+                ) : busy === 'final' ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Opening secure checkout…</>
                 ) : (
                   <><CreditCard className="h-4 w-4 mr-2" /> Brandaro Digital Pay — Final 50% (${Number(invoice.final_amount || 0).toFixed(2)})</>
                 )}
@@ -192,13 +196,18 @@ export default function PayInvoicePage() {
             </div>
           )}
 
-          {!fullyPaid && !isSplit && invoice.payment_link && (
+          {!fullyPaid && !isSplit && (
             <Button
               className="w-full"
               size="lg"
-              onClick={() => (window.location.href = invoice.payment_link)}
+              disabled={busy !== null}
+              onClick={() => launch('full')}
             >
-              <CreditCard className="h-4 w-4 mr-2" /> Brandaro Digital Pay — ${total.toFixed(2)}
+              {busy === 'full' ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Opening secure checkout…</>
+              ) : (
+                <><CreditCard className="h-4 w-4 mr-2" /> Brandaro Digital Pay — ${total.toFixed(2)}</>
+              )}
             </Button>
           )}
 
