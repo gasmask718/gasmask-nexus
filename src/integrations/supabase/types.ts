@@ -103297,6 +103297,13 @@ export type Database = {
           sent_at: string | null
           service_type: string | null
           status: string | null
+          stripe_customer_id: string | null
+          stripe_invoice_id: string | null
+          stripe_invoice_pdf: string | null
+          stripe_invoice_status: string | null
+          stripe_invoice_url: string | null
+          stripe_sync_error: string | null
+          stripe_synced_at: string | null
           total: number
           va_id: string
         }
@@ -103330,6 +103337,13 @@ export type Database = {
           sent_at?: string | null
           service_type?: string | null
           status?: string | null
+          stripe_customer_id?: string | null
+          stripe_invoice_id?: string | null
+          stripe_invoice_pdf?: string | null
+          stripe_invoice_status?: string | null
+          stripe_invoice_url?: string | null
+          stripe_sync_error?: string | null
+          stripe_synced_at?: string | null
           total?: number
           va_id: string
         }
@@ -103363,6 +103377,13 @@ export type Database = {
           sent_at?: string | null
           service_type?: string | null
           status?: string | null
+          stripe_customer_id?: string | null
+          stripe_invoice_id?: string | null
+          stripe_invoice_pdf?: string | null
+          stripe_invoice_status?: string | null
+          stripe_invoice_url?: string | null
+          stripe_sync_error?: string | null
+          stripe_synced_at?: string | null
           total?: number
           va_id?: string
         }

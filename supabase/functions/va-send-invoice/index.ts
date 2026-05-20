@@ -120,6 +120,167 @@ async function ensureStripePaymentLinks(
     return { invoice, error: `Stripe checkout session failed: ${e?.message || String(e)}` };
   }
 }
+
+/**
+ * Syncs the invoice to Stripe as a real Stripe Customer + Stripe Invoice.
+ * - Upserts a Stripe Customer keyed by email/phone (persists stripe_customer_id)
+ * - Creates a draft Stripe Invoice with one invoice item per line (or single total)
+ * - Finalizes the invoice so Stripe issues a hosted invoice URL + PDF
+ * - Persists stripe_invoice_id, stripe_invoice_url, stripe_invoice_pdf,
+ *   stripe_invoice_status, stripe_synced_at on va_invoices
+ * - For "full" payment_type, the hosted Stripe Invoice URL is also written into
+ *   `payment_link` so SMS/email use the real Stripe-hosted pay page.
+ * - For "split" payment_type we still rely on the Checkout sessions created by
+ *   ensureStripePaymentLinks (deposit / final), and only attach the Stripe
+ *   invoice as a record-of-truth.
+ */
+async function syncInvoiceToStripe(
+  supabase: any,
+  invoice: any,
+): Promise<{ invoice: any; error?: string }> {
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!stripeKey) {
+    return { invoice, error: "STRIPE_SECRET_KEY not configured — cannot sync to Stripe" };
+  }
+  const total = Number(invoice.total || 0);
+  if (!(total > 0)) {
+    return { invoice, error: "Invoice total must be greater than 0 to sync with Stripe" };
+  }
+
+  const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+
+  try {
+    // 1) Resolve / create Stripe customer
+    let customerId: string | undefined = invoice.stripe_customer_id || undefined;
+
+    if (!customerId) {
+      const email = (invoice.customer_email || "").trim();
+      if (email) {
+        const found = await stripe.customers.list({ email, limit: 1 });
+        if (found.data.length) customerId = found.data[0].id;
+      }
+    }
+
+    if (!customerId) {
+      const created = await stripe.customers.create({
+        name: invoice.customer_name || undefined,
+        email: invoice.customer_email || undefined,
+        phone: invoice.customer_phone || undefined,
+        metadata: {
+          va_invoice_id: invoice.id,
+          va_id: invoice.va_id ?? "",
+          lead_id: invoice.lead_id ?? "",
+        },
+      });
+      customerId = created.id;
+    }
+
+    // 2) Reuse an existing draft invoice if we have one and it's still editable
+    let stripeInvoice: any = null;
+    if (invoice.stripe_invoice_id) {
+      try {
+        const existing = await stripe.invoices.retrieve(invoice.stripe_invoice_id);
+        if (existing.status === "draft") stripeInvoice = existing;
+        else stripeInvoice = existing; // finalized/paid → just refresh fields
+      } catch (_) {
+        stripeInvoice = null; // recreate
+      }
+    }
+
+    if (!stripeInvoice || stripeInvoice.status !== "draft") {
+      // Create line items first then the invoice (Stripe pulls pending items)
+      const items: Array<{ description: string; price: number }> =
+        Array.isArray(invoice.line_items) && invoice.line_items.length
+          ? invoice.line_items.map((li: any, idx: number) => ({
+              description: String(li.description || `Item ${idx + 1}`),
+              price: Number(li.price || 0),
+            }))
+          : [{ description: invoice.service_type || "Service", price: total }];
+
+      // If we're recreating because previous was finalized/paid, skip creating a new one
+      if (stripeInvoice && stripeInvoice.status !== "draft") {
+        // already finalized — keep the existing one as the source of truth
+      } else {
+        for (const it of items) {
+          if (!(it.price > 0)) continue;
+          await stripe.invoiceItems.create({
+            customer: customerId!,
+            currency: "usd",
+            unit_amount: Math.round(it.price * 100),
+            quantity: 1,
+            description: it.description,
+            metadata: { va_invoice_id: invoice.id },
+          });
+        }
+
+        const dueDays = invoice.due_date
+          ? Math.max(
+              1,
+              Math.ceil(
+                (new Date(invoice.due_date).getTime() - Date.now()) /
+                  (1000 * 60 * 60 * 24),
+              ),
+            )
+          : 14;
+
+        stripeInvoice = await stripe.invoices.create({
+          customer: customerId!,
+          collection_method: "send_invoice",
+          days_until_due: dueDays,
+          description: invoice.service_type || undefined,
+          footer: invoice.notes || undefined,
+          auto_advance: false,
+          metadata: {
+            va_invoice_id: invoice.id,
+            va_id: invoice.va_id ?? "",
+            lead_id: invoice.lead_id ?? "",
+            invoice_number: invoice.invoice_number ?? "",
+            payment_type: invoice.payment_type ?? "full",
+          },
+        });
+      }
+    }
+
+    // 3) Finalize so a hosted URL + PDF exist
+    if (stripeInvoice.status === "draft") {
+      stripeInvoice = await stripe.invoices.finalizeInvoice(stripeInvoice.id);
+    }
+
+    // 4) Persist everything to the DB
+    const update: Record<string, unknown> = {
+      stripe_customer_id: customerId,
+      stripe_invoice_id: stripeInvoice.id,
+      stripe_invoice_url: stripeInvoice.hosted_invoice_url ?? null,
+      stripe_invoice_pdf: stripeInvoice.invoice_pdf ?? null,
+      stripe_invoice_status: stripeInvoice.status ?? null,
+      stripe_synced_at: new Date().toISOString(),
+      stripe_sync_error: null,
+    };
+
+    // For "full" pay, prefer the Stripe-hosted invoice URL as the canonical link
+    if ((invoice.payment_type || "full") === "full" && stripeInvoice.hosted_invoice_url) {
+      update.payment_link = stripeInvoice.hosted_invoice_url;
+      invoice.payment_link = stripeInvoice.hosted_invoice_url;
+    }
+
+    Object.assign(invoice, update);
+
+    const { error: updErr } = await supabase
+      .from("va_invoices")
+      .update(update)
+      .eq("id", invoice.id);
+    if (updErr) throw updErr;
+
+    return { invoice };
+  } catch (e: any) {
+    const msg = `Stripe sync failed: ${e?.message || String(e)}`;
+    await supabase
+      .from("va_invoices")
+      .update({ stripe_sync_error: msg })
+      .eq("id", invoice.id);
+    return { invoice, error: msg };
+  }
+}
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -393,6 +554,14 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: ensured.error }), {
         status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Sync to Stripe as a real Customer + Invoice (record-of-truth in Stripe).
+    // For full-pay invoices this also swaps payment_link to the hosted Stripe URL.
+    // Non-fatal: if Stripe sync fails we still send using the Checkout link.
+    const synced = await syncInvoiceToStripe(supabase, invoice);
+    if (synced.error) {
+      console.warn("[va-send-invoice] Stripe sync warning:", synced.error);
     }
 
     let recipient = body.recipient || "";
