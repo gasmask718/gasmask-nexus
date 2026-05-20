@@ -131,7 +131,7 @@ export function useAmbassadorThreads() {
     queryFn: async (): Promise<MessageThread[]> => {
       if (!ambassadorId) return [];
 
-      // 1. All assigned stores
+      // 1a. Stores via ambassador_assignments (primary join)
       const { data: assignments, error: aErr } = await supabase
         .from('ambassador_assignments')
         .select(`
@@ -146,9 +146,23 @@ export function useAmbassadorThreads() {
         .not('store_id', 'is', null);
       if (aErr) throw aErr;
 
-      const stores = (assignments || [])
-        .map((a) => a.store as any)
-        .filter(Boolean);
+      const storesMap = new Map<string, any>();
+      for (const a of assignments || []) {
+        const s = a.store as any;
+        if (s?.id) storesMap.set(s.id, s);
+      }
+
+      // 1b. Fallback — direct assignment on store_master.assigned_ambassador_id
+      const { data: directStores, error: dErr } = await supabase
+        .from('store_master')
+        .select('id, store_name, owner_name, phone, borough_id, language_preference, last_visit_at, owed_amount')
+        .eq('assigned_ambassador_id', ambassadorId);
+      if (dErr) throw dErr;
+      for (const s of directStores || []) {
+        if (s?.id && !storesMap.has(s.id)) storesMap.set(s.id, s);
+      }
+
+      const stores = Array.from(storesMap.values());
 
       // 2. Latest message per store (single batched query)
       const storeIds = stores.map((s) => s.id);
