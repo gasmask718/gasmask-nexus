@@ -259,6 +259,68 @@ export default function AmbassadorCommunications() {
         {/* KPI strip */}
         <KpiStrip data={kpis.data} />
 
+        {/* Bulk action toolbar */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant={multiSelectMode ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => { setMultiSelectMode((v) => !v); setSelectedStoreIds(new Set()); }}
+          >
+            <CheckCheck className="h-4 w-4 mr-1" />
+            {multiSelectMode ? `${selectedStoreIds.size} selected` : 'Multi-select'}
+          </Button>
+          {multiSelectMode && (
+            <>
+              <Button size="sm" variant="outline" onClick={() => {
+                const ids = new Set<string>();
+                threads.forEach((t) => { if (t.contact_phone) ids.add(t.store_id); });
+                setSelectedStoreIds(ids);
+              }}>Select all</Button>
+              <Button size="sm" variant="outline" onClick={() => {
+                const cutoff = Date.now() - 30 * 24 * 3600 * 1000;
+                const ids = new Set<string>();
+                threads.forEach((t) => {
+                  if (t.contact_phone && new Date(t.last_message_at).getTime() < cutoff) ids.add(t.store_id);
+                });
+                setSelectedStoreIds(ids);
+              }}>Dormant 30d+</Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" disabled={selectedStoreIds.size === 0}>
+                    Bulk Actions ▼
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => {
+                    if (selectedStoreIds.size > 50 && !confirm(`Send to ${selectedStoreIds.size} stores?`)) return;
+                    setBulkSmsOpen(true);
+                  }}>📱 Send SMS Blast</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    if (selectedStoreIds.size > 50 && !confirm(`Queue ${selectedStoreIds.size} AI calls?`)) return;
+                    setBulkAiOpen(true);
+                  }}>🤖 Schedule AI Call Blast</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSelectedStoreIds(new Set())}>✖ Clear selection</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          )}
+          <Button size="sm" variant="outline" className="ml-auto" onClick={() => setJobsPanelOpen(true)}>
+            <Activity className="h-4 w-4 mr-1" />
+            Bulk Jobs
+            {bulkKpis.data && bulkKpis.data.activeJobs > 0 && (
+              <Badge className="ml-2 h-5 px-1.5">{bulkKpis.data.activeJobs}</Badge>
+            )}
+          </Button>
+        </div>
+
+        {/* Selection checkboxes overlay in thread list */}
+        {multiSelectMode && (
+          <div className="text-xs text-muted-foreground">
+            Tip: Click a store row to toggle selection. {bulkKpis.data?.jobsToday ?? 0} jobs today · {bulkKpis.data?.reachToday ?? 0} stores reached.
+          </div>
+        )}
+
+
         <Tabs value={tab} onValueChange={setTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="messages" className="gap-2">
