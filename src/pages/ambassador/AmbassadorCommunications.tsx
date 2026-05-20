@@ -59,6 +59,13 @@ export default function AmbassadorCommunications() {
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [callTarget, setCallTarget] = useState<MessageThread | null>(null);
+  const [callMode, setCallMode] = useState<'choose' | 'ai-config'>('choose');
+  const [selectedScriptId, setSelectedScriptId] = useState<string>('');
+  const [aiScripts, setAiScripts] = useState<any[]>([]);
+  const [personalPhoneOpen, setPersonalPhoneOpen] = useState(false);
+  const [personalPhoneInput, setPersonalPhoneInput] = useState('');
+  const [isPlacing, setIsPlacing] = useState(false);
+
 
   // Persist sidebar open state per ambassador in localStorage
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => {
