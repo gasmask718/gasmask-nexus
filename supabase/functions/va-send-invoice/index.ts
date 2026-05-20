@@ -629,10 +629,9 @@ serve(async (req: Request) => {
       recipient = toNumber;
 
       const total = fmtMoney(invoice.total);
-      const longLink =
-        invoice.payment_type === 'split'
-          ? (invoice.deposit_payment_link || invoice.final_payment_link || invoice.payment_link)
-          : invoice.payment_link;
+      // Always point SMS at our own /pay/:id page — it mints a fresh Stripe
+      // Checkout session at click time so the link never expires.
+      const longLink = payPageUrl;
 
       // Wrap the Stripe checkout URL in a branded short link so the SMS shows
       // a clean "Brandaro Digital" URL that redirects to Stripe on click.
