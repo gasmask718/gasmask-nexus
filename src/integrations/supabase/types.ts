@@ -85069,11 +85069,13 @@ export type Database = {
           opt_out_method: string | null
           owed_amount: number | null
           owner_name: string | null
+          owner_name_arabic: string | null
           personality_notes: string | null
           personality_profile_id: string | null
           phone: string | null
           phone_type: string | null
           phone_verified_at: string | null
+          photo_url: string | null
           preferred_channel: string | null
           risk_score: string | null
           sms_capable: boolean | null
@@ -85149,11 +85151,13 @@ export type Database = {
           opt_out_method?: string | null
           owed_amount?: number | null
           owner_name?: string | null
+          owner_name_arabic?: string | null
           personality_notes?: string | null
           personality_profile_id?: string | null
           phone?: string | null
           phone_type?: string | null
           phone_verified_at?: string | null
+          photo_url?: string | null
           preferred_channel?: string | null
           risk_score?: string | null
           sms_capable?: boolean | null
@@ -85229,11 +85233,13 @@ export type Database = {
           opt_out_method?: string | null
           owed_amount?: number | null
           owner_name?: string | null
+          owner_name_arabic?: string | null
           personality_notes?: string | null
           personality_profile_id?: string | null
           phone?: string | null
           phone_type?: string | null
           phone_verified_at?: string | null
+          photo_url?: string | null
           preferred_channel?: string | null
           risk_score?: string | null
           sms_capable?: boolean | null
@@ -85334,6 +85340,7 @@ export type Database = {
       }
       store_notes: {
         Row: {
+          ambassador_id: string | null
           brand_scope: string | null
           cleaned_at: string | null
           cleaning_status: string | null
@@ -85348,6 +85355,7 @@ export type Database = {
           store_id: string | null
         }
         Insert: {
+          ambassador_id?: string | null
           brand_scope?: string | null
           cleaned_at?: string | null
           cleaning_status?: string | null
@@ -85362,6 +85370,7 @@ export type Database = {
           store_id?: string | null
         }
         Update: {
+          ambassador_id?: string | null
           brand_scope?: string | null
           cleaned_at?: string | null
           cleaning_status?: string | null
@@ -85376,6 +85385,34 @@ export type Database = {
           store_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "store_notes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_notes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_notes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_notes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
           {
             foreignKeyName: "store_notes_created_by_fkey"
             columns: ["created_by"]
@@ -115516,6 +115553,7 @@ export type Database = {
         Args: { p_business_id: string; p_window?: number }
         Returns: Json
       }
+      get_store_context: { Args: { p_store_id: string }; Returns: Json }
       get_store_full_address: { Args: { p_store_id: string }; Returns: string }
       get_user_assigned_stores: {
         Args: { _user_id: string }
@@ -116037,6 +116075,10 @@ export type Database = {
       revoke_user_access: {
         Args: { _invite_id: string; _reason?: string }
         Returns: Json
+      }
+      schedule_ambassador_visit: {
+        Args: { p_notes?: string; p_scheduled_for: string; p_store_id: string }
+        Returns: string
       }
       search_audit_logs: {
         Args: {
