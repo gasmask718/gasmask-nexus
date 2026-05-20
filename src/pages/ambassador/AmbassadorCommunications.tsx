@@ -125,10 +125,21 @@ export default function AmbassadorCommunications() {
 
   const handleUseTemplate = (tpl: MessageTemplate) => {
     if (!selected) return;
+    const sc = storeContext;
+    const lastOrder = sc?.stats?.last_order_date
+      ? formatDistanceToNow(new Date(sc.stats.last_order_date), { addSuffix: true })
+      : 'a while ago';
     const ctx = {
-      store_name: selected.store_name,
-      owner_name: selected.contact_name,
+      store_name: sc?.store?.store_name || selected.store_name,
+      owner_name: sc?.store?.owner_name || selected.contact_name,
+      owner_name_arabic: sc?.store?.owner_name_arabic || selected.contact_name,
       ambassador_name: ambassador?.name || '',
+      outstanding_balance: sc?.stats?.outstanding_balance != null
+        ? `$${Math.round(sc.stats.outstanding_balance)}`
+        : '$0',
+      last_order_date: lastOrder,
+      total_orders: sc?.stats?.total_orders ?? 0,
+      phone: sc?.store?.phone || selected.contact_phone || '',
     };
     setComposer(renderTemplate(tpl.body_en, ctx));
     setComposerAr(renderTemplate(tpl.body_ar, ctx));
