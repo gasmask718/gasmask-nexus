@@ -5746,6 +5746,171 @@ export type Database = {
           },
         ]
       }
+      ambassador_bulk_job_items: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          job_id: string
+          log_id: string | null
+          message_id: string | null
+          per_store_variables: Json | null
+          processed_at: string | null
+          skip_reason: string | null
+          status: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          job_id: string
+          log_id?: string | null
+          message_id?: string | null
+          per_store_variables?: Json | null
+          processed_at?: string | null
+          skip_reason?: string | null
+          status?: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          job_id?: string
+          log_id?: string | null
+          message_id?: string | null
+          per_store_variables?: Json | null
+          processed_at?: string | null
+          skip_reason?: string | null
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_bulk_job_items_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "ambassador_bulk_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ambassador_bulk_jobs: {
+        Row: {
+          ambassador_id: string
+          completed_at: string | null
+          created_at: string
+          custom_variables: Json | null
+          error_summary: Json | null
+          failed_count: number
+          id: string
+          job_type: string
+          language_strategy: string
+          objective: string | null
+          pacing_seconds: number
+          scheduled_for: string | null
+          script_id: string | null
+          sent_count: number
+          skipped_count: number
+          started_at: string | null
+          status: string
+          success_count: number
+          target_store_ids: string[]
+          template_id: string | null
+          total_count: number
+        }
+        Insert: {
+          ambassador_id: string
+          completed_at?: string | null
+          created_at?: string
+          custom_variables?: Json | null
+          error_summary?: Json | null
+          failed_count?: number
+          id?: string
+          job_type: string
+          language_strategy?: string
+          objective?: string | null
+          pacing_seconds?: number
+          scheduled_for?: string | null
+          script_id?: string | null
+          sent_count?: number
+          skipped_count?: number
+          started_at?: string | null
+          status?: string
+          success_count?: number
+          target_store_ids: string[]
+          template_id?: string | null
+          total_count: number
+        }
+        Update: {
+          ambassador_id?: string
+          completed_at?: string | null
+          created_at?: string
+          custom_variables?: Json | null
+          error_summary?: Json | null
+          failed_count?: number
+          id?: string
+          job_type?: string
+          language_strategy?: string
+          objective?: string | null
+          pacing_seconds?: number
+          scheduled_for?: string | null
+          script_id?: string | null
+          sent_count?: number
+          skipped_count?: number
+          started_at?: string | null
+          status?: string
+          success_count?: number
+          target_store_ids?: string[]
+          template_id?: string | null
+          total_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_bulk_jobs_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_bulk_jobs_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_bulk_jobs_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_bulk_jobs_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_bulk_jobs_script_id_fkey"
+            columns: ["script_id"]
+            isOneToOne: false
+            referencedRelation: "ambassador_call_scripts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_bulk_jobs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "ambassador_message_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ambassador_call_scripts: {
         Row: {
           ambassador_id: string | null
@@ -6963,6 +7128,7 @@ export type Database = {
           ai_call_daily_cost_cap: number
           ai_call_daily_limit: number
           ai_call_hourly_limit: number
+          bulk_max_recipients: number
           city: string | null
           created_at: string
           created_by: string | null
@@ -6993,6 +7159,7 @@ export type Database = {
           ai_call_daily_cost_cap?: number
           ai_call_daily_limit?: number
           ai_call_hourly_limit?: number
+          bulk_max_recipients?: number
           city?: string | null
           created_at?: string
           created_by?: string | null
@@ -7023,6 +7190,7 @@ export type Database = {
           ai_call_daily_cost_cap?: number
           ai_call_daily_limit?: number
           ai_call_hourly_limit?: number
+          bulk_max_recipients?: number
           city?: string | null
           created_at?: string
           created_by?: string | null
@@ -115756,6 +115924,10 @@ export type Database = {
       is_admin_user: { Args: { p_user_id: string }; Returns: boolean }
       is_ambassador_for_store: {
         Args: { _store_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_ambassador_owner: {
+        Args: { _ambassador_id: string }
         Returns: boolean
       }
       is_assigned_to_route: {
