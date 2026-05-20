@@ -330,6 +330,17 @@ export default function AmbassadorCommunications() {
                             <Phone className="h-4 w-4 mr-2" />
                             Call
                           </Button>
+                          {!sidebarOpen && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setSidebarOpen(true)}
+                              aria-label="Open store context"
+                              title="Open store context"
+                            >
+                              <PanelRightOpen className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardHeader>
