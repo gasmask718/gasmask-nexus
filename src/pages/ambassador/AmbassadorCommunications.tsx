@@ -31,6 +31,11 @@ import {
 } from '@/hooks/useAmbassadorComms';
 import { useStoreContext } from '@/hooks/useStoreContext';
 import { StoreContextSidebar } from '@/components/ambassador/StoreContextSidebar';
+import { BulkSmsModal } from '@/components/ambassador/BulkSmsModal';
+import { BulkAiCallModal } from '@/components/ambassador/BulkAiCallModal';
+import { BulkJobsPanel } from '@/components/ambassador/BulkJobsPanel';
+import { useBulkJobKpis } from '@/hooks/useBulkOutreach';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format, formatDistanceToNow } from 'date-fns';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { toast } from 'sonner';
@@ -65,6 +70,12 @@ export default function AmbassadorCommunications() {
   const [personalPhoneOpen, setPersonalPhoneOpen] = useState(false);
   const [personalPhoneInput, setPersonalPhoneInput] = useState('');
   const [isPlacing, setIsPlacing] = useState(false);
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const [selectedStoreIds, setSelectedStoreIds] = useState<Set<string>>(new Set());
+  const [bulkSmsOpen, setBulkSmsOpen] = useState(false);
+  const [bulkAiOpen, setBulkAiOpen] = useState(false);
+  const [jobsPanelOpen, setJobsPanelOpen] = useState(false);
+  const [smartFilter, setSmartFilter] = useState<string | null>(null);
 
 
   // Persist sidebar open state per ambassador in localStorage
@@ -82,6 +93,7 @@ export default function AmbassadorCommunications() {
   const { data: callLogs = [], isLoading: callsLoading } = useCallHistory();
   const logCall = useLogCall();
   const kpis = useAmbassadorKPIs();
+  const bulkKpis = useBulkJobKpis(ambassador?.id || null);
   const { templates, upsert: upsertTemplate, remove: removeTemplate, recordUsage } = useTemplates();
   const messagesQ = useStoreMessages(selectedId);
   const { data: storeContext } = useStoreContext(selectedId);
@@ -246,6 +258,68 @@ export default function AmbassadorCommunications() {
       <div className="p-6 space-y-4">
         {/* KPI strip */}
         <KpiStrip data={kpis.data} />
+
+        {/* Bulk action toolbar */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant={multiSelectMode ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => { setMultiSelectMode((v) => !v); setSelectedStoreIds(new Set()); }}
+          >
+            <CheckCheck className="h-4 w-4 mr-1" />
+            {multiSelectMode ? `${selectedStoreIds.size} selected` : 'Multi-select'}
+          </Button>
+          {multiSelectMode && (
+            <>
+              <Button size="sm" variant="outline" onClick={() => {
+                const ids = new Set<string>();
+                threads.forEach((t) => { if (t.contact_phone) ids.add(t.store_id); });
+                setSelectedStoreIds(ids);
+              }}>Select all</Button>
+              <Button size="sm" variant="outline" onClick={() => {
+                const cutoff = Date.now() - 30 * 24 * 3600 * 1000;
+                const ids = new Set<string>();
+                threads.forEach((t) => {
+                  if (t.contact_phone && new Date(t.last_message_at).getTime() < cutoff) ids.add(t.store_id);
+                });
+                setSelectedStoreIds(ids);
+              }}>Dormant 30d+</Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" disabled={selectedStoreIds.size === 0}>
+                    Bulk Actions ▼
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => {
+                    if (selectedStoreIds.size > 50 && !confirm(`Send to ${selectedStoreIds.size} stores?`)) return;
+                    setBulkSmsOpen(true);
+                  }}>📱 Send SMS Blast</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    if (selectedStoreIds.size > 50 && !confirm(`Queue ${selectedStoreIds.size} AI calls?`)) return;
+                    setBulkAiOpen(true);
+                  }}>🤖 Schedule AI Call Blast</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSelectedStoreIds(new Set())}>✖ Clear selection</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          )}
+          <Button size="sm" variant="outline" className="ml-auto" onClick={() => setJobsPanelOpen(true)}>
+            <Activity className="h-4 w-4 mr-1" />
+            Bulk Jobs
+            {bulkKpis.data && bulkKpis.data.activeJobs > 0 && (
+              <Badge className="ml-2 h-5 px-1.5">{bulkKpis.data.activeJobs}</Badge>
+            )}
+          </Button>
+        </div>
+
+        {/* Selection checkboxes overlay in thread list */}
+        {multiSelectMode && (
+          <div className="text-xs text-muted-foreground">
+            Tip: Click a store row to toggle selection. {bulkKpis.data?.jobsToday ?? 0} jobs today · {bulkKpis.data?.reachToday ?? 0} stores reached.
+          </div>
+        )}
+
 
         <Tabs value={tab} onValueChange={setTab} className="space-y-4">
           <TabsList>
@@ -794,6 +868,43 @@ export default function AmbassadorCommunications() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk outreach mounts */}
+      {ambassador?.id && (
+        <>
+          <BulkSmsModal
+            open={bulkSmsOpen}
+            onOpenChange={setBulkSmsOpen}
+            ambassadorId={ambassador.id}
+            ambassadorName={(ambassador as any).name || 'your rep'}
+            selectedStores={threads
+              .filter((t) => selectedStoreIds.has(t.store_id))
+              .map((t) => ({
+                id: t.store_id,
+                store_name: t.store_name,
+                phone: t.contact_phone,
+                owner_name: t.contact_name,
+              }))}
+            onSent={() => { setSelectedStoreIds(new Set()); setMultiSelectMode(false); }}
+          />
+          <BulkAiCallModal
+            open={bulkAiOpen}
+            onOpenChange={setBulkAiOpen}
+            ambassadorId={ambassador.id}
+            ambassadorName={(ambassador as any).name || 'your rep'}
+            selectedStores={threads
+              .filter((t) => selectedStoreIds.has(t.store_id))
+              .map((t) => ({
+                id: t.store_id,
+                store_name: t.store_name,
+                phone: t.contact_phone,
+                owner_name: t.contact_name,
+              }))}
+            onSent={() => { setSelectedStoreIds(new Set()); setMultiSelectMode(false); }}
+          />
+          <BulkJobsPanel open={jobsPanelOpen} onOpenChange={setJobsPanelOpen} ambassadorId={ambassador.id} />
+        </>
+      )}
     </AmbassadorLayout>
   );
 }
