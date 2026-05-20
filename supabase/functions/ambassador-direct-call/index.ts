@@ -1,0 +1,86 @@
+// Bridges an ambassador's personal phone to a store via Twilio.
+import { createClient } from 'npm:@supabase/supabase-js@2';
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+
+const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID')!;
+const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')!;
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+
+const isQuietHours = () => {
+  const h = new Date().getUTCHours() - 5; // ET approx
+  const local = (h + 24) % 24;
+  return local < 8 || local >= 21;
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+    const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
+    const { data: claims } = await userClient.auth.getClaims(authHeader.replace('Bearer ', ''));
+    if (!claims?.claims?.sub) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const userId = claims.claims.sub;
+
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+    const { store_id, notes } = await req.json();
+    if (!store_id) return new Response(JSON.stringify({ error: 'store_id required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+    const { data: amb } = await admin.from('ambassadors').select('id, personal_phone, twilio_number, name, is_active').eq('user_id', userId).maybeSingle();
+    if (!amb?.is_active) return new Response(JSON.stringify({ error: 'Ambassador not active' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (!amb.personal_phone) return new Response(JSON.stringify({ error: 'Add your personal phone in Settings before placing direct calls', code: 'NO_PERSONAL_PHONE' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+    const { data: store } = await admin.from('store_master').select('id, store_name, phone, assigned_ambassador_id, status').eq('id', store_id).maybeSingle();
+    if (!store) return new Response(JSON.stringify({ error: 'Store not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (store.assigned_ambassador_id !== amb.id) return new Response(JSON.stringify({ error: 'Store not assigned to you' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (!store.phone) return new Response(JSON.stringify({ error: 'Store missing phone number' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (store.status === 'blacklisted') return new Response(JSON.stringify({ error: 'Store is blacklisted' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (isQuietHours()) return new Response(JSON.stringify({ error: 'Quiet hours — calls allowed 8am–9pm ET' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+    // Daily limit
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count } = await admin.from('communication_logs').select('*', { count: 'exact', head: true }).eq('ambassador_id', amb.id).eq('call_type', 'direct').gte('created_at', since);
+    if ((count ?? 0) >= 30) return new Response(JSON.stringify({ error: 'Daily direct call limit reached (30)' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+    // Pre-create log row
+    const { data: log } = await admin.from('communication_logs').insert({
+      ambassador_id: amb.id, store_id, channel: 'voice', direction: 'outbound',
+      call_type: 'direct', status: 'dialing', started_at: new Date().toISOString(),
+      notes, sender_phone: amb.twilio_number, recipient_phone: store.phone,
+    }).select('id').single();
+
+    // TwiML to dial store when ambassador answers
+    const callerId = amb.twilio_number || Deno.env.get('TWILIO_PHONE_NUMBER')!;
+    const twiml = `<Response><Say voice="Polly.Joanna">Connecting you to ${store.store_name.replace(/[<>&"']/g, '')}</Say><Dial callerId="${callerId}" record="record-from-answer" timeout="25"><Number>${store.phone}</Number></Dial></Response>`;
+    const projectRef = SUPABASE_URL.split('//')[1].split('.')[0];
+    const statusCb = `https://${projectRef}.functions.supabase.co/twilio-call-status?log_id=${log!.id}`;
+
+    const form = new URLSearchParams({
+      To: amb.personal_phone, From: callerId, Twiml: twiml,
+      StatusCallback: statusCb,
+      Record: 'true',
+    });
+    ['initiated', 'ringing', 'answered', 'completed'].forEach((e) => form.append('StatusCallbackEvent', e));
+
+    const auth = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`);
+    const tw = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Calls.json`, {
+      method: 'POST', headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: form,
+    });
+    const twData = await tw.json();
+    if (!tw.ok) {
+      await admin.from('communication_logs').update({ status: 'failed', notes: `Twilio: ${twData.message || 'error'}` }).eq('id', log!.id);
+      return new Response(JSON.stringify({ error: twData.message || 'Twilio error', detail: twData }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    await admin.from('communication_logs').update({ twilio_call_sid: twData.sid }).eq('id', log!.id);
+    await admin.from('ambassador_activity_log').insert({ ambassador_id: amb.id, store_id, action_type: 'direct_call_initiated', metadata: { twilio_call_sid: twData.sid } });
+
+    return new Response(JSON.stringify({ success: true, log_id: log!.id, twilio_call_sid: twData.sid, message: 'Your phone will ring shortly. Answer to connect to the store.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  } catch (e) {
+    console.error('direct-call error', e);
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+});

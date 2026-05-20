@@ -5746,6 +5746,63 @@ export type Database = {
           },
         ]
       }
+      ambassador_call_scripts: {
+        Row: {
+          ambassador_id: string | null
+          created_at: string
+          id: string
+          is_global: boolean
+          key_questions: Json | null
+          language: string
+          last_used_at: string | null
+          max_duration_seconds: number
+          name: string
+          objective: string
+          opening_line: string | null
+          script_body: string
+          success_criteria: string | null
+          updated_at: string
+          usage_count: number
+          voice_persona_id: string
+        }
+        Insert: {
+          ambassador_id?: string | null
+          created_at?: string
+          id?: string
+          is_global?: boolean
+          key_questions?: Json | null
+          language?: string
+          last_used_at?: string | null
+          max_duration_seconds?: number
+          name: string
+          objective: string
+          opening_line?: string | null
+          script_body: string
+          success_criteria?: string | null
+          updated_at?: string
+          usage_count?: number
+          voice_persona_id?: string
+        }
+        Update: {
+          ambassador_id?: string | null
+          created_at?: string
+          id?: string
+          is_global?: boolean
+          key_questions?: Json | null
+          language?: string
+          last_used_at?: string | null
+          max_duration_seconds?: number
+          name?: string
+          objective?: string
+          opening_line?: string | null
+          script_body?: string
+          success_criteria?: string | null
+          updated_at?: string
+          usage_count?: number
+          voice_persona_id?: string
+        }
+        Relationships: []
+      }
       ambassador_commissions: {
         Row: {
           ambassador_id: string
@@ -6903,6 +6960,9 @@ export type Database = {
       }
       ambassadors: {
         Row: {
+          ai_call_daily_cost_cap: number
+          ai_call_daily_limit: number
+          ai_call_hourly_limit: number
           city: string | null
           created_at: string
           created_by: string | null
@@ -6913,6 +6973,7 @@ export type Database = {
           is_simulation: boolean | null
           name: string | null
           neighborhood: string | null
+          personal_phone: string | null
           phone_primary: string | null
           phone_secondary: string | null
           phone_whatsapp: string | null
@@ -6929,6 +6990,9 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          ai_call_daily_cost_cap?: number
+          ai_call_daily_limit?: number
+          ai_call_hourly_limit?: number
           city?: string | null
           created_at?: string
           created_by?: string | null
@@ -6939,6 +7003,7 @@ export type Database = {
           is_simulation?: boolean | null
           name?: string | null
           neighborhood?: string | null
+          personal_phone?: string | null
           phone_primary?: string | null
           phone_secondary?: string | null
           phone_whatsapp?: string | null
@@ -6955,6 +7020,9 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          ai_call_daily_cost_cap?: number
+          ai_call_daily_limit?: number
+          ai_call_hourly_limit?: number
           city?: string | null
           created_at?: string
           created_by?: string | null
@@ -6965,6 +7033,7 @@ export type Database = {
           is_simulation?: boolean | null
           name?: string | null
           neighborhood?: string | null
+          personal_phone?: string | null
           phone_primary?: string | null
           phone_secondary?: string | null
           phone_whatsapp?: string | null
@@ -30247,13 +30316,18 @@ export type Database = {
       }
       communication_logs: {
         Row: {
+          action_items: Json | null
           ai_assisted: boolean
           ai_confidence_score: number | null
           ambassador_id: string | null
+          answered_at: string | null
           bland_ai_handled: boolean
+          bland_call_id: string | null
           brand: string | null
           business_id: string | null
           call_duration: number | null
+          call_objective: string | null
+          call_type: string | null
           channel: string
           contact_id: string | null
           created_at: string
@@ -30261,36 +30335,53 @@ export type Database = {
           delivery_status: string | null
           direction: string
           driver_id: string | null
+          duration_seconds: number | null
+          ended_at: string | null
           follow_up_date: string | null
           follow_up_required: boolean | null
           full_message: string | null
           id: string
           influencer_id: string | null
           message_content: string | null
+          notes: string | null
           operator_id: string | null
+          order_intent: boolean | null
           outcome: string | null
           performed_by: string | null
           recipient_email: string | null
           recipient_phone: string | null
           recording_url: string | null
           scheduled_route_stop_id: string | null
+          script_template_id: string | null
           sender_email: string | null
           sender_phone: string | null
+          sentiment: string | null
+          started_at: string | null
+          status: string | null
           store_id: string | null
           summary: string
           thread_id: string | null
+          transcript: string | null
+          transcript_status: string | null
           transcription: string | null
+          twilio_call_sid: string | null
           twilio_sid: string | null
+          voice_persona_used: string | null
           wholesaler_id: string | null
         }
         Insert: {
+          action_items?: Json | null
           ai_assisted?: boolean
           ai_confidence_score?: number | null
           ambassador_id?: string | null
+          answered_at?: string | null
           bland_ai_handled?: boolean
+          bland_call_id?: string | null
           brand?: string | null
           business_id?: string | null
           call_duration?: number | null
+          call_objective?: string | null
+          call_type?: string | null
           channel: string
           contact_id?: string | null
           created_at?: string
@@ -30298,36 +30389,53 @@ export type Database = {
           delivery_status?: string | null
           direction: string
           driver_id?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
           follow_up_date?: string | null
           follow_up_required?: boolean | null
           full_message?: string | null
           id?: string
           influencer_id?: string | null
           message_content?: string | null
+          notes?: string | null
           operator_id?: string | null
+          order_intent?: boolean | null
           outcome?: string | null
           performed_by?: string | null
           recipient_email?: string | null
           recipient_phone?: string | null
           recording_url?: string | null
           scheduled_route_stop_id?: string | null
+          script_template_id?: string | null
           sender_email?: string | null
           sender_phone?: string | null
+          sentiment?: string | null
+          started_at?: string | null
+          status?: string | null
           store_id?: string | null
           summary: string
           thread_id?: string | null
+          transcript?: string | null
+          transcript_status?: string | null
           transcription?: string | null
+          twilio_call_sid?: string | null
           twilio_sid?: string | null
+          voice_persona_used?: string | null
           wholesaler_id?: string | null
         }
         Update: {
+          action_items?: Json | null
           ai_assisted?: boolean
           ai_confidence_score?: number | null
           ambassador_id?: string | null
+          answered_at?: string | null
           bland_ai_handled?: boolean
+          bland_call_id?: string | null
           brand?: string | null
           business_id?: string | null
           call_duration?: number | null
+          call_objective?: string | null
+          call_type?: string | null
           channel?: string
           contact_id?: string | null
           created_at?: string
@@ -30335,26 +30443,38 @@ export type Database = {
           delivery_status?: string | null
           direction?: string
           driver_id?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
           follow_up_date?: string | null
           follow_up_required?: boolean | null
           full_message?: string | null
           id?: string
           influencer_id?: string | null
           message_content?: string | null
+          notes?: string | null
           operator_id?: string | null
+          order_intent?: boolean | null
           outcome?: string | null
           performed_by?: string | null
           recipient_email?: string | null
           recipient_phone?: string | null
           recording_url?: string | null
           scheduled_route_stop_id?: string | null
+          script_template_id?: string | null
           sender_email?: string | null
           sender_phone?: string | null
+          sentiment?: string | null
+          started_at?: string | null
+          status?: string | null
           store_id?: string | null
           summary?: string
           thread_id?: string | null
+          transcript?: string | null
+          transcript_status?: string | null
           transcription?: string | null
+          twilio_call_sid?: string | null
           twilio_sid?: string | null
+          voice_persona_used?: string | null
           wholesaler_id?: string | null
         }
         Relationships: [

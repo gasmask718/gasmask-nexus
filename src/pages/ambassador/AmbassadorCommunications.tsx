@@ -59,6 +59,13 @@ export default function AmbassadorCommunications() {
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [callTarget, setCallTarget] = useState<MessageThread | null>(null);
+  const [callMode, setCallMode] = useState<'choose' | 'ai-config'>('choose');
+  const [selectedScriptId, setSelectedScriptId] = useState<string>('');
+  const [aiScripts, setAiScripts] = useState<any[]>([]);
+  const [personalPhoneOpen, setPersonalPhoneOpen] = useState(false);
+  const [personalPhoneInput, setPersonalPhoneInput] = useState('');
+  const [isPlacing, setIsPlacing] = useState(false);
+
 
   // Persist sidebar open state per ambassador in localStorage
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => {
@@ -147,47 +154,88 @@ export default function AmbassadorCommunications() {
     setTemplatePickerOpen(false);
   };
 
-  const openCallDialog = (thread: MessageThread) => {
+  const openCallDialog = async (thread: MessageThread) => {
     setCallTarget(thread);
+    setCallMode('choose');
     setCallDialogOpen(true);
+    // Lazy-load scripts on first open
+    if (aiScripts.length === 0) {
+      const { data } = await (await import('@/integrations/supabase/client')).supabase
+        .from('ambassador_call_scripts' as any)
+        .select('id,name,objective,language,opening_line,voice_persona_id,max_duration_seconds,is_global,usage_count')
+        .order('is_global', { ascending: false })
+        .order('usage_count', { ascending: false });
+      setAiScripts((data as any[]) || []);
+    }
   };
 
   const startDirectCall = async () => {
-    if (!callTarget) return;
+    if (!callTarget || isPlacing) return;
+    setIsPlacing(true);
     try {
-      await logCall.mutateAsync({
-        storeId: callTarget.store_id,
-        phone: callTarget.contact_phone || '',
-        type: 'outbound',
-        outcome: 'attempted',
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.functions.invoke('ambassador-direct-call', {
+        body: { store_id: callTarget.store_id },
       });
-      if (callTarget.contact_phone) {
-        initiateCall({
-          destinationPhone: callTarget.contact_phone,
-          entityType: 'store',
-          entityId: callTarget.store_id,
-          entityName: callTarget.store_name,
-        });
+      if (error || data?.error) {
+        const code = (data as any)?.code || '';
+        if (code === 'NO_PERSONAL_PHONE') {
+          setCallDialogOpen(false);
+          setPersonalPhoneOpen(true);
+          return;
+        }
+        throw new Error(data?.error || error?.message || 'Failed to place call');
       }
-    } finally {
+      toast.success('📞 Your phone is ringing — answer to connect');
       setCallDialogOpen(false);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setIsPlacing(false);
     }
   };
 
   const startAiCall = async () => {
-    if (!callTarget) return;
-    await logCall.mutateAsync({
-      storeId: callTarget.store_id,
-      phone: callTarget.contact_phone || '',
-      type: 'outbound',
-      outcome: 'ai_scheduled',
-      aiAssisted: true,
-    });
-    toast.success('AI call queued');
-    setCallDialogOpen(false);
+    if (!callTarget || !selectedScriptId || isPlacing) return;
+    setIsPlacing(true);
+    try {
+      const script = aiScripts.find((s) => s.id === selectedScriptId);
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.functions.invoke('ambassador-ai-call', {
+        body: { store_id: callTarget.store_id, script_template_id: selectedScriptId, objective: script?.objective },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message || 'AI call failed');
+      toast.success('🤖 AI call queued — you\'ll be notified when it completes');
+      setCallDialogOpen(false);
+      setCallMode('choose');
+      setSelectedScriptId('');
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setIsPlacing(false);
+    }
   };
 
-  const unreadCount = 0; // realtime hook may surface this later
+  const savePersonalPhone = async () => {
+    if (!/^\+\d{10,15}$/.test(personalPhoneInput)) {
+      toast.error('Use E.164 format, e.g. +12125551234');
+      return;
+    }
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { error } = await supabase.from('ambassadors' as any)
+        .update({ personal_phone: personalPhoneInput } as any)
+        .eq('id', (ambassador as any)?.id);
+      if (error) throw error;
+      toast.success('Personal phone saved');
+      setPersonalPhoneOpen(false);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const unreadCount = 0;
+
 
   return (
     <AmbassadorLayout
@@ -654,22 +702,96 @@ export default function AmbassadorCommunications() {
       />
 
       {/* Call type dialog */}
-      <Dialog open={callDialogOpen} onOpenChange={setCallDialogOpen}>
-        <DialogContent>
+      <Dialog open={callDialogOpen} onOpenChange={(v) => { setCallDialogOpen(v); if (!v) { setCallMode('choose'); setSelectedScriptId(''); } }}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Call {callTarget?.store_name}</DialogTitle>
-            <DialogDescription>{callTarget?.contact_name} · {callTarget?.contact_phone}</DialogDescription>
+            <DialogDescription>
+              {callTarget?.contact_name} · {callTarget?.contact_phone}
+              {(ambassador as any)?.twilio_number && (
+                <div className="mt-1 text-xs">Caller ID: {(ambassador as any).twilio_number}</div>
+              )}
+            </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-3 py-2">
-            <Button onClick={startDirectCall} className="h-20 flex-col gap-2">
-              <Phone className="h-5 w-5" />
-              Direct Call
-            </Button>
-            <Button onClick={startAiCall} variant="secondary" className="h-20 flex-col gap-2">
-              <Sparkles className="h-5 w-5" />
-              AI-Assisted
-            </Button>
-          </div>
+
+          {callMode === 'choose' && (
+            <div className="grid grid-cols-2 gap-3 py-2">
+              <Button onClick={startDirectCall} disabled={isPlacing} className="h-24 flex-col gap-2">
+                <Phone className="h-5 w-5" />
+                <div className="text-sm font-semibold">Direct Call</div>
+                <div className="text-[10px] opacity-80">Bridge through your phone</div>
+              </Button>
+              <Button onClick={() => setCallMode('ai-config')} variant="secondary" className="h-24 flex-col gap-2">
+                <Sparkles className="h-5 w-5" />
+                <div className="text-sm font-semibold">AI-Assisted</div>
+                <div className="text-[10px] opacity-80">Sara handles the call</div>
+              </Button>
+            </div>
+          )}
+
+          {callMode === 'ai-config' && (() => {
+            const storeLang = (storeContext as any)?.store?.language_preference || 'en';
+            const sorted = [...aiScripts].sort((a, b) => ((a.language === storeLang ? -1 : 1) - (b.language === storeLang ? -1 : 1)));
+            const chosen = aiScripts.find((s) => s.id === selectedScriptId);
+            return (
+              <div className="space-y-3 py-2">
+                <div className="text-xs text-muted-foreground">
+                  Store prefers <Badge variant="outline" className="ml-1">{storeLang.toUpperCase()}</Badge>
+                  {storeLang === 'ar' && ' — Arabic voice falls back to English until provisioned.'}
+                </div>
+                <Select value={selectedScriptId} onValueChange={setSelectedScriptId}>
+                  <SelectTrigger><SelectValue placeholder="Pick a script…" /></SelectTrigger>
+                  <SelectContent>
+                    {sorted.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.language === 'ar' ? '🇸🇦' : '🇺🇸'} {s.name} · {s.objective.replace('_', ' ')}
+                        {s.usage_count > 0 && ` · ${s.usage_count} uses`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {chosen && (
+                  <Card className="p-3 bg-muted/30">
+                    <div className="text-[11px] uppercase text-muted-foreground mb-1">Opening line preview</div>
+                    <div className="text-sm" dir={chosen.language === 'ar' ? 'rtl' : 'ltr'}>
+                      {(chosen.opening_line || '').replace(/\{\{owner_name\}\}/g, callTarget?.contact_name || 'there').replace(/\{\{store_name\}\}/g, callTarget?.store_name || '')}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-2">
+                      Max duration: {Math.round((chosen.max_duration_seconds || 240) / 60)} min
+                    </div>
+                  </Card>
+                )}
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setCallMode('choose')}>Back</Button>
+                  <Button onClick={startAiCall} disabled={!selectedScriptId || isPlacing}>
+                    <Sparkles className="h-4 w-4 mr-1" />
+                    {isPlacing ? 'Initiating…' : 'Initiate AI Call'}
+                  </Button>
+                </DialogFooter>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Personal phone setup modal */}
+      <Dialog open={personalPhoneOpen} onOpenChange={setPersonalPhoneOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set your personal phone</DialogTitle>
+            <DialogDescription>
+              Direct calls ring this number first, then bridge to the store. E.164 format only (e.g. +12125551234).
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            placeholder="+12125551234"
+            value={personalPhoneInput}
+            onChange={(e) => setPersonalPhoneInput(e.target.value)}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPersonalPhoneOpen(false)}>Cancel</Button>
+            <Button onClick={savePersonalPhone}>Save</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </AmbassadorLayout>
