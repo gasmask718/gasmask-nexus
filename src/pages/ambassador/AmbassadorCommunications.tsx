@@ -443,14 +443,23 @@ export default function AmbassadorCommunications() {
                         {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16" />)}
                       </div>
                     ) : filtered.length === 0 ? (
-                      <div className="p-8 text-center text-muted-foreground">
-                        <Users className="h-10 w-10 mx-auto mb-2 opacity-40" />
-                        <p className="text-sm">
-                          {threads.length === 0
-                            ? 'No stores assigned yet'
-                            : 'No stores match this filter'}
-                        </p>
-                      </div>
+                      needsAmbassadorPicker && threads.length === 0 ? (
+                        <AdminAmbassadorPicker />
+                      ) : (
+                        <div className="p-8 text-center text-muted-foreground">
+                          <Users className="h-10 w-10 mx-auto mb-2 opacity-40" />
+                          <p className="text-sm">
+                            {threads.length === 0
+                              ? 'No stores assigned yet'
+                              : 'No stores match this filter'}
+                          </p>
+                          {threads.length === 0 && !isAdmin && (
+                            <p className="text-xs mt-2 opacity-70">
+                              Contact your manager to get assigned to a route.
+                            </p>
+                          )}
+                        </div>
+                      )
                     ) : (
                       filtered.map((t) => {
                         const ts = t.last_message_at && new Date(t.last_message_at).getTime() > 0
