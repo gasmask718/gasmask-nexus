@@ -630,34 +630,14 @@ serve(async (req: Request) => {
       recipient = toNumber;
 
       const total = fmtMoney(invoice.total);
-      const longLink = directStripePayUrl;
 
-      // Wrap the Stripe checkout URL in a branded short link so the SMS shows
-      // a clean "Brandaro Digital" URL that redirects to Stripe on click.
-      // The /p/:code redirect is handled by ShortLinkRedirect.tsx via the
-      // resolve_short_link RPC, which also tracks click attribution.
-      let smsLink: string | null = null;
-      if (longLink) {
-        try {
-          const { data: shortCode, error: slErr } = await supabase.rpc("create_short_link", {
-            p_target_url: longLink,
-            p_kind: "invoice_payment_stripe_direct",
-            p_invoice_id: invoice.id,
-            p_lead_id: invoice.lead_id || null,
-            p_session_id: null,
-            p_context: { source: "va-send-invoice", channel: "sms", va_id: userId, direct_stripe: true, brand: "Brandaro Digital" },
-            p_expires_at: null,
-          });
-          if (slErr) throw slErr;
-          if (shortCode) {
-            const origin = Deno.env.get("PUBLIC_APP_ORIGIN") || "https://gasmask-os-nexus.lovable.app";
-            smsLink = `${origin}/p/${shortCode}`;
-          }
-        } catch (e) {
-          console.warn("create_short_link failed, falling back to direct Stripe URL:", (e as Error).message);
-          smsLink = longLink;
-        }
-      }
+      // Send the SMS recipient straight to Stripe Checkout — no /p short-link
+      // and no internal /pay interstitial. The URL persisted on va_invoices
+      // (payment_link / deposit_payment_link / final_payment_link) is the
+      // real cs_live_… Stripe Checkout Session URL guaranteed by
+      // ensureStripePaymentLinks above, so this is database-backed and
+      // opens a payable Stripe page on click.
+      const smsLink = directStripePayUrl;
 
       const smsBody = smsLink
         ? `Brandaro Digital Pay — $${total} invoice ready. Tap to pay securely: ${smsLink}`
