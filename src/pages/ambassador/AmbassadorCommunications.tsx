@@ -304,7 +304,7 @@ export default function AmbassadorCommunications() {
               </Card>
 
               {/* Thread view */}
-              <Card className="lg:col-span-2 flex flex-col">
+              <Card className="flex flex-col min-w-0 relative">
                 {selected ? (
                   <>
                     <CardHeader className="border-b">
