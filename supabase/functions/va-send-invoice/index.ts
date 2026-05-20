@@ -1,5 +1,125 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+
+/**
+ * Ensures the invoice has live Stripe Checkout URL(s) persisted before sending.
+ * - payment_type 'full'  → guarantees `payment_link`
+ * - payment_type 'split' → guarantees `deposit_payment_link` + `final_payment_link`
+ * If links are already present, this is a no-op. If missing, sessions are created
+ * via Stripe and written back to va_invoices so every Email/SMS link is a real
+ * Stripe pay URL backed by the database.
+ */
+async function ensureStripePaymentLinks(
+  supabase: any,
+  invoice: any,
+  origin: string,
+): Promise<{ invoice: any; error?: string }> {
+  const paymentType: "full" | "split" =
+    invoice.payment_type === "split" ? "split" : "full";
+
+  const needsFull = paymentType === "full" && !invoice.payment_link;
+  const needsSplit =
+    paymentType === "split" &&
+    (!invoice.deposit_payment_link || !invoice.final_payment_link);
+
+  if (!needsFull && !needsSplit) return { invoice };
+
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!stripeKey) {
+    return { invoice, error: "STRIPE_SECRET_KEY not configured — cannot create payment link" };
+  }
+  const total = Number(invoice.total || 0);
+  if (!(total > 0)) {
+    return { invoice, error: "Invoice total must be greater than 0 to generate a Stripe payment link" };
+  }
+
+  const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const depositPercent = Math.min(Math.max(Number(invoice.deposit_percent || 50), 1), 99);
+  const depositAmount = round2((total * depositPercent) / 100);
+  const finalAmount = round2(total - depositAmount);
+
+  const customerEmail = invoice.customer_email || undefined;
+  const productLabel = invoice.service_type
+    ? `${invoice.service_type} — ${invoice.customer_name}`
+    : `Invoice ${invoice.invoice_number || ""} — ${invoice.customer_name}`;
+
+  const buildSession = async (
+    phase: "full" | "deposit" | "final",
+    amount: number,
+  ) => {
+    const label =
+      phase === "deposit"
+        ? `${productLabel} (Deposit)`
+        : phase === "final"
+          ? `${productLabel} (Final Payment)`
+          : productLabel;
+
+    return await stripe.checkout.sessions.create({
+      mode: "payment",
+      customer_email: customerEmail,
+      line_items: [{
+        price_data: {
+          currency: "usd",
+          product_data: { name: label },
+          unit_amount: Math.round(amount * 100),
+        },
+        quantity: 1,
+      }],
+      success_url: `${origin}/pay/${invoice.id}?paid=${phase}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/pay/${invoice.id}?cancelled=${phase}`,
+      metadata: {
+        invoice_id: invoice.id,
+        va_id: invoice.va_id ?? "",
+        phase,
+      },
+    });
+  };
+
+  try {
+    const update: Record<string, unknown> = {
+      payment_type: paymentType,
+      deposit_percent: depositPercent,
+    };
+
+    if (paymentType === "full") {
+      const session = await buildSession("full", total);
+      update.full_session_id = session.id;
+      update.payment_link = session.url;
+      update.deposit_amount = null;
+      update.final_amount = null;
+      invoice.payment_link = session.url;
+    } else {
+      const [dep, fin] = await Promise.all([
+        buildSession("deposit", depositAmount),
+        buildSession("final", finalAmount),
+      ]);
+      update.deposit_session_id = dep.id;
+      update.final_session_id = fin.id;
+      update.deposit_payment_link = dep.url;
+      update.final_payment_link = fin.url;
+      update.payment_link = dep.url;
+      update.deposit_amount = depositAmount;
+      update.final_amount = finalAmount;
+      invoice.deposit_payment_link = dep.url;
+      invoice.final_payment_link = fin.url;
+      invoice.payment_link = dep.url;
+      invoice.deposit_amount = depositAmount;
+      invoice.final_amount = finalAmount;
+    }
+
+    const { error: updErr } = await supabase
+      .from("va_invoices")
+      .update(update)
+      .eq("id", invoice.id);
+    if (updErr) throw updErr;
+
+    return { invoice };
+  } catch (e: any) {
+    return { invoice, error: `Stripe checkout session failed: ${e?.message || String(e)}` };
+  }
+}
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -256,6 +376,23 @@ serve(async (req: Request) => {
         .eq("id", invoice.lead_id)
         .maybeSingle();
       lead = data;
+    }
+
+    // GUARANTEE every outbound message carries a real Stripe Checkout URL.
+    // Creates sessions on-demand and persists them to va_invoices so the DB
+    // is the single source of truth for payment links.
+    const origin =
+      Deno.env.get("PUBLIC_APP_ORIGIN") ||
+      req.headers.get("origin") ||
+      "https://gasmask-os-nexus.lovable.app";
+    const ensured = await ensureStripePaymentLinks(supabase, invoice, origin.replace(/\/$/, ""));
+    if (ensured.error) {
+      await supabase.from("va_invoices")
+        .update({ last_send_error: ensured.error })
+        .eq("id", invoice.id);
+      return new Response(JSON.stringify({ error: ensured.error }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     let recipient = body.recipient || "";
