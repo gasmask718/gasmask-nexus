@@ -41,6 +41,11 @@ import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { toast } from 'sonner';
 import { useCall } from '@/components/communication/CallProvider';
 import { cn } from '@/lib/utils';
+import { useViewAs } from '@/contexts/ViewAsContext';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Eye } from 'lucide-react';
 
 const TEMPLATE_CATEGORIES = ['reorder', 'new_product', 'route_eta', 'payment', 'visit', 'promo', 'custom'];
 
