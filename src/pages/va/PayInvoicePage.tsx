@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,10 +8,32 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, FileText, CheckCircle, CreditCard, SplitSquareHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 
+async function startCheckout(invoiceId: string, phase: 'full' | 'deposit' | 'final') {
+  const { data, error } = await supabase.functions.invoke('va-create-pay-session', {
+    body: { invoice_id: invoiceId, phase },
+  });
+  if (error) throw new Error(error.message || 'Could not start checkout');
+  const url = (data as any)?.url;
+  if (!url) throw new Error((data as any)?.error || 'No payment URL returned');
+  window.location.href = url;
+}
+
 export default function PayInvoicePage() {
   const { invoiceId } = useParams();
   const [params, setParams] = useSearchParams();
   const qc = useQueryClient();
+  const [busy, setBusy] = useState<null | 'full' | 'deposit' | 'final'>(null);
+
+  const launch = async (phase: 'full' | 'deposit' | 'final') => {
+    if (!invoiceId) return;
+    try {
+      setBusy(phase);
+      await startCheckout(invoiceId, phase);
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not open secure checkout');
+      setBusy(null);
+    }
+  };
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['pay-invoice', invoiceId],
@@ -142,11 +164,13 @@ export default function PayInvoicePage() {
               <Button
                 className="w-full"
                 size="lg"
-                disabled={depositPaid || !invoice.deposit_payment_link}
-                onClick={() => invoice.deposit_payment_link && (window.location.href = invoice.deposit_payment_link)}
+                disabled={depositPaid || busy !== null}
+                onClick={() => launch('deposit')}
               >
                 {depositPaid ? (
                   <><CheckCircle className="h-4 w-4 mr-2" /> Deposit Paid</>
+                ) : busy === 'deposit' ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Opening secure checkout…</>
                 ) : (
                   <><SplitSquareHorizontal className="h-4 w-4 mr-2" /> Brandaro Digital Pay — 50% Deposit (${Number(invoice.deposit_amount || 0).toFixed(2)})</>
                 )}
@@ -155,11 +179,13 @@ export default function PayInvoicePage() {
                 className="w-full"
                 size="lg"
                 variant={depositPaid ? 'default' : 'outline'}
-                disabled={finalPaid || !invoice.final_payment_link}
-                onClick={() => invoice.final_payment_link && (window.location.href = invoice.final_payment_link)}
+                disabled={finalPaid || busy !== null}
+                onClick={() => launch('final')}
               >
                 {finalPaid ? (
                   <><CheckCircle className="h-4 w-4 mr-2" /> Final Paid</>
+                ) : busy === 'final' ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Opening secure checkout…</>
                 ) : (
                   <><CreditCard className="h-4 w-4 mr-2" /> Brandaro Digital Pay — Final 50% (${Number(invoice.final_amount || 0).toFixed(2)})</>
                 )}
@@ -170,13 +196,18 @@ export default function PayInvoicePage() {
             </div>
           )}
 
-          {!fullyPaid && !isSplit && invoice.payment_link && (
+          {!fullyPaid && !isSplit && (
             <Button
               className="w-full"
               size="lg"
-              onClick={() => (window.location.href = invoice.payment_link)}
+              disabled={busy !== null}
+              onClick={() => launch('full')}
             >
-              <CreditCard className="h-4 w-4 mr-2" /> Brandaro Digital Pay — ${total.toFixed(2)}
+              {busy === 'full' ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Opening secure checkout…</>
+              ) : (
+                <><CreditCard className="h-4 w-4 mr-2" /> Brandaro Digital Pay — ${total.toFixed(2)}</>
+              )}
             </Button>
           )}
 

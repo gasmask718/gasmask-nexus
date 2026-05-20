@@ -381,19 +381,20 @@ function renderEmailHtml(invoice: any, lead: any): string {
       ${escapeHtml(label)}
     </a>`;
 
-  const ctaBlock =
-    invoice.payment_type === "split" && (invoice.deposit_payment_link || invoice.final_payment_link)
-      ? `<div style="text-align:center;padding:8px 0 4px">
-          ${invoice.deposit_payment_link ? ctaButton(invoice.deposit_payment_link, `Brandaro Digital Pay — 50% Deposit ($${fmtMoney(invoice.deposit_amount)})`, true) : ""}
-          ${invoice.final_payment_link ? ctaButton(invoice.final_payment_link, `Brandaro Digital Pay — Final 50% ($${fmtMoney(invoice.final_amount)})`, false) : ""}
-          <p style="margin:12px 0 0;color:#64748b;font-size:12px;line-height:1.5">50% deposit starts the work. Final 50% due on completion.</p>
-        </div>`
-      : invoice.payment_link
-      ? `<div style="text-align:center;padding:8px 0 4px">
-          ${ctaButton(invoice.payment_link, `Brandaro Digital Pay — $${fmtMoney(invoice.total)}`, true)}
-          <p style="margin:12px 0 0;color:#64748b;font-size:12px">Powered by Brandaro Digital Pay · Secure checkout</p>
-        </div>`
-      : "";
+  // ALWAYS link to our own /pay/:id page. That page mints a FRESH Stripe
+  // Checkout session at the moment of click, so links never show
+  // "checkout expired" / "you're all done" — Stripe sessions auto-expire
+  // after 24h, but our page-relative URL never does.
+  const appOrigin = (
+    Deno.env.get("PUBLIC_APP_ORIGIN") ||
+    "https://gasmask-os-nexus.lovable.app"
+  ).replace(/\/$/, "");
+  const payHref = `${appOrigin}/pay/${invoice.id}`;
+
+  const ctaBlock = `<div style="text-align:center;padding:8px 0 4px">
+      ${ctaButton(payHref, `Brandaro Digital Pay — $${fmtMoney(invoice.total)}`, true)}
+      <p style="margin:12px 0 0;color:#64748b;font-size:12px">Powered by Brandaro Digital Pay · Secure checkout · Link never expires</p>
+    </div>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -582,6 +583,9 @@ serve(async (req: Request) => {
 
     let sendResult: { ok: boolean; error?: string } = { ok: false };
 
+    // Customer-facing pay page (never expires; mints fresh Stripe session on click).
+    const payPageUrl = `${origin.replace(/\/$/, "")}/pay/${invoice.id}`;
+
     if (channel === "email") {
       const html = renderEmailHtml(invoice, lead);
       const subject = `Invoice ${invoice.invoice_number || ""} from Brandaro - $${Number(invoice.total || 0).toFixed(2)}`;
@@ -589,7 +593,7 @@ serve(async (req: Request) => {
         `Brandaro invoice ${invoice.invoice_number || ""}`.trim(),
         `Amount due: $${fmtMoney(invoice.total)}`,
         invoice.due_date ? `Due: ${new Date(invoice.due_date).toLocaleDateString("en-US")}` : "",
-        invoice.payment_link ? `Brandaro Digital Pay: ${invoice.payment_link}` : "",
+        `Brandaro Digital Pay: ${payPageUrl}`,
       ].filter(Boolean);
       sendResult = await sendInvoiceEmail({
         to: recipient,
@@ -625,10 +629,9 @@ serve(async (req: Request) => {
       recipient = toNumber;
 
       const total = fmtMoney(invoice.total);
-      const longLink =
-        invoice.payment_type === 'split'
-          ? (invoice.deposit_payment_link || invoice.final_payment_link || invoice.payment_link)
-          : invoice.payment_link;
+      // Always point SMS at our own /pay/:id page — it mints a fresh Stripe
+      // Checkout session at click time so the link never expires.
+      const longLink = payPageUrl;
 
       // Wrap the Stripe checkout URL in a branded short link so the SMS shows
       // a clean "Brandaro Digital" URL that redirects to Stripe on click.
