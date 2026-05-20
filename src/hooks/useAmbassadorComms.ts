@@ -131,14 +131,14 @@ export function useAmbassadorThreads() {
     queryFn: async (): Promise<MessageThread[]> => {
       if (!ambassadorId) return [];
 
-      // 1a. Stores via ambassador_assignments (primary join)
+      // 1a. Stores via ambassador_assignments (primary join). Excludes soft-deleted.
       const { data: assignments, error: aErr } = await supabase
         .from('ambassador_assignments')
         .select(`
           store_id,
           store:store_master!store_id(
             id, store_name, owner_name, phone, borough_id,
-            language_preference, last_visit_at, owed_amount
+            language_preference, last_visit_at, owed_amount, deleted_at
           )
         `)
         .eq('ambassador_id', ambassadorId)
@@ -149,17 +149,40 @@ export function useAmbassadorThreads() {
       const storesMap = new Map<string, any>();
       for (const a of assignments || []) {
         const s = a.store as any;
-        if (s?.id) storesMap.set(s.id, s);
+        if (s?.id && !s.deleted_at && s.store_name) storesMap.set(s.id, s);
       }
 
       // 1b. Fallback — direct assignment on store_master.assigned_ambassador_id
       const { data: directStores, error: dErr } = await supabase
         .from('store_master')
         .select('id, store_name, owner_name, phone, borough_id, language_preference, last_visit_at, owed_amount')
-        .eq('assigned_ambassador_id', ambassadorId);
+        .eq('assigned_ambassador_id', ambassadorId)
+        .is('deleted_at', null)
+        .not('store_name', 'is', null);
       if (dErr) throw dErr;
       for (const s of directStores || []) {
         if (s?.id && !storesMap.has(s.id)) storesMap.set(s.id, s);
+      }
+
+      // Defensive contamination guard: filter rows whose store_name matches an ambassador
+      if (storesMap.size) {
+        const candidateNames = Array.from(storesMap.values()).map((s) => s.store_name).filter(Boolean);
+        if (candidateNames.length) {
+          const { data: ambs } = await supabase
+            .from('ambassadors')
+            .select('name')
+            .in('name', candidateNames);
+          const ambNames = new Set((ambs || []).map((a: any) => (a.name || '').trim().toLowerCase()));
+          for (const [id, s] of storesMap) {
+            if (ambNames.has((s.store_name || '').trim().toLowerCase())) {
+              if (import.meta.env.DEV) {
+                // eslint-disable-next-line no-console
+                console.warn('[useAmbassadorThreads] Filtered contaminated store (matches ambassador name):', s);
+              }
+              storesMap.delete(id);
+            }
+          }
+        }
       }
 
       const stores = Array.from(storesMap.values());
