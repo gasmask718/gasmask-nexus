@@ -378,6 +378,23 @@ serve(async (req: Request) => {
       lead = data;
     }
 
+    // GUARANTEE every outbound message carries a real Stripe Checkout URL.
+    // Creates sessions on-demand and persists them to va_invoices so the DB
+    // is the single source of truth for payment links.
+    const origin =
+      Deno.env.get("PUBLIC_APP_ORIGIN") ||
+      req.headers.get("origin") ||
+      "https://gasmask-os-nexus.lovable.app";
+    const ensured = await ensureStripePaymentLinks(supabase, invoice, origin.replace(/\/$/, ""));
+    if (ensured.error) {
+      await supabase.from("va_invoices")
+        .update({ last_send_error: ensured.error })
+        .eq("id", invoice.id);
+      return new Response(JSON.stringify({ error: ensured.error }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let recipient = body.recipient || "";
     if (!recipient) {
       if (channel === "email") recipient = invoice.customer_email || lead?.email || "";
