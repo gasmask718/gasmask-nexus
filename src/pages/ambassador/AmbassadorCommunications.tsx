@@ -93,6 +93,7 @@ export default function AmbassadorCommunications() {
   const { data: callLogs = [], isLoading: callsLoading } = useCallHistory();
   const logCall = useLogCall();
   const kpis = useAmbassadorKPIs();
+  const bulkKpis = useBulkJobKpis(ambassador?.id || null);
   const { templates, upsert: upsertTemplate, remove: removeTemplate, recordUsage } = useTemplates();
   const messagesQ = useStoreMessages(selectedId);
   const { data: storeContext } = useStoreContext(selectedId);
