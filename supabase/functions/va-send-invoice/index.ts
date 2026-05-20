@@ -386,7 +386,7 @@ function renderEmailHtml(invoice: any, lead: any): string {
   // "checkout expired" / "you're all done" — Stripe sessions auto-expire
   // after 24h, but our page-relative URL never does.
   const appOrigin = (
-    (globalThis as any).__APP_ORIGIN__ ||
+    Deno.env.get("PUBLIC_APP_ORIGIN") ||
     "https://gasmask-os-nexus.lovable.app"
   ).replace(/\/$/, "");
   const payHref = `${appOrigin}/pay/${invoice.id}`;
