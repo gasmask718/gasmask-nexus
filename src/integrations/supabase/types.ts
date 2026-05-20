@@ -5425,6 +5425,62 @@ export type Database = {
         }
         Relationships: []
       }
+      ambassador_activity_log: {
+        Row: {
+          action_type: string
+          ambassador_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          store_id: string | null
+        }
+        Insert: {
+          action_type: string
+          ambassador_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          store_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          ambassador_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_activity_log_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_activity_log_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_activity_log_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_activity_log_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+        ]
+      }
       ambassador_applications: {
         Row: {
           city: string | null
@@ -6073,6 +6129,83 @@ export type Database = {
           },
           {
             foreignKeyName: "ambassador_links_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+        ]
+      }
+      ambassador_message_templates: {
+        Row: {
+          ambassador_id: string | null
+          body_ar: string
+          body_en: string
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_global: boolean
+          last_used_at: string | null
+          name: string
+          updated_at: string
+          usage_count: number
+          variables: Json
+        }
+        Insert: {
+          ambassador_id?: string | null
+          body_ar?: string
+          body_en?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_global?: boolean
+          last_used_at?: string | null
+          name: string
+          updated_at?: string
+          usage_count?: number
+          variables?: Json
+        }
+        Update: {
+          ambassador_id?: string | null
+          body_ar?: string
+          body_en?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_global?: boolean
+          last_used_at?: string | null
+          name?: string
+          updated_at?: string
+          usage_count?: number
+          variables?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_message_templates_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_message_templates_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_message_templates_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_message_templates_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
@@ -6791,6 +6924,7 @@ export type Database = {
           tier: string
           total_earnings: number
           tracking_code: string
+          twilio_number: string | null
           updated_at: string
           user_id: string | null
         }
@@ -6816,6 +6950,7 @@ export type Database = {
           tier?: string
           total_earnings?: number
           tracking_code: string
+          twilio_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -6841,6 +6976,7 @@ export type Database = {
           tier?: string
           total_earnings?: number
           tracking_code?: string
+          twilio_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -30111,7 +30247,9 @@ export type Database = {
       }
       communication_logs: {
         Row: {
+          ai_assisted: boolean
           ai_confidence_score: number | null
+          ambassador_id: string | null
           bland_ai_handled: boolean
           brand: string | null
           business_id: string | null
@@ -30146,7 +30284,9 @@ export type Database = {
           wholesaler_id: string | null
         }
         Insert: {
+          ai_assisted?: boolean
           ai_confidence_score?: number | null
+          ambassador_id?: string | null
           bland_ai_handled?: boolean
           brand?: string | null
           business_id?: string | null
@@ -30181,7 +30321,9 @@ export type Database = {
           wholesaler_id?: string | null
         }
         Update: {
+          ai_assisted?: boolean
           ai_confidence_score?: number | null
+          ambassador_id?: string | null
           bland_ai_handled?: boolean
           brand?: string | null
           business_id?: string | null
@@ -30216,6 +30358,34 @@ export type Database = {
           wholesaler_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "communication_logs_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "communication_logs_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "communication_logs_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_logs_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
           {
             foreignKeyName: "communication_logs_business_id_fkey"
             columns: ["business_id"]
@@ -30306,8 +30476,10 @@ export type Database = {
         Row: {
           actor_type: string | null
           ai_generated: boolean | null
+          ambassador_id: string | null
           assigned_at: string | null
           assigned_by: string | null
+          body_translated: string | null
           business_id: string | null
           channel: string
           contact_id: string | null
@@ -30326,6 +30498,7 @@ export type Database = {
           from_number: string | null
           id: string
           idempotency_key: string | null
+          media_urls: Json
           metadata: Json | null
           owner_user_id: string | null
           phone_number: string | null
@@ -30339,6 +30512,7 @@ export type Database = {
           snoozed_until: string | null
           status: string | null
           store_id: string | null
+          template_id: string | null
           thread_id: string | null
           to_number: string | null
           updated_at: string | null
@@ -30346,8 +30520,10 @@ export type Database = {
         Insert: {
           actor_type?: string | null
           ai_generated?: boolean | null
+          ambassador_id?: string | null
           assigned_at?: string | null
           assigned_by?: string | null
+          body_translated?: string | null
           business_id?: string | null
           channel: string
           contact_id?: string | null
@@ -30366,6 +30542,7 @@ export type Database = {
           from_number?: string | null
           id?: string
           idempotency_key?: string | null
+          media_urls?: Json
           metadata?: Json | null
           owner_user_id?: string | null
           phone_number?: string | null
@@ -30379,6 +30556,7 @@ export type Database = {
           snoozed_until?: string | null
           status?: string | null
           store_id?: string | null
+          template_id?: string | null
           thread_id?: string | null
           to_number?: string | null
           updated_at?: string | null
@@ -30386,8 +30564,10 @@ export type Database = {
         Update: {
           actor_type?: string | null
           ai_generated?: boolean | null
+          ambassador_id?: string | null
           assigned_at?: string | null
           assigned_by?: string | null
+          body_translated?: string | null
           business_id?: string | null
           channel?: string
           contact_id?: string | null
@@ -30406,6 +30586,7 @@ export type Database = {
           from_number?: string | null
           id?: string
           idempotency_key?: string | null
+          media_urls?: Json
           metadata?: Json | null
           owner_user_id?: string | null
           phone_number?: string | null
@@ -30419,11 +30600,40 @@ export type Database = {
           snoozed_until?: string | null
           status?: string | null
           store_id?: string | null
+          template_id?: string | null
           thread_id?: string | null
           to_number?: string | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "communication_messages_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "communication_messages_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "communication_messages_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_messages_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
           {
             foreignKeyName: "communication_messages_assigned_by_fkey"
             columns: ["assigned_by"]
