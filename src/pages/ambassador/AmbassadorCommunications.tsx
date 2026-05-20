@@ -151,6 +151,10 @@ export default function AmbassadorCommunications() {
   }, [sidebarOpen]);
 
   const { initiateCall } = useCall();
+  const { viewAsAmbassador } = useViewAs();
+  const { roles } = useUserRole();
+  const isAdmin = roles.includes('admin') || roles.includes('owner');
+  const needsAmbassadorPicker = isAdmin && !viewAsAmbassador;
   const { threads, isLoading: threadsLoading, sendMessage, isSending, ambassador } = useAmbassadorThreads();
   const { data: callLogs = [], isLoading: callsLoading } = useCallHistory();
   const logCall = useLogCall();
