@@ -217,7 +217,12 @@ export default function AmbassadorCommunications() {
 
           {/* ──────────── MESSAGES ──────────── */}
           <TabsContent value="messages">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[640px]">
+            <div className={cn(
+              'grid gap-4 h-[640px] grid-cols-1',
+              sidebarOpen && selected
+                ? 'lg:grid-cols-[280px_1fr_420px]'
+                : 'lg:grid-cols-[320px_1fr]',
+            )}>
               {/* Thread list */}
               <Card className="lg:col-span-1 flex flex-col">
                 <CardHeader className="pb-3 space-y-3">
