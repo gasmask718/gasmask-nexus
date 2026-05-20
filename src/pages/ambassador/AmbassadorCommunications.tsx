@@ -518,7 +518,8 @@ export default function AmbassadorCommunications() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             const t = threads.find((th) => th.store_id === c.store_id);
                             if (t) openCallDialog(t);
                           }}
