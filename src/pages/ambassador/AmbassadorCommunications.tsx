@@ -23,11 +23,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   MessageSquare, Phone, Send, Search, FileText, PhoneCall, PhoneIncoming, PhoneOutgoing,
   PhoneMissed, Languages, MoreVertical, Plus, Trash2, Sparkles, Activity, Users, CheckCheck,
+  PanelRightOpen,
 } from 'lucide-react';
 import {
   useAmbassadorThreads, useCallHistory, useLogCall, useStoreMessages,
   useTemplates, useAmbassadorKPIs, renderTemplate, MessageThread, MessageTemplate,
 } from '@/hooks/useAmbassadorComms';
+import { useStoreContext } from '@/hooks/useStoreContext';
+import { StoreContextSidebar } from '@/components/ambassador/StoreContextSidebar';
 import { format, formatDistanceToNow } from 'date-fns';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { toast } from 'sonner';
