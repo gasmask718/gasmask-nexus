@@ -22,6 +22,18 @@ export default function PayInvoicePage() {
   const { invoiceId } = useParams();
   const [params, setParams] = useSearchParams();
   const qc = useQueryClient();
+  const [busy, setBusy] = useState<null | 'full' | 'deposit' | 'final'>(null);
+
+  const launch = async (phase: 'full' | 'deposit' | 'final') => {
+    if (!invoiceId) return;
+    try {
+      setBusy(phase);
+      await startCheckout(invoiceId, phase);
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not open secure checkout');
+      setBusy(null);
+    }
+  };
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['pay-invoice', invoiceId],
