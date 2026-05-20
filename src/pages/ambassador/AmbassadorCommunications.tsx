@@ -3,7 +3,7 @@
  * Tabs: Messages | Call Log | Templates
  * Every assigned store is always shown (no more "No conversations yet").
  */
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,11 +23,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   MessageSquare, Phone, Send, Search, FileText, PhoneCall, PhoneIncoming, PhoneOutgoing,
   PhoneMissed, Languages, MoreVertical, Plus, Trash2, Sparkles, Activity, Users, CheckCheck,
+  PanelRightOpen,
 } from 'lucide-react';
 import {
   useAmbassadorThreads, useCallHistory, useLogCall, useStoreMessages,
   useTemplates, useAmbassadorKPIs, renderTemplate, MessageThread, MessageTemplate,
 } from '@/hooks/useAmbassadorComms';
+import { useStoreContext } from '@/hooks/useStoreContext';
+import { StoreContextSidebar } from '@/components/ambassador/StoreContextSidebar';
 import { format, formatDistanceToNow } from 'date-fns';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { toast } from 'sonner';
@@ -57,6 +60,16 @@ export default function AmbassadorCommunications() {
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [callTarget, setCallTarget] = useState<MessageThread | null>(null);
 
+  // Persist sidebar open state per ambassador in localStorage
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const v = localStorage.getItem('amb_comm_sidebar_open');
+    return v === null ? true : v === '1';
+  });
+  useEffect(() => {
+    try { localStorage.setItem('amb_comm_sidebar_open', sidebarOpen ? '1' : '0'); } catch {}
+  }, [sidebarOpen]);
+
   const { initiateCall } = useCall();
   const { threads, isLoading: threadsLoading, sendMessage, isSending, ambassador } = useAmbassadorThreads();
   const { data: callLogs = [], isLoading: callsLoading } = useCallHistory();
@@ -64,6 +77,7 @@ export default function AmbassadorCommunications() {
   const kpis = useAmbassadorKPIs();
   const { templates, upsert: upsertTemplate, remove: removeTemplate, recordUsage } = useTemplates();
   const messagesQ = useStoreMessages(selectedId);
+  const { data: storeContext } = useStoreContext(selectedId);
 
   const selected = threads.find((t) => t.id === selectedId);
   const filtered = useMemo(() => {
@@ -111,10 +125,21 @@ export default function AmbassadorCommunications() {
 
   const handleUseTemplate = (tpl: MessageTemplate) => {
     if (!selected) return;
+    const sc = storeContext;
+    const lastOrder = sc?.stats?.last_order_date
+      ? formatDistanceToNow(new Date(sc.stats.last_order_date), { addSuffix: true })
+      : 'a while ago';
     const ctx = {
-      store_name: selected.store_name,
-      owner_name: selected.contact_name,
+      store_name: sc?.store?.store_name || selected.store_name,
+      owner_name: sc?.store?.owner_name || selected.contact_name,
+      owner_name_arabic: sc?.store?.owner_name_arabic || selected.contact_name,
       ambassador_name: ambassador?.name || '',
+      outstanding_balance: sc?.stats?.outstanding_balance != null
+        ? `$${Math.round(sc.stats.outstanding_balance)}`
+        : '$0',
+      last_order_date: lastOrder,
+      total_orders: sc?.stats?.total_orders ?? 0,
+      phone: sc?.store?.phone || selected.contact_phone || '',
     };
     setComposer(renderTemplate(tpl.body_en, ctx));
     setComposerAr(renderTemplate(tpl.body_ar, ctx));
@@ -192,9 +217,14 @@ export default function AmbassadorCommunications() {
 
           {/* ──────────── MESSAGES ──────────── */}
           <TabsContent value="messages">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[640px]">
+            <div className={cn(
+              'grid gap-4 h-[640px] grid-cols-1',
+              sidebarOpen && selected
+                ? 'lg:grid-cols-[280px_1fr_420px]'
+                : 'lg:grid-cols-[320px_1fr]',
+            )}>
               {/* Thread list */}
-              <Card className="lg:col-span-1 flex flex-col">
+              <Card className="flex flex-col min-w-0">
                 <CardHeader className="pb-3 space-y-3">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -274,7 +304,7 @@ export default function AmbassadorCommunications() {
               </Card>
 
               {/* Thread view */}
-              <Card className="lg:col-span-2 flex flex-col">
+              <Card className="flex flex-col min-w-0 relative">
                 {selected ? (
                   <>
                     <CardHeader className="border-b">
@@ -300,6 +330,17 @@ export default function AmbassadorCommunications() {
                             <Phone className="h-4 w-4 mr-2" />
                             Call
                           </Button>
+                          {!sidebarOpen && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setSidebarOpen(true)}
+                              aria-label="Open store context"
+                              title="Open store context"
+                            >
+                              <PanelRightOpen className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardHeader>
@@ -417,6 +458,16 @@ export default function AmbassadorCommunications() {
                   </div>
                 )}
               </Card>
+
+              {/* Store context sidebar */}
+              {sidebarOpen && selected && (
+                <StoreContextSidebar
+                  storeId={selected.store_id}
+                  open={sidebarOpen}
+                  onClose={() => setSidebarOpen(false)}
+                  onCall={() => openCallDialog(selected)}
+                />
+              )}
             </div>
           </TabsContent>
 
@@ -434,7 +485,15 @@ export default function AmbassadorCommunications() {
                 ) : (
                   <div className="divide-y">
                     {callLogs.map((c) => (
-                      <div key={c.id} className="flex items-center gap-4 p-4 hover:bg-muted/50">
+                      <div
+                        key={c.id}
+                        className="flex items-center gap-4 p-4 hover:bg-muted/50 cursor-pointer"
+                        onClick={() => {
+                          setSelectedId(c.store_id);
+                          setSidebarOpen(true);
+                          setTab('messages');
+                        }}
+                      >
                         <div className="p-2 rounded-full bg-muted">
                           {c.type === 'inbound' ? <PhoneIncoming className="h-4 w-4 text-green-500" />
                             : c.type === 'missed' ? <PhoneMissed className="h-4 w-4 text-red-500" />
@@ -459,7 +518,8 @@ export default function AmbassadorCommunications() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             const t = threads.find((th) => th.store_id === c.store_id);
                             if (t) openCallDialog(t);
                           }}
