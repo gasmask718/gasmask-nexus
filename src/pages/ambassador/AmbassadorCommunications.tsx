@@ -41,6 +41,11 @@ import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { toast } from 'sonner';
 import { useCall } from '@/components/communication/CallProvider';
 import { cn } from '@/lib/utils';
+import { useViewAs } from '@/contexts/ViewAsContext';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Eye } from 'lucide-react';
 
 const TEMPLATE_CATEGORIES = ['reorder', 'new_product', 'route_eta', 'payment', 'visit', 'promo', 'custom'];
 
@@ -50,6 +55,63 @@ const QUICK_REPLIES = [
   { en: 'New drop available, interested?', ar: 'منتج جديد متوفر، مهتم؟' },
   { en: 'Friendly payment reminder', ar: 'تذكير ودي بشأن الدفع' },
 ];
+
+/** Admin-only picker shown when an admin lands on the ambassador portal without impersonating. */
+function AdminAmbassadorPicker() {
+  const { startViewAs } = useViewAs();
+  const [q, setQ] = useState('');
+  const { data: ambassadors = [], isLoading } = useQuery({
+    queryKey: ['admin-ambassador-picker'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ambassadors')
+        .select('id, name, user_id, is_active, twilio_number')
+        .eq('is_active', true)
+        .order('name', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const filtered = ambassadors.filter((a: any) =>
+    !q.trim() || (a.name || '').toLowerCase().includes(q.toLowerCase())
+  );
+  return (
+    <div className="p-6 space-y-4">
+      <div className="flex items-center gap-2 text-sm font-medium">
+        <Eye className="h-4 w-4" />
+        View Ambassador Portal as…
+      </div>
+      <Input
+        placeholder="Search ambassadors"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+      />
+      <ScrollArea className="h-[420px] border rounded-md">
+        {isLoading ? (
+          <div className="p-4 space-y-2">
+            {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12" />)}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-6 text-sm text-muted-foreground text-center">No ambassadors found</div>
+        ) : (
+          filtered.map((a: any) => (
+            <button
+              key={a.id}
+              onClick={() => startViewAs({ id: a.id, name: a.name, user_id: a.user_id })}
+              className="w-full text-left px-3 py-2 border-b hover:bg-muted/60 transition-colors flex items-center justify-between"
+            >
+              <div>
+                <div className="text-sm font-medium">{a.name || 'Unnamed ambassador'}</div>
+                <div className="text-xs text-muted-foreground">{a.twilio_number || 'no Twilio #'}</div>
+              </div>
+              <Badge variant="outline">View</Badge>
+            </button>
+          ))
+        )}
+      </ScrollArea>
+    </div>
+  );
+}
 
 export default function AmbassadorCommunications() {
   const [tab, setTab] = useState('messages');
@@ -89,6 +151,10 @@ export default function AmbassadorCommunications() {
   }, [sidebarOpen]);
 
   const { initiateCall } = useCall();
+  const { viewAsAmbassador } = useViewAs();
+  const { roles } = useUserRole();
+  const isAdmin = roles.includes('admin') || roles.includes('owner');
+  const needsAmbassadorPicker = isAdmin && !viewAsAmbassador;
   const { threads, isLoading: threadsLoading, sendMessage, isSending, ambassador } = useAmbassadorThreads();
   const { data: callLogs = [], isLoading: callsLoading } = useCallHistory();
   const logCall = useLogCall();
@@ -377,14 +443,23 @@ export default function AmbassadorCommunications() {
                         {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16" />)}
                       </div>
                     ) : filtered.length === 0 ? (
-                      <div className="p-8 text-center text-muted-foreground">
-                        <Users className="h-10 w-10 mx-auto mb-2 opacity-40" />
-                        <p className="text-sm">
-                          {threads.length === 0
-                            ? 'No stores assigned yet'
-                            : 'No stores match this filter'}
-                        </p>
-                      </div>
+                      needsAmbassadorPicker && threads.length === 0 ? (
+                        <AdminAmbassadorPicker />
+                      ) : (
+                        <div className="p-8 text-center text-muted-foreground">
+                          <Users className="h-10 w-10 mx-auto mb-2 opacity-40" />
+                          <p className="text-sm">
+                            {threads.length === 0
+                              ? 'No stores assigned yet'
+                              : 'No stores match this filter'}
+                          </p>
+                          {threads.length === 0 && !isAdmin && (
+                            <p className="text-xs mt-2 opacity-70">
+                              Contact your manager to get assigned to a route.
+                            </p>
+                          )}
+                        </div>
+                      )
                     ) : (
                       filtered.map((t) => {
                         const ts = t.last_message_at && new Date(t.last_message_at).getTime() > 0

@@ -8,6 +8,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useViewAs } from '@/contexts/ViewAsContext';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
 
@@ -71,24 +72,51 @@ export interface MessageTemplate {
   last_used_at: string | null;
 }
 
-/** Resolve current ambassador row (cached). */
+/**
+ * Resolve current ambassador row (cached).
+ * - If admin is impersonating via ViewAsContext, returns that ambassador's row.
+ * - Otherwise resolves from auth.uid(); picks the oldest row (deterministic) when
+ *   multiple ambassador records share the same user_id (legacy seed data).
+ */
 function useCurrentAmbassador() {
   const { user } = useAuth();
+  const { viewAsAmbassador } = useViewAs();
+  const impersonatedId = viewAsAmbassador?.id ?? null;
+
   return useQuery({
-    queryKey: ['current-ambassador', user?.id],
+    queryKey: ['current-ambassador', user?.id, impersonatedId],
     queryFn: async () => {
+      // Impersonation path — fetch the target ambassador directly
+      if (impersonatedId) {
+        const { data, error } = await supabase
+          .from('ambassadors')
+          .select('id, name, twilio_number, phone_primary')
+          .eq('id', impersonatedId)
+          .limit(1);
+        if (error) throw error;
+        return data?.[0] ?? null;
+      }
+
       if (!user?.id) return null;
       const { data, error } = await supabase
         .from('ambassadors')
-        .select('id, name, twilio_number, phone_primary')
+        .select('id, name, twilio_number, phone_primary, created_at')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .order('created_at', { ascending: true })
+        .limit(1);
       if (error) throw error;
-      return data;
+      return data?.[0] ?? null;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id || !!impersonatedId,
     staleTime: 5 * 60 * 1000,
   });
+}
+
+/** Public helper — effective ambassador id (impersonated or own). */
+export function useEffectiveAmbassadorId(): string | null {
+  const { viewAsAmbassador } = useViewAs();
+  const ambQ = useCurrentAmbassador();
+  return viewAsAmbassador?.id ?? ambQ.data?.id ?? null;
 }
 
 /** Threads = one per assigned store, enriched with last message + unread count. */
@@ -103,7 +131,7 @@ export function useAmbassadorThreads() {
     queryFn: async (): Promise<MessageThread[]> => {
       if (!ambassadorId) return [];
 
-      // 1. All assigned stores
+      // 1a. Stores via ambassador_assignments (primary join)
       const { data: assignments, error: aErr } = await supabase
         .from('ambassador_assignments')
         .select(`
@@ -118,9 +146,23 @@ export function useAmbassadorThreads() {
         .not('store_id', 'is', null);
       if (aErr) throw aErr;
 
-      const stores = (assignments || [])
-        .map((a) => a.store as any)
-        .filter(Boolean);
+      const storesMap = new Map<string, any>();
+      for (const a of assignments || []) {
+        const s = a.store as any;
+        if (s?.id) storesMap.set(s.id, s);
+      }
+
+      // 1b. Fallback — direct assignment on store_master.assigned_ambassador_id
+      const { data: directStores, error: dErr } = await supabase
+        .from('store_master')
+        .select('id, store_name, owner_name, phone, borough_id, language_preference, last_visit_at, owed_amount')
+        .eq('assigned_ambassador_id', ambassadorId);
+      if (dErr) throw dErr;
+      for (const s of directStores || []) {
+        if (s?.id && !storesMap.has(s.id)) storesMap.set(s.id, s);
+      }
+
+      const stores = Array.from(storesMap.values());
 
       // 2. Latest message per store (single batched query)
       const storeIds = stores.map((s) => s.id);
