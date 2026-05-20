@@ -224,7 +224,7 @@ export default function AmbassadorCommunications() {
                 : 'lg:grid-cols-[320px_1fr]',
             )}>
               {/* Thread list */}
-              <Card className="lg:col-span-1 flex flex-col">
+              <Card className="flex flex-col min-w-0">
                 <CardHeader className="pb-3 space-y-3">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
