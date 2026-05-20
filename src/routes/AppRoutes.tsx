@@ -2906,91 +2906,91 @@ export default function AppRoutes() {
       <Route path="/ambassador/dashboard" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorDashboard /></Layout>
+            <AmbassadorDashboard />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/stores" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorStoresList /></Layout>
+            <AmbassadorStoresList />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/wholesalers" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorWholesalersList /></Layout>
+            <AmbassadorWholesalersList />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/stores/:id" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><StoreDetail /></Layout>
+            <StoreDetail />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/wholesalers/:id" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><WholesalerProfilePage /></Layout>
+            <WholesalerProfilePage />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/influencers/:id" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><InfluencerProfilePage /></Layout>
+            <InfluencerProfilePage />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/ambassadors/:id" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorProfilePage /></Layout>
+            <AmbassadorProfilePage />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/orders" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorOrders /></Layout>
+            <AmbassadorOrders />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/purchases" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorPurchases /></Layout>
+            <AmbassadorPurchases />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/sell-through" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorSellThrough /></Layout>
+            <AmbassadorSellThrough />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/profit" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorProfitDashboard /></Layout>
+            <AmbassadorProfitDashboard />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/routes" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorRoutes /></Layout>
+            <AmbassadorRoutes />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/leads" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorLeads /></Layout>
+            <AmbassadorLeads />
           </RequireRole>
         </ProtectedRoute>
       } />
@@ -2998,56 +2998,56 @@ export default function AppRoutes() {
       <Route path="/ambassador/:ambassadorId/leads" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorLeads /></Layout>
+            <AmbassadorLeads />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/communications" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorCommunications /></Layout>
+            <AmbassadorCommunications />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/invites" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorInvites /></Layout>
+            <AmbassadorInvites />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/recruitment" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorRecruitmentLeads /></Layout>
+            <AmbassadorRecruitmentLeads />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/request-ambassador" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorRequestAmbassador /></Layout>
+            <AmbassadorRequestAmbassador />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/commissions" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorCommissions /></Layout>
+            <AmbassadorCommissions />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/disputes" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorDisputes /></Layout>
+            <AmbassadorDisputes />
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/disputes/:id" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorDisputeDetail /></Layout>
+            <AmbassadorDisputeDetail />
           </RequireRole>
         </ProtectedRoute>
       } />
