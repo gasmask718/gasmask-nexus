@@ -72,24 +72,51 @@ export interface MessageTemplate {
   last_used_at: string | null;
 }
 
-/** Resolve current ambassador row (cached). */
+/**
+ * Resolve current ambassador row (cached).
+ * - If admin is impersonating via ViewAsContext, returns that ambassador's row.
+ * - Otherwise resolves from auth.uid(); picks the oldest row (deterministic) when
+ *   multiple ambassador records share the same user_id (legacy seed data).
+ */
 function useCurrentAmbassador() {
   const { user } = useAuth();
+  const { viewAsAmbassador } = useViewAs();
+  const impersonatedId = viewAsAmbassador?.id ?? null;
+
   return useQuery({
-    queryKey: ['current-ambassador', user?.id],
+    queryKey: ['current-ambassador', user?.id, impersonatedId],
     queryFn: async () => {
+      // Impersonation path — fetch the target ambassador directly
+      if (impersonatedId) {
+        const { data, error } = await supabase
+          .from('ambassadors')
+          .select('id, name, twilio_number, phone_primary')
+          .eq('id', impersonatedId)
+          .limit(1);
+        if (error) throw error;
+        return data?.[0] ?? null;
+      }
+
       if (!user?.id) return null;
       const { data, error } = await supabase
         .from('ambassadors')
-        .select('id, name, twilio_number, phone_primary')
+        .select('id, name, twilio_number, phone_primary, created_at')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .order('created_at', { ascending: true })
+        .limit(1);
       if (error) throw error;
-      return data;
+      return data?.[0] ?? null;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id || !!impersonatedId,
     staleTime: 5 * 60 * 1000,
   });
+}
+
+/** Public helper — effective ambassador id (impersonated or own). */
+export function useEffectiveAmbassadorId(): string | null {
+  const { viewAsAmbassador } = useViewAs();
+  const ambQ = useCurrentAmbassador();
+  return viewAsAmbassador?.id ?? ambQ.data?.id ?? null;
 }
 
 /** Threads = one per assigned store, enriched with last message + unread count. */
