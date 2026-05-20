@@ -60,6 +60,16 @@ export default function AmbassadorCommunications() {
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [callTarget, setCallTarget] = useState<MessageThread | null>(null);
 
+  // Persist sidebar open state per ambassador in localStorage
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const v = localStorage.getItem('amb_comm_sidebar_open');
+    return v === null ? true : v === '1';
+  });
+  useEffect(() => {
+    try { localStorage.setItem('amb_comm_sidebar_open', sidebarOpen ? '1' : '0'); } catch {}
+  }, [sidebarOpen]);
+
   const { initiateCall } = useCall();
   const { threads, isLoading: threadsLoading, sendMessage, isSending, ambassador } = useAmbassadorThreads();
   const { data: callLogs = [], isLoading: callsLoading } = useCallHistory();
@@ -67,6 +77,7 @@ export default function AmbassadorCommunications() {
   const kpis = useAmbassadorKPIs();
   const { templates, upsert: upsertTemplate, remove: removeTemplate, recordUsage } = useTemplates();
   const messagesQ = useStoreMessages(selectedId);
+  const { data: storeContext } = useStoreContext(selectedId);
 
   const selected = threads.find((t) => t.id === selectedId);
   const filtered = useMemo(() => {
