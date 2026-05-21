@@ -53,10 +53,16 @@ const ALIAS_TO_SLUG: Record<string, string> = {
   // Public site snake_case payloads
   exotic_cars: 'exotic-cars',
   hotel_concierge: 'hotels',
-  transportation: 'black-truck',
+  transportation: 'black-truck', // STAGED REMOVAL — hold until public pages send exotic_cars/helicopter/black-truck explicitly
   chauffeur: 'black-truck',
   experience: 'things-to-do',
   travel_packages: 'travel-packages',
+  // Additive coverage for public site variants
+  art_gallery: 'art-gallery',
+  accommodation: 'hotels',
+  dining: 'restaurant',
+  entertainment: 'club',
+
 };
 
 export async function resolveRouting(
