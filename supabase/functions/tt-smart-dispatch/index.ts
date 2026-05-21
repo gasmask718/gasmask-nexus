@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { resolveRouting } from "../_shared/serviceRouter.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,22 +8,6 @@ const corsHeaders = {
 }
 
 const PUBLIC_URL = 'https://hruhkyvwtfpfviwnvhne.supabase.co'
-
-// Maps booking service_type to values found in partner service_types array
-const serviceTypeMap: Record<string, string[]> = {
-  luxury_transport: ['chauffeur', 'sprinter', 'sedan', 'suv', 'limo'],
-  exotic_rental: ['exotic', 'rental', 'supercar'],
-  helicopter: ['helicopter', 'aviation'],
-  private_jet: ['jet', 'aviation', 'private_jet'],
-  yacht_charter: ['yacht', 'marine', 'vessel'],
-  private_chef: ['chef', 'culinary', 'catering'],
-  nightlife_vip: ['nightlife', 'vip', 'bottle'],
-  wellness_massage: ['massage', 'wellness', 'spa'],
-  beauty_services: ['beauty', 'styling', 'glam'],
-  media_production: ['photographer', 'videographer', 'media', 'photography'],
-  security_detail: ['security', 'protection'],
-  event_space: ['venue', 'events', 'space'],
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -47,8 +32,44 @@ serve(async (req) => {
 
     if (!booking) throw new Error('Booking not found')
 
-    const serviceCategory = booking.service_type || 'luxury_transport'
-    const matchServiceTypes = serviceTypeMap[serviceCategory] || [serviceCategory]
+    const routing = await resolveRouting(supabase, booking.service_slug || booking.service_type)
+    const serviceCategory = routing.service_category
+    const matchServiceTypes = routing.partner_types
+
+    // Manual or unrouted: do not broadcast. Create routed lead + admin alert.
+    if (routing._unrouted || routing.fulfillment_model === 'manual' || matchServiceTypes.length === 0) {
+      await supabase.from('tt_dispatch_requests').insert({
+        booking_id: booking.id,
+        booking_reference: booking.booking_reference,
+        service_type: booking.service_type,
+        service_category: serviceCategory,
+        pickup_location: booking.pickup_location,
+        dropoff_location: booking.dropoff_location,
+        scheduled_at: booking.scheduled_at,
+        customer_name: booking.client_name,
+        customer_phone: booking.client_phone,
+        special_requests: booking.special_requests,
+        total_price: booking.total_price,
+        status: routing._unrouted ? 'needs_review' : 'manual_queue',
+        matched_partners: [],
+        auto_matched: false,
+      })
+      await supabase.from('tt_notifications_log').insert({
+        booking_id: booking.id,
+        type: routing._unrouted ? 'unrouted_booking_alert' : 'manual_dispatch_required',
+        channel: 'internal',
+        recipient: 'admin',
+        message: `${routing.display_name} booking ${booking.booking_reference} requires manual handling`,
+        status: 'sent',
+      })
+      return new Response(JSON.stringify({
+        success: true, matched: 0,
+        fulfillment_model: routing.fulfillment_model,
+        unrouted: !!routing._unrouted,
+        message: 'Routed to manual queue',
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
 
     // Query partners: status = 'approved' AND is_active = true
     // Use overlaps to match service_types array
