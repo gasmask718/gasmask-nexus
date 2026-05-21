@@ -50,6 +50,13 @@ const ALIAS_TO_SLUG: Record<string, string> = {
   art_concierge: 'art-gallery',
   jewelry_concierge: 'jewelry',
   gifting: 'luxury-gifting',
+  // Public site snake_case payloads
+  exotic_cars: 'exotic-cars',
+  hotel_concierge: 'hotels',
+  transportation: 'black-truck',
+  chauffeur: 'black-truck',
+  experience: 'things-to-do',
+  travel_packages: 'travel-packages',
 };
 
 export async function resolveRouting(
