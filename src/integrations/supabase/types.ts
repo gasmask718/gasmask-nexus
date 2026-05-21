@@ -91340,6 +91340,8 @@ export type Database = {
           pickup_lat: number | null
           pickup_lng: number | null
           pickup_location: string | null
+          requested_red_carpet: boolean | null
+          requested_star_ceiling: boolean | null
           scheduled_at: string | null
           service_name: string
           service_slug: string | null
@@ -91377,6 +91379,8 @@ export type Database = {
           pickup_lat?: number | null
           pickup_lng?: number | null
           pickup_location?: string | null
+          requested_red_carpet?: boolean | null
+          requested_star_ceiling?: boolean | null
           scheduled_at?: string | null
           service_name: string
           service_slug?: string | null
@@ -91414,6 +91418,8 @@ export type Database = {
           pickup_lat?: number | null
           pickup_lng?: number | null
           pickup_location?: string | null
+          requested_red_carpet?: boolean | null
+          requested_star_ceiling?: boolean | null
           scheduled_at?: string | null
           service_name?: string
           service_slug?: string | null
@@ -91979,7 +91985,10 @@ export type Database = {
           phone: string | null
           photo_url: string | null
           rating: number | null
+          red_carpet: boolean
+          star_ceiling: boolean
           status: string
+          styles_offered: string[]
           total_trips: number | null
           updated_at: string
           vehicle_classes: string[]
@@ -92010,7 +92019,10 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           rating?: number | null
+          red_carpet?: boolean
+          star_ceiling?: boolean
           status?: string
+          styles_offered?: string[]
           total_trips?: number | null
           updated_at?: string
           vehicle_classes?: string[]
@@ -92041,7 +92053,10 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           rating?: number | null
+          red_carpet?: boolean
+          star_ceiling?: boolean
           status?: string
+          styles_offered?: string[]
           total_trips?: number | null
           updated_at?: string
           vehicle_classes?: string[]
@@ -92747,13 +92762,18 @@ export type Database = {
           is_active: boolean
           last_active_at: string | null
           name: string
+          offers_red_carpet: boolean
+          offers_star_ceiling: boolean
           partner_type: string | null
           phone: string | null
+          profit_margin: number | null
           response_rate: number
           service_category: string
           service_radius_miles: number | null
+          service_regions: string[]
           state: string | null
           status: string
+          styles_offered: string[]
           total_bookings: number
           total_earnings: number
           trust_score: number
@@ -92774,13 +92794,18 @@ export type Database = {
           is_active?: boolean
           last_active_at?: string | null
           name: string
+          offers_red_carpet?: boolean
+          offers_star_ceiling?: boolean
           partner_type?: string | null
           phone?: string | null
+          profit_margin?: number | null
           response_rate?: number
           service_category?: string
           service_radius_miles?: number | null
+          service_regions?: string[]
           state?: string | null
           status?: string
+          styles_offered?: string[]
           total_bookings?: number
           total_earnings?: number
           trust_score?: number
@@ -92801,13 +92826,18 @@ export type Database = {
           is_active?: boolean
           last_active_at?: string | null
           name?: string
+          offers_red_carpet?: boolean
+          offers_star_ceiling?: boolean
           partner_type?: string | null
           phone?: string | null
+          profit_margin?: number | null
           response_rate?: number
           service_category?: string
           service_radius_miles?: number | null
+          service_regions?: string[]
           state?: string | null
           status?: string
+          styles_offered?: string[]
           total_bookings?: number
           total_earnings?: number
           trust_score?: number
@@ -92974,6 +93004,7 @@ export type Database = {
         Row: {
           created_at: string
           dedicated_tables: string[] | null
+          dispatch_pattern: string | null
           display_name: string
           fulfillment_model: string
           id: string
@@ -92991,6 +93022,7 @@ export type Database = {
         Insert: {
           created_at?: string
           dedicated_tables?: string[] | null
+          dispatch_pattern?: string | null
           display_name: string
           fulfillment_model?: string
           id?: string
@@ -93008,6 +93040,7 @@ export type Database = {
         Update: {
           created_at?: string
           dedicated_tables?: string[] | null
+          dispatch_pattern?: string | null
           display_name?: string
           fulfillment_model?: string
           id?: string
@@ -93132,9 +93165,12 @@ export type Database = {
           notes: string | null
           owner_partner_id: string | null
           plate_number: string | null
+          red_carpet: boolean
           seats: number | null
           sort_order: number
+          star_ceiling: boolean
           status: string
+          style: string | null
           type: string
           updated_at: string
           vehicle_class: string | null
@@ -93161,9 +93197,12 @@ export type Database = {
           notes?: string | null
           owner_partner_id?: string | null
           plate_number?: string | null
+          red_carpet?: boolean
           seats?: number | null
           sort_order?: number
+          star_ceiling?: boolean
           status?: string
+          style?: string | null
           type?: string
           updated_at?: string
           vehicle_class?: string | null
@@ -93190,9 +93229,12 @@ export type Database = {
           notes?: string | null
           owner_partner_id?: string | null
           plate_number?: string | null
+          red_carpet?: boolean
           seats?: number | null
           sort_order?: number
+          star_ceiling?: boolean
           status?: string
+          style?: string | null
           type?: string
           updated_at?: string
           vehicle_class?: string | null
@@ -116912,6 +116954,10 @@ export type Database = {
           _token: string
         }
         Returns: string
+      }
+      tt_partners_refresh_capabilities: {
+        Args: { _partner_id: string }
+        Returns: undefined
       }
       update_contact_responsiveness: {
         Args: { p_contact_id: string }
