@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from 'https://esm.sh/@supabase/supabase-js@2/cors'
+import { resolveRouting } from '../_shared/serviceRouter.ts'
 
 function generateBookingRef(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -18,7 +19,14 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json();
-    const { customer_name, customer_email, customer_phone, pickup_address, pickup_lat, pickup_lng, dropoff_address, dropoff_lat, dropoff_lng, pickup_datetime, vehicle_id, passenger_count, add_ons, special_requests, stripe_payment_intent_id, total_price } = body;
+    const {
+      customer_name, customer_email, customer_phone,
+      pickup_address, pickup_lat, pickup_lng,
+      dropoff_address, dropoff_lat, dropoff_lng,
+      pickup_datetime, vehicle_id, passenger_count,
+      add_ons, special_requests, stripe_payment_intent_id, total_price,
+      service_slug, service_type: incomingServiceType,
+    } = body;
 
     if (!customer_name || !pickup_address || !pickup_datetime || !total_price) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -26,15 +34,20 @@ Deno.serve(async (req) => {
 
     const booking_reference = generateBookingRef();
 
-    // Insert booking
+    // Resolve routing from slug / legacy service_type (defaults to black-truck for back-compat)
+    const routing = await resolveRouting(supabase, service_slug || incomingServiceType || 'black-truck');
+    const initialStatus = routing._unrouted ? 'needs_review' : 'confirmed';
+
     const { data: booking, error: bookingErr } = await supabase.from('tt_bookings').insert({
       client_name: customer_name,
       client_email: customer_email,
       client_phone: customer_phone,
-      service_type: 'luxury_transport',
-      service_name: 'Black Car Service',
+      service_type: routing.service_category,
+      service_name: routing.display_name,
+      service_slug: routing.slug,
+      fulfillment_model: routing.fulfillment_model,
       total_price,
-      status: 'confirmed',
+      status: initialStatus,
       payment_status: 'paid',
       booking_reference,
       pickup_location: pickup_address,
@@ -49,14 +62,23 @@ Deno.serve(async (req) => {
 
     if (bookingErr) throw bookingErr;
 
-    // Create dispatch record
+    if (routing._unrouted) {
+      await supabase.from('tt_notifications_log').insert({
+        booking_id: booking.id,
+        type: 'unrouted_booking_alert',
+        channel: 'internal',
+        recipient: 'admin',
+        message: `Unrouted service "${service_slug || incomingServiceType}" — booking ${booking_reference} needs review`,
+        status: 'sent',
+      });
+    }
+
     await supabase.from('tt_dispatches').insert({
       booking_id: booking.id,
       vehicle_id,
       status: 'pending',
     });
 
-    // Log notification
     if (customer_phone) {
       await supabase.from('tt_notifications_log').insert({
         booking_id: booking.id,
@@ -68,7 +90,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ booking_id: booking.id, booking_reference, status: 'confirmed' }), {
+    return new Response(JSON.stringify({
+      booking_id: booking.id,
+      booking_reference,
+      status: initialStatus,
+      service_category: routing.service_category,
+      fulfillment_model: routing.fulfillment_model,
+      unrouted: !!routing._unrouted,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
