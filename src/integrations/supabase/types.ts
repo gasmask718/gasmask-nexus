@@ -91975,12 +91975,14 @@ export type Database = {
           is_simulation: boolean | null
           last_name: string
           license_plate: string | null
+          owner_partner_id: string | null
           phone: string | null
           photo_url: string | null
           rating: number | null
           status: string
           total_trips: number | null
           updated_at: string
+          vehicle_classes: string[]
           vehicle_color: string | null
           vehicle_id: string | null
           vehicle_make: string | null
@@ -92004,12 +92006,14 @@ export type Database = {
           is_simulation?: boolean | null
           last_name: string
           license_plate?: string | null
+          owner_partner_id?: string | null
           phone?: string | null
           photo_url?: string | null
           rating?: number | null
           status?: string
           total_trips?: number | null
           updated_at?: string
+          vehicle_classes?: string[]
           vehicle_color?: string | null
           vehicle_id?: string | null
           vehicle_make?: string | null
@@ -92033,12 +92037,14 @@ export type Database = {
           is_simulation?: boolean | null
           last_name?: string
           license_plate?: string | null
+          owner_partner_id?: string | null
           phone?: string | null
           photo_url?: string | null
           rating?: number | null
           status?: string
           total_trips?: number | null
           updated_at?: string
+          vehicle_classes?: string[]
           vehicle_color?: string | null
           vehicle_id?: string | null
           vehicle_make?: string | null
@@ -92051,6 +92057,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tt_drivers_owner_partner_id_fkey"
+            columns: ["owner_partner_id"]
+            isOneToOne: false
+            referencedRelation: "tt_partners"
             referencedColumns: ["id"]
           },
         ]
@@ -92731,8 +92744,10 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          is_active: boolean
           last_active_at: string | null
           name: string
+          partner_type: string | null
           phone: string | null
           response_rate: number
           service_category: string
@@ -92756,8 +92771,10 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          is_active?: boolean
           last_active_at?: string | null
           name: string
+          partner_type?: string | null
           phone?: string | null
           response_rate?: number
           service_category?: string
@@ -92781,8 +92798,10 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          is_active?: boolean
           last_active_at?: string | null
           name?: string
+          partner_type?: string | null
           phone?: string | null
           response_rate?: number
           service_category?: string
@@ -93098,6 +93117,7 @@ export type Database = {
           created_at: string
           daily_rate: number | null
           description: string | null
+          dispatch_model: string | null
           featured: boolean
           fulfillment_model: string
           gallery_images: Json | null
@@ -93110,12 +93130,14 @@ export type Database = {
           model: string | null
           name: string
           notes: string | null
+          owner_partner_id: string | null
           plate_number: string | null
           seats: number | null
           sort_order: number
           status: string
           type: string
           updated_at: string
+          vehicle_class: string | null
           year: number | null
         }
         Insert: {
@@ -93124,6 +93146,7 @@ export type Database = {
           created_at?: string
           daily_rate?: number | null
           description?: string | null
+          dispatch_model?: string | null
           featured?: boolean
           fulfillment_model?: string
           gallery_images?: Json | null
@@ -93136,12 +93159,14 @@ export type Database = {
           model?: string | null
           name: string
           notes?: string | null
+          owner_partner_id?: string | null
           plate_number?: string | null
           seats?: number | null
           sort_order?: number
           status?: string
           type?: string
           updated_at?: string
+          vehicle_class?: string | null
           year?: number | null
         }
         Update: {
@@ -93150,6 +93175,7 @@ export type Database = {
           created_at?: string
           daily_rate?: number | null
           description?: string | null
+          dispatch_model?: string | null
           featured?: boolean
           fulfillment_model?: string
           gallery_images?: Json | null
@@ -93162,15 +93188,25 @@ export type Database = {
           model?: string | null
           name?: string
           notes?: string | null
+          owner_partner_id?: string | null
           plate_number?: string | null
           seats?: number | null
           sort_order?: number
           status?: string
           type?: string
           updated_at?: string
+          vehicle_class?: string | null
           year?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tt_vehicles_owner_partner_id_fkey"
+            columns: ["owner_partner_id"]
+            isOneToOne: false
+            referencedRelation: "tt_partners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tts_events: {
         Row: {
