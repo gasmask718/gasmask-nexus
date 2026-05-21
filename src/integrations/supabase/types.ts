@@ -91342,6 +91342,7 @@ export type Database = {
           pickup_location: string | null
           scheduled_at: string | null
           service_name: string
+          service_slug: string | null
           service_type: string
           source: string | null
           special_requests: string | null
@@ -91378,6 +91379,7 @@ export type Database = {
           pickup_location?: string | null
           scheduled_at?: string | null
           service_name: string
+          service_slug?: string | null
           service_type?: string
           source?: string | null
           special_requests?: string | null
@@ -91414,6 +91416,7 @@ export type Database = {
           pickup_location?: string | null
           scheduled_at?: string | null
           service_name?: string
+          service_slug?: string | null
           service_type?: string
           source?: string | null
           special_requests?: string | null
@@ -92947,6 +92950,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tt_service_routing: {
+        Row: {
+          created_at: string
+          dedicated_tables: string[] | null
+          display_name: string
+          fulfillment_model: string
+          id: string
+          intake_table: string
+          is_active: boolean
+          partner_types: string[]
+          pricing_strategy: string
+          requires_authenticator: boolean
+          service_category: string
+          slug: string
+          sms_template_key: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dedicated_tables?: string[] | null
+          display_name: string
+          fulfillment_model?: string
+          id?: string
+          intake_table?: string
+          is_active?: boolean
+          partner_types?: string[]
+          pricing_strategy?: string
+          requires_authenticator?: boolean
+          service_category: string
+          slug: string
+          sms_template_key?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dedicated_tables?: string[] | null
+          display_name?: string
+          fulfillment_model?: string
+          id?: string
+          intake_table?: string
+          is_active?: boolean
+          partner_types?: string[]
+          pricing_strategy?: string
+          requires_authenticator?: boolean
+          service_category?: string
+          slug?: string
+          sms_template_key?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       tt_system_controls: {
         Row: {
