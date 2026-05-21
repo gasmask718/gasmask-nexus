@@ -53,7 +53,7 @@ const ALIAS_TO_SLUG: Record<string, string> = {
   // Public site snake_case payloads
   exotic_cars: 'exotic-cars',
   hotel_concierge: 'hotels',
-  transportation: 'black-truck', // STAGED REMOVAL — hold until public pages send exotic_cars/helicopter/black-truck explicitly
+  // 'transportation' alias REMOVED — was ambiguous across Black Truck/Exotic/Helicopter pages. Stray 'transportation' now _unrouted (needs_review) by design.
   chauffeur: 'black-truck',
   experience: 'things-to-do',
   travel_packages: 'travel-packages',
