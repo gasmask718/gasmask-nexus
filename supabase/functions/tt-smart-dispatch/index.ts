@@ -258,8 +258,8 @@ async function selectAssetFallback(ctx: any) {
   // Amenity filter for exotics only
   if (routing.partner_types.includes('exotic_supplier')) {
     ordered = ordered.filter((p: any) =>
-      (!booking.requested_red_carpet   || p.red_carpet === true) &&
-      (!booking.requested_star_ceiling || p.star_ceiling === true)
+      (!booking.requested_red_carpet   || p.offers_red_carpet === true) &&
+      (!booking.requested_star_ceiling || p.offers_star_ceiling === true)
     )
   }
 
