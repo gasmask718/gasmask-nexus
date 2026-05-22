@@ -222,6 +222,51 @@ Deno.serve(async (req) => {
         partnerId = ins!.id;
       }
 
+      // Decorator profile (paired row in `decorators`, linked by tt_partner_id)
+      if (r.partner_type === 'decorator' && r.decorator_profile) {
+        const dp = r.decorator_profile;
+        const decoratorPayload = {
+          tt_partner_id: partnerId!,
+          name: dp.name ?? r.business_name,
+          city: dp.city,
+          state: dp.state ?? null,
+          lat: dp.lat ?? null,
+          lng: dp.lng ?? null,
+          service_radius_miles: dp.service_radius_miles ?? 25,
+          specialties: dp.specialties ?? [],
+          bio: dp.bio ?? null,
+          portfolio_images: dp.portfolio_images ?? [],
+          base_price_min: dp.base_price_min ?? null,
+          base_price_max: dp.base_price_max ?? null,
+          is_active: true,
+        };
+        const { data: existingDec, error: decLookupErr } = await admin
+          .from('decorators')
+          .select('id')
+          .eq('tt_partner_id', partnerId!)
+          .maybeSingle();
+        if (decLookupErr) {
+          rejects.push({ index: a.index, row: r, reasons: [`decorator_lookup_failed:${decLookupErr.message}`] });
+          continue;
+        }
+        if (existingDec?.id) {
+          const { error: decUpdErr } = await admin
+            .from('decorators')
+            .update(decoratorPayload)
+            .eq('id', existingDec.id);
+          if (decUpdErr) {
+            rejects.push({ index: a.index, row: r, reasons: [`decorator_update_failed:${decUpdErr.message}`] });
+            continue;
+          }
+        } else {
+          const { error: decInsErr } = await admin.from('decorators').insert(decoratorPayload);
+          if (decInsErr) {
+            rejects.push({ index: a.index, row: r, reasons: [`decorator_insert_failed:${decInsErr.message}`] });
+            continue;
+          }
+        }
+      }
+
       // Vehicles
       const vehicleErrors: string[] = [];
       let landed = 0;
