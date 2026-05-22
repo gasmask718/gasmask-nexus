@@ -30,7 +30,8 @@ serve(async (req) => {
       body = await req.json()
     }
 
-    const { from_phone, message, dispatch_request_id, partner_id, source } = body
+    const { from_phone, message, dispatch_request_id, partner_id, source,
+            meeting_point_address, meeting_point_time } = body
 
     const response = (message || '').trim().toUpperCase()
     const accepted = response.startsWith('YES') || response === 'Y' || response === 'ACCEPT' || response === '1'
@@ -98,6 +99,91 @@ serve(async (req) => {
           .eq('id', partner.id)
       }
 
+      // ====== TRUCK-WITH-DECOR MEETING-POINT (cross-row write to decor sibling) ======
+      // When the accepted dispatch is a black-truck pool_style row AND the booking
+      // has decor_addon=true, there is a sibling marketplace_direct row for the
+      // decorator. The driver MUST submit meeting_point_address + meeting_point_time
+      // on accept; we write them to the DECOR row (service_role bypasses RLS).
+      // Failure path: surface needs_review + admin alert, set truck status to
+      // 'accepted_meeting_point_pending', send SMS without meeting point. Driver
+      // is NOT blocked from the job.
+      let decorRow: any = null
+      let meetingPointStatus: 'none' | 'saved' | 'failed' | 'missing' = 'none'
+      const { data: booking } = await supabase
+        .from('tt_bookings').select('id, decor_addon, decor_partner_id')
+        .eq('id', dispatchRequest.booking_id).maybeSingle()
+      const isTruckWithDecor =
+        dispatchRequest.dispatch_pattern === 'pool_style' &&
+        booking?.decor_addon === true &&
+        !!booking?.decor_partner_id
+
+      if (isTruckWithDecor) {
+        const { data: sibling } = await supabase
+          .from('tt_dispatch_requests').select('*')
+          .eq('booking_id', dispatchRequest.booking_id)
+          .eq('dispatch_pattern', 'marketplace_direct')
+          .maybeSingle()
+        decorRow = sibling
+
+        if (!meeting_point_address || !meeting_point_time) {
+          meetingPointStatus = 'missing'
+          // 422 — driver MUST provide meeting point. Roll back truck accept.
+          await supabase.from('tt_dispatch_requests')
+            .update({ status: 'sent', accepted_partner_id: null, accepted_partner_name: null, accepted_at: null })
+            .eq('id', dispatchRequest.id)
+          if (partner?.id) {
+            await supabase.from('tt_partner_assets').update({ is_available: true }).eq('id', partner.id)
+          }
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'meeting_point_required',
+            message: 'This booking includes decor — set meeting point (address + time) to accept.',
+          }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        if (decorRow) {
+          const { error: mpErr } = await supabase
+            .from('tt_dispatch_requests')
+            .update({
+              meeting_point_address,
+              meeting_point_time,
+              meeting_point_set_at: new Date().toISOString(),
+              meeting_point_set_by: partner?.id ?? null,
+            })
+            .eq('id', decorRow.id)
+          if (mpErr) {
+            console.error('meeting-point write failed:', mpErr.message)
+            meetingPointStatus = 'failed'
+            await supabase.from('tt_dispatch_requests')
+              .update({ status: 'needs_review' })
+              .eq('id', decorRow.id)
+            await supabase.from('tt_dispatch_requests')
+              .update({ status: 'accepted_meeting_point_pending' })
+              .eq('id', dispatchRequest.id)
+            await supabase.from('tt_notifications_log').insert({
+              booking_id: dispatchRequest.booking_id,
+              type: 'truck_decor_meeting_point_failed',
+              channel: 'internal', recipient: 'admin', status: 'sent',
+              message: `Driver accepted ${dispatchRequest.booking_reference} but meeting-point write failed: ${mpErr.message}. Ops must contact driver+decorator.`,
+            })
+          } else {
+            meetingPointStatus = 'saved'
+          }
+        } else {
+          // Decor sibling missing — soft fail, accept proceeds, alert ops
+          meetingPointStatus = 'failed'
+          await supabase.from('tt_dispatch_requests')
+            .update({ status: 'accepted_meeting_point_pending' })
+            .eq('id', dispatchRequest.id)
+          await supabase.from('tt_notifications_log').insert({
+            booking_id: dispatchRequest.booking_id,
+            type: 'truck_decor_sibling_missing',
+            channel: 'internal', recipient: 'admin', status: 'sent',
+            message: `Truck-with-decor booking ${dispatchRequest.booking_reference}: no decor dispatch sibling found. Coordination broken.`,
+          })
+        }
+      }
+
       const twilioSid = Deno.env.get('TWILIO_ACCOUNT_SID')
       const twilioToken = Deno.env.get('TWILIO_AUTH_TOKEN')
       const fromTwilio = Deno.env.get('TT_PHONE_NUMBER')
@@ -124,6 +210,49 @@ serve(async (req) => {
             }),
           }
         )
+      }
+
+      // ====== DUAL SMS for truck-with-decor when meeting point saved ======
+      if (isTruckWithDecor && meetingPointStatus === 'saved' && twilioSid && twilioToken && fromTwilio) {
+        const mpDate = meeting_point_time
+          ? new Date(meeting_point_time).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
+          : 'TBD'
+        // Driver SMS: pickup + meeting point
+        if (partner?.partner_phone || partner?.phone) {
+          const driverPhone = partner.partner_phone || partner.phone
+          const driverMsg =
+            `TopTier ${dispatchRequest.booking_reference} CONFIRMED.\n` +
+            `Pickup: ${dispatchRequest.pickup_location || 'TBD'}\n` +
+            `Meet decorator first: ${meeting_point_address} @ ${mpDate}\n` +
+            `Decorator will load decor for setup at venue.`
+          try {
+            await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
+              method: 'POST',
+              headers: { Authorization: `Basic ${btoa(`${twilioSid}:${twilioToken}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: new URLSearchParams({ To: driverPhone, From: fromTwilio, Body: driverMsg }),
+            })
+          } catch (e) { console.error('driver SMS failed:', e) }
+        }
+        // Decorator SMS: meeting point + driver name/phone
+        if (decorRow) {
+          const decorPartners = (decorRow.matched_partners || []) as any[]
+          const decorContact = decorPartners[0]
+          const decorPhone = decorContact?.partner_phone || decorContact?.phone
+          if (decorPhone) {
+            const decorMsg =
+              `TopTier ${dispatchRequest.booking_reference}: Driver assigned.\n` +
+              `Meet: ${meeting_point_address} @ ${mpDate}\n` +
+              `Driver: ${partner?.partner_name || 'Driver'} ${partner?.partner_phone || partner?.phone || ''}\n` +
+              `Load decor onto truck at meeting point for venue setup.`
+            try {
+              await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
+                method: 'POST',
+                headers: { Authorization: `Basic ${btoa(`${twilioSid}:${twilioToken}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ To: decorPhone, From: fromTwilio, Body: decorMsg }),
+              })
+            } catch (e) { console.error('decorator SMS failed:', e) }
+          }
+        }
       }
 
       try {
