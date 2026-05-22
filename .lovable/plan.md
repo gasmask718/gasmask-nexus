@@ -1,424 +1,278 @@
+# tt-smart-dispatch — 5-Pattern Refactor
 
-# Universal Service Router — Plan & Diffs (PRE-DEPLOY)
+## 1. Coach-bus ownership (answered first)
 
-Nothing below is applied yet. Approve and I will run the migration, write the files, and deploy the 3 functions. No unrelated code will be touched.
+**Question:** does coach-bus belong to `cb-dispatch-engine` or to the new `quote_region` branch?
 
-Scope of file changes:
-- NEW migration: `tt_service_routing` table + RLS + trigger + 30 seed rows
-- NEW file: `supabase/functions/_shared/serviceRouter.ts`
-- EDIT: `supabase/functions/create-tt-booking/index.ts`
-- EDIT: `supabase/functions/receive-public-booking/index.ts`
-- EDIT: `supabase/functions/tt-smart-dispatch/index.ts`
+**Answer: `cb-dispatch-engine` owns it.** Evidence:
+- `PenthouseCoachBusDispatch.tsx` invokes only `cb-dispatch-engine` (dispatch / select_quote / send_customer_offer).
+- `PenthousePrivateJetDispatch.tsx` also invokes `cb-dispatch-engine` — the cb engine is the shared quote-flow engine for **both** coach-bus and private-jet.
+- `PartnerRespond.tsx` (partner quote submission) routes through `cb-dispatch-engine`.
 
-No other functions, no UI, no public site, no standalone backend.
+**Implication for tt-smart-dispatch:** the `quote_region` branch must NOT broadcast SMS and must NOT charge. It only:
+1. Inserts a `tt_dispatch_requests` row with `status='awaiting_quote'`, `dispatch_pattern='quote_region'`, `payment_leg='pay_after_quote_not_built'`, and `matched_partners` = regional partner list (for visibility).
+2. Returns early with `{ success: true, fulfillment: 'quote_region', engine: 'cb-dispatch-engine', matched: N }`.
 
----
+The cb engine is then triggered manually from the Penthouse UI (existing flow). No double-dispatch.
 
-## STEP 1 — Migration SQL
+## 2. Branch architecture
 
-```sql
--- 1. Routing table
-CREATE TABLE public.tt_service_routing (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug text UNIQUE NOT NULL,
-  display_name text NOT NULL,
-  service_category text NOT NULL,
-  partner_types text[] NOT NULL DEFAULT '{}',
-  pricing_strategy text NOT NULL DEFAULT 'quote',      -- distance|fixed|tiered|quote|catalog
-  fulfillment_model text NOT NULL DEFAULT 'manual',    -- auto_dispatch|manual|quote_then_dispatch|catalog_order
-  intake_table text NOT NULL DEFAULT 'tt_bookings',
-  dedicated_tables text[] DEFAULT '{}',
-  sms_template_key text,
-  requires_authenticator boolean NOT NULL DEFAULT false,
-  is_active boolean NOT NULL DEFAULT true,
-  sort_order int NOT NULL DEFAULT 0,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
+After `resolveRouting()` resolves `routing.dispatch_pattern`:
 
-CREATE INDEX idx_tt_service_routing_slug ON public.tt_service_routing(slug);
-CREATE INDEX idx_tt_service_routing_cat_active
-  ON public.tt_service_routing(service_category, is_active);
-
-ALTER TABLE public.tt_service_routing ENABLE ROW LEVEL SECURITY;
-
--- Public can read active rows (needed for public site / unauth intake)
-CREATE POLICY "tt_service_routing public read active"
-ON public.tt_service_routing FOR SELECT
-USING (is_active = true);
-
--- Admins full access (relies on existing has_role(...,'admin'))
-CREATE POLICY "tt_service_routing admin all"
-ON public.tt_service_routing FOR ALL
-USING (public.has_role(auth.uid(), 'admin'::app_role))
-WITH CHECK (public.has_role(auth.uid(), 'admin'::app_role));
-
--- updated_at trigger (reuses existing public.update_updated_at_column)
-CREATE TRIGGER trg_tt_service_routing_updated_at
-BEFORE UPDATE ON public.tt_service_routing
-FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+```text
+routing._unrouted || fulfillment_model='manual' || partner_types=[]  → manual queue   (UNCHANGED)
+dispatch_pattern = 'pool_style'                                      → selectPoolStyle()
+                 = 'asset_fallback'                                  → selectAssetFallback()
+                 = 'hybrid'                                          → selectHybrid()
+                 = 'quote_region'                                    → selectQuoteRegion()  [selection only]
+                 = 'broadcast_hold'                                  → selectBroadcastHold() [selection only]
+dispatch_pattern IS NULL (beauty/chef/roses/media/security/massage/
+   spa/club/corporate/art-gallery/custom-experience/art-commission)  → selectLegacyScored() (extracted intact)
 ```
 
-## STEP 2 — Seed (30 slugs)
+`selectLegacyScored()` is the **current 287-line logic verbatim** — public-site partner query, scoring, top-5, SMS broadcast — pulled into one function with zero behavioral change. Beauty regression test will hit this.
 
-```sql
-INSERT INTO public.tt_service_routing
-  (slug, display_name, service_category, partner_types, pricing_strategy, fulfillment_model, dedicated_tables, is_active, sort_order) VALUES
--- Transportation
-('black-truck',  'Black Truck / Car Service', 'luxury_transport', ARRAY['chauffeur','sedan','suv'],         'distance','auto_dispatch',       ARRAY['tt_vehicles'], true, 10),
-('exotic-cars',  'Exotic Car Rentals',        'exotic_rental',    ARRAY['exotic_supplier'],                 'tiered','auto_dispatch',         ARRAY['tt_vehicles'], true, 20),
-('sprinters',    'Sprinter Vans',             'luxury_transport', ARRAY['sprinter_operator'],               'distance','auto_dispatch',       ARRAY['tt_vehicles'], true, 30),
-('party-bus',    'Party Bus',                 'group_transport',  ARRAY['party_bus_operator'],              'tiered','auto_dispatch',         '{}',                  true, 40),
-('private-jet',  'Private Jet',               'private_jet',      ARRAY['aviation_broker'],                 'quote','quote_then_dispatch',    ARRAY['tt_private_jets'], true, 50),
-('yachts',       'Yacht Charter',             'yacht_charter',    ARRAY['yacht_operator'],                  'quote','quote_then_dispatch',    '{}',                  true, 60),
-('helicopter',   'Helicopter',                'helicopter',       ARRAY['helicopter_operator'],             'quote','quote_then_dispatch',    '{}',                  true, 70),
-('coach-bus',    'Coach Bus',                 'coach_bus',        ARRAY['coach_operator'],                  'tiered','auto_dispatch',         '{}',                  true, 80),
-('jetski',       'Jet Ski',                   'watercraft_rental',ARRAY['watercraft_operator'],             'fixed','auto_dispatch',          '{}',                  true, 90),
-('slingshot',    'Slingshot',                 'novelty_rental',   ARRAY['novelty_operator'],                'fixed','auto_dispatch',          '{}',                  true, 100),
--- Entertainment
-('club',         'Nightclub VIP',             'nightlife_vip',    ARRAY['nightlife_host'],                  'quote','manual',                 '{}',                  true, 110),
-('restaurant',   'Restaurant Reservations',   'dining_reservation',ARRAY['restaurant_partner'],             'quote','manual',                 '{}',                  true, 120),
-('event-spaces', 'Event Spaces',              'event_space',      ARRAY['venue_partner'],                   'quote','quote_then_dispatch',    '{}',                  true, 130),
-('security',     'Security Detail',           'security_detail',  ARRAY['security_provider'],               'quote','auto_dispatch',          '{}',                  true, 140),
-('media',        'Media / Photo / Video',     'media_production', ARRAY['photographer','videographer'],     'tiered','auto_dispatch',         '{}',                  true, 150),
-('corporate',    'Corporate Events',          'corporate_event',  ARRAY['corporate_planner'],               'quote','manual',                 ARRAY['tt_corporate_accounts'], true, 160),
-('kids-family',  'Kids & Family Experiences', 'family_experience',ARRAY['experience_host'],                 'catalog','manual',               ARRAY['tt_experiences'], true, 170),
-('activities',   'Activities',                'experience_booking',ARRAY['experience_host'],                'catalog','manual',               ARRAY['tt_experiences'], true, 180),
-('things-to-do', 'Things To Do',              'experience_booking',ARRAY['experience_host'],                'catalog','manual',               ARRAY['tt_experiences'], true, 190),
--- Lifestyle
-('beauty',       'Beauty Services',           'beauty_services',  ARRAY['beauty_pro'],                      'tiered','auto_dispatch',         '{}',                  true, 200),
-('spa-wellness', 'Spa & Wellness',            'wellness',         ARRAY['wellness_pro'],                    'tiered','auto_dispatch',         '{}',                  true, 210),
-('massage',      'Massage',                   'wellness',         ARRAY['massage_therapist'],               'tiered','auto_dispatch',         '{}',                  true, 220),
-('chef',         'Private Chef',              'private_chef',     ARRAY['chef'],                            'quote','auto_dispatch',          '{}',                  true, 230),
-('hotels',       'Hotels',                    'hotel_booking',    ARRAY['hotel_supplier'],                  'catalog','quote_then_dispatch',  ARRAY['tt_hotels','tt_hotel_room_offers','tt_hotel_addons'], true, 240),
-('roses',        'Roses & Floral Gifting',    'roses_gifting',    ARRAY['florist'],                         'fixed','auto_dispatch',          '{}',                  true, 250),
-('art-gallery',  'Art Gallery Concierge',     'art_concierge',    ARRAY['art_dealer'],                      'quote','manual',                 '{}',                  true, 260),
-('jewelry',      'Jewelry Concierge',         'jewelry_concierge',ARRAY['jeweler'],                         'quote','manual',                 '{}',                  true, 270),
-('luxury-gifting','Luxury Gifting',           'gifting',          ARRAY['gift_concierge'],                  'tiered','manual',                '{}',                  true, 280),
--- Decor (subsystem not yet built — inactive)
-('hotel-decor',  'Hotel Decor',               'decor',            ARRAY['decorator'],                       'tiered','quote_then_dispatch',   '{}',                  false, 290),
-('truck-decor',  'Truck Decor',               'decor',            ARRAY['decorator'],                       'tiered','quote_then_dispatch',   '{}',                  false, 300);
-```
+## 3. Per-branch logic
 
-## STEP 3 — `supabase/functions/_shared/serviceRouter.ts` (new)
+### pool_style (black-truck)
+- Source: `tt_drivers` (active, status='approved').
+- Filter: `vehicle_classes && [class]` (class derived from routing/booking — for black-truck, partner_types `chauffeur/sedan/suv`).
+- Filter: `styles_offered @> [booking.requested_style]` only when `requested_style IS NOT NULL`.
+- Amenity filter: `requested_red_carpet=true` → `red_carpet=true`; `requested_star_ceiling=true` → `star_ceiling=true`. NULL/false = no filter.
+- Broadcast SMS to filtered set, first-confirm-wins. `dispatch_pattern='pool_style'`, no payment_leg flag.
 
-```ts
-// Shared service routing resolver for TopTier intake + dispatch.
-// Never throws — unknown slugs return { _unrouted: true } so booking is still
-// captured and an admin alert can fire, instead of silently becoming 'general'.
+### asset_fallback (exotic-cars, party-bus, yachts)
+- If `booking.vehicle_id IS NOT NULL`: resolve `tt_vehicles.owner_partner_id` → primary partner.
+- Fallback list = other `tt_partners` with `partner_type IN routing.partner_types` AND `vehicle_id` in their inventory (`tt_partner_assets.vehicle_id` join), ordered:
+  - exotic_supplier: `profit_margin DESC`
+  - party_bus_operator / yacht_operator: `profit_margin DESC, rating DESC` *(flag: no `availability_score`/`next_available_at` column — recorded as parked)*
+- Amenity filter for exotics same as pool_style.
+- Store ordered list in `tt_dispatch_requests.matched_partners[0]=owner, [1..N]=fallback`.
+- SMS owner first; partner-respond handler walks the fallback chain on decline/timeout.
 
-export interface RoutingRow {
-  id?: string;
-  slug: string;
-  display_name: string;
-  service_category: string;
-  partner_types: string[];
-  pricing_strategy: string;
-  fulfillment_model: string;
-  intake_table: string;
-  dedicated_tables: string[];
-  sms_template_key?: string | null;
-  requires_authenticator?: boolean;
-  is_active?: boolean;
-  _unrouted?: boolean;
-}
+### hybrid (sprinters)
+- Probe: `SELECT 1 FROM tt_vehicles WHERE style=booking.requested_style AND owner_partner_id IS NOT NULL LIMIT 1`.
+- Found → asset path (same selection as `asset_fallback`, partner_type=`sprinter_operator`).
+- Not found → pool path (`tt_drivers` where `vehicle_classes && ['sprinter']` + style/amenity filters).
 
-// Legacy / alias map: old service_type strings -> canonical slug
-const ALIAS_TO_SLUG: Record<string, string> = {
-  luxury_transport: 'black-truck',
-  black_car: 'black-truck',
-  exotic: 'exotic-cars',
-  exotic_rental: 'exotic-cars',
-  sprinter: 'sprinters',
-  party_bus: 'party-bus',
-  private_jet: 'private-jet',
-  jet: 'private-jet',
-  yacht: 'yachts',
-  yacht_charter: 'yachts',
-  coach_bus: 'coach-bus',
-  watercraft_rental: 'jetski',
-  novelty_rental: 'slingshot',
-  nightlife_vip: 'club',
-  dining_reservation: 'restaurant',
-  event_space: 'event-spaces',
-  security_detail: 'security',
-  media_production: 'media',
-  corporate_event: 'corporate',
-  family_experience: 'kids-family',
-  experience_booking: 'activities',
-  beauty_services: 'beauty',
-  wellness: 'spa-wellness',
-  wellness_massage: 'massage',
-  private_chef: 'chef',
-  hotel_booking: 'hotels',
-  roses_gifting: 'roses',
-  art_concierge: 'art-gallery',
-  jewelry_concierge: 'jewelry',
-  gifting: 'luxury-gifting',
-};
+### quote_region (private-jet, coach-bus)  — selection only
+- `tt_partners` where `partner_type IN routing.partner_types` AND `service_regions && [booking.pickup_state]`.
+- Pickup state resolution: `booking.pickup_state` first; fallback regex on `pickup_location` if null (`/\b([A-Z]{2})\b/` final token).
+- Insert `tt_dispatch_requests` with `status='awaiting_quote'`, `dispatch_pattern='quote_region'`, `payment_leg='pay_after_quote_not_built'`, `matched_partners`=list.
+- **NO SMS, NO charge, RETURN EARLY.** cb-dispatch-engine handles the rest.
 
-export async function resolveRouting(
-  supabase: any,
-  slugOrServiceType: string | null | undefined
-): Promise<RoutingRow> {
-  const raw = (slugOrServiceType || '').trim();
-  const candidate = raw.toLowerCase();
-  const slug = ALIAS_TO_SLUG[candidate] || candidate;
+### broadcast_hold (helicopter, jetski, slingshot)  — selection only
+- Same regional filter as quote_region.
+- Broadcast SMS to regional set (`first-availability-wins` UX exists in partner-respond).
+- Insert `tt_dispatch_requests` with `status='sent'`, `dispatch_pattern='broadcast_hold'`, `payment_leg='auth_hold_not_built'`.
+- Booking cannot complete without the auth-hold leg — flagged.
 
-  if (slug) {
-    const { data } = await supabase
-      .from('tt_service_routing')
-      .select('*')
-      .eq('slug', slug)
-      .maybeSingle();
-    if (data) return data as RoutingRow;
-  }
+## 4. Preserved untouched
+- Manual / `_unrouted` queue
+- `selectLegacyScored()` — every NULL-pattern service (beauty regression target)
+- `cb-dispatch-engine` (not modified)
+- `media-dispatch-*`, `tt-auto-dispatch`, `tt-partner-response`
+- SMS gateway code (Twilio via connector-gateway)
+- `tt_dispatch_requests` row shape — only adding 2 nullable columns
 
-  // Unrouted fallback — never throw
-  return {
-    slug: raw || 'unknown',
-    display_name: raw || 'Unrouted Inquiry',
-    service_category: 'unrouted',
-    partner_types: [],
-    pricing_strategy: 'quote',
-    fulfillment_model: 'manual',
-    intake_table: 'tt_bookings',
-    dedicated_tables: [],
-    _unrouted: true,
-  };
-}
-```
+## 5. Migrations (run BEFORE deploy)
 
-## STEP 4 — Diff: `create-tt-booking/index.ts`
-
-Add import + resolve routing + write resolved fields. Hard-coded `service_type` / `service_name` removed; if unrouted, status flips to `needs_review` and an admin alert is logged.
-
-```diff
- import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
- import { corsHeaders } from 'https://esm.sh/@supabase/supabase-js@2/cors'
-+import { resolveRouting } from '../_shared/serviceRouter.ts'
-@@
--    const body = await req.json();
--    const { customer_name, customer_email, customer_phone, pickup_address, pickup_lat, pickup_lng, dropoff_address, dropoff_lat, dropoff_lng, pickup_datetime, vehicle_id, passenger_count, add_ons, special_requests, stripe_payment_intent_id, total_price } = body;
-+    const body = await req.json();
-+    const { customer_name, customer_email, customer_phone, pickup_address, pickup_lat, pickup_lng, dropoff_address, dropoff_lat, dropoff_lng, pickup_datetime, vehicle_id, passenger_count, add_ons, special_requests, stripe_payment_intent_id, total_price, service_slug, service_type: incomingServiceType } = body;
-@@
--    const booking_reference = generateBookingRef();
--
--    // Insert booking
--    const { data: booking, error: bookingErr } = await supabase.from('tt_bookings').insert({
-+    const booking_reference = generateBookingRef();
-+
-+    // Resolve routing from slug / legacy service_type (defaults to black-truck for back-compat)
-+    const routing = await resolveRouting(supabase, service_slug || incomingServiceType || 'black-truck');
-+    const initialStatus = routing._unrouted ? 'needs_review' : 'confirmed';
-+
-+    // Insert booking
-+    const { data: booking, error: bookingErr } = await supabase.from('tt_bookings').insert({
-       client_name: customer_name,
-       client_email: customer_email,
-       client_phone: customer_phone,
--      service_type: 'luxury_transport',
--      service_name: 'Black Car Service',
-+      service_type: routing.service_category,
-+      service_name: routing.display_name,
-+      service_slug: routing.slug,
-+      fulfillment_model: routing.fulfillment_model,
-       total_price,
--      status: 'confirmed',
-+      status: initialStatus,
-       payment_status: 'paid',
-@@
-     if (bookingErr) throw bookingErr;
-+
-+    if (routing._unrouted) {
-+      await supabase.from('tt_notifications_log').insert({
-+        booking_id: booking.id,
-+        type: 'unrouted_booking_alert',
-+        channel: 'internal',
-+        recipient: 'admin',
-+        message: `Unrouted service "${service_slug || incomingServiceType}" — booking ${booking_reference} needs review`,
-+        status: 'sent',
-+      });
-+    }
-```
-
-Note: `service_slug` column does not exist yet on `tt_bookings`. I'll add it in the same migration:
+### Migration A — schema adds (additive, all nullable)
 ```sql
 ALTER TABLE public.tt_bookings
-  ADD COLUMN IF NOT EXISTS service_slug text;
-```
-(`fulfillment_model` already exists per `receive-public-booking`.)
+  ADD COLUMN IF NOT EXISTS requested_style text,
+  ADD COLUMN IF NOT EXISTS pickup_state    text;
 
-## STEP 5 — Diff: `receive-public-booking/index.ts`
+ALTER TABLE public.tt_dispatch_requests
+  ADD COLUMN IF NOT EXISTS dispatch_pattern text,
+  ADD COLUMN IF NOT EXISTS payment_leg      text;
 
-```diff
- import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
- import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-+import { resolveRouting } from "../_shared/serviceRouter.ts"
-@@
--    const booking_reference = 'TT-' + (local_booking_id || '').slice(0, 8).toUpperCase()
-+    const booking_reference = 'TT-' + (local_booking_id || '').slice(0, 8).toUpperCase()
-+    const routing = await resolveRouting(supabase, service_type)
-+    const status = routing._unrouted ? 'needs_review' : 'pending'
-
-     const { data: osBooking, error } = await supabase
-       .from('tt_bookings')
-       .insert({
-         client_name: customer_name || 'Website Inquiry',
-         client_email: customer_email || null,
-         client_phone: customer_phone || null,
--        service_type: service_type || 'general',
--        service_name: service_name || service_type || 'Website Booking',
-+        service_type: routing.service_category,
-+        service_name: service_name || routing.display_name,
-+        service_slug: routing.slug,
-         pickup_location: pickup_location || null,
-         dropoff_location: dropoff_location || null,
-         scheduled_at: scheduled_at || null,
-         total_price: total_price || 0,
--        status: 'pending',
-+        status,
-         payment_status: 'unpaid',
-         booking_reference: booking_reference,
--        fulfillment_model: 'quote_broadcast',
-+        fulfillment_model: routing.fulfillment_model,
-         special_requests: special_requests || null,
-         source: 'public_website',
-         notes: metadata ? JSON.stringify(metadata) : null,
-       })
-@@
-     if (error) throw error
-+
-+    if (routing._unrouted) {
-+      await supabase.from('tt_notifications_log').insert({
-+        booking_id: osBooking.id,
-+        type: 'unrouted_booking_alert',
-+        channel: 'internal',
-+        recipient: 'admin',
-+        message: `Unrouted public service "${service_type}" — ${booking_reference} needs review`,
-+        status: 'sent',
-+      })
-+    }
-@@
--    // Auto-trigger smart dispatch
--    try {
-+    // Auto-trigger smart dispatch only for auto_dispatch / quote_then_dispatch
-+    const shouldDispatch = !routing._unrouted &&
-+      (routing.fulfillment_model === 'auto_dispatch' ||
-+       routing.fulfillment_model === 'quote_then_dispatch')
-+    if (shouldDispatch) try {
-       const dispatchRes = await supabase.functions.invoke(
-         'tt-smart-dispatch',
-         { body: { booking_id: osBooking.id } }
-       )
-       console.log('Auto-dispatch result:', dispatchRes.data)
-     } catch (dispatchErr) {
-       console.error('Auto-dispatch failed (non-critical):', dispatchErr)
-     }
+CREATE INDEX IF NOT EXISTS idx_tt_dispatch_requests_pattern
+  ON public.tt_dispatch_requests(dispatch_pattern);
 ```
 
-## STEP 6 — Diff: `tt-smart-dispatch/index.ts`
+### Migration B — partner_type reconciliation (TEST seed only)
+```sql
+UPDATE public.tt_partners SET partner_type = 'exotic_supplier'
+  WHERE partner_type = 'exotic_owner';
+UPDATE public.tt_partners SET partner_type = 'sprinter_operator'
+  WHERE partner_type = 'sprinter_op';
+UPDATE public.tt_partners SET partner_type = 'aviation_broker'
+  WHERE partner_type = 'jet_op';
+UPDATE public.tt_partners SET partner_type = 'helicopter_operator'
+  WHERE partner_type = 'heli_op';
+-- chauffeur unchanged
+```
+Confirmed against `tt_service_routing.partner_types` — these are the canonical names. Without this update, every pattern branch returns 0 partners silently.
 
-Replace hard-coded `serviceTypeMap` with `resolveRouting`. Manual / unrouted bookings go to `tt_dispatch_requests` as a routed lead and fire an admin alert — they do NOT broadcast to partners. Coach-bus + media keep their existing engines because their routing rows resolve to `auto_dispatch` with the partner_types those engines already use (no engine-specific code is removed here).
+## 6. The diff — `supabase/functions/tt-smart-dispatch/index.ts`
+
+Structurally: keep `serve()` shell, keep booking fetch + routing resolve + manual/unrouted block (lines 12–71) UNCHANGED. Replace lines 73–279 (legacy scoring + SMS) with a pattern dispatcher that calls one of 6 selector functions. The original 73–279 block is moved verbatim into `selectLegacyScored(supabase, publicClient, booking, routing)` and called for NULL pattern.
 
 ```diff
- import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
- import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-+import { resolveRouting } from "../_shared/serviceRouter.ts"
-@@
- const PUBLIC_URL = 'https://hruhkyvwtfpfviwnvhne.supabase.co'
+@@ after manual/unrouted early-return (line 71) @@
 -
--// Maps booking service_type to values found in partner service_types array
--const serviceTypeMap: Record<string, string[]> = {
--  luxury_transport: ['chauffeur', 'sprinter', 'sedan', 'suv', 'limo'],
--  exotic_rental: ['exotic', 'rental', 'supercar'],
--  helicopter: ['helicopter', 'aviation'],
--  private_jet: ['jet', 'aviation', 'private_jet'],
--  yacht_charter: ['yacht', 'marine', 'vessel'],
--  private_chef: ['chef', 'culinary', 'catering'],
--  nightlife_vip: ['nightlife', 'vip', 'bottle'],
--  wellness_massage: ['massage', 'wellness', 'spa'],
--  beauty_services: ['beauty', 'styling', 'glam'],
--  media_production: ['photographer', 'videographer', 'media', 'photography'],
--  security_detail: ['security', 'protection'],
--  event_space: ['venue', 'events', 'space'],
--}
-@@
--    const serviceCategory = booking.service_type || 'luxury_transport'
--    const matchServiceTypes = serviceTypeMap[serviceCategory] || [serviceCategory]
-+    const routing = await resolveRouting(supabase, booking.service_slug || booking.service_type)
-+    const serviceCategory = routing.service_category
-+    const matchServiceTypes = routing.partner_types
+-    // Query partners: status = 'approved' AND is_active = true
+-    // ... (lines 73–279 — current scoring + SMS body) ...
 +
-+    // Manual or unrouted: do not broadcast. Create routed lead + admin alert.
-+    if (routing._unrouted || routing.fulfillment_model === 'manual' || matchServiceTypes.length === 0) {
-+      await supabase.from('tt_dispatch_requests').insert({
-+        booking_id: booking.id,
-+        booking_reference: booking.booking_reference,
-+        service_type: booking.service_type,
-+        service_category: serviceCategory,
-+        pickup_location: booking.pickup_location,
-+        dropoff_location: booking.dropoff_location,
-+        scheduled_at: booking.scheduled_at,
-+        customer_name: booking.client_name,
-+        customer_phone: booking.client_phone,
-+        special_requests: booking.special_requests,
-+        total_price: booking.total_price,
-+        status: routing._unrouted ? 'needs_review' : 'manual_queue',
-+        matched_partners: [],
-+        auto_matched: false,
-+      })
-+      await supabase.from('tt_notifications_log').insert({
-+        booking_id: booking.id,
-+        type: routing._unrouted ? 'unrouted_booking_alert' : 'manual_dispatch_required',
-+        channel: 'internal',
-+        recipient: 'admin',
-+        message: `${routing.display_name} booking ${booking.booking_reference} requires manual handling`,
-+        status: 'sent',
-+      })
-+      return new Response(JSON.stringify({
-+        success: true, matched: 0,
-+        fulfillment_model: routing.fulfillment_model,
-+        unrouted: !!routing._unrouted,
-+        message: 'Routed to manual queue',
-+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
++    // ====== PATTERN DISPATCHER ======
++    const pattern = routing.dispatch_pattern as string | null
++    const ctx = { supabase, publicClient, booking, routing, corsHeaders }
++
++    switch (pattern) {
++      case 'pool_style':      return await selectPoolStyle(ctx)
++      case 'asset_fallback':  return await selectAssetFallback(ctx)
++      case 'hybrid':          return await selectHybrid(ctx)
++      case 'quote_region':    return await selectQuoteRegion(ctx)     // selection only
++      case 'broadcast_hold':  return await selectBroadcastHold(ctx)   // selection only
++      default:                return await selectLegacyScored(ctx)    // NULL pattern: unchanged
 +    }
-@@
-     const { data: publicPartners, error: partnerErr } = await publicClient
-       .from('partners')
-       .select('id, user_id, partner_type, business_name, status, service_types, markets, rating, average_response_minutes, is_active, capabilities, phone, contact_info, contact_phone, trust_score')
-       .eq('status', 'approved')
-       .eq('is_active', true)
-       .overlaps('service_types', matchServiceTypes)
++  } catch (err) { /* unchanged */ }
++})
++
++// ===================== SELECTORS =====================
++
++async function selectLegacyScored(ctx) {
++  // ** verbatim copy of current lines 73–279 ** — public partner query,
++  // candidates build, scoring loop, top-5 dispatch insert, SMS broadcast,
++  // tt_bookings.status='dispatched' update, success response.
++}
++
++async function selectPoolStyle(ctx) {
++  const { supabase, booking, routing } = ctx
++  const classes = routing.partner_types       // e.g. ['chauffeur','sedan','suv']
++  let q = supabase.from('tt_drivers')
++    .select('id, partner_id, driver_name, phone, vehicle_classes, styles_offered, red_carpet, star_ceiling, rating')
++    .eq('status','approved').eq('is_active', true)
++    .overlaps('vehicle_classes', classes)
++  if (booking.requested_style)        q = q.contains('styles_offered', [booking.requested_style])
++  if (booking.requested_red_carpet)   q = q.eq('red_carpet', true)
++  if (booking.requested_star_ceiling) q = q.eq('star_ceiling', true)
++  const { data: drivers } = await q
++  return await insertDispatchAndBroadcast(ctx, drivers || [], {
++    dispatch_pattern: 'pool_style', payment_leg: null, status: 'sent',
++  })
++}
++
++async function selectAssetFallback(ctx) {
++  const { supabase, booking, routing } = ctx
++  let primary = null
++  if (booking.vehicle_id) {
++    const { data: v } = await supabase.from('tt_vehicles')
++      .select('owner_partner_id').eq('id', booking.vehicle_id).maybeSingle()
++    if (v?.owner_partner_id) {
++      const { data: op } = await supabase.from('tt_partners')
++        .select('*').eq('id', v.owner_partner_id).maybeSingle()
++      primary = op
++    }
++  }
++  const orderCol = routing.partner_types.includes('exotic_supplier') ? 'profit_margin' : 'profit_margin'
++  const { data: pool } = await supabase.from('tt_partners')
++    .select('*').in('partner_type', routing.partner_types)
++    .eq('status','approved').eq('is_active', true)
++    .order(orderCol, { ascending: false })
++  const fallback = (pool || []).filter(p => p.id !== primary?.id)
++  const ordered = [primary, ...fallback].filter(Boolean)
++  // amenity filter (exotic only)
++  const filtered = routing.partner_types.includes('exotic_supplier')
++    ? ordered.filter(p => (!booking.requested_red_carpet   || p.red_carpet)
++                       && (!booking.requested_star_ceiling || p.star_ceiling))
++    : ordered
++  return await insertDispatchAndBroadcast(ctx, filtered, {
++    dispatch_pattern: 'asset_fallback', payment_leg: null, status: 'sent',
++  })
++}
++
++async function selectHybrid(ctx) {
++  const { supabase, booking } = ctx
++  let hasAsset = false
++  if (booking.requested_style) {
++    const { data } = await supabase.from('tt_vehicles')
++      .select('id').eq('style', booking.requested_style)
++      .not('owner_partner_id','is', null).limit(1)
++    hasAsset = (data || []).length > 0
++  }
++  return hasAsset ? await selectAssetFallback(ctx) : await selectPoolStyle(ctx)
++}
++
++async function selectQuoteRegion(ctx) {
++  const { supabase, booking, routing } = ctx
++  const state = resolvePickupState(booking)
++  const { data: regional } = await supabase.from('tt_partners')
++    .select('*').in('partner_type', routing.partner_types)
++    .eq('status','approved').eq('is_active', true)
++    .overlaps('service_regions', state ? [state] : [])
++  const list = regional || []
++  const { data: dr } = await supabase.from('tt_dispatch_requests').insert({
++    booking_id: booking.id, booking_reference: booking.booking_reference,
++    service_type: booking.service_type, service_category: routing.service_category,
++    pickup_location: booking.pickup_location, status: 'awaiting_quote',
++    dispatch_pattern: 'quote_region', payment_leg: 'pay_after_quote_not_built',
++    matched_partners: list, auto_matched: true,
++  }).select().single()
++  // NO SMS — cb-dispatch-engine handles quote flow
++  return jsonOk(ctx, { matched: list.length, dispatch_request_id: dr?.id,
++    pattern: 'quote_region', engine: 'cb-dispatch-engine',
++    payment_leg: 'pay_after_quote_not_built' })
++}
++
++async function selectBroadcastHold(ctx) {
++  const { supabase, booking, routing } = ctx
++  const state = resolvePickupState(booking)
++  const { data: regional } = await supabase.from('tt_partners')
++    .select('*').in('partner_type', routing.partner_types)
++    .eq('status','approved').eq('is_active', true)
++    .overlaps('service_regions', state ? [state] : [])
++  return await insertDispatchAndBroadcast(ctx, regional || [], {
++    dispatch_pattern: 'broadcast_hold',
++    payment_leg: 'auth_hold_not_built', status: 'sent',
++  })
++}
++
++function resolvePickupState(b) {
++  if (b.pickup_state) return b.pickup_state.toUpperCase()
++  const m = (b.pickup_location || '').match(/\b([A-Z]{2})\b(?!.*\b[A-Z]{2}\b)/)
++  return m ? m[1] : null
++}
++
++// shared insert + SMS — extracted from current SMS loop, parameterized
++async function insertDispatchAndBroadcast(ctx, list, meta) { /* … */ }
++function jsonOk(ctx, body) { /* … */ }
 ```
 
-Rest of the dispatch / scoring / SMS path is unchanged.
+`insertDispatchAndBroadcast` reuses the existing SMS Twilio block verbatim, parameterized by `meta.dispatch_pattern` + `meta.payment_leg` written into the dispatch row. Phone resolution uses partner.phone / driver.phone.
 
----
+## 7. Parked (explicitly out-of-scope, flagged in code)
+- `pay_after_quote_not_built` — quote_region payment leg
+- `auth_hold_not_built` — broadcast_hold payment leg
+- Party-bus / yacht availability ranking (`availability_score`, `next_available_at`) — using `profit_margin DESC` proxy
+- `requested_style` derivation for vehicle_id-only bookings — pool bookings must send `requested_style` explicitly
 
-## STEP 7 — Verification (run after deploy)
+## 8. Post-deploy test plan (real invocations, not SELECTs)
 
-I will then report a table with:
+Create one synthetic booking per case via direct insert into `tt_bookings`, then `supabase.functions.invoke('tt-smart-dispatch', { booking_id })` and read back `tt_dispatch_requests`:
 
-| Check | Expected | Result |
-|---|---|---|
-| 30 rows in `tt_service_routing` | count = 30 | tbd |
-| `exotic-cars` resolve | category=exotic_rental, partners=[exotic_supplier], model=auto_dispatch | tbd |
-| `yachts` resolve | yacht_charter / [yacht_operator] / quote_then_dispatch | tbd |
-| `chef` resolve | private_chef / [chef] / auto_dispatch | tbd |
-| `roses` resolve | roses_gifting / [florist] / auto_dispatch | tbd |
-| `jewelry` resolve | jewelry_concierge / [jeweler] / manual | tbd |
-| Unknown slug `foo-bar` | `_unrouted=true`, booking status `needs_review`, admin alert logged | tbd |
-| `coach-bus` resolve | coach_bus / [coach_operator] / auto_dispatch — cb_* engine untouched | tbd |
-| `media` resolve | media_production / [photographer,videographer] / auto_dispatch — media_dispatch_* untouched | tbd |
+| # | Pattern | Input | Expected `matched_partners` |
+|---|---------|-------|------------|
+| 1 | pool_style | black-truck, no filters | A, B, C (3 drivers) |
+| 2 | pool_style | + requested_red_carpet | A, B |
+| 3 | pool_style | + requested_star_ceiling | A |
+| 4 | pool_style | + requested_style=escalade | escalade driver only |
+| 5 | asset_fallback | exotic owner unavailable | fallback ordered B(0.45) → A(0.30) |
+| 6 | hybrid | sprinter style=luxury | asset branch |
+| 7 | hybrid | sprinter style=passenger | pool branch |
+| 8 | quote_region | private-jet pickup_state=NY | Jet_Ops_NY; status=awaiting_quote; no SMS |
+| 9 | quote_region | private-jet pickup_state=FL | empty matched_partners; status=awaiting_quote |
+| 10 | broadcast_hold | helicopter pickup_state=NY | Heli_NY; payment_leg='auth_hold_not_built' |
+| 11 | **REGRESSION** | beauty (NULL pattern) | hits legacy scored path — top-5 SMS broadcast unchanged |
 
----
+Report = real `tt_dispatch_requests` rows returned per invocation + pass/fail vs expected.
 
-## What I will NOT change
-- public site, standalone backend, any other edge function
-- `tt_bookings` schema beyond adding `service_slug text` (nullable, additive)
-- scoring logic, SMS gateway, partner query against the public site
-- coach-bus (`cb_*`) and media (`media_dispatch_*`) engines
+## 9. Deploy order
+1. Run Migration A (schema adds).
+2. Run Migration B (partner_type rename).
+3. Write new `index.ts` (legacy logic preserved verbatim inside `selectLegacyScored`).
+4. Deploy `tt-smart-dispatch`.
+5. Run 11-row test matrix, report results.
 
-Approve and I'll run the migration, write the three function files + the shared router, deploy, then post the verification table.
+**Awaiting approval before applying.**
