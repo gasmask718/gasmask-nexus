@@ -214,9 +214,8 @@ async function selectPoolStyle(ctx: any) {
   const { supabase, booking, routing } = ctx
   let q = supabase
     .from('tt_drivers')
-    .select('id, partner_id, driver_name, phone, vehicle_classes, styles_offered, red_carpet, star_ceiling, rating')
+    .select('id, owner_partner_id, full_name, phone, vehicle_classes, styles_offered, red_carpet, star_ceiling, rating, status')
     .eq('status', 'approved')
-    .eq('is_active', true)
     .overlaps('vehicle_classes', routing.partner_types)
 
   if (booking.requested_style)         q = q.contains('styles_offered', [booking.requested_style])
