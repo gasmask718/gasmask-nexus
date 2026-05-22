@@ -31,6 +31,16 @@ type DecoratorProfile = {
   base_price_max?: number | null;
 };
 
+type PackageInput = {
+  category: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  platform_fee_pct?: number | null;
+  is_published?: boolean | null;
+  inclusions?: unknown;
+};
+
 type PartnerRow = {
   business_name: string;
   contact_name?: string | null;
@@ -44,6 +54,7 @@ type PartnerRow = {
   default_markup_pct?: number | null;
   vehicles?: VehicleRow[];
   decorator_profile?: DecoratorProfile | null;
+  packages?: PackageInput[];
 };
 
 const FIXED_PRICE_PATTERNS = new Set(['asset_fallback', 'pool_style', 'hybrid']);
