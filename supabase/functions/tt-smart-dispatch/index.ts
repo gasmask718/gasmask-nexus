@@ -254,12 +254,14 @@ async function selectAssetFallback(ctx: any) {
     }
   }
 
-  const { data: pool } = await supabase
+  const { data: pool, error: poolErr } = await supabase
     .from('tt_partners').select('*')
     .in('partner_type', routing.partner_types)
     .eq('status', 'approved').eq('is_active', true)
-    .order('profit_margin', { ascending: false, nullsFirst: false })
-    .order('rating', { ascending: false, nullsFirst: false })
+    .order('profit_margin', { ascending: false })
+    .order('rating', { ascending: false })
+  if (poolErr) console.error('asset_fallback pool query error:', poolErr.message)
+  console.log(`asset_fallback: types=${JSON.stringify(routing.partner_types)} pool=${(pool || []).length} primary=${primary?.id || 'none'}`)
 
   const fallback = (pool || []).filter((p: any) => p.id !== primary?.id)
   let ordered = [primary, ...fallback].filter(Boolean)
