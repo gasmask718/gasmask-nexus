@@ -144,6 +144,23 @@ Deno.serve(async (req) => {
         }
       }
 
+      if (r.packages && r.packages.length > 0) {
+        if (r.partner_type !== 'decorator') {
+          reasons.push('packages:only_allowed_for_decorator');
+        } else {
+          const validCats = new Set(['hotel-decor', 'truck-decor']);
+          r.packages.forEach((pkg, pi) => {
+            if (!pkg?.name) reasons.push(`packages[${pi}]:missing_name`);
+            if (!pkg?.category) reasons.push(`packages[${pi}]:missing_category`);
+            else if (!validCats.has(pkg.category)) reasons.push(`packages[${pi}]:invalid_category:${pkg.category}`);
+            const price = Number(pkg?.price);
+            if (!Number.isFinite(price) || price <= 0) reasons.push(`packages[${pi}]:price_must_be_gt_0`);
+            const fee = pkg?.platform_fee_pct;
+            if (fee != null && (Number(fee) < 0 || Number(fee) > 100)) reasons.push(`packages[${pi}]:fee_out_of_range`);
+          });
+        }
+      }
+
       if (reasons.length > 0) {
         rejects.push({ index: i, row: r, reasons });
         continue;
