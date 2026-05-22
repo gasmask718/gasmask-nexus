@@ -118,7 +118,16 @@ Deno.serve(async (req) => {
         if (!v.name) reasons.push(`vehicle[${vi}]:missing_name`);
         if (isFixedPrice && v.customer_price == null && v.markup_pct == null) {
           reasons.push(`vehicle[${vi}]:missing_pricing`);
+      }
+
+      if (r.partner_type === 'decorator') {
+        const dp = r.decorator_profile;
+        if (!dp) reasons.push('decorator_profile:missing');
+        else {
+          if (!dp.city) reasons.push('decorator_profile:missing_city');
+          if (dp.service_radius_miles == null) reasons.push('decorator_profile:missing_service_radius_miles');
         }
+      }
         if (patterns.has('asset_fallback') && !v.dispatch_model) {
           reasons.push(`vehicle[${vi}]:missing_dispatch_model`);
         }
