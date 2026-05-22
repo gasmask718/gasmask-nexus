@@ -204,6 +204,7 @@ async function insertDispatchAndBroadcast(
     payment_leg: meta.payment_leg,
     status: meta.status,
     matched_partners: normalized,
+    selector_errors: ctx.errors ?? [],
   })
 }
 
