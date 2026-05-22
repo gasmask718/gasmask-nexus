@@ -212,6 +212,49 @@ serve(async (req) => {
         )
       }
 
+      // ====== DUAL SMS for truck-with-decor when meeting point saved ======
+      if (isTruckWithDecor && meetingPointStatus === 'saved' && twilioSid && twilioToken && fromTwilio) {
+        const mpDate = meeting_point_time
+          ? new Date(meeting_point_time).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
+          : 'TBD'
+        // Driver SMS: pickup + meeting point
+        if (partner?.partner_phone || partner?.phone) {
+          const driverPhone = partner.partner_phone || partner.phone
+          const driverMsg =
+            `TopTier ${dispatchRequest.booking_reference} CONFIRMED.\n` +
+            `Pickup: ${dispatchRequest.pickup_location || 'TBD'}\n` +
+            `Meet decorator first: ${meeting_point_address} @ ${mpDate}\n` +
+            `Decorator will load decor for setup at venue.`
+          try {
+            await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
+              method: 'POST',
+              headers: { Authorization: `Basic ${btoa(`${twilioSid}:${twilioToken}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: new URLSearchParams({ To: driverPhone, From: fromTwilio, Body: driverMsg }),
+            })
+          } catch (e) { console.error('driver SMS failed:', e) }
+        }
+        // Decorator SMS: meeting point + driver name/phone
+        if (decorRow) {
+          const decorPartners = (decorRow.matched_partners || []) as any[]
+          const decorContact = decorPartners[0]
+          const decorPhone = decorContact?.partner_phone || decorContact?.phone
+          if (decorPhone) {
+            const decorMsg =
+              `TopTier ${dispatchRequest.booking_reference}: Driver assigned.\n` +
+              `Meet: ${meeting_point_address} @ ${mpDate}\n` +
+              `Driver: ${partner?.partner_name || 'Driver'} ${partner?.partner_phone || partner?.phone || ''}\n` +
+              `Load decor onto truck at meeting point for venue setup.`
+            try {
+              await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
+                method: 'POST',
+                headers: { Authorization: `Basic ${btoa(`${twilioSid}:${twilioToken}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ To: decorPhone, From: fromTwilio, Body: decorMsg }),
+              })
+            } catch (e) { console.error('decorator SMS failed:', e) }
+          }
+        }
+      }
+
       try {
         await supabase.from('tt_notifications_log').insert({
           booking_id: dispatchRequest.booking_id,
