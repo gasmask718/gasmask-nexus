@@ -215,7 +215,12 @@ async function selectPoolStyle(ctx: any) {
   // Drivers may be seeded with vehicle_classes containing either the routing slug
   // (e.g. 'black_truck') OR the canonical partner_types (chauffeur/sedan/suv).
   // Accept both. Status accepted: approved OR active (seed inconsistency).
-  const classMatch = [routing.slug, ...routing.partner_types]
+  const classMatch = Array.from(new Set([
+    routing.slug,
+    routing.slug?.replace(/-/g, '_'),
+    routing.slug?.replace(/_/g, '-'),
+    ...routing.partner_types,
+  ].filter(Boolean)))
   let q = supabase
     .from('tt_drivers')
     .select('id, owner_partner_id, full_name, phone, vehicle_classes, styles_offered, red_carpet, star_ceiling, rating, status')
