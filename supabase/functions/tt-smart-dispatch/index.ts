@@ -76,6 +76,42 @@ serve(async (req) => {
 
     console.log(`tt-smart-dispatch: booking=${booking.id} slug=${routing.slug} pattern=${pattern || 'NULL→legacy'}`)
 
+    // ====== PRE-SWITCH DECOR ADDON DETECTOR (truck-with-decor coordination) ======
+    // Fires ONLY when this is a black-truck booking carrying a decor addon.
+    // Side-effect: creates a SECOND tt_dispatch_requests row for the DECORATOR
+    // (marketplace_direct, targeting decor_partner_id). The main switch still runs
+    // the truck pattern below against the unmodified ctx.
+    // Standalone truck-decor bookings DO NOT trigger this (decor_addon=false).
+    // Decor failure is logged + surfaced; it does NOT abort the truck dispatch.
+    const isTruckWithDecor =
+      (booking.service_slug === 'black-truck' || routing.slug === 'black-truck') &&
+      booking.decor_addon === true &&
+      !!booking.decor_partner_id
+    if (isTruckWithDecor) {
+      try {
+        const decorRouting = await resolveRouting(supabase, 'truck-decor')
+        const decorCtx = {
+          ...ctx,
+          booking: { ...ctx.booking, partner_id: ctx.booking.decor_partner_id },
+          routing: decorRouting,
+          serviceCategory: decorRouting.service_category,
+          errors: [] as string[],
+        }
+        console.log(`decor-addon detector: firing decor dispatch for booking=${booking.id} decorator=${booking.decor_partner_id}`)
+        await selectMarketplaceDirect(decorCtx)
+        if (decorCtx.errors.length) ctx.errors.push(...decorCtx.errors.map((e: string) => `decor_addon: ${e}`))
+      } catch (decorErr) {
+        console.error('decor-addon detector failed:', decorErr)
+        ctx.errors.push(`decor_addon: ${(decorErr as Error).message}`)
+        await supabase.from('tt_notifications_log').insert({
+          booking_id: booking.id,
+          type: 'truck_decor_addon_dispatch_failed',
+          channel: 'internal', recipient: 'admin', status: 'sent',
+          message: `Truck-decor addon dispatch failed for booking ${booking.booking_reference}: ${(decorErr as Error).message}`,
+        })
+      }
+    }
+
     switch (pattern) {
       case 'pool_style':         return await selectPoolStyle(ctx)
       case 'asset_fallback':     return await selectAssetFallback(ctx)
