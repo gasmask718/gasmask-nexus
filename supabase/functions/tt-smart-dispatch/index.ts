@@ -117,13 +117,13 @@ async function insertDispatchAndBroadcast(
   // Normalize recipients to a common shape with phone
   const normalized = recipients.map((r: any) => ({
     id: r.id,
-    partner_name: r.business_name || r.driver_name || r.partner_name || 'Unknown',
-    partner_type: r.partner_type || 'driver',
+    partner_name: r.business_name || r.full_name || r.name || r.partner_name || 'Unknown',
+    partner_type: r.partner_type || (r.vehicle_classes ? 'driver' : 'partner'),
     partner_phone: r.phone || r.contact_phone || r.contact_info?.phone || null,
     profit_margin: r.profit_margin ?? null,
     rating: r.rating ?? null,
-    red_carpet: r.red_carpet ?? null,
-    star_ceiling: r.star_ceiling ?? null,
+    red_carpet: r.red_carpet ?? r.offers_red_carpet ?? null,
+    star_ceiling: r.star_ceiling ?? r.offers_star_ceiling ?? null,
     styles_offered: r.styles_offered ?? null,
     vehicle_classes: r.vehicle_classes ?? null,
     service_regions: r.service_regions ?? null,
