@@ -99,6 +99,91 @@ serve(async (req) => {
           .eq('id', partner.id)
       }
 
+      // ====== TRUCK-WITH-DECOR MEETING-POINT (cross-row write to decor sibling) ======
+      // When the accepted dispatch is a black-truck pool_style row AND the booking
+      // has decor_addon=true, there is a sibling marketplace_direct row for the
+      // decorator. The driver MUST submit meeting_point_address + meeting_point_time
+      // on accept; we write them to the DECOR row (service_role bypasses RLS).
+      // Failure path: surface needs_review + admin alert, set truck status to
+      // 'accepted_meeting_point_pending', send SMS without meeting point. Driver
+      // is NOT blocked from the job.
+      let decorRow: any = null
+      let meetingPointStatus: 'none' | 'saved' | 'failed' | 'missing' = 'none'
+      const { data: booking } = await supabase
+        .from('tt_bookings').select('id, decor_addon, decor_partner_id')
+        .eq('id', dispatchRequest.booking_id).maybeSingle()
+      const isTruckWithDecor =
+        dispatchRequest.dispatch_pattern === 'pool_style' &&
+        booking?.decor_addon === true &&
+        !!booking?.decor_partner_id
+
+      if (isTruckWithDecor) {
+        const { data: sibling } = await supabase
+          .from('tt_dispatch_requests').select('*')
+          .eq('booking_id', dispatchRequest.booking_id)
+          .eq('dispatch_pattern', 'marketplace_direct')
+          .maybeSingle()
+        decorRow = sibling
+
+        if (!meeting_point_address || !meeting_point_time) {
+          meetingPointStatus = 'missing'
+          // 422 — driver MUST provide meeting point. Roll back truck accept.
+          await supabase.from('tt_dispatch_requests')
+            .update({ status: 'sent', accepted_partner_id: null, accepted_partner_name: null, accepted_at: null })
+            .eq('id', dispatchRequest.id)
+          if (partner?.id) {
+            await supabase.from('tt_partner_assets').update({ is_available: true }).eq('id', partner.id)
+          }
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'meeting_point_required',
+            message: 'This booking includes decor — set meeting point (address + time) to accept.',
+          }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        if (decorRow) {
+          const { error: mpErr } = await supabase
+            .from('tt_dispatch_requests')
+            .update({
+              meeting_point_address,
+              meeting_point_time,
+              meeting_point_set_at: new Date().toISOString(),
+              meeting_point_set_by: partner?.id ?? null,
+            })
+            .eq('id', decorRow.id)
+          if (mpErr) {
+            console.error('meeting-point write failed:', mpErr.message)
+            meetingPointStatus = 'failed'
+            await supabase.from('tt_dispatch_requests')
+              .update({ status: 'needs_review' })
+              .eq('id', decorRow.id)
+            await supabase.from('tt_dispatch_requests')
+              .update({ status: 'accepted_meeting_point_pending' })
+              .eq('id', dispatchRequest.id)
+            await supabase.from('tt_notifications_log').insert({
+              booking_id: dispatchRequest.booking_id,
+              type: 'truck_decor_meeting_point_failed',
+              channel: 'internal', recipient: 'admin', status: 'sent',
+              message: `Driver accepted ${dispatchRequest.booking_reference} but meeting-point write failed: ${mpErr.message}. Ops must contact driver+decorator.`,
+            })
+          } else {
+            meetingPointStatus = 'saved'
+          }
+        } else {
+          // Decor sibling missing — soft fail, accept proceeds, alert ops
+          meetingPointStatus = 'failed'
+          await supabase.from('tt_dispatch_requests')
+            .update({ status: 'accepted_meeting_point_pending' })
+            .eq('id', dispatchRequest.id)
+          await supabase.from('tt_notifications_log').insert({
+            booking_id: dispatchRequest.booking_id,
+            type: 'truck_decor_sibling_missing',
+            channel: 'internal', recipient: 'admin', status: 'sent',
+            message: `Truck-with-decor booking ${dispatchRequest.booking_reference}: no decor dispatch sibling found. Coordination broken.`,
+          })
+        }
+      }
+
       const twilioSid = Deno.env.get('TWILIO_ACCOUNT_SID')
       const twilioToken = Deno.env.get('TWILIO_AUTH_TOKEN')
       const fromTwilio = Deno.env.get('TT_PHONE_NUMBER')
