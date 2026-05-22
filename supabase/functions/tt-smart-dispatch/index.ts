@@ -77,13 +77,15 @@ serve(async (req) => {
     console.log(`tt-smart-dispatch: booking=${booking.id} slug=${routing.slug} pattern=${pattern || 'NULL→legacy'}`)
 
     switch (pattern) {
-      case 'pool_style':     return await selectPoolStyle(ctx)
-      case 'asset_fallback': return await selectAssetFallback(ctx)
-      case 'hybrid':         return await selectHybrid(ctx)
-      case 'quote_region':   return await selectQuoteRegion(ctx)
-      case 'broadcast_hold': return await selectBroadcastHold(ctx)
-      default:               return await selectLegacyScored(ctx)
+      case 'pool_style':         return await selectPoolStyle(ctx)
+      case 'asset_fallback':     return await selectAssetFallback(ctx)
+      case 'hybrid':             return await selectHybrid(ctx)
+      case 'quote_region':       return await selectQuoteRegion(ctx)
+      case 'broadcast_hold':     return await selectBroadcastHold(ctx)
+      case 'marketplace_direct': return await selectMarketplaceDirect(ctx)
+      default:                   return await selectLegacyScored(ctx)
     }
+
   } catch (err) {
     console.error('tt-smart-dispatch error:', err)
     return new Response(JSON.stringify({ error: (err as Error).message }), {
