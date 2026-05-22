@@ -17,6 +17,20 @@ type VehicleRow = {
   markup_pct?: number | null;
 };
 
+type DecoratorProfile = {
+  name?: string | null;
+  city: string;
+  state?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  service_radius_miles?: number | null;
+  specialties?: string[] | null;
+  bio?: string | null;
+  portfolio_images?: string[] | null;
+  base_price_min?: number | null;
+  base_price_max?: number | null;
+};
+
 type PartnerRow = {
   business_name: string;
   contact_name?: string | null;
@@ -29,6 +43,7 @@ type PartnerRow = {
   default_customer_price?: number | null;
   default_markup_pct?: number | null;
   vehicles?: VehicleRow[];
+  decorator_profile?: DecoratorProfile | null;
 };
 
 const FIXED_PRICE_PATTERNS = new Set(['asset_fallback', 'pool_style', 'hybrid']);
@@ -106,6 +121,15 @@ Deno.serve(async (req) => {
         }
         if (patterns.has('asset_fallback') && !v.dispatch_model) {
           reasons.push(`vehicle[${vi}]:missing_dispatch_model`);
+        }
+      }
+
+      if (r.partner_type === 'decorator') {
+        const dp = r.decorator_profile;
+        if (!dp) reasons.push('decorator_profile:missing');
+        else {
+          if (!dp.city) reasons.push('decorator_profile:missing_city');
+          if (dp.service_radius_miles == null) reasons.push('decorator_profile:missing_service_radius_miles');
         }
       }
 
@@ -196,6 +220,51 @@ Deno.serve(async (req) => {
           continue;
         }
         partnerId = ins!.id;
+      }
+
+      // Decorator profile (paired row in `decorators`, linked by tt_partner_id)
+      if (r.partner_type === 'decorator' && r.decorator_profile) {
+        const dp = r.decorator_profile;
+        const decoratorPayload = {
+          tt_partner_id: partnerId!,
+          name: dp.name ?? r.business_name,
+          city: dp.city,
+          state: dp.state ?? null,
+          lat: dp.lat ?? null,
+          lng: dp.lng ?? null,
+          service_radius_miles: dp.service_radius_miles ?? 25,
+          specialties: dp.specialties ?? [],
+          bio: dp.bio ?? null,
+          portfolio_images: dp.portfolio_images ?? [],
+          base_price_min: dp.base_price_min ?? null,
+          base_price_max: dp.base_price_max ?? null,
+          is_active: true,
+        };
+        const { data: existingDec, error: decLookupErr } = await admin
+          .from('decorators')
+          .select('id')
+          .eq('tt_partner_id', partnerId!)
+          .maybeSingle();
+        if (decLookupErr) {
+          rejects.push({ index: a.index, row: r, reasons: [`decorator_lookup_failed:${decLookupErr.message}`] });
+          continue;
+        }
+        if (existingDec?.id) {
+          const { error: decUpdErr } = await admin
+            .from('decorators')
+            .update(decoratorPayload)
+            .eq('id', existingDec.id);
+          if (decUpdErr) {
+            rejects.push({ index: a.index, row: r, reasons: [`decorator_update_failed:${decUpdErr.message}`] });
+            continue;
+          }
+        } else {
+          const { error: decInsErr } = await admin.from('decorators').insert(decoratorPayload);
+          if (decInsErr) {
+            rejects.push({ index: a.index, row: r, reasons: [`decorator_insert_failed:${decInsErr.message}`] });
+            continue;
+          }
+        }
       }
 
       // Vehicles
