@@ -254,30 +254,11 @@ async function selectAssetFallback(ctx: any) {
     }
   }
 
-  // DIAG: shape of routing.partner_types as it arrives at runtime
-  console.log('DIAG partner_types typeof=', typeof routing.partner_types,
-    'isArray=', Array.isArray(routing.partner_types),
-    'value=', JSON.stringify(routing.partner_types))
-
-  // DIAG: parallel HARDCODED array — known-good shape
-  const { data: hardRows, error: hardErr } = await supabase
-    .from('tt_partners').select('id, partner_type')
-    .in('partner_type', ['exotic_supplier'])
-  console.log('DIAG hardcoded .in([exotic_supplier]) =>',
-    JSON.stringify({ count: hardRows?.length ?? 0, err: hardErr?.message || null, rows: hardRows }))
-
-  // DIAG: same query driven by routing.partner_types
-  const { data: rawAll, error: rawErr } = await supabase
-    .from('tt_partners').select('id, partner_type, status, is_active, profit_margin')
-    .in('partner_type', routing.partner_types as any)
-  console.log('DIAG routing.partner_types query =>',
-    JSON.stringify({ count: rawAll?.length ?? 0, err: rawErr?.message || null }))
   const { data: pool, error: poolErr } = await supabase
     .from('tt_partners').select('*')
     .in('partner_type', routing.partner_types)
     .eq('status', 'approved').eq('is_active', true)
     .order('profit_margin', { ascending: false })
-    .order('rating', { ascending: false })
   if (poolErr) console.error('asset_fallback pool query error:', poolErr.message)
   console.log(`asset_fallback: types=${JSON.stringify(routing.partner_types)} pool=${(pool || []).length} primary=${primary?.id || 'none'}`)
 
