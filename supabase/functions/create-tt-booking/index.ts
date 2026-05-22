@@ -28,6 +28,11 @@ Deno.serve(async (req) => {
       service_slug, service_type: incomingServiceType,
       chosen_partner_id,        // tt_partners.id (preferred)
       chosen_decorator_id,      // decorators.id (legacy public-site id) — resolved via Phase-1 link
+      // Truck-decor addon (black-truck + decor coordinated)
+      decor_addon,              // boolean
+      decor_partner_id: incomingDecorPartnerId,  // tt_partners.id (preferred)
+      decor_decorator_id,       // decorators.id (legacy) — resolved via decorators.tt_partner_id
+      decor_package_slug,
     } = body;
 
     if (!customer_name || !pickup_address || !pickup_datetime || !total_price) {
@@ -51,6 +56,32 @@ Deno.serve(async (req) => {
       if (!resolvedPartnerId) {
         return new Response(JSON.stringify({
           error: `chosen_decorator_id ${chosen_decorator_id} has no linked tt_partner_id`,
+        }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
+
+    // Truck-decor addon — resolve & validate decor partner when decor_addon=true
+    let resolvedDecorPartnerId: string | null = incomingDecorPartnerId ?? null;
+    if (decor_addon === true) {
+      if (!resolvedDecorPartnerId && decor_decorator_id) {
+        const { data: dec, error: decErr } = await supabase
+          .from('decorators').select('tt_partner_id')
+          .eq('id', decor_decorator_id).maybeSingle();
+        if (decErr) throw decErr;
+        resolvedDecorPartnerId = dec?.tt_partner_id ?? null;
+      }
+      if (!resolvedDecorPartnerId) {
+        return new Response(JSON.stringify({
+          error: 'decor_addon=true requires decor_partner_id (or resolvable decor_decorator_id)',
+        }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const { data: dp, error: dpErr } = await supabase
+        .from('tt_partners').select('id')
+        .eq('id', resolvedDecorPartnerId).maybeSingle();
+      if (dpErr) throw dpErr;
+      if (!dp) {
+        return new Response(JSON.stringify({
+          error: `decor_partner_id ${resolvedDecorPartnerId} not found in tt_partners`,
         }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
     }
