@@ -31,6 +31,16 @@ type DecoratorProfile = {
   base_price_max?: number | null;
 };
 
+type PackageInput = {
+  category: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  platform_fee_pct?: number | null;
+  is_published?: boolean | null;
+  inclusions?: unknown;
+};
+
 type PartnerRow = {
   business_name: string;
   contact_name?: string | null;
@@ -44,6 +54,7 @@ type PartnerRow = {
   default_markup_pct?: number | null;
   vehicles?: VehicleRow[];
   decorator_profile?: DecoratorProfile | null;
+  packages?: PackageInput[];
 };
 
 const FIXED_PRICE_PATTERNS = new Set(['asset_fallback', 'pool_style', 'hybrid']);
@@ -130,6 +141,23 @@ Deno.serve(async (req) => {
         else {
           if (!dp.city) reasons.push('decorator_profile:missing_city');
           if (dp.service_radius_miles == null) reasons.push('decorator_profile:missing_service_radius_miles');
+        }
+      }
+
+      if (r.packages && r.packages.length > 0) {
+        if (r.partner_type !== 'decorator') {
+          reasons.push('packages:only_allowed_for_decorator');
+        } else {
+          const validCats = new Set(['hotel-decor', 'truck-decor']);
+          r.packages.forEach((pkg, pi) => {
+            if (!pkg?.name) reasons.push(`packages[${pi}]:missing_name`);
+            if (!pkg?.category) reasons.push(`packages[${pi}]:missing_category`);
+            else if (!validCats.has(pkg.category)) reasons.push(`packages[${pi}]:invalid_category:${pkg.category}`);
+            const price = Number(pkg?.price);
+            if (!Number.isFinite(price) || price <= 0) reasons.push(`packages[${pi}]:price_must_be_gt_0`);
+            const fee = pkg?.platform_fee_pct;
+            if (fee != null && (Number(fee) < 0 || Number(fee) > 100)) reasons.push(`packages[${pi}]:fee_out_of_range`);
+          });
         }
       }
 
@@ -266,6 +294,52 @@ Deno.serve(async (req) => {
           }
         }
       }
+
+      // Decorator packages — idempotent on (tt_partner_id, name).
+      // Only runs for decorators; validation already gated this above.
+      const packageErrors: string[] = [];
+      if (r.partner_type === 'decorator' && r.packages && r.packages.length > 0) {
+        for (let pi = 0; pi < r.packages.length; pi++) {
+          const pkg = r.packages[pi];
+          const pkgPayload = {
+            tt_partner_id: partnerId!,
+            provider_id: null,
+            category: pkg.category,
+            name: pkg.name,
+            description: pkg.description ?? null,
+            price: pkg.price,
+            platform_fee_pct: pkg.platform_fee_pct ?? 15,
+            inclusions: pkg.inclusions ?? [],
+            is_published: pkg.is_published ?? false,
+            is_active: true,
+          };
+          const { data: existingPkg, error: pkgLookupErr } = await admin
+            .from('provider_packages')
+            .select('id')
+            .eq('tt_partner_id', partnerId!)
+            .eq('name', pkg.name)
+            .maybeSingle();
+          if (pkgLookupErr) {
+            packageErrors.push(`packages[${pi}]:lookup_failed:${pkgLookupErr.message}`);
+            continue;
+          }
+          if (existingPkg?.id) {
+            const { error: pkgUpdErr } = await admin
+              .from('provider_packages')
+              .update(pkgPayload)
+              .eq('id', existingPkg.id);
+            if (pkgUpdErr) packageErrors.push(`packages[${pi}]:update_failed:${pkgUpdErr.message}`);
+          } else {
+            const { error: pkgInsErr } = await admin.from('provider_packages').insert(pkgPayload);
+            if (pkgInsErr) packageErrors.push(`packages[${pi}]:insert_failed:${pkgInsErr.message}`);
+          }
+        }
+        if (packageErrors.length > 0) {
+          rejects.push({ index: a.index, row: r, reasons: packageErrors });
+        }
+      }
+
+
 
       // Vehicles
       const vehicleErrors: string[] = [];
