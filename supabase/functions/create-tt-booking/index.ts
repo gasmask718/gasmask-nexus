@@ -26,6 +26,8 @@ Deno.serve(async (req) => {
       pickup_datetime, vehicle_id, passenger_count,
       add_ons, special_requests, stripe_payment_intent_id, total_price,
       service_slug, service_type: incomingServiceType,
+      chosen_partner_id,        // tt_partners.id (preferred)
+      chosen_decorator_id,      // decorators.id (legacy public-site id) — resolved via Phase-1 link
     } = body;
 
     if (!customer_name || !pickup_address || !pickup_datetime || !total_price) {
@@ -37,6 +39,21 @@ Deno.serve(async (req) => {
     // Resolve routing from slug / legacy service_type (defaults to black-truck for back-compat)
     const routing = await resolveRouting(supabase, service_slug || incomingServiceType || 'black-truck');
     const initialStatus = routing._unrouted ? 'needs_review' : 'confirmed';
+
+    // Resolve chosen decorator → tt_partners.id (for marketplace_direct dispatch)
+    let resolvedPartnerId: string | null = chosen_partner_id ?? null;
+    if (!resolvedPartnerId && chosen_decorator_id) {
+      const { data: dec, error: decErr } = await supabase
+        .from('decorators').select('tt_partner_id')
+        .eq('id', chosen_decorator_id).maybeSingle();
+      if (decErr) throw decErr;  // surface, never swallow
+      resolvedPartnerId = dec?.tt_partner_id ?? null;
+      if (!resolvedPartnerId) {
+        return new Response(JSON.stringify({
+          error: `chosen_decorator_id ${chosen_decorator_id} has no linked tt_partner_id`,
+        }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
 
     const { data: booking, error: bookingErr } = await supabase.from('tt_bookings').insert({
       client_name: customer_name,
@@ -58,7 +75,9 @@ Deno.serve(async (req) => {
       passenger_count,
       special_requests,
       notes: add_ons ? JSON.stringify(add_ons) : null,
+      partner_id: resolvedPartnerId,
     }).select().single();
+
 
     if (bookingErr) throw bookingErr;
 
