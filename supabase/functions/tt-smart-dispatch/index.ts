@@ -212,11 +212,15 @@ async function insertDispatchAndBroadcast(
 // pool_style: black-truck → tt_drivers, vehicle_classes + styles_offered + amenity
 async function selectPoolStyle(ctx: any) {
   const { supabase, booking, routing } = ctx
+  // Drivers may be seeded with vehicle_classes containing either the routing slug
+  // (e.g. 'black_truck') OR the canonical partner_types (chauffeur/sedan/suv).
+  // Accept both. Status accepted: approved OR active (seed inconsistency).
+  const classMatch = [routing.slug, ...routing.partner_types]
   let q = supabase
     .from('tt_drivers')
     .select('id, owner_partner_id, full_name, phone, vehicle_classes, styles_offered, red_carpet, star_ceiling, rating, status')
-    .eq('status', 'approved')
-    .overlaps('vehicle_classes', routing.partner_types)
+    .in('status', ['approved', 'active'])
+    .overlaps('vehicle_classes', classMatch)
 
   if (booking.requested_style)         q = q.contains('styles_offered', [booking.requested_style])
   if (booking.requested_red_carpet)    q = q.eq('red_carpet', true)
