@@ -72,7 +72,7 @@ serve(async (req) => {
 
     // ====== PATTERN DISPATCHER ======
     const pattern = (routing as any).dispatch_pattern as string | null
-    const ctx = { supabase, publicClient, booking, routing, serviceCategory }
+    const ctx: any = { supabase, publicClient, booking, routing, serviceCategory, errors: [] as string[] }
 
     console.log(`tt-smart-dispatch: booking=${booking.id} slug=${routing.slug} pattern=${pattern || 'NULL→legacy'}`)
 
