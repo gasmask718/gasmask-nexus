@@ -270,7 +270,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
         store_id,
         attempt_number,
         status,
-        stores!inner ( id, name, phone, notes, do_not_call )
+        store_master!campaign_call_queue_store_id_fkey ( id, store_name, phone, notes, do_not_call )
       `)
       .eq('campaign_id', selectedCampaign)
       .eq('status', 'queued')
@@ -290,11 +290,18 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       return null;
     }
 
-    const store = (data as any).stores;
+    const store = (data as any).store_master;
+    if (!store) {
+      toast.error('Queue item missing store record — skipping');
+      await (supabase as any).from('campaign_call_queue')
+        .update({ status: 'skipped', completed_at: new Date().toISOString() })
+        .eq('id', data.id);
+      return null;
+    }
     const lead: QueueLead = {
       queue_id: data.id,
       store_id: store.id,
-      business_name: store.name || 'Unknown',
+      business_name: store.store_name || 'Unknown',
       phone: store.phone || '',
       notes: store.notes || null,
       do_not_call: !!store.do_not_call,
