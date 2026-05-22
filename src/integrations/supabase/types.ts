@@ -91340,8 +91340,10 @@ export type Database = {
           pickup_lat: number | null
           pickup_lng: number | null
           pickup_location: string | null
+          pickup_state: string | null
           requested_red_carpet: boolean | null
           requested_star_ceiling: boolean | null
+          requested_style: string | null
           scheduled_at: string | null
           service_name: string
           service_slug: string | null
@@ -91379,8 +91381,10 @@ export type Database = {
           pickup_lat?: number | null
           pickup_lng?: number | null
           pickup_location?: string | null
+          pickup_state?: string | null
           requested_red_carpet?: boolean | null
           requested_star_ceiling?: boolean | null
+          requested_style?: string | null
           scheduled_at?: string | null
           service_name: string
           service_slug?: string | null
@@ -91418,8 +91422,10 @@ export type Database = {
           pickup_lat?: number | null
           pickup_lng?: number | null
           pickup_location?: string | null
+          pickup_state?: string | null
           requested_red_carpet?: boolean | null
           requested_star_ceiling?: boolean | null
+          requested_style?: string | null
           scheduled_at?: string | null
           service_name?: string
           service_slug?: string | null
@@ -91780,11 +91786,13 @@ export type Database = {
           created_at: string | null
           customer_name: string | null
           customer_phone: string | null
+          dispatch_pattern: string | null
           dropoff_location: string | null
           expires_at: string | null
           id: string
           match_score: number | null
           matched_partners: Json | null
+          payment_leg: string | null
           pickup_location: string | null
           scheduled_at: string | null
           sent_at: string | null
@@ -91804,11 +91812,13 @@ export type Database = {
           created_at?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          dispatch_pattern?: string | null
           dropoff_location?: string | null
           expires_at?: string | null
           id?: string
           match_score?: number | null
           matched_partners?: Json | null
+          payment_leg?: string | null
           pickup_location?: string | null
           scheduled_at?: string | null
           sent_at?: string | null
@@ -91828,11 +91838,13 @@ export type Database = {
           created_at?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          dispatch_pattern?: string | null
           dropoff_location?: string | null
           expires_at?: string | null
           id?: string
           match_score?: number | null
           matched_partners?: Json | null
+          payment_leg?: string | null
           pickup_location?: string | null
           scheduled_at?: string | null
           sent_at?: string | null
