@@ -92766,11 +92766,16 @@ export type Database = {
           bio: string | null
           business_name: string | null
           city: string | null
+          claimed_at: string | null
           commission_rate: number | null
           country: string | null
           created_at: string
+          default_customer_price: number | null
+          default_markup_pct: number | null
+          default_partner_cost: number | null
           email: string | null
           id: string
+          invited_at: string | null
           is_active: boolean
           last_active_at: string | null
           name: string
@@ -92778,6 +92783,7 @@ export type Database = {
           offers_star_ceiling: boolean
           partner_type: string | null
           phone: string | null
+          portal_status: string
           profit_margin: number | null
           response_rate: number
           service_category: string
@@ -92790,6 +92796,7 @@ export type Database = {
           total_earnings: number
           trust_score: number
           updated_at: string
+          user_id: string | null
           website: string | null
         }
         Insert: {
@@ -92798,11 +92805,16 @@ export type Database = {
           bio?: string | null
           business_name?: string | null
           city?: string | null
+          claimed_at?: string | null
           commission_rate?: number | null
           country?: string | null
           created_at?: string
+          default_customer_price?: number | null
+          default_markup_pct?: number | null
+          default_partner_cost?: number | null
           email?: string | null
           id?: string
+          invited_at?: string | null
           is_active?: boolean
           last_active_at?: string | null
           name: string
@@ -92810,6 +92822,7 @@ export type Database = {
           offers_star_ceiling?: boolean
           partner_type?: string | null
           phone?: string | null
+          portal_status?: string
           profit_margin?: number | null
           response_rate?: number
           service_category?: string
@@ -92822,6 +92835,7 @@ export type Database = {
           total_earnings?: number
           trust_score?: number
           updated_at?: string
+          user_id?: string | null
           website?: string | null
         }
         Update: {
@@ -92830,11 +92844,16 @@ export type Database = {
           bio?: string | null
           business_name?: string | null
           city?: string | null
+          claimed_at?: string | null
           commission_rate?: number | null
           country?: string | null
           created_at?: string
+          default_customer_price?: number | null
+          default_markup_pct?: number | null
+          default_partner_cost?: number | null
           email?: string | null
           id?: string
+          invited_at?: string | null
           is_active?: boolean
           last_active_at?: string | null
           name?: string
@@ -92842,6 +92861,7 @@ export type Database = {
           offers_star_ceiling?: boolean
           partner_type?: string | null
           phone?: string | null
+          portal_status?: string
           profit_margin?: number | null
           response_rate?: number
           service_category?: string
@@ -92854,6 +92874,7 @@ export type Database = {
           total_earnings?: number
           trust_score?: number
           updated_at?: string
+          user_id?: string | null
           website?: string | null
         }
         Relationships: []
@@ -93160,6 +93181,7 @@ export type Database = {
           base_price: number | null
           color: string | null
           created_at: string
+          customer_price: number | null
           daily_rate: number | null
           description: string | null
           dispatch_model: string | null
@@ -93172,10 +93194,12 @@ export type Database = {
           is_popular: boolean
           location: string | null
           make: string | null
+          markup_pct: number | null
           model: string | null
           name: string
           notes: string | null
           owner_partner_id: string | null
+          partner_cost: number | null
           plate_number: string | null
           red_carpet: boolean
           seats: number | null
@@ -93192,6 +93216,7 @@ export type Database = {
           base_price?: number | null
           color?: string | null
           created_at?: string
+          customer_price?: number | null
           daily_rate?: number | null
           description?: string | null
           dispatch_model?: string | null
@@ -93204,10 +93229,12 @@ export type Database = {
           is_popular?: boolean
           location?: string | null
           make?: string | null
+          markup_pct?: number | null
           model?: string | null
           name: string
           notes?: string | null
           owner_partner_id?: string | null
+          partner_cost?: number | null
           plate_number?: string | null
           red_carpet?: boolean
           seats?: number | null
@@ -93224,6 +93251,7 @@ export type Database = {
           base_price?: number | null
           color?: string | null
           created_at?: string
+          customer_price?: number | null
           daily_rate?: number | null
           description?: string | null
           dispatch_model?: string | null
@@ -93236,10 +93264,12 @@ export type Database = {
           is_popular?: boolean
           location?: string | null
           make?: string | null
+          markup_pct?: number | null
           model?: string | null
           name?: string
           notes?: string | null
           owner_partner_id?: string | null
+          partner_cost?: number | null
           plate_number?: string | null
           red_carpet?: boolean
           seats?: number | null
@@ -110964,6 +110994,20 @@ export type Database = {
         }
         Relationships: []
       }
+      tt_pricing_margin_v: {
+        Row: {
+          customer_price: number | null
+          id: string | null
+          label: string | null
+          margin: number | null
+          margin_pct: number | null
+          partner_cost: number | null
+          partner_id: string | null
+          partner_name: string | null
+          scope: string | null
+        }
+        Relationships: []
+      }
       tube_counter: {
         Row: {
           brand: string | null
@@ -116967,9 +117011,69 @@ export type Database = {
         }
         Returns: string
       }
+      tt_claim_partner: {
+        Args: { _partner_id: string }
+        Returns: {
+          address: string | null
+          avatar_url: string | null
+          bio: string | null
+          business_name: string | null
+          city: string | null
+          claimed_at: string | null
+          commission_rate: number | null
+          country: string | null
+          created_at: string
+          default_customer_price: number | null
+          default_markup_pct: number | null
+          default_partner_cost: number | null
+          email: string | null
+          id: string
+          invited_at: string | null
+          is_active: boolean
+          last_active_at: string | null
+          name: string
+          offers_red_carpet: boolean
+          offers_star_ceiling: boolean
+          partner_type: string | null
+          phone: string | null
+          portal_status: string
+          profit_margin: number | null
+          response_rate: number
+          service_category: string
+          service_radius_miles: number | null
+          service_regions: string[]
+          state: string | null
+          status: string
+          styles_offered: string[]
+          total_bookings: number
+          total_earnings: number
+          trust_score: number
+          updated_at: string
+          user_id: string | null
+          website: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tt_partners"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       tt_partners_refresh_capabilities: {
         Args: { _partner_id: string }
         Returns: undefined
+      }
+      tt_resolve_price: {
+        Args: {
+          _customer_price: number
+          _markup_pct: number
+          _partner_cost: number
+        }
+        Returns: {
+          customer_price: number
+          margin: number
+          margin_pct: number
+        }[]
       }
       update_contact_responsiveness: {
         Args: { p_contact_id: string }

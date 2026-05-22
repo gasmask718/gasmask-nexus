@@ -1,0 +1,1 @@
+ALTER VIEW public.tt_pricing_margin_v SET (security_invoker = true);

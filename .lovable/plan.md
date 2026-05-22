@@ -1,278 +1,256 @@
-# tt-smart-dispatch — 5-Pattern Refactor
+# Partner Pricing + Portal Seeding + Bulk Import — Plan
 
-## 1. Coach-bus ownership (answered first)
+Three coordinated changes. **Nothing applied yet** — review then approve.
 
-**Question:** does coach-bus belong to `cb-dispatch-engine` or to the new `quote_region` branch?
+---
 
-**Answer: `cb-dispatch-engine` owns it.** Evidence:
-- `PenthouseCoachBusDispatch.tsx` invokes only `cb-dispatch-engine` (dispatch / select_quote / send_customer_offer).
-- `PenthousePrivateJetDispatch.tsx` also invokes `cb-dispatch-engine` — the cb engine is the shared quote-flow engine for **both** coach-bus and private-jet.
-- `PartnerRespond.tsx` (partner quote submission) routes through `cb-dispatch-engine`.
+## Pre-flight finding (important — read first)
 
-**Implication for tt-smart-dispatch:** the `quote_region` branch must NOT broadcast SMS and must NOT charge. It only:
-1. Inserts a `tt_dispatch_requests` row with `status='awaiting_quote'`, `dispatch_pattern='quote_region'`, `payment_leg='pay_after_quote_not_built'`, and `matched_partners` = regional partner list (for visibility).
-2. Returns early with `{ success: true, fulfillment: 'quote_region', engine: 'cb-dispatch-engine', matched: N }`.
+There is **no existing self-service partner portal** for `tt_partners`. The only partner-touching surface today is:
 
-The cb engine is then triggered manually from the Penthouse UI (existing flow). No double-dispatch.
+- `src/pages/partner/PartnerRespond.tsx` — token-based SMS response landing (no login)
+- `TTPartners`, `PenthousePartners`, `TopTierPartnerDashboard` — all **admin** views (David's side)
 
-## 2. Branch architecture
+So Part 2B is not "confirm existing portal reads by partner_id" — it's **build a minimal partner portal scoped by partner_id**. Flagging because spec assumed one exists. Two options:
 
-After `resolveRouting()` resolves `routing.dispatch_pattern`:
+- **(a) Minimal scope (recommended now):** ship schema + bulk import + claim-invite flow + a small `/partner/portal` page (dispatch inbox + booking history scoped by `partner_id`). Defer rich portal UI to its own task.
+- **(b) Full portal build now:** adds ~5–8 more components/pages. Larger surface, more review.
 
-```text
-routing._unrouted || fulfillment_model='manual' || partner_types=[]  → manual queue   (UNCHANGED)
-dispatch_pattern = 'pool_style'                                      → selectPoolStyle()
-                 = 'asset_fallback'                                  → selectAssetFallback()
-                 = 'hybrid'                                          → selectHybrid()
-                 = 'quote_region'                                    → selectQuoteRegion()  [selection only]
-                 = 'broadcast_hold'                                  → selectBroadcastHold() [selection only]
-dispatch_pattern IS NULL (beauty/chef/roses/media/security/massage/
-   spa/club/corporate/art-gallery/custom-experience/art-commission)  → selectLegacyScored() (extracted intact)
-```
+**Plan below assumes (a).** Confirm or switch to (b).
 
-`selectLegacyScored()` is the **current 287-line logic verbatim** — public-site partner query, scoring, top-5, SMS broadcast — pulled into one function with zero behavioral change. Beauty regression test will hit this.
+---
 
-## 3. Per-branch logic
+## Part 1 — Pricing Schema (Migration A)
 
-### pool_style (black-truck)
-- Source: `tt_drivers` (active, status='approved').
-- Filter: `vehicle_classes && [class]` (class derived from routing/booking — for black-truck, partner_types `chauffeur/sedan/suv`).
-- Filter: `styles_offered @> [booking.requested_style]` only when `requested_style IS NOT NULL`.
-- Amenity filter: `requested_red_carpet=true` → `red_carpet=true`; `requested_star_ceiling=true` → `star_ceiling=true`. NULL/false = no filter.
-- Broadcast SMS to filtered set, first-confirm-wins. `dispatch_pattern='pool_style'`, no payment_leg flag.
-
-### asset_fallback (exotic-cars, party-bus, yachts)
-- If `booking.vehicle_id IS NOT NULL`: resolve `tt_vehicles.owner_partner_id` → primary partner.
-- Fallback list = other `tt_partners` with `partner_type IN routing.partner_types` AND `vehicle_id` in their inventory (`tt_partner_assets.vehicle_id` join), ordered:
-  - exotic_supplier: `profit_margin DESC`
-  - party_bus_operator / yacht_operator: `profit_margin DESC, rating DESC` *(flag: no `availability_score`/`next_available_at` column — recorded as parked)*
-- Amenity filter for exotics same as pool_style.
-- Store ordered list in `tt_dispatch_requests.matched_partners[0]=owner, [1..N]=fallback`.
-- SMS owner first; partner-respond handler walks the fallback chain on decline/timeout.
-
-### hybrid (sprinters)
-- Probe: `SELECT 1 FROM tt_vehicles WHERE style=booking.requested_style AND owner_partner_id IS NOT NULL LIMIT 1`.
-- Found → asset path (same selection as `asset_fallback`, partner_type=`sprinter_operator`).
-- Not found → pool path (`tt_drivers` where `vehicle_classes && ['sprinter']` + style/amenity filters).
-
-### quote_region (private-jet, coach-bus)  — selection only
-- `tt_partners` where `partner_type IN routing.partner_types` AND `service_regions && [booking.pickup_state]`.
-- Pickup state resolution: `booking.pickup_state` first; fallback regex on `pickup_location` if null (`/\b([A-Z]{2})\b/` final token).
-- Insert `tt_dispatch_requests` with `status='awaiting_quote'`, `dispatch_pattern='quote_region'`, `payment_leg='pay_after_quote_not_built'`, `matched_partners`=list.
-- **NO SMS, NO charge, RETURN EARLY.** cb-dispatch-engine handles the rest.
-
-### broadcast_hold (helicopter, jetski, slingshot)  — selection only
-- Same regional filter as quote_region.
-- Broadcast SMS to regional set (`first-availability-wins` UX exists in partner-respond).
-- Insert `tt_dispatch_requests` with `status='sent'`, `dispatch_pattern='broadcast_hold'`, `payment_leg='auth_hold_not_built'`.
-- Booking cannot complete without the auth-hold leg — flagged.
-
-## 4. Preserved untouched
-- Manual / `_unrouted` queue
-- `selectLegacyScored()` — every NULL-pattern service (beauty regression target)
-- `cb-dispatch-engine` (not modified)
-- `media-dispatch-*`, `tt-auto-dispatch`, `tt-partner-response`
-- SMS gateway code (Twilio via connector-gateway)
-- `tt_dispatch_requests` row shape — only adding 2 nullable columns
-
-## 5. Migrations (run BEFORE deploy)
-
-### Migration A — schema adds (additive, all nullable)
+### `tt_vehicles` additions
 ```sql
-ALTER TABLE public.tt_bookings
-  ADD COLUMN IF NOT EXISTS requested_style text,
-  ADD COLUMN IF NOT EXISTS pickup_state    text;
-
-ALTER TABLE public.tt_dispatch_requests
-  ADD COLUMN IF NOT EXISTS dispatch_pattern text,
-  ADD COLUMN IF NOT EXISTS payment_leg      text;
-
-CREATE INDEX IF NOT EXISTS idx_tt_dispatch_requests_pattern
-  ON public.tt_dispatch_requests(dispatch_pattern);
+ALTER TABLE tt_vehicles
+  ADD COLUMN partner_cost     numeric(10,2),
+  ADD COLUMN customer_price   numeric(10,2),  -- explicit wins
+  ADD COLUMN markup_pct       numeric(5,2);   -- fallback
 ```
 
-### Migration B — partner_type reconciliation (TEST seed only)
+### `tt_partners` additions (standard-rate for pools)
 ```sql
-UPDATE public.tt_partners SET partner_type = 'exotic_supplier'
-  WHERE partner_type = 'exotic_owner';
-UPDATE public.tt_partners SET partner_type = 'sprinter_operator'
-  WHERE partner_type = 'sprinter_op';
-UPDATE public.tt_partners SET partner_type = 'aviation_broker'
-  WHERE partner_type = 'jet_op';
-UPDATE public.tt_partners SET partner_type = 'helicopter_operator'
-  WHERE partner_type = 'heli_op';
--- chauffeur unchanged
-```
-Confirmed against `tt_service_routing.partner_types` — these are the canonical names. Without this update, every pattern branch returns 0 partners silently.
+ALTER TABLE tt_partners
+  ADD COLUMN default_partner_cost   numeric(10,2),
+  ADD COLUMN default_customer_price numeric(10,2),
+  ADD COLUMN default_markup_pct     numeric(5,2),
+  ADD COLUMN portal_status text NOT NULL DEFAULT 'seeded'
+    CHECK (portal_status IN ('seeded','invited','active')),
+  ADD COLUMN user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  ADD COLUMN invited_at timestamptz,
+  ADD COLUMN claimed_at timestamptz;
 
-## 6. The diff — `supabase/functions/tt-smart-dispatch/index.ts`
-
-Structurally: keep `serve()` shell, keep booking fetch + routing resolve + manual/unrouted block (lines 12–71) UNCHANGED. Replace lines 73–279 (legacy scoring + SMS) with a pattern dispatcher that calls one of 6 selector functions. The original 73–279 block is moved verbatim into `selectLegacyScored(supabase, publicClient, booking, routing)` and called for NULL pattern.
-
-```diff
-@@ after manual/unrouted early-return (line 71) @@
--
--    // Query partners: status = 'approved' AND is_active = true
--    // ... (lines 73–279 — current scoring + SMS body) ...
-+
-+    // ====== PATTERN DISPATCHER ======
-+    const pattern = routing.dispatch_pattern as string | null
-+    const ctx = { supabase, publicClient, booking, routing, corsHeaders }
-+
-+    switch (pattern) {
-+      case 'pool_style':      return await selectPoolStyle(ctx)
-+      case 'asset_fallback':  return await selectAssetFallback(ctx)
-+      case 'hybrid':          return await selectHybrid(ctx)
-+      case 'quote_region':    return await selectQuoteRegion(ctx)     // selection only
-+      case 'broadcast_hold':  return await selectBroadcastHold(ctx)   // selection only
-+      default:                return await selectLegacyScored(ctx)    // NULL pattern: unchanged
-+    }
-+  } catch (err) { /* unchanged */ }
-+})
-+
-+// ===================== SELECTORS =====================
-+
-+async function selectLegacyScored(ctx) {
-+  // ** verbatim copy of current lines 73–279 ** — public partner query,
-+  // candidates build, scoring loop, top-5 dispatch insert, SMS broadcast,
-+  // tt_bookings.status='dispatched' update, success response.
-+}
-+
-+async function selectPoolStyle(ctx) {
-+  const { supabase, booking, routing } = ctx
-+  const classes = routing.partner_types       // e.g. ['chauffeur','sedan','suv']
-+  let q = supabase.from('tt_drivers')
-+    .select('id, partner_id, driver_name, phone, vehicle_classes, styles_offered, red_carpet, star_ceiling, rating')
-+    .eq('status','approved').eq('is_active', true)
-+    .overlaps('vehicle_classes', classes)
-+  if (booking.requested_style)        q = q.contains('styles_offered', [booking.requested_style])
-+  if (booking.requested_red_carpet)   q = q.eq('red_carpet', true)
-+  if (booking.requested_star_ceiling) q = q.eq('star_ceiling', true)
-+  const { data: drivers } = await q
-+  return await insertDispatchAndBroadcast(ctx, drivers || [], {
-+    dispatch_pattern: 'pool_style', payment_leg: null, status: 'sent',
-+  })
-+}
-+
-+async function selectAssetFallback(ctx) {
-+  const { supabase, booking, routing } = ctx
-+  let primary = null
-+  if (booking.vehicle_id) {
-+    const { data: v } = await supabase.from('tt_vehicles')
-+      .select('owner_partner_id').eq('id', booking.vehicle_id).maybeSingle()
-+    if (v?.owner_partner_id) {
-+      const { data: op } = await supabase.from('tt_partners')
-+        .select('*').eq('id', v.owner_partner_id).maybeSingle()
-+      primary = op
-+    }
-+  }
-+  const orderCol = routing.partner_types.includes('exotic_supplier') ? 'profit_margin' : 'profit_margin'
-+  const { data: pool } = await supabase.from('tt_partners')
-+    .select('*').in('partner_type', routing.partner_types)
-+    .eq('status','approved').eq('is_active', true)
-+    .order(orderCol, { ascending: false })
-+  const fallback = (pool || []).filter(p => p.id !== primary?.id)
-+  const ordered = [primary, ...fallback].filter(Boolean)
-+  // amenity filter (exotic only)
-+  const filtered = routing.partner_types.includes('exotic_supplier')
-+    ? ordered.filter(p => (!booking.requested_red_carpet   || p.red_carpet)
-+                       && (!booking.requested_star_ceiling || p.star_ceiling))
-+    : ordered
-+  return await insertDispatchAndBroadcast(ctx, filtered, {
-+    dispatch_pattern: 'asset_fallback', payment_leg: null, status: 'sent',
-+  })
-+}
-+
-+async function selectHybrid(ctx) {
-+  const { supabase, booking } = ctx
-+  let hasAsset = false
-+  if (booking.requested_style) {
-+    const { data } = await supabase.from('tt_vehicles')
-+      .select('id').eq('style', booking.requested_style)
-+      .not('owner_partner_id','is', null).limit(1)
-+    hasAsset = (data || []).length > 0
-+  }
-+  return hasAsset ? await selectAssetFallback(ctx) : await selectPoolStyle(ctx)
-+}
-+
-+async function selectQuoteRegion(ctx) {
-+  const { supabase, booking, routing } = ctx
-+  const state = resolvePickupState(booking)
-+  const { data: regional } = await supabase.from('tt_partners')
-+    .select('*').in('partner_type', routing.partner_types)
-+    .eq('status','approved').eq('is_active', true)
-+    .overlaps('service_regions', state ? [state] : [])
-+  const list = regional || []
-+  const { data: dr } = await supabase.from('tt_dispatch_requests').insert({
-+    booking_id: booking.id, booking_reference: booking.booking_reference,
-+    service_type: booking.service_type, service_category: routing.service_category,
-+    pickup_location: booking.pickup_location, status: 'awaiting_quote',
-+    dispatch_pattern: 'quote_region', payment_leg: 'pay_after_quote_not_built',
-+    matched_partners: list, auto_matched: true,
-+  }).select().single()
-+  // NO SMS — cb-dispatch-engine handles quote flow
-+  return jsonOk(ctx, { matched: list.length, dispatch_request_id: dr?.id,
-+    pattern: 'quote_region', engine: 'cb-dispatch-engine',
-+    payment_leg: 'pay_after_quote_not_built' })
-+}
-+
-+async function selectBroadcastHold(ctx) {
-+  const { supabase, booking, routing } = ctx
-+  const state = resolvePickupState(booking)
-+  const { data: regional } = await supabase.from('tt_partners')
-+    .select('*').in('partner_type', routing.partner_types)
-+    .eq('status','approved').eq('is_active', true)
-+    .overlaps('service_regions', state ? [state] : [])
-+  return await insertDispatchAndBroadcast(ctx, regional || [], {
-+    dispatch_pattern: 'broadcast_hold',
-+    payment_leg: 'auth_hold_not_built', status: 'sent',
-+  })
-+}
-+
-+function resolvePickupState(b) {
-+  if (b.pickup_state) return b.pickup_state.toUpperCase()
-+  const m = (b.pickup_location || '').match(/\b([A-Z]{2})\b(?!.*\b[A-Z]{2}\b)/)
-+  return m ? m[1] : null
-+}
-+
-+// shared insert + SMS — extracted from current SMS loop, parameterized
-+async function insertDispatchAndBroadcast(ctx, list, meta) { /* … */ }
-+function jsonOk(ctx, body) { /* … */ }
+CREATE UNIQUE INDEX tt_partners_user_id_uidx
+  ON tt_partners(user_id) WHERE user_id IS NOT NULL;
 ```
 
-`insertDispatchAndBroadcast` reuses the existing SMS Twilio block verbatim, parameterized by `meta.dispatch_pattern` + `meta.payment_leg` written into the dispatch row. Phone resolution uses partner.phone / driver.phone.
+### Price-resolution helper (SQL, single source of truth)
+```sql
+CREATE OR REPLACE FUNCTION public.tt_resolve_price(
+  _partner_cost   numeric,
+  _customer_price numeric,
+  _markup_pct     numeric
+) RETURNS TABLE(customer_price numeric, margin numeric, margin_pct numeric)
+LANGUAGE sql IMMUTABLE AS $$
+  SELECT
+    cp,
+    CASE WHEN cp IS NULL OR _partner_cost IS NULL THEN NULL
+         ELSE cp - _partner_cost END,
+    CASE WHEN cp IS NULL OR _partner_cost IS NULL OR _partner_cost = 0 THEN NULL
+         ELSE round(((cp - _partner_cost) / _partner_cost) * 100, 2) END
+  FROM (
+    SELECT COALESCE(
+      _customer_price,
+      CASE WHEN _partner_cost IS NOT NULL AND _markup_pct IS NOT NULL
+           THEN round(_partner_cost * (1 + _markup_pct/100.0), 2) END
+    ) AS cp
+  ) s;
+$$;
+```
 
-## 7. Parked (explicitly out-of-scope, flagged in code)
-- `pay_after_quote_not_built` — quote_region payment leg
-- `auth_hold_not_built` — broadcast_hold payment leg
-- Party-bus / yacht availability ranking (`availability_score`, `next_available_at`) — using `profit_margin DESC` proxy
-- `requested_style` derivation for vehicle_id-only bookings — pool bookings must send `requested_style` explicitly
+Mirror TS helper at `src/lib/toptier/resolvePrice.ts` for client use — same logic, returns `{ customerPrice, margin, marginPct }`. **One canonical formula** used by dispatch, admin, and reporting.
 
-## 8. Post-deploy test plan (real invocations, not SELECTs)
+### Margin reporting view
+```sql
+CREATE OR REPLACE VIEW tt_pricing_margin_v AS
+SELECT 'vehicle'::text AS scope, v.id, v.name AS label, p.id AS partner_id, p.name AS partner,
+       v.partner_cost, (tt_resolve_price(v.partner_cost, v.customer_price, v.markup_pct)).*
+  FROM tt_vehicles v LEFT JOIN tt_partners p ON p.id = v.owner_partner_id
+UNION ALL
+SELECT 'partner_default', p.id, p.name, p.id, p.name,
+       p.default_partner_cost,
+       (tt_resolve_price(p.default_partner_cost, p.default_customer_price, p.default_markup_pct)).*
+  FROM tt_partners p
+ WHERE p.default_partner_cost IS NOT NULL;
+```
 
-Create one synthetic booking per case via direct insert into `tt_bookings`, then `supabase.functions.invoke('tt-smart-dispatch', { booking_id })` and read back `tt_dispatch_requests`:
+**Quote-pattern partners (jets/coach/heli) stay NULL — no constraint forces pricing.** Validation lives in the importer (Part 3B), not the DB, so quote partners aren't blocked.
 
-| # | Pattern | Input | Expected `matched_partners` |
-|---|---------|-------|------------|
-| 1 | pool_style | black-truck, no filters | A, B, C (3 drivers) |
-| 2 | pool_style | + requested_red_carpet | A, B |
-| 3 | pool_style | + requested_star_ceiling | A |
-| 4 | pool_style | + requested_style=escalade | escalade driver only |
-| 5 | asset_fallback | exotic owner unavailable | fallback ordered B(0.45) → A(0.30) |
-| 6 | hybrid | sprinter style=luxury | asset branch |
-| 7 | hybrid | sprinter style=passenger | pool branch |
-| 8 | quote_region | private-jet pickup_state=NY | Jet_Ops_NY; status=awaiting_quote; no SMS |
-| 9 | quote_region | private-jet pickup_state=FL | empty matched_partners; status=awaiting_quote |
-| 10 | broadcast_hold | helicopter pickup_state=NY | Heli_NY; payment_leg='auth_hold_not_built' |
-| 11 | **REGRESSION** | beauty (NULL pattern) | hits legacy scored path — top-5 SMS broadcast unchanged |
+---
 
-Report = real `tt_dispatch_requests` rows returned per invocation + pass/fail vs expected.
+## Part 2 — Portal Seeding & Claim-on-Login
 
-## 9. Deploy order
-1. Run Migration A (schema adds).
-2. Run Migration B (partner_type rename).
-3. Write new `index.ts` (legacy logic preserved verbatim inside `selectLegacyScored`).
-4. Deploy `tt-smart-dispatch`.
-5. Run 11-row test matrix, report results.
+### Schema (already in Migration A above)
+`portal_status`, `user_id`, `invited_at`, `claimed_at`.
 
-**Awaiting approval before applying.**
+### 2B — Partner-scoped data access
+Add RLS to `tt_dispatch_requests` + `tt_bookings`:
+
+```sql
+CREATE POLICY "Partner sees own dispatches" ON tt_dispatch_requests
+  FOR SELECT TO authenticated
+  USING (partner_id IN (SELECT id FROM tt_partners WHERE user_id = auth.uid()));
+
+CREATE POLICY "Partner sees own bookings" ON tt_bookings
+  FOR SELECT TO authenticated
+  USING (assigned_partner_id IN (SELECT id FROM tt_partners WHERE user_id = auth.uid()));
+```
+(Admin policies untouched — additive only.)
+
+Data is keyed by `partner_id`. The orders exist before any login does; the moment a partner claims and `user_id` is linked, RLS opens their inbox.
+
+### 2C — Claim-invite flow (we never set their password)
+
+**Admin button "Invite to Portal"** on `PenthousePartners` row → calls new edge function `tt-invite-partner`:
+
+```ts
+// supabase/functions/tt-invite-partner/index.ts
+// Uses admin client: supabase.auth.admin.inviteUserByEmail(email, {
+//   redirectTo: `${SITE_URL}/partner/claim?partner_id=${partnerId}`,
+//   data: { tt_partner_id: partnerId }
+// })
+// Then UPDATE tt_partners SET portal_status='invited', invited_at=now()
+```
+
+**Claim landing `/partner/claim`** (new page):
+- User arrives via magic link → Supabase session exists.
+- Page prompts them to **set their own password** (`supabase.auth.updateUser({ password })`).
+- On success, call RPC `tt_claim_partner(partner_id)`:
+  ```sql
+  CREATE FUNCTION tt_claim_partner(_partner_id uuid) RETURNS void
+  LANGUAGE plpgsql SECURITY DEFINER AS $$
+  BEGIN
+    UPDATE tt_partners
+       SET user_id = auth.uid(), portal_status = 'active', claimed_at = now()
+     WHERE id = _partner_id AND user_id IS NULL;  -- one-shot claim
+  END $$;
+  ```
+- Redirect to `/partner/portal`.
+
+**Confirmation: we never call `admin.createUser` with a password.** `inviteUserByEmail` sends a Supabase magic link; the partner sets credentials themselves. Documented in code comments.
+
+### 2D — Minimal `/partner/portal` page (scope-a)
+`src/pages/partner/PartnerPortal.tsx`:
+- Header: business name + portal_status badge
+- Tab 1: **Active dispatch requests** (status in sent/accepted) — Accept/Decline buttons (write to same `tt_dispatch_requests.status`, mirrors SMS responses)
+- Tab 2: **Booking history** (assigned_partner_id = me)
+- Reads via standard supabase client; RLS handles scoping.
+
+**SMS dispatch unchanged.** Portal is a parallel record — seeded-but-not-claimed partners still get SMS and respond by text; their portal just accumulates jobs until they claim.
+
+---
+
+## Part 3 — Bulk Import
+
+### Edge function `bulk-import-partners`
+- Auth: admin only (check role).
+- Input: `{ rows: PartnerImportRow[], dryRun: boolean }`.
+- Parse → validate → (commit or dry-run report).
+- **Idempotent:** upsert match key = normalized `phone` OR `email`. Existing → update; new → insert with `portal_status='seeded'`.
+- For each partner: insert/update vehicles (match by partner_id + name).
+- Returns: `{ imported: n, updated: n, rejected: [{row, reasons[]}], wouldImport?: [...] }`.
+
+### Validation rules (3B) — reject + report, never silent-drop
+| Check | Error |
+|---|---|
+| `partner_type` not in `tt_service_routing.partner_types` (any row) | `unknown_partner_type` |
+| Vehicle row has no parent partner | `orphan_vehicle` |
+| Vehicle on fixed-price service (asset_fallback/pool_style/hybrid) with **both** `customer_price` and `markup_pct` null | `missing_pricing` |
+| Asset-pattern vehicle missing `dispatch_model` | `missing_dispatch_model` |
+| Style not in known styles enum | `unknown_style` |
+| Missing required: business_name, phone OR email, partner_type | `missing_required:<field>` |
+
+Quote-pattern partners (jet/coach/heli) → pricing checks skipped.
+
+### Admin page `/admin/partners/import`
+`src/pages/admin/PartnersImport.tsx`:
+1. CSV upload (papaparse) + paste-as-array
+2. Column mapping preview (auto-detect by header name)
+3. **Dry-run** → shows would-import / would-update / rejects-with-reasons table
+4. **Commit** button (disabled until dry-run runs)
+5. Result summary + downloadable reject CSV
+
+Sidebar registration: add to `src/components/Layout.tsx` under TopTier admin section.
+
+### Auto-rollup after import (3D)
+Trigger on `tt_vehicles` insert/update that updates the partner's `styles_offered`, `offers_star_ceiling`, `offers_red_carpet` aggregate fields:
+```sql
+CREATE OR REPLACE FUNCTION tt_partner_capability_rollup()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE tt_partners SET
+    styles_offered = (SELECT array_agg(DISTINCT style) FROM tt_vehicles WHERE owner_partner_id = NEW.owner_partner_id AND style IS NOT NULL),
+    offers_star_ceiling = EXISTS(SELECT 1 FROM tt_vehicles WHERE owner_partner_id = NEW.owner_partner_id AND star_ceiling = true),
+    offers_red_carpet   = EXISTS(SELECT 1 FROM tt_vehicles WHERE owner_partner_id = NEW.owner_partner_id AND red_carpet = true)
+   WHERE id = NEW.owner_partner_id;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trg_tt_partner_capability_rollup
+AFTER INSERT OR UPDATE OF style, star_ceiling, red_carpet, owner_partner_id
+ON tt_vehicles FOR EACH ROW EXECUTE FUNCTION tt_partner_capability_rollup();
+```
+
+---
+
+## Guardrail confirmations
+
+- ✅ `tt-smart-dispatch` untouched. The 5 patterns + legacy path keep working — new columns are additive and nullable.
+- ✅ Pricing nullable everywhere; quote-pattern partners not required to set it.
+- ✅ Importer reports rejects; no silent drops.
+- ✅ We never set partner passwords — `inviteUserByEmail` + partner-driven `updateUser({ password })`.
+- ✅ `selectLegacyScored` (NULL pattern) not referenced; beauty regression remains green.
+
+---
+
+## File manifest (what gets created/edited on approval)
+
+**Migrations**
+- `supabase/migrations/<ts>_tt_pricing_and_portal.sql` (Part 1 + 2A + 2B RLS + rollup trigger + claim RPC + view + helper fn)
+
+**Edge functions**
+- `supabase/functions/bulk-import-partners/index.ts`
+- `supabase/functions/tt-invite-partner/index.ts`
+
+**Frontend**
+- `src/lib/toptier/resolvePrice.ts` (mirror helper)
+- `src/pages/admin/PartnersImport.tsx`
+- `src/pages/partner/PartnerPortal.tsx`
+- `src/pages/partner/PartnerClaim.tsx`
+- Route registrations in `src/routes/AppRoutes.tsx`
+- Sidebar entry in `src/components/Layout.tsx`
+- "Invite to Portal" button on `PenthousePartners.tsx`
+
+---
+
+## Sequenced execution after approval
+
+1. Apply migration → wait for types regen
+2. Deploy `bulk-import-partners` + `tt-invite-partner`
+3. Build frontend (importer page, portal, claim, invite button)
+4. **Test batch:** import 3 clearly-marked sample partners (1 asset = exotic w/ vehicle + pricing, 1 pool = sprinter standard-rate, 1 quote = jet, no pricing). Verify:
+   - `tt_pricing_margin_v` returns correct margins for the two priced rows
+   - Dispatch an `exotic-cars` job → row appears in partner-scoped query as the test partner's user
+   - Invite the test partner email → magic link arrives, claim flow completes, `portal_status='active'`, `user_id` linked
+5. Report results, then unlock for real-partner import.
+
+---
+
+## Decisions I need from you
+
+1. **Scope (a) minimal portal vs (b) full portal now?** Recommending (a).
+2. **Test batch:** do you have 3 real partners to seed, or use clearly-marked `SEED_TEST_*` samples?
+3. **Invite email:** use Supabase default magic-link email, or scaffold a branded TopTier auth email template first? (Default works; branded is one extra step.)
+
+Reply with answers (or "go with recommendations") and I'll apply Migration A first, pause for types regen, then build the rest.
