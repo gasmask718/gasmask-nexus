@@ -107,6 +107,9 @@ Deno.serve(async (req) => {
       special_requests,
       notes: add_ons ? JSON.stringify(add_ons) : null,
       partner_id: resolvedPartnerId,
+      decor_addon: decor_addon === true,
+      decor_partner_id: decor_addon === true ? resolvedDecorPartnerId : null,
+      decor_package_slug: decor_addon === true ? (decor_package_slug ?? null) : null,
     }).select().single();
 
 
