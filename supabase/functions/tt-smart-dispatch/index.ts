@@ -72,7 +72,7 @@ serve(async (req) => {
 
     // ====== PATTERN DISPATCHER ======
     const pattern = (routing as any).dispatch_pattern as string | null
-    const ctx = { supabase, publicClient, booking, routing, serviceCategory }
+    const ctx: any = { supabase, publicClient, booking, routing, serviceCategory, errors: [] as string[] }
 
     console.log(`tt-smart-dispatch: booking=${booking.id} slug=${routing.slug} pattern=${pattern || 'NULL→legacy'}`)
 
@@ -204,6 +204,7 @@ async function insertDispatchAndBroadcast(
     payment_leg: meta.payment_leg,
     status: meta.status,
     matched_partners: normalized,
+    selector_errors: ctx.errors ?? [],
   })
 }
 
@@ -232,7 +233,10 @@ async function selectPoolStyle(ctx: any) {
   if (booking.requested_star_ceiling)  q = q.eq('star_ceiling', true)
 
   const { data: drivers, error } = await q
-  if (error) console.error('pool_style query error:', error.message)
+  if (error) {
+    console.error('pool_style query error:', error.message)
+    ctx.errors.push(`pool_style: ${error.message}`)
+  }
   return await insertDispatchAndBroadcast(ctx, drivers || [], {
     dispatch_pattern: 'pool_style', payment_leg: null, status: 'sent',
   })
@@ -243,13 +247,15 @@ async function selectAssetFallback(ctx: any) {
   const { supabase, booking, routing } = ctx
   let primary: any = null
   if (booking.vehicle_id) {
-    const { data: v } = await supabase
+    const { data: v, error: vErr } = await supabase
       .from('tt_vehicles').select('owner_partner_id')
       .eq('id', booking.vehicle_id).maybeSingle()
+    if (vErr) { console.error('asset_fallback vehicle query error:', vErr.message); ctx.errors.push(`asset_fallback.vehicle: ${vErr.message}`) }
     if (v?.owner_partner_id) {
-      const { data: op } = await supabase
+      const { data: op, error: opErr } = await supabase
         .from('tt_partners').select('*')
         .eq('id', v.owner_partner_id).maybeSingle()
+      if (opErr) { console.error('asset_fallback owner query error:', opErr.message); ctx.errors.push(`asset_fallback.owner: ${opErr.message}`) }
       primary = op
     }
   }
@@ -259,7 +265,7 @@ async function selectAssetFallback(ctx: any) {
     .in('partner_type', routing.partner_types)
     .eq('status', 'approved').eq('is_active', true)
     .order('profit_margin', { ascending: false })
-  if (poolErr) console.error('asset_fallback pool query error:', poolErr.message)
+  if (poolErr) { console.error('asset_fallback pool query error:', poolErr.message); ctx.errors.push(`asset_fallback.pool: ${poolErr.message}`) }
   console.log(`asset_fallback: types=${JSON.stringify(routing.partner_types)} pool=${(pool || []).length} primary=${primary?.id || 'none'}`)
 
   const fallback = (pool || []).filter((p: any) => p.id !== primary?.id)
@@ -283,11 +289,12 @@ async function selectHybrid(ctx: any) {
   const { supabase, booking } = ctx
   let hasAsset = false
   if (booking.requested_style) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('tt_vehicles').select('id')
       .eq('style', booking.requested_style)
       .not('owner_partner_id', 'is', null)
       .limit(1)
+    if (error) { console.error('hybrid vehicle query error:', error.message); ctx.errors.push(`hybrid.vehicle: ${error.message}`) }
     hasAsset = (data || []).length > 0
   }
   console.log(`hybrid branch: requested_style=${booking.requested_style} → ${hasAsset ? 'ASSET' : 'POOL'}`)
@@ -303,10 +310,11 @@ async function selectQuoteRegion(ctx: any) {
     .in('partner_type', routing.partner_types)
     .eq('status', 'approved').eq('is_active', true)
   if (state) q = q.overlaps('service_regions', [state])
-  const { data: regional } = await q
+  const { data: regional, error: regErr } = await q
+  if (regErr) { console.error('quote_region query error:', regErr.message); ctx.errors.push(`quote_region: ${regErr.message}`) }
   const list = regional || []
 
-  const { data: dr } = await supabase.from('tt_dispatch_requests').insert({
+  const { data: dr, error: drErr } = await supabase.from('tt_dispatch_requests').insert({
     booking_id: booking.id,
     booking_reference: booking.booking_reference,
     service_type: booking.service_type,
@@ -324,6 +332,7 @@ async function selectQuoteRegion(ctx: any) {
     dispatch_pattern: 'quote_region',
     payment_leg: 'pay_after_quote_not_built',
   }).select().single()
+  if (drErr) { console.error('quote_region insert error:', drErr.message); ctx.errors.push(`quote_region.insert: ${drErr.message}`) }
 
   // NO SMS — cb-dispatch-engine owns the quote workflow
   return jsonOk({
@@ -335,6 +344,7 @@ async function selectQuoteRegion(ctx: any) {
     status: 'awaiting_quote',
     resolved_pickup_state: state,
     matched_partners: list,
+    selector_errors: ctx.errors ?? [],
   })
 }
 
@@ -347,7 +357,8 @@ async function selectBroadcastHold(ctx: any) {
     .in('partner_type', routing.partner_types)
     .eq('status', 'approved').eq('is_active', true)
   if (state) q = q.overlaps('service_regions', [state])
-  const { data: regional } = await q
+  const { data: regional, error: regErr } = await q
+  if (regErr) { console.error('broadcast_hold query error:', regErr.message); ctx.errors.push(`broadcast_hold: ${regErr.message}`) }
   return await insertDispatchAndBroadcast(ctx, regional || [], {
     dispatch_pattern: 'broadcast_hold',
     payment_leg: 'auth_hold_not_built',
