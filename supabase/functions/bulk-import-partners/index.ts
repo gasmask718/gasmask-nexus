@@ -295,6 +295,52 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Decorator packages — idempotent on (tt_partner_id, name).
+      // Only runs for decorators; validation already gated this above.
+      const packageErrors: string[] = [];
+      if (r.partner_type === 'decorator' && r.packages && r.packages.length > 0) {
+        for (let pi = 0; pi < r.packages.length; pi++) {
+          const pkg = r.packages[pi];
+          const pkgPayload = {
+            tt_partner_id: partnerId!,
+            provider_id: null,
+            category: pkg.category,
+            name: pkg.name,
+            description: pkg.description ?? null,
+            price: pkg.price,
+            platform_fee_pct: pkg.platform_fee_pct ?? 15,
+            inclusions: pkg.inclusions ?? [],
+            is_published: pkg.is_published ?? false,
+            is_active: true,
+          };
+          const { data: existingPkg, error: pkgLookupErr } = await admin
+            .from('provider_packages')
+            .select('id')
+            .eq('tt_partner_id', partnerId!)
+            .eq('name', pkg.name)
+            .maybeSingle();
+          if (pkgLookupErr) {
+            packageErrors.push(`packages[${pi}]:lookup_failed:${pkgLookupErr.message}`);
+            continue;
+          }
+          if (existingPkg?.id) {
+            const { error: pkgUpdErr } = await admin
+              .from('provider_packages')
+              .update(pkgPayload)
+              .eq('id', existingPkg.id);
+            if (pkgUpdErr) packageErrors.push(`packages[${pi}]:update_failed:${pkgUpdErr.message}`);
+          } else {
+            const { error: pkgInsErr } = await admin.from('provider_packages').insert(pkgPayload);
+            if (pkgInsErr) packageErrors.push(`packages[${pi}]:insert_failed:${pkgInsErr.message}`);
+          }
+        }
+        if (packageErrors.length > 0) {
+          rejects.push({ index: a.index, row: r, reasons: packageErrors });
+        }
+      }
+
+
+
       // Vehicles
       const vehicleErrors: string[] = [];
       let landed = 0;
