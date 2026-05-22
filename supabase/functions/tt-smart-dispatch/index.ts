@@ -310,10 +310,11 @@ async function selectQuoteRegion(ctx: any) {
     .in('partner_type', routing.partner_types)
     .eq('status', 'approved').eq('is_active', true)
   if (state) q = q.overlaps('service_regions', [state])
-  const { data: regional } = await q
+  const { data: regional, error: regErr } = await q
+  if (regErr) { console.error('quote_region query error:', regErr.message); ctx.errors.push(`quote_region: ${regErr.message}`) }
   const list = regional || []
 
-  const { data: dr } = await supabase.from('tt_dispatch_requests').insert({
+  const { data: dr, error: drErr } = await supabase.from('tt_dispatch_requests').insert({
     booking_id: booking.id,
     booking_reference: booking.booking_reference,
     service_type: booking.service_type,
@@ -331,6 +332,7 @@ async function selectQuoteRegion(ctx: any) {
     dispatch_pattern: 'quote_region',
     payment_leg: 'pay_after_quote_not_built',
   }).select().single()
+  if (drErr) { console.error('quote_region insert error:', drErr.message); ctx.errors.push(`quote_region.insert: ${drErr.message}`) }
 
   // NO SMS — cb-dispatch-engine owns the quote workflow
   return jsonOk({
@@ -342,6 +344,7 @@ async function selectQuoteRegion(ctx: any) {
     status: 'awaiting_quote',
     resolved_pickup_state: state,
     matched_partners: list,
+    selector_errors: ctx.errors ?? [],
   })
 }
 
