@@ -147,8 +147,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    // COMMIT
-    const results: { partner_id: string; mode: string; vehicles: number }[] = [];
+    // COMMIT — every write is error-checked; failures surface to rejects.
+    const results: {
+      partner_id?: string;
+      mode: string;
+      partner_name: string;
+      vehicles_attempted: number;
+      vehicles_landed: number;
+      vehicle_errors: string[];
+    }[] = [];
+
     for (const a of accepts) {
       const r = a.row;
       const partnerPayload = {
@@ -169,7 +177,14 @@ Deno.serve(async (req) => {
 
       let partnerId = a.existing_id;
       if (partnerId) {
-        await admin.from('tt_partners').update(partnerPayload).eq('id', partnerId);
+        const { error: updErr } = await admin
+          .from('tt_partners')
+          .update(partnerPayload)
+          .eq('id', partnerId);
+        if (updErr) {
+          rejects.push({ index: a.index, row: r, reasons: [`partner_update_failed:${updErr.message}`] });
+          continue;
+        }
       } else {
         const { data: ins, error } = await admin
           .from('tt_partners')
@@ -177,15 +192,19 @@ Deno.serve(async (req) => {
           .select('id')
           .single();
         if (error) {
-          rejects.push({ index: a.index, row: r, reasons: [`insert_failed:${error.message}`] });
+          rejects.push({ index: a.index, row: r, reasons: [`partner_insert_failed:${error.message}`] });
           continue;
         }
         partnerId = ins!.id;
       }
 
-      // Vehicles: match on (owner_partner_id, name)
-      let vCount = 0;
-      for (const v of r.vehicles ?? []) {
+      // Vehicles
+      const vehicleErrors: string[] = [];
+      let landed = 0;
+      const attempted = (r.vehicles ?? []).length;
+
+      for (let vi = 0; vi < attempted; vi++) {
+        const v = r.vehicles![vi];
         const vehiclePayload = {
           owner_partner_id: partnerId,
           name: v.name,
@@ -200,21 +219,61 @@ Deno.serve(async (req) => {
           markup_pct: v.markup_pct ?? null,
           is_active: true,
         };
-        const { data: existingV } = await admin
+        const { data: existingV, error: lookupErr } = await admin
           .from('tt_vehicles')
           .select('id')
           .eq('owner_partner_id', partnerId!)
           .eq('name', v.name)
           .maybeSingle();
-        if (existingV?.id) {
-          await admin.from('tt_vehicles').update(vehiclePayload).eq('id', existingV.id);
-        } else {
-          await admin.from('tt_vehicles').insert(vehiclePayload);
+        if (lookupErr) {
+          vehicleErrors.push(`vehicle[${vi}]:lookup_failed:${lookupErr.message}`);
+          continue;
         }
-        vCount++;
+        if (existingV?.id) {
+          const { error: updErr } = await admin
+            .from('tt_vehicles')
+            .update(vehiclePayload)
+            .eq('id', existingV.id);
+          if (updErr) {
+            vehicleErrors.push(`vehicle[${vi}]:update_failed:${updErr.message}`);
+            continue;
+          }
+        } else {
+          const { error: insErr } = await admin.from('tt_vehicles').insert(vehiclePayload);
+          if (insErr) {
+            vehicleErrors.push(`vehicle[${vi}]:insert_failed:${insErr.message}`);
+            continue;
+          }
+        }
+        landed++;
       }
 
-      results.push({ partner_id: partnerId!, mode: a.mode, vehicles: vCount });
+      // Reconcile reported vs actual rows in DB for this partner
+      const { count: actualCount, error: countErr } = await admin
+        .from('tt_vehicles')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_partner_id', partnerId!);
+
+      if (vehicleErrors.length > 0 || countErr || (actualCount ?? -1) < landed) {
+        rejects.push({
+          index: a.index,
+          row: r,
+          reasons: [
+            ...vehicleErrors,
+            ...(countErr ? [`reconcile_failed:${countErr.message}`] : []),
+            `vehicles_attempted=${attempted} landed_in_loop=${landed} actual_in_db=${actualCount ?? 'unknown'}`,
+          ],
+        });
+      }
+
+      results.push({
+        partner_id: partnerId!,
+        mode: a.mode,
+        partner_name: r.business_name,
+        vehicles_attempted: attempted,
+        vehicles_landed: landed,
+        vehicle_errors: vehicleErrors,
+      });
     }
 
     return new Response(

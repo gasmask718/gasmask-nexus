@@ -25,7 +25,7 @@ const SAMPLE = JSON.stringify(
           color: 'red',
           star_ceiling: false,
           red_carpet: false,
-          dispatch_model: 'owner_asset',
+          dispatch_model: 'asset_fallback',
           partner_cost: 800,
           markup_pct: 35,
         },
