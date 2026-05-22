@@ -17,6 +17,20 @@ type VehicleRow = {
   markup_pct?: number | null;
 };
 
+type DecoratorProfile = {
+  name?: string | null;
+  city: string;
+  state?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  service_radius_miles?: number | null;
+  specialties?: string[] | null;
+  bio?: string | null;
+  portfolio_images?: string[] | null;
+  base_price_min?: number | null;
+  base_price_max?: number | null;
+};
+
 type PartnerRow = {
   business_name: string;
   contact_name?: string | null;
@@ -29,6 +43,7 @@ type PartnerRow = {
   default_customer_price?: number | null;
   default_markup_pct?: number | null;
   vehicles?: VehicleRow[];
+  decorator_profile?: DecoratorProfile | null;
 };
 
 const FIXED_PRICE_PATTERNS = new Set(['asset_fallback', 'pool_style', 'hybrid']);
