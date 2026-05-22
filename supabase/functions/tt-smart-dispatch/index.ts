@@ -357,7 +357,8 @@ async function selectBroadcastHold(ctx: any) {
     .in('partner_type', routing.partner_types)
     .eq('status', 'approved').eq('is_active', true)
   if (state) q = q.overlaps('service_regions', [state])
-  const { data: regional } = await q
+  const { data: regional, error: regErr } = await q
+  if (regErr) { console.error('broadcast_hold query error:', regErr.message); ctx.errors.push(`broadcast_hold: ${regErr.message}`) }
   return await insertDispatchAndBroadcast(ctx, regional || [], {
     dispatch_pattern: 'broadcast_hold',
     payment_leg: 'auth_hold_not_built',
