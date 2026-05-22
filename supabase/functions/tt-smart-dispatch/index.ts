@@ -247,13 +247,15 @@ async function selectAssetFallback(ctx: any) {
   const { supabase, booking, routing } = ctx
   let primary: any = null
   if (booking.vehicle_id) {
-    const { data: v } = await supabase
+    const { data: v, error: vErr } = await supabase
       .from('tt_vehicles').select('owner_partner_id')
       .eq('id', booking.vehicle_id).maybeSingle()
+    if (vErr) { console.error('asset_fallback vehicle query error:', vErr.message); ctx.errors.push(`asset_fallback.vehicle: ${vErr.message}`) }
     if (v?.owner_partner_id) {
-      const { data: op } = await supabase
+      const { data: op, error: opErr } = await supabase
         .from('tt_partners').select('*')
         .eq('id', v.owner_partner_id).maybeSingle()
+      if (opErr) { console.error('asset_fallback owner query error:', opErr.message); ctx.errors.push(`asset_fallback.owner: ${opErr.message}`) }
       primary = op
     }
   }
@@ -263,7 +265,7 @@ async function selectAssetFallback(ctx: any) {
     .in('partner_type', routing.partner_types)
     .eq('status', 'approved').eq('is_active', true)
     .order('profit_margin', { ascending: false })
-  if (poolErr) console.error('asset_fallback pool query error:', poolErr.message)
+  if (poolErr) { console.error('asset_fallback pool query error:', poolErr.message); ctx.errors.push(`asset_fallback.pool: ${poolErr.message}`) }
   console.log(`asset_fallback: types=${JSON.stringify(routing.partner_types)} pool=${(pool || []).length} primary=${primary?.id || 'none'}`)
 
   const fallback = (pool || []).filter((p: any) => p.id !== primary?.id)
