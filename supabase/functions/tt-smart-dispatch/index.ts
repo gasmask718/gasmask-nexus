@@ -289,11 +289,12 @@ async function selectHybrid(ctx: any) {
   const { supabase, booking } = ctx
   let hasAsset = false
   if (booking.requested_style) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('tt_vehicles').select('id')
       .eq('style', booking.requested_style)
       .not('owner_partner_id', 'is', null)
       .limit(1)
+    if (error) { console.error('hybrid vehicle query error:', error.message); ctx.errors.push(`hybrid.vehicle: ${error.message}`) }
     hasAsset = (data || []).length > 0
   }
   console.log(`hybrid branch: requested_style=${booking.requested_style} → ${hasAsset ? 'ASSET' : 'POOL'}`)
