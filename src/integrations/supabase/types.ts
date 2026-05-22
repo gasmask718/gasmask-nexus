@@ -91335,6 +91335,9 @@ export type Database = {
           client_name: string
           client_phone: string | null
           created_at: string
+          decor_addon: boolean
+          decor_package_slug: string | null
+          decor_partner_id: string | null
           dispatch_method: string | null
           dispatched_to: string | null
           driver_id: string | null
@@ -91376,6 +91379,9 @@ export type Database = {
           client_name: string
           client_phone?: string | null
           created_at?: string
+          decor_addon?: boolean
+          decor_package_slug?: string | null
+          decor_partner_id?: string | null
           dispatch_method?: string | null
           dispatched_to?: string | null
           driver_id?: string | null
@@ -91417,6 +91423,9 @@ export type Database = {
           client_name?: string
           client_phone?: string | null
           created_at?: string
+          decor_addon?: boolean
+          decor_package_slug?: string | null
+          decor_partner_id?: string | null
           dispatch_method?: string | null
           dispatched_to?: string | null
           driver_id?: string | null
@@ -91453,6 +91462,13 @@ export type Database = {
           vehicle_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tt_bookings_decor_partner_id_fkey"
+            columns: ["decor_partner_id"]
+            isOneToOne: false
+            referencedRelation: "tt_partners"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tt_bookings_driver_id_fkey"
             columns: ["driver_id"]
@@ -91806,6 +91822,10 @@ export type Database = {
           id: string
           match_score: number | null
           matched_partners: Json | null
+          meeting_point_address: string | null
+          meeting_point_set_at: string | null
+          meeting_point_set_by: string | null
+          meeting_point_time: string | null
           payment_leg: string | null
           pickup_location: string | null
           scheduled_at: string | null
@@ -91832,6 +91852,10 @@ export type Database = {
           id?: string
           match_score?: number | null
           matched_partners?: Json | null
+          meeting_point_address?: string | null
+          meeting_point_set_at?: string | null
+          meeting_point_set_by?: string | null
+          meeting_point_time?: string | null
           payment_leg?: string | null
           pickup_location?: string | null
           scheduled_at?: string | null
@@ -91858,6 +91882,10 @@ export type Database = {
           id?: string
           match_score?: number | null
           matched_partners?: Json | null
+          meeting_point_address?: string | null
+          meeting_point_set_at?: string | null
+          meeting_point_set_by?: string | null
+          meeting_point_time?: string | null
           payment_leg?: string | null
           pickup_location?: string | null
           scheduled_at?: string | null
