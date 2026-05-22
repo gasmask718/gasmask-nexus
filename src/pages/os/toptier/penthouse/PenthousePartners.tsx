@@ -17,8 +17,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import {
   Users, CheckCircle, Clock, Star, Download, Eye, Ban,
-  Check, Loader2, Plus, Edit, Upload, X, Image as ImageIcon
+  Check, Loader2, Plus, Edit, Upload, X, Image as ImageIcon, Mail, UploadCloud
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function PenthousePartners() {
   const queryClient = useQueryClient();
@@ -148,6 +149,9 @@ export default function PenthousePartners() {
           <Button onClick={openCreate} className="bg-[#C9A84C] hover:bg-[#B89A3C] text-black text-xs h-8">
             <Plus className="h-3 w-3 mr-1" /> Add Partner
           </Button>
+          <Button asChild variant="outline" className="border-[#C9A84C]/30 text-[#C9A84C] hover:bg-[#C9A84C]/10 text-xs h-8">
+            <Link to="/admin/partners/import"><UploadCloud className="h-3 w-3 mr-1" /> Bulk Import</Link>
+          </Button>
           <Button onClick={exportCSV} variant="outline" className="border-[#C9A84C]/30 text-[#C9A84C] hover:bg-[#C9A84C]/10 text-xs h-8">
             <Download className="h-3 w-3 mr-1" /> Export
           </Button>
@@ -222,6 +226,20 @@ export default function PenthousePartners() {
                       <Button size="sm" variant="ghost" className="h-7 text-xs text-blue-400" onClick={() => openEdit(p)}>
                         <Edit className="h-3 w-3" />
                       </Button>
+                      {p.email && p.portal_status !== 'active' && (
+                        <Button
+                          size="sm" variant="ghost" className="h-7 text-xs text-amber-400"
+                          title={p.portal_status === 'invited' ? 'Re-send invite' : 'Invite to portal'}
+                          onClick={async () => {
+                            const { data, error } = await supabase.functions.invoke('tt-invite-partner', { body: { partner_id: p.id } });
+                            if (error) return toast.error(error.message);
+                            toast.success(`Invite sent to ${data?.email}`);
+                            queryClient.invalidateQueries({ queryKey: ['penthouse-partners'] });
+                          }}
+                        >
+                          <Mail className="h-3 w-3" />
+                        </Button>
+                      )}
                       {p.status === 'pending' && (
                         <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-400" disabled={statusMutation.isPending} onClick={() => statusMutation.mutate({ id: p.id, status: 'active', currentStatus: p.status })}>
                           <Check className="h-3 w-3" />
