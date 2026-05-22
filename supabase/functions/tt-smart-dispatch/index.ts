@@ -368,6 +368,109 @@ async function selectBroadcastHold(ctx: any) {
   })
 }
 
+// ===================== MARKETPLACE_DIRECT (decor) =====================
+// Customer chose ONE decorator on the public site → route DIRECTLY to that decorator.
+// No scoring, no broadcast, no SMS (portal-only notification for v1).
+// Reads booking.partner_id (resolved by create-tt-booking from chosen_partner_id
+// or chosen_decorator_id → decorators.tt_partner_id). Missing/unresolved → needs_review + alert.
+async function selectMarketplaceDirect(ctx: any) {
+  const { supabase, booking, serviceCategory } = ctx
+  const chosenId = booking.partner_id as string | null
+
+  const baseRow = {
+    booking_id: booking.id,
+    booking_reference: booking.booking_reference,
+    service_type: booking.service_type,
+    service_category: serviceCategory,
+    pickup_location: booking.pickup_location,
+    dropoff_location: booking.dropoff_location,
+    scheduled_at: booking.scheduled_at,
+    customer_name: booking.client_name,
+    customer_phone: booking.client_phone,
+    special_requests: booking.special_requests,
+    total_price: booking.total_price,
+    dispatch_pattern: 'marketplace_direct',
+    payment_leg: null,
+  }
+
+  if (!chosenId) {
+    const { data: dr, error: drErr } = await supabase
+      .from('tt_dispatch_requests')
+      .insert({ ...baseRow, status: 'needs_review', matched_partners: [], auto_matched: false })
+      .select().single()
+    if (drErr) { console.error('marketplace_direct insert error:', drErr.message); ctx.errors.push(`marketplace_direct.insert: ${drErr.message}`) }
+    await supabase.from('tt_notifications_log').insert({
+      booking_id: booking.id,
+      type: 'marketplace_direct_no_chosen_partner',
+      channel: 'internal', recipient: 'admin', status: 'sent',
+      message: `Decor booking ${booking.booking_reference} has no chosen decorator (partner_id null) — needs review`,
+    })
+    ctx.errors.push('marketplace_direct: booking.partner_id is null')
+    return jsonOk({
+      matched: 0, dispatch_request_id: dr?.id,
+      dispatch_pattern: 'marketplace_direct', status: 'needs_review',
+      matched_partners: [], selector_errors: ctx.errors,
+    })
+  }
+
+  const { data: partner, error: pErr } = await supabase
+    .from('tt_partners').select('*').eq('id', chosenId).maybeSingle()
+  if (pErr) { console.error('marketplace_direct partner query error:', pErr.message); ctx.errors.push(`marketplace_direct.partner: ${pErr.message}`); throw pErr }
+
+  if (!partner) {
+    const { data: dr } = await supabase
+      .from('tt_dispatch_requests')
+      .insert({ ...baseRow, status: 'needs_review', matched_partners: [], auto_matched: false })
+      .select().single()
+    await supabase.from('tt_notifications_log').insert({
+      booking_id: booking.id,
+      type: 'marketplace_direct_partner_not_found',
+      channel: 'internal', recipient: 'admin', status: 'sent',
+      message: `Decor booking ${booking.booking_reference}: chosen partner_id ${chosenId} not found in tt_partners`,
+    })
+    ctx.errors.push(`marketplace_direct: tt_partners ${chosenId} not found`)
+    return jsonOk({
+      matched: 0, dispatch_request_id: dr?.id,
+      dispatch_pattern: 'marketplace_direct', status: 'needs_review',
+      matched_partners: [], selector_errors: ctx.errors,
+    })
+  }
+
+  const normalized = [{
+    id: partner.id,
+    partner_name: partner.business_name || partner.name || 'Decorator',
+    partner_type: partner.partner_type,
+    partner_phone: partner.phone || partner.contact_info?.phone || partner.contact_phone || null,
+  }]
+
+  const { data: dr, error: drErr } = await supabase
+    .from('tt_dispatch_requests')
+    .insert({
+      ...baseRow,
+      status: 'sent',
+      matched_partners: normalized,
+      auto_matched: true,
+      accepted_partner_id: String(partner.id),   // matches existing portal RLS predicate
+      sent_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+    })
+    .select().single()
+  if (drErr) { console.error('marketplace_direct insert error:', drErr.message); ctx.errors.push(`marketplace_direct.insert: ${drErr.message}`); throw drErr }
+
+  await supabase.from('tt_bookings').update({ status: 'dispatched' }).eq('id', booking.id)
+
+  return jsonOk({
+    matched: 1,
+    dispatch_request_id: dr?.id,
+    dispatch_pattern: 'marketplace_direct',
+    status: 'sent',
+    matched_partners: normalized,
+    selector_errors: ctx.errors,
+  })
+}
+
+
+
 // ===================== LEGACY (NULL pattern) — VERBATIM PRESERVED =====================
 // All NULL-pattern services (beauty, chef, roses, media, security, massage, spa, club,
 // corporate, art-gallery, custom-experience, art-commission, etc.) hit this path unchanged.
