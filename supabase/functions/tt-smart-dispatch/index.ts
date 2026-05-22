@@ -233,7 +233,10 @@ async function selectPoolStyle(ctx: any) {
   if (booking.requested_star_ceiling)  q = q.eq('star_ceiling', true)
 
   const { data: drivers, error } = await q
-  if (error) console.error('pool_style query error:', error.message)
+  if (error) {
+    console.error('pool_style query error:', error.message)
+    ctx.errors.push(`pool_style: ${error.message}`)
+  }
   return await insertDispatchAndBroadcast(ctx, drivers || [], {
     dispatch_pattern: 'pool_style', payment_leg: null, status: 'sent',
   })
