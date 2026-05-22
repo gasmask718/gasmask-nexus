@@ -99,14 +99,14 @@ function ProvidersTab() {
   const { data: providers = [] } = useQuery({
     queryKey: ['decor-providers'],
     queryFn: async () => {
-      const { data } = await supabase.from('decor_providers').select('*').order('created_at', { ascending: false });
+      const { data } = await supabase.from('decor_providers_legacy').select('*').order('created_at', { ascending: false });
       return data || [];
     },
   });
 
   const create = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from('decor_providers').insert({
+      const { error } = await supabase.from('decor_providers_legacy').insert({
         name: form.name, city: form.city,
         specialties: form.specialties.split(',').map(s => s.trim()).filter(Boolean),
         price_range: form.price_range, bio: form.bio,
@@ -273,7 +273,7 @@ function TransformationsTab() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ provider_id: '', before_image: '', after_image: '', style: '', description: '' });
 
-  const { data: providers = [] } = useQuery({ queryKey: ['decor-providers'], queryFn: async () => { const { data } = await supabase.from('decor_providers').select('id,name'); return data || []; } });
+  const { data: providers = [] } = useQuery({ queryKey: ['decor-providers'], queryFn: async () => { const { data } = await supabase.from('decor_providers_legacy').select('id,name'); return data || []; } });
   const { data: items = [] } = useQuery({
     queryKey: ['decor-transformations'],
     queryFn: async () => { const { data } = await supabase.from('decor_transformations').select('*, decor_providers(name)').order('created_at', { ascending: false }); return data || []; },
@@ -361,7 +361,7 @@ function MatchesTab() {
 // ─── Main Page ──────────────────────────────────────────
 export default function PenthouseVehicleDecor() {
   const { data: styleCt = 0 } = useQuery({ queryKey: ['decor-styles-ct'], queryFn: async () => { const { count } = await supabase.from('vehicle_decor_styles').select('*', { count: 'exact', head: true }); return count || 0; } });
-  const { data: providerCt = 0 } = useQuery({ queryKey: ['decor-providers-ct'], queryFn: async () => { const { count } = await supabase.from('decor_providers').select('*', { count: 'exact', head: true }); return count || 0; } });
+  const { data: providerCt = 0 } = useQuery({ queryKey: ['decor-providers-ct'], queryFn: async () => { const { count } = await supabase.from('decor_providers_legacy').select('*', { count: 'exact', head: true }); return count || 0; } });
   const { data: bookingCt = 0 } = useQuery({ queryKey: ['decor-bookings-ct'], queryFn: async () => { const { count } = await supabase.from('decor_bookings').select('*', { count: 'exact', head: true }); return count || 0; } });
   const { data: addonCt = 0 } = useQuery({ queryKey: ['decor-addons-ct'], queryFn: async () => { const { count } = await supabase.from('decor_addons').select('*', { count: 'exact', head: true }); return count || 0; } });
 

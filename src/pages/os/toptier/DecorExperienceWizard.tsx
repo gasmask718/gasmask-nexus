@@ -98,7 +98,7 @@ export default function DecorExperienceWizard() {
     queryFn: async () => {
       if (matchedProviderIds.length === 0) return [];
       const { data } = await supabase
-        .from('decor_providers')
+        .from('decor_providers_legacy')
         .select('*')
         .in('id', matchedProviderIds);
       return (data || []).map((p: any) => ({

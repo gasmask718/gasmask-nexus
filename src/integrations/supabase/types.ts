@@ -36038,7 +36038,7 @@ export type Database = {
             foreignKeyName: "decor_bookings_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
-            referencedRelation: "decor_providers"
+            referencedRelation: "decor_providers_legacy"
             referencedColumns: ["id"]
           },
           {
@@ -36178,7 +36178,7 @@ export type Database = {
             foreignKeyName: "decor_matches_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
-            referencedRelation: "decor_providers"
+            referencedRelation: "decor_providers_legacy"
             referencedColumns: ["id"]
           },
         ]
@@ -36291,7 +36291,7 @@ export type Database = {
           },
         ]
       }
-      decor_providers: {
+      decor_providers_legacy: {
         Row: {
           bio: string | null
           city: string
@@ -36441,7 +36441,7 @@ export type Database = {
             foreignKeyName: "decor_transformations_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
-            referencedRelation: "decor_providers"
+            referencedRelation: "decor_providers_legacy"
             referencedColumns: ["id"]
           },
         ]
@@ -36512,8 +36512,10 @@ export type Database = {
           portfolio_images: string[] | null
           rating: number | null
           service_radius_miles: number
+          source_legacy_id: string | null
           specialties: string[]
           state: string | null
+          tt_partner_id: string | null
           updated_at: string
           user_id: string | null
         }
@@ -36531,8 +36533,10 @@ export type Database = {
           portfolio_images?: string[] | null
           rating?: number | null
           service_radius_miles?: number
+          source_legacy_id?: string | null
           specialties?: string[]
           state?: string | null
+          tt_partner_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -36550,12 +36554,22 @@ export type Database = {
           portfolio_images?: string[] | null
           rating?: number | null
           service_radius_miles?: number
+          source_legacy_id?: string | null
           specialties?: string[]
           state?: string | null
+          tt_partner_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "decorators_tt_partner_id_fkey"
+            columns: ["tt_partner_id"]
+            isOneToOne: false
+            referencedRelation: "tt_partners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dedupe_suggestions: {
         Row: {
