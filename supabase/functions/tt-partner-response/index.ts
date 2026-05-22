@@ -30,7 +30,8 @@ serve(async (req) => {
       body = await req.json()
     }
 
-    const { from_phone, message, dispatch_request_id, partner_id, source } = body
+    const { from_phone, message, dispatch_request_id, partner_id, source,
+            meeting_point_address, meeting_point_time } = body
 
     const response = (message || '').trim().toUpperCase()
     const accepted = response.startsWith('YES') || response === 'Y' || response === 'ACCEPT' || response === '1'
