@@ -254,6 +254,12 @@ async function selectAssetFallback(ctx: any) {
     }
   }
 
+  // Diagnostic: try a plain select first
+  const { data: rawAll, error: rawErr } = await supabase
+    .from('tt_partners').select('id, partner_type, status, is_active, profit_margin')
+    .in('partner_type', routing.partner_types)
+  console.log(`asset_fallback raw select: ${(rawAll || []).length} rows, err=${rawErr?.message || 'none'}`)
+  if (rawAll) console.log(`  rows=${JSON.stringify(rawAll)}`)
   const { data: pool, error: poolErr } = await supabase
     .from('tt_partners').select('*')
     .in('partner_type', routing.partner_types)
