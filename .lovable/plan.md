@@ -86,6 +86,7 @@ JOIN tt_partners p ON p.id = pp.tt_partner_id;
   - `/decorators/:id` — read packages from `provider_packages_v WHERE tt_partner_id = :id AND is_published`.
   - `/services/hotel-decor` and `/services/truck-decor` — "starting from" computed as `MIN(price) FROM provider_packages_v WHERE category=... AND is_published`. Remove hardcoded `experiences[]/packages[]` constants; replace with real queries (loading + empty states).
 - **Importer** (Phase 1 branch extension): accept optional `packages: [{name, price, category, platform_fee_pct?}]` and write them.
+- **Legacy-read repointing (Phase 1 stopgap → Phase 2 cleanup):** `src/pages/os/toptier/DecorExperienceWizard.tsx` and `src/pages/os/toptier/penthouse/PenthouseVehicleDecor.tsx` were temporarily repointed to `decor_providers_legacy` during Phase 1. In Phase 2 they MUST be migrated to read from `decorators` joined to `tt_partners` (the unified identity). This must land before the 30-day `decor_providers_legacy` retention window closes — drop of the legacy table is gated on this migration.
 
 ### VERIFY (Phase 2)
 1. Decorator logs into portal, creates a $X package → row appears in `provider_packages` with correct `tt_partner_id`, `platform_fee_pct`, `is_published=true`.
