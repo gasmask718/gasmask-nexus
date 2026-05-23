@@ -672,29 +672,50 @@ async function selectLegacyScored(ctx: any) {
     ? new Date(booking.scheduled_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
     : 'TBD'
 
-  for (const partner of top5) {
-    if (!partner.partner_phone) continue
-    if (!LOVABLE_API_KEY || !TWILIO_API_KEY || !fromPhone) break
-    const msg = `TopTier Dispatch: ${serviceCategory.replace(/_/g, ' ')} booking\n` +
-      `Client: ${booking.client_name || 'N/A'}\n` +
-      `Pickup: ${booking.pickup_location || 'TBD'}\n` +
-      `Date: ${scheduledDate}\n` +
-      `Value: $${booking.total_price || 0}\n` +
-      `Ref: ${booking.booking_reference || 'N/A'}\n\n` +
-      `Reply YES to accept or NO to decline.\n` +
-      `Expires in 30 minutes.`
-    try {
-      await fetch(`${GATEWAY_URL}/Messages.json`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'X-Connection-Api-Key': TWILIO_API_KEY,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({ To: partner.partner_phone, From: fromPhone, Body: msg }),
-      })
-    } catch (smsErr) {
-      console.error('SMS to partner failed:', smsErr)
+  const smsResults: any = { attempted: 0, sent: 0, failed: 0, errors: [] as string[] }
+  if (!fromPhone) {
+    const errMsg = 'TT_PHONE_NUMBER not set, SMS not sent'
+    console.error('[tt-smart-dispatch:legacy] ' + errMsg)
+    smsResults.errors.push(errMsg)
+  } else if (!LOVABLE_API_KEY || !TWILIO_API_KEY) {
+    const errMsg = 'LOVABLE_API_KEY or TWILIO_API_KEY missing, SMS not sent'
+    console.error('[tt-smart-dispatch:legacy] ' + errMsg)
+    smsResults.errors.push(errMsg)
+  } else {
+    for (const partner of top5) {
+      if (!partner.partner_phone) continue
+      smsResults.attempted++
+      const msg = `TopTier Dispatch: ${serviceCategory.replace(/_/g, ' ')} booking\n` +
+        `Client: ${booking.client_name || 'N/A'}\n` +
+        `Pickup: ${booking.pickup_location || 'TBD'}\n` +
+        `Date: ${scheduledDate}\n` +
+        `Value: $${booking.total_price || 0}\n` +
+        `Ref: ${booking.booking_reference || 'N/A'}\n\n` +
+        `Reply YES to accept or NO to decline.\n` +
+        `Expires in 30 minutes.`
+      try {
+        const resp = await fetch(`${GATEWAY_URL}/Messages.json`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'X-Connection-Api-Key': TWILIO_API_KEY,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({ To: partner.partner_phone, From: fromPhone, Body: msg }),
+        })
+        if (!resp.ok) {
+          const body = await resp.text()
+          smsResults.failed++
+          smsResults.errors.push(`${partner.partner_phone}: ${resp.status} ${body.slice(0,200)}`)
+          console.error('[tt-smart-dispatch:legacy] SMS failed', resp.status, body)
+        } else {
+          smsResults.sent++
+        }
+      } catch (smsErr) {
+        smsResults.failed++
+        smsResults.errors.push(`${partner.partner_phone}: ${(smsErr as Error).message}`)
+        console.error('SMS to partner failed:', smsErr)
+      }
     }
   }
 
@@ -706,6 +727,7 @@ async function selectLegacyScored(ctx: any) {
     dispatch_request_id: dispatchReq?.id,
     top_match: top5[0]?.partner_name || 'None',
     public_partners_found: partners.length,
+    sms_results: smsResults,
     message: `Request sent to ${top5.length} partners`
   }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 }
