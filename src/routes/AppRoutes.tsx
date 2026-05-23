@@ -782,6 +782,7 @@ const PenthouseYachtOps = lazy(() => import('@/pages/os/toptier/penthouse/Pentho
 const PenthouseExoticCarOps = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseExoticCarOps'));
 const DynastyRevenueOrchestrator = lazy(() => import('@/pages/os/dynasty-sales/DynastyRevenueOrchestrator'));
 const PartnerRespond = lazy(() => import('@/pages/partner/PartnerRespond'));
+const TTPartnerAccept = lazy(() => import('@/pages/toptier/PartnerAccept'));
 const PartnerClaim = lazy(() => import('@/pages/partner/PartnerClaim'));
 const PartnerPortal = lazy(() => import('@/pages/partner/PartnerPortal'));
 const PartnersImport = lazy(() => import('@/pages/admin/PartnersImport'));
@@ -1188,6 +1189,7 @@ export default function AppRoutes() {
       <Route path="/install" element={<InstallPwa />} />
       <Route path="/twl-landing" element={<TWLLanding />} />
       <Route path="/partner/respond/:token" element={<PartnerRespond />} />
+      <Route path="/tt/partner/accept/:token" element={<TTPartnerAccept />} />
       <Route path="/partner/claim" element={<PartnerClaim />} />
       <Route path="/partner/portal" element={<PartnerPortal />} />
       <Route path="/admin/partners/import" element={<PartnersImport />} />
