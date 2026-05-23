@@ -194,6 +194,7 @@ async function insertDispatchAndBroadcast(
     .single()
 
   // SMS via Twilio gateway (only if status === 'sent')
+  let smsResults: any = { attempted: 0, sent: 0, failed: 0, errors: [] as string[] }
   if (meta.status === 'sent') {
     const GATEWAY_URL = 'https://connector-gateway.lovable.dev/twilio'
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
@@ -204,9 +205,18 @@ async function insertDispatchAndBroadcast(
       ? new Date(booking.scheduled_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
       : 'TBD'
 
-    if (LOVABLE_API_KEY && TWILIO_API_KEY && fromPhone) {
+    if (!fromPhone) {
+      const errMsg = 'TT_PHONE_NUMBER not set, SMS not sent'
+      console.error('[tt-smart-dispatch] ' + errMsg)
+      smsResults.errors.push(errMsg)
+    } else if (!LOVABLE_API_KEY || !TWILIO_API_KEY) {
+      const errMsg = 'LOVABLE_API_KEY or TWILIO_API_KEY missing, SMS not sent'
+      console.error('[tt-smart-dispatch] ' + errMsg)
+      smsResults.errors.push(errMsg)
+    } else {
       for (const r of normalized) {
         if (!r.partner_phone) continue
+        smsResults.attempted++
         const flagSuffix = meta.payment_leg ? `\n[FLAG: ${meta.payment_leg}]` : ''
         const msg = `TopTier Dispatch: ${serviceCategory.replace(/_/g, ' ')} booking\n` +
           `Client: ${booking.client_name || 'N/A'}\n` +
@@ -217,7 +227,7 @@ async function insertDispatchAndBroadcast(
           `Reply YES to accept or NO to decline.\n` +
           `Expires in 30 minutes.${flagSuffix}`
         try {
-          await fetch(`${GATEWAY_URL}/Messages.json`, {
+          const resp = await fetch(`${GATEWAY_URL}/Messages.json`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${LOVABLE_API_KEY}`,
@@ -226,7 +236,17 @@ async function insertDispatchAndBroadcast(
             },
             body: new URLSearchParams({ To: r.partner_phone, From: fromPhone, Body: msg }),
           })
+          if (!resp.ok) {
+            const body = await resp.text()
+            smsResults.failed++
+            smsResults.errors.push(`${r.partner_phone}: ${resp.status} ${body.slice(0,200)}`)
+            console.error('[tt-smart-dispatch] SMS failed', resp.status, body)
+          } else {
+            smsResults.sent++
+          }
         } catch (smsErr) {
+          smsResults.failed++
+          smsResults.errors.push(`${r.partner_phone}: ${(smsErr as Error).message}`)
           console.error('SMS to partner failed:', smsErr)
         }
       }
@@ -242,6 +262,7 @@ async function insertDispatchAndBroadcast(
     payment_leg: meta.payment_leg,
     status: meta.status,
     matched_partners: normalized,
+    sms_results: smsResults,
     selector_errors: ctx.errors ?? [],
   })
 }
