@@ -661,9 +661,8 @@ async function selectLegacyScored(ctx: any) {
     .select()
     .single()
 
-  const GATEWAY_URL = 'https://connector-gateway.lovable.dev/twilio'
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
-  const TWILIO_API_KEY = Deno.env.get('TWILIO_API_KEY')
+  const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
+  const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
   const fromPhone = Deno.env.get('TT_PHONE_NUMBER')
 
   const scheduledDate = booking.scheduled_at
@@ -675,8 +674,8 @@ async function selectLegacyScored(ctx: any) {
     const errMsg = 'TT_PHONE_NUMBER not set, SMS not sent'
     console.error('[tt-smart-dispatch:legacy] ' + errMsg)
     smsResults.errors.push(errMsg)
-  } else if (!LOVABLE_API_KEY || !TWILIO_API_KEY) {
-    const errMsg = 'LOVABLE_API_KEY or TWILIO_API_KEY missing, SMS not sent'
+  } else if (!TWILIO_SID || !TWILIO_TOKEN) {
+    const errMsg = 'TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN missing, SMS not sent'
     console.error('[tt-smart-dispatch:legacy] ' + errMsg)
     smsResults.errors.push(errMsg)
   } else {
@@ -692,11 +691,10 @@ async function selectLegacyScored(ctx: any) {
         `Reply YES to accept or NO to decline.\n` +
         `Expires in 30 minutes.`
       try {
-        const resp = await fetch(`${GATEWAY_URL}/Messages.json`, {
+        const resp = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-            'X-Connection-Api-Key': TWILIO_API_KEY,
+            'Authorization': `Basic ${btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`)}`,
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: new URLSearchParams({ To: partner.partner_phone, From: fromPhone, Body: msg }),
