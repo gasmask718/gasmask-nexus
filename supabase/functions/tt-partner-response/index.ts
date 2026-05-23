@@ -37,21 +37,39 @@ serve(async (req) => {
     const accepted = response.startsWith('YES') || response === 'Y' || response === 'ACCEPT' || response === '1'
 
     let dispatchRequest: any = null
+    let claimToken: string | null = null
+    let resolvedPartnerId: string | null = null
 
     if (source === 'twilio_webhook' && from_phone) {
-      const { data: requests } = await supabase
-        .from('tt_dispatch_requests')
-        .select('*')
-        .eq('status', 'sent')
+      // Resolve the most recent unresolved token for this phone — gives us BOTH
+      // the dispatch and the per-driver token so we can use the atomic claim RPC.
+      const { data: tokenRow } = await supabase
+        .from('tt_dispatch_tokens')
+        .select('token, partner_id, dispatch_id, declined_at, notified_taken_at, tt_dispatch_requests!inner(*)')
+        .eq('partner_phone', from_phone)
+        .is('declined_at', null)
         .order('created_at', { ascending: false })
-        .limit(20)
-
-      dispatchRequest = requests?.find(r => {
-        const partners = r.matched_partners || []
-        return (partners as any[]).some((p: any) =>
-          p.partner_phone === from_phone || p.phone === from_phone
-        )
-      })
+        .limit(1)
+        .maybeSingle()
+      if (tokenRow) {
+        claimToken = (tokenRow as any).token
+        resolvedPartnerId = (tokenRow as any).partner_id
+        dispatchRequest = (tokenRow as any).tt_dispatch_requests
+      } else {
+        // Legacy fallback: no token row (pre-migration dispatches still in flight)
+        const { data: requests } = await supabase
+          .from('tt_dispatch_requests')
+          .select('*')
+          .eq('status', 'sent')
+          .order('created_at', { ascending: false })
+          .limit(20)
+        dispatchRequest = requests?.find(r => {
+          const partners = r.matched_partners || []
+          return (partners as any[]).some((p: any) =>
+            p.partner_phone === from_phone || p.phone === from_phone
+          )
+        })
+      }
     } else if (dispatch_request_id) {
       const { data } = await supabase
         .from('tt_dispatch_requests')
@@ -59,6 +77,19 @@ serve(async (req) => {
         .eq('id', dispatch_request_id)
         .single()
       dispatchRequest = data
+      // For programmatic calls with a known partner, try to look up their token too
+      if (partner_id) {
+        const { data: tok } = await supabase
+          .from('tt_dispatch_tokens')
+          .select('token, notified_taken_at')
+          .eq('dispatch_id', dispatch_request_id)
+          .eq('partner_id', String(partner_id))
+          .maybeSingle()
+        if (tok) {
+          claimToken = (tok as any).token
+          resolvedPartnerId = String(partner_id)
+        }
+      }
     }
 
     if (!dispatchRequest) {
@@ -70,27 +101,96 @@ serve(async (req) => {
 
     const partners = (dispatchRequest.matched_partners || []) as any[]
     const partner = partners.find((p: any) =>
-      p.partner_phone === from_phone || p.phone === from_phone || p.id === partner_id
+      p.partner_phone === from_phone || p.phone === from_phone ||
+      p.id === partner_id || p.id === resolvedPartnerId
     ) || partners[0]
 
-    if (accepted) {
-      await supabase
-        .from('tt_dispatch_requests')
-        .update({
-          status: 'accepted',
-          accepted_partner_id: partner?.id || partner_id,
-          accepted_partner_name: partner?.partner_name || partner?.name,
-          accepted_at: new Date().toISOString(),
-        })
-        .eq('id', dispatchRequest.id)
+    // Helper: courtesy "already taken" SMS, sent ONCE per token when a driver
+    // actively engages (replies or taps) on a claimed dispatch.
+    async function sendAlreadyTakenSms() {
+      if (!claimToken) return
+      const { data: tokRow } = await supabase
+        .from('tt_dispatch_tokens')
+        .select('notified_taken_at, partner_phone')
+        .eq('token', claimToken)
+        .maybeSingle()
+      if (!tokRow || tokRow.notified_taken_at) return
+      const sid = Deno.env.get('TWILIO_ACCOUNT_SID')
+      const tok = Deno.env.get('TWILIO_AUTH_TOKEN')
+      const from = Deno.env.get('TT_PHONE_NUMBER')
+      const to = tokRow.partner_phone || from_phone
+      if (sid && tok && from && to) {
+        try {
+          await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+            method: 'POST',
+            headers: { Authorization: `Basic ${btoa(`${sid}:${tok}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              To: to, From: from,
+              Body: `TopTier ${dispatchRequest.booking_reference}: this job was already claimed by another driver. No action needed.`,
+            }),
+          })
+        } catch (e) { console.error('already-taken SMS failed:', e) }
+      }
+      await supabase.from('tt_dispatch_tokens')
+        .update({ notified_taken_at: new Date().toISOString() })
+        .eq('token', claimToken)
+    }
 
-      await supabase
-        .from('tt_bookings')
-        .update({
-          status: 'driver_assigned',
-          driver_id: partner?.id || partner_id,
-        })
-        .eq('id', dispatchRequest.booking_id)
+    if (accepted) {
+      // ATOMIC CLAIM via RPC when we have a token (modern path). Shared lock with
+      // the magic-link page — both routes serialize through the same conditional UPDATE.
+      let claimOutcome: 'won' | 'lost' | 'legacy' = 'legacy'
+      if (claimToken) {
+        const { data: claimRes, error: claimErr } = await supabase.rpc('tt_claim_dispatch', { p_token: claimToken })
+        if (claimErr) {
+          console.error('[tt-partner-response] claim RPC failed:', claimErr.message)
+          claimOutcome = 'lost'
+        } else if ((claimRes as any)?.outcome === 'won') {
+          claimOutcome = 'won'
+        } else {
+          claimOutcome = 'lost'
+        }
+        // Re-read dispatch to reflect post-claim state
+        const { data: refreshed } = await supabase
+          .from('tt_dispatch_requests').select('*').eq('id', dispatchRequest.id).single()
+        if (refreshed) dispatchRequest = refreshed
+      }
+
+      if (claimOutcome === 'lost') {
+        await sendAlreadyTakenSms()
+        if (source === 'twilio_webhook') {
+          return new Response(
+            `<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry — ${dispatchRequest.booking_reference} was already claimed by another driver.</Message></Response>`,
+            { headers: { 'Content-Type': 'text/xml' } }
+          )
+        }
+        return new Response(JSON.stringify({
+          success: false, action: 'already_claimed',
+          booking_reference: dispatchRequest.booking_reference,
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      // Legacy path (no token row): preserve original non-atomic update so in-flight
+      // pre-migration dispatches keep working. New dispatches always have tokens.
+      if (claimOutcome === 'legacy') {
+        await supabase
+          .from('tt_dispatch_requests')
+          .update({
+            status: 'accepted',
+            accepted_partner_id: partner?.id || partner_id,
+            accepted_partner_name: partner?.partner_name || partner?.name,
+            accepted_at: new Date().toISOString(),
+          })
+          .eq('id', dispatchRequest.id)
+
+        await supabase
+          .from('tt_bookings')
+          .update({
+            status: 'driver_assigned',
+            driver_id: partner?.id || partner_id,
+          })
+          .eq('id', dispatchRequest.booking_id)
+      }
 
       if (partner?.id) {
         await supabase
