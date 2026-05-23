@@ -9,6 +9,19 @@ const corsHeaders = {
 
 const PUBLIC_URL = 'https://hruhkyvwtfpfviwnvhne.supabase.co'
 
+// Normalize any stored phone to strict E.164 (with leading +).
+// Defense-in-depth: storage may drift; Twilio outbound + inbound-match both require '+'.
+function toE164(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  const trimmed = String(raw).trim()
+  if (!trimmed) return null
+  if (trimmed.startsWith('+')) return trimmed
+  const digits = trimmed.replace(/\D/g, '')
+  if (digits.length === 10) return '+1' + digits         // bare US 10-digit
+  if (digits.length >= 11 && digits.length <= 15) return '+' + digits
+  return null
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
