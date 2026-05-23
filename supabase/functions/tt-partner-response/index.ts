@@ -6,6 +6,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Strict E.164 normalizer. Twilio sends From as '+1XXXXXXXXXX'; stored phones
+// may have drifted off the '+'. Normalize both sides so matching can't break.
+function toE164(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  const trimmed = String(raw).trim()
+  if (!trimmed) return null
+  if (trimmed.startsWith('+')) return trimmed
+  const digits = trimmed.replace(/\D/g, '')
+  if (digits.length === 10) return '+1' + digits
+  if (digits.length >= 11 && digits.length <= 15) return '+' + digits
+  return null
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
