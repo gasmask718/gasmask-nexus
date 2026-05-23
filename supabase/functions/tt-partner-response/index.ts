@@ -188,14 +188,16 @@ serve(async (req) => {
       const twilioToken = Deno.env.get('TWILIO_AUTH_TOKEN')
       const fromTwilio = Deno.env.get('TT_PHONE_NUMBER')
 
-      if (twilioSid && twilioToken && fromTwilio && dispatchRequest.customer_phone) {
+      if (!fromTwilio) {
+        console.error('[tt-partner-response] TT_PHONE_NUMBER not set, customer confirmation SMS not sent')
+      } else if (twilioSid && twilioToken && dispatchRequest.customer_phone) {
         const customerMsg =
           `TopTier: Your ${(dispatchRequest.service_type || '').replace(/_/g, ' ')} booking is confirmed!` +
           ` ${partner?.partner_name || 'Your provider'} has accepted.` +
           ` Ref: ${dispatchRequest.booking_reference}.` +
           ` We'll send details shortly.`
 
-        await fetch(
+        const resp = await fetch(
           `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
           {
             method: 'POST',
@@ -210,6 +212,9 @@ serve(async (req) => {
             }),
           }
         )
+        if (!resp.ok) {
+          console.error('[tt-partner-response] customer SMS failed', resp.status, await resp.text())
+        }
       }
 
       // ====== DUAL SMS for truck-with-decor when meeting point saved ======
