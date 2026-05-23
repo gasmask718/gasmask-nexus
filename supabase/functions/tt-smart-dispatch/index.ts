@@ -600,7 +600,7 @@ async function selectLegacyScored(ctx: any) {
     const linkedAsset = (localAssets || []).find(
       (a: any) => a.partner_id === p.id || a.partner_id === p.user_id
     )
-    const phone = p.phone || p.contact_info?.phone || p.contact_phone || linkedAsset?.partner_phone || null
+    const phone = toE164(p.phone || p.contact_info?.phone || p.contact_phone || linkedAsset?.partner_phone || null)
     const caps = p.capabilities || {}
     return {
       id: p.id,
