@@ -170,7 +170,7 @@ async function insertDispatchAndBroadcast(
     id: r.id,
     partner_name: r.business_name || r.full_name || r.name || r.partner_name || 'Unknown',
     partner_type: r.partner_type || (r.vehicle_classes ? 'driver' : 'partner'),
-    partner_phone: r.phone || r.contact_phone || r.contact_info?.phone || null,
+    partner_phone: toE164(r.phone || r.contact_phone || r.contact_info?.phone || null),
     profit_margin: r.profit_margin ?? null,
     rating: r.rating ?? null,
     red_carpet: r.red_carpet ?? r.offers_red_carpet ?? null,
