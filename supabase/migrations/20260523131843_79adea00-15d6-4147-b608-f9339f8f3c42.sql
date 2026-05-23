@@ -1,0 +1,2 @@
+DELETE FROM public.tt_vehicles WHERE name ILIKE 'SEED_TEST%' OR owner_partner_id IN (SELECT id FROM public.tt_partners WHERE business_name ILIKE 'SEED_TEST%');
+DELETE FROM public.tt_partners WHERE business_name ILIKE 'SEED_TEST%';
