@@ -193,7 +193,37 @@ async function insertDispatchAndBroadcast(
     .select()
     .single()
 
-  // SMS via Twilio gateway (only if status === 'sent')
+  // Insert one magic-link token per recipient. Map partner_id -> token for SMS.
+  const tokenByPartner: Record<string, string> = {}
+  if (dispatchReq?.id && meta.status === 'sent' && normalized.length > 0) {
+    const tokenRows = normalized
+      .filter((r) => r.id)
+      .map((r) => ({
+        dispatch_id: dispatchReq.id,
+        partner_id: String(r.id),
+        partner_name: r.partner_name,
+        partner_phone: r.partner_phone,
+      }))
+    if (tokenRows.length) {
+      const { data: insertedTokens, error: tokErr } = await supabase
+        .from('tt_dispatch_tokens')
+        .insert(tokenRows)
+        .select('token, partner_id')
+      if (tokErr) {
+        console.error('[tt-smart-dispatch] token insert failed:', tokErr.message)
+        ctx.errors.push(`tokens: ${tokErr.message}`)
+      } else {
+        for (const t of insertedTokens || []) {
+          tokenByPartner[t.partner_id] = t.token
+        }
+      }
+    }
+  }
+
+  const acceptBaseUrl =
+    Deno.env.get('TT_ACCEPT_BASE_URL') || 'https://gasmask-os-nexus.lovable.app'
+
+  // SMS via Twilio (only if status === 'sent')
   let smsResults: any = { attempted: 0, sent: 0, failed: 0, errors: [] as string[] }
   if (meta.status === 'sent') {
     const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
@@ -217,13 +247,17 @@ async function insertDispatchAndBroadcast(
         if (!r.partner_phone) continue
         smsResults.attempted++
         const flagSuffix = meta.payment_leg ? `\n[FLAG: ${meta.payment_leg}]` : ''
+        const tok = r.id ? tokenByPartner[String(r.id)] : undefined
+        const acceptLine = tok
+          ? `Accept: ${acceptBaseUrl}/tt/partner/accept/${tok}\n(or reply YES to accept / NO to decline)`
+          : `Reply YES to accept or NO to decline.`
         const msg = `TopTier Dispatch: ${serviceCategory.replace(/_/g, ' ')} booking\n` +
           `Client: ${booking.client_name || 'N/A'}\n` +
           `Pickup: ${booking.pickup_location || 'TBD'}\n` +
           `Date: ${scheduledDate}\n` +
           `Value: $${booking.total_price || 0}\n` +
           `Ref: ${booking.booking_reference || 'N/A'}\n\n` +
-          `Reply YES to accept or NO to decline.\n` +
+          `${acceptLine}\n` +
           `Expires in 30 minutes.${flagSuffix}`
         try {
           const resp = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
