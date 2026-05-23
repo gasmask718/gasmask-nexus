@@ -542,7 +542,7 @@ async function selectMarketplaceDirect(ctx: any) {
     id: partner.id,
     partner_name: partner.business_name || partner.name || 'Decorator',
     partner_type: partner.partner_type,
-    partner_phone: partner.phone || partner.contact_info?.phone || partner.contact_phone || null,
+    partner_phone: toE164(partner.phone || partner.contact_info?.phone || partner.contact_phone || null),
   }]
 
   const { data: dr, error: drErr } = await supabase
