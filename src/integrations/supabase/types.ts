@@ -91906,6 +91906,47 @@ export type Database = {
           },
         ]
       }
+      tt_dispatch_tokens: {
+        Row: {
+          created_at: string
+          declined_at: string | null
+          dispatch_id: string
+          notified_taken_at: string | null
+          partner_id: string
+          partner_name: string | null
+          partner_phone: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          declined_at?: string | null
+          dispatch_id: string
+          notified_taken_at?: string | null
+          partner_id: string
+          partner_name?: string | null
+          partner_phone?: string | null
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          declined_at?: string | null
+          dispatch_id?: string
+          notified_taken_at?: string | null
+          partner_id?: string
+          partner_name?: string | null
+          partner_phone?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_dispatch_tokens_dispatch_id_fkey"
+            columns: ["dispatch_id"]
+            isOneToOne: false
+            referencedRelation: "tt_dispatch_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tt_dispatches: {
         Row: {
           assigned_at: string | null
@@ -117053,6 +117094,7 @@ export type Database = {
         }
         Returns: string
       }
+      tt_claim_dispatch: { Args: { p_token: string }; Returns: Json }
       tt_claim_partner: {
         Args: { _partner_id: string }
         Returns: {
@@ -117101,6 +117143,8 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      tt_decline_dispatch: { Args: { p_token: string }; Returns: Json }
+      tt_get_dispatch_by_token: { Args: { p_token: string }; Returns: Json }
       tt_partners_refresh_capabilities: {
         Args: { _partner_id: string }
         Returns: undefined
