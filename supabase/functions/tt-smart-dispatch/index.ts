@@ -9,6 +9,19 @@ const corsHeaders = {
 
 const PUBLIC_URL = 'https://hruhkyvwtfpfviwnvhne.supabase.co'
 
+// Normalize any stored phone to strict E.164 (with leading +).
+// Defense-in-depth: storage may drift; Twilio outbound + inbound-match both require '+'.
+function toE164(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  const trimmed = String(raw).trim()
+  if (!trimmed) return null
+  if (trimmed.startsWith('+')) return trimmed
+  const digits = trimmed.replace(/\D/g, '')
+  if (digits.length === 10) return '+1' + digits         // bare US 10-digit
+  if (digits.length >= 11 && digits.length <= 15) return '+' + digits
+  return null
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -157,7 +170,7 @@ async function insertDispatchAndBroadcast(
     id: r.id,
     partner_name: r.business_name || r.full_name || r.name || r.partner_name || 'Unknown',
     partner_type: r.partner_type || (r.vehicle_classes ? 'driver' : 'partner'),
-    partner_phone: r.phone || r.contact_phone || r.contact_info?.phone || null,
+    partner_phone: toE164(r.phone || r.contact_phone || r.contact_info?.phone || null),
     profit_margin: r.profit_margin ?? null,
     rating: r.rating ?? null,
     red_carpet: r.red_carpet ?? r.offers_red_carpet ?? null,
@@ -529,7 +542,7 @@ async function selectMarketplaceDirect(ctx: any) {
     id: partner.id,
     partner_name: partner.business_name || partner.name || 'Decorator',
     partner_type: partner.partner_type,
-    partner_phone: partner.phone || partner.contact_info?.phone || partner.contact_phone || null,
+    partner_phone: toE164(partner.phone || partner.contact_info?.phone || partner.contact_phone || null),
   }]
 
   const { data: dr, error: drErr } = await supabase
@@ -587,7 +600,7 @@ async function selectLegacyScored(ctx: any) {
     const linkedAsset = (localAssets || []).find(
       (a: any) => a.partner_id === p.id || a.partner_id === p.user_id
     )
-    const phone = p.phone || p.contact_info?.phone || p.contact_phone || linkedAsset?.partner_phone || null
+    const phone = toE164(p.phone || p.contact_info?.phone || p.contact_phone || linkedAsset?.partner_phone || null)
     const caps = p.capabilities || {}
     return {
       id: p.id,
