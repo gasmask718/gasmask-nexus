@@ -114,9 +114,20 @@ Deno.serve(async (req) => {
       service_name: routing.display_name,
       service_slug: routing.slug,
       fulfillment_model: routing.fulfillment_model,
+    const { data: booking, error: bookingErr } = await supabase.from('tt_bookings').insert({
+      client_name: customer_name,
+      client_email: customer_email,
+      client_phone: customer_phone,
+      service_type: routing.service_category,
+      service_name: routing.display_name,
+      service_slug: routing.slug,
+      fulfillment_model: routing.fulfillment_model,
       total_price,
       status: initialStatus,
-      payment_status: 'paid',
+      payment_status: initialPaymentStatus,
+      payment_hold_status: initialHoldStatus,
+      stripe_payment_intent_id: stripe_payment_intent_id ?? null,
+      auth_expires_at: authExpiresAt,
       booking_reference,
       pickup_location: pickup_address,
       dropoff_location: dropoff_address,
@@ -151,6 +162,27 @@ Deno.serve(async (req) => {
       vehicle_id,
       status: 'pending',
     });
+
+    // Auto-fire smart dispatch when this is an auth-hold flow — we need partners to
+    // accept so we can capture the PaymentIntent. Black-truck dispatch is triggered
+    // by the existing fulfillment pipeline; don't double-fire there.
+    if (isAuthHold && !routing._unrouted) {
+      try {
+        await supabase.functions.invoke('tt-smart-dispatch', {
+          body: { booking_id: booking.id },
+        });
+      } catch (e) {
+        console.error('[create-tt-booking] smart-dispatch invoke failed:', e);
+        await supabase.from('tt_notifications_log').insert({
+          booking_id: booking.id,
+          type: 'dispatch_invoke_failed',
+          channel: 'internal',
+          recipient: 'admin',
+          message: `Auth-hold booking ${booking_reference} created but tt-smart-dispatch failed: ${(e as any)?.message ?? e}`,
+          status: 'sent',
+        });
+      }
+    }
 
     if (customer_phone) {
       await supabase.from('tt_notifications_log').insert({
