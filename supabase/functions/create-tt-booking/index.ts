@@ -33,6 +33,8 @@ Deno.serve(async (req) => {
       decor_partner_id: incomingDecorPartnerId,  // tt_partners.id (preferred)
       decor_decorator_id,       // decorators.id (legacy) — resolved via decorators.tt_partner_id
       decor_package_slug,
+      // Auth-then-capture payment flow (slingshot/jetski/helicopter)
+      payment_mode,             // 'auth_hold' | 'paid' (default 'paid' for back-compat)
     } = body;
 
     if (!customer_name || !pickup_address || !pickup_datetime || !total_price) {
@@ -43,7 +45,25 @@ Deno.serve(async (req) => {
 
     // Resolve routing from slug / legacy service_type (defaults to black-truck for back-compat)
     const routing = await resolveRouting(supabase, service_slug || incomingServiceType || 'black-truck');
-    const initialStatus = routing._unrouted ? 'needs_review' : 'confirmed';
+
+    // Auth-then-capture flow detection. Public site sends payment_mode='auth_hold' for
+    // slingshot/jetski/helicopter when it creates a manual-capture PaymentIntent.
+    const isAuthHold = payment_mode === 'auth_hold';
+    if (isAuthHold && !stripe_payment_intent_id) {
+      return new Response(JSON.stringify({
+        error: 'payment_mode=auth_hold requires stripe_payment_intent_id',
+      }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    const initialStatus = routing._unrouted
+      ? 'needs_review'
+      : (isAuthHold ? 'authorized_pending_confirmation' : 'confirmed');
+    const initialPaymentStatus = isAuthHold ? 'authorized' : 'paid';
+    const initialHoldStatus = isAuthHold ? 'hold_placed' : 'none';
+    const holdWindowMinutes = (routing as any).auth_hold_window_minutes ?? 120;
+    const authExpiresAt = isAuthHold
+      ? new Date(Date.now() + holdWindowMinutes * 60_000).toISOString()
+      : null;
 
     // Resolve chosen decorator → tt_partners.id (for marketplace_direct dispatch)
     let resolvedPartnerId: string | null = chosen_partner_id ?? null;
@@ -96,7 +116,10 @@ Deno.serve(async (req) => {
       fulfillment_model: routing.fulfillment_model,
       total_price,
       status: initialStatus,
-      payment_status: 'paid',
+      payment_status: initialPaymentStatus,
+      payment_hold_status: initialHoldStatus,
+      stripe_payment_intent_id: stripe_payment_intent_id ?? null,
+      auth_expires_at: authExpiresAt,
       booking_reference,
       pickup_location: pickup_address,
       dropoff_location: dropoff_address,
@@ -131,6 +154,27 @@ Deno.serve(async (req) => {
       vehicle_id,
       status: 'pending',
     });
+
+    // Auto-fire smart dispatch when this is an auth-hold flow — we need partners to
+    // accept so we can capture the PaymentIntent. Black-truck dispatch is triggered
+    // by the existing fulfillment pipeline; don't double-fire there.
+    if (isAuthHold && !routing._unrouted) {
+      try {
+        await supabase.functions.invoke('tt-smart-dispatch', {
+          body: { booking_id: booking.id },
+        });
+      } catch (e) {
+        console.error('[create-tt-booking] smart-dispatch invoke failed:', e);
+        await supabase.from('tt_notifications_log').insert({
+          booking_id: booking.id,
+          type: 'dispatch_invoke_failed',
+          channel: 'internal',
+          recipient: 'admin',
+          message: `Auth-hold booking ${booking_reference} created but tt-smart-dispatch failed: ${(e as any)?.message ?? e}`,
+          status: 'sent',
+        });
+      }
+    }
 
     if (customer_phone) {
       await supabase.from('tt_notifications_log').insert({

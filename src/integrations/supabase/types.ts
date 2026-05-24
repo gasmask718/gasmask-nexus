@@ -91330,6 +91330,7 @@ export type Database = {
       }
       tt_bookings: {
         Row: {
+          auth_expires_at: string | null
           booking_reference: string | null
           client_email: string | null
           client_name: string
@@ -91368,12 +91369,14 @@ export type Database = {
           source: string | null
           special_requests: string | null
           status: string
+          stripe_payment_intent_id: string | null
           total_price: number
           updated_at: string
           vehicle_id: string | null
           vehicle_name: string | null
         }
         Insert: {
+          auth_expires_at?: string | null
           booking_reference?: string | null
           client_email?: string | null
           client_name: string
@@ -91412,12 +91415,14 @@ export type Database = {
           source?: string | null
           special_requests?: string | null
           status?: string
+          stripe_payment_intent_id?: string | null
           total_price?: number
           updated_at?: string
           vehicle_id?: string | null
           vehicle_name?: string | null
         }
         Update: {
+          auth_expires_at?: string | null
           booking_reference?: string | null
           client_email?: string | null
           client_name?: string
@@ -91456,6 +91461,7 @@ export type Database = {
           source?: string | null
           special_requests?: string | null
           status?: string
+          stripe_payment_intent_id?: string | null
           total_price?: number
           updated_at?: string
           vehicle_id?: string | null
@@ -93118,6 +93124,7 @@ export type Database = {
       }
       tt_service_routing: {
         Row: {
+          auth_hold_window_minutes: number
           created_at: string
           dedicated_tables: string[] | null
           dispatch_pattern: string | null
@@ -93136,6 +93143,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auth_hold_window_minutes?: number
           created_at?: string
           dedicated_tables?: string[] | null
           dispatch_pattern?: string | null
@@ -93154,6 +93162,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auth_hold_window_minutes?: number
           created_at?: string
           dedicated_tables?: string[] | null
           dispatch_pattern?: string | null

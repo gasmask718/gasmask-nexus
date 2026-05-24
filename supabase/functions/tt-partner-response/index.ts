@@ -213,6 +213,97 @@ serve(async (req) => {
           .eq('id', partner.id)
       }
 
+      // ====== CAPTURE-ON-ACCEPT (auth-then-capture flow) ======
+      // For slingshot/jetski/helicopter the booking was created with a manual-capture
+      // PaymentIntent (payment_hold_status='hold_placed'). On a successful partner
+      // claim, capture the PI now. Surface failures loudly — never silently leave a
+      // held-but-uncaptured booking.
+      try {
+        const { data: bk } = await supabase
+          .from('tt_bookings')
+          .select('id, stripe_payment_intent_id, payment_hold_status, booking_reference, client_phone, total_price')
+          .eq('id', dispatchRequest.booking_id)
+          .maybeSingle()
+
+        if (bk && bk.payment_hold_status === 'hold_placed' && bk.stripe_payment_intent_id) {
+          const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')
+          if (!stripeKey) {
+            console.error('[tt-partner-response] STRIPE_SECRET_KEY missing — cannot capture')
+            await supabase.from('tt_bookings').update({
+              status: 'capture_failed', payment_hold_status: 'capture_failed',
+            }).eq('id', bk.id)
+            await supabase.from('tt_notifications_log').insert({
+              booking_id: bk.id, type: 'capture_failure_alert', channel: 'internal',
+              recipient: 'admin', status: 'sent',
+              message: `Capture failed for ${bk.booking_reference}: STRIPE_SECRET_KEY not configured. Partner already won — manual reconciliation required.`,
+            })
+          } else {
+            const capRes = await fetch(
+              `https://api.stripe.com/v1/payment_intents/${bk.stripe_payment_intent_id}/capture`,
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${stripeKey}`,
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                },
+              }
+            )
+            const capJson: any = await capRes.json().catch(() => ({}))
+            if (capRes.ok && capJson?.status === 'succeeded') {
+              await supabase.from('tt_bookings').update({
+                status: 'confirmed',
+                payment_status: 'captured',
+                payment_hold_status: 'charged',
+              }).eq('id', bk.id)
+              await supabase.from('tt_notifications_log').insert({
+                booking_id: bk.id, type: 'payment_captured', channel: 'internal',
+                recipient: 'system', status: 'sent',
+                message: `Captured $${bk.total_price} for ${bk.booking_reference} (PI ${bk.stripe_payment_intent_id}) on partner accept.`,
+              })
+            } else {
+              const errMsg = capJson?.error?.message || `HTTP ${capRes.status}`
+              console.error('[tt-partner-response] capture failed:', errMsg, capJson)
+              await supabase.from('tt_bookings').update({
+                status: 'capture_failed', payment_hold_status: 'capture_failed',
+              }).eq('id', bk.id)
+              await supabase.from('tt_notifications_log').insert({
+                booking_id: bk.id, type: 'capture_failure_alert', channel: 'internal',
+                recipient: 'admin', status: 'sent',
+                message: `Capture FAILED for ${bk.booking_reference} (PI ${bk.stripe_payment_intent_id}): ${errMsg}. Partner ${partner?.partner_name || partner?.name} already won — ops must contact customer for new card or release partner.`,
+              })
+              // Also alert ops via SMS
+              const sid = Deno.env.get('TWILIO_ACCOUNT_SID')
+              const tok = Deno.env.get('TWILIO_AUTH_TOKEN')
+              const from = Deno.env.get('TT_PHONE_NUMBER')
+              const ops = Deno.env.get('DAVID_PHONE_NUMBER')
+              if (sid && tok && from && ops) {
+                try {
+                  await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+                    method: 'POST',
+                    headers: { Authorization: `Basic ${btoa(`${sid}:${tok}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                      To: ops, From: from,
+                      Body: `⚠️ CAPTURE FAILED: ${bk.booking_reference} — partner accepted but card capture failed (${errMsg}). Manual action needed.`,
+                    }),
+                  })
+                } catch (_) { /* non-critical */ }
+              }
+            }
+          }
+        }
+      } catch (capErr) {
+        console.error('[tt-partner-response] capture pipeline error:', capErr)
+        try {
+          await supabase.from('tt_notifications_log').insert({
+            booking_id: dispatchRequest.booking_id,
+            type: 'capture_failure_alert', channel: 'internal',
+            recipient: 'admin', status: 'sent',
+            message: `Capture pipeline error for ${dispatchRequest.booking_reference}: ${(capErr as any)?.message ?? capErr}`,
+          })
+        } catch (_) {}
+      }
+
+
       // ====== TRUCK-WITH-DECOR MEETING-POINT (cross-row write to decor sibling) ======
       // When the accepted dispatch is a black-truck pool_style row AND the booking
       // has decor_addon=true, there is a sibling marketplace_direct row for the

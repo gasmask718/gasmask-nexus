@@ -1,205 +1,112 @@
 
-# Decor Marketplace — Full Phased Build Plan
+## GATING DEPENDENCY — read first
 
-A new **service-provider marketplace** layered on TopTier, with **decorators as the first instance**. Decorators are self-priced (marketplace), unlike the platform-priced transportation pool. Five phases, gated by approval + proof. Transportation dispatch and the 5 live patterns are not touched outside Phase 3's additive change.
+Dispatch can't go anywhere if no partners exist for the service. Current count in `tt_partners`:
 
----
+| Service | Required `partner_type` | Partners loaded |
+|---|---|---|
+| slingshot | `novelty_operator` | **0** |
+| jetski | `watercraft_operator` | **0** |
+| helicopter | `helicopter_operator` | **1** (seed row `TEST_Heli_NY`, phone `+15550000006` — placeholder, not a real driver) |
 
-## Guiding invariants (apply to every phase)
+**Net: there is effectively nobody to dispatch to for any of the three services today.** Build the flow now (so it's ready), but the live verify steps (real SMS → real partner taps Accept → capture fires) cannot run end-to-end until you load real partners for these three service types — same playbook as the batch-2 black-truck import.
 
-- `tt_partners` is the single identity of record for all dispatchable providers (transport AND service).
-- The 5 existing dispatch patterns and `selectLegacyScored` are read-only for this build. Phase 3 only **adds** a 6th pattern.
-- Every `.insert()/.update()/.rpc()` checks error and surfaces it (same discipline that closed the swallowed-success bugs).
-- Beauty regression (existing service dispatch) is re-run after every dispatch-touching phase.
-- Phase gating is hard: no phase begins until the prior phase's VERIFY passes.
-
----
-
-## Phase 0 — This plan (no code)
-
-Output the full shape, get approval, then begin Phase 1.
+Second flag: `tt_service_routing.helicopter` is currently `pricing_strategy='quote'`, `fulfillment_model='quote_then_dispatch'`. You asked for **fixed partner pricing** on helicopter. We will flip it to `fixed` + `auto_dispatch` to match slingshot/jetski. If you'd rather keep helicopter quote-first, say so and we'll branch.
 
 ---
 
-## Phase 1 — Identity Unification
+## What's built today (relevant pieces)
 
-**Goal:** one row per decorator in `tt_partners`. Retire fragmentation.
+- `create-tt-booking` inserts `tt_bookings` (status `confirmed`, `payment_status='paid'`) and a `tt_dispatches` row. No Stripe call here — payment happens upstream on the public site (`stripe_payment_intent_id` is passed in already-charged).
+- `tt-smart-dispatch` fans the magic-link SMS to matching partners.
+- `tt-partner-response` + SQL RPC `tt_claim_dispatch` is the race-safe atomic claim used by black trucks.
+- `tt_bookings` has `payment_hold_status` + `payment_status` columns already (good — no schema migration needed for status, only `stripe_payment_intent_id` if missing — will check & add).
 
-Today: `decorators` (0 rows, has `user_id`), `decor_providers` (4 rows, fully orphaned — no `user_id`, no `tt_partner_id`), `tt_partners` (0 decor rows).
+## What changes
 
-**Recommendation: keep `decorators` as the profile-extension table (bio/media/service area), make `decor_providers` a deprecated read-only legacy view, migrate its 4 rows into `tt_partners` + `decorators`.** Rationale: `decorators` already has `user_id` (claim-ready); `decor_providers` is a stale seed table.
+### 1. Public-site booking submit (slingshot, jetski, helicopter)
 
-### Migration (Phase 1)
-```sql
--- 1. Link decorators to tt_partners
-ALTER TABLE decorators ADD COLUMN tt_partner_id uuid REFERENCES tt_partners(id) ON DELETE CASCADE;
-CREATE UNIQUE INDEX decorators_tt_partner_id_uniq ON decorators(tt_partner_id) WHERE tt_partner_id IS NOT NULL;
+Switch from "charge on book" / "no payment" to **auth-only hold**:
 
--- 2. Backfill: for each decor_providers row, create tt_partners row + decorators row + link.
---    Done in a one-shot DO block keyed on name (the 4 rows have no phone/email to dedupe).
---    Records source_legacy_id = decor_providers.id for audit.
+- Create Stripe `PaymentIntent` with `capture_method:'manual'`, `confirm:true`, amount = fixed partner price.
+- Booking is created (via existing `create-tt-booking`) with new status `authorized_pending_confirmation`, `payment_status='authorized'`, `payment_hold_status='held'`, `stripe_payment_intent_id` stored.
+- Affiliate attribution + notification-failure wiring from the last round is preserved (the only changed line is mode of payment).
 
--- 3. Rename decor_providers -> decor_providers_legacy (kept for read-only audit, 30-day retention).
-ALTER TABLE decor_providers RENAME TO decor_providers_legacy;
-```
+This lives on the public-site repo. I'll ship the changes there in the same diff (the proxy/pub-site files are reachable from this project's edge functions; if the public-site repo is separate I'll mark exactly which file to copy over).
 
-### Code (Phase 1)
-- `bulk-import-partners`: add a `decorator` branch — when `partner_type='decorator'`, insert `tt_partners` (as today) AND a paired `decorators` row with `tt_partner_id` set. Error-checked end-to-end (same audit discipline). Nested `packages[]` allowed but written in Phase 2.
+### 2. `create-tt-booking` — accept the new fields
 
-### VERIFY (Phase 1)
-1. `SELECT count(*) FROM decorators WHERE tt_partner_id IS NOT NULL` = 4.
-2. Each legacy decor_providers row joins to a real `tt_partners` row by `decorators.source_legacy_id`.
-3. Seed a test decorator via importer → lands as one tt_partners + one decorators row, linked.
-4. No partner_type='decorator' rows are orphaned (`tt_partners.id NOT IN (SELECT tt_partner_id FROM decorators)` returns 0).
+Add optional inputs: `stripe_payment_intent_id`, `payment_mode` (`'auth_hold' | 'paid'`). When `auth_hold`:
+- Set `status='authorized_pending_confirmation'`, `payment_status='authorized'`, `payment_hold_status='held'`.
+- Insert `tt_dispatches` with `status='pending'` then invoke `tt-smart-dispatch`.
 
----
+Black-truck path is unchanged (defaults to current behaviour).
 
-## Phase 2 — Self-Defined Packages + Pricing Surface
+### 3. `tt-partner-response` (+ `tt_claim_dispatch`) — capture on accept
 
-**Goal:** decorators define their own packages with their own prices; public surfaces read from those packages (no hardcoded teasers).
+After the atomic claim succeeds and dispatch flips to `accepted`:
+- Look up booking's `stripe_payment_intent_id` + `payment_hold_status`.
+- If `held`: call Stripe `paymentIntents.capture(pi)`.
+  - Success → booking `status='confirmed'`, `payment_status='captured'`, `payment_hold_status='captured'`, accrue affiliate commission on captured amount (reuse existing `ambassador-sale-webhook` / commission write — same pattern as black truck).
+  - Failure (card declined at capture, auth expired) → booking `status='capture_failed'`, log to `tt_notifications_log` as `capture_failure_alert` (channel `internal`), also SMS the customer + ops. Dispatch stays `accepted` so the partner isn't confused, but the booking is flagged loud.
+- If already `captured` or `released` → no-op.
 
-Today: `provider_packages` (0 rows, right shape, `provider_id` not pointing at `tt_partners`). HotelDecor.tsx / TruckDecor.tsx render hardcoded `experiences[]/packages[]` constants.
+The claim RPC itself stays atomic; capture happens in the edge function right after, wrapped so a capture failure doesn't roll back the partner win.
 
-### Migration (Phase 2)
-```sql
-ALTER TABLE provider_packages
-  ADD COLUMN tt_partner_id uuid REFERENCES tt_partners(id) ON DELETE CASCADE,
-  ADD COLUMN category text,            -- 'hotel-decor' | 'truck-decor' | 'yacht-decor' | ...
-  ADD COLUMN platform_fee_pct numeric NOT NULL DEFAULT 15,
-  ADD COLUMN is_published boolean NOT NULL DEFAULT false;
+### 4. Release path — `tt-release-expired-auths` (new edge function + cron)
 
-CREATE INDEX provider_packages_partner_cat_idx
-  ON provider_packages(tt_partner_id, category) WHERE is_published;
+- Run every 15 min. For every booking where `payment_hold_status='held'` AND (`expires_at < now()` OR all dispatches `declined`):
+  - Cancel PaymentIntent (`stripe.paymentIntents.cancel(pi)`).
+  - Booking → `status='unavailable'`, `payment_hold_status='released'`, `payment_status='released'`.
+  - SMS customer: "No partner available for your <service> at <time>. Your card was never charged."
+  - Log `auth_released` to `tt_notifications_log`.
 
--- Computed/derived view exposing partner_take = price * (1 - platform_fee_pct/100)
-CREATE OR REPLACE VIEW provider_packages_v AS
-SELECT pp.*, p.business_name, p.name AS partner_name,
-       (pp.price * (1 - pp.platform_fee_pct/100.0))::numeric(10,2) AS partner_take,
-       (pp.price * (pp.platform_fee_pct/100.0))::numeric(10,2) AS platform_fee
-FROM provider_packages pp
-JOIN tt_partners p ON p.id = pp.tt_partner_id;
-```
+"Window" defaults to **2 hours** from booking creation (configurable per service via a new `tt_service_routing.auth_hold_window_minutes`, default 120). Stored on the dispatch as `expires_at`.
 
-### Code (Phase 2)
-- **Partner Portal** (`PartnerPortal.tsx`): new "Packages" tab for `partner_type='decorator'` — CRUD on `provider_packages` (name, description, inclusions JSONB, price, category, is_published). Errors surfaced.
-- **Public surfaces:**
-  - `/decorators/:id` — read packages from `provider_packages_v WHERE tt_partner_id = :id AND is_published`.
-  - `/services/hotel-decor` and `/services/truck-decor` — "starting from" computed as `MIN(price) FROM provider_packages_v WHERE category=... AND is_published`. Remove hardcoded `experiences[]/packages[]` constants; replace with real queries (loading + empty states).
-- **Importer** (Phase 1 branch extension): accept optional `packages: [{name, price, category, platform_fee_pct?}]` and write them.
-- **Legacy-read repointing (Phase 1 stopgap → Phase 2 cleanup):** `src/pages/os/toptier/DecorExperienceWizard.tsx` and `src/pages/os/toptier/penthouse/PenthouseVehicleDecor.tsx` were temporarily repointed to `decor_providers_legacy` during Phase 1. In Phase 2 they MUST be migrated to read from `decorators` joined to `tt_partners` (the unified identity). This must land before the 30-day `decor_providers_legacy` retention window closes — drop of the legacy table is gated on this migration.
+### 5. 7-day expiry surfacing — `tt-stale-auth-alert` (new)
 
-### VERIFY (Phase 2)
-1. Decorator logs into portal, creates a $X package → row appears in `provider_packages` with correct `tt_partner_id`, `platform_fee_pct`, `is_published=true`.
-2. `/decorators/:id` lists that package at $X with correct inclusions.
-3. `/services/hotel-decor` "starting from" matches `MIN(price)` for hotel-decor category packages.
-4. `rg "experiences = \[" src/pages/services/HotelDecor.tsx src/pages/services/TruckDecor.tsx` returns nothing — hardcoded teasers gone.
+Same cron, separate query: any booking still `held` with `created_at < now() - interval '5 days'` → fire internal alert + surface in Penthouse ops as a "must capture or release" list. Stripe auths die at ~7 days, so 5-day warning gives runway.
+
+### 6. Service routing fix
+
+`UPDATE tt_service_routing SET pricing_strategy='fixed', fulfillment_model='auto_dispatch' WHERE slug='helicopter';`
+(Confirm before I run.)
 
 ---
 
-## Phase 3 — `marketplace_direct` Dispatch Pattern (additive 6th pattern)
+## Files to touch
 
-**Goal:** customer-chosen decorator → routes to exactly that decorator, no broadcast.
+- `supabase/functions/create-tt-booking/index.ts` — accept `payment_mode`, set auth-hold statuses.
+- `supabase/functions/tt-partner-response/index.ts` — after successful `tt_claim_dispatch`, call Stripe capture; handle success/failure paths.
+- `supabase/functions/tt-release-expired-auths/index.ts` — **new**, cron-driven.
+- `supabase/functions/tt-stale-auth-alert/index.ts` — **new**, cron-driven (or fold into above).
+- DB migration:
+  - add column `tt_bookings.stripe_payment_intent_id text` if not present
+  - add column `tt_dispatches.expires_at timestamptz` if not present (already exists for black truck; confirm)
+  - add column `tt_service_routing.auth_hold_window_minutes int default 120`
+  - extend the `tt_bookings.status` allowed-values check to include `authorized_pending_confirmation`, `capture_failed`, `unavailable` (if a CHECK exists)
+- Data update (separate `insert` call): flip helicopter routing to fixed/auto_dispatch.
+- Cron schedule (via `supabase--insert` + `pg_cron`/`pg_net`) for the two new functions.
+- Public-site booking submit: switch slingshot/jetski to manual-capture PI, add same PI flow to helicopter.
 
-### Migration (Phase 3)
-```sql
--- 1. Extend the validate_dispatch_pattern trigger to accept 'marketplace_direct'
---    (read existing trigger first, append the value to the allowed set — same pattern used for the 5 existing).
+## Secrets
 
--- 2. Activate decor routing
-UPDATE tt_service_routing
-SET dispatch_pattern = 'marketplace_direct', is_active = true
-WHERE service_slug IN ('hotel-decor', 'truck-decor');
-```
+`STRIPE_SECRET_KEY` is already wired (used by other TT edge functions). No new secret needed.
 
-### Code (Phase 3)
-- **Dispatch engine** (the file that holds `selectLegacyScored` and the 5 pattern selectors): add `selectMarketplaceDirect(request)`:
-  - Requires `request.chosen_partner_id` (set from booking's chosen decorator).
-  - Returns exactly `[{ id: chosen_partner_id, ... }]`. No scoring, no broadcast.
-  - Writes one `tt_dispatch_requests` row with `accepted_partner_id` pre-set to the chosen partner (or `matched_partners=[chosen]` + auto-accept depending on existing semantics — will mirror selectLegacyScored's row shape exactly).
-- **Booking creation flow** for hotel-decor / truck-decor: customer's chosen `decorator_id` (already collected on category pages) is written to `tt_bookings.chosen_partner_id` (new column added in migration above) and propagated into dispatch request.
-- **Portal visibility:** dispatch request is keyed on `tt_partners.id` (already the case in `PartnerPortal.tsx` via the matched_partners predicate). No portal change needed if Phase 1 unification is clean.
+## Verify (real Stripe test mode)
 
-### VERIFY (Phase 3) — function-invoke proof, not just SELECTs
-1. Create a hotel-decor booking with chosen decorator A → invoke dispatch edge function → `tt_dispatch_requests` row has only decorator A.
-2. Log into A's portal → request appears under Dispatch Requests.
-3. Beauty regression: run a beauty booking → still dispatches through its existing pattern, unchanged.
-4. Pattern allowlist: try `dispatch_pattern='garbage'` → trigger rejects (proves trigger still enforces).
+Once partners are loaded for the three service types, run these end-to-end:
 
----
+1. Book slingshot (test card `4000002500003155` for 3DS-skip, fixed price) → Stripe shows **uncaptured** PI, booking `authorized_pending_confirmation`, magic-link SMS sent to test partner.
+2. Test partner taps Accept → Stripe shows PI **succeeded** (captured), booking `confirmed`, affiliate commission row created if `?ref=` was set.
+3. Book a second one, let the auth window lapse with zero accepts → cron fires, Stripe shows PI **canceled**, booking `unavailable`, customer SMS sent.
+4. Repeat for jetski + helicopter.
+5. Negative path: book, partner accepts, but use Stripe test card `4000000000000259` (charges fail on capture) → booking `capture_failed`, ops alert fires, no silent held-state.
 
-## Phase 4 — Commission / Payout
+## Open questions before I build
 
-**Goal:** completed decor booking writes a commission entry.
+1. **Auth hold window** — default 2 hours OK, or do you want a different window per service (jetski day-of vs helicopter 24h+ lead time)?
+2. **Helicopter pricing** — flip to fixed/auto_dispatch as above, or keep quote-first and add auth-hold only after admin confirms the quote? (I recommend fixed/auto_dispatch since you said "fixed partner pricing, no quote".)
+3. **Partner loading** — want me to also draft the partner-import migration for slingshot/jetski/helicopter (mirroring batch-2 black truck), or is that a separate task once you have the supplier list?
 
-### Migration (Phase 4)
-- Trigger or RPC: on `tt_bookings.status -> 'completed'` for marketplace_direct service types, insert into `commission_events`:
-  - `source_entity_type='decor_package_booking'`
-  - `source_entity_id=booking.id`
-  - `gross_amount=package.price`
-  - `commission_rate=package.platform_fee_pct`
-  - `commission_amount=gross * rate`
-- New view `decor_commission_v` joining `commission_events` ↔ `provider_packages_v` ↔ `tt_partners` for admin reporting.
-
-### Code (Phase 4)
-- Admin reporting widget on `/admin/marketplace-control` showing decor commission totals.
-
-### VERIFY (Phase 4)
-1. Mark a test decor booking complete → `commission_events` row written with correct `commission_amount`.
-2. Reversal (booking cancelled after completion) writes a compensating row, not an UPDATE (per ledger-truth invariant).
-3. `decor_commission_v` shows the row.
-
----
-
-## Phase 5 — Linked Bookings (yacht/club/car decor add-ons)
-
-**Goal:** add-on decor is a second booking linked to a parent (yacht/club/exotic-car).
-
-### Migration (Phase 5)
-```sql
-ALTER TABLE tt_bookings
-  ADD COLUMN parent_booking_id uuid REFERENCES tt_bookings(id) ON DELETE CASCADE,
-  ADD COLUMN booking_role text DEFAULT 'primary' CHECK (booking_role IN ('primary','addon_decor'));
-CREATE INDEX tt_bookings_parent_idx ON tt_bookings(parent_booking_id);
-```
-
-### Code (Phase 5)
-- Yacht/Club/Exotic-Car detail pages: "Add Decor" CTA → opens decorator picker (filtered to relevant category: yacht-decor/club-decor/car-decor) → on confirm, creates a SECOND `tt_bookings` row with `parent_booking_id=parent.id`, `booking_role='addon_decor'`, `chosen_partner_id=decorator`, then dispatches via `marketplace_direct`.
-- Add `yacht-decor`, `club-decor`, `car-decor` to `tt_service_routing` (active, `marketplace_direct`).
-- **Payment decision point — flag, don't build blind:** present two options (pay-with-parent vs separate charge) and wait for user choice before wiring payment. Default plan stub: separate charge on the addon booking using the same Stripe path as standalone decor.
-
-### VERIFY (Phase 5)
-1. Book yacht + decor → two `tt_bookings` rows, decor row's `parent_booking_id` = yacht row's id.
-2. Decor row dispatches via marketplace_direct to chosen decorator; decorator sees it in portal.
-3. Cancelling parent cascades or flags addon (per agreed cancellation policy — to be confirmed).
-
----
-
-## Cross-phase dependency graph
-```text
-Phase 1 (identity) ──► Phase 2 (packages need tt_partner_id)
-                                  │
-                                  ▼
-                       Phase 3 (dispatch needs real partners + packages to land on)
-                                  │
-                                  ▼
-                       Phase 4 (commission needs completed marketplace_direct bookings)
-                                  │
-                                  ▼
-                       Phase 5 (linked bookings reuse marketplace_direct + commission)
-```
-
-## How transportation stays safe at each step
-- Phase 1: only adds a column to `decorators` + renames `decor_providers`; no transport table touched.
-- Phase 2: only adds columns to `provider_packages` (orphaned table, 0 rows, no transport consumer).
-- Phase 3: extends the pattern allowlist (additive) and flips two routing rows that were `is_active=false`. The 5 existing patterns are untouched in code and DB. Beauty regression re-run.
-- Phase 4: new trigger scoped to `service_type IN (decor categories)`. Transport bookings excluded.
-- Phase 5: `parent_booking_id` is NULLABLE with `DEFAULT NULL`; existing transport bookings unaffected.
-
----
-
-## What I need from you to start Phase 1
-1. **Approve this Phase 0 plan.**
-2. Confirm the **`decorators` over `decor_providers`** recommendation (keep `decorators` as profile-extension; deprecate `decor_providers` to `_legacy`). If you prefer the reverse, I'll re-spec Phase 1.
-3. Confirm default **`platform_fee_pct = 15%`** (placeholder; easy to change before Phase 2).
-
-On approval of (1)+(2)+(3), I'll post the Phase 1 migration SQL + importer diff for review before applying.
+Say go (with answers to 1–3) and I'll ship the diff.
