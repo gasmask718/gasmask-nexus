@@ -45,7 +45,25 @@ Deno.serve(async (req) => {
 
     // Resolve routing from slug / legacy service_type (defaults to black-truck for back-compat)
     const routing = await resolveRouting(supabase, service_slug || incomingServiceType || 'black-truck');
-    const initialStatus = routing._unrouted ? 'needs_review' : 'confirmed';
+
+    // Auth-then-capture flow detection. Public site sends payment_mode='auth_hold' for
+    // slingshot/jetski/helicopter when it creates a manual-capture PaymentIntent.
+    const isAuthHold = payment_mode === 'auth_hold';
+    if (isAuthHold && !stripe_payment_intent_id) {
+      return new Response(JSON.stringify({
+        error: 'payment_mode=auth_hold requires stripe_payment_intent_id',
+      }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    const initialStatus = routing._unrouted
+      ? 'needs_review'
+      : (isAuthHold ? 'authorized_pending_confirmation' : 'confirmed');
+    const initialPaymentStatus = isAuthHold ? 'authorized' : 'paid';
+    const initialHoldStatus = isAuthHold ? 'hold_placed' : 'none';
+    const holdWindowMinutes = (routing as any).auth_hold_window_minutes ?? 120;
+    const authExpiresAt = isAuthHold
+      ? new Date(Date.now() + holdWindowMinutes * 60_000).toISOString()
+      : null;
 
     // Resolve chosen decorator → tt_partners.id (for marketplace_direct dispatch)
     let resolvedPartnerId: string | null = chosen_partner_id ?? null;
