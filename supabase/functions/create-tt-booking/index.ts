@@ -33,6 +33,8 @@ Deno.serve(async (req) => {
       decor_partner_id: incomingDecorPartnerId,  // tt_partners.id (preferred)
       decor_decorator_id,       // decorators.id (legacy) — resolved via decorators.tt_partner_id
       decor_package_slug,
+      // Auth-then-capture payment flow (slingshot/jetski/helicopter)
+      payment_mode,             // 'auth_hold' | 'paid' (default 'paid' for back-compat)
     } = body;
 
     if (!customer_name || !pickup_address || !pickup_datetime || !total_price) {
