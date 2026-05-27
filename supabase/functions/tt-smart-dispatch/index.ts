@@ -195,7 +195,7 @@ async function insertDispatchAndBroadcast(
     if (!prior) {
       const criteria = {
         partner_types: routing?.partner_types ?? [],
-        pickup_state: pickupState(booking),
+        pickup_state: resolvePickupState(booking),
         fulfillment_model: routing?.fulfillment_model ?? null,
       }
       const payload = {
