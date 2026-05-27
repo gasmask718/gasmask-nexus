@@ -1,0 +1,158 @@
+// supabase/functions/send-invoice-sms/index.ts
+// Shortens a Stripe checkout URL via TinyURL and sends it to the customer
+// via Twilio SMS. Logs every send (success or failure) to communication_logs.
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+
+interface Payload {
+  checkout_url: string;
+  customer_phone: string;
+  customer_name?: string;
+  invoice_id?: string;        // marketplace_orders.id (or whatever you key on)
+  invoice_number?: string;    // human-friendly label for the SMS
+  business_id?: string;
+  brand?: string;
+}
+
+function toE164(raw: string): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("+")) return /^\+\d{8,15}$/.test(trimmed) ? trimmed : null;
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return null;
+}
+
+async function shortenUrl(longUrl: string): Promise<string> {
+  try {
+    const res = await fetch(
+      `https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`,
+      { method: "GET" },
+    );
+    if (!res.ok) return longUrl;
+    const text = (await res.text()).trim();
+    return text.startsWith("http") ? text : longUrl;
+  } catch {
+    return longUrl;
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const json = (status: number, body: unknown) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
+  try {
+    // ---- Auth: require a logged-in user ----
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) return json(401, { error: "Unauthorized" });
+
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claims, error: claimsErr } = await userClient.auth.getClaims(token);
+    if (claimsErr || !claims?.claims) return json(401, { error: "Unauthorized" });
+    const userId = claims.claims.sub as string;
+
+    // ---- Validate input ----
+    const body = (await req.json().catch(() => null)) as Payload | null;
+    if (!body) return json(400, { error: "Invalid JSON body" });
+
+    const { checkout_url, customer_phone, customer_name, invoice_id, invoice_number, business_id, brand } = body;
+
+    if (!checkout_url || !/^https:\/\/(checkout\.stripe\.com|billing\.stripe\.com|buy\.stripe\.com)/.test(checkout_url)) {
+      return json(400, { error: "checkout_url must be a valid Stripe URL" });
+    }
+    const to = toE164(customer_phone || "");
+    if (!to) return json(400, { error: "customer_phone is missing or not a valid phone number" });
+
+    // ---- Twilio creds ----
+    const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
+    const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+    const from = Deno.env.get("TWILIO_PHONE_NUMBER") || Deno.env.get("TWILIO_FROM_NUMBER");
+    if (!sid || !authToken || !from) {
+      return json(500, { error: "Twilio credentials are not configured" });
+    }
+    if (!sid.startsWith("AC")) {
+      return json(500, { error: "TWILIO_ACCOUNT_SID must start with 'AC'" });
+    }
+
+    // ---- Shorten + compose ----
+    const shortUrl = await shortenUrl(checkout_url);
+    const greeting = customer_name?.trim() ? `Hi ${customer_name.trim()}` : "Hello";
+    const label = invoice_number ? ` ${invoice_number}` : "";
+    const message = `${greeting}, here's your invoice${label}: ${shortUrl}`;
+
+    // ---- Send via Twilio ----
+    const twilioRes = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Basic " + btoa(`${sid}:${authToken}`),
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({ To: to, From: from, Body: message }),
+      },
+    );
+    const twilioData = await twilioRes.json();
+
+    // ---- Log to communication_logs via service role (bypass RLS) ----
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    await admin.from("communication_logs").insert({
+      channel: "sms",
+      direction: "outbound",
+      summary: twilioRes.ok ? `Invoice SMS sent${label}` : `Invoice SMS failed${label}`,
+      message_content: message,
+      full_message: message,
+      recipient_phone: to,
+      sender_phone: from,
+      delivery_status: twilioRes.ok ? "sent" : "failed",
+      twilio_sid: twilioData?.sid ?? null,
+      outcome: twilioRes.ok ? "delivered_to_carrier" : (twilioData?.message ?? "twilio_error"),
+      performed_by: "system",
+      created_by: userId,
+      business_id: business_id ?? null,
+      brand: brand ?? null,
+    });
+
+    // ---- Stamp the invoice/order if we know its id ----
+    if (invoice_id && twilioRes.ok) {
+      await admin
+        .from("marketplace_orders")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", invoice_id);
+    }
+
+    if (!twilioRes.ok) {
+      return json(502, {
+        error: "Twilio rejected the message",
+        twilio_status: twilioRes.status,
+        twilio_message: twilioData?.message ?? null,
+        twilio_code: twilioData?.code ?? null,
+      });
+    }
+
+    return json(200, {
+      success: true,
+      short_url: shortUrl,
+      sms_sid: twilioData.sid,
+      to,
+      message,
+    });
+  } catch (err) {
+    console.error("send-invoice-sms error", err);
+    return json(500, { error: (err as Error).message || "Unknown error" });
+  }
+});
