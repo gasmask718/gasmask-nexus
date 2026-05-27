@@ -163,7 +163,7 @@ async function insertDispatchAndBroadcast(
   recipients: any[],
   meta: { dispatch_pattern: string; payment_leg: string | null; status: string }
 ) {
-  const { supabase, booking, serviceCategory } = ctx
+  const { supabase, booking, serviceCategory, routing } = ctx
 
   // Normalize recipients to a common shape with phone
   const normalized = recipients.map((r: any) => ({
@@ -179,6 +179,51 @@ async function insertDispatchAndBroadcast(
     vehicle_classes: r.vehicle_classes ?? null,
     service_regions: r.service_regions ?? null,
   }))
+
+  // === NO-MATCH ADMIN ALERT (silent-failure guard) ===
+  // Fires BEFORE any downstream insert so a later throw cannot swallow it.
+  // Idempotent: one alert per booking_id.
+  if (normalized.length === 0) {
+    const { data: prior } = await supabase
+      .from('tt_notifications_log')
+      .select('id')
+      .eq('booking_id', booking.id)
+      .eq('type', 'no_partners_matched_alert')
+      .limit(1)
+      .maybeSingle()
+
+    if (!prior) {
+      const criteria = {
+        partner_types: routing?.partner_types ?? [],
+        pickup_state: pickupState(booking),
+        fulfillment_model: routing?.fulfillment_model ?? null,
+      }
+      const payload = {
+        booking_id: booking.id,
+        booking_reference: booking.booking_reference,
+        service_slug: booking.service_slug || routing?.slug,
+        service_type: booking.service_type,
+        service_category: serviceCategory,
+        customer_name: booking.client_name,
+        scheduled_at: booking.scheduled_at,
+        pickup_location: booking.pickup_location,
+        dispatch_pattern: meta.dispatch_pattern,
+        criteria,
+        reason: 'Zero active partners with valid phone matched the routing criteria',
+      }
+      await supabase.from('tt_notifications_log').insert({
+        booking_id: booking.id,
+        type: 'no_partners_matched_alert',
+        channel: 'internal',
+        recipient: 'admin',
+        message: `No partners matched for ${routing?.display_name || booking.service_type} booking ${booking.booking_reference || booking.id} — criteria=${JSON.stringify(criteria)}`,
+        status: 'sent',
+      })
+      console.warn('[tt-smart-dispatch] no_partners_matched_alert emitted', payload)
+    } else {
+      console.log('[tt-smart-dispatch] no_partners_matched_alert already exists for booking', booking.id, '— skipping (idempotent)')
+    }
+  }
 
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
   const { data: dispatchReq } = await supabase
