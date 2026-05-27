@@ -684,6 +684,32 @@ async function selectLegacyScored(ctx: any) {
   const allCandidates = [...candidates, ...localOnly]
 
   if (allCandidates.length === 0) {
+    // No-match alert (mirrors insertDispatchAndBroadcast guard; source='legacy_scored')
+    const { data: existingAlert } = await supabase
+      .from('tt_notifications_log')
+      .select('id')
+      .eq('booking_id', booking.id)
+      .eq('type', 'no_partners_matched_alert')
+      .maybeSingle()
+    if (!existingAlert) {
+      const criteria = {
+        partner_types: routing?.partner_types ?? [],
+        pickup_state: resolvePickupState(booking),
+        fulfillment_model: routing?.fulfillment_model ?? null,
+        source: 'legacy_scored',
+      }
+      await supabase.from('tt_notifications_log').insert({
+        booking_id: booking.id,
+        type: 'no_partners_matched_alert',
+        channel: 'internal',
+        recipient: 'admin',
+        status: 'sent',
+        message: `No partners matched for ${routing?.display_name || booking.service_type} booking ${booking.booking_reference || booking.id} — legacy_scored path — criteria=${JSON.stringify(criteria)}`,
+      })
+      console.warn('[tt-smart-dispatch] no_partners_matched_alert emitted (legacy_scored)', { booking_id: booking.id, criteria })
+    } else {
+      console.log('[tt-smart-dispatch] no_partners_matched_alert already exists for booking', booking.id, '— skipping (idempotent, legacy_scored)')
+    }
     await supabase.from('tt_dispatch_requests').insert({
       booking_id: booking.id,
       booking_reference: booking.booking_reference,
