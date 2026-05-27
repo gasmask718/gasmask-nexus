@@ -1191,7 +1191,7 @@ export default function AppRoutes() {
       <Route path="/partner/respond/:token" element={<PartnerRespond />} />
       <Route path="/tt/partner/accept/:token" element={<TTPartnerAccept />} />
       <Route path="/partner/claim" element={<PartnerClaim />} />
-      <Route path="/partner/portal" element={<PartnerPortal />} />
+      <Route path="/partner/portal" element={<ProtectedRoute><PartnerPortal /></ProtectedRoute>} />
       <Route path="/admin/partners/import" element={<PartnersImport />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/auth/intake" element={<PublicIntakePage />} />
