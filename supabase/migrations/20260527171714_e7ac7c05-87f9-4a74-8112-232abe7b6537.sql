@@ -1,0 +1,2 @@
+DELETE FROM tt_notifications_log WHERE booking_id = 'bbbbbbbb-0000-0000-0000-000000000012' AND type = 'no_partners_matched_alert';
+INSERT INTO tt_notifications_log (booking_id, type, channel, recipient, status, message) VALUES ('bbbbbbbb-0000-0000-0000-000000000012', 'no_partners_matched_alert', 'internal', 'admin', 'sent', 'Pre-seeded from insert_dispatch path — source=insert_dispatch');
