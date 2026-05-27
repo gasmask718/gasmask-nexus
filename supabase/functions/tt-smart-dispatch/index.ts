@@ -692,28 +692,23 @@ async function selectLegacyScored(ctx: any) {
       .eq('type', 'no_partners_matched_alert')
       .maybeSingle()
     if (!existingAlert) {
+      const criteria = {
+        partner_types: routing?.partner_types ?? [],
+        pickup_state: resolvePickupState(booking),
+        fulfillment_model: routing?.fulfillment_model ?? null,
+        source: 'legacy_scored',
+      }
       await supabase.from('tt_notifications_log').insert({
         booking_id: booking.id,
         type: 'no_partners_matched_alert',
         channel: 'internal',
         recipient: 'admin',
-        status: 'pending',
-        message: `No partners matched for ${booking.service_type} (${serviceCategory}) — legacy scored path. Pickup: ${booking.pickup_location || 'n/a'}, scheduled ${booking.scheduled_at || 'n/a'}, customer ${booking.client_name || 'n/a'}.`,
-        payload: {
-          booking_id: booking.id,
-          service_slug: routing?.slug,
-          service_type: booking.service_type,
-          customer_name: booking.client_name,
-          scheduled_at: booking.scheduled_at,
-          dispatch_pattern: 'legacy_scored',
-          criteria: {
-            partner_types: routing?.partner_types || [],
-            pickup_state: null,
-            fulfillment_model: routing?.fulfillment_model,
-            source: 'legacy_scored',
-          },
-        },
+        status: 'sent',
+        message: `No partners matched for ${routing?.display_name || booking.service_type} booking ${booking.booking_reference || booking.id} — legacy_scored path — criteria=${JSON.stringify(criteria)}`,
       })
+      console.warn('[tt-smart-dispatch] no_partners_matched_alert emitted (legacy_scored)', { booking_id: booking.id, criteria })
+    } else {
+      console.log('[tt-smart-dispatch] no_partners_matched_alert already exists for booking', booking.id, '— skipping (idempotent, legacy_scored)')
     }
     await supabase.from('tt_dispatch_requests').insert({
       booking_id: booking.id,
