@@ -690,7 +690,7 @@ serve(async (req: Request) => {
         {
           method: "POST",
           headers: {
-            "Authorization": "Basic " + btoa(`${accountSid}:${authToken}`),
+            "Authorization": "Basic " + btoa(`${basicUser}:${basicPass}`),
             "Content-Type": "application/x-www-form-urlencoded",
           },
           body: new URLSearchParams(twilioParams),
