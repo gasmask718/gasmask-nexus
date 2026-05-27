@@ -684,6 +684,37 @@ async function selectLegacyScored(ctx: any) {
   const allCandidates = [...candidates, ...localOnly]
 
   if (allCandidates.length === 0) {
+    // No-match alert (mirrors insertDispatchAndBroadcast guard; source='legacy_scored')
+    const { data: existingAlert } = await supabase
+      .from('tt_notifications_log')
+      .select('id')
+      .eq('booking_id', booking.id)
+      .eq('type', 'no_partners_matched_alert')
+      .maybeSingle()
+    if (!existingAlert) {
+      await supabase.from('tt_notifications_log').insert({
+        booking_id: booking.id,
+        type: 'no_partners_matched_alert',
+        channel: 'internal',
+        recipient: 'admin',
+        status: 'pending',
+        message: `No partners matched for ${booking.service_type} (${serviceCategory}) — legacy scored path. Pickup: ${booking.pickup_location || 'n/a'}, scheduled ${booking.scheduled_at || 'n/a'}, customer ${booking.client_name || 'n/a'}.`,
+        payload: {
+          booking_id: booking.id,
+          service_slug: routing?.slug,
+          service_type: booking.service_type,
+          customer_name: booking.client_name,
+          scheduled_at: booking.scheduled_at,
+          dispatch_pattern: 'legacy_scored',
+          criteria: {
+            partner_types: routing?.partner_types || [],
+            pickup_state: null,
+            fulfillment_model: routing?.fulfillment_model,
+            source: 'legacy_scored',
+          },
+        },
+      })
+    }
     await supabase.from('tt_dispatch_requests').insert({
       booking_id: booking.id,
       booking_reference: booking.booking_reference,
