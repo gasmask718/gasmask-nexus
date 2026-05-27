@@ -1,0 +1,2 @@
+UPDATE tt_partner_assets SET is_available = true WHERE id IN ('6ad8501a-1c81-490c-b6dc-3e8e9e0d0155','5baab630-7eb9-4e3b-8065-c05d26458ce1','d0b4bcb3-2dff-49e3-ae8c-81a857c92db6');
+DELETE FROM tt_notifications_log WHERE booking_id = 'bbbbbbbb-0000-0000-0000-000000000012' AND type = 'no_partners_matched_alert';
