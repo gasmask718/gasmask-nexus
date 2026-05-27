@@ -605,19 +605,38 @@ serve(async (req: Request) => {
     } else {
       const accountSid = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID") || Deno.env.get("TWILIO_ACCOUNT_SID");
       const authToken = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN") || Deno.env.get("TWILIO_AUTH_TOKEN");
+      // Prefer API Key (SK + Secret) auth — more robust and rotatable.
+      const apiKeySid =
+        Deno.env.get("BRANDARO_TWILIO_API_KEY_SID") || Deno.env.get("TWILIO_API_KEY_SID") || Deno.env.get("TWILIO_API_SID");
+      const apiKeySecret =
+        Deno.env.get("BRANDARO_TWILIO_API_KEY_SECRET") || Deno.env.get("TWILIO_API_KEY_SECRET") || Deno.env.get("TWILIO_API_SECRET");
       const fromNumber =
         Deno.env.get("BRANDARO_TWILIO_NUMBER") ||
         Deno.env.get("TWILIO_FROM_NUMBER") ||
         Deno.env.get("TWILIO_PHONE_NUMBER");
       const messagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID");
 
-      if (!accountSid || !authToken || (!fromNumber && !messagingServiceSid)) {
-        const errMsg = "Twilio SMS not configured (need ACCOUNT_SID + AUTH_TOKEN + (FROM number or MESSAGING_SERVICE_SID))";
+      // Resolve which credential pair to use for Basic auth.
+      const useApiKey = !!(apiKeySid && apiKeySecret && apiKeySid.startsWith("SK"));
+      const basicUser = useApiKey ? apiKeySid! : (accountSid || "");
+      const basicPass = useApiKey ? apiKeySecret! : (authToken || "");
+      const credsOk = !!(accountSid && accountSid.startsWith("AC") && basicUser && basicPass);
+
+      if (!credsOk || (!fromNumber && !messagingServiceSid)) {
+        const errMsg =
+          `Twilio SMS not configured. accountSid_present=${!!accountSid} accountSid_AC=${!!(accountSid && accountSid.startsWith("AC"))} ` +
+          `auth_mode=${useApiKey ? "api_key" : "auth_token"} basic_user_present=${!!basicUser} basic_pass_present=${!!basicPass} ` +
+          `from_present=${!!fromNumber} messaging_service_present=${!!messagingServiceSid}. ` +
+          `Ensure BRANDARO_TWILIO_ACCOUNT_SID starts with "AC" and is paired with the matching BRANDARO_TWILIO_AUTH_TOKEN, ` +
+          `or set BRANDARO_TWILIO_API_KEY_SID (SK...) + BRANDARO_TWILIO_API_KEY_SECRET from the SAME Twilio account.`;
+        console.error("[va-send-invoice]", errMsg);
         await supabase.from("va_invoices").update({ last_send_error: errMsg }).eq("id", invoice.id);
         return new Response(JSON.stringify({ error: errMsg }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      console.log("[va-send-invoice] twilio auth mode:", useApiKey ? "api_key (SK)" : "auth_token", "account:", (accountSid || "").slice(0, 6) + "…");
 
       // Normalize recipient to E.164 (default US +1 if 10 digits)
       let toNumber = String(recipient).trim();
