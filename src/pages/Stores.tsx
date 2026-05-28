@@ -331,6 +331,8 @@ const Stores = () => {
         invoice_payment_status: store.invoice_payment_status || null,
         invoice_payment_method: store.invoice_payment_method || null,
         invoice_amount_paid: store.invoice_amount_paid || null,
+        last_active_date: null,
+        reactivation_priority: null,
       }));
 
       // Fetch contacts for these stores
