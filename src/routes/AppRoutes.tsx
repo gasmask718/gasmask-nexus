@@ -204,6 +204,7 @@ const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplica
 
 // VA Portal
 const VAAuthPage = lazy(() => import('@/pages/va/VAAuthPage'));
+const VAResetPasswordPage = lazy(() => import('@/pages/va/VAResetPasswordPage'));
 const VAAcceptInvitePage = lazy(() => import('@/pages/va/VAAcceptInvitePage'));
 const VADashboard = lazy(() => import('@/pages/va/VADashboard'));
 const VAProfilePage = lazy(() => import('@/pages/va/VAProfilePage'));
@@ -1219,6 +1220,7 @@ export default function AppRoutes() {
 
       {/* VA Portal — Public routes */}
       <Route path="/va/auth" element={<VAAuthPage />} />
+      <Route path="/va/reset-password" element={<VAResetPasswordPage />} />
       <Route path="/va/accept-invite/:token" element={<VAAcceptInvitePage />} />
       <Route path="/pay/:invoiceId" element={<PayInvoicePage />} />
       <Route path="/p/:code" element={<ShortLinkRedirect />} />

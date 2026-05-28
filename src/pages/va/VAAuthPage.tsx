@@ -20,11 +20,37 @@ export default function VAAuthPage() {
     '';
   const hasInvite = !!inviteToken;
 
-  const [isLogin, setIsLogin] = useState(!hasInvite); // invited users default to signup
+  type Mode = 'login' | 'signup' | 'forgot';
+  const [mode, setMode] = useState<Mode>(hasInvite ? 'signup' : 'login');
+  const isLogin = mode === 'login';
+  const setIsLogin = (v: boolean) => setMode(v ? 'login' : 'signup');
   const [loading, setLoading] = useState(false);
   const [lookupLoading, setLookupLoading] = useState(hasInvite);
   const [companyName, setCompanyName] = useState<string | null>(null);
   const [form, setForm] = useState({ email: '', password: '', fullName: '' });
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = form.email.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Enter a valid email address');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/va/reset-password`,
+      });
+      if (error) throw error;
+      toast.success('If an account exists, a reset link has been sent.');
+      setMode('login');
+    } catch (err: any) {
+      // Don't leak existence — generic success message
+      toast.success('If an account exists, a reset link has been sent.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // If we have an invite token, look up the email/company so the form is pre-filled
   useEffect(() => {
@@ -140,6 +166,34 @@ export default function VAAuthPage() {
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
             </div>
+          ) : mode === 'forgot' ? (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <p className="text-sm text-slate-300">
+                Enter your account email and we'll send you a password reset link.
+              </p>
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Email</label>
+                <Input
+                  type="email"
+                  value={form.email}
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  placeholder="va@brandaro.com"
+                  required
+                  className="bg-slate-800 border-slate-700 text-white"
+                />
+              </div>
+              <Button type="submit" disabled={loading} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Send Reset Link
+              </Button>
+              <button
+                type="button"
+                onClick={() => setMode('login')}
+                className="w-full text-center text-sm text-cyan-400 hover:text-cyan-300"
+              >
+                Back to sign in
+              </button>
+            </form>
           ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
@@ -178,18 +232,29 @@ export default function VAAuthPage() {
                 className="bg-slate-800 border-slate-700 text-white"
               />
             </div>
+            {isLogin && (
+              <button
+                type="button"
+                onClick={() => setMode('forgot')}
+                className="block ml-auto text-xs text-cyan-400 hover:text-cyan-300"
+              >
+                Forgot password?
+              </button>
+            )}
             <Button type="submit" disabled={loading} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white">
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               {isLogin ? 'Sign In' : hasInvite ? 'Create Account & Join' : 'Create Account'}
             </Button>
           </form>
           )}
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="w-full text-center text-sm text-cyan-400 hover:text-cyan-300 mt-4"
-          >
-            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-          </button>
+          {mode !== 'forgot' && (
+            <button
+              onClick={() => setIsLogin(!isLogin)}
+              className="w-full text-center text-sm text-cyan-400 hover:text-cyan-300 mt-4"
+            >
+              {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+            </button>
+          )}
         </CardContent>
       </Card>
     </div>
