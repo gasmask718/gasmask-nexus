@@ -329,6 +329,8 @@ serve(async (req: Request) => {
     }
 
     // ── 11. Fallback on Failure ──────────────────────────────────────
+    let actualProviderUsed: "twilio" | "biztext" = chosenProvider;
+
     if (!result.success && fallbackProvider && fallbackProvider !== chosenProvider) {
       console.log(`⚠️ Primary ${chosenProvider} failed, falling back to ${fallbackProvider}`);
       if (fallbackProvider === "twilio") {
@@ -336,6 +338,7 @@ serve(async (req: Request) => {
       } else {
         result = await sendViaBizText(formattedTo, message_body);
       }
+      actualProviderUsed = fallbackProvider as "twilio" | "biztext";
 
       if (result.success) {
         // Update provider to reflect fallback used
@@ -366,7 +369,7 @@ serve(async (req: Request) => {
         success: true,
         status: "sent",
         message_id: pendingRow.id,
-        provider: chosenProvider,
+        provider: actualProviderUsed,
         provider_message_id: result.provider_message_id,
       });
     } else {
