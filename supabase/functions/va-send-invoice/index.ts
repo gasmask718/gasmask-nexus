@@ -607,23 +607,80 @@ serve(async (req: Request) => {
     } else {
       const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
       const connectorApiKey = Deno.env.get("TWILIO_API_KEY");
-      const accountSid = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID") || Deno.env.get("TWILIO_ACCOUNT_SID");
-      const authToken = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN") || Deno.env.get("TWILIO_AUTH_TOKEN");
+      const genericAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+      const genericAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+      const genericApiSid = Deno.env.get("TWILIO_API_SID");
+      const genericApiSecret = Deno.env.get("TWILIO_API_SECRET");
+      const brandaroAccountSid = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID");
+      const brandaroAuthToken = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN");
+      const brandaroApiSid = Deno.env.get("BRANDARO_TWILIO_API_KEY_SID");
+      const brandaroApiSecret = Deno.env.get("BRANDARO_TWILIO_API_KEY_SECRET");
       const fromNumber =
-        Deno.env.get("BRANDARO_TWILIO_NUMBER") ||
         Deno.env.get("TWILIO_FROM_NUMBER") ||
-        Deno.env.get("TWILIO_PHONE_NUMBER");
+        Deno.env.get("TWILIO_PHONE_NUMBER") ||
+        Deno.env.get("TWILIO_SHARED_NUMBER") ||
+        Deno.env.get("BRANDARO_TWILIO_NUMBER");
       const messagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID");
 
-      const useGateway = !!(lovableApiKey && connectorApiKey);
-      const useDirect = !!(accountSid && accountSid.startsWith("AC") && authToken);
+      type DirectTwilioCredential = {
+        label: string;
+        accountSid: string;
+        username: string;
+        password: string;
+      };
 
-      if ((!useGateway && !useDirect) || (!fromNumber && !messagingServiceSid)) {
+      const directCandidates: DirectTwilioCredential[] = [
+        genericAccountSid && genericAccountSid.startsWith("AC") && genericAuthToken
+          ? {
+              label: "direct-main-auth-token",
+              accountSid: genericAccountSid,
+              username: genericAccountSid,
+              password: genericAuthToken,
+            }
+          : null,
+        genericAccountSid && genericAccountSid.startsWith("AC") && genericApiSid && genericApiSecret
+          ? {
+              label: "direct-main-api-key",
+              accountSid: genericAccountSid,
+              username: genericApiSid,
+              password: genericApiSecret,
+            }
+          : null,
+        brandaroAccountSid && brandaroAccountSid.startsWith("AC") && brandaroAuthToken
+          ? {
+              label: "direct-brandaro-auth-token",
+              accountSid: brandaroAccountSid,
+              username: brandaroAccountSid,
+              password: brandaroAuthToken,
+            }
+          : null,
+        brandaroAccountSid && brandaroAccountSid.startsWith("AC") && brandaroApiSid && brandaroApiSecret
+          ? {
+              label: "direct-brandaro-api-key",
+              accountSid: brandaroAccountSid,
+              username: brandaroApiSid,
+              password: brandaroApiSecret,
+            }
+          : null,
+      ].filter((candidate): candidate is DirectTwilioCredential => !!candidate);
+
+      const useGateway = !!(
+        lovableApiKey &&
+        connectorApiKey &&
+        directCandidates.length === 0 &&
+        !genericApiSid &&
+        !genericApiSecret &&
+        !brandaroApiSid &&
+        !brandaroApiSecret
+      );
+
+      if ((!useGateway && directCandidates.length === 0) || (!fromNumber && !messagingServiceSid)) {
         const errMsg =
-          `Twilio SMS not configured. gateway_ready=${useGateway} direct_ready=${useDirect} ` +
-          `accountSid_present=${!!accountSid} accountSid_AC=${!!(accountSid && accountSid.startsWith("AC"))} auth_token_present=${!!authToken} connector_api_key_present=${!!connectorApiKey} ` +
-          `from_present=${!!fromNumber} messaging_service_present=${!!messagingServiceSid}. ` +
-          `Configure either the Twilio connector path (LOVABLE_API_KEY + TWILIO_API_KEY) or a matching AC... account SID + auth token pair.`;
+          `Twilio SMS not configured. gateway_ready=${useGateway} direct_candidates=${directCandidates.length} ` +
+          `generic_account_present=${!!genericAccountSid} generic_auth_present=${!!genericAuthToken} generic_api_sid_present=${!!genericApiSid} generic_api_secret_present=${!!genericApiSecret} ` +
+          `brandaro_account_present=${!!brandaroAccountSid} brandaro_auth_present=${!!brandaroAuthToken} brandaro_api_sid_present=${!!brandaroApiSid} brandaro_api_secret_present=${!!brandaroApiSecret} ` +
+          `connector_api_key_present=${!!connectorApiKey} from_present=${!!fromNumber} messaging_service_present=${!!messagingServiceSid}. ` +
+          `Configure a valid direct Twilio credential pair for the same account as the sending number, or link a real Twilio connector.`;
         console.error("[va-send-invoice]", errMsg);
         await supabase.from("va_invoices").update({ last_send_error: errMsg }).eq("id", invoice.id);
         return new Response(JSON.stringify({ error: errMsg }), {
@@ -631,16 +688,12 @@ serve(async (req: Request) => {
         });
       }
 
-      const preferredTwilioModes = [
-        ...(useDirect ? ["direct"] as const : []),
-        ...(useGateway ? ["gateway"] as const : []),
-      ];
-
       console.log(
         "[va-send-invoice] twilio send mode preference:",
-        preferredTwilioModes.join(" -> ") || "none",
-        "account:",
-        (accountSid || "").slice(0, 6) + "…",
+        [
+          ...directCandidates.map((candidate) => `${candidate.label}:${candidate.accountSid.slice(0, 6)}…`),
+          ...(useGateway ? ["gateway"] : []),
+        ].join(" -> ") || "none",
       );
 
       // Normalize recipient to E.164 (default US +1 if 10 digits)
@@ -690,7 +743,7 @@ serve(async (req: Request) => {
       if (messagingServiceSid && !fromNumber) twilioParams.MessagingServiceSid = messagingServiceSid;
       else if (fromNumber) twilioParams.From = fromNumber;
 
-      const sendTwilioRequest = async (mode: "direct" | "gateway") => {
+      const sendTwilioRequest = async (mode: DirectTwilioCredential | "gateway") => {
         if (mode === "gateway") {
           return await fetch(`${TWILIO_GATEWAY_URL}/Messages.json`, {
             method: "POST",
@@ -704,11 +757,11 @@ serve(async (req: Request) => {
         }
 
         return await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+          `https://api.twilio.com/2010-04-01/Accounts/${mode.accountSid}/Messages.json`,
           {
             method: "POST",
             headers: {
-              "Authorization": "Basic " + btoa(`${accountSid}:${authToken}`),
+              "Authorization": "Basic " + btoa(`${mode.username}:${mode.password}`),
               "Content-Type": "application/x-www-form-urlencoded",
             },
             body: new URLSearchParams(twilioParams),
@@ -718,20 +771,25 @@ serve(async (req: Request) => {
 
       let twilioSucceeded = false;
       const twilioErrors: string[] = [];
+      const twilioModes: Array<DirectTwilioCredential | "gateway"> = [
+        ...directCandidates,
+        ...(useGateway ? ["gateway"] : []),
+      ];
 
-      for (const mode of preferredTwilioModes) {
+      for (const mode of twilioModes) {
         const twilioRes = await sendTwilioRequest(mode);
+        const modeLabel = mode === "gateway" ? "gateway" : mode.label;
 
         if (twilioRes.ok) {
-          console.log("[va-send-invoice] twilio send succeeded via", mode);
+          console.log("[va-send-invoice] twilio send succeeded via", modeLabel);
           sendResult = { ok: true };
           twilioSucceeded = true;
           break;
         }
 
         const errText = await twilioRes.text();
-        console.error(`[va-send-invoice] twilio ${mode} send failed:`, errText);
-        twilioErrors.push(`${mode}: ${errText}`);
+        console.error(`[va-send-invoice] twilio ${modeLabel} send failed:`, errText);
+        twilioErrors.push(`${modeLabel}: ${errText}`);
       }
 
       if (!twilioSucceeded) {
