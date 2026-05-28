@@ -430,30 +430,38 @@ const Stores = () => {
           });
         }
 
-        // Fetch phone numbers from legacy stores table (batched)
+        // Fetch status + phone numbers from legacy stores table (batched)
         const legacyStoresData = await batchedIn<any>((ids) =>
           supabase
             .from('stores')
-            .select('id, phone, alt_phone')
+            .select('id, phone, alt_phone, status, last_active_date, reactivation_priority')
             .in('id', ids)
         );
 
         if (legacyStoresData.length) {
-          const phonesByStore = legacyStoresData.reduce((acc, store) => {
-            acc[store.id] = { 
-              phone: store.phone ? String(store.phone) : null, 
-              alt_phone: store.alt_phone ? String(store.alt_phone) : null 
+          const legacyByStore = legacyStoresData.reduce((acc, store) => {
+            acc[store.id] = {
+              phone: store.phone ? String(store.phone) : null,
+              alt_phone: store.alt_phone ? String(store.alt_phone) : null,
+              status: store.status,
+              last_active_date: store.last_active_date,
+              reactivation_priority: store.reactivation_priority,
             };
             return acc;
-          }, {} as Record<string, { phone: string | null; alt_phone: string | null }>);
+          }, {} as Record<string, { phone: string | null; alt_phone: string | null; status: string | null; last_active_date: string | null; reactivation_priority: string | null }>);
 
           mappedStores.forEach(store => {
-            const legacyPhones = phonesByStore[store.id];
-            if (legacyPhones) {
-              if (!store.phone && legacyPhones.phone) {
-                store.phone = legacyPhones.phone;
+            const legacy = legacyByStore[store.id];
+            if (legacy) {
+              if (!store.phone && legacy.phone) {
+                store.phone = legacy.phone;
               }
-              store.alt_phone = legacyPhones.alt_phone;
+              store.alt_phone = legacy.alt_phone;
+              if (legacy.status) {
+                store.status = legacy.status;
+              }
+              store.last_active_date = legacy.last_active_date;
+              store.reactivation_priority = legacy.reactivation_priority;
             }
           });
         }
@@ -579,19 +587,22 @@ const Stores = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-500/10 text-green-500 border-green-500/20';
+      case 'active':
+      case 'revenue_active':
+      case 'engagement_active':
+        return 'bg-green-500/10 text-green-500 border-green-500/20';
       case 'inactive': return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
       case 'prospect': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
       case 'needsFollowUp': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
+      case 'reactivation_target': return 'bg-orange-500/10 text-orange-500 border-orange-500/20';
       default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const statusCounts = {
     all: stores.length,
-    active: stores.filter(s => s.status === 'active').length,
-    prospect: stores.filter(s => s.status === 'prospect').length,
-    needsFollowUp: stores.filter(s => s.status === 'needsFollowUp').length,
+    active: stores.filter(s => isStoreActiveStatus(s.status)).length,
+    inactive: stores.filter(s => !isStoreActiveStatus(s.status)).length,
   };
 
   const flowersCount = stores.filter(s => s.sells_flowers).length;
@@ -931,11 +942,11 @@ const Stores = () => {
           </Button>
 
           {/* Active Filters Display */}
-          {(tagFilter !== 'all' || stickerFilter !== 'all' || paymentTypeFilter !== 'all' || newStoresOnly || noNameFilter || monthFilter !== 'all') && (
+          {(activeFilter !== 'all' || tagFilter !== 'all' || stickerFilter !== 'all' || paymentTypeFilter !== 'all' || newStoresOnly || noNameFilter || monthFilter !== 'all') && (
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => { setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); setNewStoresOnly(false); setNoNameFilter(false); setMonthFilter('all'); setCustomDateFrom(''); setCustomDateTo(''); setShowCustomDate(false); }}
+              onClick={() => { setActiveFilter('all'); setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); setNewStoresOnly(false); setNoNameFilter(false); setMonthFilter('all'); setCustomDateFrom(''); setCustomDateTo(''); setShowCustomDate(false); }}
               className="text-muted-foreground"
             >
               {t('page.stores.clear_filters') || 'Clear filters'}
@@ -1232,9 +1243,40 @@ const Stores = () => {
                              </span>
                            </div>
                          );
-                       })()}
-                    </div>
-                </CardContent>
+                        })()}
+                     </div>
+
+                    {/* Inactive Store Triage — last_active_date + reactivation_priority */}
+                    {!isStoreActiveStatus(store.status) && (store.last_active_date || store.reactivation_priority) && (
+                      <div className="pt-2 border-t border-border/50 space-y-1.5">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Reactivation Triage
+                        </p>
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          {store.last_active_date && (
+                            <span className="flex items-center gap-1 text-muted-foreground">
+                              <CalendarDays className="h-3 w-3" />
+                              Last active: {format(new Date(store.last_active_date), 'MMM d, yyyy')}
+                            </span>
+                          )}
+                          {store.reactivation_priority && (
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'text-[10px]',
+                                store.reactivation_priority === 'easy_reorder' && 'bg-green-500/10 text-green-600 border-green-500/30',
+                                store.reactivation_priority === 'warm_restart' && 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30',
+                                store.reactivation_priority === 'cold_restart' && 'bg-red-500/10 text-red-600 border-red-500/30',
+                              )}
+                            >
+                              {store.reactivation_priority.replace('_', ' ')}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                 </CardContent>
               </Card>
             );
           })}
