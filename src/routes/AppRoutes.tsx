@@ -204,6 +204,7 @@ const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplica
 
 // VA Portal
 const VAAuthPage = lazy(() => import('@/pages/va/VAAuthPage'));
+const VAResetPasswordPage = lazy(() => import('@/pages/va/VAResetPasswordPage'));
 const VAAcceptInvitePage = lazy(() => import('@/pages/va/VAAcceptInvitePage'));
 const VADashboard = lazy(() => import('@/pages/va/VADashboard'));
 const VAProfilePage = lazy(() => import('@/pages/va/VAProfilePage'));
