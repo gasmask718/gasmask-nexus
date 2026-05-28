@@ -20,11 +20,37 @@ export default function VAAuthPage() {
     '';
   const hasInvite = !!inviteToken;
 
-  const [isLogin, setIsLogin] = useState(!hasInvite); // invited users default to signup
+  type Mode = 'login' | 'signup' | 'forgot';
+  const [mode, setMode] = useState<Mode>(hasInvite ? 'signup' : 'login');
+  const isLogin = mode === 'login';
+  const setIsLogin = (v: boolean) => setMode(v ? 'login' : 'signup');
   const [loading, setLoading] = useState(false);
   const [lookupLoading, setLookupLoading] = useState(hasInvite);
   const [companyName, setCompanyName] = useState<string | null>(null);
   const [form, setForm] = useState({ email: '', password: '', fullName: '' });
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = form.email.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Enter a valid email address');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/va/reset-password`,
+      });
+      if (error) throw error;
+      toast.success('If an account exists, a reset link has been sent.');
+      setMode('login');
+    } catch (err: any) {
+      // Don't leak existence — generic success message
+      toast.success('If an account exists, a reset link has been sent.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // If we have an invite token, look up the email/company so the form is pre-filled
   useEffect(() => {
