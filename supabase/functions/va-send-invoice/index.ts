@@ -298,6 +298,7 @@ interface Body {
   channel?: "email" | "sms";
   method?: "email" | "sms";
   recipient?: string;
+  explicit_provider?: "twilio" | "biztext";
 }
 
 function escapeHtml(s: any): string {
@@ -655,10 +656,13 @@ serve(async (req: Request) => {
         ? `Your $${total} invoice ${invoice.invoice_number || ""} is ready.\nBrandaro Digital Pay: ${smsLink}`
         : `Brandaro Digital Pay — $${total} invoice ${invoice.invoice_number || ""} ready.`;
 
+      const explicitProvider = body.explicit_provider;
+
       const smsPayload = {
         to_number: recipient,
         message_body: smsBody,
         idempotency_key: `invoice-${invoice.id}-${crypto.randomUUID()}`,
+        explicit_provider: explicitProvider,
         skip_cooldown: true,
         metadata: {
           source: "va-send-invoice",
@@ -668,6 +672,7 @@ serve(async (req: Request) => {
           lead_id: invoice.lead_id || null,
           va_id: userId,
           channel: "sms",
+          explicit_provider: explicitProvider || null,
         },
       };
 
