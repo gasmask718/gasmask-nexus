@@ -779,17 +779,29 @@ const Stores = () => {
               className="pl-10 bg-secondary/50 border-border/50"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-48 bg-secondary/50 border-border/50">
-              <SelectValue placeholder={t('page.stores.filter_status') || 'Filter by status'} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('page.stores.all_stores') || 'All Stores'} ({statusCounts.all})</SelectItem>
-              <SelectItem value="active">{t('page.stores.status_active') || 'Active'} ({statusCounts.active})</SelectItem>
-              <SelectItem value="prospect">{t('page.stores.status_prospect') || 'Prospects'} ({statusCounts.prospect})</SelectItem>
-              <SelectItem value="needsFollowUp">{t('page.stores.status_followup') || 'Needs Follow-up'} ({statusCounts.needsFollowUp})</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2">
+            {([
+              { key: 'all', label: 'All' },
+              { key: 'active', label: 'Active' },
+              { key: 'inactive', label: 'Inactive' },
+            ] as const).map(({ key, label }) => {
+              const count = key === 'all' ? stores.length : key === 'active' ? stores.filter(s => isStoreActiveStatus(s.status)).length : stores.filter(s => !isStoreActiveStatus(s.status)).length;
+              return (
+                <Button
+                  key={key}
+                  variant={activeFilter === key ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActiveFilter(key)}
+                  className="h-9 gap-1.5"
+                >
+                  {label}
+                  <Badge variant={activeFilter === key ? 'secondary' : 'outline'} className="text-xs">
+                    {count}
+                  </Badge>
+                </Button>
+              );
+            })}
+          </div>
         </div>
         
         {/* Additional Filters Row */}
