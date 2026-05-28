@@ -1220,6 +1220,7 @@ export default function AppRoutes() {
 
       {/* VA Portal — Public routes */}
       <Route path="/va/auth" element={<VAAuthPage />} />
+      <Route path="/va/reset-password" element={<VAResetPasswordPage />} />
       <Route path="/va/accept-invite/:token" element={<VAAcceptInvitePage />} />
       <Route path="/pay/:invoiceId" element={<PayInvoicePage />} />
       <Route path="/p/:code" element={<ShortLinkRedirect />} />
