@@ -88,7 +88,7 @@ export function SendInvoiceDialog({ open, onClose, invoice, invalidateKeys }: Pr
           invoice_id: invoice.id,
           channel,
           recipient: recipient.trim(),
-          explicit_provider: channel === 'sms' ? selectedProvider : undefined,
+          explicit_provider: channel === 'sms' && selectedProvider !== 'default' ? selectedProvider : undefined,
         },
       });
       if (error) throw error;
