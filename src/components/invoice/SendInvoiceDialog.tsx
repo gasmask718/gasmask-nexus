@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SmsProviderSelect } from '@/components/communication/SmsProviderSelect';
 import { Mail, MessageSquare, Send, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -45,6 +46,7 @@ export function SendInvoiceDialog({ open, onClose, invoice, invalidateKeys }: Pr
   const qc = useQueryClient();
   const [channel, setChannel] = useState<Channel>('email');
   const [recipient, setRecipient] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState('twilio');
 
   // Default channel + recipient whenever the invoice changes
   useEffect(() => {
@@ -54,6 +56,7 @@ export function SendInvoiceDialog({ open, onClose, invoice, invalidateKeys }: Pr
     const next: Channel = email ? 'email' : phone ? 'sms' : 'email';
     setChannel(next);
     setRecipient(next === 'email' ? email : phone);
+    setSelectedProvider('twilio');
   }, [open, invoice]);
 
   // Switching channel auto-fills the appropriate recipient
@@ -81,7 +84,12 @@ export function SendInvoiceDialog({ open, onClose, invoice, invalidateKeys }: Pr
           : 'Enter a valid phone number in international format (e.g. +15551234567)');
       }
       const { data, error } = await supabase.functions.invoke('va-send-invoice', {
-        body: { invoice_id: invoice.id, channel, recipient: recipient.trim() },
+        body: {
+          invoice_id: invoice.id,
+          channel,
+          recipient: recipient.trim(),
+          explicit_provider: channel === 'sms' ? selectedProvider : undefined,
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -169,9 +177,16 @@ export function SendInvoiceDialog({ open, onClose, invoice, invalidateKeys }: Pr
               </p>
             )}
             {channel === 'sms' && (
-              <p className="text-[11px] text-muted-foreground">
-                US numbers will be auto-prefixed with +1 if missing.
-              </p>
+              <div className="space-y-2">
+                <p className="text-[11px] text-muted-foreground">
+                  US numbers will be auto-prefixed with +1 if missing.
+                </p>
+                <SmsProviderSelect
+                  value={selectedProvider}
+                  onChange={setSelectedProvider}
+                  showLabel={false}
+                />
+              </div>
             )}
           </div>
 
