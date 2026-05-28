@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 
+const TWILIO_GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
+
 /**
  * Ensures the invoice has live Stripe Checkout URL(s) persisted before sending.
  * - payment_type 'full'  → guarantees `payment_link`
@@ -603,32 +605,25 @@ serve(async (req: Request) => {
         text: plainLines.join("\n"),
       });
     } else {
+      const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+      const connectorApiKey = Deno.env.get("TWILIO_API_KEY");
       const accountSid = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID") || Deno.env.get("TWILIO_ACCOUNT_SID");
       const authToken = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN") || Deno.env.get("TWILIO_AUTH_TOKEN");
-      // Prefer API Key (SK + Secret) auth — more robust and rotatable.
-      const apiKeySid =
-        Deno.env.get("BRANDARO_TWILIO_API_KEY_SID") || Deno.env.get("TWILIO_API_KEY_SID") || Deno.env.get("TWILIO_API_SID");
-      const apiKeySecret =
-        Deno.env.get("BRANDARO_TWILIO_API_KEY_SECRET") || Deno.env.get("TWILIO_API_KEY_SECRET") || Deno.env.get("TWILIO_API_SECRET");
       const fromNumber =
         Deno.env.get("BRANDARO_TWILIO_NUMBER") ||
         Deno.env.get("TWILIO_FROM_NUMBER") ||
         Deno.env.get("TWILIO_PHONE_NUMBER");
       const messagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID");
 
-      // Resolve which credential pair to use for Basic auth.
-      const useApiKey = !!(apiKeySid && apiKeySecret && apiKeySid.startsWith("SK"));
-      const basicUser = useApiKey ? apiKeySid! : (accountSid || "");
-      const basicPass = useApiKey ? apiKeySecret! : (authToken || "");
-      const credsOk = !!(accountSid && accountSid.startsWith("AC") && basicUser && basicPass);
+      const useGateway = !!(lovableApiKey && connectorApiKey);
+      const useDirect = !!(accountSid && accountSid.startsWith("AC") && authToken);
 
-      if (!credsOk || (!fromNumber && !messagingServiceSid)) {
+      if ((!useGateway && !useDirect) || (!fromNumber && !messagingServiceSid)) {
         const errMsg =
-          `Twilio SMS not configured. accountSid_present=${!!accountSid} accountSid_AC=${!!(accountSid && accountSid.startsWith("AC"))} ` +
-          `auth_mode=${useApiKey ? "api_key" : "auth_token"} basic_user_present=${!!basicUser} basic_pass_present=${!!basicPass} ` +
+          `Twilio SMS not configured. gateway_ready=${useGateway} direct_ready=${useDirect} ` +
+          `accountSid_present=${!!accountSid} accountSid_AC=${!!(accountSid && accountSid.startsWith("AC"))} auth_token_present=${!!authToken} connector_api_key_present=${!!connectorApiKey} ` +
           `from_present=${!!fromNumber} messaging_service_present=${!!messagingServiceSid}. ` +
-          `Ensure BRANDARO_TWILIO_ACCOUNT_SID starts with "AC" and is paired with the matching BRANDARO_TWILIO_AUTH_TOKEN, ` +
-          `or set BRANDARO_TWILIO_API_KEY_SID (SK...) + BRANDARO_TWILIO_API_KEY_SECRET from the SAME Twilio account.`;
+          `Configure either the Twilio connector path (LOVABLE_API_KEY + TWILIO_API_KEY) or a matching AC... account SID + auth token pair.`;
         console.error("[va-send-invoice]", errMsg);
         await supabase.from("va_invoices").update({ last_send_error: errMsg }).eq("id", invoice.id);
         return new Response(JSON.stringify({ error: errMsg }), {
@@ -636,7 +631,7 @@ serve(async (req: Request) => {
         });
       }
 
-      console.log("[va-send-invoice] twilio auth mode:", useApiKey ? "api_key (SK)" : "auth_token", "account:", (accountSid || "").slice(0, 6) + "…");
+      console.log("[va-send-invoice] twilio send mode:", useGateway ? "gateway" : "direct", "account:", (accountSid || "").slice(0, 6) + "…");
 
       // Normalize recipient to E.164 (default US +1 if 10 digits)
       let toNumber = String(recipient).trim();
@@ -685,17 +680,27 @@ serve(async (req: Request) => {
       if (messagingServiceSid && !fromNumber) twilioParams.MessagingServiceSid = messagingServiceSid;
       else if (fromNumber) twilioParams.From = fromNumber;
 
-      const twilioRes = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-        {
-          method: "POST",
-          headers: {
-            "Authorization": "Basic " + btoa(`${basicUser}:${basicPass}`),
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams(twilioParams),
-        },
-      );
+      const twilioRes = useGateway
+        ? await fetch(`${TWILIO_GATEWAY_URL}/Messages.json`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${lovableApiKey!}`,
+              "X-Connection-Api-Key": connectorApiKey!,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams(twilioParams),
+          })
+        : await fetch(
+            `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+            {
+              method: "POST",
+              headers: {
+                "Authorization": "Basic " + btoa(`${accountSid}:${authToken}`),
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              body: new URLSearchParams(twilioParams),
+            },
+          );
 
       if (!twilioRes.ok) {
         const errText = await twilioRes.text();
