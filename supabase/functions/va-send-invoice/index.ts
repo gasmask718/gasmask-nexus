@@ -631,7 +631,17 @@ serve(async (req: Request) => {
         });
       }
 
-      console.log("[va-send-invoice] twilio send mode:", useGateway ? "gateway" : "direct", "account:", (accountSid || "").slice(0, 6) + "…");
+      const preferredTwilioModes = [
+        ...(useDirect ? ["direct"] as const : []),
+        ...(useGateway ? ["gateway"] as const : []),
+      ];
+
+      console.log(
+        "[va-send-invoice] twilio send mode preference:",
+        preferredTwilioModes.join(" -> ") || "none",
+        "account:",
+        (accountSid || "").slice(0, 6) + "…",
+      );
 
       // Normalize recipient to E.164 (default US +1 if 10 digits)
       let toNumber = String(recipient).trim();
@@ -680,8 +690,9 @@ serve(async (req: Request) => {
       if (messagingServiceSid && !fromNumber) twilioParams.MessagingServiceSid = messagingServiceSid;
       else if (fromNumber) twilioParams.From = fromNumber;
 
-      const twilioRes = useGateway
-        ? await fetch(`${TWILIO_GATEWAY_URL}/Messages.json`, {
+      const sendTwilioRequest = async (mode: "direct" | "gateway") => {
+        if (mode === "gateway") {
+          return await fetch(`${TWILIO_GATEWAY_URL}/Messages.json`, {
             method: "POST",
             headers: {
               "Authorization": `Bearer ${lovableApiKey!}`,
@@ -689,24 +700,42 @@ serve(async (req: Request) => {
               "Content-Type": "application/x-www-form-urlencoded",
             },
             body: new URLSearchParams(twilioParams),
-          })
-        : await fetch(
-            `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-            {
-              method: "POST",
-              headers: {
-                "Authorization": "Basic " + btoa(`${accountSid}:${authToken}`),
-                "Content-Type": "application/x-www-form-urlencoded",
-              },
-              body: new URLSearchParams(twilioParams),
-            },
-          );
+          });
+        }
 
-      if (!twilioRes.ok) {
+        return await fetch(
+          `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": "Basic " + btoa(`${accountSid}:${authToken}`),
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams(twilioParams),
+          },
+        );
+      };
+
+      let twilioSucceeded = false;
+      const twilioErrors: string[] = [];
+
+      for (const mode of preferredTwilioModes) {
+        const twilioRes = await sendTwilioRequest(mode);
+
+        if (twilioRes.ok) {
+          console.log("[va-send-invoice] twilio send succeeded via", mode);
+          sendResult = { ok: true };
+          twilioSucceeded = true;
+          break;
+        }
+
         const errText = await twilioRes.text();
-        sendResult = { ok: false, error: `Twilio error: ${errText}` };
-      } else {
-        sendResult = { ok: true };
+        console.error(`[va-send-invoice] twilio ${mode} send failed:`, errText);
+        twilioErrors.push(`${mode}: ${errText}`);
+      }
+
+      if (!twilioSucceeded) {
+        sendResult = { ok: false, error: `Twilio error: ${twilioErrors.join(" | ")}` };
       }
     }
 
