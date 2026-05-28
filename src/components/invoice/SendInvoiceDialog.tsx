@@ -46,7 +46,7 @@ export function SendInvoiceDialog({ open, onClose, invoice, invalidateKeys }: Pr
   const qc = useQueryClient();
   const [channel, setChannel] = useState<Channel>('email');
   const [recipient, setRecipient] = useState('');
-  const [selectedProvider, setSelectedProvider] = useState('twilio');
+  const [selectedProvider, setSelectedProvider] = useState('default');
 
   // Default channel + recipient whenever the invoice changes
   useEffect(() => {
@@ -56,7 +56,7 @@ export function SendInvoiceDialog({ open, onClose, invoice, invalidateKeys }: Pr
     const next: Channel = email ? 'email' : phone ? 'sms' : 'email';
     setChannel(next);
     setRecipient(next === 'email' ? email : phone);
-    setSelectedProvider('twilio');
+    setSelectedProvider('default');
   }, [open, invoice]);
 
   // Switching channel auto-fills the appropriate recipient
