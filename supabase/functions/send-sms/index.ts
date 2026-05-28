@@ -12,37 +12,67 @@ const corsHeaders = {
 async function sendViaTwilio(to: string, body: string): Promise<ProviderResult> {
   const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
   const token = Deno.env.get("TWILIO_AUTH_TOKEN");
+  const apiSid = Deno.env.get("TWILIO_API_SID") || Deno.env.get("TWILIO_API_KEY") || undefined;
+  const apiSecret = Deno.env.get("TWILIO_API_SECRET") || undefined;
   const from = Deno.env.get("TWILIO_PHONE_NUMBER") || "+18484004179";
+  const messagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID") || undefined;
 
-  if (!sid || !token) return { success: false, error_code: "NO_CREDENTIALS", error_message: "Missing Twilio credentials" };
+  if (!sid) return { success: false, error_code: "NO_CREDENTIALS", error_message: "Missing TWILIO_ACCOUNT_SID" };
+  if (!sid.startsWith("AC")) {
+    return { success: false, error_code: "INVALID_SID", error_message: "TWILIO_ACCOUNT_SID must start with AC" };
+  }
+  if (!token && !(apiSid && apiSecret)) {
+    return { success: false, error_code: "NO_CREDENTIALS", error_message: "Missing Twilio auth credentials" };
+  }
 
   const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
   const form = new URLSearchParams();
   form.append("To", to);
-  form.append("From", from);
+  if (messagingServiceSid) form.append("MessagingServiceSid", messagingServiceSid);
+  else form.append("From", from);
   form.append("Body", body);
 
+  const authCandidates: Array<{ label: string; value: string }> = [];
+  if (apiSid && apiSecret) authCandidates.push({ label: "api_key", value: btoa(`${apiSid}:${apiSecret}`) });
+  if (token) authCandidates.push({ label: "account_token", value: btoa(`${sid}:${token}`) });
+
   try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: form,
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, error_code: String(data.code || res.status), error_message: data.message || "Twilio error", raw_response: data };
+    let lastFailure: ProviderResult | null = null;
+
+    for (const auth of authCandidates) {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${auth.value}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: form,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        return { success: true, provider_message_id: data.sid, raw_response: { ...data, auth_mode: auth.label } };
+      }
+
+      lastFailure = {
+        success: false,
+        error_code: String(data.code || res.status),
+        error_message: data.message || "Twilio error",
+        raw_response: { ...data, auth_mode: auth.label },
+      };
+
+      if (!(res.status === 401 || data?.code === 20003)) {
+        return lastFailure;
+      }
     }
-    return { success: true, provider_message_id: data.sid, raw_response: data };
+
+    return lastFailure || { success: false, error_code: "TWILIO_UNKNOWN", error_message: "Twilio send failed" };
   } catch (e: any) {
     return { success: false, error_code: "NETWORK", error_message: e.message };
   }
 }
 
 async function sendViaBizText(to: string, body: string): Promise<ProviderResult> {
-  const wid = Deno.env.get("BIZTEXT_ID") || "438";
+  const wid = Deno.env.get("BIZTEXT_WEBSITE_ID") || "438";
   // Normalize to 10 digits for BizText
   let digits = to.replace(/\D/g, "");
   if (digits.startsWith("1") && digits.length === 11) digits = digits.substring(1);
