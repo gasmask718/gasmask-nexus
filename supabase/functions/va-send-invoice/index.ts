@@ -2,8 +2,6 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 
-const TWILIO_GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
-
 /**
  * Ensures the invoice has live Stripe Checkout URL(s) persisted before sending.
  * - payment_type 'full'  → guarantees `payment_link`
@@ -288,6 +286,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function getRequiredEnv(name: string): string {
+  const value = Deno.env.get(name)?.trim();
+  if (!value) throw new Error(`Missing required environment variable: ${name}`);
+  return value;
+}
+
 interface Body {
   invoice_id?: string;
   invoiceId?: string;
@@ -487,14 +491,18 @@ serve(async (req: Request) => {
       });
     }
 
+    const supabaseUrl = getRequiredEnv("SUPABASE_URL");
+    const serviceRoleKey = getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY");
+    const anonKey = getRequiredEnv("SUPABASE_ANON_KEY");
+
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      supabaseUrl,
+      serviceRoleKey,
     );
 
     const userClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
+      supabaseUrl,
+      anonKey,
       { global: { headers: { Authorization: authHeader } } },
     );
 
@@ -605,97 +613,6 @@ serve(async (req: Request) => {
         text: plainLines.join("\n"),
       });
     } else {
-      const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-      const connectorApiKey = Deno.env.get("TWILIO_API_KEY");
-      const genericAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-      const genericAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-      const genericApiSid = Deno.env.get("TWILIO_API_SID");
-      const genericApiSecret = Deno.env.get("TWILIO_API_SECRET");
-      const brandaroAccountSid = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID");
-      const brandaroAuthToken = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN");
-      const brandaroApiSid = Deno.env.get("BRANDARO_TWILIO_API_KEY_SID");
-      const brandaroApiSecret = Deno.env.get("BRANDARO_TWILIO_API_KEY_SECRET");
-      const fromNumber =
-        Deno.env.get("TWILIO_FROM_NUMBER") ||
-        Deno.env.get("TWILIO_PHONE_NUMBER") ||
-        Deno.env.get("TWILIO_SHARED_NUMBER") ||
-        Deno.env.get("BRANDARO_TWILIO_NUMBER");
-      const messagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID");
-
-      type DirectTwilioCredential = {
-        label: string;
-        accountSid: string;
-        username: string;
-        password: string;
-      };
-
-      const directCandidates: DirectTwilioCredential[] = [
-        genericAccountSid && genericAccountSid.startsWith("AC") && genericAuthToken
-          ? {
-              label: "direct-main-auth-token",
-              accountSid: genericAccountSid,
-              username: genericAccountSid,
-              password: genericAuthToken,
-            }
-          : null,
-        genericAccountSid && genericAccountSid.startsWith("AC") && genericApiSid && genericApiSecret
-          ? {
-              label: "direct-main-api-key",
-              accountSid: genericAccountSid,
-              username: genericApiSid,
-              password: genericApiSecret,
-            }
-          : null,
-        brandaroAccountSid && brandaroAccountSid.startsWith("AC") && brandaroAuthToken
-          ? {
-              label: "direct-brandaro-auth-token",
-              accountSid: brandaroAccountSid,
-              username: brandaroAccountSid,
-              password: brandaroAuthToken,
-            }
-          : null,
-        brandaroAccountSid && brandaroAccountSid.startsWith("AC") && brandaroApiSid && brandaroApiSecret
-          ? {
-              label: "direct-brandaro-api-key",
-              accountSid: brandaroAccountSid,
-              username: brandaroApiSid,
-              password: brandaroApiSecret,
-            }
-          : null,
-      ].filter((candidate): candidate is DirectTwilioCredential => !!candidate);
-
-      const useGateway = !!(
-        lovableApiKey &&
-        connectorApiKey &&
-        directCandidates.length === 0 &&
-        !genericApiSid &&
-        !genericApiSecret &&
-        !brandaroApiSid &&
-        !brandaroApiSecret
-      );
-
-      if ((!useGateway && directCandidates.length === 0) || (!fromNumber && !messagingServiceSid)) {
-        const errMsg =
-          `Twilio SMS not configured. gateway_ready=${useGateway} direct_candidates=${directCandidates.length} ` +
-          `generic_account_present=${!!genericAccountSid} generic_auth_present=${!!genericAuthToken} generic_api_sid_present=${!!genericApiSid} generic_api_secret_present=${!!genericApiSecret} ` +
-          `brandaro_account_present=${!!brandaroAccountSid} brandaro_auth_present=${!!brandaroAuthToken} brandaro_api_sid_present=${!!brandaroApiSid} brandaro_api_secret_present=${!!brandaroApiSecret} ` +
-          `connector_api_key_present=${!!connectorApiKey} from_present=${!!fromNumber} messaging_service_present=${!!messagingServiceSid}. ` +
-          `Configure a valid direct Twilio credential pair for the same account as the sending number, or link a real Twilio connector.`;
-        console.error("[va-send-invoice]", errMsg);
-        await supabase.from("va_invoices").update({ last_send_error: errMsg }).eq("id", invoice.id);
-        return new Response(JSON.stringify({ error: errMsg }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      console.log(
-        "[va-send-invoice] twilio send mode preference:",
-        [
-          ...directCandidates.map((candidate) => `${candidate.label}:${candidate.accountSid.slice(0, 6)}…`),
-          ...(useGateway ? ["gateway"] : []),
-        ].join(" -> ") || "none",
-      );
-
       // Normalize recipient to E.164 (default US +1 if 10 digits)
       let toNumber = String(recipient).trim();
       if (!toNumber.startsWith("+")) {
@@ -738,62 +655,55 @@ serve(async (req: Request) => {
         ? `Your $${total} invoice ${invoice.invoice_number || ""} is ready.\nBrandaro Digital Pay: ${smsLink}`
         : `Brandaro Digital Pay — $${total} invoice ${invoice.invoice_number || ""} ready.`;
 
-
-      const twilioParams: Record<string, string> = { To: recipient, Body: smsBody };
-      if (messagingServiceSid && !fromNumber) twilioParams.MessagingServiceSid = messagingServiceSid;
-      else if (fromNumber) twilioParams.From = fromNumber;
-
-      const sendTwilioRequest = async (mode: DirectTwilioCredential | "gateway") => {
-        if (mode === "gateway") {
-          return await fetch(`${TWILIO_GATEWAY_URL}/Messages.json`, {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${lovableApiKey!}`,
-              "X-Connection-Api-Key": connectorApiKey!,
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: new URLSearchParams(twilioParams),
-          });
-        }
-
-        return await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${mode.accountSid}/Messages.json`,
-          {
-            method: "POST",
-            headers: {
-              "Authorization": "Basic " + btoa(`${mode.username}:${mode.password}`),
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: new URLSearchParams(twilioParams),
-          },
-        );
+      const smsPayload = {
+        to_number: recipient,
+        message_body: smsBody,
+        idempotency_key: `invoice-${invoice.id}-${crypto.randomUUID()}`,
+        skip_cooldown: true,
+        metadata: {
+          source: "va-send-invoice",
+          purpose: "invoice_payment",
+          invoice_id: invoice.id,
+          invoice_number: invoice.invoice_number || null,
+          lead_id: invoice.lead_id || null,
+          va_id: userId,
+          channel: "sms",
+        },
       };
 
-      let twilioSucceeded = false;
-      const twilioErrors: string[] = [];
-      const twilioModes: Array<DirectTwilioCredential | "gateway"> = [
-        ...directCandidates,
-        ...(useGateway ? ["gateway"] : []),
-      ];
+      const smsResponse = await fetch(`${supabaseUrl}/functions/v1/send-sms`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${serviceRoleKey}`,
+        },
+        body: JSON.stringify(smsPayload),
+      });
 
-      for (const mode of twilioModes) {
-        const twilioRes = await sendTwilioRequest(mode);
-        const modeLabel = mode === "gateway" ? "gateway" : mode.label;
-
-        if (twilioRes.ok) {
-          console.log("[va-send-invoice] twilio send succeeded via", modeLabel);
-          sendResult = { ok: true };
-          twilioSucceeded = true;
-          break;
-        }
-
-        const errText = await twilioRes.text();
-        console.error(`[va-send-invoice] twilio ${modeLabel} send failed:`, errText);
-        twilioErrors.push(`${modeLabel}: ${errText}`);
+      const smsResponseText = await smsResponse.text();
+      let smsResult: any = null;
+      try {
+        smsResult = smsResponseText ? JSON.parse(smsResponseText) : null;
+      } catch {
+        smsResult = { raw: smsResponseText };
       }
 
-      if (!twilioSucceeded) {
-        sendResult = { ok: false, error: `Twilio error: ${twilioErrors.join(" | ")}` };
+      if (!smsResponse.ok || smsResult?.success === false || smsResult?.status === "failed") {
+        const upstreamError =
+          smsResult?.error ||
+          smsResult?.error_message ||
+          smsResult?.reason ||
+          smsResult?.raw ||
+          smsResponseText ||
+          `send-sms returned ${smsResponse.status}`;
+        console.error("[va-send-invoice] shared send-sms failed:", upstreamError);
+        sendResult = {
+          ok: false,
+          error: `Invoice SMS failed: ${String(upstreamError).slice(0, 500)}`,
+        };
+      } else {
+        console.log("[va-send-invoice] invoice SMS sent via shared send-sms pipeline");
+        sendResult = { ok: true };
       }
     }
 
