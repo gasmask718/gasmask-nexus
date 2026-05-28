@@ -2,8 +2,6 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 
-const TWILIO_GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
-
 /**
  * Ensures the invoice has live Stripe Checkout URL(s) persisted before sending.
  * - payment_type 'full'  → guarantees `payment_link`
