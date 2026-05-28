@@ -108,6 +108,8 @@ interface Store {
   last_visit_at: string | null;
   last_order_at: string | null;
   health_status: string | null;
+  last_active_date?: string | null;
+  reactivation_priority?: string | null;
 }
 
 const Stores = () => {
@@ -117,7 +119,7 @@ const Stores = () => {
   const { simulationMode } = useSimulationMode();
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('active');
   const [tagFilter, setTagFilter] = useState<string>('all');
   const [stickerFilter, setStickerFilter] = useState<string>('all');
   const [newStoresOnly, setNewStoresOnly] = useState(false);
@@ -276,7 +278,7 @@ const Stores = () => {
         phone: store.phone ? String(store.phone) : '',
         alt_phone: null as string | null,
         email: store.email || null,
-        status: store.health_status || 'active',
+        status: 'active', // Default; overridden by legacy stores.status when available
         tags: [] as string[],
         sells_flowers: false,
         sticker_status: '',
