@@ -495,6 +495,12 @@ const Stores = () => {
     return Array.from(storeTagsSet).sort((a, b) => a.localeCompare(b));
   }, [stores, allGlobalTags]);
 
+  const isStoreActiveStatus = (status: string | null) => {
+    if (!status) return true; // Default to active
+    const activeStatuses = ['active', 'revenue_active', 'engagement_active', 'contacted', 'sample_sent', 'visited', 'demo_scheduled', 'test'];
+    return activeStatuses.includes(status);
+  };
+
   const filteredStores = stores.filter(store => {
     // Search across name + full address fields (street, city, state, zip)
     const searchLower = searchQuery.toLowerCase();
@@ -508,7 +514,9 @@ const Stores = () => {
       store.owner_name?.toLowerCase().includes(searchLower) ||
       store.tags?.some(tag => tag.toLowerCase().includes(searchLower));
     
-    const matchesStatus = statusFilter === 'all' || store.status === statusFilter;
+    const matchesStatus = activeFilter === 'all' 
+      || (activeFilter === 'active' && isStoreActiveStatus(store.status))
+      || (activeFilter === 'inactive' && !isStoreActiveStatus(store.status));
     
     const matchesTag =
       tagFilter === 'all' ||
