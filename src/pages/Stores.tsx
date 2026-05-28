@@ -819,7 +819,7 @@ const Stores = () => {
               { key: 'active', label: 'Active' },
               { key: 'inactive', label: 'Inactive' },
             ] as const).map(({ key, label }) => {
-              const count = key === 'all' ? stores.length : key === 'active' ? stores.filter(s => isStoreActiveStatus(s.status)).length : stores.filter(s => !isStoreActiveStatus(s.status)).length;
+              const count = key === 'all' ? stores.length : key === 'active' ? stores.filter(s => isStoreActive(s.id)).length : stores.filter(s => !isStoreActive(s.id)).length;
               return (
                 <Button
                   key={key}
@@ -1270,7 +1270,7 @@ const Stores = () => {
                      </div>
 
                     {/* Inactive Store Triage — last_active_date + reactivation_priority */}
-                    {!isStoreActiveStatus(store.status) && (store.last_active_date || store.reactivation_priority) && (
+                    {!isStoreActive(store.id) && (store.last_active_date || store.reactivation_priority) && (
                       <div className="pt-2 border-t border-border/50 space-y-1.5">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium flex items-center gap-1">
                           <Clock className="h-3 w-3" />
