@@ -234,6 +234,29 @@ const Stores = () => {
     select: (data) => data,
   });
 
+  // Active store IDs = any store that has at least one invoice ever (source of truth)
+  const { data: activeStoreIds = new Set<string>() } = useQuery({
+    queryKey: ['stores-active-ids-invoiced'],
+    queryFn: async () => {
+      const ids = new Set<string>();
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('invoices_unified')
+          .select('store_id')
+          .not('store_id', 'is', null)
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error) throw error;
+        (data || []).forEach((r: any) => r.store_id && ids.add(r.store_id));
+        if (!data || data.length < pageSize) break;
+        page++;
+      }
+      return ids;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Fetch stores from database - RLS automatically filters by simulation mode
   const { data: stores = [], isLoading } = useQuery({
     queryKey: ['stores-with-contacts', simulationMode],
@@ -505,11 +528,9 @@ const Stores = () => {
     return Array.from(storeTagsSet).sort((a, b) => a.localeCompare(b));
   }, [stores, allGlobalTags]);
 
-  const isStoreActiveStatus = (status: string | null) => {
-    if (!status) return true; // Default to active
-    const activeStatuses = ['active', 'revenue_active', 'engagement_active', 'contacted', 'sample_sent', 'visited', 'demo_scheduled', 'test'];
-    return activeStatuses.includes(status);
-  };
+  // Active = the store has at least one invoice in invoices_unified.
+  // Inactive = no invoice on record.
+  const isStoreActive = (storeId: string) => activeStoreIds.has(storeId);
 
   const filteredStores = stores.filter(store => {
     // Search across name + full address fields (street, city, state, zip)
@@ -525,8 +546,8 @@ const Stores = () => {
       store.tags?.some(tag => tag.toLowerCase().includes(searchLower));
     
     const matchesStatus = activeFilter === 'all' 
-      || (activeFilter === 'active' && isStoreActiveStatus(store.status))
-      || (activeFilter === 'inactive' && !isStoreActiveStatus(store.status));
+      || (activeFilter === 'active' && isStoreActive(store.id))
+      || (activeFilter === 'inactive' && !isStoreActive(store.id));
     
     const matchesTag =
       tagFilter === 'all' ||
@@ -603,8 +624,8 @@ const Stores = () => {
 
   const statusCounts = {
     all: stores.length,
-    active: stores.filter(s => isStoreActiveStatus(s.status)).length,
-    inactive: stores.filter(s => !isStoreActiveStatus(s.status)).length,
+    active: stores.filter(s => isStoreActive(s.id)).length,
+    inactive: stores.filter(s => !isStoreActive(s.id)).length,
   };
 
   const flowersCount = stores.filter(s => s.sells_flowers).length;
@@ -798,7 +819,7 @@ const Stores = () => {
               { key: 'active', label: 'Active' },
               { key: 'inactive', label: 'Inactive' },
             ] as const).map(({ key, label }) => {
-              const count = key === 'all' ? stores.length : key === 'active' ? stores.filter(s => isStoreActiveStatus(s.status)).length : stores.filter(s => !isStoreActiveStatus(s.status)).length;
+              const count = key === 'all' ? stores.length : key === 'active' ? stores.filter(s => isStoreActive(s.id)).length : stores.filter(s => !isStoreActive(s.id)).length;
               return (
                 <Button
                   key={key}
@@ -1249,7 +1270,7 @@ const Stores = () => {
                      </div>
 
                     {/* Inactive Store Triage — last_active_date + reactivation_priority */}
-                    {!isStoreActiveStatus(store.status) && (store.last_active_date || store.reactivation_priority) && (
+                    {!isStoreActive(store.id) && (store.last_active_date || store.reactivation_priority) && (
                       <div className="pt-2 border-t border-border/50 space-y-1.5">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium flex items-center gap-1">
                           <Clock className="h-3 w-3" />
