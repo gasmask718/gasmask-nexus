@@ -115344,6 +115344,15 @@ export type Database = {
       }
     }
     Functions: {
+      _execute_store_merge_from_plan: {
+        Args: {
+          p_group_id?: number
+          p_plan: Json
+          p_session_label: string
+          p_survivor_name_override?: string
+        }
+        Returns: Json
+      }
       accept_ambassador_invite: {
         Args: { p_token: string; p_user_id: string }
         Returns: Json
@@ -116110,11 +116119,21 @@ export type Database = {
         Args: { p_apply_conflicts?: boolean; p_session_label: string }
         Returns: Json
       }
+      execute_store_merge_direct: {
+        Args: {
+          p_loser_ids: string[]
+          p_session_label: string
+          p_survivor_name_override?: string
+          p_winner_id: string
+        }
+        Returns: Json
+      }
       execute_store_merge_group: {
         Args: {
           p_group_id: number
           p_operator_acknowledged_review?: boolean
           p_session_label: string
+          p_survivor_name_override?: string
         }
         Returns: Json
       }
@@ -116809,6 +116828,10 @@ export type Database = {
       }
       preview_phone_name_merge_group: {
         Args: { p_phone_name_group_id: number }
+        Returns: Json
+      }
+      preview_store_merge_direct: {
+        Args: { p_loser_ids: string[]; p_winner_id: string }
         Returns: Json
       }
       preview_store_merge_group: { Args: { p_group_id: number }; Returns: Json }
