@@ -93,6 +93,20 @@ export function SkuOrderHistoryPanel({ storeId }: Props) {
             ))}
           </div>
         )}
+        {!isLoading && !error && totalInvoices > 0 && (
+          <p className="text-[11px] text-muted-foreground mt-3 pt-2 border-t border-border/30">
+            Showing SKU detail for {invoicesWithLineItems} of {totalInvoices}{' '}
+            invoice{totalInvoices === 1 ? '' : 's'}.
+            {totalInvoices - invoicesWithLineItems > 0 && (
+              <span>
+                {' '}
+                {totalInvoices - invoicesWithLineItems} legacy invoice
+                {totalInvoices - invoicesWithLineItems === 1 ? '' : 's'} recorded
+                as totals only (no SKU breakdown).
+              </span>
+            )}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
