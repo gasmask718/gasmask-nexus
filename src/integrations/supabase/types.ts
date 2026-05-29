@@ -110741,14 +110741,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -113531,6 +113531,19 @@ export type Database = {
             referencedColumns: ["store_id"]
           },
         ]
+      }
+      v_neighborhood_coverage: {
+        Row: {
+          coverage_pct: number | null
+          neighborhood: string | null
+          prospect_stores: number | null
+          source_other: number | null
+          source_verified: number | null
+          source_zip_lookup: number | null
+          total_stores: number | null
+          worked_stores: number | null
+        }
+        Relationships: []
       }
       v_neighborhood_tube_intel: {
         Row: {
