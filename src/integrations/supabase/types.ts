@@ -59488,6 +59488,54 @@ export type Database = {
           },
         ]
       }
+      merge_invoice_repoint_log: {
+        Row: {
+          duplicate_group_id: number | null
+          id: number
+          invoice_id: string
+          invoice_status: string
+          invoice_total: number | null
+          merge_session_id: string
+          merged_at: string
+          merged_by: string | null
+          new_store_id: string
+          new_store_name: string | null
+          original_store_id: string
+          session_label: string | null
+          was_finalized: boolean
+        }
+        Insert: {
+          duplicate_group_id?: number | null
+          id?: number
+          invoice_id: string
+          invoice_status: string
+          invoice_total?: number | null
+          merge_session_id: string
+          merged_at?: string
+          merged_by?: string | null
+          new_store_id: string
+          new_store_name?: string | null
+          original_store_id: string
+          session_label?: string | null
+          was_finalized: boolean
+        }
+        Update: {
+          duplicate_group_id?: number | null
+          id?: number
+          invoice_id?: string
+          invoice_status?: string
+          invoice_total?: number | null
+          merge_session_id?: string
+          merged_at?: string
+          merged_by?: string | null
+          new_store_id?: string
+          new_store_name?: string | null
+          original_store_id?: string
+          session_label?: string | null
+          was_finalized?: boolean
+        }
+        Relationships: []
+      }
       message_language_detection: {
         Row: {
           confidence: number | null
