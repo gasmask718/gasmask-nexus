@@ -97,9 +97,15 @@ export function useStoreSkuOrderHistory(storeId: string | null) {
         }
       }
 
-      return Array.from(map.values()).sort((a, b) =>
-        a.last_ordered_at < b.last_ordered_at ? 1 : -1
-      );
+      return {
+        rows: Array.from(map.values()).sort((a, b) =>
+          a.last_ordered_at < b.last_ordered_at ? 1 : -1
+        ),
+        totalInvoices: (data || []).length,
+        invoicesWithLineItems: (data || []).filter(
+          (inv: any) => (inv.invoice_line_items || []).length > 0
+        ).length,
+      };
     },
     enabled: !!storeId,
     staleTime: 30_000,
