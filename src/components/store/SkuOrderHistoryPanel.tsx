@@ -105,16 +105,20 @@ export function SkuOrderHistoryPanel({ storeId }: Props) {
           </div>
         )}
         {!isLoading && !error && totalInvoices > 0 && (
-          <p className="text-[11px] text-muted-foreground mt-3 pt-2 border-t border-border/30">
-            Showing SKU detail for {invoicesWithLineItems} of {totalInvoices}{' '}
-            invoice{totalInvoices === 1 ? '' : 's'}.
-            {totalInvoices - invoicesWithLineItems > 0 && (
-              <span>
-                {' '}
-                {totalInvoices - invoicesWithLineItems} legacy invoice
-                {totalInvoices - invoicesWithLineItems === 1 ? '' : 's'} recorded
-                as totals only (no SKU breakdown).
-              </span>
+          <p className="text-[11px] text-muted-foreground mt-3 pt-2 border-t border-border/30 leading-relaxed">
+            {legacyAttributedInvoices > 0 ? (
+              <>
+                GasMask Tubes order count includes {legacyAttributedInvoices}{' '}
+                legacy invoice
+                {legacyAttributedInvoices === 1 ? '' : 's'} attributed by total
+                (no line-item detail); {invoicesWithLineItems} invoice
+                {invoicesWithLineItems === 1 ? '' : 's'} have full SKU detail.
+              </>
+            ) : (
+              <>
+                Showing SKU detail for {invoicesWithLineItems} of {totalInvoices}{' '}
+                invoice{totalInvoices === 1 ? '' : 's'}.
+              </>
             )}
           </p>
         )}
