@@ -972,17 +972,21 @@ function ExpandedGroup({
 
 // ─── Per-record card ──────────────────────────────────────────────────
 function RecordCard({
-  record, isEffectiveWinner, isOverride, onMakeWinner,
+  record, isEffectiveWinner, isOverride, onMakeWinner, invoiceSignal, invoiceSignalLoading,
 }: {
   record: RecordRow;
   isEffectiveWinner: boolean;
   isOverride: boolean;
   onMakeWinner: () => void;
+  invoiceSignal: { count: number; lastDate: string | null; total: number } | null;
+  invoiceSignalLoading: boolean;
 }) {
   const copyId = () => {
     navigator.clipboard.writeText(record.store_id);
     toast.success("Store ID copied");
   };
+
+  const hasOrders = (invoiceSignal?.count ?? 0) > 0;
 
   return (
     <Card className={isEffectiveWinner ? "border-primary border-2" : record.is_pristine_shell ? "border-dashed" : ""}>
@@ -1002,6 +1006,19 @@ function RecordCard({
                   </Badge>
                 )
               )}
+              {invoiceSignalLoading ? (
+                <Badge variant="outline" className="text-muted-foreground">
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" /> invoices…
+                </Badge>
+              ) : hasOrders ? (
+                <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/40 border">
+                  HAS ORDERS · {invoiceSignal!.count} invoice{invoiceSignal!.count === 1 ? "" : "s"}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-muted-foreground border-dashed">
+                  EMPTY · safe to fold
+                </Badge>
+              )}
               {record.is_pristine_shell && (
                 <Badge variant="outline" className="text-muted-foreground">
                   <ShieldAlert className="h-3 w-3 mr-1" /> Pristine Shell
@@ -1011,6 +1028,11 @@ function RecordCard({
             <button onClick={copyId} className="text-[10px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1 mt-1">
               {record.store_id.slice(0, 8)}…{record.store_id.slice(-4)} <Copy className="h-2.5 w-2.5" />
             </button>
+            {hasOrders && (
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                last invoice: {fmtRel(invoiceSignal!.lastDate)} · total {fmtMoney(invoiceSignal!.total)}
+              </div>
+            )}
           </div>
           <div className="text-right shrink-0">
             <div className="text-[10px] text-muted-foreground uppercase">Activity</div>
