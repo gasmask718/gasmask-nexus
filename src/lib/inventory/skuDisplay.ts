@@ -41,9 +41,9 @@ export function skuDisplayName(productId: string | null | undefined, fallback?: 
 export const BRAND_DISPLAY_MAP: Record<string, string> = {
   gasmask: 'GasMask',
   gasmasktubes: 'GasMask',
-  hotscolatti: 'HotScalati',
-  hotscalati: 'HotScalati',
-  hotmama: 'Hot Mama',
+  hotscolatti: 'Hotscolatti',
+  hotscalati: 'Hotscolatti',
+  hotmama: 'HotMama',
   grabba: 'Grabba R Us',
 };
 
