@@ -83,12 +83,12 @@ const VisitLogModal = ({ open, onOpenChange, storeId, storeName, onSuccess }: Vi
 
         await createVisitProducts.mutateAsync(visitProductsData);
 
-        // 3. Update store tube inventory (only for GasMask, HotMama, Hot Scolatti)
+        // 3. Update store tube inventory (only for GasMask, HotMama, Hotscolatti)
         // Map brand names to tube inventory brand IDs
         const brandNameToTubeId: Record<string, string> = {
           'GasMask': 'gasmask',
           'HotMama': 'hotmama',
-          'Hot Scolatti': 'hotscolatti',
+          'Hotscolatti': 'hotscolatti',
         };
 
         // Aggregate by brand name (only for valid tube brands)

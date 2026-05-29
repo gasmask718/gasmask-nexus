@@ -988,8 +988,8 @@ async function importStores(
                 { id: "gasmasktubes", name: "GasMask Tubes" },
                 { id: "hotmama", name: "HotMama" },
                 { id: "grabba", name: "Grabba R Us" },
-                { id: "hotscolatti-light", name: "Hot Scolatti Light" },
-                { id: "hotscolatti-dark", name: "Hot Scolatti Dark" },
+                { id: "hotscolatti-light", name: "Hotscolatti Light" },
+                { id: "hotscolatti-dark", name: "Hotscolatti Dark" },
               ];
 
               for (const brand of TUBE_BRANDS) {

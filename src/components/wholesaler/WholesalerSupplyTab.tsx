@@ -272,7 +272,7 @@ function SKUBreakdownView({ orders }: { orders: any[] }) {
     { key: 'dark grabba', name: 'Dark Grabba', color: 'text-amber-400' },
     { key: 'grabba leaf', name: 'Grabba Leaf', color: 'text-emerald-400' },
     { key: 'gasmask', name: 'GasMask', color: 'text-green-400' },
-    { key: 'hot scolatti', name: 'Hot Scolatti', color: 'text-orange-400' },
+    { key: 'hot scolatti', name: 'Hotscolatti', color: 'text-orange-400' },
     { key: 'hotmama', name: 'HotMama', color: 'text-pink-400' },
   ];
 

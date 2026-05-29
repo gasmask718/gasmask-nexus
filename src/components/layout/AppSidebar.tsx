@@ -451,7 +451,7 @@ export default function AppSidebar() {
                 { path: '/gasmask/agent-center', label: 'AI Agent Center', emoji: '🧠' },
               ], "text-rose-400 hover:bg-rose-500/10")}
 
-              {renderSection('scalati-os', 'Hot Scalati OS', '🟠', [
+              {renderSection('scalati-os', 'Hotscolatti OS', '🟠', [
                 { path: '/grabba/brand/scalati', label: 'Scalati Dashboard', emoji: '📊' },
                 { path: '/scalati/stores', label: 'Scalati Stores', emoji: '🏪' },
                 { path: '/scalati/inventory', label: 'Scalati Inventory', emoji: '📦' },

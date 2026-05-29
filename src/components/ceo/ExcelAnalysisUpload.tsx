@@ -82,7 +82,7 @@ export function ExcelAnalysisUpload() {
   };
 
   const brands = [
-    'GasMask', 'HotMama', 'Grabba R Us', 'Hot Scalati', 'TopTier',
+    'GasMask', 'HotMama', 'Grabba R Us', 'Hotscolatti', 'TopTier',
     'Playboxxx', 'iClean WeClean', 'Unforgettable Times', 'Funding',
     'Special Needs', 'Sports Betting', 'Dynasty Investments'
   ];

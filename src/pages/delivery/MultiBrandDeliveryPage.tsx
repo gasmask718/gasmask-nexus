@@ -65,7 +65,7 @@ import {
   TodayIntelligenceSummary
 } from "@/components/delivery";
 
-const BRANDS = ["GasMask", "Hot Mama", "Hot Scalati", "Grabba R Us"];
+const BRANDS = ["GasMask", "Hot Mama", "Hotscolatti", "Grabba R Us"];
 
 interface DeliveryItem {
   id: string;
@@ -536,7 +536,7 @@ export default function MultiBrandDeliveryPage() {
     switch (brand) {
       case "GasMask": return "bg-purple-500/10 text-purple-600 border-purple-500/30";
       case "Hot Mama": return "bg-red-500/10 text-red-600 border-red-500/30";
-      case "Hot Scalati": return "bg-orange-500/10 text-orange-600 border-orange-500/30";
+      case "Hotscolatti": return "bg-orange-500/10 text-orange-600 border-orange-500/30";
       case "Grabba R Us": return "bg-green-500/10 text-green-600 border-green-500/30";
       default: return "bg-gray-500/10 text-gray-600";
     }

@@ -58,7 +58,7 @@ const BRANDS = [
   'Grabba R Us',
   'Hot Mama Grabba', 
   'Gas Mask',
-  'Hot Scalati'
+  'Hotscolatti'
 ];
 
 const CATEGORY_OPTIONS = [

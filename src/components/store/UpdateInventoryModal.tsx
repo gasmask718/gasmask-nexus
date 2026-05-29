@@ -33,8 +33,8 @@ const BRANDS = [
   { id: 'gasmasktubes', name: 'GasMask Tubes' },
   { id: 'hotmama', name: 'HotMama' },
   { id: 'grabba', name: 'Grabba r us' },
-  { id: 'hotscolatti-light', name: 'Hot Scolatti Light' },
-  { id: 'hotscolatti-dark', name: 'Hot Scolatti Dark' },
+  { id: 'hotscolatti-light', name: 'Hotscolatti Light' },
+  { id: 'hotscolatti-dark', name: 'Hotscolatti Dark' },
 ];
 
 export function UpdateInventoryModal({

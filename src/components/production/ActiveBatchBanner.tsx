@@ -22,7 +22,7 @@ interface ActiveBatchBannerProps {
 const BRAND_LABELS: Record<string, string> = {
   gasmask: 'Gasmask',
   hotmama: 'HotMama',
-  hotscolati: 'HotScolati',
+  hotscolati: 'Hotscolatti',
   'grabba-rus': 'GrabbaRus',
 };
 

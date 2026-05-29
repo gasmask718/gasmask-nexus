@@ -378,7 +378,7 @@ const DYNASTY_NAVIGATION = {
     items: [
       { path: '/gasmask/driver', label: '🔴 GasMask OS', icon: Flame },
       { path: '/brand/hotmama', label: '🟠 HotMama OS', icon: Heart },
-      { path: '/brand/scalati', label: '🟡 Hot Scalati OS', icon: Sparkles },
+      { path: '/brand/scalati', label: '🟡 Hotscolatti OS', icon: Sparkles },
       { path: '/brand/grabba-r-us', label: '🟢 Grabba R Us OS', icon: ShoppingBag },
       { path: '/brand-dashboard', label: 'Brand Dashboard', icon: LayoutDashboard },
     ],

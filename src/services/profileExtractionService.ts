@@ -139,7 +139,7 @@ function extractProfileLocally(notesText: string, notesCount: number): Extracted
   const preferredBrands: string[] = [];
   if (lowerText.includes('gasmask')) preferredBrands.push('GasMask');
   if (lowerText.includes('hotmama') || lowerText.includes('hot mama')) preferredBrands.push('HotMama');
-  if (lowerText.includes('scalati') || lowerText.includes('hot scalati')) preferredBrands.push('Hot Scalati');
+  if (lowerText.includes('scalati') || lowerText.includes('hot scalati')) preferredBrands.push('Hotscolatti');
   if (lowerText.includes('grabba r us')) preferredBrands.push('Grabba R Us');
   if (preferredBrands.length > 0) {
     profile.operational_profile.preferred_brands = preferredBrands;

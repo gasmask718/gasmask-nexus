@@ -25,7 +25,7 @@
 export const STICKER_BRANDS = [
   { id: 'gasmask', name: 'Gasmask' },
   { id: 'hotmama', name: 'HotMama' },
-  { id: 'hotscolati', name: 'HotScolati' },
+  { id: 'hotscolati', name: 'Hotscolatti' },
   { id: 'grabba-rus', name: 'GrabbaRus' },
 ] as const;
 

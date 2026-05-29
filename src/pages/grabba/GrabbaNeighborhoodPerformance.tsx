@@ -108,7 +108,7 @@ function NeighborhoodRow({ neighborhood }: { neighborhood: typeof neighborhoodDa
                 HotMama: {totals.hotmama}
               </Badge>
               <Badge style={{ backgroundColor: GRABBA_BRAND_CONFIG.hotscolatti.primary }} className="text-white">
-                Hot Scolatti: {totals.hotscolatti}
+                Hotscolatti: {totals.hotscolatti}
               </Badge>
               <Badge style={{ backgroundColor: GRABBA_BRAND_CONFIG.grabba_r_us.primary }} className="text-white">
                 Grabba R Us: {totals.grabba_r_us}
@@ -124,7 +124,7 @@ function NeighborhoodRow({ neighborhood }: { neighborhood: typeof neighborhoodDa
                   <TableHead>Store</TableHead>
                   <TableHead className="text-center" style={{ color: GRABBA_BRAND_CONFIG.gasmask.primary }}>GasMask</TableHead>
                   <TableHead className="text-center" style={{ color: GRABBA_BRAND_CONFIG.hotmama.primary }}>HotMama</TableHead>
-                  <TableHead className="text-center" style={{ color: GRABBA_BRAND_CONFIG.hotscolatti.primary }}>Hot Scolatti</TableHead>
+                  <TableHead className="text-center" style={{ color: GRABBA_BRAND_CONFIG.hotscolatti.primary }}>Hotscolatti</TableHead>
                   <TableHead className="text-center" style={{ color: GRABBA_BRAND_CONFIG.grabba_r_us.primary }}>Grabba R Us</TableHead>
                   <TableHead className="text-center">Total Tubes</TableHead>
                   <TableHead className="text-center">Boxes</TableHead>
@@ -285,7 +285,7 @@ export default function GrabbaNeighborhoodPerformance() {
                 <div className="text-sm">{formatTubesAsBoxes(grandTotals.hotmama).fractionLabel}</div>
               </div>
               <div className="p-4 rounded-lg" style={{ backgroundColor: `${GRABBA_BRAND_CONFIG.hotscolatti.primary}20`, borderLeft: `4px solid ${GRABBA_BRAND_CONFIG.hotscolatti.primary}` }}>
-                <div className="text-sm text-muted-foreground">Hot Scolatti</div>
+                <div className="text-sm text-muted-foreground">Hotscolatti</div>
                 <div className="text-2xl font-bold">{grandTotals.hotscolatti.toLocaleString()} tubes</div>
                 <div className="text-sm">{formatTubesAsBoxes(grandTotals.hotscolatti).fractionLabel}</div>
               </div>

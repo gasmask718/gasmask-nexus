@@ -1884,7 +1884,7 @@ const HOTMAMA_BLUEPRINT = createGrabbaBlueprint("hot_mama", "hot_mama", "Hot Mam
 
 const GRABBA_R_US_BLUEPRINT = createGrabbaBlueprint("grabba_r_us", "grabba_r_us", "Grabba R Us", "#A020F0");
 
-const HOT_SCOLATTI_BLUEPRINT = createGrabbaBlueprint("hot_scolatti", "hot_scolatti", "Hot Scolatti", "#FF7A00");
+const HOT_SCOLATTI_BLUEPRINT = createGrabbaBlueprint("hot_scolatti", "hot_scolatti", "Hotscolatti", "#FF7A00");
 
 // ============================================
 // BLUEPRINT REGISTRY

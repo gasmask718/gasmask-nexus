@@ -15,9 +15,9 @@ const PRODUCTS = [
   'GasMask Tubes',
   'HotMama',
   'Grabba R Us',
-  'Hot Scolatti Light',
-  'Hot Scolatti Dark',
-  'HotScalati Bros',
+  'Hotscolatti Light',
+  'Hotscolatti Dark',
+  'Hotscolatti Bros',
 ];
 
 type FilterMode = 'all' | 'active' | 'inactive';
@@ -188,7 +188,7 @@ export function TubeIntelligenceSection({ storeId, personType = 'drivers' }: Tub
         {/* Product Cards */}
         <div className="space-y-3">
           {filtered.map(row => {
-            const isNew = row.product_name === 'HotScalati Bros';
+            const isNew = row.product_name === 'Hotscolatti Bros';
             const isActive = row.status === 'active';
             // Legend dot
             const dotColor = row.tube_count > 0 && row.last_order_date

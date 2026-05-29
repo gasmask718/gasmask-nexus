@@ -46,7 +46,7 @@ export default function GrabbaClusterDashboard() {
       <div>
         <h1 className="text-3xl font-bold">Grabba Cluster Operations</h1>
         <p className="text-muted-foreground mt-2">
-          Unified multi-brand management system for GasMask • HotMama • Grabba R Us • Hot Scalati
+          Unified multi-brand management system for GasMask • HotMama • Grabba R Us • Hotscolatti
         </p>
       </div>
 

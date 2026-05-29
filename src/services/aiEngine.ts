@@ -53,13 +53,13 @@ function generateContextualResponse(payload: AICommandPayload): string {
       return "HotMama Performance: 89 active stores carrying HotMama. 4,200 tubes sold MTD. Growing demand in Queens (+18%). Top product: HotMama Original. 3 new store inquiries pending review. Action: Follow up on Queens expansion opportunities.";
     }
     if (cmd.includes('scalati') || cmd.includes('hot scalati')) {
-      return "Hot Scalati Report: 72 stores, 3,100 tubes MTD. Premium positioning holding strong. Average order value: $245 (highest among brands). 2 wholesalers interested in bulk orders. Opportunity: Launch VIP store program for top 10 accounts.";
+      return "Hotscolatti Report: 72 stores, 3,100 tubes MTD. Premium positioning holding strong. Average order value: $245 (highest among brands). 2 wholesalers interested in bulk orders. Opportunity: Launch VIP store program for top 10 accounts.";
     }
     if (cmd.includes('grabba r us') || cmd.includes('grabba')) {
       return "Grabba R Us Summary: 95 stores, 5,800 tubes MTD. Strong presence in Bronx and Harlem. Price competitiveness driving volume. 4 ambassador referrals this week. Consider: Loyalty program activation for repeat stores.";
     }
     if (cmd.includes('inventory') || cmd.includes('stock') || cmd.includes('low')) {
-      return "Grabba Inventory Alert: 12 stores below reorder threshold. GasMask: 5 stores, HotMama: 3 stores, Hot Scalati: 2 stores, Grabba R Us: 2 stores. Priority restock needed in Brooklyn (7 stores) and Bronx (3 stores). Estimated restock value: $8,400.";
+      return "Grabba Inventory Alert: 12 stores below reorder threshold. GasMask: 5 stores, HotMama: 3 stores, Hotscolatti: 2 stores, Grabba R Us: 2 stores. Priority restock needed in Brooklyn (7 stores) and Bronx (3 stores). Estimated restock value: $8,400.";
     }
     if (cmd.includes('delivery') || cmd.includes('route') || cmd.includes('driver')) {
       return "Grabba Delivery Ops: 8 active routes today. 42 stops scheduled, 28 completed (67%). Active drivers: 6. Brooklyn routes ahead of schedule. Queens route delayed 25 min (traffic). Next priority: Complete Bronx route before 4pm.";
@@ -71,13 +71,13 @@ function generateContextualResponse(payload: AICommandPayload): string {
       return "Grabba Wholesale Activity: 12 active wholesalers. MTD orders: $45,200. 3 pending orders awaiting fulfillment. Largest order: Brooklyn Smoke Distributors ($8,400). New inquiry from NJ distributor - potential $5K/month account.";
     }
     if (cmd.includes('unpaid') || cmd.includes('payment') || cmd.includes('owed')) {
-      return "Grabba Unpaid Accounts: Total outstanding: $12,450. GasMask: $4,200 (8 stores), HotMama: $2,800 (5 stores), Hot Scalati: $3,100 (4 stores), Grabba R Us: $2,350 (6 stores). Oldest: 45 days (Nostrand Ave Smoke). Action: Schedule collection calls.";
+      return "Grabba Unpaid Accounts: Total outstanding: $12,450. GasMask: $4,200 (8 stores), HotMama: $2,800 (5 stores), Hotscolatti: $3,100 (4 stores), Grabba R Us: $2,350 (6 stores). Oldest: 45 days (Nostrand Ave Smoke). Action: Schedule collection calls.";
     }
     if (cmd.includes('summary') || cmd.includes('overview') || cmd.includes('status')) {
       return "Grabba Empire Summary: 4 brands, 127 stores, 21,550 tubes sold MTD ($215K revenue). Growth: +11% vs last month. Active fleet: 6 drivers, 34 ambassadors. Alerts: 12 low-inventory stores, $12.4K unpaid. Top opportunity: Queens expansion. Risk: Brooklyn collection backlog.";
     }
     // Default Grabba response
-    return "Grabba Command processed. All 4 brands (GasMask, HotMama, Hot Scalati, Grabba R Us) are operational. Key metrics: 127 stores, 21K+ tubes MTD, 6 active drivers. For specific insights, try: 'GasMask inventory status' or 'Grabba wholesale orders'.";
+    return "Grabba Command processed. All 4 brands (GasMask, HotMama, Hotscolatti, Grabba R Us) are operational. Key metrics: 127 stores, 21K+ tubes MTD, 6 active drivers. For specific insights, try: 'GasMask inventory status' or 'Grabba wholesale orders'.";
   }
 
   // ═══════════════════════════════════════════════════════════════════════

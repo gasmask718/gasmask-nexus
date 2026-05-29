@@ -201,7 +201,7 @@ export const dynastyFloors: Floor[] = [
       },
       {
         id: 'scalati',
-        name: 'Hot Scalati',
+        name: 'Hotscolatti',
         colors: {
           primary: '#5A3A2E',
           secondary: '#FF7A00',

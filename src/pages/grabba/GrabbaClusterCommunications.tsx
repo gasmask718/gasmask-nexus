@@ -17,7 +17,7 @@ const recentCampaigns = [
   { id: '1', type: 'sms', name: 'GasMask Restock Alert', brand: 'gasmask', recipients: 145, sent: '2024-01-15', status: 'completed', opens: 89 },
   { id: '2', type: 'email', name: 'HotMama New Product Launch', brand: 'hotmama', recipients: 230, sent: '2024-01-14', status: 'completed', opens: 156 },
   { id: '3', type: 'sms', name: 'Grabba R Us Weekend Special', brand: 'grabba', recipients: 180, sent: '2024-01-13', status: 'completed', opens: 102 },
-  { id: '4', type: 'call', name: 'Hot Scalati Follow-up', brand: 'scalati', recipients: 45, sent: '2024-01-12', status: 'in-progress', opens: 28 },
+  { id: '4', type: 'call', name: 'Hotscolatti Follow-up', brand: 'scalati', recipients: 45, sent: '2024-01-12', status: 'in-progress', opens: 28 },
 ];
 
 const upcomingCampaigns = [
@@ -49,7 +49,7 @@ export default function GrabbaClusterCommunications() {
             Grabba Communications Hub
           </h1>
           <p className="text-muted-foreground mt-2">
-            SMS, Email, and AI calls for GasMask, HotMama, Hot Scalati, and Grabba R Us only
+            SMS, Email, and AI calls for GasMask, HotMama, Hotscolatti, and Grabba R Us only
           </p>
         </div>
 

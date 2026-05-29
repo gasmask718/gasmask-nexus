@@ -36,7 +36,7 @@ export type OSRole =
 export const DYNASTY_BRANDS = {
   gasmask: { id: 'gasmask', name: 'GasMask', color: '#FF0000', icon: '🔴' },
   hotmama: { id: 'hotmama', name: 'HotMama', color: '#B76E79', icon: '🟣' },
-  scalati: { id: 'scalati', name: 'Hot Scalati', color: '#FF7A00', icon: '🟠' },
+  scalati: { id: 'scalati', name: 'Hotscolatti', color: '#FF7A00', icon: '🟠' },
   grabba: { id: 'grabba', name: 'Grabba R Us', color: '#A020F0', icon: '🟪' },
 } as const;
 

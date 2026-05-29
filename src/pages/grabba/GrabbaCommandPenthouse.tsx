@@ -297,7 +297,7 @@ const AIAlertsSummary = () => {
     queryKey: ['grabba-ai-alerts-brand-scoped'],
     queryFn: async () => {
       // Filter alerts to only Grabba brands
-      const grabbaBrands = ['gasmask', 'hotmama', 'hot_mama', 'scalati', 'hot_scalati', 'grabba', 'grabba_r_us', 'GasMask', 'HotMama', 'Hot Scalati', 'Grabba R Us'];
+      const grabbaBrands = ['gasmask', 'hotmama', 'hot_mama', 'scalati', 'hot_scalati', 'grabba', 'grabba_r_us', 'GasMask', 'HotMama', 'Hotscolatti', 'Grabba R Us'];
       
       const [recommendationsRes, queueRes] = await Promise.all([
         supabase.from('ai_recommendations')
@@ -969,7 +969,7 @@ const WholesaleMarketplacePulse = () => {
         topItems: [
           { id: '1', name: 'GasMask Premium Tubes', supplier: 'NYC Wholesale' },
           { id: '2', name: 'HotMama Rose Gold', supplier: 'Brooklyn Supply' },
-          { id: '3', name: 'HotScolati Classic', supplier: 'Queens Dist' },
+          { id: '3', name: 'Hotscolatti Classic', supplier: 'Queens Dist' },
           { id: '4', name: 'Grabba R Us Value Pack', supplier: 'Bronx Traders' },
           { id: '5', name: 'Mixed Brand Bundle', supplier: 'Manhattan Hub' },
         ]

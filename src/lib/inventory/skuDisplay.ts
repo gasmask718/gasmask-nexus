@@ -60,7 +60,7 @@ export function brandDisplayName(raw: string | null | undefined): string {
 // Default policy:
 //   gasmask (bare)     → GasMask Bags (current operator UI label)
 //   gasmasktubes       → GasMask Tubes
-//   hotscalati family  → HotScalati Mix Pack (entry SKU)
+//   hotscalati family  → Hotscolatti Mix (entry SKU)
 //   hot mama / grabba  → their single SKU
 // Specific tube variants (light / dark / bros / redtops) resolve to themselves.
 // Specific tube variants (light / dark / bros) resolve to themselves.
@@ -70,16 +70,16 @@ export const BRAND_TO_DEFAULT_PRODUCT_ID: Record<string, string> = {
   gasmaskbags:          '170adb8f-ac4e-40f4-a283-38730d30c5de', // GasMask Bags
   gasmasktubes:         'dd5e14c0-d6c5-403a-a2d7-504181b0f4ea', // GasMask Tubes
   gasmaskredtops:       'e3eea682-831e-4913-8b0e-563bc1325a1f', // GasMask Redtops
-  hotscolatti:          '04336f6d-d69b-4ec8-8571-7088783b31d6', // HotScalati Mix Pack
-  hotscalati:           '04336f6d-d69b-4ec8-8571-7088783b31d6', // HotScalati Mix Pack
+  hotscolatti:          '04336f6d-d69b-4ec8-8571-7088783b31d6', // Hotscolatti Mix
+  hotscalati:           '04336f6d-d69b-4ec8-8571-7088783b31d6', // Hotscolatti Mix
   hotscalatimixpack:    '04336f6d-d69b-4ec8-8571-7088783b31d6',
-  'hotscolatti-dark':   '1c4f112e-97a1-4430-aae0-f1fcc0229a85', // HotScalati Dark
-  'hotscolatti-light':  '27e21aec-21a2-4ce7-9515-dbfd618a27c6', // HotScalati Light
+  'hotscolatti-dark':   '1c4f112e-97a1-4430-aae0-f1fcc0229a85', // Hotscolatti Dark
+  'hotscolatti-light':  '27e21aec-21a2-4ce7-9515-dbfd618a27c6', // Hotscolatti Light
   hotscolattidark:      '1c4f112e-97a1-4430-aae0-f1fcc0229a85',
   hotscolattilight:     '27e21aec-21a2-4ce7-9515-dbfd618a27c6',
   hotscalatidark:       '1c4f112e-97a1-4430-aae0-f1fcc0229a85',
   hotscalatilight:      '27e21aec-21a2-4ce7-9515-dbfd618a27c6',
-  hotscalatibros:       'fcfe5469-e9d3-40f3-8bf4-a4349086e1c3', // HotScalati Bros
+  hotscalatibros:       'fcfe5469-e9d3-40f3-8bf4-a4349086e1c3', // Hotscolatti Bros
   hotscolattibros:      'fcfe5469-e9d3-40f3-8bf4-a4349086e1c3',
   hotmama:              '2dfcbd00-0e44-4cd1-b80d-b00a33b123c5', // Hot Mama
   grabba:               '2d28e463-5296-4d42-b548-896d18ee906e', // Grabba R Us

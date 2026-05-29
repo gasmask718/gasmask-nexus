@@ -91,7 +91,7 @@ const BRANDS = [
   { value: 'gasmask', label: 'GasMask' },
   { value: 'GasMask', label: 'GasMask' },
   { value: 'hotmama', label: 'HotMama' },
-  { value: 'hotscolati', label: 'HotScolati' },
+  { value: 'hotscolati', label: 'Hotscolatti' },
   { value: 'grabba_r_us', label: 'Grabba R Us' },
 ];
 
