@@ -16,7 +16,8 @@ interface Props {
  * `invoices.store_id` — which the merge engine repoints to the survivor.
  */
 export function SkuOrderHistoryPanel({ storeId }: Props) {
-  const { rows, isLoading, error } = useStoreSkuOrderHistoryWithGaps(storeId);
+  const { rows, isLoading, error, totalInvoices, invoicesWithLineItems } =
+    useStoreSkuOrderHistoryWithGaps(storeId);
 
   return (
     <Card className="glass-card border-border/50">
@@ -91,6 +92,20 @@ export function SkuOrderHistoryPanel({ storeId }: Props) {
               </div>
             ))}
           </div>
+        )}
+        {!isLoading && !error && totalInvoices > 0 && (
+          <p className="text-[11px] text-muted-foreground mt-3 pt-2 border-t border-border/30">
+            Showing SKU detail for {invoicesWithLineItems} of {totalInvoices}{' '}
+            invoice{totalInvoices === 1 ? '' : 's'}.
+            {totalInvoices - invoicesWithLineItems > 0 && (
+              <span>
+                {' '}
+                {totalInvoices - invoicesWithLineItems} legacy invoice
+                {totalInvoices - invoicesWithLineItems === 1 ? '' : 's'} recorded
+                as totals only (no SKU breakdown).
+              </span>
+            )}
+          </p>
         )}
       </CardContent>
     </Card>
