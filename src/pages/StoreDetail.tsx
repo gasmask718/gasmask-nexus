@@ -49,6 +49,8 @@ import { SharedStoreCoreIntelligence } from "@/components/store/SharedStoreCoreI
 import { TubesSoldHeroStrip } from "@/components/store-profile/TubesSoldHeroStrip";
 import { EngagementBanner } from "@/components/store-profile/EngagementBanner";
 import { BrandPaymentQuickView } from "@/components/store/BrandPaymentQuickView";
+import { BrandInterestChips } from "@/components/store/BrandInterestChips";
+import { SkuOrderHistoryPanel } from "@/components/store/SkuOrderHistoryPanel";
 import { QuickStatsBrandPaymentMatrix } from "@/components/store/QuickStatsBrandPaymentMatrix";
 import { CanonicalStoreDataProvider } from "@/components/store/CanonicalStoreDataProvider";
 import { PinnedNotesSection } from "@/components/store/PinnedNotesSection";
@@ -632,6 +634,8 @@ const StoreDetail = () => {
               {/* Primary Responsive Contact — subtle header badge */}
               <PrimaryContactHeaderBadge storeId={id} />
               {/* Brand Payment Quick View — executive intelligence */}
+              {/* 🎯 Brand Interest — top-of-profile glance answer for ambassadors */}
+              <BrandInterestChips storeId={id || ''} />
               <BrandPaymentQuickView storeId={id || ''} />
             </div>
             <div className="flex gap-2">
@@ -798,6 +802,9 @@ const StoreDetail = () => {
 
           {/* Last Order Snapshot Intelligence */}
           <LastOrderSnapshotPanel storeId={id || ""} />
+
+          {/* Per-SKU drill-down — pairs with brand-level snapshot above */}
+          <SkuOrderHistoryPanel storeId={id || ""} />
 
           {/* Route Intelligence Insights */}
           {routeInsight && (
