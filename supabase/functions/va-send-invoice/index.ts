@@ -656,7 +656,11 @@ serve(async (req: Request) => {
         ? `Your $${total} invoice ${invoice.invoice_number || ""} is ready.\nBrandaro Digital Pay: ${smsLink}`
         : `Brandaro Digital Pay — $${total} invoice ${invoice.invoice_number || ""} ready.`;
 
-      const explicitProvider = body.explicit_provider;
+      // Force Twilio for invoice SMS — these go to real customers with a
+      // Stripe payment link and must use the verified Brandaro Twilio number,
+      // not the marketing BizText short-code pool. Callers can still override
+      // explicitly (e.g. admin re-send via picker) by passing explicit_provider.
+      const explicitProvider = body.explicit_provider ?? "twilio";
 
       const smsPayload = {
         to_number: recipient,
@@ -672,9 +676,10 @@ serve(async (req: Request) => {
           lead_id: invoice.lead_id || null,
           va_id: userId,
           channel: "sms",
-          explicit_provider: explicitProvider || null,
+          explicit_provider: explicitProvider,
         },
       };
+
 
       const smsResponse = await fetch(`${supabaseUrl}/functions/v1/send-sms`, {
         method: "POST",
