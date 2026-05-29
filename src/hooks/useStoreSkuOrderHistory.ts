@@ -5,18 +5,20 @@ import { useStoreTubeKPI } from './useStoreTubeKPI';
 /**
  * Per-SKU order history for a store.
  *
- * The existing `store-recent-invoices-sku` cache (useStoreRecentInvoices)
- * returns invoice rows with a single "top SKU" label per invoice — NOT a
- * per-SKU rollup. To show "last ordered date + qty per SKU" we must
- * aggregate `invoice_line_items` grouped by product. That's this hook.
- *
- * Returned rows are sorted most-recent first. SKUs that exist in the brand
- * catalog but have never been ordered are merged in by the consumer panel
- * (via useStoreTubeKPI brands) and shown as "Never ordered".
+ * Data sources:
+ *  1. `invoice_line_items` — modern invoices have full per-SKU detail.
+ *  2. Finalized invoices WITHOUT line items (legacy header-totals) are
+ *     attributed to the canonical legacy SKU "GasMask Tubes" — the only
+ *     product GasMask Wholesale sold during the legacy era. Variant detail
+ *     (Bags / Redtops / etc.) is not recoverable for these rows; they are
+ *     counted as orders against GasMask Tubes with an "attributed" marker.
  *
  * IMPORTANT: query is on `invoices.store_id` (the live store id) — so
  * post-merge survivors automatically see ALL repointed invoices.
  */
+
+const LEGACY_ATTRIBUTION_SKU = 'GasMask Tubes';
+const LEGACY_ATTRIBUTION_BRAND = 'GasMask';
 
 export interface SkuOrderHistoryRow {
   sku: string;
@@ -25,21 +27,28 @@ export interface SkuOrderHistoryRow {
   last_qty: number;
   lifetime_qty: number;
   order_count: number;
+  legacy_attributed_count?: number; // legacy invoices folded into this row
 }
 
 export interface SkuOrderHistoryResult {
   rows: SkuOrderHistoryRow[];
   totalInvoices: number;
   invoicesWithLineItems: number;
+  legacyAttributedInvoices: number;
 }
 
 export function useStoreSkuOrderHistory(storeId: string | null) {
   return useQuery<SkuOrderHistoryResult>({
     queryKey: ['store-sku-order-history', storeId],
     queryFn: async () => {
-      if (!storeId) return { rows: [] as SkuOrderHistoryRow[], totalInvoices: 0, invoicesWithLineItems: 0 };
+      if (!storeId)
+        return {
+          rows: [] as SkuOrderHistoryRow[],
+          totalInvoices: 0,
+          invoicesWithLineItems: 0,
+          legacyAttributedInvoices: 0,
+        };
 
-      // Pull invoices + line items in one round-trip via nested select.
       const { data, error } = await supabase
         .from('invoices')
         .select(
@@ -47,6 +56,8 @@ export function useStoreSkuOrderHistory(storeId: string | null) {
           id,
           created_at,
           deleted_at,
+          status,
+          total_tubes_sold,
           invoice_line_items (
             product_name,
             product_name_snapshot,
@@ -64,42 +75,71 @@ export function useStoreSkuOrderHistory(storeId: string | null) {
       if (error) throw error;
 
       const map = new Map<string, SkuOrderHistoryRow>();
+      let legacyAttributedInvoices = 0;
+
+      const upsert = (
+        sku: string,
+        brand: string | null,
+        createdAt: string,
+        qty: number,
+        isLegacy: boolean,
+      ) => {
+        const existing = map.get(sku);
+        if (!existing) {
+          map.set(sku, {
+            sku,
+            brand,
+            last_ordered_at: createdAt,
+            last_qty: qty,
+            lifetime_qty: qty,
+            order_count: 1,
+            legacy_attributed_count: isLegacy ? 1 : 0,
+          });
+        } else {
+          existing.lifetime_qty += qty;
+          existing.order_count += 1;
+          if (isLegacy)
+            existing.legacy_attributed_count =
+              (existing.legacy_attributed_count || 0) + 1;
+          if (createdAt > existing.last_ordered_at) {
+            existing.last_ordered_at = createdAt;
+            existing.last_qty = qty;
+          }
+        }
+      };
+
       for (const inv of data || []) {
-        const createdAt = (inv as any).created_at as string;
-        const items = ((inv as any).invoice_line_items || []) as Array<{
+        const anyInv = inv as any;
+        const createdAt = anyInv.created_at as string;
+        const items = (anyInv.invoice_line_items || []) as Array<{
           product_name?: string | null;
           product_name_snapshot?: string | null;
           brand?: string | null;
           brand_name_snapshot?: string | null;
           quantity?: number | null;
         }>;
-        for (const li of items) {
-          const sku =
-            li.product_name_snapshot?.trim() ||
-            li.product_name?.trim() ||
-            'Unknown SKU';
-          const brand =
-            li.brand_name_snapshot?.trim() || li.brand?.trim() || null;
-          const qty = Number(li.quantity ?? 0);
-          const existing = map.get(sku);
-          if (!existing) {
-            map.set(sku, {
-              sku,
-              brand,
-              last_ordered_at: createdAt,
-              last_qty: qty,
-              lifetime_qty: qty,
-              order_count: 1,
-            });
-          } else {
-            existing.lifetime_qty += qty;
-            existing.order_count += 1;
-            // invoices were ordered DESC so first hit is the latest
-            if (createdAt > existing.last_ordered_at) {
-              existing.last_ordered_at = createdAt;
-              existing.last_qty = qty;
-            }
+
+        if (items.length > 0) {
+          for (const li of items) {
+            const sku =
+              li.product_name_snapshot?.trim() ||
+              li.product_name?.trim() ||
+              'Unknown SKU';
+            const brand =
+              li.brand_name_snapshot?.trim() || li.brand?.trim() || null;
+            upsert(sku, brand, createdAt, Number(li.quantity ?? 0), false);
           }
+        } else if (anyInv.status === 'finalized') {
+          // Legacy header-only finalized invoice → attribute to GasMask Tubes.
+          legacyAttributedInvoices += 1;
+          const qty = Number(anyInv.total_tubes_sold ?? 0);
+          upsert(
+            LEGACY_ATTRIBUTION_SKU,
+            LEGACY_ATTRIBUTION_BRAND,
+            createdAt,
+            qty,
+            true,
+          );
         }
       }
 
@@ -111,6 +151,7 @@ export function useStoreSkuOrderHistory(storeId: string | null) {
         invoicesWithLineItems: (data || []).filter(
           (inv: any) => (inv.invoice_line_items || []).length > 0
         ).length,
+        legacyAttributedInvoices,
       };
     },
     enabled: !!storeId,
@@ -118,11 +159,6 @@ export function useStoreSkuOrderHistory(storeId: string | null) {
   });
 }
 
-/**
- * Convenience: marries `useStoreSkuOrderHistory` with the brand catalog
- * from `useStoreTubeKPI` so brands with zero orders surface as
- * "Never ordered" rows.
- */
 export interface SkuOrderHistoryWithGaps extends SkuOrderHistoryRow {
   never_ordered?: boolean;
 }
@@ -133,24 +169,15 @@ export function useStoreSkuOrderHistoryWithGaps(storeId: string | null) {
 
   const historyRows = history.data?.rows ?? [];
 
-  const orderedSkuKeys = new Set(
-    historyRows.map((r) => `${r.brand ?? ''}|${r.sku}`.toLowerCase())
-  );
-
-  // Brands present in catalog but never appear in any invoice line — surface
-  // them at the bottom so reorder gaps are obvious.
   const gapRows: SkuOrderHistoryWithGaps[] = (kpi.data || [])
     .filter((b) => {
-      // brand-level gap: if no SKU under this brand has ever been ordered
       const hit = historyRows.some(
         (h) => (h.brand || '').toLowerCase() === b.brand_name.toLowerCase()
       );
       return !hit;
     })
-    // dedupe by brand_name
     .filter(
-      (b, i, arr) =>
-        arr.findIndex((x) => x.brand_name === b.brand_name) === i
+      (b, i, arr) => arr.findIndex((x) => x.brand_name === b.brand_name) === i
     )
     .map((b) => ({
       sku: `${b.brand_name} (no SKU on file)`,
@@ -168,5 +195,6 @@ export function useStoreSkuOrderHistoryWithGaps(storeId: string | null) {
     rows: [...(historyRows as SkuOrderHistoryWithGaps[]), ...gapRows],
     totalInvoices: history.data?.totalInvoices ?? 0,
     invoicesWithLineItems: history.data?.invoicesWithLineItems ?? 0,
+    legacyAttributedInvoices: history.data?.legacyAttributedInvoices ?? 0,
   };
 }
