@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      _merge_matrix_results: {
+        Row: {
+          actual: string | null
+          expected: string | null
+          pass: boolean | null
+          run_at: string | null
+          test_name: string | null
+        }
+        Insert: {
+          actual?: string | null
+          expected?: string | null
+          pass?: boolean | null
+          run_at?: string | null
+          test_name?: string | null
+        }
+        Update: {
+          actual?: string | null
+          expected?: string | null
+          pass?: boolean | null
+          run_at?: string | null
+          test_name?: string | null
+        }
+        Relationships: []
+      }
       _quarantine_misclassified_stores: {
         Row: {
           address: string | null
@@ -115352,6 +115376,20 @@ export type Database = {
           p_survivor_name_override?: string
         }
         Returns: Json
+      }
+      _test_merge_bypass_matrix: {
+        Args: {
+          p_invoice_id: string
+          p_new_store: string
+          p_old_store: string
+          p_ts_id: string
+        }
+        Returns: {
+          actual: string
+          expected: string
+          pass: boolean
+          test_name: string
+        }[]
       }
       accept_ambassador_invite: {
         Args: { p_token: string; p_user_id: string }
