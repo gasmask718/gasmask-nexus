@@ -835,6 +835,32 @@ function ExpandedGroup({
     return (records.data || []).filter(r => r.duplicate_group_id === group.duplicate_group_id);
   }, [records.data, group.duplicate_group_id]);
 
+  // Hard invoice signal from invoices_unified (source of truth, not activity score)
+  const invoiceSignals = useQuery({
+    queryKey: ["smp-invoice-signals", group.duplicate_group_id, groupRecords.map(r => r.store_id).sort().join(",")],
+    enabled: groupRecords.length > 0,
+    queryFn: async () => {
+      const ids = groupRecords.map(r => r.store_id);
+      const { data, error } = await supabase
+        .from("invoices_unified")
+        .select("store_id, created_at, total_amount")
+        .in("store_id", ids);
+      if (error) throw error;
+      const map = new Map<string, { count: number; lastDate: string | null; total: number }>();
+      ids.forEach(id => map.set(id, { count: 0, lastDate: null, total: 0 }));
+      (data || []).forEach((row: { store_id: string | null; created_at: string | null; total_amount: number | null }) => {
+        if (!row.store_id) return;
+        const cur = map.get(row.store_id) || { count: 0, lastDate: null, total: 0 };
+        cur.count += 1;
+        cur.total += Number(row.total_amount || 0);
+        if (row.created_at && (!cur.lastDate || row.created_at > cur.lastDate)) cur.lastDate = row.created_at;
+        map.set(row.store_id, cur);
+      });
+      return map;
+    },
+    staleTime: 60_000,
+  });
+
   if (records.isLoading) {
     return (
       <div className="p-6 flex items-center gap-2 text-sm text-muted-foreground">
@@ -846,8 +872,27 @@ function ExpandedGroup({
   }
   if (records.error) return <div className="p-6 text-sm text-destructive">{(records.error as Error).message}</div>;
 
+  const recordsWithOrders = groupRecords.filter(r => (invoiceSignals.data?.get(r.store_id)?.count ?? 0) > 0).length;
+  const multiTenantWarn = recordsWithOrders >= 2;
+
   return (
     <div className="p-4 space-y-4">
+      {invoiceSignals.data && (
+        <div className={`rounded border p-2 text-xs flex items-center gap-2 ${
+          multiTenantWarn
+            ? "border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200"
+            : "border-emerald-500/30 bg-emerald-500/5 text-emerald-900 dark:text-emerald-200"
+        }`}>
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          <span>
+            <strong>{recordsWithOrders}</strong> of {groupRecords.length} records have invoices in <code>invoices_unified</code>.{" "}
+            {multiTenantWarn
+              ? "Possible multi-tenant building — do NOT merge unless you've confirmed they're the same business."
+              : "True duplicate pattern: 1 record with orders + empty shells = safe to fold in."}
+          </span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {groupRecords.map(rec => (
           <RecordCard
@@ -856,6 +901,8 @@ function ExpandedGroup({
             isEffectiveWinner={rec.store_id === effectiveWinnerId}
             isOverride={isOverride}
             onMakeWinner={() => onMakeWinner(rec)}
+            invoiceSignal={invoiceSignals.data?.get(rec.store_id) ?? null}
+            invoiceSignalLoading={invoiceSignals.isLoading}
           />
         ))}
       </div>
@@ -925,17 +972,21 @@ function ExpandedGroup({
 
 // ─── Per-record card ──────────────────────────────────────────────────
 function RecordCard({
-  record, isEffectiveWinner, isOverride, onMakeWinner,
+  record, isEffectiveWinner, isOverride, onMakeWinner, invoiceSignal, invoiceSignalLoading,
 }: {
   record: RecordRow;
   isEffectiveWinner: boolean;
   isOverride: boolean;
   onMakeWinner: () => void;
+  invoiceSignal: { count: number; lastDate: string | null; total: number } | null;
+  invoiceSignalLoading: boolean;
 }) {
   const copyId = () => {
     navigator.clipboard.writeText(record.store_id);
     toast.success("Store ID copied");
   };
+
+  const hasOrders = (invoiceSignal?.count ?? 0) > 0;
 
   return (
     <Card className={isEffectiveWinner ? "border-primary border-2" : record.is_pristine_shell ? "border-dashed" : ""}>
@@ -955,6 +1006,19 @@ function RecordCard({
                   </Badge>
                 )
               )}
+              {invoiceSignalLoading ? (
+                <Badge variant="outline" className="text-muted-foreground">
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" /> invoices…
+                </Badge>
+              ) : hasOrders ? (
+                <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/40 border">
+                  HAS ORDERS · {invoiceSignal!.count} invoice{invoiceSignal!.count === 1 ? "" : "s"}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-muted-foreground border-dashed">
+                  EMPTY · safe to fold
+                </Badge>
+              )}
               {record.is_pristine_shell && (
                 <Badge variant="outline" className="text-muted-foreground">
                   <ShieldAlert className="h-3 w-3 mr-1" /> Pristine Shell
@@ -964,6 +1028,11 @@ function RecordCard({
             <button onClick={copyId} className="text-[10px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1 mt-1">
               {record.store_id.slice(0, 8)}…{record.store_id.slice(-4)} <Copy className="h-2.5 w-2.5" />
             </button>
+            {hasOrders && (
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                last invoice: {fmtRel(invoiceSignal!.lastDate)} · total {fmtMoney(invoiceSignal!.total)}
+              </div>
+            )}
           </div>
           <div className="text-right shrink-0">
             <div className="text-[10px] text-muted-foreground uppercase">Activity</div>
