@@ -131,8 +131,10 @@ export function useStoreSkuOrderHistoryWithGaps(storeId: string | null) {
   const history = useStoreSkuOrderHistory(storeId);
   const kpi = useStoreTubeKPI(storeId);
 
+  const historyRows = history.data?.rows ?? [];
+
   const orderedSkuKeys = new Set(
-    (history.data || []).map((r) => `${r.brand ?? ''}|${r.sku}`.toLowerCase())
+    historyRows.map((r) => `${r.brand ?? ''}|${r.sku}`.toLowerCase())
   );
 
   // Brands present in catalog but never appear in any invoice line — surface
@@ -140,7 +142,7 @@ export function useStoreSkuOrderHistoryWithGaps(storeId: string | null) {
   const gapRows: SkuOrderHistoryWithGaps[] = (kpi.data || [])
     .filter((b) => {
       // brand-level gap: if no SKU under this brand has ever been ordered
-      const hit = (history.data || []).some(
+      const hit = historyRows.some(
         (h) => (h.brand || '').toLowerCase() === b.brand_name.toLowerCase()
       );
       return !hit;
@@ -163,6 +165,8 @@ export function useStoreSkuOrderHistoryWithGaps(storeId: string | null) {
   return {
     isLoading: history.isLoading || kpi.isLoading,
     error: history.error || kpi.error,
-    rows: [...((history.data as SkuOrderHistoryWithGaps[]) || []), ...gapRows],
+    rows: [...(historyRows as SkuOrderHistoryWithGaps[]), ...gapRows],
+    totalInvoices: history.data?.totalInvoices ?? 0,
+    invoicesWithLineItems: history.data?.invoicesWithLineItems ?? 0,
   };
 }
