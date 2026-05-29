@@ -1284,6 +1284,7 @@ export default function AppRoutes() {
         <Route path="/territory/tube-intelligence" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TubeTerritoryPage /></RequireRole>} />
         <Route path="/territory/tube-intelligence/:neighborhood" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><NeighborhoodDetailPage /></RequireRole>} />
         <Route path="/territory/neighborhoods" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryNeighborhoods /></RequireRole>} />
+        <Route path="/territory/coverage" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><NeighborhoodCoverage /></RequireRole>} />
         <Route path="/territory/tasks" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryTasks /></RequireRole>} />
         <Route path="/territory/candidates" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryCandidates /></RequireRole>} />
         <Route path="/territory/execute/scout" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><ScoutConsole /></RequireRole>} />
