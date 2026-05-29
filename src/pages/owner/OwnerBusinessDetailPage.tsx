@@ -8,7 +8,7 @@ import { ArrowLeft, Building2, DollarSign, CheckSquare, ShoppingCart, Brain } fr
 const businessData: Record<string, { name: string; revenue: string; openTasks: number; activeOrders: number; aiNote: string }> = {
   'gasmask': { name: 'GasMask OS', revenue: '$128,450', openTasks: 12, activeOrders: 45, aiNote: '1. Follow up on 5 low-stock SKUs. 2. Review driver performance in Zone 3.' },
   'hotmama': { name: 'HotMama', revenue: '$24,980', openTasks: 3, activeOrders: 8, aiNote: '1. Expand marketing to new demographics. 2. Consider bundle pricing strategy.' },
-  'scalati': { name: 'Hot Scalati', revenue: '$18,200', openTasks: 2, activeOrders: 6, aiNote: '1. Premium product positioning working well. 2. Explore wholesale partnerships.' },
+  'scalati': { name: 'Hotscolatti', revenue: '$18,200', openTasks: 2, activeOrders: 6, aiNote: '1. Premium product positioning working well. 2. Explore wholesale partnerships.' },
   'grabba-r-us': { name: 'Grabba R Us', revenue: '$22,100', openTasks: 5, activeOrders: 15, aiNote: '1. Retail channel growing steadily. 2. Optimize delivery routes for cost savings.' },
   'toptier': { name: 'TopTier Experience', revenue: '$58,320', openTasks: 8, activeOrders: 22, aiNote: '1. Weekend pricing optimization opportunity. 2. Launch roses bundle for +AOV.' },
   'unforgettable': { name: 'Unforgettable Times', revenue: '$32,740', openTasks: 6, activeOrders: 12, aiNote: '1. Address 3% revenue decline with targeted campaign. 2. Review competitor pricing.' },

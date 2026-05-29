@@ -23,8 +23,8 @@ export const VALID_TUBE_BRANDS = [
   { id: 'gasmasktubes', name: 'GasMask Tubes', color: '#3B82F6' }, // blue-500
   { id: 'hotmama', name: 'HotMama', color: '#EC4899' }, // pink-500
   { id: 'grabba', name: 'Grabba r us', color: '#A855F7' }, // purple-500
-  { id: 'hotscolatti-light', name: 'Hot Scolatti Light', color: '#FBBF24' }, // amber-400
-  { id: 'hotscolatti-dark', name: 'Hot Scolatti Dark', color: '#92400E' }, // amber-800
+  { id: 'hotscolatti-light', name: 'Hotscolatti Light', color: '#FBBF24' }, // amber-400
+  { id: 'hotscolatti-dark', name: 'Hotscolatti Dark', color: '#92400E' }, // amber-800
 ] as const;
 
 interface TubeInventory {
@@ -273,7 +273,7 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
                   </SelectItem>
                 );
               })}
-              <SelectItem value="hotscolatti">Hot Scolatti (Both)</SelectItem>
+              <SelectItem value="hotscolatti">Hotscolatti (Both)</SelectItem>
             </SelectContent>
           </Select>
         </div>

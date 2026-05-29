@@ -49,7 +49,7 @@ export default function GrabbaClusterCommunications() {
             Grabba Communications Hub
           </h1>
           <p className="text-muted-foreground mt-2">
-            SMS, Email, and AI calls for GasMask, HotMama, Hot Scalati, and Grabba R Us only
+            SMS, Email, and AI calls for GasMask, HotMama, Hotscolatti, and Grabba R Us only
           </p>
         </div>
 

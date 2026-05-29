@@ -51,7 +51,7 @@ export default function GrabbaClusterAnalytics() {
             Cross-Brand Analytics
           </h1>
           <p className="text-muted-foreground mt-2">
-            Performance insights across GasMask, HotMama, Hot Scalati, and Grabba R Us
+            Performance insights across GasMask, HotMama, Hotscolatti, and Grabba R Us
           </p>
         </div>
 

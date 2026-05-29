@@ -297,7 +297,7 @@ const AIAlertsSummary = () => {
     queryKey: ['grabba-ai-alerts-brand-scoped'],
     queryFn: async () => {
       // Filter alerts to only Grabba brands
-      const grabbaBrands = ['gasmask', 'hotmama', 'hot_mama', 'scalati', 'hot_scalati', 'grabba', 'grabba_r_us', 'GasMask', 'HotMama', 'Hot Scalati', 'Grabba R Us'];
+      const grabbaBrands = ['gasmask', 'hotmama', 'hot_mama', 'scalati', 'hot_scalati', 'grabba', 'grabba_r_us', 'GasMask', 'HotMama', 'Hotscolatti', 'Grabba R Us'];
       
       const [recommendationsRes, queueRes] = await Promise.all([
         supabase.from('ai_recommendations')

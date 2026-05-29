@@ -33,7 +33,7 @@ export const brandThemes: Record<string, BrandTheme> = {
     gradient: "linear-gradient(135deg, #FFD700, #FF0000, #0066CC)"
   },
   scalati: {
-    name: "Hot Scalati",
+    name: "Hotscolatti",
     primary: "#FF1A1A",
     primaryRgb: "255, 26, 26",
     accent: "#000000",

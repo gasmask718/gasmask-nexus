@@ -19,7 +19,7 @@ const ASSET_TYPES = [
 
 const BRANDS = [
   '', 'GasMask', 'HotMama', 'Grabba R Us',
-  'Hot Scolatti Light', 'Hot Scolatti Dark', 'HotScalati Bros',
+  'Hotscolatti Light', 'Hotscolatti Dark', 'Hotscolatti Bros',
 ];
 
 export default function CanvaTemplatesPage() {

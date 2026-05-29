@@ -88,7 +88,7 @@ const VisitLogModal = ({ open, onOpenChange, storeId, storeName, onSuccess }: Vi
         const brandNameToTubeId: Record<string, string> = {
           'GasMask': 'gasmask',
           'HotMama': 'hotmama',
-          'Hot Scolatti': 'hotscolatti',
+          'Hotscolatti': 'hotscolatti',
         };
 
         // Aggregate by brand name (only for valid tube brands)

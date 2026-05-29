@@ -367,7 +367,7 @@ export default function CompanyProfile() {
       pillClass: 'bg-pink-500/20 text-pink-300 border-pink-500/40'
     },
     hotscolatti: { 
-      label: 'HotScolati', 
+      label: 'Hotscolatti', 
       gradient: 'from-amber-400/30 to-amber-500/30 border-amber-400/50', // Light: #FBBF24 amber-400, Dark: #92400E amber-800
       pillClass: 'bg-amber-400/20 text-amber-300 border-amber-400/40'
     },
@@ -538,7 +538,7 @@ export default function CompanyProfile() {
                 <SelectItem value="all">All Brands</SelectItem>
                 <SelectItem value="gasmask">GasMask</SelectItem>
                 <SelectItem value="hotmama">HotMama</SelectItem>
-                <SelectItem value="hotscolati">HotScolati</SelectItem>
+                <SelectItem value="hotscolati">Hotscolatti</SelectItem>
                 <SelectItem value="grabba_r_us">Grabba R Us</SelectItem>
               </SelectContent>
             </Select>

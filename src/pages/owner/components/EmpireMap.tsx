@@ -36,7 +36,7 @@ interface BusinessUnit {
 const businessUnits: BusinessUnit[] = [
   { id: 'gasmask', name: 'GasMask OS', icon: Flame, revenue: '$128,450', change: '+12%', changeType: 'positive', status: 'healthy', path: '/os/owner/business/gasmask', color: 'red' },
   { id: 'hotmama', name: 'HotMama', icon: Heart, revenue: '$24,980', change: '+8%', changeType: 'positive', status: 'watch', path: '/os/owner/business/hotmama', color: 'rose' },
-  { id: 'scalati', name: 'Hot Scalati', icon: Sparkles, revenue: '$18,200', change: '+15%', changeType: 'positive', status: 'healthy', path: '/os/owner/business/scalati', color: 'orange' },
+  { id: 'scalati', name: 'Hotscolatti', icon: Sparkles, revenue: '$18,200', change: '+15%', changeType: 'positive', status: 'healthy', path: '/os/owner/business/scalati', color: 'orange' },
   { id: 'grabba-r-us', name: 'Grabba R Us', icon: ShoppingBag, revenue: '$22,100', change: '+5%', changeType: 'positive', status: 'healthy', path: '/os/owner/business/grabba-r-us', color: 'green' },
   { id: 'toptier', name: 'TopTier Experience', icon: Car, revenue: '$58,320', change: '+22%', changeType: 'positive', status: 'healthy', path: '/os/owner/business/toptier', color: 'blue' },
   { id: 'unforgettable', name: 'Unforgettable Times', icon: PartyPopper, revenue: '$32,740', change: '-3%', changeType: 'negative', status: 'watch', path: '/os/owner/business/unforgettable', color: 'purple' },

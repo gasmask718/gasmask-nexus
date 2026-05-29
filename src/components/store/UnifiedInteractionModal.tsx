@@ -323,7 +323,7 @@ export function UnifiedInteractionModal({
           const brandNameToTubeId: Record<string, string> = {
             'GasMask': 'gasmask',
             'HotMama': 'hotmama',
-            'Hot Scolatti': 'hotscolatti',
+            'Hotscolatti': 'hotscolatti',
           };
 
           const brandQuantities = new Map<string, number>();

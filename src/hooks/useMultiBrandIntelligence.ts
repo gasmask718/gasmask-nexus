@@ -67,7 +67,7 @@ export type BrandConflictType =
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const BRANDS = ['GasMask', 'Hot Mama', 'Hot Scalati', 'Grabba R Us'] as const;
+const BRANDS = ['GasMask', 'Hot Mama', 'Hotscolatti', 'Grabba R Us'] as const;
 
 // Worker capacity limits (boxes)
 export const WORKER_CAPACITY = {

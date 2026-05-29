@@ -42,7 +42,7 @@ interface DailyBatchEntryProps {
 const BRANDS = [
   { id: 'gasmask', label: 'Gasmask', color: 'bg-emerald-500' },
   { id: 'hotmama', label: 'HotMama', color: 'bg-pink-500' },
-  { id: 'hotscolati', label: 'HotScolati', color: 'bg-amber-500' },
+  { id: 'hotscolati', label: 'Hotscolatti', color: 'bg-amber-500' },
   { id: 'grabba-rus', label: 'GrabbaRus', color: 'bg-purple-500' },
 ];
 

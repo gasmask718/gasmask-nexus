@@ -108,7 +108,7 @@ function NeighborhoodRow({ neighborhood }: { neighborhood: typeof neighborhoodDa
                 HotMama: {totals.hotmama}
               </Badge>
               <Badge style={{ backgroundColor: GRABBA_BRAND_CONFIG.hotscolatti.primary }} className="text-white">
-                Hot Scolatti: {totals.hotscolatti}
+                Hotscolatti: {totals.hotscolatti}
               </Badge>
               <Badge style={{ backgroundColor: GRABBA_BRAND_CONFIG.grabba_r_us.primary }} className="text-white">
                 Grabba R Us: {totals.grabba_r_us}

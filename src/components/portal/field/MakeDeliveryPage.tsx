@@ -89,7 +89,7 @@ export function MakeDeliveryPage({ portalType }: MakeDeliveryPageProps) {
           // For demo, create sample items - in production, fetch from actual delivery orders
           const sampleItems: DeliveryItem[] = [
             { id: '1', product_name: 'Grabba Leaf (Light)', brand_name: 'Grabba', quantity: 5, confirmed: false },
-            { id: '2', product_name: 'Hot Scolatti Dark', brand_name: 'Hot Scolatti', quantity: 10, confirmed: false },
+            { id: '2', product_name: 'Hotscolatti Dark', brand_name: 'Hotscolatti', quantity: 10, confirmed: false },
             { id: '3', product_name: 'Rolling Papers', brand_name: 'Accessories', quantity: 20, confirmed: false },
           ];
 

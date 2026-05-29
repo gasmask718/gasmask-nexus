@@ -10,7 +10,7 @@ const clusterData: Record<string, { name: string; businesses: string[]; revenueM
   transport: { name: 'Transport & Logistics Cluster', businesses: ['GasMask Distribution', 'Grabba R Us Delivery', 'BikerFleet'], revenueMTD: 185000, trend: 12, openRisks: 3, automationCoverage: 78 },
   events: { name: 'Events & Experiences Cluster', businesses: ['TopTier Experience', 'Unforgettable Times'], revenueMTD: 91000, trend: 18, openRisks: 2, automationCoverage: 65 },
   adult: { name: 'Adult Entertainment Cluster', businesses: ['PlayBoxxx'], revenueMTD: 77000, trend: 25, openRisks: 1, automationCoverage: 82 },
-  tobacco: { name: 'Tobacco & Lifestyle Cluster', businesses: ['GasMask', 'HotMama', 'Hot Scalati', 'Grabba R Us'], revenueMTD: 193000, trend: 10, openRisks: 5, automationCoverage: 88 },
+  tobacco: { name: 'Tobacco & Lifestyle Cluster', businesses: ['GasMask', 'HotMama', 'Hotscolatti', 'Grabba R Us'], revenueMTD: 193000, trend: 10, openRisks: 5, automationCoverage: 88 },
   services: { name: 'Services Cluster', businesses: ['iClean WeClean'], revenueMTD: 22000, trend: 7, openRisks: 1, automationCoverage: 45 },
   finance: { name: 'Finance & Wealth Cluster', businesses: ['Funding Company', 'Grant Company', 'Wealth Engine'], revenueMTD: 76000, trend: 15, openRisks: 4, automationCoverage: 72 },
 };

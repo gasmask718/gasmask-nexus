@@ -37,22 +37,22 @@ export const TUBE_BRAND_COLORS: Record<string, { hex: string; tailwind: string; 
   'hotscolatti-light': {
     hex: '#FBBF24',
     tailwind: 'text-amber-400',
-    name: 'Hot Scolatti Light',
+    name: 'Hotscolatti Light',
   },
   'hotscolatti-dark': {
     hex: '#92400E',
     tailwind: 'text-amber-900',
-    name: 'Hot Scolatti Dark',
+    name: 'Hotscolatti Dark',
   },
   hotscalatibros: {
     hex: '#3B82F6',
     tailwind: 'text-blue-500',
-    name: 'HotScalati Bros',
+    name: 'Hotscolatti Bros',
   },
   hotscalatimixpack: {
     hex: '#F59E0B',
     tailwind: 'text-amber-500',
-    name: 'HotScalati Mix Pack',
+    name: 'Hotscolatti Mix',
   },
   gasmaskredtops: {
     hex: '#DC2626',

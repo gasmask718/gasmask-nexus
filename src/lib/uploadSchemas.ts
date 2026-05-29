@@ -84,7 +84,7 @@ export const uploadSchemas: Record<string, UploadSchema> = {
       },
       {
         field: 'hotscolatti_notes',
-        displayName: 'Hot Scolatti Note',
+        displayName: 'Hotscolatti Note',
         type: 'string',
         required: false,
         source: 'excel',
@@ -573,7 +573,7 @@ export const uploadSchemas: Record<string, UploadSchema> = {
       },
       {
         field: 'hotscolatti_notes',
-        displayName: 'Hot Scolatti Note',
+        displayName: 'Hotscolatti Note',
         type: 'string',
         required: false,
         source: 'excel',

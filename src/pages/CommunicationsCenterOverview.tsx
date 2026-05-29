@@ -41,7 +41,7 @@ const brands = [
   },
   {
     id: 'scalati',
-    name: 'Hot Scalati',
+    name: 'Hotscolatti',
     colors: { primary: '#5A3A2E', secondary: '#FF7A00', accent: '#8B4513' },
     voicePersona: 'warm and inviting',
     description: 'Chocolate and fire aesthetic'

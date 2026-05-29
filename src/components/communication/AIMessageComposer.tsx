@@ -17,11 +17,11 @@ const TONE_OPTIONS = [
 
 const PRODUCT_OPTIONS = [
   "GasMask Bags", "GasMask Tubes", "HotMama", "Grabba R Us",
-  "Hot Scolatti Light", "Hot Scolatti Dark", "HotScalati Bros", "Full product line",
+  "Hotscolatti Light", "Hotscolatti Dark", "Hotscolatti Bros", "Full product line",
 ];
 
 const QUICK_PROMPTS = [
-  "Announce new HotScalati Bros at $1 per unit",
+  "Announce new Hotscolatti Bros at $1 per unit",
   "Follow up with stores that haven't ordered in 30 days",
   "Promote our full grabba line to new prospects",
   "Remind active customers to reorder",
@@ -117,7 +117,7 @@ export function AIMessageComposer({ audience, audienceType, onMessageGenerated }
               <Textarea
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
-                placeholder="e.g. Tell them about our new HotScalati Bros product at $1"
+                placeholder="e.g. Tell them about our new Hotscolatti Bros product at $1"
                 rows={2}
                 className="text-xs resize-none"
               />
