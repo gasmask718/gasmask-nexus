@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, ChevronRight, Download, ShieldAlert, Loader2 } from 'lucide-react';
 import { exportData } from '@/utils/exportUtils';
+import PhoneNameDuplicatesCard from '@/components/admin/PhoneNameDuplicatesCard';
 
 interface DuplicateGroup {
   duplicate_group_id: number;
