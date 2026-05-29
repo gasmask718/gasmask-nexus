@@ -27,8 +27,14 @@ export interface SkuOrderHistoryRow {
   order_count: number;
 }
 
+export interface SkuOrderHistoryResult {
+  rows: SkuOrderHistoryRow[];
+  totalInvoices: number;
+  invoicesWithLineItems: number;
+}
+
 export function useStoreSkuOrderHistory(storeId: string | null) {
-  return useQuery({
+  return useQuery<SkuOrderHistoryResult>({
     queryKey: ['store-sku-order-history', storeId],
     queryFn: async () => {
       if (!storeId) return [] as SkuOrderHistoryRow[];
