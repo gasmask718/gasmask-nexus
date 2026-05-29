@@ -115353,6 +115353,20 @@ export type Database = {
         }
         Returns: Json
       }
+      _test_merge_bypass_matrix: {
+        Args: {
+          p_invoice_id: string
+          p_new_store: string
+          p_old_store: string
+          p_ts_id: string
+        }
+        Returns: {
+          actual: string
+          expected: string
+          pass: boolean
+          test_name: string
+        }[]
+      }
       accept_ambassador_invite: {
         Args: { p_token: string; p_user_id: string }
         Returns: Json
