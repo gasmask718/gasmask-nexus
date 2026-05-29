@@ -88283,6 +88283,7 @@ export type Database = {
           member_since: string | null
           name: string
           neighborhood: string | null
+          neighborhood_source: string | null
           notes: string | null
           notes_old: string | null
           notes_overview: string | null
@@ -88375,6 +88376,7 @@ export type Database = {
           member_since?: string | null
           name: string
           neighborhood?: string | null
+          neighborhood_source?: string | null
           notes?: string | null
           notes_old?: string | null
           notes_overview?: string | null
@@ -88467,6 +88469,7 @@ export type Database = {
           member_since?: string | null
           name?: string
           neighborhood?: string | null
+          neighborhood_source?: string | null
           notes?: string | null
           notes_old?: string | null
           notes_overview?: string | null
