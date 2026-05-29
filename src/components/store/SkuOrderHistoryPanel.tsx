@@ -16,7 +16,8 @@ interface Props {
  * `invoices.store_id` — which the merge engine repoints to the survivor.
  */
 export function SkuOrderHistoryPanel({ storeId }: Props) {
-  const { rows, isLoading, error } = useStoreSkuOrderHistoryWithGaps(storeId);
+  const { rows, isLoading, error, totalInvoices, invoicesWithLineItems } =
+    useStoreSkuOrderHistoryWithGaps(storeId);
 
   return (
     <Card className="glass-card border-border/50">
