@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      _merge_matrix_results: {
+        Row: {
+          actual: string | null
+          expected: string | null
+          pass: boolean | null
+          run_at: string | null
+          test_name: string | null
+        }
+        Insert: {
+          actual?: string | null
+          expected?: string | null
+          pass?: boolean | null
+          run_at?: string | null
+          test_name?: string | null
+        }
+        Update: {
+          actual?: string | null
+          expected?: string | null
+          pass?: boolean | null
+          run_at?: string | null
+          test_name?: string | null
+        }
+        Relationships: []
+      }
       _quarantine_misclassified_stores: {
         Row: {
           address: string | null
