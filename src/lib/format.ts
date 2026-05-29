@@ -30,3 +30,17 @@ export function formatPercent(value: number | null | undefined, decimals = 1): s
   if (value === null || value === undefined) return '0%';
   return `${value.toFixed(decimals)}%`;
 }
+
+/**
+ * Render "Product Name — $X.XX" using the default store-price tier.
+ * Price is joined at RENDER time (never stored in product.name).
+ * Pass a different tier (wholesale/street) when a surface needs it.
+ */
+export function nameWithPrice(
+  name: string | null | undefined,
+  price: number | null | undefined,
+): string {
+  const n = (name ?? '').trim() || 'Unknown';
+  if (price === null || price === undefined) return n;
+  return `${n} — ${formatCurrency(price)}`;
+}

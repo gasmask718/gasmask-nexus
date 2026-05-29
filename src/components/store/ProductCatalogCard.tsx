@@ -110,9 +110,9 @@ export function ProductCatalogCard({ storeId }: ProductCatalogCardProps) {
                   </div>
                 )}
 
-                {/* Product name */}
+                {/* Product name — store price */}
                 <p className="font-semibold text-sm leading-tight pr-8">
-                  {product.name}
+                  {product.name} — {formatCurrency(product.store_price)}
                 </p>
 
                 {/* Brand · SKU */}

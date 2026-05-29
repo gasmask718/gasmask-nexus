@@ -61,8 +61,8 @@ export const CANONICAL_BRANDS: Record<CanonicalBrandId, BrandIdentity> = {
   },
   hotscolatti: {
     id: 'hotscolatti',
-    displayName: 'Hot Scolatti',
-    shortName: 'Scolatti',
+    displayName: 'Hotscolatti',
+    shortName: 'Hotscolatti',
     primaryColor: '#FF7A00',
     softBgClass: 'bg-orange-500/10',
     borderClass: 'border-orange-500/30',
@@ -70,7 +70,7 @@ export const CANONICAL_BRANDS: Record<CanonicalBrandId, BrandIdentity> = {
     pillClass: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
     gradient: 'from-orange-500 to-amber-600',
     icon: '🟠',
-    aliases: ['scalati', 'scolatti', 'hot scolatti', 'hot scalati', 'hotscolati', 'hotscalati', 'hotscolatti', 'hotscolatti'],
+    aliases: ['scalati', 'scolatti', 'hot scolatti', 'hot scalati', 'hotscolati', 'hotscalati', 'hotscolatti', 'hotscollati'],
   },
   grabba_r_us: {
     id: 'grabba_r_us',
