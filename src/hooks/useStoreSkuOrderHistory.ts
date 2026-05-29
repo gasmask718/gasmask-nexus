@@ -37,7 +37,7 @@ export function useStoreSkuOrderHistory(storeId: string | null) {
   return useQuery<SkuOrderHistoryResult>({
     queryKey: ['store-sku-order-history', storeId],
     queryFn: async () => {
-      if (!storeId) return [] as SkuOrderHistoryRow[];
+      if (!storeId) return { rows: [] as SkuOrderHistoryRow[], totalInvoices: 0, invoicesWithLineItems: 0 };
 
       // Pull invoices + line items in one round-trip via nested select.
       const { data, error } = await supabase
