@@ -73,6 +73,7 @@ const TerritoryOverview = lazy(() => import('@/pages/territory/TerritoryOverview
 const TubeTerritoryPage = lazy(() => import('@/pages/territory/TubeTerritoryPage'));
 const NeighborhoodDetailPage = lazy(() => import('@/pages/territory/NeighborhoodDetailPage'));
 const TerritoryNeighborhoods = lazy(() => import('@/pages/territory/TerritoryNeighborhoods'));
+const NeighborhoodCoverage = lazy(() => import('@/pages/territory/NeighborhoodCoverage'));
 const TerritoryTasks = lazy(() => import('@/pages/territory/TerritoryTasks'));
 const TerritoryCandidates = lazy(() => import('@/pages/territory/TerritoryCandidates'));
 const ScoutConsole = lazy(() => import('@/pages/territory/ScoutConsole'));
