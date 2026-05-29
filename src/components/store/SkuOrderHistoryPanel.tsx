@@ -84,6 +84,11 @@ export function SkuOrderHistoryPanel({ storeId }: Props) {
                         </p>
                         <p className="text-[10px] text-muted-foreground">
                           {r.order_count}× lifetime ({r.lifetime_qty})
+                          {(r as any).legacy_attributed_count > 0 && (
+                            <span className="ml-1 text-amber-400">
+                              · {(r as any).legacy_attributed_count} legacy
+                            </span>
+                          )}
                         </p>
                       </div>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
