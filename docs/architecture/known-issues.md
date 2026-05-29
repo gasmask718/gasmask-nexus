@@ -60,3 +60,35 @@ behaves. Slated for a dedicated session — too broad to patch mid-feature.
   user's selection correctly; the loss happens server-side.
 
 ## TRG-001 → see also docs/architecture/store-capture-system.md
+
+---
+
+## ENUM-001: `brand_type` Enum Value "HotScalati" Misspelled
+
+**Severity:** Cosmetic (zero user impact)
+**Logged:** 2026-05-29
+**Status:** Deliberate — DO NOT FIX without coordinated migration
+
+### Symptom
+The Postgres `brand_type` enum contains the literal `"HotScalati"` (misspelled). All user-visible UI correctly displays `"Hotscolatti"` via the canonical brand registry (`src/config/brands.ts`).
+
+### Why we're not fixing it
+- The enum is an internal lookup key — never rendered to users.
+- Renaming requires a synchronized DB migration + code change across ~14 files that match the literal `"HotScalati"`.
+- Any drift between migration timing and deploy carries silent-broken-lookup risk (brand joins fail, dashboards go empty).
+- Reward = zero (no one sees it). Risk = nonzero.
+
+### Rule for future agents
+Code spots matching the literal string `"HotScalati"` (enum comparisons, switch cases, brand_type filters) are **CORRECT as-is** and must continue to match the DB enum. Do NOT "fix the spelling" in these locations:
+
+- `src/services/dynastyAI.ts`
+- `src/hooks/useVAPermissions.ts`
+- `src/components/templates/TemplateEditor.tsx`, `TemplateList.tsx`
+- `src/pages/grabba/AIInsights.tsx`, `GrabbaClusterDashboard.tsx`, `UnifiedUploadCenter.tsx`
+- `src/components/store/StoreTubeIntelCard.tsx`, `StoreTubeInventoryCard.tsx`
+- `src/components/contacts/AdvancedContactModal.tsx`, `AddContactModal.tsx`
+- `src/components/delivery/checklist/StickerVisibilitySection.tsx`
+- `src/config/grabbaSkyscraper.ts` (mapping value)
+
+### When to revisit
+Only if a future refactor of `brand_type` (replacing the enum, restructuring brand joins, or a full brand-table rewrite) is already in scope. At that point, fold the rename in as part of the larger migration.
