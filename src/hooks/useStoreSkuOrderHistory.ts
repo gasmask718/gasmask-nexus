@@ -100,7 +100,7 @@ export function useStoreSkuOrderHistory(storeId: string | null) {
           invoicesUnattributed: 0,
         };
 
-      // 1) Invoices for this store
+      // 1) Invoices for this store (all statuses for line-item visibility)
       const { data: invs, error: invErr } = await supabase
         .from('invoices')
         .select('id, created_at, status')
@@ -110,15 +110,17 @@ export function useStoreSkuOrderHistory(storeId: string | null) {
         .limit(1000);
       if (invErr) throw invErr;
 
-      const finalized = (invs || []).filter((i: any) => i.status === 'finalized');
       const invDate = new Map<string, string>();
-      finalized.forEach((i: any) => invDate.set(i.id, i.created_at));
-      const finalIds = finalized.map((i: any) => i.id);
+      (invs || []).forEach((i: any) => invDate.set(i.id, i.created_at));
+      const allIds = (invs || []).map((i: any) => i.id);
+      const finalIds = (invs || [])
+        .filter((i: any) => i.status === 'finalized')
+        .map((i: any) => i.id);
 
-      if (finalIds.length === 0) {
+      if (allIds.length === 0) {
         return {
           rows: [],
-          totalInvoices: (invs || []).length,
+          totalInvoices: 0,
           invoicesWithLineItems: 0,
           invoicesVerified: 0,
           invoicesEstimated: 0,
@@ -126,13 +128,13 @@ export function useStoreSkuOrderHistory(storeId: string | null) {
         };
       }
 
-      // 2) Live line items
+      // 2) Live line items (any status — drafts are still real activity)
       const { data: lineItems, error: liErr } = await supabase
         .from('invoice_line_items')
         .select(
           'invoice_id, product_name, product_name_snapshot, brand, brand_name_snapshot, quantity',
         )
-        .in('invoice_id', finalIds);
+        .in('invoice_id', allIds);
       if (liErr) throw liErr;
 
       // 3) Repair attributions (join product name)
@@ -182,7 +184,7 @@ export function useStoreSkuOrderHistory(storeId: string | null) {
         upsert(map, sku, 'GasMask', createdAt, Number(r.unit_count ?? 0), tier);
       }
 
-      // Unattributed = finalized invoices in neither set
+      // Unattributed = finalized invoices with neither live line items nor repair attribution
       const unattributedIds = finalIds.filter(
         (id) =>
           !invoicesWithLineItemsSet.has(id) && !invoicesWithRepairTier.has(id),
@@ -219,7 +221,7 @@ export function useStoreSkuOrderHistory(storeId: string | null) {
 
       return {
         rows,
-        totalInvoices: (invs || []).length,
+        totalInvoices: finalIds.length,
         invoicesWithLineItems: invoicesWithLineItemsSet.size,
         invoicesVerified,
         invoicesEstimated,
