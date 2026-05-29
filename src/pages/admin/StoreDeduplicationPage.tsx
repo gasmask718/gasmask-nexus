@@ -122,6 +122,8 @@ export default function StoreDeduplicationPage() {
         </Card>
       </div>
 
+      <PhoneNameDuplicatesCard />
+
       <Card>
         <CardHeader>
           <CardTitle>Duplicate Groups</CardTitle>
