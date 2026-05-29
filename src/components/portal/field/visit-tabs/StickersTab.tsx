@@ -13,7 +13,7 @@ interface StickersTabProps {
  * UNIFIED STICKERS TAB
  * 
  * This component uses the canonical BrandStickersCard which provides:
- * - 4 approved brands (GasMask, Hot Mama, HotScalati, Grabba R Us)
+ * - 4 approved brands (GasMask, Hot Mama, Hotscolatti, Grabba R Us)
  * - 4 sticker types per brand (Front Door, Brand Character, Authorized Retailer, Telephone Number)
  * - Installed/Requested status per sticker
  * - Per-sticker notes with red indicator when present

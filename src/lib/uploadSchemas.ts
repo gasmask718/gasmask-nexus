@@ -88,7 +88,7 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         type: 'string',
         required: false,
         source: 'excel',
-        notes: 'Brand-specific notes for Hot Scolatti'
+        notes: 'Brand-specific notes for Hotscolatti'
       },
       {
         field: 'grabba_notes',
@@ -577,7 +577,7 @@ export const uploadSchemas: Record<string, UploadSchema> = {
         type: 'string',
         required: false,
         source: 'excel',
-        notes: 'Brand-specific notes for Hot Scolatti'
+        notes: 'Brand-specific notes for Hotscolatti'
       },
       {
         field: 'grabba_notes',

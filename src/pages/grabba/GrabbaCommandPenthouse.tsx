@@ -969,7 +969,7 @@ const WholesaleMarketplacePulse = () => {
         topItems: [
           { id: '1', name: 'GasMask Premium Tubes', supplier: 'NYC Wholesale' },
           { id: '2', name: 'HotMama Rose Gold', supplier: 'Brooklyn Supply' },
-          { id: '3', name: 'HotScolati Classic', supplier: 'Queens Dist' },
+          { id: '3', name: 'Hotscolatti Classic', supplier: 'Queens Dist' },
           { id: '4', name: 'Grabba R Us Value Pack', supplier: 'Bronx Traders' },
           { id: '5', name: 'Mixed Brand Bundle', supplier: 'Manhattan Hub' },
         ]

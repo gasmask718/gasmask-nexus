@@ -14,7 +14,7 @@ const BRAND_COLORS: Record<string, string> = {
   'fb52b0e6-39b2-4e13-bea9-cd016f51efb0': 'border-red-500/40 bg-red-500/5',       // GasMask
   '4b1c1255-b7b1-43ea-9ad9-a257c6582094': 'border-purple-500/40 bg-purple-500/5',  // Grabba R Us
   'f3e8ba65-2b76-4f61-a157-0751acb3e7b2': 'border-pink-500/40 bg-pink-500/5',      // Hot Mama
-  'c9d60b82-f0d3-44b4-9b33-1abe4adf1ebe': 'border-orange-500/40 bg-orange-500/5',  // HotScalati
+  'c9d60b82-f0d3-44b4-9b33-1abe4adf1ebe': 'border-orange-500/40 bg-orange-500/5',  // Hotscolatti
 };
 
 export function ProductCatalogCard({ storeId }: ProductCatalogCardProps) {

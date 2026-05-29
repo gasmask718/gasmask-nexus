@@ -345,7 +345,7 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
               {/* HotScolatti Light and Dark grouped section */}
               {(filterBrand === 'all' || filterBrand === 'hotscolatti' || filterBrand === 'hotscolatti-light' || filterBrand === 'hotscolatti-dark') && (
                 <div className="space-y-2 p-3 rounded-lg border-2 border-amber-500/30 bg-amber-500/5">
-                  <div className="text-sm font-semibold text-amber-600 mb-2">Hot Scolatti</div>
+                  <div className="text-sm font-semibold text-amber-600 mb-2">Hotscolatti</div>
                   {['hotscolatti-light', 'hotscolatti-dark'].map((brandId) => {
                     const brand = VALID_TUBE_BRANDS.find(b => b.id === brandId);
                     if (!brand) return null;

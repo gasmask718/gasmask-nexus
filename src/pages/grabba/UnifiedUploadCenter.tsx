@@ -112,7 +112,7 @@ export default function UnifiedUploadCenter() {
       <div>
         <h1 className="text-3xl font-bold">Unified Upload Center</h1>
         <p className="text-muted-foreground mt-2">
-          Upload one CSV to update all 4 brands: GasMask • HotMama • Grabba R Us • Hot Scalati
+          Upload one CSV to update all 4 brands: GasMask • HotMama • Grabba R Us • Hotscolatti
         </p>
       </div>
 

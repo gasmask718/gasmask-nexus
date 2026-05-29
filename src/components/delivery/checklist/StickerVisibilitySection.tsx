@@ -18,7 +18,7 @@ const PERSON_TYPES = ['drivers', 'bikers', 'ambassadors'] as const;
 const BRAND_COLORS: Record<string, { bg: string; text: string; border: string; initials: string }> = {
   'GasMask':      { bg: 'bg-emerald-500/10', text: 'text-emerald-600', border: 'border-emerald-500/30', initials: 'GM' },
   'Hot Mama':     { bg: 'bg-pink-500/10',    text: 'text-pink-600',    border: 'border-pink-500/30',    initials: 'HM' },
-  'HotScalati':   { bg: 'bg-orange-500/10',  text: 'text-orange-600',  border: 'border-orange-500/30',  initials: 'HS' },
+  'Hotscolatti':   { bg: 'bg-orange-500/10',  text: 'text-orange-600',  border: 'border-orange-500/30',  initials: 'HS' },
   'Grabba R Us':  { bg: 'bg-blue-500/10',    text: 'text-blue-600',    border: 'border-blue-500/30',    initials: 'GR' },
 };
 

@@ -12,7 +12,7 @@ import { submitFieldChange, GOVERNANCE_STRICT_MODE } from '@/services/fieldGover
 export const STICKER_BRANDS = [
   { slug: 'gasmask', name: 'GasMask', color: '#FF0000' },
   { slug: 'hotmama', name: 'Hot Mama', color: '#E7A1B0' },
-  { slug: 'hotscolati', name: 'HotScalati', color: '#FF7F11' },
+  { slug: 'hotscolati', name: 'Hotscolatti', color: '#FF7F11' },
   { slug: 'grabba-rus', name: 'Grabba R Us', color: '#8A2BE2' },
 ] as const;
 

@@ -107,7 +107,7 @@ export default function GrabbaAICommandConsole() {
           <div>
             <h1 className="text-2xl font-bold">Grabba AI Command Console</h1>
             <p className="text-sm text-muted-foreground">
-              Natural language control for GasMask, HotMama, Hot Scalati & Grabba R Us
+              Natural language control for GasMask, HotMama, Hotscolatti & Grabba R Us
             </p>
           </div>
         </div>

@@ -160,7 +160,7 @@ export function CreateStoreInvoiceModal({
     'fb52b0e6-39b2-4e13-bea9-cd016f51efb0', // GasMask
     '4b1c1255-b7b1-43ea-9ad9-a257c6582094', // Grabba R Us
     'f3e8ba65-2b76-4f61-a157-0751acb3e7b2', // Hot Mama
-    'c9d60b82-f0d3-44b4-9b33-1abe4adf1ebe', // HotScalati
+    'c9d60b82-f0d3-44b4-9b33-1abe4adf1ebe', // Hotscolatti
   ];
 
   const { data: brands = [], isLoading: brandsLoading } = useQuery({
