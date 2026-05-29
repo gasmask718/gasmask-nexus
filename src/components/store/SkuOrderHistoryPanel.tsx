@@ -9,11 +9,12 @@ interface Props {
 }
 
 /**
- * Per-SKU last-ordered history. Complements the brand-level
- * LastOrderSnapshotPanel by drilling down to individual SKUs.
+ * Per-SKU last-ordered history. Reads from the canonical attribution stack
+ * (live invoice_line_items + historical_invoice_line_repairs) so legacy
+ * orders surface with verified tube counts instead of "qty unknown".
  *
- * Works correctly for merged survivors because the underlying query keys on
- * `invoices.store_id` — which the merge engine repoints to the survivor.
+ * Works for merged survivors because the underlying query keys on
+ * `invoices.store_id` — repointed at merge time.
  */
 export function SkuOrderHistoryPanel({ storeId }: Props) {
   const {
@@ -22,8 +23,13 @@ export function SkuOrderHistoryPanel({ storeId }: Props) {
     error,
     totalInvoices,
     invoicesWithLineItems,
-    legacyAttributedInvoices,
+    invoicesVerified,
+    invoicesEstimated,
+    invoicesUnattributed,
   } = useStoreSkuOrderHistoryWithGaps(storeId);
+
+  const activeSkuCount = rows.filter((r) => !r.never_ordered && !r.unattributed)
+    .length;
 
   return (
     <Card className="glass-card border-border/50">
@@ -33,8 +39,7 @@ export function SkuOrderHistoryPanel({ storeId }: Props) {
           Last Ordered by SKU
           {!isLoading && (
             <Badge variant="outline" className="ml-auto text-xs font-normal">
-              {rows.filter((r) => !r.never_ordered).length} SKU
-              {rows.filter((r) => !r.never_ordered).length === 1 ? '' : 's'}
+              {activeSkuCount} SKU{activeSkuCount === 1 ? '' : 's'}
             </Badge>
           )}
         </CardTitle>
@@ -57,69 +62,108 @@ export function SkuOrderHistoryPanel({ storeId }: Props) {
         )}
         {!isLoading && rows.length > 0 && (
           <div className="divide-y divide-border/40">
-            {rows.map((r) => (
-              <div
-                key={`${r.brand ?? ''}-${r.sku}`}
-                className="flex items-center justify-between gap-3 py-2.5"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{r.sku}</p>
-                  {r.brand && !r.never_ordered && (
-                    <p className="text-xs text-muted-foreground">{r.brand}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  {r.never_ordered ? (
-                    <Badge
-                      variant="outline"
-                      className="bg-red-500/10 text-red-400 border-red-500/30 text-xs"
-                    >
-                      Never ordered
-                    </Badge>
-                  ) : (
-                    <>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold">
-                          {r.last_qty} {r.last_qty === 1 ? 'unit' : 'units'}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {r.order_count}× lifetime ({r.lifetime_qty})
-                          {(r as any).legacy_attributed_count > 0 && (
-                            <span className="ml-1 text-amber-400">
-                              · {(r as any).legacy_attributed_count} legacy
-                            </span>
+            {rows.map((r) => {
+              const liveOnly =
+                (r.live_count || 0) > 0 &&
+                !(r.verified_count || 0) &&
+                !(r.estimated_count || 0);
+              return (
+                <div
+                  key={`${r.brand ?? ''}-${r.sku}`}
+                  className="flex items-center justify-between gap-3 py-2.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <p className="text-sm font-medium truncate">{r.sku}</p>
+                      {!r.unattributed && !r.never_ordered && !liveOnly && (
+                        <>
+                          {(r.verified_count || 0) > 0 && (
+                            <Badge
+                              variant="outline"
+                              className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] px-1.5 py-0"
+                            >
+                              verified
+                            </Badge>
                           )}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
-                        <Clock className="h-3 w-3" />
-                        {formatDistanceToNowStrict(parseISO(r.last_ordered_at), {
-                          addSuffix: true,
-                        })}
-                      </div>
-                    </>
-                  )}
+                          {(r.estimated_count || 0) > 0 && (
+                            <Badge
+                              variant="outline"
+                              className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-[10px] px-1.5 py-0"
+                            >
+                              estimated
+                            </Badge>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    {r.brand && !r.never_ordered && !r.unattributed && (
+                      <p className="text-xs text-muted-foreground">{r.brand}</p>
+                    )}
+                    {r.unattributed && (
+                      <p className="text-xs text-muted-foreground">
+                        Finalized invoices with no SKU breakdown and no
+                        attribution on file
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {r.never_ordered ? (
+                      <Badge
+                        variant="outline"
+                        className="bg-red-500/10 text-red-400 border-red-500/30 text-xs"
+                      >
+                        Never ordered
+                      </Badge>
+                    ) : r.unattributed ? (
+                      <Badge
+                        variant="outline"
+                        className="bg-muted/40 text-muted-foreground border-border/50 text-xs"
+                      >
+                        {r.order_count} unattributed
+                      </Badge>
+                    ) : (
+                      <>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold">
+                            {r.last_qty} {r.last_qty === 1 ? 'unit' : 'units'}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {r.order_count}× lifetime ({r.lifetime_qty})
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+                          <Clock className="h-3 w-3" />
+                          {r.last_ordered_at
+                            ? formatDistanceToNowStrict(
+                                parseISO(r.last_ordered_at),
+                                { addSuffix: true },
+                              )
+                            : '—'}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
         {!isLoading && !error && totalInvoices > 0 && (
           <p className="text-[11px] text-muted-foreground mt-3 pt-2 border-t border-border/30 leading-relaxed">
-            {legacyAttributedInvoices > 0 ? (
-              <>
-                GasMask Tubes order count includes {legacyAttributedInvoices}{' '}
-                legacy invoice
-                {legacyAttributedInvoices === 1 ? '' : 's'} attributed by total
-                (no line-item detail); {invoicesWithLineItems} invoice
-                {invoicesWithLineItems === 1 ? '' : 's'} have full SKU detail.
-              </>
-            ) : (
-              <>
-                Showing SKU detail for {invoicesWithLineItems} of {totalInvoices}{' '}
-                invoice{totalInvoices === 1 ? '' : 's'}.
-              </>
-            )}
+            {invoicesWithLineItems} live line-item
+            {invoicesWithLineItems === 1 ? '' : 's'} ·{' '}
+            <span className="text-emerald-400">
+              {invoicesVerified} verified
+            </span>{' '}
+            ·{' '}
+            <span className="text-amber-400">
+              {invoicesEstimated} estimated
+            </span>{' '}
+            ·{' '}
+            <span>
+              {invoicesUnattributed} unattributed
+            </span>{' '}
+            of {totalInvoices} invoice{totalInvoices === 1 ? '' : 's'}.
           </p>
         )}
       </CardContent>
