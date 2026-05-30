@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/sheet';
 import { StoreCaptureForm } from '@/components/store/StoreCaptureForm';
 import { AmbassadorStoreMap } from '@/components/ambassador/AmbassadorStoreMap';
+import { useTranslation } from '@/hooks/useTranslation';
 
 // MASTER GENIUS ARCHITECT: Lead KPI config - all lead types must be represented
 const LEAD_KPI_CONFIG = {
