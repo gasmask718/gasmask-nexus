@@ -126,6 +126,7 @@ const WIZARD_COMPLETE_KEY = 'production-wizard-complete';
 
 export default function ProductionPortalPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { data: offices = [], isLoading: officesLoading } = useProductionOffices();
   const [selectedOfficeId, setSelectedOfficeId] = useState<string>('');
   const [isTrainingMode, setIsTrainingMode] = useState(false);
