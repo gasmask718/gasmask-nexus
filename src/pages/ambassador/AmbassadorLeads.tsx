@@ -32,8 +32,10 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AmbassadorLeads() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
