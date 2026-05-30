@@ -316,48 +316,89 @@ export default function NeighborhoodIntelligencePage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={filtered.length > 0 && filtered.every((r: any) => selectedIds.includes(r.id))}
+                      onCheckedChange={(v) => {
+                        const allIds = filtered.map((r: any) => r.id);
+                        setSelectedIds((prev) =>
+                          v
+                            ? Array.from(new Set([...prev, ...allIds]))
+                            : prev.filter((id) => !allIds.includes(id))
+                        );
+                      }}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
                   <TableHead>Store Name</TableHead>
                   <TableHead>Address</TableHead>
                   <TableHead>City</TableHead>
                   <TableHead>Borough</TableHead>
                   <TableHead>Brand</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead></TableHead>
+                  <TableHead className="w-20 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((store: any) => (
-                  <TableRow key={store.id}>
-                    <TableCell className="font-medium">{store.store_name}</TableCell>
-                    <TableCell className="text-sm">{store.address}</TableCell>
-                    <TableCell>{store.city}, {store.state}</TableCell>
-                    <TableCell>
-                      {(store.boroughs as any)?.name && (
-                        <Badge variant="outline">{(store.boroughs as any).name}</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {(store.brands as any)?.name && (
-                        <Badge>{(store.brands as any).name}</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm">{store.store_type || '-'}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link to={`/os/crm/stores/${store.id}`}>
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filtered.map((store: any) => {
+                  const checked = selectedIds.includes(store.id);
+                  return (
+                    <TableRow key={store.id} data-state={checked ? 'selected' : undefined}>
+                      <TableCell>
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) =>
+                            setSelectedIds((prev) =>
+                              v ? [...prev, store.id] : prev.filter((id) => id !== store.id)
+                            )
+                          }
+                          aria-label={`Select ${store.store_name}`}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">{store.store_name}</TableCell>
+                      <TableCell className="text-sm">{store.address}</TableCell>
+                      <TableCell>{store.city}, {store.state}</TableCell>
+                      <TableCell>
+                        {(store.boroughs as any)?.name && (
+                          <Badge variant="outline">{(store.boroughs as any).name}</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {(store.brands as any)?.name && (
+                          <Badge>{(store.brands as any).name}</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">{store.store_type || '-'}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="inline-flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            title="Add to route"
+                            onClick={() => setDispatchStores([store.id])}
+                          >
+                            <RouteIcon className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                            <Link to={`/os/crm/stores/${store.id}`}>
+                              <Eye className="h-3.5 w-3.5" />
+                            </Link>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                       No stores found matching your filters
                     </TableCell>
                   </TableRow>
                 )}
+              </TableBody>
+            </Table>
               </TableBody>
             </Table>
           )}
