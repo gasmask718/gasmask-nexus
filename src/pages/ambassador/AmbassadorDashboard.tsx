@@ -252,7 +252,7 @@ function DashboardContent() {
         }
       });
       
-      console.log('[Dashboard KPI] Lead counts:', counts, 'from', data?.length, 'leads');
+      
       return counts;
     },
     enabled: !!user?.id,
