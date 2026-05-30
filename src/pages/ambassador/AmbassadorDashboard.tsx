@@ -304,6 +304,9 @@ function DashboardContent() {
         </div>
       </div>
 
+      {/* Portfolio map — RLS-scoped to this ambassador's stores */}
+      <AmbassadorStoreMap />
+
       {/* My Captured Stores - portfolio of stores ambassador captured */}
       <MyCapturedStores />
 
