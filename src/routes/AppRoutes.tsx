@@ -3305,7 +3305,9 @@ export default function AppRoutes() {
       <Route path="/ambassador/reports/earnings" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorEarningsPage /></Layout>
+            <AmbassadorLayout title="Earnings Report" subtitle="Your earnings breakdown and history">
+              <AmbassadorEarningsPage />
+            </AmbassadorLayout>
           </RequireRole>
         </ProtectedRoute>
       } />
