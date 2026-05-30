@@ -253,12 +253,12 @@ export default function GrabbaDeliveries() {
       const today = new Date().toISOString().split("T")[0];
       const { data } = await supabase
         .from("routes")
-        .select("id, status, assigned_to, profiles:assigned_to ( full_name, phone )")
+        .select("id, status, assigned_to, profiles:assigned_to ( name, phone )")
         .eq("source", "grabba_biker")
         .eq("date", today);
       return (data || []).map((r: any) => ({
         id: r.id,
-        biker_name: r.profiles?.full_name || "Unassigned",
+        biker_name: r.profiles?.name || "Unassigned",
         biker_phone: r.profiles?.phone || "",
         completed: r.status === "completed",
       }));
