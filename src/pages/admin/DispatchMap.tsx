@@ -28,7 +28,7 @@ const ROWS: Row[] = [
 
   // RED — has stores but not wired
   { floor: 'Store Intelligence', path: '/grabba/store-intelligence', shows: 'AI-scored stores (0-100)', status: 'wired' },
-  { floor: 'Grabba StoreMasterProfile', path: '/grabba/stores/:id', shows: 'Master profile of a single store', status: 'unwired', note: 'Profile lacks single-store Dispatch CTA' },
+  { floor: 'Grabba StoreMasterProfile', path: '/grabba/stores/:id', shows: 'Master profile of a single store', status: 'wired' },
   { floor: 'OS NeighborhoodIntelligence', path: '/os/neighborhood-intelligence', shows: 'Neighborhood-level signals + stores', status: 'unwired', note: 'Stores list missing multi-select dispatch' },
   { floor: 'Floor9 Predictions', path: '/grabba/floor9/predictions', shows: 'Stores predicted to need visit', status: 'unwired', note: 'Predicted list is read-only — no dispatch' },
   { floor: 'Grabba ClusterDashboard', path: '/grabba/clusters', shows: 'Stores grouped into clusters', status: 'unwired', note: 'Cluster cards have no dispatch action' },
