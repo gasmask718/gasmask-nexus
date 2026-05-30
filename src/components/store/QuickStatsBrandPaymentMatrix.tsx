@@ -62,12 +62,14 @@ export function QuickStatsBrandPaymentMatrix({ storeId }: Props) {
                   className={`text-xs ${
                     !isActive
                       ? 'bg-muted/50 text-muted-foreground/60 border-border/30'
-                      : rel.payment_type === 'pay_upfront'
-                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                        : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                      : !rel.payment_type_chosen
+                        ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40'
+                        : rel.payment_type === 'pay_upfront'
+                          ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                          : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                   }`}
                 >
-                  {isActive ? PAYMENT_LABELS[rel.payment_type] : 'Inactive'}
+                  {!isActive ? 'Inactive' : !rel.payment_type_chosen ? 'Neither (set)' : PAYMENT_LABELS[rel.payment_type]}
                 </Badge>
               ) : (
                 <Badge variant="outline" className="text-xs bg-muted/50 text-muted-foreground/60 border-border/30">

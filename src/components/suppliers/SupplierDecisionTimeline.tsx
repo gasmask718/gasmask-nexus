@@ -33,7 +33,7 @@ export function SupplierDecisionTimeline({ supplier }: SupplierDecisionTimelineP
           {lastDate && (
             <div className="flex flex-col items-center">
               <span className="text-muted-foreground">Last Receipt</span>
-              <span className="font-medium">{format(lastDate, 'MMM d')}</span>
+              <span className="font-medium">{format(lastDate, 'MMM d, yyyy')}</span>
             </div>
           )}
           <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
@@ -43,11 +43,11 @@ export function SupplierDecisionTimeline({ supplier }: SupplierDecisionTimelineP
           </div>
           <div className="flex flex-col items-center">
             <span className="text-muted-foreground">30d</span>
-            <span className="font-medium">{format(d30, 'MMM d')}</span>
+            <span className="font-medium">{format(d30, 'MMM d, yyyy')}</span>
           </div>
           <div className="flex flex-col items-center">
             <span className="text-muted-foreground">60d</span>
-            <span className="font-medium">{format(d60, 'MMM d')}</span>
+            <span className="font-medium">{format(d60, 'MMM d, yyyy')}</span>
           </div>
         </div>
       </CardContent>

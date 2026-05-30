@@ -41,13 +41,13 @@ function usePLReport(period: ReportPeriod, offset: number) {
           const weekStart = startOfWeek(subWeeks(now, offset), { weekStartsOn: 1 });
           start = weekStart;
           end = endOfWeek(weekStart, { weekStartsOn: 1 });
-          label = `Week of ${format(start, 'MMM d')}`;
+          label = `Week of ${format(start, 'MMM d, yyyy')}`;
           break;
         case 'biweekly':
           const bwStart = startOfWeek(subWeeks(now, offset * 2), { weekStartsOn: 1 });
           start = bwStart;
           end = endOfWeek(addWeeks(bwStart, 1), { weekStartsOn: 1 });
-          label = `${format(start, 'MMM d')} - ${format(end, 'MMM d')}`;
+          label = `${format(start, 'MMM d, yyyy')} - ${format(end, 'MMM d, yyyy')}`;
           break;
         case 'monthly':
         default:

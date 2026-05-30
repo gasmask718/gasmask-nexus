@@ -90,7 +90,7 @@ export function InventoryCheckSection({
     if (!date) return 'Never ordered';
     const d = new Date(date);
     const days = Math.floor((Date.now() - d.getTime()) / 86400000);
-    return `${format(d, 'MMM d')} · ${days}d ago`;
+    return `${format(d, 'MMM d, yyyy')} · ${days}d ago`;
   };
 
   const saveTubeCounts = async () => {

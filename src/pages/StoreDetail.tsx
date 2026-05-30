@@ -51,6 +51,7 @@ import { SharedStoreCoreIntelligence } from "@/components/store/SharedStoreCoreI
 import { TubesSoldHeroStrip } from "@/components/store-profile/TubesSoldHeroStrip";
 import { EngagementBanner } from "@/components/store-profile/EngagementBanner";
 import { BrandPaymentQuickView } from "@/components/store/BrandPaymentQuickView";
+import { RelationshipStatusInline } from "@/components/store/RelationshipStatusInline";
 import { BrandInterestChips } from "@/components/store/BrandInterestChips";
 import { SkuOrderHistoryPanel } from "@/components/store/SkuOrderHistoryPanel";
 import { QuickStatsBrandPaymentMatrix } from "@/components/store/QuickStatsBrandPaymentMatrix";
@@ -641,6 +642,8 @@ const StoreDetail = () => {
               {/* 🎯 Brand Interest — top-of-profile glance answer for ambassadors */}
               <BrandInterestChips storeId={id || ''} />
               <BrandPaymentQuickView storeId={id || ''} />
+              {/* 9-state Relationship Status — direct from profile header */}
+              {id && <RelationshipStatusInline storeId={id} />}
             </div>
             <div className="flex gap-2">
               <Button

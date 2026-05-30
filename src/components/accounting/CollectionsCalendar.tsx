@@ -66,7 +66,7 @@ function getDateLabel(dateStr: string | null): { label: string; urgent: boolean 
   if (isToday(date)) return { label: 'TODAY', urgent: true };
   if (isTomorrow(date)) return { label: 'Tomorrow', urgent: true };
   if (isThisWeek(date)) return { label: format(date, 'EEEE'), urgent: false };
-  return { label: format(date, 'MMM d'), urgent: false };
+  return { label: format(date, 'MMM d, yyyy'), urgent: false };
 }
 
 function exportCollectionsCSV(data: CollectionEntry[]) {

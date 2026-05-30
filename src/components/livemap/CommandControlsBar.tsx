@@ -103,7 +103,7 @@ export function CommandControlsBar({
               className="h-8 px-3"
             >
               <CalendarIcon className="h-4 w-4 mr-1" />
-              {!isToday && !isTomorrow ? format(selectedDate, 'MMM d') : 'Custom'}
+              {!isToday && !isTomorrow ? format(selectedDate, 'MMM d, yyyy') : 'Custom'}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">

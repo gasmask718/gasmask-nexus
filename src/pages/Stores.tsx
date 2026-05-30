@@ -840,8 +840,8 @@ const Stores = () => {
           <div className="flex gap-2">
             {([
               { key: 'all', label: 'All' },
-              { key: 'active', label: 'Active' },
-              { key: 'inactive', label: 'Inactive' },
+              { key: 'active', label: 'Invoiced' },
+              { key: 'inactive', label: 'Never Invoiced' },
             ] as const).map(({ key, label }) => {
               const count = key === 'all' ? stores.length : key === 'active' ? stores.filter(s => isStoreActive(s.id)).length : stores.filter(s => !isStoreActive(s.id)).length;
               return (
@@ -864,7 +864,7 @@ const Stores = () => {
 
         {/* Relationship Status (9-state) Filter */}
         <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-xs text-muted-foreground mr-1">Relationship:</span>
+          <span className="text-xs text-muted-foreground mr-1" title="Relationship health from store_master.relationship_status (separate from invoice activity)">Relationship health:</span>
           {(() => {
             const counts: Record<string, number> = { all: stores.length };
             for (const s of STORE_RELATIONSHIP_STATUSES) counts[s] = 0;

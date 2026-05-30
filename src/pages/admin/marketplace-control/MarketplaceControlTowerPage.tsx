@@ -437,7 +437,7 @@ export default function MarketplaceControlTowerPage() {
                                     <div>
                                       <p className="text-muted-foreground text-[10px] mb-1">Payment Timeline</p>
                                       <p className="font-mono">{Math.round(o.hoursSincePaid)}h since payment</p>
-                                      <p className="text-muted-foreground">{o.created_at ? format(new Date(o.created_at), 'MMM d, h:mm a') : '—'}</p>
+                                      <p className="text-muted-foreground">{o.created_at ? format(new Date(o.created_at), 'MMM d, yyyy · h:mm a') : '—'}</p>
                                     </div>
                                     <div>
                                       <p className="text-muted-foreground text-[10px] mb-1">Vendor Performance</p>
@@ -569,7 +569,7 @@ export default function MarketplaceControlTowerPage() {
                             <TableCell className="text-xs font-mono">{s.wholesaler_id?.slice(0, 8)}</TableCell>
                             <TableCell className="text-right font-mono font-bold text-xs">${(s.net_amount || 0).toFixed(2)}</TableCell>
                             <TableCell><Badge variant="outline" className="text-[10px]">{s.status}</Badge></TableCell>
-                            <TableCell className="text-xs">{releaseAt ? format(releaseAt, 'MMM d, h:mm a') : '—'}</TableCell>
+                            <TableCell className="text-xs">{releaseAt ? format(releaseAt, 'MMM d, yyyy · h:mm a') : '—'}</TableCell>
                             <TableCell>
                               {hoursLeft !== null ? (
                                 <div className="space-y-1">
@@ -641,7 +641,7 @@ export default function MarketplaceControlTowerPage() {
                           <TableCell><Button variant="link" className="p-0 h-auto text-xs font-mono" onClick={() => setDeepDiveOrderId(d.id)}>{d.id.slice(0, 8)}</Button></TableCell>
                           <TableCell className="text-xs font-mono">{d.wholesaler_id?.slice(0, 8) || '—'}</TableCell>
                           <TableCell className="text-xs max-w-[150px] truncate">{d.dispute_reason || '—'}</TableCell>
-                          <TableCell className="text-xs">{d.dispute_opened_at ? format(new Date(d.dispute_opened_at), 'MMM d, h:mm a') : '—'}</TableCell>
+                          <TableCell className="text-xs">{d.dispute_opened_at ? format(new Date(d.dispute_opened_at), 'MMM d, yyyy · h:mm a') : '—'}</TableCell>
                           <TableCell><Badge variant="outline" className="text-[10px]">{d.dispute_status}</Badge></TableCell>
                           <TableCell className="text-right font-mono text-xs">${(d.total || 0).toFixed(2)}</TableCell>
                           <TableCell className="text-right">
@@ -813,7 +813,7 @@ export default function MarketplaceControlTowerPage() {
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <Badge variant="outline" className="text-[10px]">{m.sender_role}</Badge>
                               {m.message_type === 'dispute_related' && <Badge className="bg-destructive/15 text-destructive text-[10px]">Dispute</Badge>}
-                              <span className="text-[10px] text-muted-foreground">{m.created_at ? format(new Date(m.created_at), 'MMM d, h:mm a') : ''}</span>
+                              <span className="text-[10px] text-muted-foreground">{m.created_at ? format(new Date(m.created_at), 'MMM d, yyyy · h:mm a') : ''}</span>
                             </div>
                             <p className="text-sm truncate">{m.message_body}</p>
                             <p className="text-[10px] text-muted-foreground font-mono mt-1">Order: {m.order_id?.slice(0, 8)}</p>
@@ -889,7 +889,7 @@ export default function MarketplaceControlTowerPage() {
                             <TableCell className="font-mono text-xs">{a.related_vendor_id?.slice(0, 8) || '—'}</TableCell>
                             <TableCell className="text-xs max-w-[200px] truncate">{a.reason}</TableCell>
                             <TableCell className="font-mono text-xs">{a.admin_user_id?.slice(0, 8)}</TableCell>
-                            <TableCell className="text-xs">{a.created_at ? format(new Date(a.created_at), 'MMM d, h:mm a') : ''}</TableCell>
+                            <TableCell className="text-xs">{a.created_at ? format(new Date(a.created_at), 'MMM d, yyyy · h:mm a') : ''}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

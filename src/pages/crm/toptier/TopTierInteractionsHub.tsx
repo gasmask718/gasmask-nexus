@@ -216,7 +216,7 @@ export default function TopTierInteractionsHub() {
                           </p>
                           <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
-                            {format(interaction.date, 'MMM d, h:mm a')}
+                            {format(interaction.date, 'MMM d, yyyy · h:mm a')}
                           </div>
                         </div>
                       </div>

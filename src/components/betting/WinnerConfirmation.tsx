@@ -619,7 +619,7 @@ export function WinnerConfirmation() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Brain className="w-5 h-5 text-purple-400" />
-                <span className="font-medium text-purple-400">AI Accuracy for {format(selectedDate, 'MMM d')}</span>
+                <span className="font-medium text-purple-400">AI Accuracy for {format(selectedDate, 'MMM d, yyyy')}</span>
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-sm">
