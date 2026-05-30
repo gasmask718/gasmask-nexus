@@ -1,15 +1,17 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Phone, MessageSquare, Bot, ChevronRight, Users, Flame, Percent, Tag } from 'lucide-react';
+import { Phone, MessageSquare, Bot, ChevronRight, Users, Flame, Percent, Tag, Truck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePriorCustomerSegmentMap, FLOW_STATUS_META, type FlowStatus } from '@/hooks/usePriorCustomerSegmentMap';
 import { NeighborhoodStoreBreakdown } from '@/components/territory/NeighborhoodStoreBreakdown';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 
 const fmt = (n: number) => Number(n || 0).toLocaleString();
 
@@ -17,6 +19,36 @@ export default function NeighborhoodDetailPage() {
   const { neighborhood: rawNeigh } = useParams<{ neighborhood: string }>();
   const neighborhood = decodeURIComponent(rawNeigh || '');
   const navigate = useNavigate();
+
+  const [dispatchOpen, setDispatchOpen] = useState(false);
+  const [dispatchStoreIds, setDispatchStoreIds] = useState<string[]>([]);
+  const [isLoadingDispatch, setIsLoadingDispatch] = useState(false);
+
+  const handleDispatchNeighborhood = async () => {
+    setIsLoadingDispatch(true);
+    try {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id')
+        .is('deleted_at', null)
+        .eq('approval_status', 'approved')
+        .eq('neighborhood', neighborhood)
+        .limit(500);
+      if (error) throw error;
+      const ids = (data || []).map((s: any) => s.id);
+      if (ids.length === 0) {
+        toast.warning(`No approved stores found in ${neighborhood}`);
+        return;
+      }
+      setDispatchStoreIds(ids);
+      setDispatchOpen(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to load stores');
+    } finally {
+      setIsLoadingDispatch(false);
+    }
+  };
+
 
   const intel = useQuery({
     queryKey: ['neigh-intel', neighborhood],
@@ -157,6 +189,9 @@ export default function NeighborhoodDetailPage() {
           <Button variant="outline" onClick={() => navigate(`/communication/messaging?neighborhood=${encodeURIComponent(neighborhood)}`)}>
             <MessageSquare className="h-4 w-4" /> SMS Blast
           </Button>
+          <Button variant="default" onClick={handleDispatchNeighborhood} disabled={isLoadingDispatch}>
+            <Truck className="h-4 w-4" /> {isLoadingDispatch ? 'Loading…' : `Dispatch ${neighborhood}`}
+          </Button>
         </CardContent>
       </Card>
 
@@ -236,6 +271,21 @@ export default function NeighborhoodDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      <RouteAssignmentDialog
+        open={dispatchOpen}
+        onOpenChange={(open) => {
+          setDispatchOpen(open);
+          if (!open) setDispatchStoreIds([]);
+        }}
+        assigneeId=""
+        assigneeName=""
+        assigneeType="driver"
+        assigneeUserId={null}
+        bulkMode={dispatchStoreIds.length > 1}
+        preselectedStores={dispatchStoreIds}
+        prefilledTerritory={neighborhood}
+      />
     </div>
   );
 }
