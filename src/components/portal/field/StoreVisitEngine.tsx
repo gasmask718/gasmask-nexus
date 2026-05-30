@@ -98,6 +98,9 @@ export interface StoreVisitData {
     secureLevel: 'low' | 'medium' | 'high';
     sellsFlowers: boolean;
     interestedInCleaning: boolean;
+    additionalItemsWanted: string;
+    topSellingItems: string;
+    mostNeededItems: string;
   };
   // Notes
   internalNotes: string;
