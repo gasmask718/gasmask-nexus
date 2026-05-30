@@ -765,9 +765,9 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Batch Details
+            <BilingualLabel tKey="production.batch_details" en="Batch Details" inline />
             <Badge className={cn(STATUS_CONFIG[batch.status || 'open'].color)}>
-              {STATUS_CONFIG[batch.status || 'open'].label}
+              {t(STATUS_CONFIG[batch.status || 'open'].tKey)}
             </Badge>
           </DialogTitle>
         </DialogHeader>
@@ -779,23 +779,23 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
             <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
               <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-3 flex items-center gap-2">
                 <Package className="h-4 w-4" />
-                Issued to Office
+                <BilingualLabel tKey="production.issued_to_office" en="Issued to Office" inline />
               </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tobacco</span>
-                  <span className="font-medium">{batch.tobacco_lbs ?? 0} lbs</span>
+                  <span className="text-muted-foreground">{t('production.tobacco')}</span>
+                  <span className="font-medium">{batch.tobacco_lbs ?? 0} {t('production.lbs')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tubes</span>
+                  <span className="text-muted-foreground">{t('production.tubes')}</span>
                   <span className="font-medium">{(batch.tubes_total || 0).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Stickers</span>
+                  <span className="text-muted-foreground">{t('production.stickers')}</span>
                   <span className="font-medium">{totalStickersIssued.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Empty Boxes</span>
+                  <span className="text-muted-foreground">{t('production.empty_boxes')}</span>
                   <span className="font-medium">{totalEmptyBoxesIssued.toLocaleString()}</span>
                 </div>
               </div>
@@ -805,23 +805,23 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
             <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800">
               <h4 className="font-medium text-emerald-800 dark:text-emerald-200 mb-3 flex items-center gap-2">
                 <Scale className="h-4 w-4" />
-                Used in Production
+                <BilingualLabel tKey="production.used_in_production" en="Used in Production" inline />
               </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Boxes Completed</span>
+                  <span className="text-muted-foreground">{t('production.boxes_completed')}</span>
                   <span className="font-medium text-primary">{totalBoxes.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tubes Used</span>
+                  <span className="text-muted-foreground">{t('production.tubes_used')}</span>
                   <span className="font-medium">{totalTubes.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Stickers Used</span>
+                  <span className="text-muted-foreground">{t('production.stickers_used')}</span>
                   <span className="font-medium">{totalStickersUsed.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Empty Boxes Used</span>
+                  <span className="text-muted-foreground">{t('production.empty_boxes_used')}</span>
                   <span className="font-medium">{totalEmptyBoxesUsed.toLocaleString()}</span>
                 </div>
               </div>
@@ -830,7 +830,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
 
           {/* Variance Summary */}
           <div className="p-3 bg-muted/50 rounded-lg">
-            <h4 className="font-medium mb-2 text-sm">Variance</h4>
+            <h4 className="font-medium mb-2 text-sm"><BilingualLabel tKey="production.variance" en="Variance" inline /></h4>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <p className={cn(
@@ -839,7 +839,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                 )}>
                   {((batch.tubes_total || 0) - totalTubes) >= 0 ? '+' : ''}{(batch.tubes_total || 0) - totalTubes}
                 </p>
-                <p className="text-xs text-muted-foreground">Tubes</p>
+                <p className="text-xs text-muted-foreground">{t('production.tubes')}</p>
               </div>
               <div>
                 <p className={cn(
@@ -848,7 +848,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                 )}>
                   {(totalStickersIssued - totalStickersUsed) >= 0 ? '+' : ''}{totalStickersIssued - totalStickersUsed}
                 </p>
-                <p className="text-xs text-muted-foreground">Stickers</p>
+                <p className="text-xs text-muted-foreground">{t('production.stickers')}</p>
               </div>
               <div>
                 <p className={cn(
@@ -857,7 +857,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                 )}>
                   {(totalEmptyBoxesIssued - totalEmptyBoxesUsed) >= 0 ? '+' : ''}{totalEmptyBoxesIssued - totalEmptyBoxesUsed}
                 </p>
-                <p className="text-xs text-muted-foreground">Empty Boxes</p>
+                <p className="text-xs text-muted-foreground">{t('production.empty_boxes')}</p>
               </div>
             </div>
           </div>
@@ -867,17 +867,17 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
             <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
               <h4 className="font-medium text-red-800 dark:text-red-200 mb-2 flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
-                Defects: {totalDefects}
+                {t('production.defects')}: {totalDefects}
               </h4>
               <div className="space-y-1">
                 {outputs.filter(o => o.defects_count > 0).map(o => (
                   <div key={o.id} className="text-sm flex items-center gap-2">
                     <Badge variant="destructive" className="text-xs">{o.defects_count}</Badge>
                     {o.defect_category ? (
-                      <Badge variant="outline" className="text-xs">{o.defect_category}</Badge>
+                      <Badge variant="outline" className="text-xs">{t(`production.defect.${o.defect_category}`)}</Badge>
                     ) : (
                       <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
-                        No Category
+                        {t('production.no_category')}
                       </Badge>
                     )}
                     <span className="text-muted-foreground">{o.brand}</span>
@@ -889,9 +889,9 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
 
           {/* Recorded Outputs */}
           <div>
-            <h4 className="font-medium mb-2">Recorded Outputs by Brand</h4>
+            <h4 className="font-medium mb-2"><BilingualLabel tKey="production.recorded_outputs" en="Recorded Outputs by Brand" inline /></h4>
             {outputs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No outputs recorded yet.</p>
+              <p className="text-sm text-muted-foreground">{t('production.no_outputs')}</p>
             ) : (
               <div className="space-y-2">
                 {outputs.map(output => {
@@ -911,20 +911,20 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-primary font-medium">{output.boxes_completed} boxes</span>
+                          <span className="text-primary font-medium">{output.boxes_completed} {t('production.boxes_lower')}</span>
                           {output.defects_count > 0 && (
                             <Badge variant="destructive" className="text-xs">
-                              {output.defects_count} defects
+                              {output.defects_count} {t('production.defects_lower')}
                             </Badge>
                           )}
                         </div>
                       </div>
                       <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
-                        <span>{output.tubes_used} tubes</span>
-                        <span>{output.stickers_used} stickers</span>
-                        <span>{output.empty_boxes_used} boxes</span>
+                        <span>{output.tubes_used} {t('production.tubes').toLowerCase()}</span>
+                        <span>{output.stickers_used} {t('production.stickers').toLowerCase()}</span>
+                        <span>{output.empty_boxes_used} {t('production.boxes_lower')}</span>
                         {output.defect_category && (
-                          <span className="text-destructive">{output.defect_category}</span>
+                          <span className="text-destructive">{t(`production.defect.${output.defect_category}`)}</span>
                         )}
                       </div>
                     </div>
@@ -937,14 +937,14 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
           {/* Record New Output */}
           {batch.status !== 'completed' && batch.status !== 'cancelled' && (
             <div className="border-t pt-4">
-              <h4 className="font-medium mb-3">Record Output</h4>
+              <h4 className="font-medium mb-3"><BilingualLabel tKey="production.record_output" en="Record Output" inline /></h4>
               
               {/* Defect Category Warning */}
               {showDefectWarning && (
                 <Alert variant="default" className="mb-3 border-amber-200 bg-amber-50 dark:bg-amber-950/30">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-800 dark:text-amber-200">
-                    Recording defects without a category. For better analytics, select a defect category.
+                    {t('production.defect_warning')}
                   </AlertDescription>
                 </Alert>
               )}
@@ -954,14 +954,14 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                 <div className="mb-3">
                   <Label className="flex items-center gap-1">
                     <User className="h-3 w-3" />
-                    Worker (Required for tracking)
+                    <BilingualLabel tKey="production.worker_required" en="Worker (Required for tracking)" inline />
                   </Label>
                   <Select
                     value={outputForm.worker_id}
                     onValueChange={(value) => setOutputForm({ ...outputForm, worker_id: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select worker..." />
+                      <SelectValue placeholder={t('production.select_worker')} />
                     </SelectTrigger>
                     <SelectContent>
                       {availableWorkers.map(worker => (
@@ -976,7 +976,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
               
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <Label>Brand</Label>
+                  <Label><BilingualLabel tKey="production.brand" en="Brand" inline /></Label>
                   <Select
                     value={outputForm.brand}
                     onValueChange={(value: any) => setOutputForm({ ...outputForm, brand: value })}
@@ -994,7 +994,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                   </Select>
                 </div>
                 <div>
-                  <Label>Boxes Completed</Label>
+                  <Label><BilingualLabel tKey="production.boxes_completed" en="Boxes Completed" inline /></Label>
                   <Input
                     type="number"
                     value={outputForm.boxes_completed}
@@ -1003,7 +1003,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                   />
                 </div>
                 <div>
-                  <Label>Tubes Used</Label>
+                  <Label><BilingualLabel tKey="production.tubes_used" en="Tubes Used" inline /></Label>
                   <Input
                     type="number"
                     value={outputForm.tubes_used}
@@ -1014,7 +1014,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
               </div>
               <div className="grid grid-cols-3 gap-3 mt-3">
                 <div>
-                  <Label>Stickers Used</Label>
+                  <Label><BilingualLabel tKey="production.stickers_used" en="Stickers Used" inline /></Label>
                   <Input
                     type="number"
                     value={outputForm.stickers_used}
@@ -1023,7 +1023,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                   />
                 </div>
                 <div>
-                  <Label>Empty Boxes Used</Label>
+                  <Label><BilingualLabel tKey="production.empty_boxes_used" en="Empty Boxes Used" inline /></Label>
                   <Input
                     type="number"
                     value={outputForm.empty_boxes_used}
@@ -1032,7 +1032,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                   />
                 </div>
                 <div>
-                  <Label>Defects</Label>
+                  <Label><BilingualLabel tKey="production.defects" en="Defects" inline /></Label>
                   <Input
                     type="number"
                     value={outputForm.defects_count}
@@ -1048,23 +1048,23 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
               {/* Time & Motion (Optional) */}
               <div className="grid grid-cols-2 gap-3 mt-3">
                 <div>
-                  <Label>Avg Tube Fill (seconds)</Label>
+                  <Label><BilingualLabel tKey="production.avg_tube_fill" en="Avg Tube Fill (seconds)" inline /></Label>
                   <Input
                     type="number"
                     step="0.1"
                     value={outputForm.tube_fill_seconds}
                     onChange={(e) => setOutputForm({ ...outputForm, tube_fill_seconds: e.target.value })}
-                    placeholder="Optional"
+                    placeholder={t('production.optional')}
                   />
                 </div>
                 <div>
-                  <Label>Avg Sticker Apply (seconds)</Label>
+                  <Label><BilingualLabel tKey="production.avg_sticker_apply" en="Avg Sticker Apply (seconds)" inline /></Label>
                   <Input
                     type="number"
                     step="0.1"
                     value={outputForm.sticker_apply_seconds}
                     onChange={(e) => setOutputForm({ ...outputForm, sticker_apply_seconds: e.target.value })}
-                    placeholder="Optional"
+                    placeholder={t('production.optional')}
                   />
                 </div>
               </div>
@@ -1079,7 +1079,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                 )}>
                   <div>
                     <Label className="flex items-center gap-1">
-                      Defect Category
+                      <BilingualLabel tKey="production.defect_category" en="Defect Category" inline />
                       {categoryMissing && (
                         <AlertTriangle className="h-3 w-3 text-amber-600" />
                       )}
@@ -1092,28 +1092,28 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                       }}
                     >
                       <SelectTrigger className={categoryMissing ? "border-amber-400" : ""}>
-                        <SelectValue placeholder="Select category..." />
+                        <SelectValue placeholder={t('production.select_category')} />
                       </SelectTrigger>
                       <SelectContent>
                         {DEFECT_CATEGORIES.map(cat => (
                           <SelectItem key={cat.value} value={cat.value}>
-                            {cat.label}
+                            {t(cat.tKey)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     {categoryMissing && (
                       <p className="text-xs text-amber-600 mt-1">
-                        Recommended for defect analytics
+                        {t('production.defect_recommended')}
                       </p>
                     )}
                   </div>
                   <div>
-                    <Label>Defect Notes</Label>
+                    <Label><BilingualLabel tKey="production.defect_notes" en="Defect Notes" inline /></Label>
                     <Input
                       value={outputForm.defect_reason}
                       onChange={(e) => setOutputForm({ ...outputForm, defect_reason: e.target.value })}
-                      placeholder="Additional details..."
+                      placeholder={t('production.additional_details')}
                     />
                   </div>
                 </div>
@@ -1124,7 +1124,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                 onClick={handleRecordOutput}
                 disabled={!outputForm.boxes_completed || recordOutput.isPending}
               >
-                Record Output
+                <BilingualLabel tKey="production.record_output" en="Record Output" inline />
               </Button>
             </div>
           )}
@@ -1132,9 +1132,10 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Close
+            <BilingualLabel tKey="production.close" en="Close" inline />
           </Button>
         </DialogFooter>
+
       </DialogContent>
     </Dialog>
   );
