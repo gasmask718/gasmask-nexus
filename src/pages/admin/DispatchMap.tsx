@@ -2,40 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CheckCircle2, XCircle } from 'lucide-react';
+import { DISPATCH_REGISTRY, type DispatchStatus } from '@/config/dispatchRegistry';
 
-type Status = 'wired' | 'unwired';
+type Status = DispatchStatus;
 
-interface Row {
-  floor: string;
-  path?: string;
-  shows: string;
-  status: Status;
-  note?: string;
-}
-
-const ROWS: Row[] = [
-  // GREEN — dispatch wired
-  { floor: 'Ambassador Profile', path: '/ambassadors/:id', shows: 'Stores owned/managed by an ambassador', status: 'wired' },
-  { floor: 'Stores (master list)', path: '/stores', shows: 'All approved stores', status: 'wired' },
-  { floor: 'Neighborhood Coverage', path: '/territory/neighborhoods', shows: 'Stores grouped by neighborhood', status: 'wired' },
-  { floor: 'Sell-Through', path: '/grabba/sell-through', shows: 'Stores ranked by inventory velocity', status: 'wired' },
-  { floor: 'All Opportunities', path: '/crm/opportunities', shows: 'Merged high-intent store signals', status: 'wired' },
-  { floor: 'Store Detail', path: '/stores/:id', shows: 'Single store dispatch action', status: 'wired' },
-  { floor: 'CRM Follow-Ups', path: '/crm/followups', shows: 'Stores with pending follow-up', status: 'wired' },
-  { floor: 'Manual Call console', path: '/communication/manual-call', shows: 'Stores queued for outbound', status: 'wired' },
-  { floor: 'Pending Route Stops', path: '/routes/pending-stops', shows: 'Stops awaiting assignment', status: 'wired' },
-  { floor: 'Territory Map', path: '/territory/map', shows: 'Geospatial store view', status: 'wired' },
-
-  // RED — has stores but not wired
-  { floor: 'Store Intelligence', path: '/grabba/store-intelligence', shows: 'AI-scored stores (0-100)', status: 'wired' },
-  { floor: 'Grabba StoreMasterProfile', path: '/grabba/stores/:id', shows: 'Master profile of a single store', status: 'wired' },
-  { floor: 'OS NeighborhoodIntelligence', path: '/os/neighborhood-intelligence', shows: 'Neighborhood-level signals + stores', status: 'wired' },
-  { floor: 'Floor9 Predictions', path: '/grabba/floor9/predictions', shows: 'Stores predicted to need visit', status: 'wired', note: 'Multi-select + Dispatch Selected + Dispatch All Flagged + per-row Add-to-Route' },
-  { floor: 'Grabba ClusterDashboard', path: '/grabba/clusters', shows: 'Stores grouped into clusters', status: 'wired', note: 'Dispatch by Brand panel: brand filter + multi-select + per-row Add-to-Route' },
-  { floor: 'Floor1 BrandCRM', path: '/floor1/brand-crm', shows: 'Brand-level CRM store roster', status: 'wired', note: 'Roster: multi-select + Dispatch Selected + per-row Add-to-Route' },
-  { floor: 'Ambassador StoresList', path: '/ambassador/stores', shows: 'Ambassador-portal store list', status: 'wired', note: 'Pre-filled assignee = self (ambassador role), RLS-scoped' },
-];
-
+const ROWS = DISPATCH_REGISTRY;
 const wiredCount = ROWS.filter((r) => r.status === 'wired').length;
 const unwiredCount = ROWS.filter((r) => r.status === 'unwired').length;
 
