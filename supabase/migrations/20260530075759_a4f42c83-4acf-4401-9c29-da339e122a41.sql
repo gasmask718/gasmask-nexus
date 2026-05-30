@@ -1,0 +1,1 @@
+DELETE FROM public.routes WHERE id IN ('aaaa1111-aaaa-1111-aaaa-111111111111','bbbb2222-bbbb-2222-bbbb-222222222222');

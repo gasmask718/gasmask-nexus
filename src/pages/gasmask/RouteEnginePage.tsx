@@ -70,7 +70,10 @@ export default function RouteEnginePage() {
   const [showRouteBuilder, setShowRouteBuilder] = useState(false);
   const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
   const [routeBuilderStep, setRouteBuilderStep] = useState(1);
-  const [routeConfig, setRouteConfig] = useState({ driver_name: '', scheduled_date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
+  const [routeConfig, setRouteConfig] = useState({ scheduled_date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
+  const [selectedAssignee, setSelectedAssignee] = useState<{ id: string; name: string; userId: string; role: 'driver' | 'biker' | 'ambassador' } | null>(null);
+  const [assigneeSearch, setAssigneeSearch] = useState('');
+
   const [buildingRoute, setBuildingRoute] = useState(false);
   const [detailTrigger, setDetailTrigger] = useState<any>(null);
   const [detailTab, setDetailTab] = useState<'details' | 'actions' | 'history'>('details');
@@ -124,6 +127,23 @@ export default function RouteEnginePage() {
       return data || [];
     },
   });
+
+  // Fetch assignable people across all 3 roles (active + has user_id)
+  const { data: assignablePeople = [] } = useQuery({
+    queryKey: ['route-engine-assignable-people'],
+    queryFn: async () => {
+      const [drv, bk, amb] = await Promise.all([
+        (supabase as any).from('drivers').select('id, full_name, user_id').eq('status', 'active').not('user_id', 'is', null).order('full_name'),
+        (supabase as any).from('bikers').select('id, full_name, user_id').eq('status', 'active').not('user_id', 'is', null).order('full_name'),
+        (supabase as any).from('ambassadors').select('id, name, user_id').eq('is_active', true).not('user_id', 'is', null).order('name'),
+      ]);
+      const drivers = (drv.data || []).map((r: any) => ({ id: r.id, name: r.full_name || 'Driver', userId: r.user_id, role: 'driver' as const }));
+      const bikers = (bk.data || []).map((r: any) => ({ id: r.id, name: r.full_name || 'Biker', userId: r.user_id, role: 'biker' as const }));
+      const ambs = (amb.data || []).map((r: any) => ({ id: r.id, name: (r.name || '').trim() || 'Ambassador', userId: r.user_id, role: 'ambassador' as const }));
+      return [...drivers, ...bikers, ...ambs];
+    },
+  });
+
 
   // Fetch store history for detail panel
   const { data: storeHistory = [] } = useQuery({
@@ -218,21 +238,35 @@ export default function RouteEnginePage() {
 
   const buildRoute = async () => {
     if (!selectedTriggers.length) { toast.error('Select triggers first'); return; }
+    if (!selectedAssignee) { toast.error('Pick an assignee (driver, biker, or ambassador)'); return; }
     setBuildingRoute(true);
     try {
       const { data, error } = await supabase.functions.invoke('gasmask-route-agent', {
-        body: { action: 'build_route', trigger_ids: selectedTriggers, driver_name: routeConfig.driver_name, scheduled_date: routeConfig.scheduled_date, route_notes: routeConfig.notes },
+        body: {
+          action: 'build_route',
+          trigger_ids: selectedTriggers,
+          driver_name: selectedAssignee.name,
+          assigned_to_user_id: selectedAssignee.userId,
+          assignee_type: selectedAssignee.role,
+          scheduled_date: routeConfig.scheduled_date,
+          route_notes: routeConfig.notes,
+        },
       });
       if (error) throw error;
-      toast.success(`Route created: ${data?.total_stops} stops, ~${data?.estimated_hours}h`);
+      toast.success(`Route created: ${data?.total_stops} stops → ${selectedAssignee.name} (${selectedAssignee.role})`);
       setShowRouteBuilder(false);
       setSelectedTriggers([]);
       setRouteBuilderStep(1);
+      setSelectedAssignee(null);
       refetchTriggers();
-      queryClient.invalidateQueries({ queryKey: ['gasmask-route-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['gasmask-routes-canonical'] });
+      queryClient.invalidateQueries({ queryKey: ['driver-routes'] });
+      queryClient.invalidateQueries({ queryKey: ['biker-routes'] });
+      queryClient.invalidateQueries({ queryKey: ['ambassador-routes'] });
     } catch (err: any) { toast.error(err.message); }
     finally { setBuildingRoute(false); }
   };
+
 
   const completeTrigger = async (id: string) => {
     await (supabase as any).from('gasmask_visit_triggers').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', id);
@@ -926,10 +960,46 @@ export default function RouteEnginePage() {
             {routeBuilderStep === 1 && (
               <>
                 <p className="text-sm text-muted-foreground">{selectedTriggers.length} triggers selected</p>
-                <div><Label className="text-xs">Driver Name</Label><Input value={routeConfig.driver_name} onChange={e => setRouteConfig(c => ({ ...c, driver_name: e.target.value }))} placeholder="Enter driver name" /></div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Assign To (driver / biker / ambassador)</Label>
+                  {selectedAssignee && (
+                    <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/30">
+                      <Badge variant="outline" className="text-[10px] capitalize">{selectedAssignee.role}</Badge>
+                      <span className="text-sm flex-1 truncate">{selectedAssignee.name}</span>
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setSelectedAssignee(null)}><X className="h-3 w-3" /></Button>
+                    </div>
+                  )}
+                  <Input
+                    placeholder="Search name or role..."
+                    value={assigneeSearch}
+                    onChange={(e) => setAssigneeSearch(e.target.value)}
+                  />
+                  <div className="max-h-48 overflow-y-auto rounded-md border p-1">
+                    {assignablePeople
+                      .filter((p: any) => {
+                        const q = assigneeSearch.trim().toLowerCase();
+                        if (!q) return true;
+                        return p.name.toLowerCase().includes(q) || p.role.includes(q);
+                      })
+                      .map((p: any) => (
+                        <div
+                          key={`${p.role}-${p.id}`}
+                          className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-sm ${selectedAssignee?.id === p.id && selectedAssignee?.role === p.role ? 'bg-primary/10' : 'hover:bg-muted/50'}`}
+                          onClick={() => setSelectedAssignee(p)}
+                        >
+                          <span className="flex-1 truncate">{p.name}</span>
+                          <Badge variant="outline" className="text-[10px] capitalize">{p.role}</Badge>
+                        </div>
+                      ))}
+                    {assignablePeople.length === 0 && (
+                      <p className="text-xs text-muted-foreground text-center py-3">No active assignable people</p>
+                    )}
+                  </div>
+                </div>
                 <div><Label className="text-xs">Date</Label><Input type="date" value={routeConfig.scheduled_date} onChange={e => setRouteConfig(c => ({ ...c, scheduled_date: e.target.value }))} /></div>
                 <div><Label className="text-xs">Notes</Label><textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[60px]" value={routeConfig.notes} onChange={e => setRouteConfig(c => ({ ...c, notes: e.target.value }))} /></div>
-                <Button onClick={() => setRouteBuilderStep(2)} className="w-full">Next — Review Stops →</Button>
+                <Button onClick={() => setRouteBuilderStep(2)} disabled={!selectedAssignee} className="w-full">Next — Review Stops →</Button>
+
               </>
             )}
             {routeBuilderStep === 2 && (

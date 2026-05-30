@@ -19,8 +19,10 @@ import {
 } from '@/hooks/useRouteSuggestions';
 import { useBoroList } from '@/hooks/useTerritoryStats';
 import { format } from 'date-fns';
-import { BikerAssignmentDialog } from '@/components/biker/BikerAssignmentDialog';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
 
 const RouteSuggestionsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -65,20 +67,50 @@ const RouteSuggestionsPage: React.FC = () => {
     });
   };
 
-  const handleApply = (suggestion: RouteSuggestion) => {
+  const [preselectedStoreIds, setPreselectedStoreIds] = useState<string[]>([]);
+
+  const handleApply = async (suggestion: RouteSuggestion) => {
+    // Load suggestion's stop store IDs (location_id maps 1:1 to stores.id)
+    const { data: stops, error } = await supabase
+      .from('route_suggestion_stops')
+      .select('location_id, stop_order')
+      .eq('route_suggestion_id', suggestion.id)
+      .order('stop_order');
+
+    if (error) {
+      toast.error(`Failed to load suggestion stops: ${error.message}`);
+      return;
+    }
+
+    const storeIds = (stops || [])
+      .map((s: any) => s.location_id)
+      .filter((id: string | null): id is string => !!id);
+
+    if (storeIds.length === 0) {
+      toast.error('This suggestion has no stops with valid stores');
+      return;
+    }
+
+    setPreselectedStoreIds(storeIds);
     setSelectedSuggestion(suggestion);
     setAssignDialogOpen(true);
   };
 
-  const handleBikerAssigned = (bikerId?: string) => {
-    if (selectedSuggestion && bikerId) {
-      applyRoute.mutate({ 
-        suggestionId: selectedSuggestion.id, 
-        bikerId 
-      });
+  const handleRouteAssigned = async (routeIds: string[]) => {
+    if (selectedSuggestion && routeIds.length > 0) {
+      // Mark the suggestion as applied — assignee now lives on routes.assigned_to
+      const { error } = await supabase
+        .from('route_suggestions')
+        .update({ status: 'applied' })
+        .eq('id', selectedSuggestion.id);
+      if (error) toast.error(`Failed to mark suggestion applied: ${error.message}`);
+      else toast.success('Suggestion marked as applied');
     }
     setSelectedSuggestion(null);
+    setPreselectedStoreIds([]);
   };
+
+
 
   const handleDismiss = (suggestionId: string) => {
     dismissRoute.mutate(suggestionId);
@@ -286,20 +318,25 @@ const RouteSuggestionsPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Assignment Dialog */}
+        {/* Assignment Dialog — canonical route + dispatch in one flow */}
         {selectedSuggestion && (
-          <BikerAssignmentDialog
+          <RouteAssignmentDialog
             open={assignDialogOpen}
             onOpenChange={(open) => {
               setAssignDialogOpen(open);
-              if (!open) setSelectedSuggestion(null);
+              if (!open) {
+                setSelectedSuggestion(null);
+                setPreselectedStoreIds([]);
+              }
             }}
-            entityType="route"
-            entityId={selectedSuggestion.id}
-            entityName={selectedSuggestion.summary || 'Route Suggestion'}
-            onAssigned={handleBikerAssigned}
+            assigneeId=""
+            assigneeName=""
+            assigneeType="biker"
+            preselectedStores={preselectedStoreIds}
+            onAssigned={handleRouteAssigned}
           />
         )}
+
       </div>
     </Layout>
   );

@@ -293,7 +293,7 @@ Return ONLY valid JSON:
     }
 
     if (action === 'build_route') {
-      const { trigger_ids, driver_name, scheduled_date, route_notes } = body;
+      const { trigger_ids, driver_name, assigned_to_user_id, assignee_type, scheduled_date, route_notes } = body;
 
       if (!trigger_ids?.length) {
         return new Response(
@@ -342,13 +342,18 @@ Return ONLY valid JSON:
 
       const totalDuration = triggers?.reduce((sum: number, t: any) => sum + (t.visit_duration_minutes || 20), 0) || 0;
 
-      // CANONICAL WRITE: insert into routes (not gasmask_route_runs)
+      // CANONICAL WRITE: assigned_to MUST be a real user_id so the route shows on the assignee's dashboard.
+      const routeType = (assignee_type === 'driver' || assignee_type === 'biker' || assignee_type === 'ambassador')
+        ? assignee_type
+        : 'driver';
+
       const { data: route, error: routeErr } = await supabase
         .from('routes')
         .insert({
-          name: `Route ${scheduled_date} - ${driver_name || 'Driver'}`,
+          name: `Route ${scheduled_date} - ${driver_name || 'Unassigned'}`,
           date: scheduled_date,
-          type: 'driver',
+          type: routeType,
+          assigned_to: assigned_to_user_id || null,
           status: 'planned',
           source: 'gasmask_agent',
           total_stops: trigger_ids.length,
@@ -357,6 +362,7 @@ Return ONLY valid JSON:
         })
         .select()
         .single();
+
 
       if (routeErr) throw routeErr;
 
