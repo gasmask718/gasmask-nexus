@@ -72,7 +72,14 @@ export function AmbassadorPortalNav() {
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">{item.label}</span>
+                <span className="hidden sm:inline">
+                  {t(item.i18n)}
+                  {language !== 'en' && (
+                    <span className="ml-1 text-[10px] uppercase tracking-wide text-muted-foreground/70">
+                      {item.label}
+                    </span>
+                  )}
+                </span>
                 {wired && (
                   <span
                     title={DISPATCH_TOOLTIP}
