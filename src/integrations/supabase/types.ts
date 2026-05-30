@@ -6424,6 +6424,7 @@ export type Database = {
           revoked_at: string | null
           revoked_by: string | null
           status: Database["public"]["Enums"]["ambassador_invite_status"]
+          target_ambassador_id: string | null
           token_hash: string
           used_at: string | null
           used_by_user_id: string | null
@@ -6446,6 +6447,7 @@ export type Database = {
           revoked_at?: string | null
           revoked_by?: string | null
           status?: Database["public"]["Enums"]["ambassador_invite_status"]
+          target_ambassador_id?: string | null
           token_hash: string
           used_at?: string | null
           used_by_user_id?: string | null
@@ -6468,6 +6470,7 @@ export type Database = {
           revoked_at?: string | null
           revoked_by?: string | null
           status?: Database["public"]["Enums"]["ambassador_invite_status"]
+          target_ambassador_id?: string | null
           token_hash?: string
           used_at?: string | null
           used_by_user_id?: string | null
@@ -6497,6 +6500,34 @@ export type Database = {
           {
             foreignKeyName: "ambassador_invites_invited_by_ambassador_id_fkey"
             columns: ["invited_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_invites_target_ambassador_id_fkey"
+            columns: ["target_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_invites_target_ambassador_id_fkey"
+            columns: ["target_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_invites_target_ambassador_id_fkey"
+            columns: ["target_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_invites_target_ambassador_id_fkey"
+            columns: ["target_ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
             referencedColumns: ["ambassador_id"]
@@ -116041,10 +116072,20 @@ export type Database = {
         }
         Returns: string
       }
-      create_ambassador_invite: {
-        Args: { p_email?: string; p_phone?: string; p_region_id?: string }
-        Returns: Json
-      }
+      create_ambassador_invite:
+        | {
+            Args: { p_email?: string; p_phone?: string; p_region_id?: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_email?: string
+              p_phone?: string
+              p_region_id?: string
+              p_target_ambassador_id?: string
+            }
+            Returns: Json
+          }
       create_commission_reversal: {
         Args: { p_ledger_id: string; p_reason?: string }
         Returns: string

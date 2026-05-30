@@ -79,12 +79,13 @@ export function useCreateInvite() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ email, phone }: { email?: string; phone?: string }) => {
+    mutationFn: async ({ email, phone, targetAmbassadorId }: { email?: string; phone?: string; targetAmbassadorId?: string }) => {
       const { data, error } = await supabase.rpc('create_ambassador_invite', {
         p_email: email || null,
         p_phone: phone || null,
         p_region_id: null,
-      });
+        p_target_ambassador_id: targetAmbassadorId || null,
+      } as any);
       if (error) throw error;
       const result = data as any;
       if (!result?.success) throw new Error(result?.error || 'Failed to create invite');
