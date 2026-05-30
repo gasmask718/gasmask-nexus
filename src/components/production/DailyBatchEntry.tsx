@@ -49,24 +49,25 @@ const BRANDS = [
   { id: 'grabba-rus', label: 'GrabbaRus', color: 'bg-purple-500' },
 ];
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  open: { label: 'Open', color: 'bg-blue-100 text-blue-800', icon: <Package className="h-4 w-4" /> },
-  in_progress: { label: 'In Progress', color: 'bg-amber-100 text-amber-800', icon: <Play className="h-4 w-4" /> },
-  completed: { label: 'Completed', color: 'bg-emerald-100 text-emerald-800', icon: <CheckCircle className="h-4 w-4" /> },
-  cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-800', icon: <XCircle className="h-4 w-4" /> },
+const STATUS_CONFIG: Record<string, { tKey: string; en: string; color: string; icon: React.ReactNode }> = {
+  open: { tKey: 'production.status.open', en: 'Open', color: 'bg-blue-100 text-blue-800', icon: <Package className="h-4 w-4" /> },
+  in_progress: { tKey: 'production.status.in_progress', en: 'In Progress', color: 'bg-amber-100 text-amber-800', icon: <Play className="h-4 w-4" /> },
+  completed: { tKey: 'production.status.completed', en: 'Completed', color: 'bg-emerald-100 text-emerald-800', icon: <CheckCircle className="h-4 w-4" /> },
+  cancelled: { tKey: 'production.status.cancelled', en: 'Cancelled', color: 'bg-red-100 text-red-800', icon: <XCircle className="h-4 w-4" /> },
 };
 
 const DEFECT_CATEGORIES = [
-  { value: 'underfilled', label: 'Underfilled' },
-  { value: 'overfilled', label: 'Overfilled' },
-  { value: 'loose_sticker', label: 'Loose Sticker' },
-  { value: 'torn_tube', label: 'Torn Tube' },
-  { value: 'moisture', label: 'Moisture Damage' },
-  { value: 'contamination', label: 'Contamination' },
-  { value: 'label_misaligned', label: 'Label Misaligned' },
-  { value: 'packaging_damage', label: 'Packaging Damage' },
-  { value: 'other', label: 'Other' },
+  { value: 'underfilled', tKey: 'production.defect.underfilled', en: 'Underfilled' },
+  { value: 'overfilled', tKey: 'production.defect.overfilled', en: 'Overfilled' },
+  { value: 'loose_sticker', tKey: 'production.defect.loose_sticker', en: 'Loose Sticker' },
+  { value: 'torn_tube', tKey: 'production.defect.torn_tube', en: 'Torn Tube' },
+  { value: 'moisture', tKey: 'production.defect.moisture', en: 'Moisture Damage' },
+  { value: 'contamination', tKey: 'production.defect.contamination', en: 'Contamination' },
+  { value: 'label_misaligned', tKey: 'production.defect.label_misaligned', en: 'Label Misaligned' },
+  { value: 'packaging_damage', tKey: 'production.defect.packaging_damage', en: 'Packaging Damage' },
+  { value: 'other', tKey: 'production.defect.other', en: 'Other' },
 ];
+
 
 export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
   const { data: batches = [], isLoading } = useTodayBatches(officeId);
