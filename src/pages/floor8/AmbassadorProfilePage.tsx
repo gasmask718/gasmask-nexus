@@ -11,7 +11,7 @@ import {
   ArrowLeft, User, MapPin, Phone, Mail, Store, DollarSign,
   TrendingUp, TrendingDown, Minus, MessageSquare,
   AlertTriangle, Wallet, Star, ShoppingBag, TrendingUp as TrendingUpIcon2,
-  StickyNote
+  StickyNote, Route as RouteIcon
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
@@ -32,6 +32,7 @@ import { EntityNotesSection } from '@/components/grabba/EntityNotesSection';
 import { TerritoryCoveragePanel } from '@/components/ambassador/TerritoryCoveragePanel';
 import { ProfileCompletenessScore, computeAmbassadorCompleteness } from '@/components/profile/ProfileCompletenessScore';
 import { useAmbassadorTerritory } from '@/hooks/useAmbassadorTerritory';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 
 export default function AmbassadorProfilePage() {
   const { ambassadorId } = useParams<{ ambassadorId: string }>();
