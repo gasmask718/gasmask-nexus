@@ -20,8 +20,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ExportButton } from '@/components/crud/ExportButton';
-import { Search, ExternalLink, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, ExternalLink, ArrowUpDown, ChevronLeft, ChevronRight, Route as RouteIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import type { BrandCRMStoreRow } from '@/hooks/useBrandCRMAnalytics';
 import { getBrandDisplayName } from '@/config/brands';
 
@@ -72,6 +74,8 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [dispatchStores, setDispatchStores] = useState<string[]>([]);
 
   const filtered = useMemo(() => {
     let rows = stores;
@@ -150,6 +154,7 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
   );
 
   return (
+    <>
     <Card>
       <CardHeader className="pb-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -178,6 +183,15 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
               columns={exportColumns}
               disabled={filtered.length === 0}
             />
+            <Button
+              size="sm"
+              className="h-8 text-xs"
+              disabled={selectedIds.length === 0}
+              onClick={() => setDispatchStores(selectedIds)}
+            >
+              <RouteIcon className="h-3 w-3 mr-1" />
+              Dispatch Selected ({selectedIds.length})
+            </Button>
           </div>
         </div>
 
@@ -238,6 +252,17 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={pageRows.length > 0 && pageRows.every(r => selectedIds.includes(r.store_id))}
+                        onCheckedChange={(c) => {
+                          const ids = pageRows.map(r => r.store_id);
+                          setSelectedIds(prev => c
+                            ? Array.from(new Set([...prev, ...ids]))
+                            : prev.filter(id => !ids.includes(id)));
+                        }}
+                      />
+                    </TableHead>
                     <SortHeader label="Store" sortKeyVal="store_name" />
                     <TableHead>Location</TableHead>
                     <SortHeader label="Orders" sortKeyVal="total_orders_lifetime" />
@@ -248,13 +273,13 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
                     <SortHeader label="Velocity" sortKeyVal="order_frequency_class" />
                     <TableHead>Health</TableHead>
                     <TableHead>Ambassador</TableHead>
-                    <TableHead className="w-10"></TableHead>
+                    <TableHead className="w-16"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pageRows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
                         No stores found for current filters.
                       </TableCell>
                     </TableRow>
@@ -265,6 +290,16 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => navigate(`/store-master/${row.store_id}`)}
                       >
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedIds.includes(row.store_id)}
+                            onCheckedChange={(c) => {
+                              setSelectedIds(prev => c
+                                ? [...prev, row.store_id]
+                                : prev.filter(id => id !== row.store_id));
+                            }}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium max-w-[200px] truncate">
                           {row.store_name}
                         </TableCell>
@@ -289,15 +324,26 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
                         <TableCell className="text-xs text-muted-foreground max-w-[100px] truncate">
                           {row.ambassador_name || '—'}
                         </TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 p-0"
-                            onClick={e => { e.stopPropagation(); navigate(`/store-master/${row.store_id}`); }}
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              title="Add to Route"
+                              onClick={() => setDispatchStores([row.store_id])}
+                            >
+                              <RouteIcon className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              onClick={() => navigate(`/store-master/${row.store_id}`)}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -341,5 +387,19 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
         )}
       </CardContent>
     </Card>
+    <RouteAssignmentDialog
+      open={dispatchStores.length > 0}
+      onOpenChange={(o) => {
+        if (!o) {
+          setDispatchStores([]);
+        }
+      }}
+      assigneeId=""
+      assigneeName=""
+      assigneeType="driver"
+      bulkMode={dispatchStores.length > 1}
+      preselectedStores={dispatchStores}
+    />
+    </>
   );
 }
