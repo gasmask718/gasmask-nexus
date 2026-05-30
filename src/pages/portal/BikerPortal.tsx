@@ -45,6 +45,8 @@ export default function BikerPortal() {
           <Route path="delivery" element={<MakeDeliveryPage portalType="biker" />} />
           <Route path="delivery/:deliveryId" element={<MakeDeliveryPage portalType="biker" />} />
           <Route path="delivery-tasks" element={<BikerDeliveryTasks />} />
+          <Route path="route" element={<BikerTodaysRoutesPage />} />
+          <Route path="routes" element={<BikerTodaysRoutesPage />} />
           <Route path="assigned-orders" element={<AssignedOrdersPage portalType="biker" />} />
           <Route path="changes" element={<ChangeListsPage portalType="biker" />} />
           <Route path="history" element={<HistoryPage portalType="biker" />} />
