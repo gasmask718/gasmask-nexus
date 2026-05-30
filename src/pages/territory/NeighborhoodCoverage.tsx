@@ -6,8 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
-import { ChevronDown, ChevronRight, MapPin, AlertTriangle, CheckCircle2, Users } from 'lucide-react';
+import { ChevronDown, ChevronRight, MapPin, AlertTriangle, CheckCircle2, Users, Route as RouteIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
+import { toast } from 'sonner';
 
 type Row = {
   neighborhood: string;
