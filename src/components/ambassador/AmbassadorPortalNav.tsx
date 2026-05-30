@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { isDispatchWired, DISPATCH_TOOLTIP } from '@/config/dispatchRegistry';
 
 const AMBASSADOR_NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', path: '/ambassador/dashboard', icon: LayoutDashboard },
@@ -55,6 +56,7 @@ export function AmbassadorPortalNav() {
               item.path === '/ambassador/dashboard'
                 ? location.pathname === '/ambassador/dashboard'
                 : location.pathname.startsWith(item.path);
+            const wired = isDispatchWired(item.path);
 
             return (
               <Link
@@ -69,6 +71,13 @@ export function AmbassadorPortalNav() {
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">{item.label}</span>
+                {wired && (
+                  <span
+                    title={DISPATCH_TOOLTIP}
+                    aria-label={DISPATCH_TOOLTIP}
+                    className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.7)] shrink-0"
+                  />
+                )}
               </Link>
             );
           })}
