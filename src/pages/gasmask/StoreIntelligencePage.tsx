@@ -356,6 +356,20 @@ export default function StoreIntelligencePage() {
           <Table>
             <TableHeader className="bg-muted/50">
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={paged.length > 0 && paged.every((r) => selectedIds.includes(r.store_id))}
+                    onCheckedChange={(v) => {
+                      const pageIds = paged.map((r) => r.store_id);
+                      setSelectedIds((prev) =>
+                        v
+                          ? Array.from(new Set([...prev, ...pageIds]))
+                          : prev.filter((id) => !pageIds.includes(id))
+                      );
+                    }}
+                    aria-label="Select page"
+                  />
+                </TableHead>
                 <SortHead k="store_name" label="Store" />
                 <SortHead k="full_address" label="Address" />
                 <SortHead k="activity_tier" label="Tier" />
@@ -364,18 +378,30 @@ export default function StoreIntelligencePage() {
                 <SortHead k="total_revenue" label="Revenue" className="text-right" />
                 <SortHead k="days_since_last_activity" label="Stale (d)" className="text-right" />
                 <TableHead>Phone</TableHead>
-                <TableHead className="w-12" />
+                <TableHead className="w-20 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">Loading…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center py-12 text-muted-foreground">Loading…</TableCell></TableRow>
               ) : paged.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">No stores match the current filters.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center py-12 text-muted-foreground">No stores match the current filters.</TableCell></TableRow>
               ) : paged.map((r) => {
                 const meta = TIER_META[r.activity_tier];
+                const checked = selectedIds.includes(r.store_id);
                 return (
-                  <TableRow key={r.store_id}>
+                  <TableRow key={r.store_id} data-state={checked ? 'selected' : undefined}>
+                    <TableCell>
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) =>
+                          setSelectedIds((prev) =>
+                            v ? [...prev, r.store_id] : prev.filter((id) => id !== r.store_id)
+                          )
+                        }
+                        aria-label={`Select ${r.store_name}`}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">
                       {r.store_name}
                       {r.has_drift && (
@@ -399,17 +425,29 @@ export default function StoreIntelligencePage() {
                         <a href={`tel:${r.phone}`} className="text-primary hover:underline">{r.phone}</a>
                       ) : '—'}
                     </TableCell>
-                    <TableCell>
-                      <Link to={`/gasmask/stores/${r.store_id}`}>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <ExternalLink className="h-3.5 w-3.5" />
+                    <TableCell className="text-right">
+                      <div className="inline-flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          title="Add to route"
+                          onClick={() => setDispatchStores([r.store_id])}
+                        >
+                          <RouteIcon className="h-3.5 w-3.5" />
                         </Button>
-                      </Link>
+                        <Link to={`/gasmask/stores/${r.store_id}`}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Open store">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </Button>
+                        </Link>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
               })}
             </TableBody>
+
           </Table>
 
           {totalPages > 1 && (
