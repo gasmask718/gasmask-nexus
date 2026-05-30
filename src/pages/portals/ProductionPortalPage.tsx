@@ -193,12 +193,12 @@ export default function ProductionPortalPage() {
 
   return (
     <EnhancedPortalLayout
-      title="Manufacturing OS"
-      subtitle="Office production, variance, and daily closeouts"
+      title={t('production.title')}
+      subtitle={t('production.subtitle')}
       portalIcon={<Factory className="h-4 w-4 text-primary-foreground" />}
       quickActions={[
         { label: 'All Offices', href: '/portals/production/offices' },
-        { label: 'Staff', href: '/portals/production/staff' },
+        { label: t('production.staff'), href: '/portals/production/staff' },
         { label: 'Reports', href: '/portals/production/reports' },
       ]}
     >
