@@ -162,6 +162,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
 
 function StoresListContent() {
   const navigate = useNavigate();
+  const { initiateCall } = useCall();
   const { stores, metrics, isLoading, unassignStore, isUnassigningStore, ambassador } = useAmbassadorPortfolio();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
