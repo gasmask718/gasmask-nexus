@@ -56,12 +56,14 @@ export default function InvoiceForensicsConsole() {
         supabase.from('invoices').select('*', { count: 'exact', head: true }).eq('entity_type', 'wholesaler'),
       ]);
 
-      // Check for invoices with missing store linkage
+      // Check for TRUE orphan invoices: store-type sales with no store linkage,
+      // excluding seeds/historical and wholesaler sales (which legitimately have NULL store_id)
       const { count: noStoreCount } = await supabase
         .from('invoices')
         .select('*', { count: 'exact', head: true })
         .is('store_id', null)
-        .is('company_id', null);
+        .eq('customer_type', 'store')
+        .eq('is_historical', false);
 
       // Check for invoices with null payment_status
       const { count: noStatusCount } = await supabase
