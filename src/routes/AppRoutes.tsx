@@ -286,6 +286,7 @@ const CRMContactDetail = lazy(() => import('@/pages/CRMContactDetail'));
 const CRMCustomers = lazy(() => import('@/pages/CRMCustomers'));
 const ContactProfile = lazy(() => import('@/pages/crm/ContactProfile'));
 const GlobalCRM = lazy(() => import('@/pages/crm/GlobalCRM'));
+const RelationshipHealthRollup = lazy(() => import('@/pages/crm/RelationshipHealthRollup'));
 const GlobalCRMDashboard = lazy(() => import('@/pages/crm/GlobalCRMDashboard'));
 const BusinessCRMDashboard = lazy(() => import('@/pages/crm/BusinessCRMDashboard'));
 const CRMRouter = lazy(() => import('@/pages/crm/CRMRouter'));
