@@ -454,11 +454,8 @@ const Map = () => {
       filteredStores.forEach((store) => {
       if (!map.current) return;
 
-      const color =
-        store.status === 'active' ? '#22c55e' :
-        store.status === 'prospect' ? '#eab308' :
-        store.status === 'needsFollowUp' ? '#f97316' :
-        '#6b7280';
+      // Pin color = visit/order recency (status info still in click popup)
+      const color = RECENCY_COLORS[getRecencyBucket(store)];
 
       // Create marker element
       const el = document.createElement('div');
