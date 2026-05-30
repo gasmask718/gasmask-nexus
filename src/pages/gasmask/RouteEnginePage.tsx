@@ -165,7 +165,7 @@ export default function RouteEnginePage() {
   const completedToday = triggers.filter((t: any) => t.status === 'completed' && t.completed_at && new Date(t.completed_at).toDateString() === new Date().toDateString());
   const critical = pending.filter((t: any) => t.urgency === 'critical');
   const high = pending.filter((t: any) => t.urgency === 'high');
-  const todayRoutes = routes.filter((r: any) => r.scheduled_date === today);
+  const todayRoutes = routes.filter((r: any) => r.date === today);
   const estHours = (pending.reduce((s: number, t: any) => s + (t.visit_duration_minutes || 20), 0) / 60).toFixed(1);
 
   // Filtered triggers for table/kanban
