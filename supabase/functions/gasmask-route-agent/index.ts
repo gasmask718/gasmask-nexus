@@ -143,13 +143,29 @@ Return ONLY valid JSON:
         );
       }
 
-      // ── Resolve-or-reject: every trigger MUST bind to a real stores.id ──
+      // ── ADDRESS-FIRST resolve-or-reject ──
+      // Collision model: store NAMES collide (many "Ali"), PHONES collide
+      // (one owner = multiple stores). Only ADDRESS uniquely identifies a
+      // physical store. Phone/name are confirmatory only — never primary.
       const normPhone = (p?: string | null) =>
         (p || '').replace(/\D/g, '').slice(-10) || null;
       const nameKey = (s?: string | null) =>
         (s || '').toLowerCase().trim().replace(/\s+/g, ' ');
+      const addrKey = (s?: string | null) => {
+        if (!s) return '';
+        let v = s.toLowerCase();
+        v = v.replace(/[^a-z0-9 \-]/g, ' ');     // strip punctuation (keep hyphens for Queens "107-60")
+        v = v.replace(/\bave\b/g, 'avenue');
+        v = v.replace(/\bst\b/g, 'street');
+        v = v.replace(/\bblvd\b/g, 'boulevard');
+        v = v.replace(/\brd\b/g, 'road');
+        v = v.replace(/\bdr\b/g, 'drive');
+        v = v.replace(/\bpkwy\b/g, 'parkway');
+        v = v.replace(/\s+/g, ' ').trim();
+        return v;
+      };
 
-      const resolution: { method: string; candidates?: any[] } = { method: 'none' };
+      const resolution: { method: string; warnings?: string[] } = { method: 'none' };
 
       if (store_id) {
         const { data: byId } = await supabase
@@ -163,70 +179,80 @@ Return ONLY valid JSON:
           return new Response(JSON.stringify({
             error: 'store_not_resolved',
             reason: 'provided store_id does not match a real store',
-            store_id, store_name, store_phone, store_city, trigger_source,
+            store_id, store_name, store_address, trigger_source,
           }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
       } else {
-        // (a) phone match (normalized last-10)
-        const phoneKey = normPhone(store_phone);
-        let resolved: { id: string; name: string; phone: string | null } | null = null;
-        let candidates: any[] = [];
-
-        if (phoneKey) {
-          const { data: phoneRows } = await supabase
-            .from('stores').select('id, name, phone, address_city').limit(50);
-          const phoneMatches = (phoneRows || []).filter(
-            (r: any) => normPhone(r.phone) === phoneKey
-          );
-          if (phoneMatches.length === 1) {
-            resolved = phoneMatches[0];
-            resolution.method = 'phone';
-          } else if (phoneMatches.length > 1) {
-            candidates = phoneMatches;
-          }
-        }
-
-        // (b) name match with optional city tiebreak
-        if (!resolved) {
-          const nk = nameKey(store_name);
-          const { data: nameRows } = await supabase
-            .from('stores').select('id, name, phone, address_city');
-          const nameMatches = (nameRows || []).filter(
-            (r: any) => nameKey(r.name) === nk
-          );
-          let pool = nameMatches;
-          if (nameMatches.length > 1 && store_city) {
-            const ck = nameKey(store_city);
-            const narrowed = nameMatches.filter(
-              (r: any) => nameKey(r.address_city) === ck
-            );
-            if (narrowed.length === 1) pool = narrowed;
-          }
-          if (pool.length === 1) {
-            resolved = pool[0];
-            resolution.method = nameMatches.length > 1 ? 'name+city' : 'name';
-          } else if (pool.length > 1) {
-            candidates = pool;
-          }
-        }
-
-        if (resolved) {
-          store_id = resolved.id;
-        } else {
-          const hint = candidates.length > 0
-            ? `${candidates.length} ambiguous matches`
-            : 'no name or phone match in stores';
-          console.warn('[create_trigger] store_not_resolved', {
-            store_name, store_phone, store_city, trigger_source, floor_source, hint,
+        // REQUIRE store_address — name/phone alone are unsafe (both collide)
+        const ak = addrKey(store_address);
+        if (!ak) {
+          console.warn('[create_trigger] no_address_cannot_resolve', {
+            store_name, store_phone, store_city, trigger_source, floor_source,
           });
           return new Response(JSON.stringify({
-            error: 'store_not_resolved',
-            reason: hint,
+            error: 'no_address_cannot_resolve',
+            reason: 'store_address is required — name/phone alone are unsafe (names and phones both collide across multiple stores)',
             store_name, store_phone, store_city, trigger_source,
-            resolution_hint: candidates.slice(0, 5).map((c: any) => ({
-              id: c.id, name: c.name, phone: c.phone, city: c.address_city,
+          }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        // Pull candidate pool, normalize address server-side for exact compare
+        const { data: addrRows } = await supabase
+          .from('stores').select('id, name, phone, address_street, address_city');
+        const addrMatches = (addrRows || []).filter(
+          (r: any) => addrKey(r.address_street) === ak
+        );
+
+        if (addrMatches.length === 0) {
+          console.warn('[create_trigger] address_not_found', {
+            store_name, store_address, store_city, trigger_source, floor_source,
+          });
+          return new Response(JSON.stringify({
+            error: 'address_not_found',
+            reason: 'normalized store_address did not match any row in stores',
+            store_name, store_address, store_city, trigger_source,
+            normalized: ak,
+          }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        if (addrMatches.length > 1) {
+          // Multiple stores at the same physical address = duplicate-store issue,
+          // not a trigger-logic issue. Surface for dedup, do NOT guess.
+          console.warn('[create_trigger] address_ambiguous_duplicate_stores', {
+            store_name, store_address, candidate_ids: addrMatches.map((r: any) => r.id),
+          });
+          return new Response(JSON.stringify({
+            error: 'address_ambiguous_duplicate_stores',
+            reason: 'multiple stores share this address — dedup the stores table first',
+            store_name, store_address,
+            candidates: addrMatches.map((r: any) => ({
+              id: r.id, name: r.name, phone: r.phone,
+              address_street: r.address_street, address_city: r.address_city,
             })),
           }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        // Unique address match — trust it. Phone/name are confirmatory only.
+        const resolved: any = addrMatches[0];
+        store_id = resolved.id;
+        resolution.method = 'address';
+
+        const warnings: string[] = [];
+        const tPhone = normPhone(store_phone);
+        const rPhone = normPhone(resolved.phone);
+        if (tPhone && rPhone && tPhone !== rPhone) {
+          warnings.push(`phone mismatch: trigger=${tPhone} store=${rPhone}`);
+        }
+        const tName = nameKey(store_name);
+        const rName = nameKey(resolved.name);
+        if (tName && rName && tName !== rName) {
+          warnings.push(`name mismatch: trigger="${tName}" store="${rName}"`);
+        }
+        if (warnings.length) {
+          resolution.warnings = warnings;
+          console.warn('[create_trigger] address matched but confirmatory mismatch (trusting address)', {
+            store_id, store_address, warnings,
+          });
         }
       }
 
