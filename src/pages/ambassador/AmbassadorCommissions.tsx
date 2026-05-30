@@ -270,7 +270,39 @@ export default function AmbassadorCommissions() {
                   <SelectItem value="reversed">Reversed</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="icon">
+              <Button
+                variant="outline"
+                size="icon"
+                title="Export visible rows to CSV"
+                disabled={filteredEntries.length === 0}
+                onClick={() => {
+                  const header = ['Date','Store/Source','Channel','Gross','Rate (%)','Commission','Status','Reversal Of'];
+                  const escape = (v: any) => {
+                    const s = v == null ? '' : String(v);
+                    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+                  };
+                  const rows = filteredEntries.map((e: CommissionLedgerEntry) => [
+                    e.earned_at ? format(new Date(e.earned_at), 'yyyy-MM-dd') : '',
+                    e.store_name || e.source_id,
+                    getChannelLabel(e.source_channel),
+                    Number(e.gross_amount).toFixed(2),
+                    e.commission_rate,
+                    Number(e.commission_amount).toFixed(2),
+                    e.status,
+                    e.reversal_of || '',
+                  ].map(escape).join(','));
+                  const csv = [header.join(','), ...rows].join('\n');
+                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `commissions-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+              >
                 <Download className="h-4 w-4" />
               </Button>
             </div>
