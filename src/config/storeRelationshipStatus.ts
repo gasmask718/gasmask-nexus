@@ -38,7 +38,7 @@ export const RELATIONSHIP_STATUS_COLORS: Record<StoreRelationshipStatus, string>
 
 /** Short label used in compact UIs / filter chips. */
 export const RELATIONSHIP_STATUS_SHORT: Record<StoreRelationshipStatus, string> = {
-  'Active (Good)':                       'Active',
+  'Active (Good)':                       'Good',
   'Follow-up (secure relationship)':     'Follow-up',
   'Non-active (New - need to speak)':    'New',
   'Need promo (bring samples)':          'Need promo',
