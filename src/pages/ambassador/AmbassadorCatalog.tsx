@@ -18,6 +18,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Package, ImageOff, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
+import { useTranslation } from '@/hooks/useTranslation';
+
 
 const BRAND_COLORS: Record<string, { border: string; tint: string; label: string }> = {
   'fb52b0e6-39b2-4e13-bea9-cd016f51efb0': { border: 'border-red-500/40',    tint: 'bg-red-500/5',    label: 'GasMask' },
