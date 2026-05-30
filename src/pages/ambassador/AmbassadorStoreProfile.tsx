@@ -8,7 +8,7 @@ import {
   Store, Phone, Mail, MapPin, Clock, User, 
   Package, DollarSign, FileText, MessageSquare,
   ArrowLeft, Plus, ExternalLink, Calendar, Edit,
-  CheckCircle, AlertTriangle
+  CheckCircle, AlertTriangle, ClipboardList
 } from 'lucide-react';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
