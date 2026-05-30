@@ -116998,6 +116998,111 @@ export type Database = {
       }
       resolve_intent: { Args: { p_intent_id: string }; Returns: Json }
       resolve_ops_thread: { Args: { p_thread_id: string }; Returns: undefined }
+      resolve_or_create_store_master: {
+        Args: {
+          _address?: string
+          _allow_create?: boolean
+          _city?: string
+          _email?: string
+          _is_simulation?: boolean
+          _legacy_store_id?: string
+          _owner_name?: string
+          _phone?: string
+          _state?: string
+          _store_id?: string
+          _store_name?: string
+          _store_type?: string
+          _zip?: string
+        }
+        Returns: {
+          address: string
+          assigned_ambassador_id: string | null
+          borough_id: string | null
+          brand_id: string | null
+          city: string
+          communication_preference: string | null
+          connected_group_id: string | null
+          consent_source: string | null
+          consent_timestamp: string | null
+          contact_name: string | null
+          country: string | null
+          country_of_origin: string | null
+          created_at: string | null
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_reason: string | null
+          dialect_preference: string | null
+          do_not_call: boolean | null
+          do_not_call_reason: string | null
+          email: string | null
+          expansion_notes: string | null
+          expected_open_dates: string[] | null
+          formality_level: string | null
+          frustration_triggers: string[] | null
+          has_expansion: boolean | null
+          health_status: string | null
+          id: string
+          influence_level: string | null
+          invoice_amount: number | null
+          invoice_amount_paid: number | null
+          invoice_brand: string | null
+          invoice_date: string | null
+          invoice_due_date: string | null
+          invoice_notes: string | null
+          invoice_paid_at: string | null
+          invoice_payment_method: string | null
+          invoice_payment_status: string | null
+          invoice_received_by: string | null
+          is_simulation: boolean | null
+          language_preference: string | null
+          languages: string[] | null
+          last_contacted_at: string | null
+          last_opt_out_timestamp: string | null
+          last_order_at: string | null
+          last_order_date: string | null
+          last_visit_at: string | null
+          loyalty_triggers: string[] | null
+          mode: string | null
+          new_store_addresses: string[] | null
+          nickname: string | null
+          notes: string | null
+          notes_for_tone: string | null
+          opt_out_method: string | null
+          owed_amount: number | null
+          owner_name: string | null
+          owner_name_arabic: string | null
+          personality_notes: string | null
+          personality_profile_id: string | null
+          phone: string | null
+          phone_type: string | null
+          phone_verified_at: string | null
+          photo_url: string | null
+          preferred_channel: string | null
+          risk_score: string | null
+          sms_capable: boolean | null
+          sourced_at: string | null
+          sourced_by_ambassador_id: string | null
+          state: string
+          status: string | null
+          sticker_in_store: boolean | null
+          sticker_notes: string | null
+          sticker_on_door: boolean | null
+          sticker_with_phone: boolean | null
+          store_name: string
+          store_type: string | null
+          total_answers: number | null
+          total_attempts: number | null
+          updated_at: string | null
+          zip: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "store_master"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       resolve_permissions_for_commitment: {
         Args: { p_commitment_id: string }
         Returns: undefined
