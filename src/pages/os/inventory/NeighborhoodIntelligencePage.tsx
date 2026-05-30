@@ -41,6 +41,8 @@ export default function NeighborhoodIntelligencePage() {
   const [selectedNeighborhood, setSelectedNeighborhood] = useState('all');
   const [search, setSearch] = useState('');
   const [showDetail, setShowDetail] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [dispatchStores, setDispatchStores] = useState<string[] | null>(null);
   
   // Fetch cities from stores
   const { data: cities = [] } = useQuery({
