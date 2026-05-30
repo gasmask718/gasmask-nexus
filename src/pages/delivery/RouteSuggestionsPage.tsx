@@ -67,20 +67,47 @@ const RouteSuggestionsPage: React.FC = () => {
     });
   };
 
-  const handleApply = (suggestion: RouteSuggestion) => {
+  const [preselectedStoreIds, setPreselectedStoreIds] = useState<string[]>([]);
+
+  const handleApply = async (suggestion: RouteSuggestion) => {
+    // Load suggestion's stop store IDs (location_id maps 1:1 to stores.id)
+    const { data: stops, error } = await supabase
+      .from('route_suggestion_stops')
+      .select('location_id, stop_order')
+      .eq('route_suggestion_id', suggestion.id)
+      .order('stop_order');
+
+    if (error) {
+      toast.error(`Failed to load suggestion stops: ${error.message}`);
+      return;
+    }
+
+    const storeIds = (stops || [])
+      .map((s: any) => s.location_id)
+      .filter((id: string | null): id is string => !!id);
+
+    if (storeIds.length === 0) {
+      toast.error('This suggestion has no stops with valid stores');
+      return;
+    }
+
+    setPreselectedStoreIds(storeIds);
     setSelectedSuggestion(suggestion);
     setAssignDialogOpen(true);
   };
 
-  const handleBikerAssigned = (bikerId?: string) => {
-    if (selectedSuggestion && bikerId) {
-      applyRoute.mutate({ 
-        suggestionId: selectedSuggestion.id, 
-        bikerId 
+  const handleRouteAssigned = (routeIds: string[]) => {
+    if (selectedSuggestion && routeIds.length > 0) {
+      // Mark the suggestion as applied (no biker — assignee is on routes.assigned_to now)
+      applyRoute.mutate({
+        suggestionId: selectedSuggestion.id,
+        bikerId: selectedSuggestion.suggested_for_biker_id || '',
       });
     }
     setSelectedSuggestion(null);
+    setPreselectedStoreIds([]);
   };
+
 
   const handleDismiss = (suggestionId: string) => {
     dismissRoute.mutate(suggestionId);
