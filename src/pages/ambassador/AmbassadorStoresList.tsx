@@ -255,19 +255,19 @@ function StoresListContent() {
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-3xl font-bold text-primary">{metrics.totalStores}</p>
-            <p className="text-sm text-muted-foreground">Total Stores</p>
+            <p className="text-sm text-muted-foreground">{t('amb.kpi.total_stores')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-3xl font-bold">{metrics.assignedStores}</p>
-            <p className="text-sm text-muted-foreground">Assigned</p>
+            <p className="text-sm text-muted-foreground">{t('amb.stores.tab_assigned')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-3xl font-bold text-green-500">{metrics.sourcedStores}</p>
-            <p className="text-sm text-muted-foreground">Sourced</p>
+            <p className="text-sm text-muted-foreground">{t('amb.stores.tab_sourced')}</p>
           </CardContent>
         </Card>
       </div>
@@ -277,7 +277,7 @@ function StoresListContent() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Search stores by name, address, or owner..."
+            placeholder={t('amb.stores.search_placeholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -285,7 +285,7 @@ function StoresListContent() {
         </div>
         <Button onClick={() => setNewStoreOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Store
+          {t('amb.stores.add_store')}
         </Button>
         <Button
           variant="outline"
@@ -293,11 +293,11 @@ function StoresListContent() {
           onClick={() => setDispatchStores(selectedIds)}
         >
           <RouteIcon className="h-4 w-4 mr-2" />
-          Dispatch Selected{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
+          {t('amb.stores.dispatch_selected')}{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
         </Button>
         {selectedIds.length > 0 && (
           <Button variant="ghost" size="sm" onClick={clearSelection}>
-            Clear selection
+            {t('amb.stores.clear_selection')}
           </Button>
         )}
       </div>
@@ -305,9 +305,9 @@ function StoresListContent() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); clearSelection(); }}>
         <TabsList>
-          <TabsTrigger value="all">All ({stores.length})</TabsTrigger>
-          <TabsTrigger value="assigned">Assigned ({metrics.assignedStores})</TabsTrigger>
-          <TabsTrigger value="sourced">Sourced ({metrics.sourcedStores})</TabsTrigger>
+          <TabsTrigger value="all">{t('amb.stores.tab_all')} ({stores.length})</TabsTrigger>
+          <TabsTrigger value="assigned">{t('amb.stores.tab_assigned')} ({metrics.assignedStores})</TabsTrigger>
+          <TabsTrigger value="sourced">{t('amb.stores.tab_sourced')} ({metrics.sourcedStores})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-4">
@@ -315,9 +315,9 @@ function StoresListContent() {
             <Card>
               <CardContent className="py-12 text-center">
                 <Store className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-lg font-medium">No stores found</p>
+                <p className="text-lg font-medium">{t('amb.stores.no_found')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {searchQuery ? 'Try a different search term' : 'No stores in this category'}
+                  {searchQuery ? t('amb.stores.try_another') : t('amb.stores.no_in_category')}
                 </p>
               </CardContent>
             </Card>
@@ -332,7 +332,7 @@ function StoresListContent() {
                   onToggle={(selected) => toggleSelect(store.store_id, selected)}
                   onDispatch={() => setDispatchStores([store.store_id])}
                   onCall={() => {
-                    if (!store.store_phone) { toast.error('No phone on file'); return; }
+                    if (!store.store_phone) { toast.error(t('amb.stores.no_phone')); return; }
                     initiateCall({
                       destinationPhone: store.store_phone,
                       entityType: 'store',
@@ -355,10 +355,11 @@ function StoresListContent() {
       <DeleteConfirmModal
         open={removeModalOpen}
         onOpenChange={setRemoveModalOpen}
-        title="Remove Store from Portfolio"
+        title={t('amb.stores.remove_title')}
         description={`This removes "${storeToRemove?.store_name}" from your portfolio. It does not delete the store - you can be reassigned to it later.`}
         onConfirm={handleConfirmRemove}
       />
+
 
       {/* Dispatch — RouteAssignmentDialog pre-filled with this ambassador */}
       {dispatchStores && ambassador && (
