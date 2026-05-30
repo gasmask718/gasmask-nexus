@@ -87,9 +87,14 @@ export default function DriverRoutePage() {
         }).eq('id', checklist.id);
       }
 
-      if (stop.route_id) {
-        const newCompleted = (stops as any[]).filter((s: any) => s.status === 'completed' || s.id === stop.id).length;
-        await (supabase as any).from('gasmask_route_runs').update({ completed_stops: newCompleted }).eq('id', stop.route_id);
+      // Mark the canonical route_stop as completed (matched by route_id + store_id).
+      // Progress is derived from route_stops.status — no counter to maintain.
+      if (stop.route_id && stop.store_id) {
+        await (supabase as any)
+          .from('route_stops')
+          .update({ status: 'completed', actual_departure: new Date().toISOString(), notes: notes || null })
+          .eq('route_id', stop.route_id)
+          .eq('store_id', stop.store_id);
       }
 
       toast.success('Stop completed! ✅');
