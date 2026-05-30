@@ -7,8 +7,11 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   Store, Search, Filter, MapPin, Phone, Calendar,
-  ArrowRight, Users, Trash2, Route as RouteIcon
+  ArrowRight, Users, Trash2, Route as RouteIcon, Plus
 } from 'lucide-react';
+import { NewStoreSubmissionDialog } from '@/components/portal/field/NewStoreSubmissionDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 import { useLastOrderSnapshotBatch } from '@/hooks/useLastOrderSnapshot';
 import { LastOrderKPIBadge } from '@/components/store/LastOrderKPIBadge';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
