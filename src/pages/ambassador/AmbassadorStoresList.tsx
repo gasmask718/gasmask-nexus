@@ -29,6 +29,8 @@ import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import { useAmbassadorPortfolio, type PortfolioStore } from '@/hooks/useAmbassadorPortfolio';
 import { formatDistanceToNow } from 'date-fns';
+import { useTranslation } from '@/hooks/useTranslation';
+
 
 interface StoreCardProps {
   store: PortfolioStore;
