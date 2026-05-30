@@ -348,6 +348,21 @@ export default function Floor9Predictions() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <RouteAssignmentDialog
+        open={dispatchStores.length > 0}
+        onOpenChange={(o) => {
+          if (!o) {
+            setDispatchStores([]);
+            setSelectedIds([]);
+          }
+        }}
+        assigneeId=""
+        assigneeName=""
+        assigneeType="driver"
+        bulkMode={dispatchStores.length > 1}
+        preselectedStores={dispatchStores}
+      />
     </div>
   );
 }
