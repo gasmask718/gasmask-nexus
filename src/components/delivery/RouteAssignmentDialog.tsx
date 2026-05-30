@@ -26,7 +26,7 @@ interface RouteAssignmentDialogProps {
   onOpenChange: (open: boolean) => void;
   assigneeId: string;
   assigneeName: string;
-  assigneeType: 'driver' | 'biker';
+  assigneeType: 'driver' | 'biker' | 'ambassador';
   assigneeUserId?: string | null;
   /** Enable bulk mode with multi-assignee / multi-date */
   bulkMode?: boolean;
@@ -39,6 +39,13 @@ interface RouteAssignmentDialogProps {
   /** Pre-filled territory */
   prefilledTerritory?: string;
 }
+
+type AssignablePerson = {
+  id: string;          // row id in drivers/bikers/ambassadors
+  name: string;
+  userId: string | null;
+  role: 'driver' | 'biker' | 'ambassador';
+};
 
 export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
   open,
@@ -61,9 +68,11 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
   const [notes, setNotes] = useState('');
   const [selectedStores, setSelectedStores] = useState<string[]>(preselectedStores || []);
   const [storeSearch, setStoreSearch] = useState('');
-  const [selectedAssignees, setSelectedAssignees] = useState<{ id: string; name: string; userId?: string | null }[]>([
-    { id: assigneeId, name: assigneeName, userId: assigneeUserId },
+  const [selectedAssignees, setSelectedAssignees] = useState<AssignablePerson[]>([
+    { id: assigneeId, name: assigneeName, userId: assigneeUserId ?? null, role: assigneeType },
   ]);
+  const [neighborhood, setNeighborhood] = useState<string>('');
+  const [assigneeSearch, setAssigneeSearch] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('none');
 
   // Fetch route templates
@@ -114,21 +123,60 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
     enabled: open,
   });
 
-  // Fetch all workers of same type for bulk assignee selection
-  const { data: allWorkers = [] } = useQuery({
-    queryKey: ['all-workers-for-bulk', assigneeType],
+  // Fetch ALL assignable people across all 3 roles (active + has user_id)
+  const { data: assignablePeople = [] } = useQuery<AssignablePerson[]>({
+    queryKey: ['assignable-people-all-roles'],
     queryFn: async () => {
-      const table = assigneeType === 'driver' ? 'drivers' : 'bikers';
-      const { data, error } = await supabase
-        .from(table)
-        .select('id, full_name, user_id')
-        .eq('status', 'active')
-        .order('full_name');
-      if (error) throw error;
-      return data;
+      const [drv, bk, amb] = await Promise.all([
+        supabase.from('drivers').select('id, full_name, user_id').eq('status', 'active').not('user_id', 'is', null).order('full_name'),
+        supabase.from('bikers').select('id, full_name, user_id').eq('status', 'active').not('user_id', 'is', null).order('full_name'),
+        supabase.from('ambassadors').select('id, name, user_id').eq('is_active', true).not('user_id', 'is', null).order('name'),
+      ]);
+      if (drv.error) throw drv.error;
+      if (bk.error) throw bk.error;
+      if (amb.error) throw amb.error;
+      const drivers: AssignablePerson[] = (drv.data || []).map((r: any) => ({ id: r.id, name: r.full_name || 'Driver', userId: r.user_id, role: 'driver' }));
+      const bikers: AssignablePerson[] = (bk.data || []).map((r: any) => ({ id: r.id, name: r.full_name || 'Biker', userId: r.user_id, role: 'biker' }));
+      const ambs: AssignablePerson[] = (amb.data || []).map((r: any) => ({ id: r.id, name: (r.name || '').trim() || 'Ambassador', userId: r.user_id, role: 'ambassador' }));
+      return [...drivers, ...bikers, ...ambs];
     },
-    enabled: open && isBulkMode,
+    enabled: open,
   });
+
+  // Distinct neighborhoods for the neighborhood loader
+  const { data: neighborhoods = [] } = useQuery<string[]>({
+    queryKey: ['stores-distinct-neighborhoods'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('neighborhood')
+        .is('deleted_at', null)
+        .eq('approval_status', 'approved')
+        .not('neighborhood', 'is', null)
+        .limit(5000);
+      if (error) throw error;
+      const set = new Set<string>();
+      (data || []).forEach((r: any) => { if (r.neighborhood) set.add(r.neighborhood); });
+      return Array.from(set).sort();
+    },
+    enabled: open,
+  });
+
+  const loadNeighborhoodStores = async (nbh: string) => {
+    setNeighborhood(nbh);
+    if (!nbh) return;
+    const { data, error } = await supabase
+      .from('stores')
+      .select('id')
+      .is('deleted_at', null)
+      .eq('approval_status', 'approved')
+      .eq('neighborhood', nbh)
+      .limit(500);
+    if (error) { toast.error(error.message); return; }
+    const ids = (data || []).map((s: any) => s.id);
+    setSelectedStores((prev) => Array.from(new Set([...prev, ...ids])));
+    toast.success(`Added ${ids.length} stores from ${nbh}`);
+  };
 
   const toggleStore = (storeId: string) => {
     setSelectedStores((prev) =>
@@ -147,11 +195,11 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
     setBulkDates((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const toggleAssignee = (worker: { id: string; full_name: string; user_id?: string | null }) => {
+  const toggleAssignee = (person: AssignablePerson) => {
     setSelectedAssignees((prev) => {
-      const exists = prev.find((a) => a.id === worker.id);
-      if (exists) return prev.filter((a) => a.id !== worker.id);
-      return [...prev, { id: worker.id, name: worker.full_name, userId: worker.user_id }];
+      const exists = prev.find((a) => a.id === person.id && a.role === person.role);
+      if (exists) return prev.filter((a) => !(a.id === person.id && a.role === person.role));
+      return [...prev, person];
     });
   };
 
@@ -174,7 +222,11 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
       if (selectedStores.length === 0) throw new Error('Select at least one stop');
 
       const dates = isBulkMode ? bulkDates : [routeDate];
-      const assignees = isBulkMode ? selectedAssignees : [{ id: assigneeId, name: assigneeName, userId: assigneeUserId }];
+      const assignees: AssignablePerson[] = isBulkMode
+        ? selectedAssignees
+        : (selectedAssignees[0]
+            ? [selectedAssignees[0]]
+            : [{ id: assigneeId, name: assigneeName, userId: assigneeUserId ?? null, role: assigneeType }]);
 
       if (assignees.length === 0) throw new Error('Select at least one assignee');
 
@@ -188,7 +240,7 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
           const { data: route, error: routeError } = await supabase
             .from('routes')
             .insert({
-              type: assigneeType,
+              type: assignee.role,
               assigned_to: assignedTo,
               date,
               status: 'pending',
@@ -239,7 +291,7 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
     setTerritory(prefilledTerritory || '');
     setStoreSearch('');
     setBulkDates([format(new Date(), 'yyyy-MM-dd')]);
-    setSelectedAssignees([{ id: assigneeId, name: assigneeName, userId: assigneeUserId }]);
+    setSelectedAssignees([{ id: assigneeId, name: assigneeName, userId: assigneeUserId ?? null, role: assigneeType }]);
   };
 
   return (
@@ -262,43 +314,61 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
             <Switch checked={isBulkMode} onCheckedChange={setIsBulkMode} />
           </div>
 
-          {/* Single assignee info */}
-          {!isBulkMode && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="font-medium">{assigneeName}</p>
-                <Badge variant="outline" className="text-xs capitalize">{assigneeType}</Badge>
-              </div>
+          {/* Unified assignee picker — all 3 roles */}
+          <div className="space-y-2">
+            <Label>
+              Assignee{isBulkMode ? `s (${selectedAssignees.length} selected)` : ''}
+            </Label>
+            <div className="flex flex-wrap gap-1 mb-1">
+              {selectedAssignees.map((a) => (
+                <Badge key={`${a.role}-${a.id}`} variant="secondary" className="gap-1">
+                  <span className="capitalize text-[10px] opacity-70">{a.role}</span>
+                  {a.name}
+                  <X
+                    className="h-3 w-3 cursor-pointer"
+                    onClick={() => setSelectedAssignees((prev) => prev.filter((x) => !(x.id === a.id && x.role === a.role)))}
+                  />
+                </Badge>
+              ))}
             </div>
-          )}
+            <Input
+              placeholder="Search by name or role (driver / biker / ambassador)..."
+              value={assigneeSearch}
+              onChange={(e) => setAssigneeSearch(e.target.value)}
+            />
+            <ScrollArea className="h-40 rounded-md border p-2">
+              {assignablePeople
+                .filter((p) => {
+                  const q = assigneeSearch.trim().toLowerCase();
+                  if (!q) return true;
+                  return p.name.toLowerCase().includes(q) || p.role.includes(q);
+                })
+                .map((person) => {
+                  const checked = !!selectedAssignees.find((a) => a.id === person.id && a.role === person.role);
+                  return (
+                    <div
+                      key={`${person.role}-${person.id}`}
+                      className="flex items-center gap-2 py-1.5 px-1 hover:bg-muted/50 rounded cursor-pointer"
+                      onClick={() => {
+                        if (isBulkMode) {
+                          toggleAssignee(person);
+                        } else {
+                          setSelectedAssignees([person]);
+                        }
+                      }}
+                    >
+                      <Checkbox checked={checked} />
+                      <span className="text-sm flex-1">{person.name}</span>
+                      <Badge variant="outline" className="text-[10px] capitalize">{person.role}</Badge>
+                    </div>
+                  );
+                })}
+              {assignablePeople.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-3">No active assignable people</p>
+              )}
+            </ScrollArea>
+          </div>
 
-          {/* Bulk assignee selection */}
-          {isBulkMode && (
-            <div className="space-y-2">
-              <Label>Assignees ({selectedAssignees.length} selected)</Label>
-              <div className="flex flex-wrap gap-1 mb-2">
-                {selectedAssignees.map((a) => (
-                  <Badge key={a.id} variant="secondary" className="gap-1">
-                    {a.name}
-                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedAssignees((prev) => prev.filter((x) => x.id !== a.id))} />
-                  </Badge>
-                ))}
-              </div>
-              <ScrollArea className="h-32 rounded-md border p-2">
-                {allWorkers.map((worker) => (
-                  <div
-                    key={worker.id}
-                    className="flex items-center gap-2 py-1.5 px-1 hover:bg-muted/50 rounded cursor-pointer"
-                    onClick={() => toggleAssignee(worker)}
-                  >
-                    <Checkbox checked={!!selectedAssignees.find((a) => a.id === worker.id)} />
-                    <span className="text-sm">{worker.full_name}</span>
-                  </div>
-                ))}
-              </ScrollArea>
-            </div>
-          )}
 
           {/* Date(s) */}
           {!isBulkMode ? (
@@ -354,9 +424,30 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
           {/* Store selection */}
           <div className="space-y-2">
             <Label>Stops ({selectedStores.length} selected)</Label>
+
+            {/* Neighborhood bulk-add */}
+            <div className="flex items-center gap-2">
+              <Select value={neighborhood || 'none'} onValueChange={(v) => loadNeighborhoodStores(v === 'none' ? '' : v)}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Add all stores from a neighborhood..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Pick a neighborhood —</SelectItem>
+                  {neighborhoods.map((n) => (
+                    <SelectItem key={n} value={n}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedStores.length > 0 && (
+                <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedStores([])}>
+                  Clear
+                </Button>
+              )}
+            </div>
+
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search stores..." value={storeSearch} onChange={(e) => setStoreSearch(e.target.value)} className="pl-9" />
+              <Input placeholder="Search stores (individual / bulk multi-select)..." value={storeSearch} onChange={(e) => setStoreSearch(e.target.value)} className="pl-9" />
             </div>
             <ScrollArea className="h-48 rounded-md border p-2">
               {stores.map((store) => (
