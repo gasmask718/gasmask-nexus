@@ -655,6 +655,15 @@ const StoreDetail = () => {
               <Button className="bg-primary hover:bg-primary-hover" onClick={() => setUnifiedInteractionModalOpen(true)}>
                 Log Interaction
               </Button>
+              {isAmbassador && (
+                <Button
+                  variant="outline"
+                  className="border-primary/40"
+                  onClick={() => navigate(`/ambassador/visit/${id}`)}
+                >
+                  Recon Visit / Questionnaire
+                </Button>
+              )}
             </div>
           </div>
         </div>
