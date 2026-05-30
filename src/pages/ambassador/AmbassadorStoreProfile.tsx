@@ -38,6 +38,7 @@ import { ClickablePhone } from '@/components/communication/ClickablePhone';
 function StoreProfileContent() {
   const { storeId } = useParams<{ storeId: string }>();
   const navigate = useNavigate();
+  const { initiateCall } = useCall();
   const [newNote, setNewNote] = useState('');
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
 
