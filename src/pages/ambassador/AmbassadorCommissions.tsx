@@ -42,10 +42,10 @@ export default function AmbassadorCommissions() {
 
   const getChannelLabel = (channel: string) => {
     switch (channel) {
-      case 'store_order': return 'Store Order';
-      case 'wholesale_order': return 'Wholesale';
-      case 'affiliate': return 'Affiliate';
-      case 'team_override': return 'Team Override';
+      case 'store_order': return t('amb.commissions.store_orders');
+      case 'wholesale_order': return t('amb.commissions.wholesale');
+      case 'affiliate': return t('amb.commissions.affiliate');
+      case 'team_override': return t('amb.commissions.team_override');
       default: return channel;
     }
   };
@@ -53,17 +53,18 @@ export default function AmbassadorCommissions() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/30"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
+        return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/30"><Clock className="h-3 w-3 mr-1" />{t('amb.status.pending')}</Badge>;
       case 'approved':
-        return <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/30"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>;
+        return <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/30"><CheckCircle className="h-3 w-3 mr-1" />{t('amb.status.approved')}</Badge>;
       case 'paid':
-        return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30"><CheckCircle className="h-3 w-3 mr-1" />Paid</Badge>;
+        return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30"><CheckCircle className="h-3 w-3 mr-1" />{t('amb.status.paid')}</Badge>;
       case 'reversed':
-        return <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/30"><AlertCircle className="h-3 w-3 mr-1" />Reversed</Badge>;
+        return <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/30"><AlertCircle className="h-3 w-3 mr-1" />{t('amb.status.reversed')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
+
 
   const filteredEntries = ledger.filter((entry: CommissionLedgerEntry) => {
     const matchesSearch = entry.store_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
