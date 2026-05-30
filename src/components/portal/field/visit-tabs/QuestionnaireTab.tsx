@@ -128,6 +128,47 @@ export function QuestionnaireTab({
             />
           </div>
 
+          {/* Product Intelligence — Dynasty Direct recon */}
+          <div className="space-y-4 p-4 rounded-lg border bg-amber-500/5 border-amber-500/20">
+            <div className="flex items-center gap-2">
+              <Package className="h-4 w-4 text-amber-500" />
+              <Label className="font-semibold">Product Intelligence</Label>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="additional-items">What additional items would you buy if we offered them?</Label>
+              <Textarea
+                id="additional-items"
+                value={questionnaire.additionalItemsWanted || ''}
+                onChange={(e) => update({ additionalItemsWanted: e.target.value })}
+                placeholder="e.g. lighters, screens, papers…"
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="top-selling">What items sell a lot in your store?</Label>
+              <Textarea
+                id="top-selling"
+                value={questionnaire.topSellingItems || ''}
+                onChange={(e) => update({ topSellingItems: e.target.value })}
+                placeholder="Best sellers…"
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="most-needed">What items are you most in need of?</Label>
+              <Textarea
+                id="most-needed"
+                value={questionnaire.mostNeededItems || ''}
+                onChange={(e) => update({ mostNeededItems: e.target.value })}
+                placeholder="Currently out of / hard to get…"
+                rows={2}
+              />
+            </div>
+          </div>
+
           {/* Info about clothing */}
           <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
             <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
