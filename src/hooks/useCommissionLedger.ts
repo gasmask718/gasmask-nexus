@@ -108,17 +108,25 @@ interface UseCommissionLedgerOptions {
   status?: CommissionStatus;
   sourceChannel?: SourceChannel;
   limit?: number;
+  /**
+   * Defense-in-depth: when provided, explicitly scopes ledger to this ambassador
+   * at the app layer in addition to RLS. Pass `useEffectiveAmbassadorId()` from
+   * any ambassador-portal page so commissions can never leak even if an RLS
+   * policy regresses.
+   */
+  ambassadorId?: string | null;
 }
 
 /**
- * Fetch commission ledger entries with optional filters
- * RLS automatically scopes to ambassador's own data
+ * Fetch commission ledger entries with optional filters.
+ * RLS scopes to the caller's ambassador rows; pass `ambassadorId` for an
+ * explicit second layer of scoping (see UseCommissionLedgerOptions).
  */
 export function useCommissionLedger(options: UseCommissionLedgerOptions = {}) {
-  const { storeId, status, sourceChannel, limit = 50 } = options;
+  const { storeId, status, sourceChannel, limit = 50, ambassadorId } = options;
 
   return useQuery({
-    queryKey: ['commission-ledger', storeId, status, sourceChannel, limit],
+    queryKey: ['commission-ledger', ambassadorId, storeId, status, sourceChannel, limit],
     queryFn: async () => {
       let query = supabase
         .from('commission_ledger')
@@ -130,6 +138,9 @@ export function useCommissionLedger(options: UseCommissionLedgerOptions = {}) {
         .order('earned_at', { ascending: false })
         .limit(limit);
 
+      if (ambassadorId) {
+        query = query.eq('ambassador_id', ambassadorId);
+      }
       if (storeId) {
         query = query.eq('store_id', storeId);
       }
@@ -143,13 +154,15 @@ export function useCommissionLedger(options: UseCommissionLedgerOptions = {}) {
       const { data, error } = await query;
       if (error) throw error;
 
-      // Transform to include joined fields
       return (data || []).map((entry: any) => ({
         ...entry,
         store_name: entry.store_master?.store_name || null,
         plan_name: entry.commission_plans?.name || null,
       })) as CommissionLedgerEntry[];
     },
+    // If the caller opted into explicit scoping but ambassadorId isn't resolved
+    // yet, wait rather than silently fall back to RLS-only.
+    enabled: ambassadorId === undefined ? true : !!ambassadorId,
   });
 }
 
