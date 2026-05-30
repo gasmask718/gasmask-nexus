@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Phone, MessageSquare, Bot, ChevronRight, Users, Flame, Percent, Tag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePriorCustomerSegmentMap, FLOW_STATUS_META, type FlowStatus } from '@/hooks/usePriorCustomerSegmentMap';
+import { NeighborhoodStoreBreakdown } from '@/components/territory/NeighborhoodStoreBreakdown';
 
 const fmt = (n: number) => Number(n || 0).toLocaleString();
 
@@ -158,6 +159,9 @@ export default function NeighborhoodDetailPage() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Full per-store roster with relationship status */}
+      {neighborhood && <NeighborhoodStoreBreakdown neighborhood={neighborhood} />}
 
       {/* Side-by-side tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">

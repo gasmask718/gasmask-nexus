@@ -14,8 +14,16 @@ import { Alert } from '@/components/map/AlertsPanel';
 import { RouteOptimizerPanel } from '@/components/map/RouteOptimizerPanel';
 import { Package, Users, Layers, Star, Building2, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { territories } from '@/components/map/territories';
 import { demoRoutes, DemoRoute } from '@/components/map/demoRoutes';
+import {
+  RELATIONSHIP_STATUS_COLORS,
+  RELATIONSHIP_STATUS_SHORT,
+  STORE_RELATIONSHIP_STATUSES,
+  type StoreRelationshipStatus,
+} from '@/config/storeRelationshipStatus';
 
 interface Store {
   id: string;
@@ -27,8 +35,10 @@ interface Store {
   phone: string | null;
   address_street: string | null;
   address_city: string | null;
+  neighborhood: string | null;
   last_order_at: string | null;
   last_visit_at: string | null;
+  relationship_status: StoreRelationshipStatus | null;
 }
 
 type RecencyBucket = 'fresh' | 'warm' | 'overdue' | 'unknown';
@@ -83,6 +93,8 @@ const Map = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [showSidebar, setShowSidebar] = useState(true);
   const [recencyFilter, setRecencyFilter] = useState<'all' | RecencyBucket>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | StoreRelationshipStatus>('all');
+  const [neighborhoodFilter, setNeighborhoodFilter] = useState<string>('all');
   const driverMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const routeLayersRef = useRef<string[]>([]);
 
@@ -90,7 +102,7 @@ const Map = () => {
   const fetchStores = async () => {
     const { data, error } = await supabase
       .from('stores')
-      .select('id, name, lat, lng, status, type, phone, address_street, address_city')
+      .select('id, name, lat, lng, status, type, phone, address_street, address_city, neighborhood')
       .eq('approval_status', 'approved') // Phase 7: exclude pending captures
       .not('lat', 'is', null)
       .not('lng', 'is', null);
@@ -106,27 +118,33 @@ const Map = () => {
     // Pull recency data (last_order_at / last_visit_at) from store_master
     // and merge by id. store_master.id is the canonical id shared with stores.
     const ids = baseStores.map(s => s.id);
-    const recencyMap: Record<string, { last_order_at: string | null; last_visit_at: string | null }> = {};
+    const recencyMap: Record<string, { last_order_at: string | null; last_visit_at: string | null; relationship_status: StoreRelationshipStatus | null }> = {};
     if (ids.length > 0) {
       const { data: masterData, error: masterError } = await supabase
         .from('store_master')
-        .select('id, last_order_at, last_visit_at')
+        .select('id, last_order_at, last_visit_at, relationship_status')
         .in('id', ids);
       if (masterError) {
         console.warn('Could not fetch store_master recency:', masterError);
       } else {
-        (masterData || []).forEach(m => {
-          recencyMap[m.id] = { last_order_at: m.last_order_at, last_visit_at: m.last_visit_at };
+        (masterData || []).forEach((m: any) => {
+          recencyMap[m.id] = {
+            last_order_at: m.last_order_at,
+            last_visit_at: m.last_visit_at,
+            relationship_status: (m.relationship_status as StoreRelationshipStatus) ?? null,
+          };
         });
       }
     }
 
-    const enriched: Store[] = baseStores.map(s => {
+    const enriched: Store[] = baseStores.map((s: any) => {
       const r = recencyMap[s.id];
       return {
         ...s,
+        neighborhood: s.neighborhood ?? null,
         last_order_at: r?.last_order_at ?? null,
         last_visit_at: r?.last_visit_at ?? null,
+        relationship_status: r?.relationship_status ?? null,
       };
     });
 
@@ -352,6 +370,16 @@ const Map = () => {
       filtered = filtered.filter((store) => getRecencyBucket(store) === recencyFilter);
     }
 
+    // Filter by relationship status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((store) => store.relationship_status === statusFilter);
+    }
+
+    // Filter by neighborhood
+    if (neighborhoodFilter !== 'all') {
+      filtered = filtered.filter((store) => store.neighborhood === neighborhoodFilter);
+    }
+
     setFilteredStores(filtered);
 
     // Calculate counts
@@ -369,7 +397,7 @@ const Map = () => {
     });
 
     setStoreCounts(counts);
-  }, [stores, activeFilter, selectedTerritory, recencyFilter]);
+  }, [stores, activeFilter, selectedTerritory, recencyFilter, statusFilter, neighborhoodFilter]);
 
   // Render store markers and heatmap
   useEffect(() => {
@@ -758,6 +786,79 @@ const Map = () => {
             </Button>
           );
         })}
+      </div>
+
+      {/* Relationship-status filter chips */}
+      <div className="flex flex-wrap items-center gap-2 px-1">
+        <span className="text-xs text-muted-foreground mr-1">Relationship:</span>
+        <Button
+          size="sm"
+          variant={statusFilter === 'all' ? 'default' : 'outline'}
+          onClick={() => setStatusFilter('all')}
+          className="h-8"
+        >
+          All <span className="ml-2 text-xs opacity-70">{stores.length}</span>
+        </Button>
+        {STORE_RELATIONSHIP_STATUSES.map((s) => {
+          const count = stores.filter((st) => st.relationship_status === s).length;
+          if (count === 0) return null;
+          return (
+            <Button
+              key={s}
+              size="sm"
+              variant={statusFilter === s ? 'default' : 'outline'}
+              onClick={() => setStatusFilter(s)}
+              className={`h-8 ${statusFilter === s ? '' : RELATIONSHIP_STATUS_COLORS[s]}`}
+            >
+              {RELATIONSHIP_STATUS_SHORT[s]}
+              <span className="ml-2 text-xs opacity-70">{count}</span>
+            </Button>
+          );
+        })}
+      </div>
+
+      {/* Neighborhood selector + breakdown */}
+      <div className="flex flex-wrap items-center gap-3 px-1">
+        <span className="text-xs text-muted-foreground">Neighborhood:</span>
+        <Select value={neighborhoodFilter} onValueChange={setNeighborhoodFilter}>
+          <SelectTrigger className="h-8 w-64">
+            <SelectValue placeholder="All neighborhoods" />
+          </SelectTrigger>
+          <SelectContent className="max-h-80">
+            <SelectItem value="all">All neighborhoods ({stores.length})</SelectItem>
+            {Array.from(new Set(stores.map((s) => s.neighborhood).filter(Boolean) as string[]))
+              .sort()
+              .map((n) => {
+                const c = stores.filter((s) => s.neighborhood === n).length;
+                return (
+                  <SelectItem key={n} value={n}>
+                    {n} ({c})
+                  </SelectItem>
+                );
+              })}
+          </SelectContent>
+        </Select>
+        {neighborhoodFilter !== 'all' && (() => {
+          const inNeigh = stores.filter((s) => s.neighborhood === neighborhoodFilter);
+          return (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge variant="secondary" className="text-xs">{inNeigh.length} stores</Badge>
+              {STORE_RELATIONSHIP_STATUSES.map((s) => {
+                const c = inNeigh.filter((st) => st.relationship_status === s).length;
+                if (c === 0) return null;
+                return (
+                  <Badge
+                    key={s}
+                    variant="outline"
+                    className={`text-xs ${RELATIONSHIP_STATUS_COLORS[s]}`}
+                  >
+                    {c} {RELATIONSHIP_STATUS_SHORT[s]}
+                  </Badge>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       <div className="flex gap-4">
