@@ -574,6 +574,15 @@ export default function AmbassadorProfilePage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <RouteAssignmentDialog
+        open={showRouteAssign}
+        onOpenChange={setShowRouteAssign}
+        assigneeId={ambassadorId || ''}
+        assigneeName={displayName}
+        assigneeType="ambassador"
+        assigneeUserId={ambassador.user_id}
+      />
     </Layout>
   );
 }

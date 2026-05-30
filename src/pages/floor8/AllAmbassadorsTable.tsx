@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Users, Search, Download, ChevronRight,
   TrendingUp, TrendingDown, Minus, Phone, MessageSquare,
-  MoreHorizontal, Store, DollarSign, ArrowUpDown
+  MoreHorizontal, Store, DollarSign, ArrowUpDown, Route as RouteIcon
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAdminAmbassadorCommand, type AdminAmbassadorProfile } from '@/hooks/useAdminAmbassadorCommand';
 import { formatDistanceToNow } from 'date-fns';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 
 type SortField = 'name' | 'stores_acquired' | 'revenue_generated' | 'pending_payout' | 'last_activity' | 'tier';
 type SortDirection = 'asc' | 'desc';
