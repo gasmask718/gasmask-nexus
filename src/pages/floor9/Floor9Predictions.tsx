@@ -62,14 +62,32 @@ export default function Floor9Predictions() {
             Store health scores, product intelligence, and forward-looking insights
           </p>
         </div>
-        <Button
-          onClick={() => calculateHealth.mutate(undefined)}
-          disabled={calculateHealth.isPending}
-          className="gap-2"
-        >
-          {calculateHealth.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Calculate Health Scores
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            disabled={selectedIds.length === 0}
+            onClick={() => setDispatchStores(selectedIds)}
+            className="gap-2"
+          >
+            <RouteIcon className="h-4 w-4" /> Dispatch Selected ({selectedIds.length})
+          </Button>
+          <Button
+            variant="outline"
+            disabled={flaggedStoreIds.length === 0}
+            onClick={() => setDispatchStores(flaggedStoreIds)}
+            className="gap-2"
+          >
+            <AlertTriangle className="h-4 w-4" /> Dispatch All Flagged ({flaggedStoreIds.length})
+          </Button>
+          <Button
+            onClick={() => calculateHealth.mutate(undefined)}
+            disabled={calculateHealth.isPending}
+            className="gap-2"
+          >
+            {calculateHealth.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Calculate Health Scores
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
