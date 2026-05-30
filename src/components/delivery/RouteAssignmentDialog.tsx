@@ -38,6 +38,8 @@ interface RouteAssignmentDialogProps {
   brandIds?: string[];
   /** Pre-filled territory */
   prefilledTerritory?: string;
+  /** Optional callback fired after routes are created successfully. Receives the created route IDs. */
+  onAssigned?: (routeIds: string[]) => void;
 }
 
 type AssignablePerson = {
@@ -59,6 +61,7 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
   brandStopContext,
   brandIds,
   prefilledTerritory,
+  onAssigned,
 }) => {
   const queryClient = useQueryClient();
   const [isBulkMode, setIsBulkMode] = useState(initialBulkMode);
@@ -68,9 +71,12 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
   const [notes, setNotes] = useState('');
   const [selectedStores, setSelectedStores] = useState<string[]>(preselectedStores || []);
   const [storeSearch, setStoreSearch] = useState('');
-  const [selectedAssignees, setSelectedAssignees] = useState<AssignablePerson[]>([
-    { id: assigneeId, name: assigneeName, userId: assigneeUserId ?? null, role: assigneeType },
-  ]);
+  const [selectedAssignees, setSelectedAssignees] = useState<AssignablePerson[]>(
+    assigneeId
+      ? [{ id: assigneeId, name: assigneeName, userId: assigneeUserId ?? null, role: assigneeType }]
+      : []
+  );
+
   const [neighborhood, setNeighborhood] = useState<string>('');
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('none');
