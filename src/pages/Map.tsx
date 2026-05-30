@@ -788,6 +788,79 @@ const Map = () => {
         })}
       </div>
 
+      {/* Relationship-status filter chips */}
+      <div className="flex flex-wrap items-center gap-2 px-1">
+        <span className="text-xs text-muted-foreground mr-1">Relationship:</span>
+        <Button
+          size="sm"
+          variant={statusFilter === 'all' ? 'default' : 'outline'}
+          onClick={() => setStatusFilter('all')}
+          className="h-8"
+        >
+          All <span className="ml-2 text-xs opacity-70">{stores.length}</span>
+        </Button>
+        {STORE_RELATIONSHIP_STATUSES.map((s) => {
+          const count = stores.filter((st) => st.relationship_status === s).length;
+          if (count === 0) return null;
+          return (
+            <Button
+              key={s}
+              size="sm"
+              variant={statusFilter === s ? 'default' : 'outline'}
+              onClick={() => setStatusFilter(s)}
+              className={`h-8 ${statusFilter === s ? '' : RELATIONSHIP_STATUS_COLORS[s]}`}
+            >
+              {RELATIONSHIP_STATUS_SHORT[s]}
+              <span className="ml-2 text-xs opacity-70">{count}</span>
+            </Button>
+          );
+        })}
+      </div>
+
+      {/* Neighborhood selector + breakdown */}
+      <div className="flex flex-wrap items-center gap-3 px-1">
+        <span className="text-xs text-muted-foreground">Neighborhood:</span>
+        <Select value={neighborhoodFilter} onValueChange={setNeighborhoodFilter}>
+          <SelectTrigger className="h-8 w-64">
+            <SelectValue placeholder="All neighborhoods" />
+          </SelectTrigger>
+          <SelectContent className="max-h-80">
+            <SelectItem value="all">All neighborhoods ({stores.length})</SelectItem>
+            {Array.from(new Set(stores.map((s) => s.neighborhood).filter(Boolean) as string[]))
+              .sort()
+              .map((n) => {
+                const c = stores.filter((s) => s.neighborhood === n).length;
+                return (
+                  <SelectItem key={n} value={n}>
+                    {n} ({c})
+                  </SelectItem>
+                );
+              })}
+          </SelectContent>
+        </Select>
+        {neighborhoodFilter !== 'all' && (() => {
+          const inNeigh = stores.filter((s) => s.neighborhood === neighborhoodFilter);
+          return (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge variant="secondary" className="text-xs">{inNeigh.length} stores</Badge>
+              {STORE_RELATIONSHIP_STATUSES.map((s) => {
+                const c = inNeigh.filter((st) => st.relationship_status === s).length;
+                if (c === 0) return null;
+                return (
+                  <Badge
+                    key={s}
+                    variant="outline"
+                    className={`text-xs ${RELATIONSHIP_STATUS_COLORS[s]}`}
+                  >
+                    {c} {RELATIONSHIP_STATUS_SHORT[s]}
+                  </Badge>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </div>
+
       <div className="flex gap-4">
         <div className={`relative rounded-xl overflow-hidden border border-border/50 shadow-2xl transition-all duration-300 ${showSidebar ? 'w-2/3' : 'w-full'}`} style={{ height: 'calc(100vh - 280px)' }}>
         {loading && (
