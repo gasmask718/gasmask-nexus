@@ -105,6 +105,7 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
   const [showLogModal, setShowLogModal] = useState(false);
   const [unifiedInteractionModalOpen, setUnifiedInteractionModalOpen] = useState(false);
   const [createInvoiceModalOpen, setCreateInvoiceModalOpen] = useState(false);
+  const [dispatchStore, setDispatchStore] = useState<string | null>(null);
 
   const id = storeId || '';
 
