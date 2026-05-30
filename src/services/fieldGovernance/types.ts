@@ -23,7 +23,8 @@ export type FieldEntityType =
   | 'store_contact'
   | 'wholesaler_association'
   | 'connected_store'
-  | 'store_questionnaire';
+  | 'store_questionnaire'
+  | 'new_store';
 
 // Action types
 export type FieldActionType = 'create' | 'update' | 'delete';
