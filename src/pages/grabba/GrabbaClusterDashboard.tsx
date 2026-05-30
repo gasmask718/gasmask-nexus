@@ -34,7 +34,7 @@ export default function GrabbaClusterDashboard() {
         .select('store_master_id, brand, active_status, last_order_date, store_master:store_master_id(id, store_name, address, city, state)')
         .order('last_order_date', { ascending: false, nullsFirst: false })
         .limit(200);
-      if (dispatchBrand !== 'all') q = q.eq('brand', dispatchBrand);
+      if (dispatchBrand !== 'all') q = q.eq('brand', dispatchBrand as any);
       const { data, error } = await q;
       if (error) throw error;
       // Dedupe by store_master_id
