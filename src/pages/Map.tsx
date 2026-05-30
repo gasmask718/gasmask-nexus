@@ -82,6 +82,7 @@ const Map = () => {
   const [selectedRoute, setSelectedRoute] = useState<DemoRoute | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [recencyFilter, setRecencyFilter] = useState<'all' | RecencyBucket>('all');
   const driverMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const routeLayersRef = useRef<string[]>([]);
 
