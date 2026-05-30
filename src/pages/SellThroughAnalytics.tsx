@@ -165,6 +165,21 @@ export default function SellThroughAnalytics() {
     return { total, overdue, fast, avgGap, inactive: Math.round(inactive) };
   }, [activeRows, allRows, inactiveRows, showInactive]);
 
+  // Unique overdue store IDs for bulk dispatch
+  const overdueStoreIds = useMemo(() => {
+    const base = showInactive ? allRows : activeRows;
+    const withData = base.filter((r) => r.total_orders_lifetime > 1);
+    const ids = new Set<string>();
+    withData.forEach((r) => {
+      if (r.avg_days_between_orders != null && r.days_since_last_order != null) {
+        if (r.days_since_last_order > r.avg_days_between_orders * 1.5) {
+          ids.add(r.store_id);
+        }
+      }
+    });
+    return Array.from(ids);
+  }, [activeRows, allRows, showInactive]);
+
   // Export columns
   const exportColumns = [
     { key: "store_name", label: "Store Name" },
