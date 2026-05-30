@@ -68,9 +68,10 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
   const [notes, setNotes] = useState('');
   const [selectedStores, setSelectedStores] = useState<string[]>(preselectedStores || []);
   const [storeSearch, setStoreSearch] = useState('');
-  const [selectedAssignees, setSelectedAssignees] = useState<{ id: string; name: string; userId?: string | null }[]>([
-    { id: assigneeId, name: assigneeName, userId: assigneeUserId },
+  const [selectedAssignees, setSelectedAssignees] = useState<AssignablePerson[]>([
+    { id: assigneeId, name: assigneeName, userId: assigneeUserId ?? null, role: assigneeType },
   ]);
+  const [neighborhood, setNeighborhood] = useState<string>('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('none');
 
   // Fetch route templates
