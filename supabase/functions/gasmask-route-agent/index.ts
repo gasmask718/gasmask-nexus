@@ -128,7 +128,7 @@ Return ONLY valid JSON:
     }
 
     if (action === 'create_trigger') {
-      const {
+      let {
         store_id, store_name, store_address, store_city, store_state,
         store_lat, store_lng, store_phone, trigger_source, trigger_type,
         floor_source, urgency = 'normal', priority_score = 5,
@@ -143,10 +143,97 @@ Return ONLY valid JSON:
         );
       }
 
+      // ── Resolve-or-reject: every trigger MUST bind to a real stores.id ──
+      const normPhone = (p?: string | null) =>
+        (p || '').replace(/\D/g, '').slice(-10) || null;
+      const nameKey = (s?: string | null) =>
+        (s || '').toLowerCase().trim().replace(/\s+/g, ' ');
+
+      const resolution: { method: string; candidates?: any[] } = { method: 'none' };
+
+      if (store_id) {
+        const { data: byId } = await supabase
+          .from('stores').select('id').eq('id', store_id).maybeSingle();
+        if (byId) {
+          resolution.method = 'provided_id';
+        } else {
+          console.warn('[create_trigger] provided store_id not found in stores', {
+            store_id, store_name, trigger_source,
+          });
+          return new Response(JSON.stringify({
+            error: 'store_not_resolved',
+            reason: 'provided store_id does not match a real store',
+            store_id, store_name, store_phone, store_city, trigger_source,
+          }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      } else {
+        // (a) phone match (normalized last-10)
+        const phoneKey = normPhone(store_phone);
+        let resolved: { id: string; name: string; phone: string | null } | null = null;
+        let candidates: any[] = [];
+
+        if (phoneKey) {
+          const { data: phoneRows } = await supabase
+            .from('stores').select('id, name, phone, address_city').limit(50);
+          const phoneMatches = (phoneRows || []).filter(
+            (r: any) => normPhone(r.phone) === phoneKey
+          );
+          if (phoneMatches.length === 1) {
+            resolved = phoneMatches[0];
+            resolution.method = 'phone';
+          } else if (phoneMatches.length > 1) {
+            candidates = phoneMatches;
+          }
+        }
+
+        // (b) name match with optional city tiebreak
+        if (!resolved) {
+          const nk = nameKey(store_name);
+          const { data: nameRows } = await supabase
+            .from('stores').select('id, name, phone, address_city');
+          const nameMatches = (nameRows || []).filter(
+            (r: any) => nameKey(r.name) === nk
+          );
+          let pool = nameMatches;
+          if (nameMatches.length > 1 && store_city) {
+            const ck = nameKey(store_city);
+            const narrowed = nameMatches.filter(
+              (r: any) => nameKey(r.address_city) === ck
+            );
+            if (narrowed.length === 1) pool = narrowed;
+          }
+          if (pool.length === 1) {
+            resolved = pool[0];
+            resolution.method = nameMatches.length > 1 ? 'name+city' : 'name';
+          } else if (pool.length > 1) {
+            candidates = pool;
+          }
+        }
+
+        if (resolved) {
+          store_id = resolved.id;
+        } else {
+          const hint = candidates.length > 0
+            ? `${candidates.length} ambiguous matches`
+            : 'no name or phone match in stores';
+          console.warn('[create_trigger] store_not_resolved', {
+            store_name, store_phone, store_city, trigger_source, floor_source, hint,
+          });
+          return new Response(JSON.stringify({
+            error: 'store_not_resolved',
+            reason: hint,
+            store_name, store_phone, store_city, trigger_source,
+            resolution_hint: candidates.slice(0, 5).map((c: any) => ({
+              id: c.id, name: c.name, phone: c.phone, city: c.address_city,
+            })),
+          }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      }
+
       const { data: existing } = await supabase
         .from('gasmask_visit_triggers')
         .select('id')
-        .eq('store_name', store_name)
+        .eq('store_id', store_id)
         .eq('trigger_type', trigger_type)
         .eq('status', 'pending')
         .limit(1)
@@ -174,7 +261,7 @@ Return ONLY valid JSON:
       if (error) throw error;
 
       return new Response(
-        JSON.stringify({ success: true, trigger }),
+        JSON.stringify({ success: true, trigger, resolution: resolution.method }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

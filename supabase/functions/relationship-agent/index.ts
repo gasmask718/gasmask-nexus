@@ -561,9 +561,10 @@ Tube intel signals: ${hasSignals ? JSON.stringify(tubeSignals) : 'None'}
 
           // If visit escalation recommended
           if (decision.escalate_to_visit || (intelligence?.visit_needed)) {
-            await supabase.functions.invoke('gasmask-route-agent', {
+            const { data: trigRes, error: trigErr } = await supabase.functions.invoke('gasmask-route-agent', {
               body: {
                 action: 'create_trigger',
+                store_id: store.id,
                 store_name: store.name,
                 store_city: store.address_city,
                 store_state: store.address_state,
@@ -576,6 +577,13 @@ Tube intel signals: ${hasSignals ? JSON.stringify(tubeSignals) : 'None'}
                 trigger_notes: intelligence?.recommended_action || decision.reason,
               },
             });
+            if (trigErr || (trigRes as any)?.error) {
+              console.warn('[REL-AGENT] visit trigger rejected', {
+                store_id: store.id, store_name: store.name,
+                error: trigErr?.message || (trigRes as any)?.error,
+                reason: (trigRes as any)?.reason,
+              });
+            }
           }
 
           results.contacted++;
