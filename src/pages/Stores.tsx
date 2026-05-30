@@ -555,6 +555,9 @@ const Stores = () => {
     const matchesStatus = activeFilter === 'all' 
       || (activeFilter === 'active' && isStoreActive(store.id))
       || (activeFilter === 'inactive' && !isStoreActive(store.id));
+
+    const matchesRelationship = relationshipFilter === 'all'
+      || store.relationship_status === relationshipFilter;
     
     const matchesTag =
       tagFilter === 'all' ||
