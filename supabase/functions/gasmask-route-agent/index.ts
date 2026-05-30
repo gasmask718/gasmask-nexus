@@ -229,26 +229,72 @@ Return ONLY valid JSON:
 
       const totalDuration = triggers?.reduce((sum: number, t: any) => sum + (t.visit_duration_minutes || 20), 0) || 0;
 
-      const { data: route } = await supabase
-        .from('gasmask_route_runs')
+      // CANONICAL WRITE: insert into routes (not gasmask_route_runs)
+      const { data: route, error: routeErr } = await supabase
+        .from('routes')
         .insert({
-          run_name: `Route ${scheduled_date} - ${driver_name || 'Driver'}`,
-          driver_name: driver_name || 'Unassigned',
-          scheduled_date,
+          name: `Route ${scheduled_date} - ${driver_name || 'Driver'}`,
+          date: scheduled_date,
+          type: 'driver',
+          status: 'planned',
+          source: 'gasmask_agent',
           total_stops: trigger_ids.length,
           estimated_duration_minutes: totalDuration,
-          route_notes,
-          optimized_order: optimizedOrder,
-          status: 'planning',
+          notes: route_notes,
         })
         .select()
         .single();
+
+      if (routeErr) throw routeErr;
+
+      // Build trigger_id -> store_id map in optimized order
+      const triggerMap = new Map((triggers || []).map((t: any) => [t.id, t]));
+      const orderedStoreIds = optimizedOrder
+        .map((tid: string) => (triggerMap.get(tid) as any)?.store_id)
+        .filter((sid: string | null | undefined): sid is string => !!sid);
+
+      // Pre-validate which store_ids actually exist in `stores` (route_stops.store_id has FK)
+      let validStoreIds = new Set<string>();
+      if (orderedStoreIds.length) {
+        const { data: existingStores } = await supabase
+          .from('stores')
+          .select('id')
+          .in('id', orderedStoreIds);
+        validStoreIds = new Set((existingStores || []).map((s: any) => s.id));
+      }
+
+      const stopRows: any[] = [];
+      let skippedStops = 0;
+      optimizedOrder.forEach((tid: string, idx: number) => {
+        const t: any = triggerMap.get(tid);
+        const sid = t?.store_id;
+        if (sid && validStoreIds.has(sid)) {
+          stopRows.push({
+            route_id: route.id,
+            store_id: sid,
+            planned_order: idx + 1,
+            status: 'pending',
+            notes: `gasmask_trigger:${tid} | ${t?.store_name || ''}`,
+          });
+        } else {
+          skippedStops += 1;
+        }
+      });
+
+      if (stopRows.length) {
+        const { error: stopsErr } = await supabase.from('route_stops').insert(stopRows);
+        if (stopsErr) {
+          // Roll back the route header so we don't leave an orphan canonical route
+          await supabase.from('routes').delete().eq('id', route.id);
+          throw stopsErr;
+        }
+      }
 
       await supabase
         .from('gasmask_visit_triggers')
         .update({
           status: 'scheduled',
-          route_id: route?.id,
+          route_id: route.id,
           scheduled_for: scheduled_date,
           assigned_driver_name: driver_name || 'Unassigned',
         })
@@ -262,10 +308,19 @@ Return ONLY valid JSON:
       }
 
       return new Response(
-        JSON.stringify({ success: true, route, optimized_order: optimizedOrder, total_stops: trigger_ids.length, estimated_hours: (totalDuration / 60).toFixed(1) }),
+        JSON.stringify({
+          success: true,
+          route,
+          optimized_order: optimizedOrder,
+          total_stops: trigger_ids.length,
+          route_stops_created: stopRows.length,
+          stops_skipped_missing_store: skippedStops,
+          estimated_hours: (totalDuration / 60).toFixed(1),
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
 
     return new Response(
       JSON.stringify({ error: 'Unknown action' }),

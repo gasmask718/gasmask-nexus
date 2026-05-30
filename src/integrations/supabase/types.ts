@@ -75511,6 +75511,7 @@ export type Database = {
           notes: string | null
           optimization_score: number | null
           route_state: string | null
+          source: Database["public"]["Enums"]["route_source"]
           start_time: string | null
           started_at: string | null
           status: string | null
@@ -75540,6 +75541,7 @@ export type Database = {
           notes?: string | null
           optimization_score?: number | null
           route_state?: string | null
+          source?: Database["public"]["Enums"]["route_source"]
           start_time?: string | null
           started_at?: string | null
           status?: string | null
@@ -75569,6 +75571,7 @@ export type Database = {
           notes?: string | null
           optimization_score?: number | null
           route_state?: string | null
+          source?: Database["public"]["Enums"]["route_source"]
           start_time?: string | null
           started_at?: string | null
           status?: string | null
@@ -117720,6 +117723,7 @@ export type Database = {
         | "marketplace"
         | "offline"
         | "mixed"
+      route_source: "manual" | "optimizer" | "gasmask_agent" | "grabba_biker"
       sampling_status_enum: "none" | "samples_given" | "trialing" | "converted"
       sms_provider: "twilio" | "biztext"
       sticker_status: "none" | "doorOnly" | "inStoreOnly" | "doorAndInStore"
@@ -118386,6 +118390,7 @@ export const Constants = {
         "offline",
         "mixed",
       ],
+      route_source: ["manual", "optimizer", "gasmask_agent", "grabba_biker"],
       sampling_status_enum: ["none", "samples_given", "trialing", "converted"],
       sms_provider: ["twilio", "biztext"],
       sticker_status: ["none", "doorOnly", "inStoreOnly", "doorAndInStore"],
