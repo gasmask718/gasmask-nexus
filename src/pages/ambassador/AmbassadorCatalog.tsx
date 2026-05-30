@@ -159,19 +159,13 @@ export default function AmbassadorCatalog() {
   const { data: products = [], isLoading, error } = useCatalogProducts();
 
   return (
-    <PortalRBACGate allowedRoles={['admin', 'ambassador']}>
-      <AmbassadorLayout>
+    <PortalRBACGate allowedRoles={['admin', 'ambassador']} portalName="Ambassador Portal">
+      <AmbassadorLayout
+        title="Product Catalog"
+        subtitle="Active product line — store, wholesale, and street pricing for the field."
+      >
         <div className="space-y-4">
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                <Package className="h-6 w-6 text-primary" />
-                Product Catalog
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Active product line — store, wholesale, and street pricing for the field.
-              </p>
-            </div>
+          <div className="flex items-center justify-end">
             <Badge variant="outline" className="text-xs">
               {products.length} active
             </Badge>
