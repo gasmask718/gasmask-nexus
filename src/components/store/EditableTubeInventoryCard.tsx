@@ -22,7 +22,7 @@ export const VALID_TUBE_BRANDS = [
   { id: 'gasmask', name: 'GasMask Bags', color: '#EF4444' }, // red-500
   { id: 'gasmasktubes', name: 'GasMask Tubes', color: '#3B82F6' }, // blue-500
   { id: 'hotmama', name: 'HotMama', color: '#EC4899' }, // pink-500
-  { id: 'grabba', name: 'Grabba r us', color: '#A855F7' }, // purple-500
+  { id: 'grabba_r_us', name: 'Grabba R Us', color: '#A855F7' }, // purple-500 (canonical, was legacy 'grabba')
   { id: 'hotscolatti-light', name: 'Hotscolatti Light', color: '#FBBF24' }, // amber-400
   { id: 'hotscolatti-dark', name: 'Hotscolatti Dark', color: '#92400E' }, // amber-800
 ] as const;

@@ -11,7 +11,7 @@ export const TUBE_BRAND_COLORS: Record<string, { hex: string; tailwind: string; 
   gasmask: {
     hex: CANONICAL_BRANDS.gasmask.primaryColor,
     tailwind: 'text-red-500',
-    name: CANONICAL_BRANDS.gasmask.displayName,
+    name: 'GasMask Bags', // distinct SKU from gasmasktubes (product GA-BA-4VLF, track_by=bags)
   },
   gasmasktubes: {
     hex: '#3B82F6',
