@@ -472,6 +472,7 @@ export function getEntityTypeLabel(type: FieldEntityType): string {
     wholesaler_association: 'Wholesaler Association',
     connected_store: 'Connected Store',
     store_questionnaire: 'Questionnaire',
+    new_store: 'New Store',
   };
   return labels[type] || type;
 }
