@@ -6,7 +6,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Store, Search, Filter, MapPin, Phone, Calendar,
-  ArrowRight, Users, Trash2
+  ArrowRight, Users, Trash2, Route as RouteIcon
 } from 'lucide-react';
 import { useLastOrderSnapshotBatch } from '@/hooks/useLastOrderSnapshot';
 import { LastOrderKPIBadge } from '@/components/store/LastOrderKPIBadge';
@@ -18,7 +18,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import { useAmbassadorPortfolio, type PortfolioStore } from '@/hooks/useAmbassadorPortfolio';
 import { formatDistanceToNow } from 'date-fns';
 
