@@ -202,6 +202,9 @@ export default function AmbassadorProfilePage() {
               </div>
             </div>
           </div>
+          <Button size="sm" variant="outline" onClick={() => setShowRouteAssign(true)}>
+            <RouteIcon className="mr-1 h-4 w-4" /> Assign Route
+          </Button>
         </div>
 
         {/* KPI Cards - Distinct sourced vs managed counts */}
