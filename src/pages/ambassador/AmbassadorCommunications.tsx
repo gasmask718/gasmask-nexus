@@ -977,21 +977,7 @@ export default function AmbassadorCommunications() {
               }))}
             onSent={() => { setSelectedStoreIds(new Set()); setMultiSelectMode(false); }}
           />
-          <BulkAiCallModal
-            open={bulkAiOpen}
-            onOpenChange={setBulkAiOpen}
-            ambassadorId={ambassador.id}
-            ambassadorName={(ambassador as any).name || 'your rep'}
-            selectedStores={threads
-              .filter((t) => selectedStoreIds.has(t.store_id))
-              .map((t) => ({
-                id: t.store_id,
-                store_name: t.store_name,
-                phone: t.contact_phone,
-                owner_name: t.contact_name,
-              }))}
-            onSent={() => { setSelectedStoreIds(new Set()); setMultiSelectMode(false); }}
-          />
+          {/* BulkAiCallModal removed — AI calling is company-level only. */}
           <BulkJobsPanel open={jobsPanelOpen} onOpenChange={setJobsPanelOpen} ambassadorId={ambassador.id} />
         </>
       )}
