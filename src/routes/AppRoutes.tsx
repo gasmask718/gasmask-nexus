@@ -3077,6 +3077,20 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+      <Route path="/ambassador/feedback" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador', 'driver', 'biker']}>
+            <AmbassadorFeedback />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/feedback" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'staff']}>
+            <FeedbackInbox />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
 
       {/* Connected Profile Pages */}
       <Route path="/profile/ambassador/:id" element={<ProtectedRoute><Layout><AmbassadorProfilePage /></Layout></ProtectedRoute>} />
