@@ -31,6 +31,7 @@ const AMBASSADOR_NAV_ITEMS = [
   { id: 'request-ambassador', label: 'Team Expansion', path: '/ambassador/request-ambassador', icon: UserPlus },
   { id: 'payouts', label: 'Payouts', path: '/ambassador/payouts', icon: Wallet },
   { id: 'earnings', label: 'Earnings', path: '/ambassador/reports/earnings', icon: TrendingUp },
+  { id: 'feedback', label: 'Feedback', path: '/ambassador/feedback', icon: MessageSquareWarning },
 ] as const;
 
 export function AmbassadorPortalNav() {
