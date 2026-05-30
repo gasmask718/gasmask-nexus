@@ -26,7 +26,7 @@ interface RouteAssignmentDialogProps {
   onOpenChange: (open: boolean) => void;
   assigneeId: string;
   assigneeName: string;
-  assigneeType: 'driver' | 'biker';
+  assigneeType: 'driver' | 'biker' | 'ambassador';
   assigneeUserId?: string | null;
   /** Enable bulk mode with multi-assignee / multi-date */
   bulkMode?: boolean;
@@ -39,6 +39,13 @@ interface RouteAssignmentDialogProps {
   /** Pre-filled territory */
   prefilledTerritory?: string;
 }
+
+type AssignablePerson = {
+  id: string;          // row id in drivers/bikers/ambassadors
+  name: string;
+  userId: string | null;
+  role: 'driver' | 'biker' | 'ambassador';
+};
 
 export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
   open,
