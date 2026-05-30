@@ -254,7 +254,7 @@ function RecruitmentLeadsContent() {
                 })}
               </TableBody>
             </Table>
-          </ScrollArea>
+          </div>
         </CardContent>
       </Card>
 
