@@ -54,18 +54,20 @@ export default function AmbassadorPayoutsPage() {
           </Button>
         </div>
 
-        {/* Payout Account Status */}
+        {/* Cash Payout Notice */}
         {!hasPayoutAccount && (
-          <Card className="border-amber-500/50 bg-amber-500/10">
+          <Card className="border-amber-500/30 bg-amber-500/10">
             <CardContent className="py-4">
               <div className="flex items-center gap-3">
                 <AlertCircle className="h-5 w-5 text-amber-500" />
                 <div className="flex-1">
-                  <p className="font-medium">No payout account set up</p>
-                  <p className="text-sm text-muted-foreground">Configure your payout method to receive payments</p>
+                  <p className="font-medium">Cash payouts handled directly</p>
+                  <p className="text-sm text-muted-foreground">
+                    Online payout setup is coming soon. You can add your contact details below for record-keeping.
+                  </p>
                 </div>
-                <Button onClick={() => navigate('/ambassador/settings/payouts')}>
-                  Set Up Now
+                <Button variant="outline" onClick={() => navigate('/ambassador/settings/payouts')}>
+                  Add Details
                 </Button>
               </div>
             </CardContent>
