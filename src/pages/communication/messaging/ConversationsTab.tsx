@@ -180,7 +180,14 @@ export default function ConversationsTab() {
 
   // Apply filters
   const filteredThreads = (threads || []).filter((t: any) => {
-    if (searchPhone && !t.phone?.includes(searchPhone) && !t.cleanPhone?.includes(searchPhone.replace(/\D/g, ""))) return false;
+    if (searchPhone) {
+      const q = searchPhone.toLowerCase();
+      const id = resolveIdentity(t.phone);
+      const inPhone = t.phone?.toLowerCase().includes(q) || t.cleanPhone?.includes(searchPhone.replace(/\D/g, ""));
+      const inName = id?.primaryName?.toLowerCase().includes(q);
+      const inAddress = id?.address?.toLowerCase().includes(q);
+      if (!inPhone && !inName && !inAddress) return false;
+    }
     if (statusFilter === "needs_review" && !t.hasInbound) return false;
     if (statusFilter === "failed" && !t.hasFailed) return false;
     if (statusFilter === "sent" && (t.hasInbound || t.hasFailed)) return false;
