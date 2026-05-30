@@ -70,7 +70,10 @@ export default function RouteEnginePage() {
   const [showRouteBuilder, setShowRouteBuilder] = useState(false);
   const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
   const [routeBuilderStep, setRouteBuilderStep] = useState(1);
-  const [routeConfig, setRouteConfig] = useState({ driver_name: '', scheduled_date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
+  const [routeConfig, setRouteConfig] = useState({ scheduled_date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
+  const [selectedAssignee, setSelectedAssignee] = useState<{ id: string; name: string; userId: string; role: 'driver' | 'biker' | 'ambassador' } | null>(null);
+  const [assigneeSearch, setAssigneeSearch] = useState('');
+
   const [buildingRoute, setBuildingRoute] = useState(false);
   const [detailTrigger, setDetailTrigger] = useState<any>(null);
   const [detailTab, setDetailTab] = useState<'details' | 'actions' | 'history'>('details');
