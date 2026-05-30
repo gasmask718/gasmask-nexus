@@ -14,8 +14,16 @@ import { Alert } from '@/components/map/AlertsPanel';
 import { RouteOptimizerPanel } from '@/components/map/RouteOptimizerPanel';
 import { Package, Users, Layers, Star, Building2, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { territories } from '@/components/map/territories';
 import { demoRoutes, DemoRoute } from '@/components/map/demoRoutes';
+import {
+  RELATIONSHIP_STATUS_COLORS,
+  RELATIONSHIP_STATUS_SHORT,
+  STORE_RELATIONSHIP_STATUSES,
+  type StoreRelationshipStatus,
+} from '@/config/storeRelationshipStatus';
 
 interface Store {
   id: string;
@@ -27,8 +35,10 @@ interface Store {
   phone: string | null;
   address_street: string | null;
   address_city: string | null;
+  neighborhood: string | null;
   last_order_at: string | null;
   last_visit_at: string | null;
+  relationship_status: StoreRelationshipStatus | null;
 }
 
 type RecencyBucket = 'fresh' | 'warm' | 'overdue' | 'unknown';
