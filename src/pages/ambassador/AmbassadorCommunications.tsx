@@ -376,10 +376,6 @@ export default function AmbassadorCommunications() {
                     if (selectedStoreIds.size > 50 && !confirm(`Send to ${selectedStoreIds.size} stores?`)) return;
                     setBulkSmsOpen(true);
                   }}>📱 Send SMS Blast</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    if (selectedStoreIds.size > 50 && !confirm(`Queue ${selectedStoreIds.size} AI calls?`)) return;
-                    setBulkAiOpen(true);
-                  }}>🤖 Schedule AI Call Blast</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setSelectedStoreIds(new Set())}>✖ Clear selection</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
