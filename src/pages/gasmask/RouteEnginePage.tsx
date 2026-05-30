@@ -238,21 +238,35 @@ export default function RouteEnginePage() {
 
   const buildRoute = async () => {
     if (!selectedTriggers.length) { toast.error('Select triggers first'); return; }
+    if (!selectedAssignee) { toast.error('Pick an assignee (driver, biker, or ambassador)'); return; }
     setBuildingRoute(true);
     try {
       const { data, error } = await supabase.functions.invoke('gasmask-route-agent', {
-        body: { action: 'build_route', trigger_ids: selectedTriggers, driver_name: routeConfig.driver_name, scheduled_date: routeConfig.scheduled_date, route_notes: routeConfig.notes },
+        body: {
+          action: 'build_route',
+          trigger_ids: selectedTriggers,
+          driver_name: selectedAssignee.name,
+          assigned_to_user_id: selectedAssignee.userId,
+          assignee_type: selectedAssignee.role,
+          scheduled_date: routeConfig.scheduled_date,
+          route_notes: routeConfig.notes,
+        },
       });
       if (error) throw error;
-      toast.success(`Route created: ${data?.total_stops} stops, ~${data?.estimated_hours}h`);
+      toast.success(`Route created: ${data?.total_stops} stops → ${selectedAssignee.name} (${selectedAssignee.role})`);
       setShowRouteBuilder(false);
       setSelectedTriggers([]);
       setRouteBuilderStep(1);
+      setSelectedAssignee(null);
       refetchTriggers();
-      queryClient.invalidateQueries({ queryKey: ['gasmask-route-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['gasmask-routes-canonical'] });
+      queryClient.invalidateQueries({ queryKey: ['driver-routes'] });
+      queryClient.invalidateQueries({ queryKey: ['biker-routes'] });
+      queryClient.invalidateQueries({ queryKey: ['ambassador-routes'] });
     } catch (err: any) { toast.error(err.message); }
     finally { setBuildingRoute(false); }
   };
+
 
   const completeTrigger = async (id: string) => {
     await (supabase as any).from('gasmask_visit_triggers').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', id);
