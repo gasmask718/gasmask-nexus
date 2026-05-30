@@ -313,43 +313,61 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
             <Switch checked={isBulkMode} onCheckedChange={setIsBulkMode} />
           </div>
 
-          {/* Single assignee info */}
-          {!isBulkMode && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="font-medium">{assigneeName}</p>
-                <Badge variant="outline" className="text-xs capitalize">{assigneeType}</Badge>
-              </div>
+          {/* Unified assignee picker — all 3 roles */}
+          <div className="space-y-2">
+            <Label>
+              Assignee{isBulkMode ? `s (${selectedAssignees.length} selected)` : ''}
+            </Label>
+            <div className="flex flex-wrap gap-1 mb-1">
+              {selectedAssignees.map((a) => (
+                <Badge key={`${a.role}-${a.id}`} variant="secondary" className="gap-1">
+                  <span className="capitalize text-[10px] opacity-70">{a.role}</span>
+                  {a.name}
+                  <X
+                    className="h-3 w-3 cursor-pointer"
+                    onClick={() => setSelectedAssignees((prev) => prev.filter((x) => !(x.id === a.id && x.role === a.role)))}
+                  />
+                </Badge>
+              ))}
             </div>
-          )}
+            <Input
+              placeholder="Search by name or role (driver / biker / ambassador)..."
+              value={assigneeSearch}
+              onChange={(e) => setAssigneeSearch(e.target.value)}
+            />
+            <ScrollArea className="h-40 rounded-md border p-2">
+              {assignablePeople
+                .filter((p) => {
+                  const q = assigneeSearch.trim().toLowerCase();
+                  if (!q) return true;
+                  return p.name.toLowerCase().includes(q) || p.role.includes(q);
+                })
+                .map((person) => {
+                  const checked = !!selectedAssignees.find((a) => a.id === person.id && a.role === person.role);
+                  return (
+                    <div
+                      key={`${person.role}-${person.id}`}
+                      className="flex items-center gap-2 py-1.5 px-1 hover:bg-muted/50 rounded cursor-pointer"
+                      onClick={() => {
+                        if (isBulkMode) {
+                          toggleAssignee(person);
+                        } else {
+                          setSelectedAssignees([person]);
+                        }
+                      }}
+                    >
+                      <Checkbox checked={checked} />
+                      <span className="text-sm flex-1">{person.name}</span>
+                      <Badge variant="outline" className="text-[10px] capitalize">{person.role}</Badge>
+                    </div>
+                  );
+                })}
+              {assignablePeople.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-3">No active assignable people</p>
+              )}
+            </ScrollArea>
+          </div>
 
-          {/* Bulk assignee selection */}
-          {isBulkMode && (
-            <div className="space-y-2">
-              <Label>Assignees ({selectedAssignees.length} selected)</Label>
-              <div className="flex flex-wrap gap-1 mb-2">
-                {selectedAssignees.map((a) => (
-                  <Badge key={a.id} variant="secondary" className="gap-1">
-                    {a.name}
-                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedAssignees((prev) => prev.filter((x) => x.id !== a.id))} />
-                  </Badge>
-                ))}
-              </div>
-              <ScrollArea className="h-32 rounded-md border p-2">
-                {allWorkers.map((worker) => (
-                  <div
-                    key={worker.id}
-                    className="flex items-center gap-2 py-1.5 px-1 hover:bg-muted/50 rounded cursor-pointer"
-                    onClick={() => toggleAssignee(worker)}
-                  >
-                    <Checkbox checked={!!selectedAssignees.find((a) => a.id === worker.id)} />
-                    <span className="text-sm">{worker.full_name}</span>
-                  </div>
-                ))}
-              </ScrollArea>
-            </div>
-          )}
 
           {/* Date(s) */}
           {!isBulkMode ? (
