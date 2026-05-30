@@ -206,6 +206,8 @@ const StoreDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { roles } = useUserRole();
+  const isAmbassador = roles?.includes('ambassador' as any);
   const [store, setStore] = useState<Store | null>(null);
   const [inventory, setInventory] = useState<ProductInventory[]>([]);
   const [visits, setVisits] = useState<VisitLog[]>([]);
