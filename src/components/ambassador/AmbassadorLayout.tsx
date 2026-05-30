@@ -45,6 +45,7 @@ export function AmbassadorLayout({
     >
       <AmbassadorPortalNav />
       {children}
+      <FeedbackFloatingButton />
     </EnhancedPortalLayout>
   );
 }
