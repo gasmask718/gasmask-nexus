@@ -65,6 +65,7 @@ function useCatalogProducts() {
 }
 
 function TierRow({ label, perTube, unitsPerBox }: { label: string; perTube: number | null; unitsPerBox: number }) {
+  const { t } = useTranslation();
   if (perTube == null) {
     return (
       <div className="rounded-md bg-background/60 border border-border/60 px-2 py-1.5">
@@ -78,13 +79,14 @@ function TierRow({ label, perTube, unitsPerBox }: { label: string; perTube: numb
     <div className="rounded-md bg-background/60 border border-border/60 px-2 py-1.5">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="text-[11px] font-semibold leading-tight">
-        {formatCurrency(perTube)}<span className="font-normal text-muted-foreground">/tube</span>
+        {formatCurrency(perTube)}<span className="font-normal text-muted-foreground">/{t('amb.catalog.tube')}</span>
         <span className="text-muted-foreground"> · </span>
-        {formatCurrency(perBox)}<span className="font-normal text-muted-foreground">/box</span>
+        {formatCurrency(perBox)}<span className="font-normal text-muted-foreground">/{t('amb.catalog.box')}</span>
       </p>
     </div>
   );
 }
+
 
 function ProductCard({ p }: { p: CatalogProduct }) {
   const brand = p.brand_id ? BRAND_COLORS[p.brand_id] : undefined;
