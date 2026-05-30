@@ -7,6 +7,58 @@ const corsHeaders = {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// VERTICAL SCOPE — GasMask-only
+// The Relationship Agent must NEVER process Brandaro / non-GasMask
+// stores. Gate every store query by membership in store_brand_accounts
+// for one of the GasMask-family brands below.
+//
+// Brand IDs (brands table):
+//   fb52b0e6-39b2-4e13-bea9-cd016f51efb0  GasMask
+//   f3e8ba65-2b76-4f61-a157-0751acb3e7b2  Hot Mama
+//   4b1c1255-b7b1-43ea-9ad9-a257c6582094  Grabba R Us
+//   c9d60b82-f0d3-44b4-9b33-1abe4adf1ebe  Hotscolatti (Hot Scalatti)
+// store_brand_accounts.brand is a TEXT label, not brand_id; the
+// canonical values present in that table are listed below.
+// ═══════════════════════════════════════════════════════════════
+const GASMASK_BRAND_IDS = [
+  'fb52b0e6-39b2-4e13-bea9-cd016f51efb0', // GasMask
+  'f3e8ba65-2b76-4f61-a157-0751acb3e7b2', // Hot Mama
+  '4b1c1255-b7b1-43ea-9ad9-a257c6582094', // Grabba R Us
+  'c9d60b82-f0d3-44b4-9b33-1abe4adf1ebe', // Hotscolatti
+];
+const GASMASK_BRAND_LABELS = ['GasMask', 'HotMama', 'GrabbaRUs', 'Hotscolatti'];
+
+async function getGasMaskStoreIds(supabase: any): Promise<Set<string>> {
+  const ids = new Set<string>();
+  const pageSize = 1000;
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from('store_brand_accounts')
+      .select('store_master_id')
+      .in('brand', GASMASK_BRAND_LABELS)
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    for (const r of data) if (r.store_master_id) ids.add(r.store_master_id);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return ids;
+}
+
+async function isGasMaskStore(supabase: any, storeId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('store_brand_accounts')
+    .select('id')
+    .eq('store_master_id', storeId)
+    .in('brand', GASMASK_BRAND_LABELS)
+    .limit(1)
+    .maybeSingle();
+  return !!data;
+}
+
+// ═══════════════════════════════════════════════════════════════
 // AGENT 1 — Master Relationship Specialist
 // ═══════════════════════════════════════════════════════════════
 const RELATIONSHIP_AGENT = `You are Marcus, the Master Relationship Specialist for Dynasty OS — a multi-brand grabba leaf and tobacco distribution company serving corner stores, bodegas, and smoke shops across NY and NJ.
@@ -423,11 +475,16 @@ serve(async (req) => {
     if (action === 'run_daily_relationship_cycle') {
       const limit = body.limit || 50;
 
-      // Fetch stores with relationship data
+      // GasMask-only scope: pre-fetch allowed store IDs from store_brand_accounts
+      const gasmaskIds = await getGasMaskStoreIds(supabase);
+      const allowedIds = Array.from(gasmaskIds);
+
+      // Fetch stores with relationship data — filtered to GasMask vertical only
       const { data: stores, error: storesErr } = await supabase
         .from('stores')
         .select('id, name, phone, address_city, address_state, status, health_score, last_visit_date, last_order_date, owner_name, personality_notes, relationship_tier')
         .eq('status', 'active')
+        .in('id', allowedIds)
         .order('health_score', { ascending: true })
         .limit(limit);
 
@@ -612,6 +669,16 @@ Tube intel signals: ${hasSignals ? JSON.stringify(tubeSignals) : 'None'}
         });
       }
 
+      // GasMask-only scope: refuse to process inbound replies for non-GasMask stores
+      if (store_id && !(await isGasMaskStore(supabase, store_id))) {
+        return new Response(JSON.stringify({
+          success: false,
+          skipped: true,
+          reason: 'store_outside_gasmask_vertical',
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+
       // Get store context
       let storeContext = `Store: ${store_name || 'Unknown'}\nTier: ${tier || 'unknown'}\nPhone: ${phone_number || ''}`;
 
@@ -699,6 +766,14 @@ Personality: ${store.personality_notes || 'None'}
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
+      }
+
+      // GasMask-only scope
+      if (!(await isGasMaskStore(supabase, store_id))) {
+        return new Response(JSON.stringify({
+          error: 'store_outside_gasmask_vertical',
+          reason: 'Relationship Agent only processes GasMask-vertical stores',
+        }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       const { data: store } = await supabase
