@@ -34,6 +34,9 @@ import { Boxes, Plus, Play, CheckCircle, XCircle, ChevronRight, Scale, Package, 
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useTranslation } from '@/hooks/useTranslation';
+import { BilingualLabel } from '@/components/portal/BilingualLabel';
+
 
 interface DailyBatchEntryProps {
   officeId: string;
