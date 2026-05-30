@@ -46481,7 +46481,7 @@ export type Database = {
           risk_reasons: string[] | null
           risk_score: number | null
           rollback_of_id: string | null
-          store_id: string
+          store_id: string | null
           submission_source: string | null
           submission_status: Database["public"]["Enums"]["field_submission_status"]
           submitted_by_role: string
@@ -46508,7 +46508,7 @@ export type Database = {
           risk_reasons?: string[] | null
           risk_score?: number | null
           rollback_of_id?: string | null
-          store_id: string
+          store_id?: string | null
           submission_source?: string | null
           submission_status?: Database["public"]["Enums"]["field_submission_status"]
           submitted_by_role: string
@@ -46535,7 +46535,7 @@ export type Database = {
           risk_reasons?: string[] | null
           risk_score?: number | null
           rollback_of_id?: string | null
-          store_id?: string
+          store_id?: string | null
           submission_source?: string | null
           submission_status?: Database["public"]["Enums"]["field_submission_status"]
           submitted_by_role?: string
@@ -117653,6 +117653,7 @@ export type Database = {
         | "wholesaler_association"
         | "connected_store"
         | "store_questionnaire"
+        | "new_store"
       field_submission_status:
         | "pending_review"
         | "approved"
@@ -118300,6 +118301,7 @@ export const Constants = {
         "wholesaler_association",
         "connected_store",
         "store_questionnaire",
+        "new_store",
       ],
       field_submission_status: [
         "pending_review",
