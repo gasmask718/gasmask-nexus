@@ -227,6 +227,8 @@ const AmbassadorPayoutsPage = lazy(() => import('@/pages/ambassador/payouts').th
 const AmbassadorPayoutStatementPage = lazy(() => import('@/pages/ambassador/payouts').then(m => ({ default: m.AmbassadorPayoutStatementPage })));
 const AmbassadorPayoutSettingsPage = lazy(() => import('@/pages/ambassador/payouts').then(m => ({ default: m.AmbassadorPayoutSettingsPage })));
 const AmbassadorCatalog = lazy(() => import('@/pages/ambassador/AmbassadorCatalog'));
+const AmbassadorFeedback = lazy(() => import('@/pages/ambassador/AmbassadorFeedback'));
+const FeedbackInbox = lazy(() => import('@/pages/admin/FeedbackInbox'));
 
 // Misc protected pages
 const Expansion = lazy(() => import('@/pages/Expansion'));
@@ -3072,6 +3074,20 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
             <AmbassadorDisputeDetail />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/ambassador/feedback" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador', 'driver', 'biker']}>
+            <AmbassadorFeedback />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/feedback" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'staff']}>
+            <FeedbackInbox />
           </RequireRole>
         </ProtectedRoute>
       } />

@@ -45,6 +45,7 @@ import {
   Calculator,
   PhoneCall,
   MessageSquare,
+  MessageSquareWarning,
   Mail,
   Radio,
   ShoppingCart,
@@ -543,6 +544,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/va-task-center', label: 'VA Task Center', icon: ClipboardList },
       { path: '/portal/va', label: 'VA Portal', icon: User },
       { path: '/portal/ambassador', label: '🎖️ Ambassador OS', icon: Award },
+      { path: '/admin/feedback', label: '📣 Feedback Inbox', icon: MessageSquareWarning },
     ],
   },
   brandaroHub: {
