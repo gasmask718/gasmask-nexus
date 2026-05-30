@@ -9,6 +9,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { RoleRouteGuard } from '@/components/security/RoleRouteGuard';
 import { RequireRole } from '@/components/security/RequireRole';
 import Layout from '@/components/Layout';
+import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
