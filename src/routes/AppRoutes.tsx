@@ -1963,6 +1963,8 @@ export default function AppRoutes() {
         <Route path="/sbo-ai-engine/sync" element={<SBOSyncPage />} />
         <Route path="/admin/system-integrity" element={<SystemIntegrity />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
+        <Route path="/biker/route" element={<BikerTodaysRoutesPage />} />
+        <Route path="/biker/routes" element={<BikerTodaysRoutesPage />} />
 
         {/* Legacy payouts aliases (keep old links working) */}
         <Route path="/biker-payouts" element={<Navigate to="/delivery/payouts" replace />} />
