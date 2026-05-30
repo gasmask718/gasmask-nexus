@@ -4,6 +4,7 @@
  */
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { 
   Store, Phone, Mail, MapPin, Clock, User, 
   Package, DollarSign, FileText, MessageSquare,
@@ -37,6 +38,7 @@ import { ClickablePhone } from '@/components/communication/ClickablePhone';
 function StoreProfileContent() {
   const { storeId } = useParams<{ storeId: string }>();
   const navigate = useNavigate();
+  const { initiateCall } = useCall();
   const [newNote, setNewNote] = useState('');
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
 
@@ -146,11 +148,28 @@ function StoreProfileContent() {
                 <ClipboardList className="mr-1 h-4 w-4" />
                 Recon Visit
               </Button>
-              <Button size="sm" variant="outline">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!store.phone}
+                onClick={() => {
+                  if (!store.phone) { toast.error('No phone on file'); return; }
+                  initiateCall({
+                    destinationPhone: store.phone,
+                    entityType: 'store',
+                    entityId: store.id,
+                    entityName: store.store_name,
+                  });
+                }}
+              >
                 <Phone className="mr-1 h-4 w-4" />
                 Call
               </Button>
-              <Button size="sm" variant="outline">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate(`/ambassador/communications?store=${store.id}`)}
+              >
                 <MessageSquare className="mr-1 h-4 w-4" />
                 Message
               </Button>

@@ -4,6 +4,7 @@
  * Every assigned store is always shown (no more "No conversations yet").
  */
 import React, { useMemo, useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -117,10 +118,12 @@ function AdminAmbassadorPicker() {
 }
 
 export default function AmbassadorCommunications() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const preselectStoreId = searchParams.get('store');
   const [tab, setTab] = useState('messages');
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'unread' | 'overdue'>('all');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(preselectStoreId);
   const [composer, setComposer] = useState('');
   const [composerAr, setComposerAr] = useState('');
   const [lang, setLang] = useState<'en' | 'ar'>('en');
@@ -152,6 +155,15 @@ export default function AmbassadorCommunications() {
   useEffect(() => {
     try { localStorage.setItem('amb_comm_sidebar_open', sidebarOpen ? '1' : '0'); } catch {}
   }, [sidebarOpen]);
+
+  // Sync preselected store from URL into selection (once, on mount/param change)
+  useEffect(() => {
+    if (preselectStoreId && preselectStoreId !== selectedId) {
+      setSelectedId(preselectStoreId);
+      setTab('messages');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselectStoreId]);
 
   const { initiateCall } = useCall();
   const { viewAsAmbassador } = useViewAs();

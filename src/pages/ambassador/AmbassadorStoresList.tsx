@@ -7,8 +7,10 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   Store, Search, Filter, MapPin, Phone, Calendar,
-  ArrowRight, Users, Trash2, Route as RouteIcon, Plus
+  ArrowRight, Users, Trash2, Route as RouteIcon, Plus, MessageSquare
 } from 'lucide-react';
+import { useCall } from '@/components/communication/CallProvider';
+import { toast } from 'sonner';
 import { NewStoreSubmissionDialog } from '@/components/portal/field/NewStoreSubmissionDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
@@ -34,13 +36,15 @@ interface StoreCardProps {
   onRemove: () => void;
   onToggle: (selected: boolean) => void;
   onDispatch: () => void;
+  onCall: () => void;
+  onMessage: () => void;
   selected: boolean;
   losSnapshots?: import('@/hooks/useLastOrderSnapshot').LastOrderSnapshot[];
 }
 
-function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, selected, losSnapshots }: StoreCardProps) {
+function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onMessage, selected, losSnapshots }: StoreCardProps) {
   const handleRemoveClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click navigation
+    e.stopPropagation();
     onRemove();
   };
 
@@ -53,6 +57,9 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, selected, l
     e.stopPropagation();
     onDispatch();
   };
+
+  const handleCall = (e: React.MouseEvent) => { e.stopPropagation(); onCall(); };
+  const handleMessage = (e: React.MouseEvent) => { e.stopPropagation(); onMessage(); };
 
   return (
     <Card 
@@ -110,6 +117,25 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, selected, l
               <Button
                 variant="ghost"
                 size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-primary disabled:opacity-40"
+                onClick={handleCall}
+                disabled={!store.store_phone}
+                title={store.store_phone ? `Call ${store.store_phone}` : 'No phone on file'}
+              >
+                <Phone className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-primary"
+                onClick={handleMessage}
+                title="Send message"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-primary"
                 onClick={handleDispatch}
                 title="Add to Route"
@@ -136,6 +162,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, selected, l
 
 function StoresListContent() {
   const navigate = useNavigate();
+  const { initiateCall } = useCall();
   const { stores, metrics, isLoading, unassignStore, isUnassigningStore, ambassador } = useAmbassadorPortfolio();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
@@ -298,9 +325,20 @@ function StoresListContent() {
                   onRemove={() => handleRemoveClick(store)}
                   onToggle={(selected) => toggleSelect(store.store_id, selected)}
                   onDispatch={() => setDispatchStores([store.store_id])}
+                  onCall={() => {
+                    if (!store.store_phone) { toast.error('No phone on file'); return; }
+                    initiateCall({
+                      destinationPhone: store.store_phone,
+                      entityType: 'store',
+                      entityId: store.store_id,
+                      entityName: store.store_name,
+                    });
+                  }}
+                  onMessage={() => navigate(`/ambassador/communications?store=${store.store_id}`)}
                   selected={selectedIds.includes(store.store_id)}
                   losSnapshots={losMap?.get(store.store_id)}
                 />
+
               ))}
             </div>
           )}
