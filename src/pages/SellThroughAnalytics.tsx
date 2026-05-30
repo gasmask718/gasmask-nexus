@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -13,8 +14,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { DataTablePagination } from "@/components/crud/DataTablePagination";
 import { ExportButton } from "@/components/crud/ExportButton";
+import { RouteAssignmentDialog } from "@/components/delivery/RouteAssignmentDialog";
 import {
-  BarChart3, Search, ArrowUpDown, ArrowUp, ArrowDown, ExternalLink,
+  BarChart3, Search, ArrowUpDown, ArrowUp, ArrowDown, ExternalLink, Route as RouteIcon,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useGlobalSellThroughAnalytics, type GlobalSellThroughRow } from "@/hooks/useGlobalSellThroughAnalytics";
@@ -62,6 +64,10 @@ export default function SellThroughAnalytics() {
   // Pagination
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+
+  // Dispatch selection
+  const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
+  const [dispatchStores, setDispatchStores] = useState<string[] | null>(null);
 
   const toggleSort = useCallback((field: SortField) => {
     setSortField((prev) => {
@@ -159,6 +165,21 @@ export default function SellThroughAnalytics() {
     return { total, overdue, fast, avgGap, inactive: Math.round(inactive) };
   }, [activeRows, allRows, inactiveRows, showInactive]);
 
+  // Unique overdue store IDs for bulk dispatch
+  const overdueStoreIds = useMemo(() => {
+    const base = showInactive ? allRows : activeRows;
+    const withData = base.filter((r) => r.total_orders_lifetime > 1);
+    const ids = new Set<string>();
+    withData.forEach((r) => {
+      if (r.avg_days_between_orders != null && r.days_since_last_order != null) {
+        if (r.days_since_last_order > r.avg_days_between_orders * 1.5) {
+          ids.add(r.store_id);
+        }
+      }
+    });
+    return Array.from(ids);
+  }, [activeRows, allRows, showInactive]);
+
   // Export columns
   const exportColumns = [
     { key: "store_name", label: "Store Name" },
@@ -196,12 +217,31 @@ export default function SellThroughAnalytics() {
             Portfolio-level sell-through velocity across all stores and brands
           </p>
         </div>
-        <ExportButton
-          data={processed as unknown as Record<string, unknown>[]}
-          filename="sell-through-analytics"
-          columns={exportColumns}
-          disabled={processed.length === 0}
-        />
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            disabled={selectedStoreIds.length === 0}
+            onClick={() => setDispatchStores(selectedStoreIds)}
+          >
+            <RouteIcon className="h-4 w-4 mr-2" />
+            Dispatch Selected{selectedStoreIds.length > 0 ? ` (${selectedStoreIds.length})` : ''}
+          </Button>
+          {overdueStoreIds.length > 0 && (
+            <Button
+              variant="secondary"
+              onClick={() => setDispatchStores(overdueStoreIds)}
+            >
+              <RouteIcon className="h-4 w-4 mr-2" />
+              Dispatch Severely Overdue ({overdueStoreIds.length})
+            </Button>
+          )}
+          <ExportButton
+            data={processed as unknown as Record<string, unknown>[]}
+            filename="sell-through-analytics"
+            columns={exportColumns}
+            disabled={processed.length === 0}
+          />
+        </div>
       </div>
 
       {/* KPI Strip */}
@@ -296,6 +336,19 @@ export default function SellThroughAnalytics() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-8">
+                  <Checkbox
+                    checked={paginated.length > 0 && paginated.every((r) => selectedStoreIds.includes(r.store_id))}
+                    onCheckedChange={(checked) => {
+                      const pageIds = paginated.map((r) => r.store_id);
+                      setSelectedStoreIds((prev) => {
+                        const rest = prev.filter((id) => !pageIds.includes(id));
+                        return checked ? Array.from(new Set([...rest, ...pageIds])) : rest;
+                      });
+                    }}
+                    aria-label="Select all on page"
+                  />
+                </TableHead>
                 <TableHead>
                   <button className="flex items-center text-xs font-medium" onClick={() => toggleSort("store_name")}>
                     Store <SortIcon field="store_name" />
@@ -335,13 +388,13 @@ export default function SellThroughAnalytics() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-12 text-muted-foreground animate-pulse">
+                  <TableCell colSpan={11} className="text-center py-12 text-muted-foreground animate-pulse">
                     Loading sell-through analytics…
                   </TableCell>
                 </TableRow>
               ) : paginated.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
                     No results found. Adjust your filters.
                   </TableCell>
                 </TableRow>
@@ -352,6 +405,15 @@ export default function SellThroughAnalytics() {
                     row={row}
                     onNavigate={navigate}
                     isInactive={row.total_orders_lifetime === 0 && showInactive}
+                    isSelected={selectedStoreIds.includes(row.store_id)}
+                    onToggleSelect={() => {
+                      setSelectedStoreIds((prev) =>
+                        prev.includes(row.store_id)
+                          ? prev.filter((id) => id !== row.store_id)
+                          : [...prev, row.store_id]
+                      );
+                    }}
+                    onDispatch={(storeId) => setDispatchStores([storeId])}
                   />
                 ))
               )}
@@ -359,6 +421,25 @@ export default function SellThroughAnalytics() {
           </Table>
         </div>
       </Card>
+
+      {/* Dispatch — reuses working RouteAssignmentDialog with empty assignee so picker opens */}
+      {dispatchStores && (
+        <RouteAssignmentDialog
+          open={!!dispatchStores}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDispatchStores(null);
+              setSelectedStoreIds([]);
+            }
+          }}
+          assigneeId=""
+          assigneeName=""
+          assigneeType="driver"
+          assigneeUserId={null}
+          bulkMode={dispatchStores.length > 1}
+          preselectedStores={dispatchStores}
+        />
+      )}
     </div>
   );
 }
@@ -367,10 +448,16 @@ function SellThroughRow({
   row,
   onNavigate,
   isInactive,
+  isSelected,
+  onToggleSelect,
+  onDispatch,
 }: {
   row: GlobalSellThroughRow;
   onNavigate: (path: string) => void;
   isInactive?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
+  onDispatch?: (storeId: string) => void;
 }) {
   const health = classifySellThroughHealth(
     row.days_since_last_order,
@@ -385,6 +472,13 @@ function SellThroughRow({
       className={`cursor-pointer hover:bg-accent/50 ${isInactive ? "opacity-50" : ""}`}
       onClick={() => onNavigate(`/stores/${row.store_id}`)}
     >
+      <TableCell className="w-8" onClick={(e) => e.stopPropagation()}>
+        <Checkbox
+          checked={!!isSelected}
+          onCheckedChange={onToggleSelect}
+          aria-label={`Select ${row.store_name || 'Unknown Store'}`}
+        />
+      </TableCell>
       <TableCell className="font-medium max-w-[200px] truncate">
         {row.store_name || "Unknown Store"}
       </TableCell>
@@ -449,9 +543,23 @@ function SellThroughRow({
         {row.last_order_date ? format(new Date(row.last_order_date), "MMM d, yy") : "—"}
       </TableCell>
       <TableCell>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onNavigate(`/stores/${row.store_id}`); }}>
-          <ExternalLink className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onNavigate(`/stores/${row.store_id}`); }}>
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Button>
+          {onDispatch && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={(e) => { e.stopPropagation(); onDispatch(row.store_id); }}
+              aria-label={`Add ${row.store_name || 'Unknown Store'} to route`}
+              title="Add to Route"
+            >
+              <RouteIcon className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
       </TableCell>
     </TableRow>
   );
