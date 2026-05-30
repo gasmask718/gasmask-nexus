@@ -15,8 +15,10 @@ import {
   Clock,
   Play,
   Square,
-  MessageSquare
+  MessageSquare,
+  Plus
 } from 'lucide-react';
+import { NewStoreSubmissionDialog } from './NewStoreSubmissionDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useTranslation } from '@/hooks/useTranslation';
