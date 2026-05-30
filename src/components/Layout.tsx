@@ -14,6 +14,7 @@ import { SimulationWatermark } from '@/components/simulation/SimulationWatermark
 import { exportEmpireDataToExcel, exportOsBlueprintToJson } from '@/services/exportService';
 import '@/theme/departmentStyles.css';
 import { useLocation, Link } from 'react-router-dom';
+import { isDispatchWired, sectionHasDispatch, DISPATCH_TOOLTIP } from '@/config/dispatchRegistry';
 import { 
   LogOut,
   Menu,
