@@ -376,7 +376,9 @@ export default function AmbassadorCommissions() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="w-full overflow-x-auto">
                 <Table>
+
                   <TableHeader>
                     <TableRow>
                       <TableHead>Period</TableHead>
