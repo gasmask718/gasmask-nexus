@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -13,8 +14,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { DataTablePagination } from "@/components/crud/DataTablePagination";
 import { ExportButton } from "@/components/crud/ExportButton";
+import { RouteAssignmentDialog } from "@/components/delivery/RouteAssignmentDialog";
 import {
-  BarChart3, Search, ArrowUpDown, ArrowUp, ArrowDown, ExternalLink,
+  BarChart3, Search, ArrowUpDown, ArrowUp, ArrowDown, ExternalLink, Route as RouteIcon,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useGlobalSellThroughAnalytics, type GlobalSellThroughRow } from "@/hooks/useGlobalSellThroughAnalytics";
@@ -62,6 +64,10 @@ export default function SellThroughAnalytics() {
   // Pagination
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+
+  // Dispatch selection
+  const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
+  const [dispatchStores, setDispatchStores] = useState<string[] | null>(null);
 
   const toggleSort = useCallback((field: SortField) => {
     setSortField((prev) => {
