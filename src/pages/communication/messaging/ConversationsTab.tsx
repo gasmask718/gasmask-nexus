@@ -370,13 +370,24 @@ export default function ConversationsTab() {
             <div className="divide-y">
               {filteredThreads.length === 0 ? (
                 <div className="p-6 text-center text-muted-foreground text-sm">No conversations match filters.</div>
-              ) : filteredThreads.map((thread: any) => (
+              ) : filteredThreads.map((thread: any) => {
+                const id = resolveIdentity(thread.phone);
+                const displayName = id?.primaryName || thread.phone || "Unknown";
+                const subtitle = id
+                  ? (id.isMultiple ? `${id.storeIds.length} locations · ${thread.phone}` : (id.address || thread.phone))
+                  : null;
+                return (
                 <div key={thread.key} onClick={() => setSelectedThreadKey(thread.key)}
                   className={`p-4 cursor-pointer hover:bg-muted/50 transition-colors ${selectedThreadKey === thread.key ? "bg-muted" : ""}`}>
-                  <div className="flex justify-between items-start mb-1">
-                    <p className="text-sm font-semibold truncate">{thread.phone || "Unknown"}</p>
+                  <div className="flex justify-between items-start mb-1 gap-2">
+                    <p className="text-sm font-semibold truncate" title={displayName}>{displayName}</p>
                     {getStatusBadge(thread)}
                   </div>
+                  {subtitle && (
+                    <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1 mb-1" title={subtitle}>
+                      <MapPin className="h-3 w-3 shrink-0" /> {subtitle}
+                    </p>
+                  )}
                   <p className="text-xs text-primary truncate mb-2">{thread.campaignName || getSourceLabel(thread.source)}</p>
                   <p className="text-sm text-muted-foreground truncate">{thread.lastMessage}</p>
                   <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
@@ -384,7 +395,8 @@ export default function ConversationsTab() {
                     <span>{new Date(thread.lastMessageAt).toLocaleDateString()}</span>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
         </Card>
