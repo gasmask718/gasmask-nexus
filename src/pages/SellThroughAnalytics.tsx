@@ -448,10 +448,16 @@ function SellThroughRow({
   row,
   onNavigate,
   isInactive,
+  isSelected,
+  onToggleSelect,
+  onDispatch,
 }: {
   row: GlobalSellThroughRow;
   onNavigate: (path: string) => void;
   isInactive?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
+  onDispatch?: (storeId: string) => void;
 }) {
   const health = classifySellThroughHealth(
     row.days_since_last_order,
@@ -466,6 +472,13 @@ function SellThroughRow({
       className={`cursor-pointer hover:bg-accent/50 ${isInactive ? "opacity-50" : ""}`}
       onClick={() => onNavigate(`/stores/${row.store_id}`)}
     >
+      <TableCell className="w-8" onClick={(e) => e.stopPropagation()}>
+        <Checkbox
+          checked={!!isSelected}
+          onCheckedChange={onToggleSelect}
+          aria-label={`Select ${row.store_name || 'Unknown Store'}`}
+        />
+      </TableCell>
       <TableCell className="font-medium max-w-[200px] truncate">
         {row.store_name || "Unknown Store"}
       </TableCell>
@@ -530,9 +543,23 @@ function SellThroughRow({
         {row.last_order_date ? format(new Date(row.last_order_date), "MMM d, yy") : "—"}
       </TableCell>
       <TableCell>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onNavigate(`/stores/${row.store_id}`); }}>
-          <ExternalLink className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onNavigate(`/stores/${row.store_id}`); }}>
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Button>
+          {onDispatch && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={(e) => { e.stopPropagation(); onDispatch(row.store_id); }}
+              aria-label={`Add ${row.store_name || 'Unknown Store'} to route`}
+              title="Add to Route"
+            >
+              <RouteIcon className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
       </TableCell>
     </TableRow>
   );
