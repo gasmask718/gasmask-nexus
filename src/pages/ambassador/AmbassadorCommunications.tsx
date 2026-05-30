@@ -132,16 +132,12 @@ export default function AmbassadorCommunications() {
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [callTarget, setCallTarget] = useState<MessageThread | null>(null);
-  const [callMode, setCallMode] = useState<'choose' | 'ai-config'>('choose');
-  const [selectedScriptId, setSelectedScriptId] = useState<string>('');
-  const [aiScripts, setAiScripts] = useState<any[]>([]);
   const [personalPhoneOpen, setPersonalPhoneOpen] = useState(false);
   const [personalPhoneInput, setPersonalPhoneInput] = useState('');
   const [isPlacing, setIsPlacing] = useState(false);
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [selectedStoreIds, setSelectedStoreIds] = useState<Set<string>>(new Set());
   const [bulkSmsOpen, setBulkSmsOpen] = useState(false);
-  const [bulkAiOpen, setBulkAiOpen] = useState(false);
   const [jobsPanelOpen, setJobsPanelOpen] = useState(false);
   const [smartFilter, setSmartFilter] = useState<string | null>(null);
 
