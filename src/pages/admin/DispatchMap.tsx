@@ -30,8 +30,8 @@ const ROWS: Row[] = [
   { floor: 'Store Intelligence', path: '/grabba/store-intelligence', shows: 'AI-scored stores (0-100)', status: 'wired' },
   { floor: 'Grabba StoreMasterProfile', path: '/grabba/stores/:id', shows: 'Master profile of a single store', status: 'wired' },
   { floor: 'OS NeighborhoodIntelligence', path: '/os/neighborhood-intelligence', shows: 'Neighborhood-level signals + stores', status: 'wired' },
-  { floor: 'Floor9 Predictions', path: '/grabba/floor9/predictions', shows: 'Stores predicted to need visit', status: 'unwired', note: 'Predicted list is read-only — no dispatch' },
-  { floor: 'Grabba ClusterDashboard', path: '/grabba/clusters', shows: 'Stores grouped into clusters', status: 'unwired', note: 'Cluster cards have no dispatch action' },
+  { floor: 'Floor9 Predictions', path: '/grabba/floor9/predictions', shows: 'Stores predicted to need visit', status: 'wired', note: 'Multi-select + Dispatch Selected + Dispatch All Flagged + per-row Add-to-Route' },
+  { floor: 'Grabba ClusterDashboard', path: '/grabba/clusters', shows: 'Stores grouped into clusters', status: 'wired', note: 'Dispatch by Brand panel: brand filter + multi-select + per-row Add-to-Route' },
   { floor: 'Floor1 BrandCRM', path: '/floor1/brand-crm', shows: 'Brand-level CRM store roster', status: 'unwired', note: 'Roster table needs Dispatch column' },
   { floor: 'Ambassador StoresList', path: '/ambassador/stores', shows: 'Ambassador-portal store list', status: 'wired', note: 'Pre-filled assignee = self (ambassador role), RLS-scoped' },
 ];
