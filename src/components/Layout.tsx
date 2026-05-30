@@ -765,7 +765,8 @@ const Layout = ({ children }: LayoutProps) => {
 
   const renderSection = (id: string, name: string, items: Array<{ path: string; label: string; icon: any; testId?: string }>) => {
     const isOpen = openSections.includes(id);
-    
+    const sectionWired = sectionHasDispatch(items.map(i => i.path));
+
     return (
       <div key={id} className="mb-1">
         <button
@@ -773,27 +774,44 @@ const Layout = ({ children }: LayoutProps) => {
           className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-foreground/80 hover:bg-muted/50 rounded-md transition-colors"
         >
           <span className="flex-1 text-left truncate text-xs">{name}</span>
+          {sectionWired && (
+            <span
+              title={DISPATCH_TOOLTIP}
+              aria-label={DISPATCH_TOOLTIP}
+              className="inline-block h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]"
+            />
+          )}
           {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         </button>
-        
+
         {isOpen && (
           <div className="ml-4 mt-0.5 space-y-0.5">
-            {items.map(item => (
-              <Link
-                key={item.path}
-                to={item.path}
-                data-testid={item.testId}
-                className={cn(
-                  "flex items-center gap-2 px-2 py-1 text-xs rounded-md transition-colors",
-                  isPathActive(item.path)
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                )}
-              >
-                <item.icon className="h-3 w-3 shrink-0" />
-                <span className="truncate">{item.label}</span>
-              </Link>
-            ))}
+            {items.map(item => {
+              const wired = isDispatchWired(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  data-testid={item.testId}
+                  className={cn(
+                    "flex items-center gap-2 px-2 py-1 text-xs rounded-md transition-colors",
+                    isPathActive(item.path)
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  )}
+                >
+                  <item.icon className="h-3 w-3 shrink-0" />
+                  <span className="truncate flex-1">{item.label}</span>
+                  {wired && (
+                    <span
+                      title={DISPATCH_TOOLTIP}
+                      aria-label={DISPATCH_TOOLTIP}
+                      className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.7)] shrink-0"
+                    />
+                  )}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
