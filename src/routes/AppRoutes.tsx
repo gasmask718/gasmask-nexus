@@ -3169,21 +3169,27 @@ export default function AppRoutes() {
       <Route path="/ambassador/payouts" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorPayoutsPage /></Layout>
+            <AmbassadorLayout title="My Payouts" subtitle="Track your commission payments">
+              <AmbassadorPayoutsPage />
+            </AmbassadorLayout>
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/payouts/:itemId" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorPayoutStatementPage /></Layout>
+            <AmbassadorLayout title="Payout Statement" backPath="/ambassador/payouts" backLabel="Back to Payouts">
+              <AmbassadorPayoutStatementPage />
+            </AmbassadorLayout>
           </RequireRole>
         </ProtectedRoute>
       } />
       <Route path="/ambassador/settings/payouts" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
-            <Layout><AmbassadorPayoutSettingsPage /></Layout>
+            <AmbassadorLayout title="Payout Settings" subtitle="Configure how you get paid">
+              <AmbassadorPayoutSettingsPage />
+            </AmbassadorLayout>
           </RequireRole>
         </ProtectedRoute>
       } />
