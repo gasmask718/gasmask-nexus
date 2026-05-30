@@ -134,7 +134,6 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
     mutationFn: async (input: { title: string; date: string; storeIds?: string[] }) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      console.log('[Route Create] Creating route:', input);
 
       const { data: route, error: routeError } = await supabase
         .from('routes')
@@ -157,7 +156,6 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
         throw new Error('Route was not created - check RLS policies');
       }
 
-      console.log('[Route Create] Route created:', route.id);
 
       // Add stops if provided
       if (input.storeIds?.length && route?.id) {
@@ -168,7 +166,6 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
           status: 'pending',
         }));
 
-        console.log('[Route Create] Adding stops:', stops);
         const { error: stopsError } = await supabase.from('route_stops').insert(stops);
         if (stopsError) {
           console.error('[Route Create] Stops insert error:', stopsError);
@@ -192,7 +189,6 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
   // Add stop mutation
   const addStopMutation = useMutation({
     mutationFn: async (input: { routeId: string; storeId: string; order?: number }) => {
-      console.log('[Route Stop] Adding stop:', input);
       
       const { data: existingStops } = await supabase
         .from('route_stops')
@@ -223,7 +219,6 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
         throw new Error('Stop was not created - check RLS policies');
       }
       
-      console.log('[Route Stop] Stop created:', data.id);
       return data;
     },
     onSuccess: () => {

@@ -107,7 +107,6 @@ export default function AmbassadorLeads() {
         .select('role')
         .eq('user_id', user.id);
       if (error) {
-        console.warn('[Pipeline Debug] user_roles read failed:', error);
         return [] as string[];
       }
       return (data || []).map((r: any) => String(r.role));
@@ -150,7 +149,6 @@ export default function AmbassadorLeads() {
         .order('created_at', { ascending: false })
         .limit(1);
       if (error) {
-        console.warn('[Pipeline Debug] ambassador id fetch failed:', error);
         return null;
       }
       return data?.[0]?.id ?? null;
