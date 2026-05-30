@@ -768,6 +768,14 @@ Personality: ${store.personality_notes || 'None'}
         });
       }
 
+      // GasMask-only scope
+      if (!(await isGasMaskStore(supabase, store_id))) {
+        return new Response(JSON.stringify({
+          error: 'store_outside_gasmask_vertical',
+          reason: 'Relationship Agent only processes GasMask-vertical stores',
+        }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
       const { data: store } = await supabase
         .from('stores')
         .select('*')
