@@ -406,6 +406,10 @@ export default function AllAmbassadorsTable() {
                             <ChevronRight className="h-4 w-4 mr-2" />
                             View Profile
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setSelectedAmbassador(amb); setShowRouteAssign(true); }}>
+                            <RouteIcon className="h-4 w-4 mr-2" />
+                            Assign Route
+                          </DropdownMenuItem>
                           {amb.phone_primary && (
                             <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
                               <Phone className="h-4 w-4 mr-2" />
