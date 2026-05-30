@@ -59,7 +59,7 @@ const formatTimestamp = (d: string) => {
   const date = new Date(d);
   if (isToday(date)) return format(date, 'h:mm a');
   if (isYesterday(date)) return 'Yesterday';
-  return format(date, 'MMM d');
+  return format(date, 'MMM d, yyyy');
 };
 
 // ── Main Component ─────────────────────────────────────

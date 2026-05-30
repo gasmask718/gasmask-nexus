@@ -543,7 +543,7 @@ function TimeCard({ title, date, isActive, territoryData, isLoading }: TimeCardP
             {title}
           </CardTitle>
           <Badge variant={isActive ? 'default' : 'outline'}>
-            {format(date, 'MMM d')}
+            {format(date, 'MMM d, yyyy')}
           </Badge>
         </div>
       </CardHeader>

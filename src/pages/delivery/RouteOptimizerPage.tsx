@@ -786,7 +786,7 @@ export default function RouteOptimizerPage() {
                   <div>
                     <p className="font-medium text-sm">Existing Routes</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {existingRoutes.length} routes already exist for {format(selectedDate, 'MMM d')}
+                      {existingRoutes.length} routes already exist for {format(selectedDate, 'MMM d, yyyy')}
                     </p>
                   </div>
                 </div>

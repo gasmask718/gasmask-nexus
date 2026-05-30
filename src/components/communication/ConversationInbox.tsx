@@ -58,7 +58,7 @@ function formatMessageDate(dateStr: string): string {
   } else if (isYesterday(date)) {
     return `Yesterday ${format(date, 'h:mm a')}`;
   }
-  return format(date, 'MMM d, h:mm a');
+  return format(date, 'MMM d, yyyy · h:mm a');
 }
 
 function getDateSeparator(dateStr: string): string {

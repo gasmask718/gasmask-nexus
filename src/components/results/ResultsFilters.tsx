@@ -141,7 +141,7 @@ export function ResultsFilters({
               <CalendarDays className="h-3.5 w-3.5" />
               {dateRange.start && dateRange.end ? (
                 <span className="text-xs">
-                  {format(dateRange.start, 'MMM d')} - {format(dateRange.end, 'MMM d')}
+                  {format(dateRange.start, 'MMM d, yyyy')} - {format(dateRange.end, 'MMM d, yyyy')}
                 </span>
               ) : (
                 'Date Range'

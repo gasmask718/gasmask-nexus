@@ -395,7 +395,7 @@ export function ManualBackfill() {
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm">
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(dateRange.from, 'MMM d')} - {format(dateRange.to, 'MMM d')}
+                    {format(dateRange.from, 'MMM d, yyyy')} - {format(dateRange.to, 'MMM d, yyyy')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">

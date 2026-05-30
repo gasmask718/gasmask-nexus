@@ -263,7 +263,7 @@ export default function HistoryView() {
 
         <div className="ml-auto">
           <Button size="sm" onClick={verifyDate} disabled={verifying || loading}>
-            {verifying ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Verifying...</> : `⚡ Backfill & Verify ${format(selectedDateObj, 'MMM d')}`}
+            {verifying ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Verifying...</> : `⚡ Backfill & Verify ${format(selectedDateObj, 'MMM d, yyyy')}`}
           </Button>
         </div>
       </div>
