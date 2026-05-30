@@ -6,8 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
-import { ChevronDown, ChevronRight, MapPin, AlertTriangle, CheckCircle2, Users } from 'lucide-react';
+import { ChevronDown, ChevronRight, MapPin, AlertTriangle, CheckCircle2, Users, Route as RouteIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
+import { toast } from 'sonner';
 
 type Row = {
   neighborhood: string;
@@ -30,6 +32,10 @@ type Summary = {
 export default function NeighborhoodCoverage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [dispatchOpen, setDispatchOpen] = useState(false);
+  const [dispatchStoreIds, setDispatchStoreIds] = useState<string[]>([]);
+  const [dispatchNeighborhood, setDispatchNeighborhood] = useState<string>('');
+  const [isLoadingDispatch, setIsLoadingDispatch] = useState(false);
 
   const { data: rows = [], isLoading } = useQuery<Row[]>({
     queryKey: ['v_neighborhood_coverage'],
@@ -75,6 +81,33 @@ export default function NeighborhoodCoverage() {
   const filtered = rows.filter((r) => r.neighborhood.toLowerCase().includes(search.toLowerCase()));
   const totalNeighborhoods = rows.length;
   const needsTagging = (summary?.needs_manual ?? 0) + (summary?.untagged_blank ?? 0);
+
+  const handleDispatchNeighborhood = async (neighborhood: string) => {
+    setIsLoadingDispatch(true);
+    setDispatchNeighborhood(neighborhood);
+    try {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id')
+        .is('deleted_at', null)
+        .eq('approval_status', 'approved')
+        .eq('neighborhood', neighborhood)
+        .limit(500);
+      if (error) throw error;
+      const ids = (data || []).map((s: any) => s.id);
+      if (ids.length === 0) {
+        toast.warning(`No approved stores found in ${neighborhood}`);
+        setIsLoadingDispatch(false);
+        return;
+      }
+      setDispatchStoreIds(ids);
+      setDispatchOpen(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to load stores');
+    } finally {
+      setIsLoadingDispatch(false);
+    }
+  };
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -244,6 +277,15 @@ export default function NeighborhoodCoverage() {
                               <Users className="h-3.5 w-3.5 mr-1" /> View stores (#13)
                             </Link>
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => handleDispatchNeighborhood(r.neighborhood)}
+                            disabled={isLoadingDispatch}
+                          >
+                            <RouteIcon className="h-3.5 w-3.5 mr-1" />
+                            {isLoadingDispatch && dispatchNeighborhood === r.neighborhood ? 'Loading…' : `Dispatch ${r.neighborhood}`}
+                          </Button>
                         </div>
                       </div>
                     )}
@@ -258,6 +300,24 @@ export default function NeighborhoodCoverage() {
           )}
         </CardContent>
       </Card>
+
+      <RouteAssignmentDialog
+        open={dispatchOpen}
+        onOpenChange={(open) => {
+          setDispatchOpen(open);
+          if (!open) {
+            setDispatchStoreIds([]);
+            setDispatchNeighborhood('');
+          }
+        }}
+        assigneeId=""
+        assigneeName=""
+        assigneeType="driver"
+        assigneeUserId={null}
+        bulkMode={dispatchStoreIds.length > 1}
+        preselectedStores={dispatchStoreIds}
+        prefilledTerritory={dispatchNeighborhood}
+      />
     </div>
   );
 }
