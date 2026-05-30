@@ -370,6 +370,16 @@ const Map = () => {
       filtered = filtered.filter((store) => getRecencyBucket(store) === recencyFilter);
     }
 
+    // Filter by relationship status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((store) => store.relationship_status === statusFilter);
+    }
+
+    // Filter by neighborhood
+    if (neighborhoodFilter !== 'all') {
+      filtered = filtered.filter((store) => store.neighborhood === neighborhoodFilter);
+    }
+
     setFilteredStores(filtered);
 
     // Calculate counts
@@ -387,7 +397,7 @@ const Map = () => {
     });
 
     setStoreCounts(counts);
-  }, [stores, activeFilter, selectedTerritory, recencyFilter]);
+  }, [stores, activeFilter, selectedTerritory, recencyFilter, statusFilter, neighborhoodFilter]);
 
   // Render store markers and heatmap
   useEffect(() => {
