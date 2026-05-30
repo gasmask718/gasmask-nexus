@@ -11,7 +11,7 @@
 import { useLocation, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Store, Target, ShoppingBag,
-  MapPin, DollarSign, Package, MessageSquare, BarChart3, UserPlus, Users, Wallet, TrendingUp,
+  MapPin, DollarSign, Package, MessageSquare, BarChart3, UserPlus, Users, Wallet, TrendingUp, MessageSquareWarning,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
