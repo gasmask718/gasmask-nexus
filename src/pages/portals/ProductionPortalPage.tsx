@@ -357,16 +357,16 @@ export default function ProductionPortalPage() {
               {/* ── OPERATE (DO) ── */}
               <TabsTrigger value="command" className="flex items-center gap-2">
                 <Activity className="h-4 w-4" />
-                <span className="hidden sm:inline">Command</span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.command" en="Command" /></span>
               </TabsTrigger>
               <TabsTrigger value="batches" className="flex items-center gap-2">
                 <Boxes className="h-4 w-4" />
-                <span className="hidden sm:inline">Batches</span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.batches" en="Batches" /></span>
               </TabsTrigger>
               {rbac.canApproveSubmissions && (
                 <TabsTrigger value="submissions" className="flex items-center gap-2 relative">
                   <ClipboardCheck className="h-4 w-4" />
-                  <span className="hidden sm:inline">Submissions</span>
+                  <span className="hidden sm:inline"><BilingualLabel tKey="production.submissions" en="Submissions" /></span>
                   {pendingSubmissionCount > 0 && (
                     <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
                       {pendingSubmissionCount}
@@ -376,73 +376,71 @@ export default function ProductionPortalPage() {
               )}
               <TabsTrigger value="attendance" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                <span className="hidden sm:inline">Attendance</span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.attendance" en="Attendance" /></span>
               </TabsTrigger>
               <TabsTrigger value="timer" className="flex items-center gap-2">
                 <Timer className="h-4 w-4" />
-                <span className="hidden sm:inline">Task Timer</span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.task_timer" en="Task Timer" /></span>
               </TabsTrigger>
 
-              {/* ── REVIEW (CHECK) ── */}
               {rbac.canManagePayroll && (
                 <TabsTrigger value="payroll" className="flex items-center gap-2">
                   <Wallet className="h-4 w-4" />
-                  <span className="hidden sm:inline">Payroll</span>
+                  <span className="hidden sm:inline"><BilingualLabel tKey="production.payroll" en="Payroll" /></span>
                 </TabsTrigger>
               )}
               {rbac.canViewCosts && (
                 <TabsTrigger value="costs" className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
-                  <span className="hidden sm:inline">Costs</span>
+                  <span className="hidden sm:inline"><BilingualLabel tKey="production.costs" en="Costs" /></span>
                 </TabsTrigger>
               )}
               <TabsTrigger value="inventory" className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
-                <span className="hidden sm:inline">Inventory</span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.inventory" en="Inventory" /></span>
               </TabsTrigger>
               <TabsTrigger value="performance" className="flex items-center gap-2">
                 <Target className="h-4 w-4" />
-                <span className="hidden sm:inline">Performance</span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.performance" en="Performance" /></span>
               </TabsTrigger>
               {rbac.canViewForecasts && (
                 <TabsTrigger value="forecast" className="flex items-center gap-2">
                   <Brain className="h-4 w-4" />
-                  <span className="hidden sm:inline">AI Forecast</span>
+                  <span className="hidden sm:inline"><BilingualLabel tKey="production.ai_forecast" en="AI Forecast" /></span>
                 </TabsTrigger>
               )}
 
-              {/* ── ADMIN (MANAGE) ── */}
               <TabsTrigger value="workers" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Workers</span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.workers" en="Workers" /></span>
               </TabsTrigger>
               <TabsTrigger value="tools" className="flex items-center gap-2">
                 <Wrench className="h-4 w-4" />
-                <span className="hidden sm:inline">Tools</span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.tools_tab" en="Tools" /></span>
               </TabsTrigger>
               <TabsTrigger value="messages" className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
-                <span className="hidden sm:inline">Messages</span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.messages" en="Messages" /></span>
               </TabsTrigger>
               <TabsTrigger value="history" className="flex items-center gap-2">
                 <History className="h-4 w-4" />
-                <span className="hidden sm:inline">History</span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.history" en="History" /></span>
               </TabsTrigger>
               <TabsTrigger value="materials" className="flex items-center gap-2">
                 <Leaf className="h-4 w-4" />
-                <span className="hidden sm:inline">Materials</span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.materials" en="Materials" /></span>
               </TabsTrigger>
               <TabsTrigger value="equipment" className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">Equipment</span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.equipment" en="Equipment" /></span>
               </TabsTrigger>
               <TabsTrigger value="daily-exec" className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline">Daily Exec</span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.daily_exec" en="Daily Exec" /></span>
               </TabsTrigger>
               <TabsTrigger value="supervisor" className="flex items-center gap-2">
                 <Award className="h-4 w-4" />
-                <span className="hidden sm:inline">Supervisor</span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.supervisor" en="Supervisor" /></span>
               </TabsTrigger>
             </TabsList>
 
