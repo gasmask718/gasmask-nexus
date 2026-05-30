@@ -360,7 +360,7 @@ export default function AmbassadorCommissions() {
                     )}
                   </TableBody>
                 </Table>
-              </ScrollArea>
+              </div>
             </Card>
           </TabsContent>
 
