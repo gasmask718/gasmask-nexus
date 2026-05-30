@@ -221,7 +221,7 @@ export default function ProductionPortalPage() {
                   onValueChange={setSelectedOfficeId}
                 >
                   <SelectTrigger className="w-[280px] mt-1">
-                    <SelectValue placeholder="Choose an office..." />
+                    <SelectValue placeholder={t('production.choose_office')} />
                   </SelectTrigger>
                   <SelectContent>
                     {activeOffices.map(office => {
