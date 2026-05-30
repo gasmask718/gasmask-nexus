@@ -118,10 +118,12 @@ function AdminAmbassadorPicker() {
 }
 
 export default function AmbassadorCommunications() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const preselectStoreId = searchParams.get('store');
   const [tab, setTab] = useState('messages');
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'unread' | 'overdue'>('all');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(preselectStoreId);
   const [composer, setComposer] = useState('');
   const [composerAr, setComposerAr] = useState('');
   const [lang, setLang] = useState<'en' | 'ar'>('en');
