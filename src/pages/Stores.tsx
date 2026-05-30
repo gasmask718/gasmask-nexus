@@ -360,6 +360,7 @@ const Stores = () => {
         invoice_amount_paid: store.invoice_amount_paid || null,
         last_active_date: null,
         reactivation_priority: null,
+        relationship_status: (store as any).relationship_status || 'Non-active (New - need to speak)',
       }));
 
       // Fetch contacts for these stores
