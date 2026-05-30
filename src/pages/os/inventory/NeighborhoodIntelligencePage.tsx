@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -29,8 +30,10 @@ import {
   Eye,
   Building,
   Map,
+  Route as RouteIcon,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 
 export default function NeighborhoodIntelligencePage() {
   const [selectedCity, setSelectedCity] = useState('all');
