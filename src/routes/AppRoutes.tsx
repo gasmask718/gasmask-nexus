@@ -225,6 +225,7 @@ const AmbassadorEarningsPage = lazy(() => import('@/pages/ambassador/reports').t
 const AmbassadorPayoutsPage = lazy(() => import('@/pages/ambassador/payouts').then(m => ({ default: m.AmbassadorPayoutsPage })));
 const AmbassadorPayoutStatementPage = lazy(() => import('@/pages/ambassador/payouts').then(m => ({ default: m.AmbassadorPayoutStatementPage })));
 const AmbassadorPayoutSettingsPage = lazy(() => import('@/pages/ambassador/payouts').then(m => ({ default: m.AmbassadorPayoutSettingsPage })));
+const AmbassadorCatalog = lazy(() => import('@/pages/ambassador/AmbassadorCatalog'));
 
 // Misc protected pages
 const Expansion = lazy(() => import('@/pages/Expansion'));
@@ -2919,6 +2920,13 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
             <AmbassadorDashboard />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/ambassador/catalog" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <AmbassadorCatalog />
           </RequireRole>
         </ProtectedRoute>
       } />
