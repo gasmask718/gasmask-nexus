@@ -116,7 +116,7 @@ export function StoreKPIBadge({ summary, isLoading, intelSummary }: StoreKPIBadg
           const brandColor = getTubeBrandColor(brand.brand_id);
           
           // Derive status: if we have KPI data use it, otherwise default to muted
-          const colorStatus = kpi?.color_status || 'muted';
+          const colorStatus = (kpi?.color_status || 'muted') as 'green' | 'yellow' | 'red' | 'muted';
           const statusColors = getColorStatusClasses(colorStatus);
           
           const tubeCount = kpi?.tube_count ?? 0;
