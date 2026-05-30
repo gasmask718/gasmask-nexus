@@ -217,12 +217,30 @@ export default function SellThroughAnalytics() {
             Portfolio-level sell-through velocity across all stores and brands
           </p>
         </div>
-        <ExportButton
-          data={processed as unknown as Record<string, unknown>[]}
-          filename="sell-through-analytics"
-          columns={exportColumns}
-          disabled={processed.length === 0}
-        />
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            disabled={selectedStoreIds.length === 0}
+            onClick={() => setDispatchStores(selectedStoreIds)}
+          >
+            <RouteIcon className="h-4 w-4 mr-2" />
+            Dispatch Selected{selectedStoreIds.length > 0 ? ` (${selectedStoreIds.length})` : ''}
+          </Button>
+          {overdueStoreIds.length > 0 && (
+            <Button
+              variant="secondary"
+              onClick={() => setDispatchStores(overdueStoreIds)}
+            >
+              <RouteIcon className="h-4 w-4 mr-2" />
+              Dispatch Severely Overdue ({overdueStoreIds.length})
+            </Button>
+          )}
+          <ExportButton
+            data={processed as unknown as Record<string, unknown>[]}
+            filename="sell-through-analytics"
+            columns={exportColumns}
+            disabled={processed.length === 0}
+          />
       </div>
 
       {/* KPI Strip */}
