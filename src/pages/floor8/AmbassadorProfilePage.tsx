@@ -39,6 +39,7 @@ export default function AmbassadorProfilePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('overview');
+  const [showRouteAssign, setShowRouteAssign] = useState(false);
 
   // Fetch ambassador profile
   const { data: ambassador, isLoading } = useQuery({
