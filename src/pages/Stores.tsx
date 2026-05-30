@@ -1422,6 +1422,15 @@ const Stores = () => {
                 autoFocus
               />
             </div>
+            {editingStore && (
+              <div className="space-y-2">
+                <Label>Relationship Status</Label>
+                <RelationshipStatusSelect
+                  storeId={editingStore.id}
+                  value={editingStore.relationship_status}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter className="gap-2">
             <Button
