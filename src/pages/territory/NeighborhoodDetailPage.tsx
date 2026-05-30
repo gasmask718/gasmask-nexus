@@ -271,7 +271,6 @@ export default function NeighborhoodDetailPage() {
           )}
         </CardContent>
       </Card>
-      </Card>
 
       <RouteAssignmentDialog
         open={dispatchOpen}
