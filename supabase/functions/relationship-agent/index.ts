@@ -475,11 +475,16 @@ serve(async (req) => {
     if (action === 'run_daily_relationship_cycle') {
       const limit = body.limit || 50;
 
-      // Fetch stores with relationship data
+      // GasMask-only scope: pre-fetch allowed store IDs from store_brand_accounts
+      const gasmaskIds = await getGasMaskStoreIds(supabase);
+      const allowedIds = Array.from(gasmaskIds);
+
+      // Fetch stores with relationship data — filtered to GasMask vertical only
       const { data: stores, error: storesErr } = await supabase
         .from('stores')
         .select('id, name, phone, address_city, address_state, status, health_score, last_visit_date, last_order_date, owner_name, personality_notes, relationship_tier')
         .eq('status', 'active')
+        .in('id', allowedIds)
         .order('health_score', { ascending: true })
         .limit(limit);
 
