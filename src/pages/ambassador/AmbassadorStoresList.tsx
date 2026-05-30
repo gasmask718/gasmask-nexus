@@ -7,8 +7,10 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   Store, Search, Filter, MapPin, Phone, Calendar,
-  ArrowRight, Users, Trash2, Route as RouteIcon, Plus
+  ArrowRight, Users, Trash2, Route as RouteIcon, Plus, MessageSquare
 } from 'lucide-react';
+import { useCall } from '@/components/communication/CallProvider';
+import { toast } from 'sonner';
 import { NewStoreSubmissionDialog } from '@/components/portal/field/NewStoreSubmissionDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
