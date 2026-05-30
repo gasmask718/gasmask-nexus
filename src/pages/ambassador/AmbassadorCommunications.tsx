@@ -247,19 +247,9 @@ export default function AmbassadorCommunications() {
     setTemplatePickerOpen(false);
   };
 
-  const openCallDialog = async (thread: MessageThread) => {
+  const openCallDialog = (thread: MessageThread) => {
     setCallTarget(thread);
-    setCallMode('choose');
     setCallDialogOpen(true);
-    // Lazy-load scripts on first open
-    if (aiScripts.length === 0) {
-      const { data } = await (await import('@/integrations/supabase/client')).supabase
-        .from('ambassador_call_scripts' as any)
-        .select('id,name,objective,language,opening_line,voice_persona_id,max_duration_seconds,is_global,usage_count')
-        .order('is_global', { ascending: false })
-        .order('usage_count', { ascending: false });
-      setAiScripts((data as any[]) || []);
-    }
   };
 
   const startDirectCall = async () => {
