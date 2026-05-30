@@ -323,7 +323,7 @@ export default function ProductionPortalPage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <Factory className="h-5 w-5" />
-                Today's Production — {format(new Date(), 'EEEE, MMMM d')}
+                {t('production.todays_production')} — {format(new Date(), 'EEEE, MMMM d')}
               </h2>
               <TrainingModeToggle 
                 isTrainingMode={isTrainingMode}
