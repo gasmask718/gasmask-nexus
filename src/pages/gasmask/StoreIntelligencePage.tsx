@@ -15,10 +15,13 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { RefreshCw, Download, ChevronUp, ChevronDown, ExternalLink } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RefreshCw, Download, ChevronUp, ChevronDown, ExternalLink, Route as RouteIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
+
 
 type Tier = 'TIER_1_REVENUE_ACTIVE' | 'TIER_2_ENGAGEMENT_ACTIVE' | 'TIER_3_CONTACTS_ONLY' | 'TIER_4_DEAD';
 
