@@ -26,6 +26,7 @@ import { Activity, Headphones, Flame } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
+import { StoreReconCard } from "@/components/store/StoreReconCard";
 import { QuickStatsStickersSummary } from "@/components/store/QuickStatsStickersSummary";
 import { StoreHealthBadge } from "@/components/delivery/StoreHealthBadge";
 import { QuickStatsContactSnapshot } from "@/components/store/QuickStatsContactSnapshot";
@@ -898,6 +899,9 @@ const StoreDetail = () => {
               <CommunicationTimelineCRM storeId={id || ""} />
             </CardContent>
           </Card> */}
+
+          {/* Dynasty Direct Product Intelligence — captured via field questionnaire */}
+          {id && <StoreReconCard storeId={id} />}
 
           {/* Tabs for Inventory & History */}
           <Tabs defaultValue="inventory" className="w-full">

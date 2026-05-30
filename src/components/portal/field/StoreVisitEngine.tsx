@@ -98,6 +98,9 @@ export interface StoreVisitData {
     secureLevel: 'low' | 'medium' | 'high';
     sellsFlowers: boolean;
     interestedInCleaning: boolean;
+    additionalItemsWanted: string;
+    topSellingItems: string;
+    mostNeededItems: string;
   };
   // Notes
   internalNotes: string;
@@ -137,6 +140,9 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
       secureLevel: 'medium',
       sellsFlowers: false,
       interestedInCleaning: false,
+      additionalItemsWanted: '',
+      topSellingItems: '',
+      mostNeededItems: '',
     },
     internalNotes: '',
     relationshipNotes: '',
@@ -261,9 +267,12 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
           setVisitData(prev => ({
             ...prev,
             questionnaire: {
-              secureLevel: (questionnaireData.security_level as 'low' | 'medium' | 'high') || 'medium',
-              sellsFlowers: questionnaireData.sells_flowers || false,
-              interestedInCleaning: questionnaireData.interested_cleaning_service || false,
+              secureLevel: ((questionnaireData as any).security_level as 'low' | 'medium' | 'high') || 'medium',
+              sellsFlowers: (questionnaireData as any).sells_flowers || false,
+              interestedInCleaning: (questionnaireData as any).interested_cleaning_service || false,
+              additionalItemsWanted: (questionnaireData as any).additional_items_wanted || '',
+              topSellingItems: (questionnaireData as any).top_selling_items || '',
+              mostNeededItems: (questionnaireData as any).most_needed_items || '',
             },
           }));
         }
@@ -514,6 +523,9 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
           security_level: visitData.questionnaire.secureLevel,
           sells_flowers: visitData.questionnaire.sellsFlowers,
           interested_cleaning_service: visitData.questionnaire.interestedInCleaning,
+          additional_items_wanted: visitData.questionnaire.additionalItemsWanted || null,
+          top_selling_items: visitData.questionnaire.topSellingItems || null,
+          most_needed_items: visitData.questionnaire.mostNeededItems || null,
         },
       }, user.id, portalType as FieldRole);
 

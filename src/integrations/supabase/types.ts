@@ -86983,43 +86983,52 @@ export type Database = {
       }
       store_questionnaire: {
         Row: {
+          additional_items_wanted: string | null
           clothing_size: string | null
           created_at: string
           id: string
           interested_cleaning_service: boolean | null
           last_verified_at: string | null
           last_verified_by: string | null
+          most_needed_items: string | null
           security_level: string | null
           sells_flowers: boolean | null
           store_id: string
+          top_selling_items: string | null
           total_store_count: number | null
           updated_at: string
           wholesalers_used: string[] | null
         }
         Insert: {
+          additional_items_wanted?: string | null
           clothing_size?: string | null
           created_at?: string
           id?: string
           interested_cleaning_service?: boolean | null
           last_verified_at?: string | null
           last_verified_by?: string | null
+          most_needed_items?: string | null
           security_level?: string | null
           sells_flowers?: boolean | null
           store_id: string
+          top_selling_items?: string | null
           total_store_count?: number | null
           updated_at?: string
           wholesalers_used?: string[] | null
         }
         Update: {
+          additional_items_wanted?: string | null
           clothing_size?: string | null
           created_at?: string
           id?: string
           interested_cleaning_service?: boolean | null
           last_verified_at?: string | null
           last_verified_by?: string | null
+          most_needed_items?: string | null
           security_level?: string | null
           sells_flowers?: boolean | null
           store_id?: string
+          top_selling_items?: string | null
           total_store_count?: number | null
           updated_at?: string
           wholesalers_used?: string[] | null

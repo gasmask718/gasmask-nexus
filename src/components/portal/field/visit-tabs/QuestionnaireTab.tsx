@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ClipboardList, AlertCircle } from 'lucide-react';
+import { ClipboardList, AlertCircle, Package } from 'lucide-react';
 import { ConnectedStoresSection, type ConnectedStoreData } from './ConnectedStoresSection';
 import { WholesalerSection, type WholesalerAssociation } from './WholesalerSection';
 
@@ -12,6 +13,9 @@ interface Questionnaire {
   secureLevel: 'low' | 'medium' | 'high';
   sellsFlowers: boolean;
   interestedInCleaning: boolean;
+  additionalItemsWanted: string;
+  topSellingItems: string;
+  mostNeededItems: string;
 }
 
 interface QuestionnaireTabProps {
@@ -122,6 +126,47 @@ export function QuestionnaireTab({
               checked={questionnaire.interestedInCleaning}
               onCheckedChange={(checked) => update({ interestedInCleaning: checked })}
             />
+          </div>
+
+          {/* Product Intelligence — Dynasty Direct recon */}
+          <div className="space-y-4 p-4 rounded-lg border bg-amber-500/5 border-amber-500/20">
+            <div className="flex items-center gap-2">
+              <Package className="h-4 w-4 text-amber-500" />
+              <Label className="font-semibold">Product Intelligence</Label>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="additional-items">What additional items would you buy if we offered them?</Label>
+              <Textarea
+                id="additional-items"
+                value={questionnaire.additionalItemsWanted || ''}
+                onChange={(e) => update({ additionalItemsWanted: e.target.value })}
+                placeholder="e.g. lighters, screens, papers…"
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="top-selling">What items sell a lot in your store?</Label>
+              <Textarea
+                id="top-selling"
+                value={questionnaire.topSellingItems || ''}
+                onChange={(e) => update({ topSellingItems: e.target.value })}
+                placeholder="Best sellers…"
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="most-needed">What items are you most in need of?</Label>
+              <Textarea
+                id="most-needed"
+                value={questionnaire.mostNeededItems || ''}
+                onChange={(e) => update({ mostNeededItems: e.target.value })}
+                placeholder="Currently out of / hard to get…"
+                rows={2}
+              />
+            </div>
           </div>
 
           {/* Info about clothing */}
