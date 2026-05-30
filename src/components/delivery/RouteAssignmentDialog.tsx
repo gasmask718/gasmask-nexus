@@ -228,15 +228,16 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
       if (selectedStores.length === 0) throw new Error('Select at least one stop');
 
       const dates = isBulkMode ? bulkDates : [routeDate];
+      const fallback: AssignablePerson | null = assigneeId
+        ? { id: assigneeId, name: assigneeName, userId: assigneeUserId ?? null, role: assigneeType }
+        : null;
       const assignees: AssignablePerson[] = isBulkMode
         ? selectedAssignees
-        : (selectedAssignees[0]
-            ? [selectedAssignees[0]]
-            : [{ id: assigneeId, name: assigneeName, userId: assigneeUserId ?? null, role: assigneeType }]);
+        : (selectedAssignees[0] ? [selectedAssignees[0]] : (fallback ? [fallback] : []));
 
       if (assignees.length === 0) throw new Error('Select at least one assignee');
 
-      let totalCreated = 0;
+      const createdRouteIds: string[] = [];
 
       // One route per assignee per date
       for (const assignee of assignees) {
@@ -274,15 +275,17 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
 
           const { error: stopsError } = await supabase.from('route_stops').insert(stops);
           if (stopsError) throw stopsError;
-          totalCreated++;
+          createdRouteIds.push(route.id);
         }
       }
 
-      return totalCreated;
+      return createdRouteIds;
     },
-    onSuccess: (count) => {
+    onSuccess: (routeIds) => {
       invalidateAll();
+      const count = routeIds.length;
       toast.success(`${count} route${count > 1 ? 's' : ''} assigned successfully`);
+      onAssigned?.(routeIds);
       onOpenChange(false);
       resetForm();
     },
@@ -297,8 +300,13 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
     setTerritory(prefilledTerritory || '');
     setStoreSearch('');
     setBulkDates([format(new Date(), 'yyyy-MM-dd')]);
-    setSelectedAssignees([{ id: assigneeId, name: assigneeName, userId: assigneeUserId ?? null, role: assigneeType }]);
+    setSelectedAssignees(
+      assigneeId
+        ? [{ id: assigneeId, name: assigneeName, userId: assigneeUserId ?? null, role: assigneeType }]
+        : []
+    );
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
