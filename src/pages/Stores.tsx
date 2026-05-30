@@ -855,7 +855,40 @@ const Stores = () => {
             })}
           </div>
         </div>
-        
+
+        {/* Relationship Status (9-state) Filter */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs text-muted-foreground mr-1">Relationship:</span>
+          {(() => {
+            const counts: Record<string, number> = { all: stores.length };
+            for (const s of STORE_RELATIONSHIP_STATUSES) counts[s] = 0;
+            for (const st of stores) {
+              const v = st.relationship_status || 'Non-active (New - need to speak)';
+              counts[v] = (counts[v] || 0) + 1;
+            }
+            const chips: Array<{ key: string; label: string; cls?: string }> = [
+              { key: 'all', label: 'All' },
+              ...STORE_RELATIONSHIP_STATUSES.map((s) => ({
+                key: s,
+                label: RELATIONSHIP_STATUS_SHORT[s],
+                cls: RELATIONSHIP_STATUS_COLORS[s],
+              })),
+            ];
+            return chips.map(({ key, label, cls }) => (
+              <Button
+                key={key}
+                variant={relationshipFilter === key ? 'default' : 'outline'}
+                size="sm"
+                className={cn('h-8 gap-1.5 text-xs', relationshipFilter !== key && cls)}
+                onClick={() => setRelationshipFilter(key)}
+              >
+                {label}
+                <Badge variant="secondary" className="text-[10px]">{counts[key] || 0}</Badge>
+              </Button>
+            ));
+          })()}
+        </div>
+
         {/* Additional Filters Row */}
         <div className="flex flex-wrap gap-2">
           {/* Tag Filter */}
