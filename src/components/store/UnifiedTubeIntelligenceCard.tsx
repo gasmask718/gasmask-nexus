@@ -56,7 +56,7 @@ export const VALID_TUBE_BRANDS = [
   { id: 'hotscolatti-light',  name: 'Hotscolatti Light',     color: TUBE_BRAND_COLORS['hotscolatti-light'].hex },
   { id: 'hotscalatibros',     name: 'Hotscolatti Bros',      color: TUBE_BRAND_COLORS.hotscalatibros.hex, isNew: true },
   { id: 'hotmama',            name: TUBE_BRAND_COLORS.hotmama.name, color: TUBE_BRAND_COLORS.hotmama.hex },
-  { id: 'grabba',             name: TUBE_BRAND_COLORS.grabba.name,  color: TUBE_BRAND_COLORS.grabba.hex },
+  { id: 'grabba_r_us',        name: 'Grabba R Us',           color: TUBE_BRAND_COLORS.grabba.hex },
 ] as const;
 
 interface TubeInventoryRecord {
