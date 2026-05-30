@@ -82,6 +82,33 @@ export default function NeighborhoodCoverage() {
   const totalNeighborhoods = rows.length;
   const needsTagging = (summary?.needs_manual ?? 0) + (summary?.untagged_blank ?? 0);
 
+  const handleDispatchNeighborhood = async (neighborhood: string) => {
+    setIsLoadingDispatch(true);
+    setDispatchNeighborhood(neighborhood);
+    try {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id')
+        .is('deleted_at', null)
+        .eq('approval_status', 'approved')
+        .eq('neighborhood', neighborhood)
+        .limit(500);
+      if (error) throw error;
+      const ids = (data || []).map((s: any) => s.id);
+      if (ids.length === 0) {
+        toast.warning(`No approved stores found in ${neighborhood}`);
+        setIsLoadingDispatch(false);
+        return;
+      }
+      setDispatchStoreIds(ids);
+      setDispatchOpen(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to load stores');
+    } finally {
+      setIsLoadingDispatch(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <header>
