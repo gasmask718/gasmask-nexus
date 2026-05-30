@@ -1,10 +1,15 @@
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Building, Upload, Truck, BarChart3, Users, MessageSquare, Brain } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Building, Upload, Truck, BarChart3, Users, MessageSquare, Brain, Route as RouteIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 
 import { CANONICAL_BRANDS } from '@/config/brands';
 
@@ -17,6 +22,47 @@ const brandColors = {
 
 export default function GrabbaClusterDashboard() {
   const navigate = useNavigate();
+  const [dispatchBrand, setDispatchBrand] = useState<string>('all');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [dispatchStores, setDispatchStores] = useState<string[]>([]);
+
+  const { data: brandStores } = useQuery({
+    queryKey: ['grabba-cluster-stores', dispatchBrand],
+    queryFn: async () => {
+      let q = supabase
+        .from('store_brand_accounts')
+        .select('store_master_id, brand, active_status, last_order_date, store_master:store_master_id(id, store_name, address, city, state)')
+        .order('last_order_date', { ascending: false, nullsFirst: false })
+        .limit(200);
+      if (dispatchBrand !== 'all') q = q.eq('brand', dispatchBrand as any);
+      const { data, error } = await q;
+      if (error) throw error;
+      // Dedupe by store_master_id
+      const seen = new Set<string>();
+      const rows: any[] = [];
+      for (const r of (data || []) as any[]) {
+        if (!r.store_master_id || seen.has(r.store_master_id)) continue;
+        if (!r.store_master?.id) continue;
+        seen.add(r.store_master_id);
+        rows.push({
+          id: r.store_master.id,
+          name: r.store_master.store_name || 'Unnamed',
+          city: r.store_master.city,
+          state: r.store_master.state,
+          brand: r.brand,
+          last_order_date: r.last_order_date,
+        });
+      }
+      return rows;
+    },
+  });
+
+  const visibleStoreIds = useMemo(() => (brandStores || []).map((s: any) => s.id), [brandStores]);
+  const allSelected = visibleStoreIds.length > 0 && visibleStoreIds.every((id) => selectedIds.includes(id));
+  const toggleOne = (id: string) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const toggleAll = () =>
+    setSelectedIds(allSelected ? [] : visibleStoreIds);
 
   const { data: stats } = useQuery({
     queryKey: ['grabba-stats'],
@@ -253,6 +299,101 @@ export default function GrabbaClusterDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dispatch by Brand */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <RouteIcon className="w-5 h-5" /> Dispatch Stores by Brand
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Select stores from a brand cluster and route them in one go.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={dispatchBrand} onValueChange={(v) => { setDispatchBrand(v); setSelectedIds([]); }}>
+              <SelectTrigger className="w-[180px] h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Brands</SelectItem>
+                {Object.entries(brandColors).map(([brand, cfg]) => (
+                  <SelectItem key={brand} value={brand}>{cfg.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              disabled={selectedIds.length === 0}
+              onClick={() => setDispatchStores(selectedIds)}
+              className="gap-2 h-9"
+            >
+              <RouteIcon className="h-4 w-4" /> Dispatch Selected ({selectedIds.length})
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {(!brandStores || brandStores.length === 0) ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">No stores in this cluster.</p>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 pb-2 border-b mb-2">
+                <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Select all" />
+                <span className="text-xs text-muted-foreground">
+                  Select all visible ({brandStores.length})
+                </span>
+              </div>
+              <ScrollArea className="h-[360px]">
+                <div className="divide-y">
+                  {brandStores.map((s: any) => (
+                    <div key={s.id} className="flex items-center justify-between py-2 px-1 gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Checkbox
+                          checked={selectedIds.includes(s.id)}
+                          onCheckedChange={() => toggleOne(s.id)}
+                          aria-label={`Select ${s.name}`}
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{s.name}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {[s.city, s.state].filter(Boolean).join(', ')}
+                            {s.last_order_date && ` · last order ${new Date(s.last_order_date).toLocaleDateString()}`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge variant="outline" className="text-[10px]">{s.brand}</Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => setDispatchStores([s.id])}
+                          title="Add to route"
+                        >
+                          <RouteIcon className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <RouteAssignmentDialog
+        open={dispatchStores.length > 0}
+        onOpenChange={(o) => {
+          if (!o) {
+            setDispatchStores([]);
+            setSelectedIds([]);
+          }
+        }}
+        assigneeId=""
+        assigneeName=""
+        assigneeType="driver"
+        bulkMode={dispatchStores.length > 1}
+        preselectedStores={dispatchStores}
+      />
     </div>
   );
 }

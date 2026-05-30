@@ -3,7 +3,7 @@
  * 
  * Fully data-driven from store_health_scores, checklist_tube_intelligence, and store_master.
  */
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,21 +11,32 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Brain, TrendingUp, TrendingDown, AlertTriangle, Activity,
   Target, RefreshCw, Loader2, Package, Store, Heart,
-  ArrowUp, ArrowDown, Minus
+  ArrowUp, ArrowDown, Minus, Route as RouteIcon
 } from "lucide-react";
 import { ShadowModeBanner } from "@/components/floor9";
 import { StoreHealthBadge } from "@/components/floor9/StoreHealthBadge";
 import { useStoreHealthScores, useCalculateHealthScores, useProductIntelligence } from "@/hooks/useStoreHealthScores";
+import { RouteAssignmentDialog } from "@/components/delivery/RouteAssignmentDialog";
 import { cn } from "@/lib/utils";
 
 export default function Floor9Predictions() {
   const [activeTab, setActiveTab] = useState('health');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [dispatchStores, setDispatchStores] = useState<string[]>([]);
   const { data: healthScores, isLoading: healthLoading } = useStoreHealthScores({ limit: 50 });
   const { data: productIntel, isLoading: productLoading } = useProductIntelligence();
   const calculateHealth = useCalculateHealthScores();
+
+  const flaggedStoreIds = useMemo(
+    () => (healthScores || []).filter(s => s.health_status === 'Critical' || s.health_status === 'At Risk').map(s => s.store_id),
+    [healthScores]
+  );
+  const toggleOne = (id: string) =>
+    setSelectedIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
 
   const criticalStores = healthScores?.filter(s => s.health_status === 'Critical') || [];
   const atRiskStores = healthScores?.filter(s => s.health_status === 'At Risk') || [];
@@ -51,14 +62,32 @@ export default function Floor9Predictions() {
             Store health scores, product intelligence, and forward-looking insights
           </p>
         </div>
-        <Button
-          onClick={() => calculateHealth.mutate(undefined)}
-          disabled={calculateHealth.isPending}
-          className="gap-2"
-        >
-          {calculateHealth.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Calculate Health Scores
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            disabled={selectedIds.length === 0}
+            onClick={() => setDispatchStores(selectedIds)}
+            className="gap-2"
+          >
+            <RouteIcon className="h-4 w-4" /> Dispatch Selected ({selectedIds.length})
+          </Button>
+          <Button
+            variant="outline"
+            disabled={flaggedStoreIds.length === 0}
+            onClick={() => setDispatchStores(flaggedStoreIds)}
+            className="gap-2"
+          >
+            <AlertTriangle className="h-4 w-4" /> Dispatch All Flagged ({flaggedStoreIds.length})
+          </Button>
+          <Button
+            onClick={() => calculateHealth.mutate(undefined)}
+            disabled={calculateHealth.isPending}
+            className="gap-2"
+          >
+            {calculateHealth.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Calculate Health Scores
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -128,12 +157,28 @@ export default function Floor9Predictions() {
                     store.health_status === 'At Risk' && "border-orange-500/30",
                   )}>
                     <CardContent className="p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Store className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium text-sm">{store.store_name}</span>
+                      <div className="flex items-center justify-between mb-2 gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Checkbox
+                            checked={selectedIds.includes(store.store_id)}
+                            onCheckedChange={() => toggleOne(store.store_id)}
+                            aria-label={`Select ${store.store_name}`}
+                          />
+                          <Store className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="font-medium text-sm truncate">{store.store_name}</span>
                         </div>
-                        <StoreHealthBadge score={store.overall_score} status={store.health_status} size="md" />
+                        <div className="flex items-center gap-2 shrink-0">
+                          <StoreHealthBadge score={store.overall_score} status={store.health_status} size="md" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => setDispatchStores([store.store_id])}
+                            title="Add to route"
+                          >
+                            <RouteIcon className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </div>
                       <Progress value={store.overall_score} className="h-1.5 mb-2" />
                       <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
@@ -303,6 +348,21 @@ export default function Floor9Predictions() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <RouteAssignmentDialog
+        open={dispatchStores.length > 0}
+        onOpenChange={(o) => {
+          if (!o) {
+            setDispatchStores([]);
+            setSelectedIds([]);
+          }
+        }}
+        assigneeId=""
+        assigneeName=""
+        assigneeType="driver"
+        bulkMode={dispatchStores.length > 1}
+        preselectedStores={dispatchStores}
+      />
     </div>
   );
 }
