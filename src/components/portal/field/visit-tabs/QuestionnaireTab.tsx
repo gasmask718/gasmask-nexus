@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ClipboardList, AlertCircle } from 'lucide-react';
+import { ClipboardList, AlertCircle, Package } from 'lucide-react';
 import { ConnectedStoresSection, type ConnectedStoreData } from './ConnectedStoresSection';
 import { WholesalerSection, type WholesalerAssociation } from './WholesalerSection';
 
@@ -12,6 +13,9 @@ interface Questionnaire {
   secureLevel: 'low' | 'medium' | 'high';
   sellsFlowers: boolean;
   interestedInCleaning: boolean;
+  additionalItemsWanted: string;
+  topSellingItems: string;
+  mostNeededItems: string;
 }
 
 interface QuestionnaireTabProps {
