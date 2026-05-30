@@ -500,6 +500,10 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
                 <FileText className="w-4 h-4 mr-2" />
                 Create Invoice
               </Button>
+              <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => setDispatchStore(id)}>
+                <Navigation className="w-4 h-4 mr-2" />
+                Add to Route
+              </Button>
             </CardContent>
           </Card>
 
