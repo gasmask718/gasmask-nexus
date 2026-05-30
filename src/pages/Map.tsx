@@ -731,6 +731,35 @@ const Map = () => {
         storeCounts={storeCounts}
       />
 
+      {/* Recency filter — color pins by last order/visit */}
+      <div className="flex flex-wrap items-center gap-2 px-1">
+        <span className="text-xs text-muted-foreground mr-1">Recency:</span>
+        {([
+          { key: 'all', label: 'All', dot: 'bg-foreground/60' },
+          { key: 'fresh', label: 'This month', dot: 'bg-green-500' },
+          { key: 'warm', label: '1–2 months', dot: 'bg-yellow-500' },
+          { key: 'overdue', label: 'Overdue (2mo+)', dot: 'bg-red-500' },
+          { key: 'unknown', label: 'Never / no data', dot: 'bg-gray-500' },
+        ] as const).map(opt => {
+          const count = opt.key === 'all'
+            ? stores.length
+            : stores.filter(s => getRecencyBucket(s) === opt.key).length;
+          return (
+            <Button
+              key={opt.key}
+              size="sm"
+              variant={recencyFilter === opt.key ? 'default' : 'outline'}
+              onClick={() => setRecencyFilter(opt.key)}
+              className="h-8"
+            >
+              <span className={`inline-block h-2.5 w-2.5 rounded-full mr-2 ${opt.dot}`} />
+              {opt.label}
+              <span className="ml-2 text-xs opacity-70">{count}</span>
+            </Button>
+          );
+        })}
+      </div>
+
       <div className="flex gap-4">
         <div className={`relative rounded-xl overflow-hidden border border-border/50 shadow-2xl transition-all duration-300 ${showSidebar ? 'w-2/3' : 'w-full'}`} style={{ height: 'calc(100vh - 280px)' }}>
         {loading && (
