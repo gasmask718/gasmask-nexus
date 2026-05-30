@@ -590,21 +590,23 @@ export default function RouteEnginePage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {routes.length === 0 && <p className="text-sm text-muted-foreground col-span-2 text-center py-12">No routes yet. Select triggers and build your first route.</p>}
           {routes.map((route: any) => {
-            const routeTriggers = triggers.filter((t: any) => t.route_id === route.id);
-            const progress = route.total_stops ? Math.round((route.completed_stops / route.total_stops) * 100) : 0;
+            const stops = ((route.route_stops || []) as any[]).slice().sort((a, b) => (a.planned_order || 0) - (b.planned_order || 0));
+            const totalStops = route.total_stops || stops.length;
+            const completedStops = stops.filter((s: any) => s.status === 'completed').length;
+            const progress = totalStops ? Math.round((completedStops / totalStops) * 100) : 0;
             return (
               <Card key={route.id}>
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="font-semibold text-sm">{route.run_name || 'Unnamed Route'}</h3>
-                      <p className="text-xs text-muted-foreground">Driver: {route.driver_name} · {route.scheduled_date}</p>
+                      <h3 className="font-semibold text-sm">{route.name || 'Unnamed Route'}</h3>
+                      <p className="text-xs text-muted-foreground">{route.date}{route.territory ? ` · ${route.territory}` : ''}</p>
                     </div>
                     <Badge variant="outline" className="text-[10px]">{route.status}</Badge>
                   </div>
                   <div>
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span>{route.completed_stops}/{route.total_stops} stops</span>
+                      <span>{completedStops}/{totalStops} stops</span>
                       <span>{progress}%</span>
                     </div>
                     <div className="w-full h-1.5 bg-muted rounded-full">
@@ -612,17 +614,17 @@ export default function RouteEnginePage() {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">Est: {Math.round((route.estimated_duration_minutes || 0) / 60 * 10) / 10}h · {ageString(route.created_at)}</p>
-                  {routeTriggers.length > 0 && (
+                  {stops.length > 0 && (
                     <div className="space-y-1">
-                      {routeTriggers.slice(0, 3).map((t: any, i: number) => (
-                        <div key={t.id} className="flex items-center gap-2 text-xs p-1.5 bg-muted/40 rounded">
-                          <span className="font-medium text-muted-foreground">{i + 1}.</span>
-                          <span className="truncate">{t.store_name}</span>
-                          <span className="text-muted-foreground">— {t.trigger_type.replace(/_/g, ' ')}</span>
-                          {t.status === 'completed' && <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0 ml-auto" />}
+                      {stops.slice(0, 3).map((s: any, i: number) => (
+                        <div key={s.id} className="flex items-center gap-2 text-xs p-1.5 bg-muted/40 rounded">
+                          <span className="font-medium text-muted-foreground">{s.planned_order ?? i + 1}.</span>
+                          <span className="truncate">{s.stores?.name || 'Unknown store'}</span>
+                          {s.stores?.address && <span className="text-muted-foreground truncate">— {s.stores.address}</span>}
+                          {s.status === 'completed' && <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0 ml-auto" />}
                         </div>
                       ))}
-                      {routeTriggers.length > 3 && <p className="text-[10px] text-muted-foreground pl-6">+{routeTriggers.length - 3} more stops</p>}
+                      {stops.length > 3 && <p className="text-[10px] text-muted-foreground pl-6">+{stops.length - 3} more stops</p>}
                     </div>
                   )}
                 </CardContent>
