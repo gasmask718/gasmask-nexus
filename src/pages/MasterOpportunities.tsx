@@ -258,6 +258,8 @@ export default function MasterOpportunities() {
   const [oppPageSize, setOppPageSize] = useState(25);
   const [scanning, setScanning] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [selectedSignalStores, setSelectedSignalStores] = useState<string[]>([]);
+  const [dispatchStores, setDispatchStores] = useState<string[] | null>(null);
 
   // ── Existing hooks ──
   const { data: signalSummary, isLoading: signalSummaryLoading } = useTubeIntelSummary();
