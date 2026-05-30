@@ -22,29 +22,42 @@ interface LegacyStore {
 }
 
 /**
- * Hook to resolve a store_master.id from either:
- * 1. A direct store_master.id
- * 2. A legacy stores table id (by matching name/address)
+ * RLS-safe store_master resolver.
+ *
+ * All existence checks + creates flow through `resolve_or_create_store_master`
+ * (SECURITY DEFINER) so scoped users (ambassadors etc.) never trigger a
+ * duplicate row when their RLS view hides the original.
  */
 export function useStoreMasterResolver(storeId: string | undefined | null) {
   const queryClient = useQueryClient();
 
-  // First check if storeId is directly a store_master.id
-  const { data: directMatch, isLoading: checkingDirect } = useQuery({
-    queryKey: ['store-master-direct', storeId],
+  // Read-only resolve (allow_create = false). RLS-bypassed existence check.
+  const { data: resolvedStoreMaster, isLoading: resolving } = useQuery({
+    queryKey: ['store-master-resolve', storeId],
     queryFn: async (): Promise<ResolvedStoreMaster | null> => {
       if (!storeId) return null;
-      const { data } = await supabase
-        .from('store_master')
-        .select('id, store_name, address, city, state')
-        .eq('id', storeId)
-        .maybeSingle();
-      return data;
+      const { data, error } = await supabase.rpc('resolve_or_create_store_master', {
+        _store_id: storeId,
+        _allow_create: false,
+      });
+      if (error) {
+        console.error('[useStoreMasterResolver] RPC error:', error);
+        return null;
+      }
+      if (!data) return null;
+      const row = data as any;
+      return {
+        id: row.id,
+        store_name: row.store_name,
+        address: row.address,
+        city: row.city,
+        state: row.state,
+      };
     },
     enabled: !!storeId,
   });
 
-  // If not direct, try to get legacy store info to match
+  // Legacy data still surfaced for components that need legacy fields.
   const { data: legacyStore, isLoading: loadingLegacy } = useQuery({
     queryKey: ['legacy-store-info', storeId],
     queryFn: async (): Promise<LegacyStore | null> => {
@@ -54,75 +67,54 @@ export function useStoreMasterResolver(storeId: string | undefined | null) {
         .select('name, address_street, address_city, address_state, address_zip, phone, email, type, primary_contact_name')
         .eq('id', storeId)
         .maybeSingle();
-      return data;
+      return (data as LegacyStore) || null;
     },
-    enabled: !!storeId && !directMatch,
+    enabled: !!storeId && !resolvedStoreMaster,
   });
 
-  // Try to find matching store_master by name + address
-  const { data: matchedStoreMaster, isLoading: loadingMatch } = useQuery({
-    queryKey: ['store-master-match', legacyStore?.name, legacyStore?.address_street],
-    queryFn: async (): Promise<ResolvedStoreMaster | null> => {
-      if (!legacyStore) return null;
-      
-      // Try matching by name first
-      let query = supabase
-        .from('store_master')
-        .select('id, store_name, address, city, state')
-        .ilike('store_name', legacyStore.name);
-      
-      // If we have an address, narrow down
-      if (legacyStore.address_street) {
-        query = query.ilike('address', `%${legacyStore.address_street.substring(0, 20)}%`);
-      }
-      
-      const { data } = await query.limit(1).maybeSingle();
-      return data;
-    },
-    enabled: !!legacyStore && !directMatch,
-  });
-
-  // Mutation to create store_master record from legacy store
+  // Explicit create — only when user-initiated (modal submit, etc.)
   const createStoreMaster = useMutation({
-    mutationFn: async (legacy: LegacyStore): Promise<ResolvedStoreMaster> => {
-      const { data, error } = await supabase
-        .from('store_master')
-        .insert({
-          store_name: legacy.name,
-          address: legacy.address_street,
-          city: legacy.address_city,
-          state: legacy.address_state,
-          zip: legacy.address_zip,
-          phone: legacy.phone,
-          email: legacy.email,
-          store_type: legacy.type,
-          owner_name: legacy.primary_contact_name,
-        })
-        .select('id, store_name, address, city, state')
-        .single();
-      
+    mutationFn: async (): Promise<ResolvedStoreMaster> => {
+      const { data, error } = await supabase.rpc('resolve_or_create_store_master', {
+        _store_id: storeId ?? null,
+        _store_name: legacyStore?.name ?? null,
+        _address: legacyStore?.address_street ?? null,
+        _city: legacyStore?.address_city ?? null,
+        _state: legacyStore?.address_state ?? null,
+        _zip: legacyStore?.address_zip ?? null,
+        _phone: legacyStore?.phone ?? null,
+        _email: legacyStore?.email ?? null,
+        _store_type: legacyStore?.type ?? null,
+        _owner_name: legacyStore?.primary_contact_name ?? null,
+        _allow_create: true,
+      });
       if (error) throw error;
-      return data;
+      const row = data as any;
+      return {
+        id: row.id,
+        store_name: row.store_name,
+        address: row.address,
+        city: row.city,
+        state: row.state,
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['store-master'] });
-      queryClient.invalidateQueries({ queryKey: ['store-master-match'] });
+      queryClient.invalidateQueries({ queryKey: ['store-master-resolve'] });
     },
   });
 
-  const isLoading = checkingDirect || loadingLegacy || loadingMatch;
-  const resolvedStoreMaster = directMatch || matchedStoreMaster;
-  
+  const isLoading = resolving || loadingLegacy;
+
   return {
     storeMasterId: resolvedStoreMaster?.id || null,
-    storeMaster: resolvedStoreMaster,
+    storeMaster: resolvedStoreMaster ?? null,
     legacyStore,
     isLoading,
     isResolved: !!resolvedStoreMaster,
     needsCreation: !isLoading && !resolvedStoreMaster && !!legacyStore,
     createStoreMaster: async () => {
-      if (!legacyStore) throw new Error('No legacy store data');
-      return createStoreMaster.mutateAsync(legacyStore);
+      return createStoreMaster.mutateAsync();
     },
     isCreating: createStoreMaster.isPending,
   };
