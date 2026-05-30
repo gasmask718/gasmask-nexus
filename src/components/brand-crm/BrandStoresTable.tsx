@@ -386,5 +386,19 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
         )}
       </CardContent>
     </Card>
+    <RouteAssignmentDialog
+      open={dispatchStores.length > 0}
+      onOpenChange={(o) => {
+        if (!o) {
+          setDispatchStores([]);
+        }
+      }}
+      assigneeId=""
+      assigneeName=""
+      assigneeType="driver"
+      bulkMode={dispatchStores.length > 1}
+      preselectedStores={dispatchStores}
+    />
+    </>
   );
 }
