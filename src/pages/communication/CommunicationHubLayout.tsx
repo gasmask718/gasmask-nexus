@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
 import { CommunicationRuntimeProvider } from "@/contexts/CommunicationRuntimeContext";
 import { SystemHealthBar } from "@/components/communication/SystemHealthBar";
+import { isDispatchWired, sectionHasDispatch, DISPATCH_TOOLTIP } from "@/config/dispatchRegistry";
 
 // ═══ 5-FLOOR SIDEBAR STRUCTURE ═══
 
