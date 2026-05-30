@@ -4,7 +4,7 @@
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, ArrowRight, RefreshCw } from 'lucide-react';
+import { ShoppingBag, ArrowRight, RefreshCw, Plus } from 'lucide-react';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
 import { Button } from '@/components/ui/button';
