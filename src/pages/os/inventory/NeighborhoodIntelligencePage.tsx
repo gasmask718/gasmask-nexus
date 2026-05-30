@@ -182,6 +182,10 @@ export default function NeighborhoodIntelligencePage() {
             <p className="text-muted-foreground">Geographic store analysis and filtering</p>
           </div>
         </div>
+        <Button variant="outline" disabled={selectedIds.length === 0} onClick={() => setDispatchStores(selectedIds)}>
+          <RouteIcon className="h-4 w-4 mr-2" />
+          Dispatch Selected{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
+        </Button>
         <Button variant="outline" onClick={handleExport}>
           <Download className="h-4 w-4 mr-2" />
           Export CSV
