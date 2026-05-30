@@ -3,7 +3,7 @@
  * 
  * Fully data-driven from store_health_scores, checklist_tube_intelligence, and store_master.
  */
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,14 +11,16 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Brain, TrendingUp, TrendingDown, AlertTriangle, Activity,
   Target, RefreshCw, Loader2, Package, Store, Heart,
-  ArrowUp, ArrowDown, Minus
+  ArrowUp, ArrowDown, Minus, Route as RouteIcon
 } from "lucide-react";
 import { ShadowModeBanner } from "@/components/floor9";
 import { StoreHealthBadge } from "@/components/floor9/StoreHealthBadge";
 import { useStoreHealthScores, useCalculateHealthScores, useProductIntelligence } from "@/hooks/useStoreHealthScores";
+import { RouteAssignmentDialog } from "@/components/delivery/RouteAssignmentDialog";
 import { cn } from "@/lib/utils";
 
 export default function Floor9Predictions() {
