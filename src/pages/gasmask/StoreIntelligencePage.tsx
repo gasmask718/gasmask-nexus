@@ -125,6 +125,10 @@ export default function StoreIntelligencePage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(0);
   const pageSize = 50;
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [dispatchStores, setDispatchStores] = useState<string[] | null>(null);
+
+
 
   async function fetchData() {
     setLoading(true);
