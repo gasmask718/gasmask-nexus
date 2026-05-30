@@ -25,9 +25,18 @@ import { cn } from "@/lib/utils";
 
 export default function Floor9Predictions() {
   const [activeTab, setActiveTab] = useState('health');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [dispatchStores, setDispatchStores] = useState<string[]>([]);
   const { data: healthScores, isLoading: healthLoading } = useStoreHealthScores({ limit: 50 });
   const { data: productIntel, isLoading: productLoading } = useProductIntelligence();
   const calculateHealth = useCalculateHealthScores();
+
+  const flaggedStoreIds = useMemo(
+    () => (healthScores || []).filter(s => s.health_status === 'Critical' || s.health_status === 'At Risk').map(s => s.store_id),
+    [healthScores]
+  );
+  const toggleOne = (id: string) =>
+    setSelectedIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
 
   const criticalStores = healthScores?.filter(s => s.health_status === 'Critical') || [];
   const atRiskStores = healthScores?.filter(s => s.health_status === 'At Risk') || [];
