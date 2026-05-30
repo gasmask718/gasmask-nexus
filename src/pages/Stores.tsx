@@ -34,6 +34,12 @@ import { CardHelper } from '@/components/portal/guidance/CardHelper';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getBrandIdentity } from '@/config/brands';
 import { cn } from '@/lib/utils';
+import {
+  STORE_RELATIONSHIP_STATUSES,
+  RELATIONSHIP_STATUS_COLORS,
+  RELATIONSHIP_STATUS_SHORT,
+} from '@/config/storeRelationshipStatus';
+import { RelationshipStatusSelect } from '@/components/store/RelationshipStatusSelect';
 import { format } from 'date-fns';
 
 interface StoreContact {
