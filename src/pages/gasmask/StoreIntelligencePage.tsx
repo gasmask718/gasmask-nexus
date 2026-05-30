@@ -15,10 +15,13 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { RefreshCw, Download, ChevronUp, ChevronDown, ExternalLink } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RefreshCw, Download, ChevronUp, ChevronDown, ExternalLink, Route as RouteIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
+
 
 type Tier = 'TIER_1_REVENUE_ACTIVE' | 'TIER_2_ENGAGEMENT_ACTIVE' | 'TIER_3_CONTACTS_ONLY' | 'TIER_4_DEAD';
 
@@ -122,6 +125,10 @@ export default function StoreIntelligencePage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(0);
   const pageSize = 50;
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [dispatchStores, setDispatchStores] = useState<string[] | null>(null);
+
+
 
   async function fetchData() {
     setLoading(true);
@@ -253,11 +260,22 @@ export default function StoreIntelligencePage() {
             Tiered view of every active store — revenue, engagement, and dead weight at a glance.
           </p>
         </div>
-        <Button onClick={handleRefresh} disabled={refreshing} variant="outline">
-          <RefreshCw className={cn('h-4 w-4 mr-2', refreshing && 'animate-spin')} />
-          Refresh Data
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            disabled={selectedIds.length === 0}
+            onClick={() => setDispatchStores(selectedIds)}
+          >
+            <RouteIcon className="h-4 w-4 mr-2" />
+            Dispatch Selected{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
+          </Button>
+          <Button onClick={handleRefresh} disabled={refreshing} variant="outline">
+            <RefreshCw className={cn('h-4 w-4 mr-2', refreshing && 'animate-spin')} />
+            Refresh Data
+          </Button>
+        </div>
       </div>
+
 
       {/* Tier summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -338,6 +356,20 @@ export default function StoreIntelligencePage() {
           <Table>
             <TableHeader className="bg-muted/50">
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={paged.length > 0 && paged.every((r) => selectedIds.includes(r.store_id))}
+                    onCheckedChange={(v) => {
+                      const pageIds = paged.map((r) => r.store_id);
+                      setSelectedIds((prev) =>
+                        v
+                          ? Array.from(new Set([...prev, ...pageIds]))
+                          : prev.filter((id) => !pageIds.includes(id))
+                      );
+                    }}
+                    aria-label="Select page"
+                  />
+                </TableHead>
                 <SortHead k="store_name" label="Store" />
                 <SortHead k="full_address" label="Address" />
                 <SortHead k="activity_tier" label="Tier" />
@@ -346,18 +378,30 @@ export default function StoreIntelligencePage() {
                 <SortHead k="total_revenue" label="Revenue" className="text-right" />
                 <SortHead k="days_since_last_activity" label="Stale (d)" className="text-right" />
                 <TableHead>Phone</TableHead>
-                <TableHead className="w-12" />
+                <TableHead className="w-20 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">Loading…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center py-12 text-muted-foreground">Loading…</TableCell></TableRow>
               ) : paged.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">No stores match the current filters.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center py-12 text-muted-foreground">No stores match the current filters.</TableCell></TableRow>
               ) : paged.map((r) => {
                 const meta = TIER_META[r.activity_tier];
+                const checked = selectedIds.includes(r.store_id);
                 return (
-                  <TableRow key={r.store_id}>
+                  <TableRow key={r.store_id} data-state={checked ? 'selected' : undefined}>
+                    <TableCell>
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) =>
+                          setSelectedIds((prev) =>
+                            v ? [...prev, r.store_id] : prev.filter((id) => id !== r.store_id)
+                          )
+                        }
+                        aria-label={`Select ${r.store_name}`}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">
                       {r.store_name}
                       {r.has_drift && (
@@ -381,17 +425,29 @@ export default function StoreIntelligencePage() {
                         <a href={`tel:${r.phone}`} className="text-primary hover:underline">{r.phone}</a>
                       ) : '—'}
                     </TableCell>
-                    <TableCell>
-                      <Link to={`/gasmask/stores/${r.store_id}`}>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <ExternalLink className="h-3.5 w-3.5" />
+                    <TableCell className="text-right">
+                      <div className="inline-flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          title="Add to route"
+                          onClick={() => setDispatchStores([r.store_id])}
+                        >
+                          <RouteIcon className="h-3.5 w-3.5" />
                         </Button>
-                      </Link>
+                        <Link to={`/gasmask/stores/${r.store_id}`}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Open store">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </Button>
+                        </Link>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
               })}
             </TableBody>
+
           </Table>
 
           {totalPages > 1 && (
@@ -407,6 +463,25 @@ export default function StoreIntelligencePage() {
           )}
         </CardContent>
       </Card>
+
+      {dispatchStores && (
+        <RouteAssignmentDialog
+          open={!!dispatchStores}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDispatchStores(null);
+              setSelectedIds([]);
+            }
+          }}
+          assigneeId=""
+          assigneeName=""
+          assigneeType="driver"
+          assigneeUserId={null}
+          bulkMode={dispatchStores.length > 1}
+          preselectedStores={dispatchStores}
+        />
+      )}
     </div>
   );
 }
+

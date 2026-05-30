@@ -27,7 +27,7 @@ const ROWS: Row[] = [
   { floor: 'Territory Map', path: '/territory/map', shows: 'Geospatial store view', status: 'wired' },
 
   // RED — has stores but not wired
-  { floor: 'Store Intelligence', path: '/grabba/store-intelligence', shows: 'AI-scored stores (0-100)', status: 'unwired', note: 'No "Dispatch Selected" button on table' },
+  { floor: 'Store Intelligence', path: '/grabba/store-intelligence', shows: 'AI-scored stores (0-100)', status: 'wired' },
   { floor: 'Grabba StoreMasterProfile', path: '/grabba/stores/:id', shows: 'Master profile of a single store', status: 'unwired', note: 'Profile lacks single-store Dispatch CTA' },
   { floor: 'OS NeighborhoodIntelligence', path: '/os/neighborhood-intelligence', shows: 'Neighborhood-level signals + stores', status: 'unwired', note: 'Stores list missing multi-select dispatch' },
   { floor: 'Floor9 Predictions', path: '/grabba/floor9/predictions', shows: 'Stores predicted to need visit', status: 'unwired', note: 'Predicted list is read-only — no dispatch' },
