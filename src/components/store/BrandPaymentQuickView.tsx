@@ -37,20 +37,23 @@ export function BrandPaymentQuickView({ storeId }: Props) {
         if (!brand) return null;
 
         const isActive = !['paused', 'terminated'].includes(rel.relationship_health);
+        const isUnset = !rel.payment_type_chosen;
 
         return (
           <Badge
             key={rel.id}
             variant="outline"
             className={`text-xs font-medium cursor-pointer transition-colors ${
-              isActive
-                ? PAYMENT_STYLES[rel.payment_type]
-                : 'bg-muted/50 text-muted-foreground/60 border-border/30 line-through'
+              !isActive
+                ? 'bg-muted/50 text-muted-foreground/60 border-border/30 line-through'
+                : isUnset
+                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/25'
+                  : PAYMENT_STYLES[rel.payment_type]
             }`}
             onClick={handleScrollToPanel}
           >
             <span className="mr-1">{brand.icon}</span>
-            {brand.name} — {isActive ? PAYMENT_LABELS[rel.payment_type] : 'Inactive'}
+            {brand.name} — {!isActive ? 'Inactive' : isUnset ? 'Neither (set)' : PAYMENT_LABELS[rel.payment_type]}
           </Badge>
         );
       })}

@@ -93,15 +93,22 @@ function BrandRow({
         <div className="space-y-1">
           <label className="text-xs text-muted-foreground">Payment</label>
           <Select
-            value={rel.payment_type}
-            onValueChange={(v) =>
-              onUpdate({ id: rel.id, updates: { payment_type: v as PaymentType } })
-            }
+            value={rel.payment_type_chosen ? rel.payment_type : 'unset'}
+            onValueChange={(v) => {
+              if (v === 'unset') {
+                onUpdate({ id: rel.id, updates: { payment_type_chosen: false } });
+              } else {
+                onUpdate({ id: rel.id, updates: { payment_type: v as PaymentType, payment_type_chosen: true } });
+              }
+            }}
           >
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className={`h-8 text-xs ${!rel.payment_type_chosen ? 'border-amber-500/50 text-amber-600 dark:text-amber-400' : ''}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="unset" className="text-xs text-amber-600 dark:text-amber-400">
+                Neither / Not set — choose one
+              </SelectItem>
               {PAYMENT_OPTIONS.map((o) => (
                 <SelectItem key={o.value} value={o.value} className="text-xs">
                   {o.label}

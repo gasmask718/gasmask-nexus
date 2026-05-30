@@ -1,7 +1,11 @@
 // Per-brand KPI for a store: combines on-hand (v_store_tube_kpi) with
 // lifetime + 30-day sold (tube_sale_ledger).
+// Dedupes v_store_tube_kpi rows by canonical brand — the view returns
+// both 'grabba' and 'grabba_r_us' (etc.) which would otherwise render
+// as duplicate "Grabba R Us" entries on the profile.
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { normalizeBrandId, CANONICAL_BRANDS } from '@/config/brands';
 
 export interface StoreTubeBrandKpi {
   brand_id: string;
@@ -47,20 +51,36 @@ export function useStoreTubeBrandsKpi(storeId: string | undefined | null) {
         brand_id: string; brand_name: string; tube_count: number | null; last_order_date: string | null;
       }>;
 
+      // Dedupe by canonical brand id (e.g. 'grabba' + 'grabba_r_us' → one row)
+      const byCanonical = new Map<string, StoreTubeBrandKpi>();
       const seen = new Set<string>();
-      const out: StoreTubeBrandKpi[] = kpiRows.map(r => {
-        const key = (r.brand_id || r.brand_name || '').toLowerCase().trim();
-        seen.add(key);
-        const led = ledgerByBrand.get(key) || ledgerByBrand.get((r.brand_name || '').toLowerCase().trim()) || { lifetime: 0, d30: 0 };
-        return {
-          brand_id: r.brand_id,
-          brand_name: r.brand_name,
-          on_hand: Number(r.tube_count || 0),
-          sold_lifetime: led.lifetime,
-          sold_30d: led.d30,
-          last_order_date: r.last_order_date,
-        };
-      });
+      for (const r of kpiRows) {
+        const rawKey = (r.brand_id || r.brand_name || '').toLowerCase().trim();
+        seen.add(rawKey);
+        const cid = normalizeBrandId(r.brand_id) || normalizeBrandId(r.brand_name);
+        const groupKey = cid || rawKey;
+        const displayName = cid ? CANONICAL_BRANDS[cid].displayName : (r.brand_name || rawKey);
+        const led = ledgerByBrand.get(rawKey) || ledgerByBrand.get((r.brand_name || '').toLowerCase().trim()) || { lifetime: 0, d30: 0 };
+        const existing = byCanonical.get(groupKey);
+        if (existing) {
+          existing.on_hand += Number(r.tube_count || 0);
+          existing.sold_lifetime += led.lifetime;
+          existing.sold_30d += led.d30;
+          if (r.last_order_date && (!existing.last_order_date || r.last_order_date > existing.last_order_date)) {
+            existing.last_order_date = r.last_order_date;
+          }
+        } else {
+          byCanonical.set(groupKey, {
+            brand_id: cid || r.brand_id,
+            brand_name: displayName,
+            on_hand: Number(r.tube_count || 0),
+            sold_lifetime: led.lifetime,
+            sold_30d: led.d30,
+            last_order_date: r.last_order_date,
+          });
+        }
+      }
+      const out: StoreTubeBrandKpi[] = Array.from(byCanonical.values());
 
       // Surface brands present in ledger but missing from KPI view
       for (const [key, led] of ledgerByBrand.entries()) {

@@ -13,6 +13,8 @@ export interface StoreBrandRelationship {
   brand_id: string;
   is_active: boolean;
   payment_type: PaymentType;
+  /** When false, no Pay Upfront / Bill to Bill choice has been made yet (#52/53). */
+  payment_type_chosen: boolean;
   needs_starter_kit: boolean;
   starter_kit_sent: boolean;
   starter_kit_date: string | null;
