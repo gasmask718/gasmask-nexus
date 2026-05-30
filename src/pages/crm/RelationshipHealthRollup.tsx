@@ -101,7 +101,7 @@ export default function RelationshipHealthRollup() {
         .from('v_store_relationship_rollup' as any)
         .select('*');
       if (error) throw error;
-      return (data || []) as RollupRow[];
+      return ((data || []) as unknown) as RollupRow[];
     },
   });
 
