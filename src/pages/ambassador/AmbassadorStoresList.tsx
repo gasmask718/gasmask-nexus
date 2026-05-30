@@ -117,6 +117,25 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
               <Button
                 variant="ghost"
                 size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-primary disabled:opacity-40"
+                onClick={handleCall}
+                disabled={!store.store_phone}
+                title={store.store_phone ? `Call ${store.store_phone}` : 'No phone on file'}
+              >
+                <Phone className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-primary"
+                onClick={handleMessage}
+                title="Send message"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-primary"
                 onClick={handleDispatch}
                 title="Add to Route"
