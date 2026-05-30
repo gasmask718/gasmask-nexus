@@ -222,10 +222,10 @@ export default function AdminMarketplacePayoutsPage() {
                           {p.reversal_reason && <p className="text-xs text-zinc-400 mt-1">{p.reversal_reason}</p>}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {p.approved_at ? format(new Date(p.approved_at), 'MMM d, h:mm a') : '—'}
+                          {p.approved_at ? format(new Date(p.approved_at), 'MMM d, yyyy, h:mm a') : '—'}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {p.paid_at ? format(new Date(p.paid_at), 'MMM d, h:mm a') : '—'}
+                          {p.paid_at ? format(new Date(p.paid_at), 'MMM d, yyyy, h:mm a') : '—'}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-1 flex-wrap">

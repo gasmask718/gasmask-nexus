@@ -71,7 +71,7 @@ export function useWholesalerAnalytics() {
       });
 
       return Object.entries(byDate).map(([date, vals]) => ({
-        date: format(new Date(date), 'MMM d'),
+        date: format(new Date(date), 'MMM d, yyyy'),
         ...vals,
       }));
     },
@@ -151,11 +151,11 @@ export function useWholesalerAnalytics() {
 
       const byDate: Record<string, number> = {};
       for (let i = 0; i < 30; i++) {
-        byDate[format(subDays(new Date(), 29 - i), 'MMM d')] = 0;
+        byDate[format(subDays(new Date(), 29 - i), 'MMM d, yyyy')] = 0;
       }
 
       (data || []).forEach(row => {
-        const d = format(new Date(row.created_at!), 'MMM d');
+        const d = format(new Date(row.created_at!), 'MMM d, yyyy');
         if (byDate[d] !== undefined) byDate[d] += 1;
       });
 

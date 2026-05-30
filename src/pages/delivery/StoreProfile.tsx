@@ -150,7 +150,7 @@ const StoreProfile: React.FC = () => {
                 <Calendar className="h-8 w-8 text-purple-500" />
                 <div>
                   <div className="text-2xl font-bold">
-                    {storeChecks[0] ? format(new Date(storeChecks[0].scheduled_date), 'MMM d') : '-'}
+                    {storeChecks[0] ? format(new Date(storeChecks[0].scheduled_date), 'MMM d, yyyy') : '-'}
                   </div>
                   <p className="text-sm text-muted-foreground">Last Check</p>
                 </div>

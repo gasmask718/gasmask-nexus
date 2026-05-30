@@ -221,7 +221,7 @@ export function AmbassadorActivityTimeline({ ambassadorId, limit = 20 }: Ambassa
                         )}
                       </div>
                       <time className="text-xs text-muted-foreground whitespace-nowrap">
-                        {format(new Date(item.timestamp), 'MMM d, h:mm a')}
+                        {format(new Date(item.timestamp), 'MMM d, yyyy, h:mm a')}
                       </time>
                     </div>
                     {item.metadata?.status && (

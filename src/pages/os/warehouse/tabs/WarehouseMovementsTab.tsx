@@ -52,7 +52,7 @@ export function WarehouseMovementsTab() {
                 return (
                   <TableRow key={mov.id}>
                     <TableCell className="text-sm">
-                      {mov.created_at ? format(new Date(mov.created_at), 'MMM d, HH:mm') : '-'}
+                      {mov.created_at ? format(new Date(mov.created_at), 'MMM d, yyyy HH:mm') : '-'}
                     </TableCell>
                     <TableCell className="font-medium">
                       {mov.product_id?.slice(0, 8)}...

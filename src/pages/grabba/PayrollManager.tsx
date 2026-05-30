@@ -306,7 +306,7 @@ export default function PayrollManager() {
                       <TableCell className="font-medium">{record.employee_name}</TableCell>
                       <TableCell className="capitalize">{record.employee_type}</TableCell>
                       <TableCell>
-                        {format(new Date(record.pay_period_start), 'MMM d')} - {format(new Date(record.pay_period_end), 'MMM d, yyyy')}
+                        {format(new Date(record.pay_period_start), 'MMM d, yyyy')} - {format(new Date(record.pay_period_end), 'MMM d, yyyy')}
                       </TableCell>
                       <TableCell className="font-medium">${Number(record.net_pay).toLocaleString()}</TableCell>
                       <TableCell>{getStatusBadge(record.status)}</TableCell>

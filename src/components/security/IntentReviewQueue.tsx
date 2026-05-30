@@ -193,7 +193,7 @@ export function IntentReviewQueue() {
                       </TableCell>
                       <TableCell>{getStatusBadge(item.status)}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(item.client_timestamp), 'MMM d, HH:mm')}
+                        {format(new Date(item.client_timestamp), 'MMM d, yyyy HH:mm')}
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate text-sm">
                         {item.review_reason || '—'}

@@ -230,7 +230,7 @@ function PlanCard({
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-1">
           <Calendar className="h-3.5 w-3.5" />
-          {format(new Date(plan.window_start), 'MMM d')} - {format(new Date(plan.window_end), 'MMM d')}
+          {format(new Date(plan.window_start), 'MMM d, yyyy')} - {format(new Date(plan.window_end), 'MMM d, yyyy')}
         </div>
         <div className="flex items-center gap-1">
           <Users className="h-3.5 w-3.5" />

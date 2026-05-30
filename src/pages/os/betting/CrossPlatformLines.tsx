@@ -283,7 +283,7 @@ export default function CrossPlatformLines() {
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base">{group.away_team} @ {group.home_team}</CardTitle>
                       {group.commence_time && (
-                        <CardDescription>{format(new Date(group.commence_time), 'MMM d, h:mm a')}</CardDescription>
+                        <CardDescription>{format(new Date(group.commence_time), 'MMM d, yyyy, h:mm a')}</CardDescription>
                       )}
                     </CardHeader>
                     <CardContent>

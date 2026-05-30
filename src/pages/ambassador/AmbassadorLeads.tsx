@@ -688,7 +688,7 @@ export default function AmbassadorLeads() {
                                 
                                 <div className="flex items-center justify-between mt-3 pt-3 border-t">
                                   <span className="text-xs text-muted-foreground">
-                                    Added {format(new Date(lead.created_at), 'MMM d')}
+                                    Added {format(new Date(lead.created_at), 'MMM d, yyyy')}
                                   </span>
                                   <Button variant="ghost" size="sm" className="h-7 px-2">
                                     <ArrowRight className="h-3 w-3" />

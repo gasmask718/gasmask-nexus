@@ -329,7 +329,7 @@ export default function AdminDisputeDetail() {
                         }`}>
                           <div className="text-xs text-muted-foreground mb-1">
                             {msg.author_role === 'admin' ? 'Admin' : 'Ambassador'} •{' '}
-                            {format(new Date(msg.created_at), 'MMM d, h:mm a')}
+                            {format(new Date(msg.created_at), 'MMM d, yyyy, h:mm a')}
                           </div>
                           <div className="whitespace-pre-wrap">{msg.message}</div>
                         </div>

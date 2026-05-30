@@ -272,7 +272,7 @@ export function InvoiceActivityTimeline({
                           {config.label}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {format(new Date(event.timestamp), 'MMM d, h:mm a')}
+                          {format(new Date(event.timestamp), 'MMM d, yyyy, h:mm a')}
                         </span>
                       </div>
                       

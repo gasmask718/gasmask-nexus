@@ -56,7 +56,7 @@ export function FollowUpTimeline({ followUps }: FollowUpTimelineProps) {
               <span className="capitalize">{followUp.recommended_action.replace(/_/g, ' ')}</span>
               {followUp.status === 'completed' && followUp.completed_at && (
                 <span className="text-muted-foreground">
-                  {' '}— Completed {format(new Date(followUp.completed_at), 'MMM d, h:mm a')}
+                  {' '}— Completed {format(new Date(followUp.completed_at), 'MMM d, yyyy, h:mm a')}
                 </span>
               )}
             </div>

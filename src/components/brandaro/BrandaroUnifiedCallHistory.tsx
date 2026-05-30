@@ -116,7 +116,7 @@ export function BrandaroUnifiedCallHistory({ leadId, className }: BrandaroUnifie
               </div>
               <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                 <Clock className="h-3 w-3" />
-                {format(new Date(call.call_date), "MMM d, h:mm a")}
+                {format(new Date(call.call_date), "MMM d, yyyy, h:mm a")}
                 {call.duration_seconds && (
                   <span>({Math.round(call.duration_seconds)}s)</span>
                 )}

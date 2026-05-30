@@ -124,7 +124,7 @@ export function ResultsFilters({
                   {filters.dateRange?.from ? (
                     filters.dateRange.to ? (
                       <>
-                        {format(filters.dateRange.from, 'MMM d')} - {format(filters.dateRange.to, 'MMM d, yyyy')}
+                        {format(filters.dateRange.from, 'MMM d, yyyy')} - {format(filters.dateRange.to, 'MMM d, yyyy')}
                       </>
                     ) : (
                       format(filters.dateRange.from, 'MMM d, yyyy')

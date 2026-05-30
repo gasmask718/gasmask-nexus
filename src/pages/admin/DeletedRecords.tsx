@@ -495,7 +495,7 @@ export default function DeletedRecords() {
                           )}
                         </div>
                         <span className="text-muted-foreground">
-                          {format(new Date(entry.created_at), 'MMM d, h:mm a')}
+                          {format(new Date(entry.created_at), 'MMM d, yyyy, h:mm a')}
                         </span>
                       </div>
                     ))}

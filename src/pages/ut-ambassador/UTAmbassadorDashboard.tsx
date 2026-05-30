@@ -286,7 +286,7 @@ export default function UTAmbassadorDashboard() {
                       <div>
                         <span className="font-medium">${Number(p.commission_amount || 0).toLocaleString()}</span>
                         <span className="text-xs text-muted-foreground ml-2">
-                          {p.created_at ? format(new Date(p.created_at), 'MMM d') : ''}
+                          {p.created_at ? format(new Date(p.created_at), 'MMM d, yyyy') : ''}
                         </span>
                       </div>
                       <Badge variant={p.payout_status === 'paid' ? 'default' : 'outline'} className="text-xs">

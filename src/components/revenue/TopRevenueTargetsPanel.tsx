@@ -100,10 +100,10 @@ export function TopRevenueTargetsPanel({ businessId, verticalId, limit = 20 }: T
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {target.last_order_at ? format(new Date(target.last_order_at), 'MMM d') : '-'}
+                    {target.last_order_at ? format(new Date(target.last_order_at), 'MMM d, yyyy') : '-'}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {target.predicted_next_order_at ? format(new Date(target.predicted_next_order_at), 'MMM d') : '-'}
+                    {target.predicted_next_order_at ? format(new Date(target.predicted_next_order_at), 'MMM d, yyyy') : '-'}
                   </TableCell>
                   <TableCell>
                     {target.heat_score >= 80 ? (

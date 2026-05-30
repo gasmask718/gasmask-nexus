@@ -100,7 +100,7 @@ export default function BikerDashboard() {
       issue_type: 'Check Rejected',
       severity: i === 0 ? 'high' : 'medium' as 'high' | 'medium' | 'low',
       reported_by: c.biker_name || 'Unknown',
-      reported_at: format(new Date(c.created_at), 'MMM d, h:mm a'),
+      reported_at: format(new Date(c.created_at), 'MMM d, yyyy, h:mm a'),
       status: 'open',
       description: c.summary_notes
     }));

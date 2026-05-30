@@ -221,7 +221,7 @@ function MessageBubble({ message, isOwnMessage }: { message: OrderMessage; isOwn
           <p className="whitespace-pre-wrap break-words">{message.message_body}</p>
         </div>
         <p className={`text-[9px] text-muted-foreground mt-0.5 ${isOwnMessage ? 'text-right' : ''}`}>
-          {format(new Date(message.created_at), 'MMM d, h:mm a')}
+          {format(new Date(message.created_at), 'MMM d, yyyy, h:mm a')}
           {isOwnMessage && message.is_read && (
             <span className="ml-1 text-primary/60">✓ Read</span>
           )}

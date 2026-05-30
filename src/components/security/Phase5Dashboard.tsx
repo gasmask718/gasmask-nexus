@@ -313,7 +313,7 @@ export function Phase5Dashboard() {
                   {recommendations.map((rec) => (
                     <TableRow key={rec.id}>
                       <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(rec.created_at), 'MMM d, HH:mm')}
+                        {format(new Date(rec.created_at), 'MMM d, yyyy HH:mm')}
                       </TableCell>
                       <TableCell>{getRecommendationBadge(rec.recommendation_type)}</TableCell>
                       <TableCell>
@@ -394,10 +394,10 @@ export function Phase5Dashboard() {
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(pattern.first_observed_at), 'MMM d')}
+                        {format(new Date(pattern.first_observed_at), 'MMM d, yyyy')}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(pattern.last_observed_at), 'MMM d, HH:mm')}
+                        {format(new Date(pattern.last_observed_at), 'MMM d, yyyy HH:mm')}
                       </TableCell>
                       <TableCell className="max-w-xs truncate">
                         {pattern.notes || '-'}

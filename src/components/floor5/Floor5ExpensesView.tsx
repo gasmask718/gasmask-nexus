@@ -231,7 +231,7 @@ export default function Floor5ExpensesView() {
                 <tbody>
                   {expenses.slice(0, 25).map((e) => (
                     <tr key={e.id} className="border-b last:border-0 hover:bg-accent/30">
-                      <td className="py-2 px-2">{format(new Date(e.expense_date), 'MMM d')}</td>
+                      <td className="py-2 px-2">{format(new Date(e.expense_date), 'MMM d, yyyy')}</td>
                       <td className="py-2 px-2"><Badge variant="outline" className="text-xs">{e.category}</Badge></td>
                       <td className="py-2 px-2 text-muted-foreground">{e.vendor || '—'}</td>
                       <td className="py-2 px-2 text-muted-foreground">{e.payment_method || '—'}</td>

@@ -412,7 +412,7 @@ export function AmbassadorStoresTab({
                         {item.lastVisit ? (
                           <>
                             <span className="flex items-center gap-1 text-sm">
-                              {format(new Date(item.lastVisit), 'MMM d')}
+                              {format(new Date(item.lastVisit), 'MMM d, yyyy')}
                             </span>
                             <span className="text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(item.lastVisit), { addSuffix: true })}
@@ -432,7 +432,7 @@ export function AmbassadorStoresTab({
                       <div className="flex flex-col gap-1">
                         {item.lastOrder ? (
                           <>
-                            <span>{format(new Date(item.lastOrder), 'MMM d')}</span>
+                            <span>{format(new Date(item.lastOrder), 'MMM d, yyyy')}</span>
                             <span className="text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(item.lastOrder), { addSuffix: true })}
                             </span>

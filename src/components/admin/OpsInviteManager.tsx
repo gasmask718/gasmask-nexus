@@ -199,9 +199,9 @@ export default function OpsInviteManager() {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {invite.email && <span>{invite.email} · </span>}
-                    Created {format(new Date(invite.created_at), 'MMM d, HH:mm')}
+                    Created {format(new Date(invite.created_at), 'MMM d, yyyy HH:mm')}
                     {' · Expires '}
-                    {format(new Date(invite.expires_at), 'MMM d, HH:mm')}
+                    {format(new Date(invite.expires_at), 'MMM d, yyyy HH:mm')}
                   </div>
                 </div>
                 {invite.status === 'active' && (

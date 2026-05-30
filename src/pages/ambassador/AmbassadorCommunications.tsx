@@ -712,7 +712,7 @@ export default function AmbassadorCommunications() {
                         <div className="text-right">
                           <div className="font-mono text-sm">{formatDuration(c.duration_seconds)}</div>
                           <div className="text-xs text-muted-foreground">
-                            {format(new Date(c.created_at), 'MMM d, h:mm a')}
+                            {format(new Date(c.created_at), 'MMM d, yyyy, h:mm a')}
                           </div>
                         </div>
                         <Button

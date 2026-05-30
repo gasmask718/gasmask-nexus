@@ -461,7 +461,7 @@ export default function StatementUploader() {
                 <tbody>
                   {reviewTxns.map(t => (
                     <tr key={t.id} className="border-b last:border-0">
-                      <td className="py-2 px-3">{format(new Date(t.transaction_date), 'MMM d')}</td>
+                      <td className="py-2 px-3">{format(new Date(t.transaction_date), 'MMM d, yyyy')}</td>
                       <td className="py-2 px-3 truncate max-w-[200px]">{t.description}</td>
                       <td className="py-2 px-3">
                         <Badge variant={t.direction === 'credit' ? 'default' : 'destructive'} className="text-xs">

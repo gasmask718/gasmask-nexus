@@ -226,7 +226,7 @@ export function ConversationPanel({ contact, onBack }: ConversationPanelProps) {
     const date = new Date(dateStr);
     if (isToday(date)) return format(date, "h:mm a");
     if (isYesterday(date)) return `Yesterday ${format(date, "h:mm a")}`;
-    return format(date, "MMM d, h:mm a");
+    return format(date, "MMM d, yyyy, h:mm a");
   };
 
   const getStatusIcon = (status: string, direction: string) => {

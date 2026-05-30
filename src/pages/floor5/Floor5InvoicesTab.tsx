@@ -130,7 +130,7 @@ export default function Floor5InvoicesTab() {
                       <div className="text-right">
                         <p className="font-semibold">${inv.total_amount.toLocaleString()}</p>
                         <p className="text-xs text-muted-foreground">
-                          {inv.due_date ? format(new Date(inv.due_date), 'MMM d') : '—'}
+                          {inv.due_date ? format(new Date(inv.due_date), 'MMM d, yyyy') : '—'}
                         </p>
                       </div>
                       {getStatusBadge(inv.status)}

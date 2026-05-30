@@ -380,7 +380,7 @@ export default function AiCommandConsole() {
                           )}
                           
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(log.created_at), 'MMM d, h:mm a')}
+                            {format(new Date(log.created_at), 'MMM d, yyyy, h:mm a')}
                           </p>
                         </div>
                       ))}

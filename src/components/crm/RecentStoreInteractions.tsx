@@ -350,13 +350,13 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
                             {interaction.follow_up_at && (
                               <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/30">
                                 <CalendarClock className="h-3 w-3 mr-1" />
-                                {format(new Date(interaction.follow_up_at), "MMM d")}
+                                {format(new Date(interaction.follow_up_at), "MMM d, yyyy")}
                               </Badge>
                             )}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {(interaction.contact as any)?.name} •{" "}
-                            {format(new Date(interaction.created_at), "MMM d, h:mm a")}
+                            {format(new Date(interaction.created_at), "MMM d, yyyy, h:mm a")}
                           </div>
                           <div className="text-xs text-muted-foreground mt-0.5">
                             {(interaction.creator as any)?.name || 'System'} • {getSourceFromRole((interaction.creator as any)?.role)}
@@ -408,7 +408,7 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
                           />
                           <div className="text-xs text-muted-foreground mt-1">
                             {(note.profile as any)?.name || 'System'} • {getSourceFromRole((note.profile as any)?.role)} •{" "}
-                            {format(new Date(note.created_at), "MMM d, h:mm a")}
+                            {format(new Date(note.created_at), "MMM d, yyyy, h:mm a")}
                           </div>
                         </div>
                       </div>
@@ -439,7 +439,7 @@ export function RecentStoreInteractions({ storeId, onLogInteraction, onViewAll }
                           </div>
                           <div className="text-xs text-muted-foreground mt-1">
                             {(visit.user as any)?.name || 'System'} • {getSourceFromRole((visit.user as any)?.role)} •{" "}
-                            {format(new Date(visit.created_at), "MMM d, h:mm a")}
+                            {format(new Date(visit.created_at), "MMM d, yyyy, h:mm a")}
                           </div>
                         </div>
                       </div>

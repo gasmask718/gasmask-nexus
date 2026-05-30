@@ -319,9 +319,9 @@ function TaskCard({
             {task.description}
           </p>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span>Created: {format(new Date(task.created_at), 'MMM d, h:mm a')}</span>
+            <span>Created: {format(new Date(task.created_at), 'MMM d, yyyy, h:mm a')}</span>
             {task.suggested_due_date && (
-              <span>Due: {format(new Date(task.suggested_due_date), 'MMM d')}</span>
+              <span>Due: {format(new Date(task.suggested_due_date), 'MMM d, yyyy')}</span>
             )}
           </div>
         </div>

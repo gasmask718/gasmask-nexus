@@ -52,7 +52,7 @@ export function NextFollowUpBanner({ followUp, onTrigger, isLoading }: NextFollo
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 <span>{formatDistanceToNow(new Date(followUp.due_at), { addSuffix: true })}</span>
-                <span>({format(new Date(followUp.due_at), 'MMM d, h:mm a')})</span>
+                <span>({format(new Date(followUp.due_at), 'MMM d, yyyy, h:mm a')})</span>
               </div>
               <div className="text-sm capitalize mt-1">
                 {followUp.recommended_action.replace(/_/g, ' ')}

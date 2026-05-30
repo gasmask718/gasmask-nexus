@@ -231,7 +231,7 @@ export default function UTSupplierInboxV2() {
                 <div className="flex items-center gap-2 mt-1">
                   {thread.supplier_email && <Mail className="h-3 w-3 text-blue-400" />}
                   {thread.supplier_whatsapp && <MessageSquare className="h-3 w-3 text-green-400" />}
-                  {thread.last_message_at && <span className="text-[10px] text-muted-foreground">{format(new Date(thread.last_message_at), 'MMM d, h:mm a')}</span>}
+                  {thread.last_message_at && <span className="text-[10px] text-muted-foreground">{format(new Date(thread.last_message_at), 'MMM d, yyyy, h:mm a')}</span>}
                 </div>
               </div>
             ))}
@@ -282,7 +282,7 @@ export default function UTSupplierInboxV2() {
                         <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
                         <div className="flex items-center gap-2 mt-1">
                           {msg.channel === 'email' ? <Mail className="h-3 w-3 text-blue-400" /> : <MessageSquare className="h-3 w-3 text-green-400" />}
-                          <span className="text-[10px] text-muted-foreground">{format(new Date(msg.created_at), 'MMM d, h:mm a')}</span>
+                          <span className="text-[10px] text-muted-foreground">{format(new Date(msg.created_at), 'MMM d, yyyy, h:mm a')}</span>
                           {msg.direction === 'outbound' && msg.is_read && <CheckCircle className="h-3 w-3 text-green-400" />}
                         </div>
                       </div>

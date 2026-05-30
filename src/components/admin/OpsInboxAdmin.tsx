@@ -197,7 +197,7 @@ export default function OpsInboxAdmin() {
                       <Badge variant="outline" className="text-[10px]">{t.type}</Badge>
                       <Badge variant="secondary" className="text-[10px]">{t.priority}</Badge>
                       <span className="text-[10px] text-muted-foreground">
-                        {format(new Date(t.created_at), 'MMM d, h:mm a')}
+                        {format(new Date(t.created_at), 'MMM d, yyyy, h:mm a')}
                       </span>
                     </div>
                   </div>

@@ -121,7 +121,7 @@ export default function UTAutomationRuns() {
                   </div>
                   <p className="text-xs text-muted-foreground">{job.schedule}</p>
                   <p className="text-xs text-muted-foreground">Source: {job.source}</p>
-                  <p className="text-xs text-muted-foreground">Last run: {lastRun ? format(new Date(lastRun.started_at), 'MMM d, h:mm a') : 'Never'}</p>
+                  <p className="text-xs text-muted-foreground">Last run: {lastRun ? format(new Date(lastRun.started_at), 'MMM d, yyyy, h:mm a') : 'Never'}</p>
                   <Button size="sm" variant="outline" className="w-full mt-2" disabled={runningJob === job.name} onClick={() => handleRunNow(job)}>
                     {runningJob === job.name ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Running...</> : <><Play className="h-3 w-3 mr-1" />Run Now</>}
                   </Button>
@@ -161,7 +161,7 @@ export default function UTAutomationRuns() {
                 <TableRow key={run.id}>
                   <TableCell className="font-medium text-xs">{run.source || '—'}</TableCell>
                   <TableCell className="text-xs">{run.run_type || '—'}</TableCell>
-                  <TableCell className="text-xs">{run.started_at ? format(new Date(run.started_at), 'MMM d, h:mm a') : '—'}</TableCell>
+                  <TableCell className="text-xs">{run.started_at ? format(new Date(run.started_at), 'MMM d, yyyy, h:mm a') : '—'}</TableCell>
                   <TableCell className="text-xs font-semibold">{run.leads_found || 0}</TableCell>
                   <TableCell className="text-xs">{run.leads_graded || 0}</TableCell>
                   <TableCell>{getStatusBadge(run.status)}</TableCell>

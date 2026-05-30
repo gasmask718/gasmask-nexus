@@ -227,7 +227,7 @@ export function IncidentDrillPanel({ businessId }: Props) {
                         {getDrillIcon(drill.drill_type)}
                         <span>{DRILL_TYPES.find(t => t.value === drill.drill_type)?.label}</span>
                         <span>•</span>
-                        <span>{format(new Date(drill.initiated_at), 'MMM d, HH:mm')}</span>
+                        <span>{format(new Date(drill.initiated_at), 'MMM d, yyyy HH:mm')}</span>
                       </div>
                     </div>
                   ))

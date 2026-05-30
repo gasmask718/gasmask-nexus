@@ -220,7 +220,7 @@ export function PropSettlementAudit() {
                   {auditLogs.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(log.settled_at), 'MMM d HH:mm')}
+                        {format(new Date(log.settled_at), 'MMM d, yyyy HH:mm')}
                       </TableCell>
                       <TableCell className="font-medium">{log.player_name}</TableCell>
                       <TableCell>

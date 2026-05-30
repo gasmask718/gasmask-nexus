@@ -47,10 +47,10 @@ export function SettlementDetail({ payouts }: Props) {
               <div key={p.id} className="grid grid-cols-[70px_100px_100px_110px_80px_80px] gap-2 px-4 py-2.5 border-b border-border/20 items-center text-xs hover:bg-muted/20 transition-colors">
                 <span className="font-mono text-[10px] font-medium">#{p.id.slice(0, 6)}</span>
                 <span className="text-[10px] text-muted-foreground">
-                  {p.settlement_start_at ? format(new Date(p.settlement_start_at), 'MMM d, h:mm a') : '—'}
+                  {p.settlement_start_at ? format(new Date(p.settlement_start_at), 'MMM d, yyyy, h:mm a') : '—'}
                 </span>
                 <span className="text-[10px] text-muted-foreground">
-                  {p.settlement_start_at ? format(new Date(p.settlement_start_at), 'MMM d, h:mm a') : '—'}
+                  {p.settlement_start_at ? format(new Date(p.settlement_start_at), 'MMM d, yyyy, h:mm a') : '—'}
                 </span>
                 <span className="text-[10px] font-medium">
                   {p.settlement_release_at ? format(new Date(p.settlement_release_at), 'MMM d, yyyy h:mm a') : '—'}

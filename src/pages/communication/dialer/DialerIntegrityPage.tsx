@@ -303,7 +303,7 @@ export default function DialerIntegrityPage() {
             7-Day Revenue Forecast
             {latestRun?.started_at && (
               <Badge variant="outline" className="ml-auto text-xs">
-                {format(new Date(latestRun.started_at), 'MMM d HH:mm')}
+                {format(new Date(latestRun.started_at), 'MMM d, yyyy HH:mm')}
               </Badge>
             )}
           </CardTitle>
@@ -540,7 +540,7 @@ export default function DialerIntegrityPage() {
                   return (
                     <TableRow key={run.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedRunId(run.id)}>
                       <TableCell className="text-xs font-mono">
-                        {format(new Date(run.started_at), 'MMM d HH:mm:ss')}
+                        {format(new Date(run.started_at), 'MMM d, yyyy HH:mm:ss')}
                       </TableCell>
                       <TableCell><StatusBadge status={run.overall_status} /></TableCell>
                       <TableCell>

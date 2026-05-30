@@ -509,7 +509,7 @@ function DashboardTab() {
                       <p className="text-xs leading-tight">{a.description}</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
                         {a.actor_name && `${a.actor_name} · `}
-                        {format(new Date(a.created_at), 'MMM d, h:mm a')}
+                        {format(new Date(a.created_at), 'MMM d, yyyy, h:mm a')}
                       </p>
                     </div>
                   </div>

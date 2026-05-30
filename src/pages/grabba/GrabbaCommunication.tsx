@@ -354,7 +354,7 @@ export default function GrabbaCommunication() {
                         </TableCell>
                         <TableCell>{getStatusBadge(log.delivery_status || 'pending')}</TableCell>
                         <TableCell>
-                          {log.created_at ? format(new Date(log.created_at), "MMM d, h:mm a") : '-'}
+                          {log.created_at ? format(new Date(log.created_at), "MMM d, yyyy, h:mm a") : '-'}
                         </TableCell>
                         <TableCell>
                           <TableRowActions

@@ -68,7 +68,7 @@ function StopCard({
           <div>
             <CardTitle className="text-base">{stop.store_name || 'Unknown store'}</CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              Logged {format(new Date(stop.created_at), 'MMM d, h:mma')}
+              Logged {format(new Date(stop.created_at), 'MMM d, yyyy, h:mma')}
             </p>
           </div>
           <div className="flex flex-wrap gap-1 justify-end">

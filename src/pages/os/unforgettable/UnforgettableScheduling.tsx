@@ -199,7 +199,7 @@ const UnforgettableScheduling: React.FC = () => {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">
-                  {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}
+                  {format(weekStart, 'MMM d, yyyy')} - {format(weekEnd, 'MMM d, yyyy')}
                 </CardTitle>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => setSelectedDate(addDays(selectedDate, -7))}>

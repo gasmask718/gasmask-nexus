@@ -337,7 +337,7 @@ function ExecutionLedger() {
                       
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <span>
-                          Executed: {execution.executed_at ? format(new Date(execution.executed_at), 'MMM d, HH:mm') : 'N/A'}
+                          Executed: {execution.executed_at ? format(new Date(execution.executed_at), 'MMM d, yyyy HH:mm') : 'N/A'}
                         </span>
                       </div>
                     </div>

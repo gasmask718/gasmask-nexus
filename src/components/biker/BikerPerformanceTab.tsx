@@ -48,7 +48,7 @@ export const BikerPerformanceTab: React.FC<BikerPerformanceTabProps> = ({ bikerI
   };
 
   const chartData = performanceHistory.map(p => ({
-    date: format(new Date(p.date), 'MMM d'),
+    date: format(new Date(p.date), 'MMM d, yyyy'),
     score: p.score,
     approved: p.tasks_approved,
     rejected: p.tasks_rejected

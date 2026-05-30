@@ -239,7 +239,7 @@ export default function Floor5RevenueTracker() {
                 <tbody>
                   {transactions.slice(0, 20).map((t) => (
                     <tr key={t.id} className="border-b last:border-0 hover:bg-accent/30">
-                      <td className="py-2 px-2">{format(new Date(t.transaction_date), 'MMM d')}</td>
+                      <td className="py-2 px-2">{format(new Date(t.transaction_date), 'MMM d, yyyy')}</td>
                       <td className="py-2 px-2">
                         <Badge variant={t.transaction_type === 'income' ? 'default' : 'destructive'} className="text-xs">
                           {t.transaction_type}

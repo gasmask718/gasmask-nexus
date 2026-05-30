@@ -128,7 +128,7 @@ export function WholesalerTubesSoldKPI({
       return { 
         text: `Overdue by ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''}`,
         isOverdue: true,
-        date: format(etaDate, 'MMM d')
+        date: format(etaDate, 'MMM d, yyyy')
       };
     }
     
@@ -136,7 +136,7 @@ export function WholesalerTubesSoldKPI({
       return { 
         text: `~${daysUntil} day${daysUntil !== 1 ? 's' : ''}`,
         isOverdue: false,
-        date: format(etaDate, 'MMM d')
+        date: format(etaDate, 'MMM d, yyyy')
       };
     }
     
@@ -144,14 +144,14 @@ export function WholesalerTubesSoldKPI({
       return { 
         text: '~2 weeks',
         isOverdue: false,
-        date: format(etaDate, 'MMM d')
+        date: format(etaDate, 'MMM d, yyyy')
       };
     }
     
     return { 
       text: formatDistanceToNow(etaDate, { addSuffix: false }),
       isOverdue: false,
-      date: format(etaDate, 'MMM d')
+      date: format(etaDate, 'MMM d, yyyy')
     };
   };
 

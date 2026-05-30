@@ -223,7 +223,7 @@ export default function PenthouseYachtOps() {
                   <TableRow key={req.id} className="border-[#222] hover:bg-[#111] cursor-pointer" onClick={() => { setSelectedRequest(req); setDetailOpen(true); }}>
                     <TableCell className="font-medium">{req.customer_name || 'Unknown'}</TableCell>
                     <TableCell>{req.city || '—'}</TableCell>
-                    <TableCell>{req.preferred_date ? format(new Date(req.preferred_date), 'MMM d') : '—'}</TableCell>
+                    <TableCell>{req.preferred_date ? format(new Date(req.preferred_date), 'MMM d, yyyy') : '—'}</TableCell>
                     <TableCell>{req.guest_count || '—'}</TableCell>
                     <TableCell className="capitalize">{req.occasion_type || '—'}</TableCell>
                     <TableCell>{req.budget_range || '—'}</TableCell>
@@ -391,8 +391,8 @@ export default function PenthouseYachtOps() {
                     <TableRow key={p.id} className="border-[#222] hover:bg-[#0D0D0D]">
                       <TableCell className="font-bold text-[#C9A84C]">${(p.payment_amount || 0).toLocaleString()}</TableCell>
                       <TableCell><Badge variant="outline" className={STATUS_COLORS[p.payment_status] || 'bg-muted'}>{p.payment_status}</Badge></TableCell>
-                      <TableCell>{p.payment_due_at ? format(new Date(p.payment_due_at), 'MMM d') : '—'}</TableCell>
-                      <TableCell>{p.payment_received_at ? format(new Date(p.payment_received_at), 'MMM d') : '—'}</TableCell>
+                      <TableCell>{p.payment_due_at ? format(new Date(p.payment_due_at), 'MMM d, yyyy') : '—'}</TableCell>
+                      <TableCell>{p.payment_received_at ? format(new Date(p.payment_received_at), 'MMM d, yyyy') : '—'}</TableCell>
                       <TableCell>{p.payment_method || '—'}</TableCell>
                       <TableCell className="font-mono text-xs">{p.payment_reference || '—'}</TableCell>
                     </TableRow>

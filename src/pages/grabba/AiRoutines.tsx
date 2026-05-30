@@ -205,7 +205,7 @@ export default function AiRoutines() {
                       <TableCell>
                         <div>
                           <p className="text-sm">
-                            {format(new Date(routine.next_run_at), 'MMM d, h:mm a')}
+                            {format(new Date(routine.next_run_at), 'MMM d, yyyy, h:mm a')}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {formatDistanceToNow(new Date(routine.next_run_at), { addSuffix: true })}
@@ -296,7 +296,7 @@ export default function AiRoutines() {
                             Routine executed
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(log.run_at), 'MMM d, h:mm a')}
+                            {format(new Date(log.run_at), 'MMM d, yyyy, h:mm a')}
                           </p>
                         </div>
                       </div>

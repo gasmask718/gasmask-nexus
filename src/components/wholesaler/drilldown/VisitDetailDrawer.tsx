@@ -144,7 +144,7 @@ export function VisitDetailDrawer({
                               {visit.visit_type}
                             </Badge>
                             <span className="text-xs text-muted-foreground">
-                              {format(new Date(visit.visit_date), 'MMM d')}
+                              {format(new Date(visit.visit_date), 'MMM d, yyyy')}
                             </span>
                           </div>
                           {visit.observations && (

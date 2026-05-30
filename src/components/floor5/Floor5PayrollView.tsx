@@ -97,7 +97,7 @@ export default function Floor5PayrollView() {
                   <div>
                     <p className="font-medium">{p.employee_name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {p.employee_type} • {format(new Date(p.pay_period_start), 'MMM d')} – {format(new Date(p.pay_period_end), 'MMM d')}
+                      {p.employee_type} • {format(new Date(p.pay_period_start), 'MMM d, yyyy')} – {format(new Date(p.pay_period_end), 'MMM d, yyyy')}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -151,7 +151,7 @@ export default function Floor5PayrollView() {
                       <td className="py-2 px-2 font-medium">{p.employee_name}</td>
                       <td className="py-2 px-2 text-muted-foreground">{p.employee_type}</td>
                       <td className="py-2 px-2 text-muted-foreground">
-                        {format(new Date(p.pay_period_start), 'MMM d')} – {format(new Date(p.pay_period_end), 'MMM d')}
+                        {format(new Date(p.pay_period_start), 'MMM d, yyyy')} – {format(new Date(p.pay_period_end), 'MMM d, yyyy')}
                       </td>
                       <td className="py-2 px-2 text-right">{p.hours_worked ?? '—'}</td>
                       <td className="py-2 px-2 text-right">${Number(p.base_pay).toLocaleString()}</td>

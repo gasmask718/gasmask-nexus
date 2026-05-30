@@ -109,7 +109,7 @@ export function HealthScoreDrawer({
 
   // Prepare chart data
   const chartData = [...snapshots].reverse().map((s) => ({
-    date: format(new Date(s.snapshot_date), 'MMM d'),
+    date: format(new Date(s.snapshot_date), 'MMM d, yyyy'),
     score: s.health_score,
   }));
 

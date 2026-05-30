@@ -158,7 +158,7 @@ export default function DialerHistoryPage() {
                 ) : filteredAttempts.map(attempt => (
                   <TableRow key={attempt.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedAttempt(attempt)}>
                     <TableCell className="text-xs">
-                      {attempt.started_at ? format(new Date(attempt.started_at), 'MMM d, HH:mm') : '-'}
+                      {attempt.started_at ? format(new Date(attempt.started_at), 'MMM d, yyyy HH:mm') : '-'}
                     </TableCell>
                     <TableCell className="font-mono text-xs">{attempt.target_phone_e164}</TableCell>
                     <TableCell>

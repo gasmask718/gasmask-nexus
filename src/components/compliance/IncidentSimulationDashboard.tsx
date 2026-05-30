@@ -287,7 +287,7 @@ export function IncidentSimulationDashboard({ businessId }: Props) {
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        {format(new Date(run.started_at), 'MMM d, HH:mm:ss')}
+                        {format(new Date(run.started_at), 'MMM d, yyyy HH:mm:ss')}
                       </div>
                       {run.failure_reason && (
                         <div className="text-xs text-red-500 mt-1 truncate">

@@ -680,7 +680,7 @@ export default function CompanyProfile() {
                           <div className="text-right">
                             <p className="font-bold">${(Number(order.total) || 0).toLocaleString()}</p>
                             <p className="text-xs text-muted-foreground">
-                              {order.created_at && format(new Date(order.created_at), 'MMM d')}
+                              {order.created_at && format(new Date(order.created_at), 'MMM d, yyyy')}
                             </p>
                           </div>
                         </div>

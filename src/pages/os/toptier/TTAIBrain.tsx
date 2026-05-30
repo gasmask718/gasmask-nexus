@@ -369,7 +369,7 @@ Answer questions about the business concisely and directly. Identify problems. S
                     <tr><td colSpan={6} className="p-8 text-center text-white/30">No call logs found for TopTier</td></tr>
                   ) : callLogs.map((c: any) => (
                     <tr key={c.id} className="hover:bg-white/[0.02]">
-                      <td className="px-3 py-2.5 text-xs text-white/60">{c.created_at ? format(new Date(c.created_at), 'MMM d, h:mm a') : '—'}</td>
+                      <td className="px-3 py-2.5 text-xs text-white/60">{c.created_at ? format(new Date(c.created_at), 'MMM d, yyyy, h:mm a') : '—'}</td>
                       <td className="px-3 py-2.5 text-sm text-white/80">{c.phone_number || '—'}</td>
                       <td className="px-3 py-2.5 text-xs text-white/60">{c.duration_seconds ? formatDuration(c.duration_seconds) : '—'}</td>
                       <td className="px-3 py-2.5">

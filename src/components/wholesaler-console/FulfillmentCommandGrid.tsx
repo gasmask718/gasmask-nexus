@@ -140,7 +140,7 @@ export function FulfillmentCommandGrid({
                   <div>
                     <p className="font-mono text-xs font-medium">#{f.order_id?.slice(0, 8)}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      {f.created_at ? format(new Date(f.created_at), 'MMM d, h:mm a') : '—'}
+                      {f.created_at ? format(new Date(f.created_at), 'MMM d, yyyy, h:mm a') : '—'}
                     </p>
                   </div>
                   <p className="text-xs text-muted-foreground truncate">

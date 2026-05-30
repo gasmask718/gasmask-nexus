@@ -177,7 +177,7 @@ export function SendToRouteModal({
       }
     })();
 
-    const dateStr = format(new Date(scheduledDate), 'MMM d');
+    const dateStr = format(new Date(scheduledDate), 'MMM d, yyyy');
     setRouteName(`${storeName || brand || 'Route'} - ${dateStr}`);
 
     if (sourceOutreach) {

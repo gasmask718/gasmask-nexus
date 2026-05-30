@@ -128,10 +128,10 @@ export function VAInvoicesTable() {
                   <td className="p-3 text-right font-mono text-emerald-300">${Number(inv.total || 0).toFixed(2)}</td>
                   <td className="p-3">{statusBadge(inv.status)}</td>
                   <td className="p-3 text-xs text-slate-400 hidden lg:table-cell">
-                    {inv.due_date ? format(new Date(inv.due_date), 'MMM d') : '—'}
+                    {inv.due_date ? format(new Date(inv.due_date), 'MMM d, yyyy') : '—'}
                   </td>
                   <td className="p-3 text-xs text-slate-400 hidden lg:table-cell">
-                    {format(new Date(inv.created_at), 'MMM d')}
+                    {format(new Date(inv.created_at), 'MMM d, yyyy')}
                   </td>
                   <td className="p-3 pr-4 text-right">
                     <div className="flex gap-1 justify-end">

@@ -272,7 +272,7 @@ function MemoryEventCard({
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">
-            {format(new Date(event.created_at), 'MMM d, h:mm a')}
+            {format(new Date(event.created_at), 'MMM d, yyyy, h:mm a')}
           </span>
           <Button variant="ghost" size="sm" onClick={onToggle} className="h-6 w-6 p-0">
             {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}

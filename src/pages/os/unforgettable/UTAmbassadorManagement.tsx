@@ -793,7 +793,7 @@ export default function UTAmbassadorManagement() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <Badge variant="outline" className="text-[10px]">{insight.insight_type?.replace(/_/g, ' ')}</Badge>
-                          <span className="text-[10px] text-muted-foreground">{format(new Date(insight.created_at), 'MMM d, HH:mm')}</span>
+                          <span className="text-[10px] text-muted-foreground">{format(new Date(insight.created_at), 'MMM d, yyyy HH:mm')}</span>
                         </div>
                         <p className="text-sm">{insight.insight_text}</p>
                       </div>
@@ -839,7 +839,7 @@ export default function UTAmbassadorManagement() {
                         <TableCell className="text-xs max-w-[200px] truncate">
                           {log.details?.error || (log.details?.auto_healed > 0 ? `${log.details.auto_healed} healed` : log.details?.processed ? `${log.details.processed} processed` : '—')}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{format(new Date(log.created_at), 'MMM d, HH:mm')}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{format(new Date(log.created_at), 'MMM d, yyyy HH:mm')}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -969,7 +969,7 @@ export default function UTAmbassadorManagement() {
                           <div className="flex items-center gap-2 mb-1">
                             <Badge variant="outline" className="text-[10px]">{insight.insight_type?.replace(/_/g, ' ')}</Badge>
                             {insight.priority >= 3 && <Badge className="bg-red-500/20 text-red-400 text-[10px]">HIGH</Badge>}
-                            <span className="text-[10px] text-muted-foreground">{format(new Date(insight.created_at), 'MMM d, HH:mm')}</span>
+                            <span className="text-[10px] text-muted-foreground">{format(new Date(insight.created_at), 'MMM d, yyyy HH:mm')}</span>
                           </div>
                           <p className="text-sm">{insight.insight_text}</p>
                         </div>
@@ -1023,7 +1023,7 @@ export default function UTAmbassadorManagement() {
                         <TableCell className={r.commission_amount > 0 ? 'text-emerald-400 font-medium' : ''}>
                           {r.commission_amount > 0 ? `$${Number(r.commission_amount).toFixed(2)}` : '—'}
                         </TableCell>
-                        <TableCell className="text-xs">{format(new Date(r.created_at), 'MMM d, HH:mm')}</TableCell>
+                        <TableCell className="text-xs">{format(new Date(r.created_at), 'MMM d, yyyy HH:mm')}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1140,7 +1140,7 @@ export default function UTAmbassadorManagement() {
                         <TableCell>
                           {log.alert_sent ? <Badge className="bg-amber-500/20 text-amber-400">📱 SMS</Badge> : <span className="text-muted-foreground text-xs">—</span>}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{format(new Date(log.created_at), 'MMM d, HH:mm:ss')}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{format(new Date(log.created_at), 'MMM d, yyyy HH:mm:ss')}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1253,9 +1253,9 @@ export default function UTAmbassadorManagement() {
                 <p>Joined: {format(new Date(detailAmb.created_at), 'MMM d, yyyy')}</p>
                 {detailAmb.approved_at && <p>Approved: {format(new Date(detailAmb.approved_at), 'MMM d, yyyy')}</p>}
                 {detailAmb.last_conversion_at && <p>Last Conversion: {format(new Date(detailAmb.last_conversion_at), 'MMM d, yyyy')}</p>}
-                {detailAmb.tier_updated_at && <p>Tier Updated: {format(new Date(detailAmb.tier_updated_at), 'MMM d, HH:mm')}</p>}
-                {detailAmb.last_insight_at && <p>Last AI Analysis: {format(new Date(detailAmb.last_insight_at), 'MMM d, HH:mm')}</p>}
-                {detailAmb.last_reengagement_at && <p>Last Re-engagement: {format(new Date(detailAmb.last_reengagement_at), 'MMM d, HH:mm')}</p>}
+                {detailAmb.tier_updated_at && <p>Tier Updated: {format(new Date(detailAmb.tier_updated_at), 'MMM d, yyyy HH:mm')}</p>}
+                {detailAmb.last_insight_at && <p>Last AI Analysis: {format(new Date(detailAmb.last_insight_at), 'MMM d, yyyy HH:mm')}</p>}
+                {detailAmb.last_reengagement_at && <p>Last Re-engagement: {format(new Date(detailAmb.last_reengagement_at), 'MMM d, yyyy HH:mm')}</p>}
               </div>
             </div>
           )}

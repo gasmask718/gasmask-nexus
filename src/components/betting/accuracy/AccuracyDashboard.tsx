@@ -115,7 +115,7 @@ export function AccuracyDashboard() {
                           {weeklyAccuracy.slice(-8).map((week) => (
                             <TableRow key={week.week}>
                               <TableCell className="text-xs">
-                                {format(parseISO(week.week), 'MMM d')}
+                                {format(parseISO(week.week), 'MMM d, yyyy')}
                               </TableCell>
                               <TableCell className="text-xs text-right">{week.total}</TableCell>
                               <TableCell className="text-xs text-right">{week.wins}</TableCell>

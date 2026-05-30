@@ -353,7 +353,7 @@ export default function DeliveryDispatchPage() {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {order.created_at
-                            ? format(new Date(order.created_at), "MMM d, h:mm a")
+                            ? format(new Date(order.created_at), "MMM d, yyyy, h:mm a")
                             : "—"}
                         </TableCell>
                         <TableCell>
@@ -427,7 +427,7 @@ export default function DeliveryDispatchPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(task.created_at), "MMM d, h:mm a")}
+                          {format(new Date(task.created_at), "MMM d, yyyy, h:mm a")}
                         </TableCell>
                       </TableRow>
                     ))

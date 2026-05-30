@@ -144,7 +144,7 @@ export function VAInvoiceDetailDialog({ invoice, open, onClose }: VAInvoiceDetai
                     )}
                     <span className="text-slate-300">{log.sent_to}</span>
                     <span className="text-slate-500 ml-auto">
-                      {format(new Date(log.sent_at), 'MMM d, h:mm a')}
+                      {format(new Date(log.sent_at), 'MMM d, yyyy, h:mm a')}
                     </span>
                   </div>
                 ))}

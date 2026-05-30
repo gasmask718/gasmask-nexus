@@ -429,7 +429,7 @@ export function ContactCadenceBoard({
                     <TableCell className="text-center">
                       {contact.last_call_attempt_at ? (
                         <div className="text-sm">
-                          <div>{format(new Date(contact.last_call_attempt_at), 'MMM d')}</div>
+                          <div>{format(new Date(contact.last_call_attempt_at), 'MMM d, yyyy')}</div>
                           <div className="text-xs text-muted-foreground">
                             {contact.total_calls_answered}/{contact.total_calls_attempted} answered
                           </div>
@@ -441,7 +441,7 @@ export function ContactCadenceBoard({
                     <TableCell className="text-center">
                       {contact.last_text_sent_at ? (
                         <div className="text-sm">
-                          <div>{format(new Date(contact.last_text_sent_at), 'MMM d')}</div>
+                          <div>{format(new Date(contact.last_text_sent_at), 'MMM d, yyyy')}</div>
                           <div className="text-xs text-muted-foreground">
                             {contact.total_texts_received}/{contact.total_texts_sent} replied
                           </div>

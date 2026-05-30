@@ -116,7 +116,7 @@ export function WholesalerAISignals({ signals, onAcknowledge, onResolve }: Whole
                       </div>
                       <div className="shrink-0 text-right">
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(signal.detected_at), 'MMM d')}
+                          {format(new Date(signal.detected_at), 'MMM d, yyyy')}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {format(new Date(signal.detected_at), 'h:mm a')}
@@ -138,7 +138,7 @@ export function WholesalerAISignals({ signals, onAcknowledge, onResolve }: Whole
                       {signal.acknowledged_at && !signal.resolved_at && (
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          Acknowledged {format(new Date(signal.acknowledged_at), 'MMM d')}
+                          Acknowledged {format(new Date(signal.acknowledged_at), 'MMM d, yyyy')}
                         </div>
                       )}
                       <Button 

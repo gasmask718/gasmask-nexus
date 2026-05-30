@@ -156,7 +156,7 @@ export function UnifiedInbox({
                             <span className="ml-1">{message.channel}</span>
                           </Badge>
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(message.created_at), "MMM d, h:mm a")}
+                            {format(new Date(message.created_at), "MMM d, yyyy, h:mm a")}
                           </span>
                         </div>
                       </div>
@@ -213,7 +213,7 @@ export function UnifiedInbox({
                   <p className="text-sm">{selectedMessage.content}</p>
                   <div className="flex items-center gap-2 mt-2 text-xs opacity-70">
                     {selectedMessage.ai_generated && <Bot className="h-3 w-3" />}
-                    <span>{format(new Date(selectedMessage.created_at), "MMM d, h:mm a")}</span>
+                    <span>{format(new Date(selectedMessage.created_at), "MMM d, yyyy, h:mm a")}</span>
                   </div>
                 </div>
               </div>

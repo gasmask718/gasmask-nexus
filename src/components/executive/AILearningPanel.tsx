@@ -182,7 +182,7 @@ export function AILearningPanel() {
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm">Proposed Changes</CardTitle>
                       <CardDescription>
-                        Window: {run.data_window_start ? format(new Date(run.data_window_start), 'MMM d') : '?'} – {run.data_window_end ? format(new Date(run.data_window_end), 'MMM d, yyyy') : '?'}
+                        Window: {run.data_window_start ? format(new Date(run.data_window_start), 'MMM d, yyyy') : '?'} – {run.data_window_end ? format(new Date(run.data_window_end), 'MMM d, yyyy') : '?'}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">

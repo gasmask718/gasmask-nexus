@@ -547,7 +547,7 @@ export default function TopTierCustomers() {
                         {customer.dob ? (
                           <div className="flex items-center gap-1 text-sm">
                             <Cake className="h-3 w-3 text-muted-foreground" />
-                            <span>{format(new Date(customer.dob), 'MMM d')}</span>
+                            <span>{format(new Date(customer.dob), 'MMM d, yyyy')}</span>
                             <span className="text-muted-foreground">({calculateAge(customer.dob)})</span>
                           </div>
                         ) : (

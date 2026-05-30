@@ -171,7 +171,7 @@ const IssueDetailPage: React.FC = () => {
               <span className={`font-medium ${slaStatus.color}`}>{slaStatus.text}</span>
               {issue.due_at && (
                 <span className="text-sm text-muted-foreground ml-auto">
-                  Due: {format(new Date(issue.due_at), 'MMM d, h:mm a')}
+                  Due: {format(new Date(issue.due_at), 'MMM d, yyyy, h:mm a')}
                 </span>
               )}
             </CardContent>
@@ -261,7 +261,7 @@ const IssueDetailPage: React.FC = () => {
                           <p className="text-sm text-muted-foreground">{event.notes}</p>
                         )}
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(event.created_at), 'MMM d, h:mm a')}
+                          {format(new Date(event.created_at), 'MMM d, yyyy, h:mm a')}
                           {event.actor && ` by ${event.actor.name}`}
                         </p>
                       </div>

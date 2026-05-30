@@ -540,7 +540,7 @@ function ChangeListCard({ changeList, selectedItems, onToggleItem, onReview, get
                 <span className="capitalize">{changeList.submitted_by_role}</span>
                 <span className="text-muted-foreground">•</span>
                 <Calendar className="h-3 w-3" />
-                {format(new Date(changeList.created_at), 'MMM d, h:mm a')}
+                {format(new Date(changeList.created_at), 'MMM d, yyyy, h:mm a')}
               </CardDescription>
             </div>
           </div>

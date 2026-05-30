@@ -271,7 +271,7 @@ export function CollectionsDashboard() {
                             {item.action_type.replace(/_/g, ' ')}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            Scheduled: {format(new Date(item.scheduled_for), 'MMM d, h:mm a')}
+                            Scheduled: {format(new Date(item.scheduled_for), 'MMM d, yyyy, h:mm a')}
                           </p>
                         </div>
                       </div>

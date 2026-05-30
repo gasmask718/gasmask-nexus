@@ -256,7 +256,7 @@ export default function AudienceBuilderTab() {
                       {seg.engagement_rate != null ? `${seg.engagement_rate}%` : "—"}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {seg.cached_at ? format(new Date(seg.cached_at), "MMM d, h:mm a") : "Never"}
+                      {seg.cached_at ? format(new Date(seg.cached_at), "MMM d, yyyy, h:mm a") : "Never"}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">

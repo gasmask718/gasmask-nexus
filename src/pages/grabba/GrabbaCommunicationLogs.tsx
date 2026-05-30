@@ -259,7 +259,7 @@ export default function GrabbaCommunicationLogs() {
                       <div className="flex items-center gap-4">
                         {getStatusBadge(log.delivery_status)}
                         <span className="text-sm text-muted-foreground whitespace-nowrap">
-                          {log.created_at ? format(new Date(log.created_at), "MMM d, h:mm a") : ''}
+                          {log.created_at ? format(new Date(log.created_at), "MMM d, yyyy, h:mm a") : ''}
                         </span>
                       </div>
                     </div>

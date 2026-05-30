@@ -651,13 +651,13 @@ export default function UTOutreachCommand() {
                     ['Touches', selectedLead.outreach_count],
                     ['SMS Sent', selectedLead.sms_count || 0],
                     ['Last Outcome', selectedLead.last_outcome],
-                    ['Last Contact', selectedLead.last_contacted_at ? format(new Date(selectedLead.last_contacted_at), 'MMM d, h:mm a') : null],
+                    ['Last Contact', selectedLead.last_contacted_at ? format(new Date(selectedLead.last_contacted_at), 'MMM d, yyyy, h:mm a') : null],
                     ['Next Step', selectedLead.next_step],
                   ].map(([label, val]) => (
                     <div key={label as string} className="flex justify-between"><span className="text-muted-foreground">{label}</span><span>{val || '—'}</span></div>
                   ))}
                   {selectedLead.follow_up_at && (
-                    <div className="flex justify-between"><span className="text-muted-foreground">Follow-Up</span><span className="text-orange-400">{format(new Date(selectedLead.follow_up_at), 'MMM d, h:mm a')}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Follow-Up</span><span className="text-orange-400">{format(new Date(selectedLead.follow_up_at), 'MMM d, yyyy, h:mm a')}</span></div>
                   )}
                   <div className="flex justify-between"><span className="text-muted-foreground">Owner Verified</span><span>{selectedLead.owner_verified ? '✅' : '❌'}</span></div>
                 </div>
@@ -726,7 +726,7 @@ export default function UTOutreachCommand() {
                             </div>
                             {log.notes && <p className="text-[9px] text-muted-foreground mt-0.5 line-clamp-2">{log.notes}</p>}
                             {log.template_name && <p className="text-[9px] text-blue-400 mt-0.5">📱 {log.template_name}</p>}
-                            <p className="text-[9px] text-muted-foreground/50 mt-0.5">{format(new Date(log.created_at), 'MMM d, h:mm a')}</p>
+                            <p className="text-[9px] text-muted-foreground/50 mt-0.5">{format(new Date(log.created_at), 'MMM d, yyyy, h:mm a')}</p>
                           </div>
                         ))}
                         {hasMoreLogs && (
