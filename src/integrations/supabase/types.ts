@@ -46299,6 +46299,54 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback_submissions: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          description: string
+          id: string
+          page_context: string | null
+          resolved_at: string | null
+          severity: string | null
+          status: string
+          submitted_by: string
+          submitter_role: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          page_context?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          status?: string
+          submitted_by?: string
+          submitter_role?: string
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          page_context?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          status?: string
+          submitted_by?: string
+          submitter_role?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       field_capture_queue: {
         Row: {
           assigned_ambassador_id: string | null
