@@ -960,10 +960,46 @@ export default function RouteEnginePage() {
             {routeBuilderStep === 1 && (
               <>
                 <p className="text-sm text-muted-foreground">{selectedTriggers.length} triggers selected</p>
-                <div><Label className="text-xs">Driver Name</Label><Input value={routeConfig.driver_name} onChange={e => setRouteConfig(c => ({ ...c, driver_name: e.target.value }))} placeholder="Enter driver name" /></div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Assign To (driver / biker / ambassador)</Label>
+                  {selectedAssignee && (
+                    <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/30">
+                      <Badge variant="outline" className="text-[10px] capitalize">{selectedAssignee.role}</Badge>
+                      <span className="text-sm flex-1 truncate">{selectedAssignee.name}</span>
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setSelectedAssignee(null)}><X className="h-3 w-3" /></Button>
+                    </div>
+                  )}
+                  <Input
+                    placeholder="Search name or role..."
+                    value={assigneeSearch}
+                    onChange={(e) => setAssigneeSearch(e.target.value)}
+                  />
+                  <div className="max-h-48 overflow-y-auto rounded-md border p-1">
+                    {assignablePeople
+                      .filter((p: any) => {
+                        const q = assigneeSearch.trim().toLowerCase();
+                        if (!q) return true;
+                        return p.name.toLowerCase().includes(q) || p.role.includes(q);
+                      })
+                      .map((p: any) => (
+                        <div
+                          key={`${p.role}-${p.id}`}
+                          className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-sm ${selectedAssignee?.id === p.id && selectedAssignee?.role === p.role ? 'bg-primary/10' : 'hover:bg-muted/50'}`}
+                          onClick={() => setSelectedAssignee(p)}
+                        >
+                          <span className="flex-1 truncate">{p.name}</span>
+                          <Badge variant="outline" className="text-[10px] capitalize">{p.role}</Badge>
+                        </div>
+                      ))}
+                    {assignablePeople.length === 0 && (
+                      <p className="text-xs text-muted-foreground text-center py-3">No active assignable people</p>
+                    )}
+                  </div>
+                </div>
                 <div><Label className="text-xs">Date</Label><Input type="date" value={routeConfig.scheduled_date} onChange={e => setRouteConfig(c => ({ ...c, scheduled_date: e.target.value }))} /></div>
                 <div><Label className="text-xs">Notes</Label><textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[60px]" value={routeConfig.notes} onChange={e => setRouteConfig(c => ({ ...c, notes: e.target.value }))} /></div>
-                <Button onClick={() => setRouteBuilderStep(2)} className="w-full">Next — Review Stops →</Button>
+                <Button onClick={() => setRouteBuilderStep(2)} disabled={!selectedAssignee} className="w-full">Next — Review Stops →</Button>
+
               </>
             )}
             {routeBuilderStep === 2 && (
