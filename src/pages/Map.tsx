@@ -96,9 +96,40 @@ const Map = () => {
 
     if (error) {
       console.error('Error fetching stores:', error);
-    } else {
-      setStores(data || []);
+      setLoading(false);
+      return;
     }
+
+    const baseStores = data || [];
+
+    // Pull recency data (last_order_at / last_visit_at) from store_master
+    // and merge by id. store_master.id is the canonical id shared with stores.
+    const ids = baseStores.map(s => s.id);
+    let recencyMap = new Map<string, { last_order_at: string | null; last_visit_at: string | null }>();
+    if (ids.length > 0) {
+      const { data: masterData, error: masterError } = await supabase
+        .from('store_master')
+        .select('id, last_order_at, last_visit_at')
+        .in('id', ids);
+      if (masterError) {
+        console.warn('Could not fetch store_master recency:', masterError);
+      } else {
+        recencyMap = new Map(
+          (masterData || []).map(m => [m.id, { last_order_at: m.last_order_at, last_visit_at: m.last_visit_at }])
+        );
+      }
+    }
+
+    const enriched: Store[] = baseStores.map(s => {
+      const r = recencyMap.get(s.id);
+      return {
+        ...s,
+        last_order_at: r?.last_order_at ?? null,
+        last_visit_at: r?.last_visit_at ?? null,
+      };
+    });
+
+    setStores(enriched);
     setLoading(false);
   };
 
