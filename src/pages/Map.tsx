@@ -347,6 +347,11 @@ const Map = () => {
       }
     }
 
+    // Filter by recency bucket
+    if (recencyFilter !== 'all') {
+      filtered = filtered.filter((store) => getRecencyBucket(store) === recencyFilter);
+    }
+
     setFilteredStores(filtered);
 
     // Calculate counts
