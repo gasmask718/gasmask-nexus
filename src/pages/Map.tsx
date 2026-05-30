@@ -93,6 +93,8 @@ const Map = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [showSidebar, setShowSidebar] = useState(true);
   const [recencyFilter, setRecencyFilter] = useState<'all' | RecencyBucket>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | StoreRelationshipStatus>('all');
+  const [neighborhoodFilter, setNeighborhoodFilter] = useState<string>('all');
   const driverMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const routeLayersRef = useRef<string[]>([]);
 
@@ -100,7 +102,7 @@ const Map = () => {
   const fetchStores = async () => {
     const { data, error } = await supabase
       .from('stores')
-      .select('id, name, lat, lng, status, type, phone, address_street, address_city')
+      .select('id, name, lat, lng, status, type, phone, address_street, address_city, neighborhood')
       .eq('approval_status', 'approved') // Phase 7: exclude pending captures
       .not('lat', 'is', null)
       .not('lng', 'is', null);
@@ -116,27 +118,33 @@ const Map = () => {
     // Pull recency data (last_order_at / last_visit_at) from store_master
     // and merge by id. store_master.id is the canonical id shared with stores.
     const ids = baseStores.map(s => s.id);
-    const recencyMap: Record<string, { last_order_at: string | null; last_visit_at: string | null }> = {};
+    const recencyMap: Record<string, { last_order_at: string | null; last_visit_at: string | null; relationship_status: StoreRelationshipStatus | null }> = {};
     if (ids.length > 0) {
       const { data: masterData, error: masterError } = await supabase
         .from('store_master')
-        .select('id, last_order_at, last_visit_at')
+        .select('id, last_order_at, last_visit_at, relationship_status')
         .in('id', ids);
       if (masterError) {
         console.warn('Could not fetch store_master recency:', masterError);
       } else {
-        (masterData || []).forEach(m => {
-          recencyMap[m.id] = { last_order_at: m.last_order_at, last_visit_at: m.last_visit_at };
+        (masterData || []).forEach((m: any) => {
+          recencyMap[m.id] = {
+            last_order_at: m.last_order_at,
+            last_visit_at: m.last_visit_at,
+            relationship_status: (m.relationship_status as StoreRelationshipStatus) ?? null,
+          };
         });
       }
     }
 
-    const enriched: Store[] = baseStores.map(s => {
+    const enriched: Store[] = baseStores.map((s: any) => {
       const r = recencyMap[s.id];
       return {
         ...s,
+        neighborhood: s.neighborhood ?? null,
         last_order_at: r?.last_order_at ?? null,
         last_visit_at: r?.last_visit_at ?? null,
+        relationship_status: r?.relationship_status ?? null,
       };
     });
 
