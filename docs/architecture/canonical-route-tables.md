@@ -1,48 +1,77 @@
 # Canonical Route Tables
 
-**Authority:** Session 7 Step 2 (2026-05-09)
+**Authority:** Session 7 Step 2 (2026-05-09) · Updated Phase 6 (2026-05-30)
 **Status:** ACTIVE
 
 ## Source of Truth
 
-- `routes` — canonical route container (25 rows)
-- `route_stops` — canonical per-stop record (6 rows)
+- `routes` — canonical route container
+- `route_stops` — canonical per-stop record
 
-All new feature development MUST use these tables.
+All route reads and writes MUST use these tables. The `source` enum distinguishes origin:
 
-## Brand-Siloed (Do Not Consolidate)
+| `source` value   | Origin                                      |
+|------------------|---------------------------------------------|
+| `manual`         | Admin-built routes                          |
+| `optimizer`     | Auto-optimizer output                       |
+| `gasmask_agent`  | gasmask-route-agent edge function           |
+| `grabba_biker`   | Grabba biker delivery routes                |
 
-- `gasmask_route_runs` — managed by gasmask-route-agent edge function
-  for brand-specific automation workflows. Owns its own lifecycle.
-  Not subject to this consolidation.
+### Universal Assignment Target
 
-## Legacy (Do Not Write New Logic Against)
+`routes.assigned_to = person.user_id` for ALL assignee types
+(driver, biker, ambassador). Portals filter by `assigned_to = auth.uid()`.
+Prerequisite: the assignee must have a provisioned auth account
+(`user_id IS NOT NULL` on their role row).
 
-| Table | Rows | Status | Reason |
-|-------|------|--------|--------|
-| routes_generated | 4 | Legacy | Early AI-generated drafts, superseded |
-| driver_routes | 2 | Legacy | Superseded by canonical routes |
-| delivery_manifest | 0 | Unused | Never populated |
+Role-specific assignment tables (`driver_assignments`, etc.) remain as
+secondary metadata but are not the source of truth for "who owns this
+route".
+
+## Legacy / Deprecated (Do Not Write — Reads Only For Historical Data)
+
+Per Dynasty OS no-destructive-migration policy, these tables are retained
+for historical preservation but receive no new writes:
+
+| Table                  | Status     | Replaced By                                  |
+|------------------------|------------|----------------------------------------------|
+| `gasmask_route_runs`   | LEGACY     | `routes` WHERE `source='gasmask_agent'`      |
+| `biker_routes`         | LEGACY     | `routes` WHERE `source='grabba_biker'`       |
+| `routes_generated`     | LEGACY     | `routes` (canonical)                         |
+| `driver_routes`        | LEGACY     | `routes` (canonical)                         |
+| `delivery_manifest`    | UNUSED     | n/a — never populated                        |
+
+The `gasmask-route-agent` edge function was rewritten in Phase 3 to write
+to canonical `routes` + `route_stops`. The one historical
+`gasmask_route_runs` row was migrated in Phase 2
+(route `d0e11cf3-4bc5-42a5-b08c-743a047739e2`); its stops were backfilled
+into `route_stops` in Phase 4.5 (1 of 3 stops resolved; 2 await store
+creation for dangling triggers).
+
+`biker_routes` has 0 rows and 0 active writers as of Phase 5 (2026-05-30).
 
 ## Removed
 
-- `route_plans` — never existed in DB. Was a ghost reference in
-  `useRouteBuilder.ts`. Removed from code 2026-05-09 (Session 7 Step 1).
+- `route_plans` — never existed in DB. Ghost reference in
+  `useRouteBuilder.ts`. Removed 2026-05-09 (Session 7 Step 1).
 
 ## Migration Policy
 
-Per Dynasty OS Core principle, no destructive deletes. Legacy tables
-retained for historical data preservation. New feature development
-uses canonical tables only.
+No destructive deletes. Legacy tables retained for historical data
+preservation. All new feature development uses canonical tables only.
 
-## Verification
+## Remaining Legacy Consumers (READ-ONLY)
 
-First production write to canonical via the new path:
-- `routes.id = 264e0f38-5839-496c-9dc8-75457fb2519c`
-- Inserted Session 7 Step 1 test
-- Confirms `saveRoute()` → `routes` table works end-to-end
+`gasmask_route_runs` — no active app reads (edge function rewritten).
 
-## Consumers Tagged Legacy (2026-05-09)
+`biker_routes` — read-only:
+- `src/services/excelExportService.ts` (bulk export — historical)
+- `src/config/floorExportConfig.ts` (export config — historical)
+- `src/hooks/useDataHealing.ts` (data heal scan)
+- `src/hooks/useInsightPanel.ts` (insight panel)
+- `src/components/system/MissingLinksPanel.tsx` (orphan scan)
+- `src/lib/commands/CommandEngine.ts` (proxy metric — flagged for migration)
+- `supabase/functions/gdrive-backup/index.ts` (backup snapshot)
 
 `routes_generated`:
 - src/components/store/RouteIntelligence.tsx
