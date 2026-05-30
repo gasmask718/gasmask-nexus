@@ -1048,9 +1048,36 @@ const Stores = () => {
                       </Badge>
                     </div>
                   <div className="flex items-start gap-2">
+                    <Checkbox
+                      checked={selectedStoreIds.includes(store.id)}
+                      onCheckedChange={(checked) => {
+                        setSelectedStoreIds((prev) =>
+                          checked
+                            ? Array.from(new Set([...prev, store.id]))
+                            : prev.filter((id) => id !== store.id)
+                        );
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={`Select ${store.name}`}
+                      className="mt-1"
+                    />
                     <Badge className={getStatusColor(store.status)}>
                       {store.status === 'needsFollowUp' ? 'Follow-up' : store.status}
                     </Badge>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setDispatchStores([store.id]);
+                      }}
+                      aria-label={`Add ${store.name} to a route`}
+                      title="Add to Route"
+                    >
+                      <RouteIcon className="h-4 w-4" />
+                    </Button>
                     <Button
                       type="button"
                       variant="ghost"
