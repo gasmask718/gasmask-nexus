@@ -20,8 +20,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ExportButton } from '@/components/crud/ExportButton';
-import { Search, ExternalLink, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, ExternalLink, ArrowUpDown, ChevronLeft, ChevronRight, Route as RouteIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import type { BrandCRMStoreRow } from '@/hooks/useBrandCRMAnalytics';
 import { getBrandDisplayName } from '@/config/brands';
 
@@ -72,6 +74,8 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [dispatchStores, setDispatchStores] = useState<string[]>([]);
 
   const filtered = useMemo(() => {
     let rows = stores;
