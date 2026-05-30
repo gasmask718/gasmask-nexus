@@ -459,6 +459,13 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
             <StorePersonalMemoryPanel storeId={id} />
           </div>
 
+          {/* Route Intelligence — Add to Route wired to RouteAssignmentDialog */}
+          <RouteIntelligence
+            storeId={id}
+            storeName={store.store_name}
+            onAddToRoute={() => setDispatchStore(id)}
+          />
+
           {/* CANONICAL PERFORMANCE TABS — Auto-synced with all profiles */}
           <SharedStorePerformanceTabs storeId={id} storeName={store.store_name} />
         </div>
