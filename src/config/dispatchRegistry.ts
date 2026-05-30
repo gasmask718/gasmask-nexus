@@ -24,25 +24,25 @@ export interface DispatchRow {
 }
 
 export const DISPATCH_REGISTRY: DispatchRow[] = [
-  // GREEN — dispatch wired
-  { floor: 'Ambassador Profile', path: '/ambassadors/:id', shows: 'Stores owned/managed by an ambassador', status: 'wired' },
-  { floor: 'Stores (master list)', path: '/stores', shows: 'All approved stores', status: 'wired' },
-  { floor: 'Neighborhood Coverage', path: '/territory/neighborhoods', shows: 'Stores grouped by neighborhood', status: 'wired' },
-  { floor: 'Sell-Through', path: '/grabba/sell-through', shows: 'Stores ranked by inventory velocity', status: 'wired' },
-  { floor: 'All Opportunities', path: '/crm/opportunities', shows: 'Merged high-intent store signals', status: 'wired' },
+  // GREEN — dispatch wired (paths match the actual nav/router paths)
+  { floor: 'Ambassador Profile', path: '/ambassadors/:ambassadorId', shows: 'Stores owned/managed by an ambassador', status: 'wired' },
+  { floor: 'Store Directory', path: '/stores', shows: 'All approved stores', status: 'wired' },
+  { floor: 'Neighborhood Coverage', path: '/territory/coverage', shows: 'Stores grouped by neighborhood', status: 'wired' },
+  { floor: 'Sell-Through Analytics', path: '/sell-through-analytics', shows: 'Stores ranked by inventory velocity', status: 'wired' },
+  { floor: 'All Opportunities', path: '/opportunities', shows: 'Merged high-intent store signals', status: 'wired' },
   { floor: 'Store Detail', path: '/stores/:id', shows: 'Single store dispatch action', status: 'wired' },
-  { floor: 'CRM Follow-Ups', path: '/crm/followups', shows: 'Stores with pending follow-up', status: 'wired' },
-  { floor: 'Manual Call console', path: '/communication/manual-call', shows: 'Stores queued for outbound', status: 'wired' },
-  { floor: 'Pending Route Stops', path: '/routes/pending-stops', shows: 'Stops awaiting assignment', status: 'wired' },
-  { floor: 'Territory Map', path: '/territory/map', shows: 'Geospatial store view', status: 'wired' },
+  { floor: 'CRM Follow-Ups', path: '/communication/follow-ups', shows: 'Stores with pending follow-up', status: 'wired' },
+  { floor: 'Manual Call Console', path: '/communication/manual-calls', shows: 'Stores queued for outbound', status: 'wired' },
+  { floor: 'Pending Route Stops', path: '/dispatch/pending-stops', shows: 'Stops awaiting assignment', status: 'wired' },
+  { floor: 'Territory Map', path: '/territory', shows: 'Geospatial store view', status: 'wired' },
 
-  // Additional wired surfaces (previously labelled RED, now wired)
-  { floor: 'Store Intelligence', path: '/grabba/store-intelligence', shows: 'AI-scored stores (0-100)', status: 'wired' },
+  // Additional wired surfaces
+  { floor: 'Store Intelligence', path: '/gasmask/store-intelligence', shows: 'AI-scored stores (0-100)', status: 'wired' },
   { floor: 'Grabba StoreMasterProfile', path: '/grabba/stores/:id', shows: 'Master profile of a single store', status: 'wired' },
-  { floor: 'OS NeighborhoodIntelligence', path: '/os/neighborhood-intelligence', shows: 'Neighborhood-level signals + stores', status: 'wired' },
+  { floor: 'OS NeighborhoodIntelligence', path: '/os/inventory/neighborhood', shows: 'Neighborhood-level signals + stores', status: 'wired' },
   { floor: 'Floor9 Predictions', path: '/grabba/floor9/predictions', shows: 'Stores predicted to need visit', status: 'wired', note: 'Multi-select + Dispatch Selected + Dispatch All Flagged + per-row Add-to-Route' },
-  { floor: 'Grabba ClusterDashboard', path: '/grabba/clusters', shows: 'Stores grouped into clusters', status: 'wired', note: 'Dispatch by Brand panel: brand filter + multi-select + per-row Add-to-Route' },
-  { floor: 'Floor1 BrandCRM', path: '/floor1/brand-crm', shows: 'Brand-level CRM store roster', status: 'wired', note: 'Roster: multi-select + Dispatch Selected + per-row Add-to-Route' },
+  { floor: 'Grabba ClusterDashboard', path: '/grabba/cluster', shows: 'Stores grouped into clusters', status: 'wired', note: 'Dispatch by Brand panel: brand filter + multi-select + per-row Add-to-Route' },
+  { floor: 'Floor1 BrandCRM', path: '/grabba/brand/grabba', shows: 'Brand-level CRM store roster', status: 'wired', note: 'Roster: multi-select + Dispatch Selected + per-row Add-to-Route' },
   { floor: 'Ambassador StoresList', path: '/ambassador/stores', shows: 'Ambassador-portal store list', status: 'wired', note: 'Pre-filled assignee = self (ambassador role), RLS-scoped' },
 ];
 
