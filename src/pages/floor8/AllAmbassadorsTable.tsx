@@ -438,6 +438,20 @@ export default function AllAmbassadorsTable() {
           </Table>
         </CardContent>
       </Card>
+
+      {selectedAmbassador && (
+        <RouteAssignmentDialog
+          open={showRouteAssign}
+          onOpenChange={(open) => {
+            setShowRouteAssign(open);
+            if (!open) setSelectedAmbassador(null);
+          }}
+          assigneeId={selectedAmbassador.id}
+          assigneeName={selectedAmbassador.name}
+          assigneeType="ambassador"
+          assigneeUserId={selectedAmbassador.user_id || null}
+        />
+      )}
     </div>
   );
 }
