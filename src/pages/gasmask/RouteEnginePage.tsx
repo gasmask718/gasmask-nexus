@@ -105,13 +105,20 @@ export default function RouteEnginePage() {
     refetchInterval: 15000,
   });
 
-  // Fetch routes — last 50
+  // Fetch routes — canonical routes table, gasmask_agent source only, last 50
   const { data: routes = [] } = useQuery({
-    queryKey: ['gasmask-route-runs'],
+    queryKey: ['gasmask-routes-canonical'],
     queryFn: async () => {
       const { data } = await (supabase as any)
-        .from('gasmask_route_runs')
-        .select('*')
+        .from('routes')
+        .select(`
+          *,
+          route_stops (
+            id, planned_order, status, store_id, notes,
+            stores ( id, name, address )
+          )
+        `)
+        .eq('source', 'gasmask_agent')
         .order('created_at', { ascending: false })
         .limit(50);
       return data || [];
