@@ -70,6 +70,7 @@ const DEFECT_CATEGORIES = [
 
 
 export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
+  const { t } = useTranslation();
   const { data: batches = [], isLoading } = useTodayBatches(officeId);
   const { data: workers = [] } = useProductionWorkers(officeId);
   const createBatch = useCreateBatch();
@@ -77,6 +78,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
   
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<ProductionBatch | null>(null);
+
   const [formData, setFormData] = useState({
     brand: 'gasmask',
     shift_label: 'Morning',
