@@ -290,7 +290,7 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
     setTerritory(prefilledTerritory || '');
     setStoreSearch('');
     setBulkDates([format(new Date(), 'yyyy-MM-dd')]);
-    setSelectedAssignees([{ id: assigneeId, name: assigneeName, userId: assigneeUserId }]);
+    setSelectedAssignees([{ id: assigneeId, name: assigneeName, userId: assigneeUserId ?? null, role: assigneeType }]);
   };
 
   return (
