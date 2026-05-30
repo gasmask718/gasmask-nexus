@@ -355,7 +355,7 @@ export default function AmbassadorOrders() {
                 )}
               </TableBody>
             </Table>
-          </ScrollArea>
+          </div>
         </Card>
       </div>
 
