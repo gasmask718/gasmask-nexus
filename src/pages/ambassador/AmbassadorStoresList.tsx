@@ -250,6 +250,10 @@ function StoresListContent() {
             className="pl-10"
           />
         </div>
+        <Button onClick={() => setNewStoreOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Store
+        </Button>
         <Button
           variant="outline"
           disabled={selectedIds.length === 0}
