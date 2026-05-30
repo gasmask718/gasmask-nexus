@@ -20,8 +20,10 @@ import { useCommissionPage, type CommissionLedgerEntry, type SourceChannel } fro
 import { useEffectiveAmbassadorId } from '@/hooks/useAmbassadorComms';
 import { format } from 'date-fns';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AmbassadorCommissions() {
+  const { t } = useTranslation();
   const ambassadorId = useEffectiveAmbassadorId();
   const { ledger, totals, channels, payouts, isLoading } = useCommissionPage({ ambassadorId });
   const [searchQuery, setSearchQuery] = useState('');
