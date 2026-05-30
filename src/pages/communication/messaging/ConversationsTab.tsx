@@ -405,10 +405,45 @@ export default function ConversationsTab() {
           {selectedThreadKey && selectedThread ? (
             <>
               <CardHeader className="py-4 border-b bg-background">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle className="text-lg flex items-center gap-2">{selectedThread.phone}</CardTitle>
-                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="min-w-0">
+                    {(() => {
+                      const id = resolveIdentity(selectedThread.phone);
+                      if (!id) {
+                        return (
+                          <>
+                            <CardTitle className="text-lg flex items-center gap-2">{selectedThread.phone || "Unknown"}</CardTitle>
+                            <p className="text-[11px] text-muted-foreground mt-1">No matching store record found</p>
+                          </>
+                        );
+                      }
+                      return (
+                        <>
+                          <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
+                            <span>{id.primaryName}</span>
+                            {id.isMultiple && (
+                              <Badge variant="outline" className="text-[10px] font-normal">
+                                {id.storeIds.length} locations
+                              </Badge>
+                            )}
+                          </CardTitle>
+                          {id.isMultiple ? (
+                            <p className="text-xs text-muted-foreground mt-1 flex items-start gap-1">
+                              <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                              <span className="truncate">{id.storeNames.slice(0, 3).join(" · ")}{id.storeNames.length > 3 ? ` · +${id.storeNames.length - 3}` : ""}</span>
+                            </p>
+                          ) : id.address ? (
+                            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                              <MapPin className="h-3 w-3" /> {id.address}
+                            </p>
+                          ) : null}
+                          <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+                            <Phone className="h-3 w-3" /> {selectedThread.phone}
+                          </p>
+                        </>
+                      );
+                    })()}
+                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
                       Source: <span className="font-medium text-foreground">{selectedThread.campaignName || getSourceLabel(selectedThread.source)}</span>
                       <Badge variant="outline" className="ml-2 bg-green-50 text-green-600 border-green-200 gap-1"><Phone className="h-3 w-3" /> Twilio</Badge>
                     </p>
