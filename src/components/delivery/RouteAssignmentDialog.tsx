@@ -122,21 +122,60 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
     enabled: open,
   });
 
-  // Fetch all workers of same type for bulk assignee selection
-  const { data: allWorkers = [] } = useQuery({
-    queryKey: ['all-workers-for-bulk', assigneeType],
+  // Fetch ALL assignable people across all 3 roles (active + has user_id)
+  const { data: assignablePeople = [] } = useQuery<AssignablePerson[]>({
+    queryKey: ['assignable-people-all-roles'],
     queryFn: async () => {
-      const table = assigneeType === 'driver' ? 'drivers' : 'bikers';
-      const { data, error } = await supabase
-        .from(table)
-        .select('id, full_name, user_id')
-        .eq('status', 'active')
-        .order('full_name');
-      if (error) throw error;
-      return data;
+      const [drv, bk, amb] = await Promise.all([
+        supabase.from('drivers').select('id, full_name, user_id').eq('status', 'active').not('user_id', 'is', null).order('full_name'),
+        supabase.from('bikers').select('id, full_name, user_id').eq('status', 'active').not('user_id', 'is', null).order('full_name'),
+        supabase.from('ambassadors').select('id, name, user_id').eq('is_active', true).not('user_id', 'is', null).order('name'),
+      ]);
+      if (drv.error) throw drv.error;
+      if (bk.error) throw bk.error;
+      if (amb.error) throw amb.error;
+      const drivers: AssignablePerson[] = (drv.data || []).map((r: any) => ({ id: r.id, name: r.full_name || 'Driver', userId: r.user_id, role: 'driver' }));
+      const bikers: AssignablePerson[] = (bk.data || []).map((r: any) => ({ id: r.id, name: r.full_name || 'Biker', userId: r.user_id, role: 'biker' }));
+      const ambs: AssignablePerson[] = (amb.data || []).map((r: any) => ({ id: r.id, name: (r.name || '').trim() || 'Ambassador', userId: r.user_id, role: 'ambassador' }));
+      return [...drivers, ...bikers, ...ambs];
     },
-    enabled: open && isBulkMode,
+    enabled: open,
   });
+
+  // Distinct neighborhoods for the neighborhood loader
+  const { data: neighborhoods = [] } = useQuery<string[]>({
+    queryKey: ['stores-distinct-neighborhoods'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('neighborhood')
+        .is('deleted_at', null)
+        .eq('approval_status', 'approved')
+        .not('neighborhood', 'is', null)
+        .limit(5000);
+      if (error) throw error;
+      const set = new Set<string>();
+      (data || []).forEach((r: any) => { if (r.neighborhood) set.add(r.neighborhood); });
+      return Array.from(set).sort();
+    },
+    enabled: open,
+  });
+
+  const loadNeighborhoodStores = async (nbh: string) => {
+    setNeighborhood(nbh);
+    if (!nbh) return;
+    const { data, error } = await supabase
+      .from('stores')
+      .select('id')
+      .is('deleted_at', null)
+      .eq('approval_status', 'approved')
+      .eq('neighborhood', nbh)
+      .limit(500);
+    if (error) { toast.error(error.message); return; }
+    const ids = (data || []).map((s: any) => s.id);
+    setSelectedStores((prev) => Array.from(new Set([...prev, ...ids])));
+    toast.success(`Added ${ids.length} stores from ${nbh}`);
+  };
 
   const toggleStore = (storeId: string) => {
     setSelectedStores((prev) =>
@@ -155,11 +194,11 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
     setBulkDates((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const toggleAssignee = (worker: { id: string; full_name: string; user_id?: string | null }) => {
+  const toggleAssignee = (person: AssignablePerson) => {
     setSelectedAssignees((prev) => {
-      const exists = prev.find((a) => a.id === worker.id);
-      if (exists) return prev.filter((a) => a.id !== worker.id);
-      return [...prev, { id: worker.id, name: worker.full_name, userId: worker.user_id }];
+      const exists = prev.find((a) => a.id === person.id && a.role === person.role);
+      if (exists) return prev.filter((a) => !(a.id === person.id && a.role === person.role));
+      return [...prev, person];
     });
   };
 
