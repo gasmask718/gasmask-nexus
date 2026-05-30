@@ -991,6 +991,7 @@ const SBOHistoryPage = lazy(() => import('@/pages/sports-betting/pages/HistoryPa
 const SBOHealthPage = lazy(() => import('@/pages/sports-betting/pages/HealthPage'));
 const SBOSyncPage = lazy(() => import('@/pages/sports-betting/pages/SyncPage'));
 const BikerDashboard = lazy(() => import('@/pages/os/biker/BikerDashboard'));
+const BikerTodaysRoutesPage = lazy(() => import('@/pages/delivery/biker/TodaysRoutesPage'));
 const ModuleDiagnosticsPage = lazy(() => import('@/pages/ModuleDiagnosticsPage'));
 const InvoiceForensicsConsole = lazy(() => import('@/pages/diagnostics/InvoiceForensicsConsole'));
 
