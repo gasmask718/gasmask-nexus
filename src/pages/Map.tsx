@@ -369,7 +369,7 @@ const Map = () => {
     });
 
     setStoreCounts(counts);
-  }, [stores, activeFilter, selectedTerritory]);
+  }, [stores, activeFilter, selectedTerritory, recencyFilter]);
 
   // Render store markers and heatmap
   useEffect(() => {
