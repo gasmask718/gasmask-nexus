@@ -52,8 +52,8 @@ export async function submitFieldChange(
   role: FieldRole
 ): Promise<FieldGovernanceResult> {
   try {
-    // Validate required fields
-    if (!payload.store_id) {
+    // Validate required fields (store_id is optional for brand-new store proposals)
+    if (!payload.store_id && payload.entity_type !== 'new_store') {
       return {
         success: false,
         submissionId: null,
@@ -81,7 +81,7 @@ export async function submitFieldChange(
     const insertData: Record<string, unknown> = {
       submitted_by_user_id: userId,
       submitted_by_role: role,
-      store_id: payload.store_id,
+      store_id: payload.store_id ?? null,
       entity_type: payload.entity_type,
       entity_id: payload.entity_id || null,
       action_type: payload.action_type,

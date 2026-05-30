@@ -7,8 +7,11 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   Store, Search, Filter, MapPin, Phone, Calendar,
-  ArrowRight, Users, Trash2, Route as RouteIcon
+  ArrowRight, Users, Trash2, Route as RouteIcon, Plus
 } from 'lucide-react';
+import { NewStoreSubmissionDialog } from '@/components/portal/field/NewStoreSubmissionDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 import { useLastOrderSnapshotBatch } from '@/hooks/useLastOrderSnapshot';
 import { LastOrderKPIBadge } from '@/components/store/LastOrderKPIBadge';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
@@ -138,6 +141,12 @@ function StoresListContent() {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [dispatchStores, setDispatchStores] = useState<string[] | null>(null);
+  const [newStoreOpen, setNewStoreOpen] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+  }, []);
 
   // Batch fetch LOS for all portfolio stores
   const storeIds = useMemo(() => stores.map(s => s.store_id), [stores]);
@@ -241,6 +250,10 @@ function StoresListContent() {
             className="pl-10"
           />
         </div>
+        <Button onClick={() => setNewStoreOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Store
+        </Button>
         <Button
           variant="outline"
           disabled={selectedIds.length === 0}
@@ -319,6 +332,16 @@ function StoresListContent() {
           assigneeUserId={ambassador.user_id}
           bulkMode={dispatchStores.length > 1}
           preselectedStores={dispatchStores}
+        />
+      )}
+
+      {/* New store proposal — goes through field governance */}
+      {userId && (
+        <NewStoreSubmissionDialog
+          open={newStoreOpen}
+          onOpenChange={setNewStoreOpen}
+          userId={userId}
+          role="ambassador"
         />
       )}
     </div>

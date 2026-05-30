@@ -46481,7 +46481,7 @@ export type Database = {
           risk_reasons: string[] | null
           risk_score: number | null
           rollback_of_id: string | null
-          store_id: string
+          store_id: string | null
           submission_source: string | null
           submission_status: Database["public"]["Enums"]["field_submission_status"]
           submitted_by_role: string
@@ -46508,7 +46508,7 @@ export type Database = {
           risk_reasons?: string[] | null
           risk_score?: number | null
           rollback_of_id?: string | null
-          store_id: string
+          store_id?: string | null
           submission_source?: string | null
           submission_status?: Database["public"]["Enums"]["field_submission_status"]
           submitted_by_role: string
@@ -46535,7 +46535,7 @@ export type Database = {
           risk_reasons?: string[] | null
           risk_score?: number | null
           rollback_of_id?: string | null
-          store_id?: string
+          store_id?: string | null
           submission_source?: string | null
           submission_status?: Database["public"]["Enums"]["field_submission_status"]
           submitted_by_role?: string
@@ -115850,6 +115850,16 @@ export type Database = {
         Args: { _device_id: string; _endpoint_name: string }
         Returns: boolean
       }
+      check_store_address_duplicates: {
+        Args: { p_address: string }
+        Returns: {
+          address: string
+          city: string
+          id: string
+          state: string
+          store_name: string
+        }[]
+      }
       claim_available_agent: {
         Args: { p_business_id: string }
         Returns: {
@@ -117653,6 +117663,7 @@ export type Database = {
         | "wholesaler_association"
         | "connected_store"
         | "store_questionnaire"
+        | "new_store"
       field_submission_status:
         | "pending_review"
         | "approved"
@@ -118300,6 +118311,7 @@ export const Constants = {
         "wholesaler_association",
         "connected_store",
         "store_questionnaire",
+        "new_store",
       ],
       field_submission_status: [
         "pending_review",

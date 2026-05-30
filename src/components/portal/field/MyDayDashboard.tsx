@@ -15,8 +15,10 @@ import {
   Clock,
   Play,
   Square,
-  MessageSquare
+  MessageSquare,
+  Plus
 } from 'lucide-react';
+import { NewStoreSubmissionDialog } from './NewStoreSubmissionDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -60,6 +62,12 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
   const [shiftStatus, setShiftStatus] = useState<ShiftStatus>('not_started');
   const [shiftStartTime, setShiftStartTime] = useState<Date | null>(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [newStoreOpen, setNewStoreOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
+  }, []);
 
   // Real-time delivery task notifications
   useDeliveryTaskNotifications();
@@ -314,10 +322,26 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
         </div>
-        <Badge variant="outline" className="uppercase">
-          {portalType}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => setNewStoreOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add Store
+          </Button>
+          <Badge variant="outline" className="uppercase">
+            {portalType}
+          </Badge>
+        </div>
       </div>
+
+      {/* New store proposal */}
+      {currentUserId && (
+        <NewStoreSubmissionDialog
+          open={newStoreOpen}
+          onOpenChange={setNewStoreOpen}
+          userId={currentUserId}
+          role={portalType}
+        />
+      )}
 
       {/* Quick Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
