@@ -24,6 +24,7 @@ import {
   Flame,
   Clock,
   FileText,
+  Navigation,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,6 +76,8 @@ import { getExtractedProfile } from "@/services/profileExtractionService";
 import { getStoreRelationshipScore, RelationshipScore } from "@/services/crmInsightsService";
 import { UnifiedInteractionModal } from "@/components/store/UnifiedInteractionModal";
 import { CreateStoreInvoiceModal } from "@/components/store/CreateStoreInvoiceModal";
+import { RouteIntelligence } from "@/components/store/RouteIntelligence";
+import { RouteAssignmentDialog } from "@/components/delivery/RouteAssignmentDialog";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
@@ -102,6 +105,7 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
   const [showLogModal, setShowLogModal] = useState(false);
   const [unifiedInteractionModalOpen, setUnifiedInteractionModalOpen] = useState(false);
   const [createInvoiceModalOpen, setCreateInvoiceModalOpen] = useState(false);
+  const [dispatchStore, setDispatchStore] = useState<string | null>(null);
 
   const id = storeId || '';
 
@@ -455,6 +459,13 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
             <StorePersonalMemoryPanel storeId={id} />
           </div>
 
+          {/* Route Intelligence — Add to Route wired to RouteAssignmentDialog */}
+          <RouteIntelligence
+            storeId={id}
+            storeName={store.store_name}
+            onAddToRoute={() => setDispatchStore(id)}
+          />
+
           {/* CANONICAL PERFORMANCE TABS — Auto-synced with all profiles */}
           <SharedStorePerformanceTabs storeId={id} storeName={store.store_name} />
         </div>
@@ -488,6 +499,10 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
               <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => setCreateInvoiceModalOpen(true)}>
                 <FileText className="w-4 h-4 mr-2" />
                 Create Invoice
+              </Button>
+              <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => setDispatchStore(id)}>
+                <Navigation className="w-4 h-4 mr-2" />
+                Add to Route
               </Button>
             </CardContent>
           </Card>
@@ -533,6 +548,22 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
         storeName={store.store_name}
         onSuccess={() => {}}
       />
+
+      {/* Dispatch — RouteAssignmentDialog with single store preselected */}
+      {dispatchStore && (
+        <RouteAssignmentDialog
+          open={!!dispatchStore}
+          onOpenChange={(open) => {
+            if (!open) setDispatchStore(null);
+          }}
+          assigneeId=""
+          assigneeName=""
+          assigneeType="driver"
+          assigneeUserId={null}
+          bulkMode={false}
+          preselectedStores={[dispatchStore]}
+        />
+      )}
     </div>
   );
 }

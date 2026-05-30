@@ -16,9 +16,11 @@ import { AddToRouteModal } from "./AddToRouteModal";
 interface RouteIntelligenceProps {
   storeId: string;
   storeName?: string;
+  /** Optional callback that overrides the default AddToRouteModal. Use this to wire in RouteAssignmentDialog. */
+  onAddToRoute?: () => void;
 }
 
-export function RouteIntelligence({ storeId, storeName }: RouteIntelligenceProps) {
+export function RouteIntelligence({ storeId, storeName, onAddToRoute }: RouteIntelligenceProps) {
   const [addToRouteModalOpen, setAddToRouteModalOpen] = useState(false);
   // Fetch recent routes for this store
   const { data: routeHistory } = useQuery({
@@ -160,18 +162,20 @@ export function RouteIntelligence({ storeId, storeName }: RouteIntelligenceProps
         <Button 
           variant="outline" 
           className="w-full"
-          onClick={() => setAddToRouteModalOpen(true)}
+          onClick={() => onAddToRoute ? onAddToRoute() : setAddToRouteModalOpen(true)}
         >
           <Navigation className="mr-2 h-4 w-4" />
           Add to Route Request
         </Button>
 
-        <AddToRouteModal
-          open={addToRouteModalOpen}
-          onOpenChange={setAddToRouteModalOpen}
-          storeId={storeId}
-          storeName={storeName}
-        />
+        {!onAddToRoute && (
+          <AddToRouteModal
+            open={addToRouteModalOpen}
+            onOpenChange={setAddToRouteModalOpen}
+            storeId={storeId}
+            storeName={storeName}
+          />
+        )}
 
         {routeHistory && routeHistory.length > 0 && (
           <div className="space-y-2">
