@@ -21,6 +21,7 @@ const AMBASSADOR_NAV_ITEMS = [
   { id: 'stores', label: 'My Stores', path: '/ambassador/stores', icon: Store },
   { id: 'sell-through', label: 'Sell-Through', path: '/ambassador/sell-through', icon: BarChart3 },
   { id: 'leads', label: 'Leads', path: '/ambassador/leads', icon: Target },
+  { id: 'catalog', label: 'Catalog', path: '/ambassador/catalog', icon: Package },
   { id: 'purchases', label: 'My Purchases', path: '/ambassador/purchases', icon: ShoppingBag },
   { id: 'commissions', label: 'Commissions', path: '/ambassador/commissions', icon: DollarSign },
   { id: 'orders', label: 'Orders', path: '/ambassador/orders', icon: Package },
