@@ -931,6 +931,23 @@ export default function MasterOpportunities() {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-[40px]">
+                            <Checkbox
+                              checked={
+                                paginatedSignalRows.length > 0 &&
+                                paginatedSignalRows.every((r) => selectedSignalStores.includes(r.store_id))
+                              }
+                              onCheckedChange={(checked) => {
+                                const pageIds = paginatedSignalRows.map((r) => r.store_id);
+                                if (checked) {
+                                  setSelectedSignalStores((prev) => [...new Set([...prev, ...pageIds])]);
+                                } else {
+                                  setSelectedSignalStores((prev) => prev.filter((id) => !pageIds.includes(id)));
+                                }
+                              }}
+                              aria-label="Select all on page"
+                            />
+                          </TableHead>
                           <TableHead>Store</TableHead>
                           <TableHead>Brand</TableHead>
                           <TableHead>Last Order</TableHead>
@@ -944,6 +961,19 @@ export default function MasterOpportunities() {
                         {paginatedSignalRows.map((row) => (
                           <TableRow key={row.id} className="hover:bg-muted/50">
                             <TableCell>
+                              <Checkbox
+                                checked={selectedSignalStores.includes(row.store_id)}
+                                onCheckedChange={(checked) => {
+                                  setSelectedSignalStores((prev) =>
+                                    checked
+                                      ? [...new Set([...prev, row.store_id])]
+                                      : prev.filter((id) => id !== row.store_id)
+                                  );
+                                }}
+                                aria-label={`Select ${row.store_name}`}
+                              />
+                            </TableCell>
+                            <TableCell>
                               <button onClick={() => handleViewStore(row.store_id)} className="font-medium text-left hover:text-primary transition-colors">{row.store_name}</button>
                               {(row.city || row.borough) && <p className="text-xs text-muted-foreground">{[row.borough, row.city].filter(Boolean).join(', ')}</p>}
                             </TableCell>
@@ -952,7 +982,14 @@ export default function MasterOpportunities() {
                             <TableCell><div className="flex flex-wrap gap-1">{getSignalBadges(row)}</div></TableCell>
                             <TableCell>{getRoleBadge(row.last_updated_by_role)}</TableCell>
                             <TableCell><div className="flex items-center gap-1 text-sm text-muted-foreground"><Clock className="h-3 w-3" />{format(new Date(row.last_updated_at), 'MMM d, h:mm a')}</div></TableCell>
-                            <TableCell><Button variant="ghost" size="icon" onClick={() => handleViewStore(row.store_id)} className="h-8 w-8"><ExternalLink className="h-4 w-4" /></Button></TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => setDispatchStores([row.store_id])} className="h-8 w-8" title="Dispatch this store">
+                                  <Truck className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleViewStore(row.store_id)} className="h-8 w-8"><ExternalLink className="h-4 w-4" /></Button>
+                              </div>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
