@@ -341,14 +341,14 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create New Batch</DialogTitle>
+            <DialogTitle><BilingualLabel tKey="production.create_new_batch" en="Create New Batch" inline /></DialogTitle>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
             {/* Basic Info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Brand *</Label>
+                <Label><BilingualLabel tKey="production.brand" en="Brand" inline /> *</Label>
                 <Select
                   value={formData.brand}
                   onValueChange={(value) => setFormData({ ...formData, brand: value })}
@@ -370,7 +370,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
               </div>
 
               <div className="grid gap-2">
-                <Label>Shift</Label>
+                <Label><BilingualLabel tKey="production.shift" en="Shift" inline /></Label>
                 <Select
                   value={formData.shift_label}
                   onValueChange={(value) => setFormData({ ...formData, shift_label: value })}
@@ -379,10 +379,10 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Morning">Morning</SelectItem>
-                    <SelectItem value="Afternoon">Afternoon</SelectItem>
-                    <SelectItem value="Evening">Evening</SelectItem>
-                    <SelectItem value="Night">Night</SelectItem>
+                    <SelectItem value="Morning">{t('production.shift.morning')}</SelectItem>
+                    <SelectItem value="Afternoon">{t('production.shift.afternoon')}</SelectItem>
+                    <SelectItem value="Evening">{t('production.shift.evening')}</SelectItem>
+                    <SelectItem value="Night">{t('production.shift.night')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -390,7 +390,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
 
             {/* Product Type Selection */}
             <div className="grid gap-2">
-              <Label>Product Type *</Label>
+              <Label><BilingualLabel tKey="production.product_type" en="Product Type" inline /> *</Label>
               <Select
                 value={formData.product_type}
                 onValueChange={(value) => setFormData({ ...formData, product_type: value as 'tubes' | 'bags' })}
@@ -399,8 +399,8 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="tubes">🚬 Tubes (Boxed Units)</SelectItem>
-                  <SelectItem value="bags">🛍️ Bags</SelectItem>
+                  <SelectItem value="tubes">🚬 {t('production.tubes_boxed')}</SelectItem>
+                  <SelectItem value="bags">🛍️ {t('production.bags')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -409,15 +409,15 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
             <div className="border rounded-lg p-4 bg-muted/30">
               <h4 className="font-medium mb-3 flex items-center gap-2">
                 <Package className="h-4 w-4" />
-                Materials Issued to Office
+                <BilingualLabel tKey="production.materials_issued" en="Materials Issued to Office" inline />
               </h4>
               <p className="text-xs text-muted-foreground mb-3">
-                Enter what materials are being issued for this batch. These values are locked after creation.
+                {t('production.materials_issued_help')}
               </p>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="tobacco">Tobacco (lbs) *</Label>
+                  <Label htmlFor="tobacco"><BilingualLabel tKey="production.tobacco_lbs" en="Tobacco (lbs)" inline /> *</Label>
                   <Input
                     id="tobacco"
                     type="number"
@@ -428,14 +428,14 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                   />
                   {!allocationResult.allowed && proposedLbs > 0 && (
                     <p className="text-xs text-destructive mt-1">
-                      ⚠ Exceeds unallocated inventory ({Number(allocationCheck.overview?.unallocated_lbs || 0).toFixed(1)} lbs available)
+                      ⚠ {t('production.exceeds_inventory')} ({Number(allocationCheck.overview?.unallocated_lbs || 0).toFixed(1)} {t('production.lbs_available')})
                     </p>
                   )}
                 </div>
 
                 {formData.product_type === 'tubes' && (
                   <div className="grid gap-2">
-                    <Label htmlFor="tubes">Tubes Issued (qty)</Label>
+                    <Label htmlFor="tubes"><BilingualLabel tKey="production.tubes_issued_qty" en="Tubes Issued (qty)" inline /></Label>
                     <Input
                       id="tubes"
                       type="number"
@@ -451,14 +451,20 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
               <div className="border rounded-lg p-4 bg-primary/5">
                 <h4 className="font-medium mb-3 flex items-center gap-2">
                   <Boxes className="h-4 w-4" />
-                  Output — {formData.product_type === 'bags' ? 'Bags' : 'Tubes'} Produced
+                  {t('production.output')} — {formData.product_type === 'bags' ? t('production.bags_produced') : t('production.tubes_produced')}
                 </h4>
                 <p className="text-xs text-muted-foreground mb-3">
-                  100 {formData.product_type === 'bags' ? 'bags' : 'tubes'} = 1 box. Boxes auto-calculated. Remainder tracked separately.
+                  {formData.product_type === 'bags' ? t('production.units_per_box_help_bags') : t('production.units_per_box_help_tubes')}
                 </p>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="product_units">{formData.product_type === 'bags' ? 'Bags' : 'Tubes'} Produced *</Label>
+                    <Label htmlFor="product_units">
+                      <BilingualLabel
+                        tKey={formData.product_type === 'bags' ? 'production.bags_produced' : 'production.tubes_produced'}
+                        en={formData.product_type === 'bags' ? 'Bags Produced' : 'Tubes Produced'}
+                        inline
+                      /> *
+                    </Label>
                     <Input
                       id="product_units"
                       type="number"
@@ -468,15 +474,15 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label>Full Boxes</Label>
+                    <Label><BilingualLabel tKey="production.full_boxes" en="Full Boxes" inline /></Label>
                     <div className="flex items-center h-10 px-3 rounded-md border bg-muted text-foreground font-mono font-bold">
                       {Math.floor((parseInt(formData.product_output_units) || 0) / 100)}
                     </div>
                   </div>
                   <div className="grid gap-2">
-                    <Label>Remainder</Label>
+                    <Label><BilingualLabel tKey="production.remainder" en="Remainder" inline /></Label>
                     <div className="flex items-center h-10 px-3 rounded-md border bg-muted text-muted-foreground font-mono">
-                      {(parseInt(formData.product_output_units) || 0) % 100} units
+                      {(parseInt(formData.product_output_units) || 0) % 100} {t('production.units_lower')}
                     </div>
                   </div>
                 </div>
@@ -487,19 +493,19 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                   return (
                     <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                       <div className="p-2 rounded bg-muted/50 border">
-                        <span className="text-muted-foreground">Units/LB</span>
+                        <span className="text-muted-foreground">{t('production.units_per_lb')}</span>
                         <p className="font-mono font-bold">{(units / proposedLbs).toFixed(2)}</p>
                       </div>
                       <div className="p-2 rounded bg-muted/50 border">
-                        <span className="text-muted-foreground">Boxes(eq)/LB</span>
+                        <span className="text-muted-foreground">{t('production.boxes_eq_per_lb')}</span>
                         <p className="font-mono font-bold">{(boxesEquiv / proposedLbs).toFixed(3)}</p>
                       </div>
                       <div className="p-2 rounded bg-muted/50 border">
-                        <span className="text-muted-foreground">LBS/Unit</span>
+                        <span className="text-muted-foreground">{t('production.lbs_per_unit')}</span>
                         <p className="font-mono font-bold">{(proposedLbs / units).toFixed(4)}</p>
                       </div>
                       <div className="p-2 rounded bg-muted/50 border">
-                        <span className="text-muted-foreground">LBS/Box(eq)</span>
+                        <span className="text-muted-foreground">{t('production.lbs_per_box_eq')}</span>
                         <p className="font-mono font-bold">{(proposedLbs / boxesEquiv).toFixed(2)}</p>
                       </div>
                     </div>
@@ -509,7 +515,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
 
               {/* Per-brand issued materials */}
               <div className="mt-4 space-y-3">
-                <Label className="text-sm">Stickers & Boxes by Brand</Label>
+                <Label className="text-sm"><BilingualLabel tKey="production.stickers_boxes_by_brand" en="Stickers & Boxes by Brand" inline /></Label>
                 <div className="grid gap-3">
                   {BRANDS.map(brand => (
                     <div key={brand.id} className="flex items-center gap-3 p-2 bg-background rounded border">
@@ -519,7 +525,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                         <div>
                           <Input
                             type="number"
-                            placeholder="Stickers"
+                            placeholder={t('production.stickers')}
                             className="h-8 text-sm"
                             value={formData.stickers_issued[brand.id] || ''}
                             onChange={(e) => updateStickersIssued(brand.id, e.target.value)}
@@ -528,7 +534,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                         <div>
                           <Input
                             type="number"
-                            placeholder="Empty Boxes"
+                            placeholder={t('production.empty_boxes')}
                             className="h-8 text-sm"
                             value={formData.empty_boxes_issued[brand.id] || ''}
                             onChange={(e) => updateBoxesIssued(brand.id, e.target.value)}
@@ -543,7 +549,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
 
             {activeWorkers.length > 0 && (
               <div className="grid gap-2">
-                <Label>Workers Present</Label>
+                <Label><BilingualLabel tKey="production.workers_present" en="Workers Present" inline /></Label>
                 <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-2 border rounded-md">
                   {activeWorkers.map(worker => (
                     <div key={worker.id} className="flex items-center gap-2">
@@ -562,12 +568,12 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
             )}
 
             <div className="grid gap-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes"><BilingualLabel tKey="production.notes" en="Notes" inline /></Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Optional notes..."
+                placeholder={t('production.optional_notes')}
                 rows={2}
               />
             </div>
@@ -575,14 +581,15 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
-              Cancel
+              <BilingualLabel tKey="production.cancel" en="Cancel" inline />
             </Button>
             <Button 
               onClick={handleCreateBatch}
               disabled={createBatch.isPending}
             >
-              Create Batch
+              <BilingualLabel tKey="production.create_batch" en="Create Batch" inline />
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
