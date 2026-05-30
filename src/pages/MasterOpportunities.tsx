@@ -62,6 +62,8 @@ import { useStickerSummary } from '@/hooks/useBrandStickers';
 import { useStoreOpportunities, useOpportunitiesSummary, useCompleteOpportunity, useReopenOpportunity } from '@/hooks/useStoreOpportunities';
 import { ExportButton } from '@/components/crud/ExportButton';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import { toast } from 'sonner';
 
 type MainTab = 'signals' | 'opportunities' | 'messaging' | 'dialer' | 'visits' | 'ready-close' | 'ai-opps';
