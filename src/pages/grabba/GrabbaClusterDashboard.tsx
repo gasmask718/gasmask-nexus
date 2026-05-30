@@ -22,6 +22,47 @@ const brandColors = {
 
 export default function GrabbaClusterDashboard() {
   const navigate = useNavigate();
+  const [dispatchBrand, setDispatchBrand] = useState<string>('all');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [dispatchStores, setDispatchStores] = useState<string[]>([]);
+
+  const { data: brandStores } = useQuery({
+    queryKey: ['grabba-cluster-stores', dispatchBrand],
+    queryFn: async () => {
+      let q = supabase
+        .from('store_brand_accounts')
+        .select('store_master_id, brand, active_status, last_order_date, store_master:store_master_id(id, store_name, address, city, state)')
+        .order('last_order_date', { ascending: false, nullsFirst: false })
+        .limit(200);
+      if (dispatchBrand !== 'all') q = q.eq('brand', dispatchBrand);
+      const { data, error } = await q;
+      if (error) throw error;
+      // Dedupe by store_master_id
+      const seen = new Set<string>();
+      const rows: any[] = [];
+      for (const r of (data || []) as any[]) {
+        if (!r.store_master_id || seen.has(r.store_master_id)) continue;
+        if (!r.store_master?.id) continue;
+        seen.add(r.store_master_id);
+        rows.push({
+          id: r.store_master.id,
+          name: r.store_master.store_name || 'Unnamed',
+          city: r.store_master.city,
+          state: r.store_master.state,
+          brand: r.brand,
+          last_order_date: r.last_order_date,
+        });
+      }
+      return rows;
+    },
+  });
+
+  const visibleStoreIds = useMemo(() => (brandStores || []).map((s: any) => s.id), [brandStores]);
+  const allSelected = visibleStoreIds.length > 0 && visibleStoreIds.every((id) => selectedIds.includes(id));
+  const toggleOne = (id: string) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const toggleAll = () =>
+    setSelectedIds(allSelected ? [] : visibleStoreIds);
 
   const { data: stats } = useQuery({
     queryKey: ['grabba-stats'],
