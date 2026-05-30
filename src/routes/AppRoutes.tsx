@@ -246,6 +246,7 @@ const StoreDeduplicationPage = lazy(() => import('@/pages/admin/StoreDeduplicati
 const StoreMergePreview = lazy(() => import('@/pages/admin/StoreMergePreview'));
 const MergeDryRun = lazy(() => import('@/pages/admin/MergeDryRun'));
 const RecentlyAddedStores = lazy(() => import('@/pages/admin/RecentlyAddedStores'));
+const DispatchMap = lazy(() => import('@/pages/admin/DispatchMap'));
 const UserManagementPage = lazy(() => import('@/components/security/UserManagementPage'));
 const MessagesPage = lazy(() => import('@/pages/Messages'));
 const CommunicationInsights = lazy(() => import('@/pages/CommunicationInsights'));
@@ -3298,6 +3299,17 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+
+      {/* Dispatch Map — reference of dispatch wiring across floors */}
+      <Route path="/admin/dispatch-map" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']}>
+            <Layout><DispatchMap /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
+
 
       {/* QA Command Center - Production Readiness */}
       <Route path="/admin/qa-command-center" element={
