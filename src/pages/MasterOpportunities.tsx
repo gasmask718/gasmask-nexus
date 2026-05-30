@@ -1158,6 +1158,23 @@ export default function MasterOpportunities() {
           <OpportunityList items={aiOppItems} onAction={handleAction} emptyIcon={Brain} emptyText="No AI-detected opportunities — run an AI Scan" />
         </TabsContent>
       </Tabs>
+
+      {dispatchStores && (
+        <RouteAssignmentDialog
+          open={!!dispatchStores}
+          onOpenChange={(o) => { if (!o) setDispatchStores(null); }}
+          assigneeId=""
+          assigneeName=""
+          assigneeType="ambassador"
+          bulkMode
+          preselectedStores={dispatchStores}
+          onAssigned={() => {
+            setDispatchStores(null);
+            setSelectedSignalStores([]);
+            toast.success('Route created');
+          }}
+        />
+      )}
     </div>
   );
 }
