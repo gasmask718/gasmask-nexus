@@ -394,11 +394,12 @@ function StoresListContent() {
 }
 
 export default function AmbassadorStoresList() {
+  const { t } = useTranslation();
   return (
     <PortalRBACGate allowedRoles={['ambassador']} portalName="Ambassador Portal">
       <AmbassadorLayout 
-        title="My Stores" 
-        subtitle="All stores in your portfolio"
+        title={t('amb.stores.title')}
+        subtitle={t('amb.stores.subtitle')}
         portalIcon={<Users className="h-4 w-4 text-primary-foreground" />}
       >
         <StoresListContent />
@@ -406,3 +407,4 @@ export default function AmbassadorStoresList() {
     </PortalRBACGate>
   );
 }
+
