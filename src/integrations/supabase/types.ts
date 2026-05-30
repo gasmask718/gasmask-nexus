@@ -115486,6 +115486,10 @@ export type Database = {
         Args: { p_period_end: string; p_period_start: string }
         Returns: number
       }
+      ambassador_has_active_assignment: {
+        Args: { _store_id: string; _user_id: string }
+        Returns: boolean
+      }
       analyze_store_duplicate_groups: {
         Args: never
         Returns: {
@@ -116317,6 +116321,10 @@ export type Database = {
         }[]
       }
       get_ambassador_id: { Args: { _user_id: string }; Returns: string }
+      get_ambassador_id_for_user: {
+        Args: { _user_id: string }
+        Returns: string
+      }
       get_ambassador_profit_breakdown: {
         Args: {
           p_ambassador_id: string
@@ -116667,6 +116675,7 @@ export type Database = {
       is_production_admin: { Args: { _user_id: string }; Returns: boolean }
       is_production_worker: { Args: { _user_id: string }; Returns: boolean }
       is_simulation_mode: { Args: never; Returns: boolean }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
       is_va: { Args: { _user_id: string }; Returns: boolean }
       log_ai_audit_event: {
         Args: {
@@ -117424,6 +117433,10 @@ export type Database = {
           _roles: Database["public"]["Enums"]["app_role"][]
           _user_id: string
         }
+        Returns: boolean
+      }
+      user_has_route_for_store: {
+        Args: { _store_id: string; _user_id: string }
         Returns: boolean
       }
       user_has_store_access: { Args: { _store_id: string }; Returns: boolean }
