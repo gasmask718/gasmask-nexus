@@ -154,6 +154,7 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
   );
 
   return (
+    <>
     <Card>
       <CardHeader className="pb-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
