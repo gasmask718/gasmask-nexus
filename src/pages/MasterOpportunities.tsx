@@ -729,12 +729,36 @@ export default function MasterOpportunities() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => navigate('/gasmask/route-engine')}>
-            <Truck className="h-3.5 w-3.5" />Route Engine
+          <Button
+            size="sm"
+            variant={selectedSignalStores.length > 0 ? 'default' : 'outline'}
+            className="gap-1.5 text-xs"
+            disabled={selectedSignalStores.length === 0}
+            onClick={() => setDispatchStores([...new Set(selectedSignalStores)])}
+          >
+            <Truck className="h-3.5 w-3.5" />
+            Dispatch Selected{selectedSignalStores.length > 0 ? ` (${selectedSignalStores.length})` : ''}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 text-xs"
+            disabled={filteredSignalRows.length === 0}
+            onClick={() => {
+              const ids = [...new Set(filteredSignalRows.map((r) => r.store_id))];
+              setDispatchStores(ids);
+            }}
+            title="Dispatch all stores matching current signal filter"
+          >
+            <Truck className="h-3.5 w-3.5" />
+            Dispatch {activeSignalTab === 'all' ? 'All Filtered' : activeSignalTab.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())} ({[...new Set(filteredSignalRows.map((r) => r.store_id))].length})
+          </Button>
+          <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => navigate('/gasmask/route-engine')}>
+            Route Engine →
           </Button>
           <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={runSync} disabled={syncing}>
             {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-            Sync to Route Engine
+            Sync Triggers
           </Button>
           <Button size="sm" className="gap-1.5 text-xs" onClick={runAIAnalysis} disabled={scanning}>
             {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brain className="h-3.5 w-3.5" />}
