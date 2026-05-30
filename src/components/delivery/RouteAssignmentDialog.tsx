@@ -110,10 +110,18 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
     toast.success(`Template "${template.name}" applied — ${stops.length} stops loaded`);
   };
 
-  // Fetch available stores
+  // Fetch available stores — excludes 'Closed permanently' relationship_status
+  // (single source of truth: store_master.relationship_status).
   const { data: stores = [] } = useQuery({
     queryKey: ['stores-for-route', storeSearch],
     queryFn: async () => {
+      const closed = await supabase
+        .from('store_master')
+        .select('id')
+        .eq('relationship_status', 'Closed permanently')
+        .is('deleted_at', null);
+      const closedIds = (closed.data || []).map((r: any) => r.id);
+
       let query = supabase
         .from('stores')
         .select('id, name, address_street, address_city, boro')
@@ -122,6 +130,7 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
         .order('name')
         .limit(50);
       if (storeSearch) query = query.ilike('name', `%${storeSearch}%`);
+      if (closedIds.length) query = query.not('id', 'in', `(${closedIds.join(',')})`);
       const { data, error } = await query;
       if (error) throw error;
       return data;
