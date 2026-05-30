@@ -4,6 +4,7 @@
  */
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { 
   Store, Phone, Mail, MapPin, Clock, User, 
   Package, DollarSign, FileText, MessageSquare,
