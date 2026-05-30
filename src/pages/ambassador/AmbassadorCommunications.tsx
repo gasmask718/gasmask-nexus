@@ -33,7 +33,7 @@ import {
 import { useStoreContext } from '@/hooks/useStoreContext';
 import { StoreContextSidebar } from '@/components/ambassador/StoreContextSidebar';
 import { BulkSmsModal } from '@/components/ambassador/BulkSmsModal';
-import { BulkAiCallModal } from '@/components/ambassador/BulkAiCallModal';
+// BulkAiCallModal intentionally NOT imported — AI calling is company-level only, not for ambassadors.
 import { BulkJobsPanel } from '@/components/ambassador/BulkJobsPanel';
 import { useBulkJobKpis } from '@/hooks/useBulkOutreach';
 import { Checkbox } from '@/components/ui/checkbox';
