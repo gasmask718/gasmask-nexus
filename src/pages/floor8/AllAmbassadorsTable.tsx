@@ -97,6 +97,8 @@ export default function AllAmbassadorsTable() {
   const [regionFilter, setRegionFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('revenue_generated');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [showRouteAssign, setShowRouteAssign] = useState(false);
+  const [selectedAmbassador, setSelectedAmbassador] = useState<AdminAmbassadorProfile | null>(null);
 
   // Get unique regions for filter
   const regions = useMemo(() => {
