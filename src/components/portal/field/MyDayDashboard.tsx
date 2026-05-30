@@ -314,10 +314,26 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
         </div>
-        <Badge variant="outline" className="uppercase">
-          {portalType}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => setNewStoreOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add Store
+          </Button>
+          <Badge variant="outline" className="uppercase">
+            {portalType}
+          </Badge>
+        </div>
       </div>
+
+      {/* New store proposal */}
+      {currentUserId && (
+        <NewStoreSubmissionDialog
+          open={newStoreOpen}
+          onOpenChange={setNewStoreOpen}
+          userId={currentUserId}
+          role={portalType}
+        />
+      )}
 
       {/* Quick Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
