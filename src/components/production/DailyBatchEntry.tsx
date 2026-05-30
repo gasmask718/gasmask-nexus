@@ -34,6 +34,9 @@ import { Boxes, Plus, Play, CheckCircle, XCircle, ChevronRight, Scale, Package, 
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useTranslation } from '@/hooks/useTranslation';
+import { BilingualLabel } from '@/components/portal/BilingualLabel';
+
 
 interface DailyBatchEntryProps {
   officeId: string;
@@ -46,26 +49,28 @@ const BRANDS = [
   { id: 'grabba-rus', label: 'GrabbaRus', color: 'bg-purple-500' },
 ];
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  open: { label: 'Open', color: 'bg-blue-100 text-blue-800', icon: <Package className="h-4 w-4" /> },
-  in_progress: { label: 'In Progress', color: 'bg-amber-100 text-amber-800', icon: <Play className="h-4 w-4" /> },
-  completed: { label: 'Completed', color: 'bg-emerald-100 text-emerald-800', icon: <CheckCircle className="h-4 w-4" /> },
-  cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-800', icon: <XCircle className="h-4 w-4" /> },
+const STATUS_CONFIG: Record<string, { tKey: string; en: string; color: string; icon: React.ReactNode }> = {
+  open: { tKey: 'production.status.open', en: 'Open', color: 'bg-blue-100 text-blue-800', icon: <Package className="h-4 w-4" /> },
+  in_progress: { tKey: 'production.status.in_progress', en: 'In Progress', color: 'bg-amber-100 text-amber-800', icon: <Play className="h-4 w-4" /> },
+  completed: { tKey: 'production.status.completed', en: 'Completed', color: 'bg-emerald-100 text-emerald-800', icon: <CheckCircle className="h-4 w-4" /> },
+  cancelled: { tKey: 'production.status.cancelled', en: 'Cancelled', color: 'bg-red-100 text-red-800', icon: <XCircle className="h-4 w-4" /> },
 };
 
 const DEFECT_CATEGORIES = [
-  { value: 'underfilled', label: 'Underfilled' },
-  { value: 'overfilled', label: 'Overfilled' },
-  { value: 'loose_sticker', label: 'Loose Sticker' },
-  { value: 'torn_tube', label: 'Torn Tube' },
-  { value: 'moisture', label: 'Moisture Damage' },
-  { value: 'contamination', label: 'Contamination' },
-  { value: 'label_misaligned', label: 'Label Misaligned' },
-  { value: 'packaging_damage', label: 'Packaging Damage' },
-  { value: 'other', label: 'Other' },
+  { value: 'underfilled', tKey: 'production.defect.underfilled', en: 'Underfilled' },
+  { value: 'overfilled', tKey: 'production.defect.overfilled', en: 'Overfilled' },
+  { value: 'loose_sticker', tKey: 'production.defect.loose_sticker', en: 'Loose Sticker' },
+  { value: 'torn_tube', tKey: 'production.defect.torn_tube', en: 'Torn Tube' },
+  { value: 'moisture', tKey: 'production.defect.moisture', en: 'Moisture Damage' },
+  { value: 'contamination', tKey: 'production.defect.contamination', en: 'Contamination' },
+  { value: 'label_misaligned', tKey: 'production.defect.label_misaligned', en: 'Label Misaligned' },
+  { value: 'packaging_damage', tKey: 'production.defect.packaging_damage', en: 'Packaging Damage' },
+  { value: 'other', tKey: 'production.defect.other', en: 'Other' },
 ];
 
+
 export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
+  const { t } = useTranslation();
   const { data: batches = [], isLoading } = useTodayBatches(officeId);
   const { data: workers = [] } = useProductionWorkers(officeId);
   const createBatch = useCreateBatch();
@@ -73,6 +78,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
   
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<ProductionBatch | null>(null);
+
   const [formData, setFormData] = useState({
     brand: 'gasmask',
     shift_label: 'Morning',
@@ -220,11 +226,11 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <Boxes className="h-5 w-5" />
-            Today's Batches ({batches.length})
+            <BilingualLabel tKey="production.todays_batches" en="Today's Batches" inline /> ({batches.length})
           </CardTitle>
           <Button size="sm" onClick={() => setIsCreateModalOpen(true)}>
             <Plus className="h-4 w-4 mr-1" />
-            New Batch
+            <BilingualLabel tKey="production.new_batch" en="New Batch" inline />
           </Button>
         </CardHeader>
         <CardContent>
@@ -237,9 +243,9 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
           ) : batches.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Boxes className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No batches created today.</p>
+              <p>{t('production.no_batches')}</p>
               <Button variant="link" onClick={() => setIsCreateModalOpen(true)}>
-                Start your first batch
+                <BilingualLabel tKey="production.start_first_batch" en="Start your first batch" inline />
               </Button>
             </div>
           ) : (
@@ -264,27 +270,27 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                               {batch.shift_label}
                             </Badge>
                             <Badge className={cn('text-xs', statusConfig?.color)}>
-                              {statusConfig?.label}
+                              {statusConfig ? t(statusConfig.tKey) : ''}
                             </Badge>
                             {(batch as any).generated_by_system && (
                               <Badge variant="secondary" className="text-xs flex items-center gap-1">
-                                <Bot className="h-3 w-3" /> System Draft
+                                <Bot className="h-3 w-3" /> <BilingualLabel tKey="production.system_draft" en="System Draft" inline />
                               </Badge>
                             )}
                             <Badge variant="outline" className="text-xs capitalize">
-                              {(batch as any).product_type || 'tubes'}
+                              {(batch as any).product_type === 'bags' ? t('production.bags') : t('production.tubes')}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                             <span className="flex items-center gap-1">
                               <Scale className="h-3 w-3" />
-                              {batch.tobacco_lbs ?? 0} lbs
+                              {batch.tobacco_lbs ?? 0} {t('production.lbs')}
                             </span>
                             <span>
-                              {(batch as any).product_output_units || 0} {(batch as any).product_type === 'bags' ? 'bags' : 'tubes'}
+                              {(batch as any).product_output_units || 0} {(batch as any).product_type === 'bags' ? t('production.bags').toLowerCase() : t('production.tubes').toLowerCase()}
                             </span>
                             <span className="text-primary font-medium">
-                              {(batch as any).boxes_full || batch.boxes_produced || 0} boxes
+                              {(batch as any).boxes_full || batch.boxes_produced || 0} {t('production.boxes_lower')}
                               {((batch as any).units_remainder || 0) > 0 && (
                                 <span className="text-muted-foreground text-xs ml-1">+{(batch as any).units_remainder}</span>
                               )}
@@ -292,7 +298,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                             {(batch.total_defects || 0) > 0 && (
                               <span className="text-destructive flex items-center gap-1">
                                 <AlertTriangle className="h-3 w-3" />
-                                {batch.total_defects} defects
+                                {batch.total_defects} {t('production.defects_lower')}
                               </span>
                             )}
                           </div>
@@ -307,7 +313,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                             onClick={(e) => { e.stopPropagation(); handleStartBatch(batch); }}
                           >
                             <Play className="h-4 w-4 mr-1" />
-                            Start
+                            <BilingualLabel tKey="production.start" en="Start" inline />
                           </Button>
                         )}
                         {batch.status === 'in_progress' && (
@@ -316,11 +322,12 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                             onClick={(e) => { e.stopPropagation(); handleCompleteBatch(batch); }}
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
-                            Complete
+                            <BilingualLabel tKey="production.complete" en="Complete" inline />
                           </Button>
                         )}
                         <ChevronRight className="h-5 w-5 text-muted-foreground" />
                       </div>
+
                     </div>
                   </div>
                 );
@@ -334,14 +341,14 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create New Batch</DialogTitle>
+            <DialogTitle><BilingualLabel tKey="production.create_new_batch" en="Create New Batch" inline /></DialogTitle>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
             {/* Basic Info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Brand *</Label>
+                <Label><BilingualLabel tKey="production.brand" en="Brand" inline /> *</Label>
                 <Select
                   value={formData.brand}
                   onValueChange={(value) => setFormData({ ...formData, brand: value })}
@@ -363,7 +370,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
               </div>
 
               <div className="grid gap-2">
-                <Label>Shift</Label>
+                <Label><BilingualLabel tKey="production.shift" en="Shift" inline /></Label>
                 <Select
                   value={formData.shift_label}
                   onValueChange={(value) => setFormData({ ...formData, shift_label: value })}
@@ -372,10 +379,10 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Morning">Morning</SelectItem>
-                    <SelectItem value="Afternoon">Afternoon</SelectItem>
-                    <SelectItem value="Evening">Evening</SelectItem>
-                    <SelectItem value="Night">Night</SelectItem>
+                    <SelectItem value="Morning">{t('production.shift.morning')}</SelectItem>
+                    <SelectItem value="Afternoon">{t('production.shift.afternoon')}</SelectItem>
+                    <SelectItem value="Evening">{t('production.shift.evening')}</SelectItem>
+                    <SelectItem value="Night">{t('production.shift.night')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -383,7 +390,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
 
             {/* Product Type Selection */}
             <div className="grid gap-2">
-              <Label>Product Type *</Label>
+              <Label><BilingualLabel tKey="production.product_type" en="Product Type" inline /> *</Label>
               <Select
                 value={formData.product_type}
                 onValueChange={(value) => setFormData({ ...formData, product_type: value as 'tubes' | 'bags' })}
@@ -392,8 +399,8 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="tubes">🚬 Tubes (Boxed Units)</SelectItem>
-                  <SelectItem value="bags">🛍️ Bags</SelectItem>
+                  <SelectItem value="tubes">🚬 {t('production.tubes_boxed')}</SelectItem>
+                  <SelectItem value="bags">🛍️ {t('production.bags')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -402,15 +409,15 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
             <div className="border rounded-lg p-4 bg-muted/30">
               <h4 className="font-medium mb-3 flex items-center gap-2">
                 <Package className="h-4 w-4" />
-                Materials Issued to Office
+                <BilingualLabel tKey="production.materials_issued" en="Materials Issued to Office" inline />
               </h4>
               <p className="text-xs text-muted-foreground mb-3">
-                Enter what materials are being issued for this batch. These values are locked after creation.
+                {t('production.materials_issued_help')}
               </p>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="tobacco">Tobacco (lbs) *</Label>
+                  <Label htmlFor="tobacco"><BilingualLabel tKey="production.tobacco_lbs" en="Tobacco (lbs)" inline /> *</Label>
                   <Input
                     id="tobacco"
                     type="number"
@@ -421,14 +428,14 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                   />
                   {!allocationResult.allowed && proposedLbs > 0 && (
                     <p className="text-xs text-destructive mt-1">
-                      ⚠ Exceeds unallocated inventory ({Number(allocationCheck.overview?.unallocated_lbs || 0).toFixed(1)} lbs available)
+                      ⚠ {t('production.exceeds_inventory')} ({Number(allocationCheck.overview?.unallocated_lbs || 0).toFixed(1)} {t('production.lbs_available')})
                     </p>
                   )}
                 </div>
 
                 {formData.product_type === 'tubes' && (
                   <div className="grid gap-2">
-                    <Label htmlFor="tubes">Tubes Issued (qty)</Label>
+                    <Label htmlFor="tubes"><BilingualLabel tKey="production.tubes_issued_qty" en="Tubes Issued (qty)" inline /></Label>
                     <Input
                       id="tubes"
                       type="number"
@@ -444,14 +451,20 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
               <div className="border rounded-lg p-4 bg-primary/5">
                 <h4 className="font-medium mb-3 flex items-center gap-2">
                   <Boxes className="h-4 w-4" />
-                  Output — {formData.product_type === 'bags' ? 'Bags' : 'Tubes'} Produced
+                  {t('production.output')} — {formData.product_type === 'bags' ? t('production.bags_produced') : t('production.tubes_produced')}
                 </h4>
                 <p className="text-xs text-muted-foreground mb-3">
-                  100 {formData.product_type === 'bags' ? 'bags' : 'tubes'} = 1 box. Boxes auto-calculated. Remainder tracked separately.
+                  {formData.product_type === 'bags' ? t('production.units_per_box_help_bags') : t('production.units_per_box_help_tubes')}
                 </p>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="product_units">{formData.product_type === 'bags' ? 'Bags' : 'Tubes'} Produced *</Label>
+                    <Label htmlFor="product_units">
+                      <BilingualLabel
+                        tKey={formData.product_type === 'bags' ? 'production.bags_produced' : 'production.tubes_produced'}
+                        en={formData.product_type === 'bags' ? 'Bags Produced' : 'Tubes Produced'}
+                        inline
+                      /> *
+                    </Label>
                     <Input
                       id="product_units"
                       type="number"
@@ -461,15 +474,15 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label>Full Boxes</Label>
+                    <Label><BilingualLabel tKey="production.full_boxes" en="Full Boxes" inline /></Label>
                     <div className="flex items-center h-10 px-3 rounded-md border bg-muted text-foreground font-mono font-bold">
                       {Math.floor((parseInt(formData.product_output_units) || 0) / 100)}
                     </div>
                   </div>
                   <div className="grid gap-2">
-                    <Label>Remainder</Label>
+                    <Label><BilingualLabel tKey="production.remainder" en="Remainder" inline /></Label>
                     <div className="flex items-center h-10 px-3 rounded-md border bg-muted text-muted-foreground font-mono">
-                      {(parseInt(formData.product_output_units) || 0) % 100} units
+                      {(parseInt(formData.product_output_units) || 0) % 100} {t('production.units_lower')}
                     </div>
                   </div>
                 </div>
@@ -480,19 +493,19 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                   return (
                     <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                       <div className="p-2 rounded bg-muted/50 border">
-                        <span className="text-muted-foreground">Units/LB</span>
+                        <span className="text-muted-foreground">{t('production.units_per_lb')}</span>
                         <p className="font-mono font-bold">{(units / proposedLbs).toFixed(2)}</p>
                       </div>
                       <div className="p-2 rounded bg-muted/50 border">
-                        <span className="text-muted-foreground">Boxes(eq)/LB</span>
+                        <span className="text-muted-foreground">{t('production.boxes_eq_per_lb')}</span>
                         <p className="font-mono font-bold">{(boxesEquiv / proposedLbs).toFixed(3)}</p>
                       </div>
                       <div className="p-2 rounded bg-muted/50 border">
-                        <span className="text-muted-foreground">LBS/Unit</span>
+                        <span className="text-muted-foreground">{t('production.lbs_per_unit')}</span>
                         <p className="font-mono font-bold">{(proposedLbs / units).toFixed(4)}</p>
                       </div>
                       <div className="p-2 rounded bg-muted/50 border">
-                        <span className="text-muted-foreground">LBS/Box(eq)</span>
+                        <span className="text-muted-foreground">{t('production.lbs_per_box_eq')}</span>
                         <p className="font-mono font-bold">{(proposedLbs / boxesEquiv).toFixed(2)}</p>
                       </div>
                     </div>
@@ -502,7 +515,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
 
               {/* Per-brand issued materials */}
               <div className="mt-4 space-y-3">
-                <Label className="text-sm">Stickers & Boxes by Brand</Label>
+                <Label className="text-sm"><BilingualLabel tKey="production.stickers_boxes_by_brand" en="Stickers & Boxes by Brand" inline /></Label>
                 <div className="grid gap-3">
                   {BRANDS.map(brand => (
                     <div key={brand.id} className="flex items-center gap-3 p-2 bg-background rounded border">
@@ -512,7 +525,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                         <div>
                           <Input
                             type="number"
-                            placeholder="Stickers"
+                            placeholder={t('production.stickers')}
                             className="h-8 text-sm"
                             value={formData.stickers_issued[brand.id] || ''}
                             onChange={(e) => updateStickersIssued(brand.id, e.target.value)}
@@ -521,7 +534,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                         <div>
                           <Input
                             type="number"
-                            placeholder="Empty Boxes"
+                            placeholder={t('production.empty_boxes')}
                             className="h-8 text-sm"
                             value={formData.empty_boxes_issued[brand.id] || ''}
                             onChange={(e) => updateBoxesIssued(brand.id, e.target.value)}
@@ -536,7 +549,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
 
             {activeWorkers.length > 0 && (
               <div className="grid gap-2">
-                <Label>Workers Present</Label>
+                <Label><BilingualLabel tKey="production.workers_present" en="Workers Present" inline /></Label>
                 <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-2 border rounded-md">
                   {activeWorkers.map(worker => (
                     <div key={worker.id} className="flex items-center gap-2">
@@ -555,12 +568,12 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
             )}
 
             <div className="grid gap-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes"><BilingualLabel tKey="production.notes" en="Notes" inline /></Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Optional notes..."
+                placeholder={t('production.optional_notes')}
                 rows={2}
               />
             </div>
@@ -568,14 +581,15 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
-              Cancel
+              <BilingualLabel tKey="production.cancel" en="Cancel" inline />
             </Button>
             <Button 
               onClick={handleCreateBatch}
               disabled={createBatch.isPending}
             >
-              Create Batch
+              <BilingualLabel tKey="production.create_batch" en="Create Batch" inline />
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -586,28 +600,28 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Production Override Required
+              <BilingualLabel tKey="production.override_required" en="Production Override Required" inline />
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Production quantity deviates <strong>{gate.deviationPct}%</strong> from the demand-based recommendation of <strong>{gate.recommended} lbs</strong>.
+              <strong>{gate.deviationPct}%</strong> · <strong>{gate.recommended} {t('production.lbs')}</strong>
               {gate.isHighOverride && (
                 <span className="block mt-1 text-destructive font-medium">
-                  ⚠️ HIGH OVERRIDE — This will be flagged for executive review.
+                  {t('production.override_high_warning')}
                 </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label htmlFor="override-reason">Override Reason (min 20 characters) *</Label>
+              <Label htmlFor="override-reason"><BilingualLabel tKey="production.override_reason" en="Override Reason (min 20 characters) *" inline /></Label>
               <Textarea
                 id="override-reason"
                 value={overrideReason}
                 onChange={(e) => setOverrideReason(e.target.value)}
-                placeholder="Explain why this override is necessary..."
+                placeholder={t('production.override_reason_placeholder')}
                 rows={3}
               />
-              <p className="text-xs text-muted-foreground mt-1">{overrideReason.length}/20 characters minimum</p>
+              <p className="text-xs text-muted-foreground mt-1">{overrideReason.length}/20 {t('production.override_chars_minimum')}</p>
             </div>
             <div className="flex items-center gap-2">
               <Checkbox
@@ -616,20 +630,21 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                 onCheckedChange={(checked) => setOverrideAcknowledged(checked === true)}
               />
               <label htmlFor="override-ack" className="text-sm cursor-pointer">
-                I understand this overrides demand intelligence.
+                {t('production.override_ack')}
               </label>
             </div>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => { setShowOverrideModal(false); setOverrideReason(''); setOverrideAcknowledged(false); }}>
-              Cancel
+              <BilingualLabel tKey="production.cancel" en="Cancel" inline />
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleOverrideConfirm}
               disabled={overrideReason.length < 20 || !overrideAcknowledged || createBatch.isPending}
             >
-              Confirm Override & Create Batch
+              <BilingualLabel tKey="production.override_confirm" en="Confirm Override & Create Batch" inline />
             </AlertDialogAction>
+
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -657,9 +672,11 @@ interface BatchDetailModalProps {
 }
 
 function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
+  const { t } = useTranslation();
   const { data: outputs = [], isLoading } = useBatchOutputs(batch.id);
   const { data: workers = [] } = useProductionWorkers(officeId);
   const recordOutput = useRecordOutput();
+
   
   const [outputForm, setOutputForm] = useState({
     brand: 'gasmask' as const,
@@ -748,9 +765,9 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Batch Details
+            <BilingualLabel tKey="production.batch_details" en="Batch Details" inline />
             <Badge className={cn(STATUS_CONFIG[batch.status || 'open'].color)}>
-              {STATUS_CONFIG[batch.status || 'open'].label}
+              {t(STATUS_CONFIG[batch.status || 'open'].tKey)}
             </Badge>
           </DialogTitle>
         </DialogHeader>
@@ -762,23 +779,23 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
             <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
               <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-3 flex items-center gap-2">
                 <Package className="h-4 w-4" />
-                Issued to Office
+                <BilingualLabel tKey="production.issued_to_office" en="Issued to Office" inline />
               </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tobacco</span>
-                  <span className="font-medium">{batch.tobacco_lbs ?? 0} lbs</span>
+                  <span className="text-muted-foreground">{t('production.tobacco')}</span>
+                  <span className="font-medium">{batch.tobacco_lbs ?? 0} {t('production.lbs')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tubes</span>
+                  <span className="text-muted-foreground">{t('production.tubes')}</span>
                   <span className="font-medium">{(batch.tubes_total || 0).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Stickers</span>
+                  <span className="text-muted-foreground">{t('production.stickers')}</span>
                   <span className="font-medium">{totalStickersIssued.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Empty Boxes</span>
+                  <span className="text-muted-foreground">{t('production.empty_boxes')}</span>
                   <span className="font-medium">{totalEmptyBoxesIssued.toLocaleString()}</span>
                 </div>
               </div>
@@ -788,23 +805,23 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
             <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800">
               <h4 className="font-medium text-emerald-800 dark:text-emerald-200 mb-3 flex items-center gap-2">
                 <Scale className="h-4 w-4" />
-                Used in Production
+                <BilingualLabel tKey="production.used_in_production" en="Used in Production" inline />
               </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Boxes Completed</span>
+                  <span className="text-muted-foreground">{t('production.boxes_completed')}</span>
                   <span className="font-medium text-primary">{totalBoxes.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tubes Used</span>
+                  <span className="text-muted-foreground">{t('production.tubes_used')}</span>
                   <span className="font-medium">{totalTubes.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Stickers Used</span>
+                  <span className="text-muted-foreground">{t('production.stickers_used')}</span>
                   <span className="font-medium">{totalStickersUsed.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Empty Boxes Used</span>
+                  <span className="text-muted-foreground">{t('production.empty_boxes_used')}</span>
                   <span className="font-medium">{totalEmptyBoxesUsed.toLocaleString()}</span>
                 </div>
               </div>
@@ -813,7 +830,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
 
           {/* Variance Summary */}
           <div className="p-3 bg-muted/50 rounded-lg">
-            <h4 className="font-medium mb-2 text-sm">Variance</h4>
+            <h4 className="font-medium mb-2 text-sm"><BilingualLabel tKey="production.variance" en="Variance" inline /></h4>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <p className={cn(
@@ -822,7 +839,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                 )}>
                   {((batch.tubes_total || 0) - totalTubes) >= 0 ? '+' : ''}{(batch.tubes_total || 0) - totalTubes}
                 </p>
-                <p className="text-xs text-muted-foreground">Tubes</p>
+                <p className="text-xs text-muted-foreground">{t('production.tubes')}</p>
               </div>
               <div>
                 <p className={cn(
@@ -831,7 +848,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                 )}>
                   {(totalStickersIssued - totalStickersUsed) >= 0 ? '+' : ''}{totalStickersIssued - totalStickersUsed}
                 </p>
-                <p className="text-xs text-muted-foreground">Stickers</p>
+                <p className="text-xs text-muted-foreground">{t('production.stickers')}</p>
               </div>
               <div>
                 <p className={cn(
@@ -840,7 +857,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                 )}>
                   {(totalEmptyBoxesIssued - totalEmptyBoxesUsed) >= 0 ? '+' : ''}{totalEmptyBoxesIssued - totalEmptyBoxesUsed}
                 </p>
-                <p className="text-xs text-muted-foreground">Empty Boxes</p>
+                <p className="text-xs text-muted-foreground">{t('production.empty_boxes')}</p>
               </div>
             </div>
           </div>
@@ -850,17 +867,17 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
             <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
               <h4 className="font-medium text-red-800 dark:text-red-200 mb-2 flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
-                Defects: {totalDefects}
+                {t('production.defects')}: {totalDefects}
               </h4>
               <div className="space-y-1">
                 {outputs.filter(o => o.defects_count > 0).map(o => (
                   <div key={o.id} className="text-sm flex items-center gap-2">
                     <Badge variant="destructive" className="text-xs">{o.defects_count}</Badge>
                     {o.defect_category ? (
-                      <Badge variant="outline" className="text-xs">{o.defect_category}</Badge>
+                      <Badge variant="outline" className="text-xs">{t(`production.defect.${o.defect_category}`)}</Badge>
                     ) : (
                       <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
-                        No Category
+                        {t('production.no_category')}
                       </Badge>
                     )}
                     <span className="text-muted-foreground">{o.brand}</span>
@@ -872,9 +889,9 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
 
           {/* Recorded Outputs */}
           <div>
-            <h4 className="font-medium mb-2">Recorded Outputs by Brand</h4>
+            <h4 className="font-medium mb-2"><BilingualLabel tKey="production.recorded_outputs" en="Recorded Outputs by Brand" inline /></h4>
             {outputs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No outputs recorded yet.</p>
+              <p className="text-sm text-muted-foreground">{t('production.no_outputs')}</p>
             ) : (
               <div className="space-y-2">
                 {outputs.map(output => {
@@ -894,20 +911,20 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-primary font-medium">{output.boxes_completed} boxes</span>
+                          <span className="text-primary font-medium">{output.boxes_completed} {t('production.boxes_lower')}</span>
                           {output.defects_count > 0 && (
                             <Badge variant="destructive" className="text-xs">
-                              {output.defects_count} defects
+                              {output.defects_count} {t('production.defects_lower')}
                             </Badge>
                           )}
                         </div>
                       </div>
                       <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
-                        <span>{output.tubes_used} tubes</span>
-                        <span>{output.stickers_used} stickers</span>
-                        <span>{output.empty_boxes_used} boxes</span>
+                        <span>{output.tubes_used} {t('production.tubes').toLowerCase()}</span>
+                        <span>{output.stickers_used} {t('production.stickers').toLowerCase()}</span>
+                        <span>{output.empty_boxes_used} {t('production.boxes_lower')}</span>
                         {output.defect_category && (
-                          <span className="text-destructive">{output.defect_category}</span>
+                          <span className="text-destructive">{t(`production.defect.${output.defect_category}`)}</span>
                         )}
                       </div>
                     </div>
@@ -920,14 +937,14 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
           {/* Record New Output */}
           {batch.status !== 'completed' && batch.status !== 'cancelled' && (
             <div className="border-t pt-4">
-              <h4 className="font-medium mb-3">Record Output</h4>
+              <h4 className="font-medium mb-3"><BilingualLabel tKey="production.record_output" en="Record Output" inline /></h4>
               
               {/* Defect Category Warning */}
               {showDefectWarning && (
                 <Alert variant="default" className="mb-3 border-amber-200 bg-amber-50 dark:bg-amber-950/30">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-800 dark:text-amber-200">
-                    Recording defects without a category. For better analytics, select a defect category.
+                    {t('production.defect_warning')}
                   </AlertDescription>
                 </Alert>
               )}
@@ -937,14 +954,14 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                 <div className="mb-3">
                   <Label className="flex items-center gap-1">
                     <User className="h-3 w-3" />
-                    Worker (Required for tracking)
+                    <BilingualLabel tKey="production.worker_required" en="Worker (Required for tracking)" inline />
                   </Label>
                   <Select
                     value={outputForm.worker_id}
                     onValueChange={(value) => setOutputForm({ ...outputForm, worker_id: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select worker..." />
+                      <SelectValue placeholder={t('production.select_worker')} />
                     </SelectTrigger>
                     <SelectContent>
                       {availableWorkers.map(worker => (
@@ -959,7 +976,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
               
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <Label>Brand</Label>
+                  <Label><BilingualLabel tKey="production.brand" en="Brand" inline /></Label>
                   <Select
                     value={outputForm.brand}
                     onValueChange={(value: any) => setOutputForm({ ...outputForm, brand: value })}
@@ -977,7 +994,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                   </Select>
                 </div>
                 <div>
-                  <Label>Boxes Completed</Label>
+                  <Label><BilingualLabel tKey="production.boxes_completed" en="Boxes Completed" inline /></Label>
                   <Input
                     type="number"
                     value={outputForm.boxes_completed}
@@ -986,7 +1003,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                   />
                 </div>
                 <div>
-                  <Label>Tubes Used</Label>
+                  <Label><BilingualLabel tKey="production.tubes_used" en="Tubes Used" inline /></Label>
                   <Input
                     type="number"
                     value={outputForm.tubes_used}
@@ -997,7 +1014,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
               </div>
               <div className="grid grid-cols-3 gap-3 mt-3">
                 <div>
-                  <Label>Stickers Used</Label>
+                  <Label><BilingualLabel tKey="production.stickers_used" en="Stickers Used" inline /></Label>
                   <Input
                     type="number"
                     value={outputForm.stickers_used}
@@ -1006,7 +1023,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                   />
                 </div>
                 <div>
-                  <Label>Empty Boxes Used</Label>
+                  <Label><BilingualLabel tKey="production.empty_boxes_used" en="Empty Boxes Used" inline /></Label>
                   <Input
                     type="number"
                     value={outputForm.empty_boxes_used}
@@ -1015,7 +1032,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                   />
                 </div>
                 <div>
-                  <Label>Defects</Label>
+                  <Label><BilingualLabel tKey="production.defects" en="Defects" inline /></Label>
                   <Input
                     type="number"
                     value={outputForm.defects_count}
@@ -1031,23 +1048,23 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
               {/* Time & Motion (Optional) */}
               <div className="grid grid-cols-2 gap-3 mt-3">
                 <div>
-                  <Label>Avg Tube Fill (seconds)</Label>
+                  <Label><BilingualLabel tKey="production.avg_tube_fill" en="Avg Tube Fill (seconds)" inline /></Label>
                   <Input
                     type="number"
                     step="0.1"
                     value={outputForm.tube_fill_seconds}
                     onChange={(e) => setOutputForm({ ...outputForm, tube_fill_seconds: e.target.value })}
-                    placeholder="Optional"
+                    placeholder={t('production.optional')}
                   />
                 </div>
                 <div>
-                  <Label>Avg Sticker Apply (seconds)</Label>
+                  <Label><BilingualLabel tKey="production.avg_sticker_apply" en="Avg Sticker Apply (seconds)" inline /></Label>
                   <Input
                     type="number"
                     step="0.1"
                     value={outputForm.sticker_apply_seconds}
                     onChange={(e) => setOutputForm({ ...outputForm, sticker_apply_seconds: e.target.value })}
-                    placeholder="Optional"
+                    placeholder={t('production.optional')}
                   />
                 </div>
               </div>
@@ -1062,7 +1079,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                 )}>
                   <div>
                     <Label className="flex items-center gap-1">
-                      Defect Category
+                      <BilingualLabel tKey="production.defect_category" en="Defect Category" inline />
                       {categoryMissing && (
                         <AlertTriangle className="h-3 w-3 text-amber-600" />
                       )}
@@ -1075,28 +1092,28 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                       }}
                     >
                       <SelectTrigger className={categoryMissing ? "border-amber-400" : ""}>
-                        <SelectValue placeholder="Select category..." />
+                        <SelectValue placeholder={t('production.select_category')} />
                       </SelectTrigger>
                       <SelectContent>
                         {DEFECT_CATEGORIES.map(cat => (
                           <SelectItem key={cat.value} value={cat.value}>
-                            {cat.label}
+                            {t(cat.tKey)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     {categoryMissing && (
                       <p className="text-xs text-amber-600 mt-1">
-                        Recommended for defect analytics
+                        {t('production.defect_recommended')}
                       </p>
                     )}
                   </div>
                   <div>
-                    <Label>Defect Notes</Label>
+                    <Label><BilingualLabel tKey="production.defect_notes" en="Defect Notes" inline /></Label>
                     <Input
                       value={outputForm.defect_reason}
                       onChange={(e) => setOutputForm({ ...outputForm, defect_reason: e.target.value })}
-                      placeholder="Additional details..."
+                      placeholder={t('production.additional_details')}
                     />
                   </div>
                 </div>
@@ -1107,7 +1124,7 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
                 onClick={handleRecordOutput}
                 disabled={!outputForm.boxes_completed || recordOutput.isPending}
               >
-                Record Output
+                <BilingualLabel tKey="production.record_output" en="Record Output" inline />
               </Button>
             </div>
           )}
@@ -1115,9 +1132,10 @@ function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Close
+            <BilingualLabel tKey="production.close" en="Close" inline />
           </Button>
         </DialogFooter>
+
       </DialogContent>
     </Dialog>
   );
