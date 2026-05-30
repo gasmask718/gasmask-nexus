@@ -32,6 +32,10 @@ type Summary = {
 export default function NeighborhoodCoverage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [dispatchOpen, setDispatchOpen] = useState(false);
+  const [dispatchStoreIds, setDispatchStoreIds] = useState<string[]>([]);
+  const [dispatchNeighborhood, setDispatchNeighborhood] = useState<string>('');
+  const [isLoadingDispatch, setIsLoadingDispatch] = useState(false);
 
   const { data: rows = [], isLoading } = useQuery<Row[]>({
     queryKey: ['v_neighborhood_coverage'],
