@@ -115,7 +115,7 @@ export default function RouteEnginePage() {
           *,
           route_stops (
             id, planned_order, status, store_id, notes,
-            stores ( id, name, address )
+            stores ( id, name, address_street, address_city, address_state )
           )
         `)
         .eq('source', 'gasmask_agent')
@@ -620,7 +620,9 @@ export default function RouteEnginePage() {
                         <div key={s.id} className="flex items-center gap-2 text-xs p-1.5 bg-muted/40 rounded">
                           <span className="font-medium text-muted-foreground">{s.planned_order ?? i + 1}.</span>
                           <span className="truncate">{s.stores?.name || 'Unknown store'}</span>
-                          {s.stores?.address && <span className="text-muted-foreground truncate">— {s.stores.address}</span>}
+                          {(s.stores?.address_street || s.stores?.address_city) && (
+                            <span className="text-muted-foreground truncate">— {[s.stores.address_street, s.stores.address_city, s.stores.address_state].filter(Boolean).join(', ')}</span>
+                          )}
                           {s.status === 'completed' && <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0 ml-auto" />}
                         </div>
                       ))}
