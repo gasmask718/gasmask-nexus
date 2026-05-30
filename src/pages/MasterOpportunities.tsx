@@ -62,6 +62,8 @@ import { useStickerSummary } from '@/hooks/useBrandStickers';
 import { useStoreOpportunities, useOpportunitiesSummary, useCompleteOpportunity, useReopenOpportunity } from '@/hooks/useStoreOpportunities';
 import { ExportButton } from '@/components/crud/ExportButton';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import { toast } from 'sonner';
 
 type MainTab = 'signals' | 'opportunities' | 'messaging' | 'dialer' | 'visits' | 'ready-close' | 'ai-opps';
@@ -256,6 +258,8 @@ export default function MasterOpportunities() {
   const [oppPageSize, setOppPageSize] = useState(25);
   const [scanning, setScanning] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [selectedSignalStores, setSelectedSignalStores] = useState<string[]>([]);
+  const [dispatchStores, setDispatchStores] = useState<string[] | null>(null);
 
   // ── Existing hooks ──
   const { data: signalSummary, isLoading: signalSummaryLoading } = useTubeIntelSummary();
@@ -725,12 +729,36 @@ export default function MasterOpportunities() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => navigate('/gasmask/route-engine')}>
-            <Truck className="h-3.5 w-3.5" />Route Engine
+          <Button
+            size="sm"
+            variant={selectedSignalStores.length > 0 ? 'default' : 'outline'}
+            className="gap-1.5 text-xs"
+            disabled={selectedSignalStores.length === 0}
+            onClick={() => setDispatchStores([...new Set(selectedSignalStores)])}
+          >
+            <Truck className="h-3.5 w-3.5" />
+            Dispatch Selected{selectedSignalStores.length > 0 ? ` (${selectedSignalStores.length})` : ''}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 text-xs"
+            disabled={filteredSignalRows.length === 0}
+            onClick={() => {
+              const ids = [...new Set(filteredSignalRows.map((r) => r.store_id))];
+              setDispatchStores(ids);
+            }}
+            title="Dispatch all stores matching current signal filter"
+          >
+            <Truck className="h-3.5 w-3.5" />
+            Dispatch {activeSignalTab === 'all' ? 'All Filtered' : activeSignalTab.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())} ({[...new Set(filteredSignalRows.map((r) => r.store_id))].length})
+          </Button>
+          <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => navigate('/gasmask/route-engine')}>
+            Route Engine →
           </Button>
           <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={runSync} disabled={syncing}>
             {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-            Sync to Route Engine
+            Sync Triggers
           </Button>
           <Button size="sm" className="gap-1.5 text-xs" onClick={runAIAnalysis} disabled={scanning}>
             {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brain className="h-3.5 w-3.5" />}
@@ -903,6 +931,23 @@ export default function MasterOpportunities() {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-[40px]">
+                            <Checkbox
+                              checked={
+                                paginatedSignalRows.length > 0 &&
+                                paginatedSignalRows.every((r) => selectedSignalStores.includes(r.store_id))
+                              }
+                              onCheckedChange={(checked) => {
+                                const pageIds = paginatedSignalRows.map((r) => r.store_id);
+                                if (checked) {
+                                  setSelectedSignalStores((prev) => [...new Set([...prev, ...pageIds])]);
+                                } else {
+                                  setSelectedSignalStores((prev) => prev.filter((id) => !pageIds.includes(id)));
+                                }
+                              }}
+                              aria-label="Select all on page"
+                            />
+                          </TableHead>
                           <TableHead>Store</TableHead>
                           <TableHead>Brand</TableHead>
                           <TableHead>Last Order</TableHead>
@@ -916,6 +961,19 @@ export default function MasterOpportunities() {
                         {paginatedSignalRows.map((row) => (
                           <TableRow key={row.id} className="hover:bg-muted/50">
                             <TableCell>
+                              <Checkbox
+                                checked={selectedSignalStores.includes(row.store_id)}
+                                onCheckedChange={(checked) => {
+                                  setSelectedSignalStores((prev) =>
+                                    checked
+                                      ? [...new Set([...prev, row.store_id])]
+                                      : prev.filter((id) => id !== row.store_id)
+                                  );
+                                }}
+                                aria-label={`Select ${row.store_name}`}
+                              />
+                            </TableCell>
+                            <TableCell>
                               <button onClick={() => handleViewStore(row.store_id)} className="font-medium text-left hover:text-primary transition-colors">{row.store_name}</button>
                               {(row.city || row.borough) && <p className="text-xs text-muted-foreground">{[row.borough, row.city].filter(Boolean).join(', ')}</p>}
                             </TableCell>
@@ -924,7 +982,14 @@ export default function MasterOpportunities() {
                             <TableCell><div className="flex flex-wrap gap-1">{getSignalBadges(row)}</div></TableCell>
                             <TableCell>{getRoleBadge(row.last_updated_by_role)}</TableCell>
                             <TableCell><div className="flex items-center gap-1 text-sm text-muted-foreground"><Clock className="h-3 w-3" />{format(new Date(row.last_updated_at), 'MMM d, h:mm a')}</div></TableCell>
-                            <TableCell><Button variant="ghost" size="icon" onClick={() => handleViewStore(row.store_id)} className="h-8 w-8"><ExternalLink className="h-4 w-4" /></Button></TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => setDispatchStores([row.store_id])} className="h-8 w-8" title="Dispatch this store">
+                                  <Truck className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleViewStore(row.store_id)} className="h-8 w-8"><ExternalLink className="h-4 w-4" /></Button>
+                              </div>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -1093,6 +1158,23 @@ export default function MasterOpportunities() {
           <OpportunityList items={aiOppItems} onAction={handleAction} emptyIcon={Brain} emptyText="No AI-detected opportunities — run an AI Scan" />
         </TabsContent>
       </Tabs>
+
+      {dispatchStores && (
+        <RouteAssignmentDialog
+          open={!!dispatchStores}
+          onOpenChange={(o) => { if (!o) setDispatchStores(null); }}
+          assigneeId=""
+          assigneeName=""
+          assigneeType="ambassador"
+          bulkMode
+          preselectedStores={dispatchStores}
+          onAssigned={() => {
+            setDispatchStores(null);
+            setSelectedSignalStores([]);
+            toast.success('Route created');
+          }}
+        />
+      )}
     </div>
   );
 }
