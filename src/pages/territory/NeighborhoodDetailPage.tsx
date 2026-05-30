@@ -20,6 +20,36 @@ export default function NeighborhoodDetailPage() {
   const neighborhood = decodeURIComponent(rawNeigh || '');
   const navigate = useNavigate();
 
+  const [dispatchOpen, setDispatchOpen] = useState(false);
+  const [dispatchStoreIds, setDispatchStoreIds] = useState<string[]>([]);
+  const [isLoadingDispatch, setIsLoadingDispatch] = useState(false);
+
+  const handleDispatchNeighborhood = async () => {
+    setIsLoadingDispatch(true);
+    try {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id')
+        .is('deleted_at', null)
+        .eq('approval_status', 'approved')
+        .eq('neighborhood', neighborhood)
+        .limit(500);
+      if (error) throw error;
+      const ids = (data || []).map((s: any) => s.id);
+      if (ids.length === 0) {
+        toast.warning(`No approved stores found in ${neighborhood}`);
+        return;
+      }
+      setDispatchStoreIds(ids);
+      setDispatchOpen(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to load stores');
+    } finally {
+      setIsLoadingDispatch(false);
+    }
+  };
+
+
   const intel = useQuery({
     queryKey: ['neigh-intel', neighborhood],
     enabled: !!neighborhood,
