@@ -278,26 +278,7 @@ export default function AmbassadorCommunications() {
     }
   };
 
-  const startAiCall = async () => {
-    if (!callTarget || !selectedScriptId || isPlacing) return;
-    setIsPlacing(true);
-    try {
-      const script = aiScripts.find((s) => s.id === selectedScriptId);
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { data, error } = await supabase.functions.invoke('ambassador-ai-call', {
-        body: { store_id: callTarget.store_id, script_template_id: selectedScriptId, objective: script?.objective },
-      });
-      if (error || data?.error) throw new Error(data?.error || error?.message || 'AI call failed');
-      toast.success('🤖 AI call queued — you\'ll be notified when it completes');
-      setCallDialogOpen(false);
-      setCallMode('choose');
-      setSelectedScriptId('');
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setIsPlacing(false);
-    }
-  };
+  // AI-call helpers removed — AI calling is company-level only, not for ambassadors.
 
   const savePersonalPhone = async () => {
     if (!/^\+\d{10,15}$/.test(personalPhoneInput)) {
