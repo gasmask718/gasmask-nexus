@@ -300,6 +300,24 @@ export default function NeighborhoodCoverage() {
           )}
         </CardContent>
       </Card>
+
+      <RouteAssignmentDialog
+        open={dispatchOpen}
+        onOpenChange={(open) => {
+          setDispatchOpen(open);
+          if (!open) {
+            setDispatchStoreIds([]);
+            setDispatchNeighborhood('');
+          }
+        }}
+        assigneeId=""
+        assigneeName=""
+        assigneeType="driver"
+        assigneeUserId={null}
+        bulkMode={dispatchStoreIds.length > 1}
+        preselectedStores={dispatchStoreIds}
+        prefilledTerritory={dispatchNeighborhood}
+      />
     </div>
   );
 }
