@@ -554,8 +554,6 @@ function DashboardContent() {
 // UI Version for debugging - change key to force re-mount
 const AMBASSADOR_UI_VERSION = 'ambassador-ui-v3';
 
-import { useTranslation } from '@/hooks/useTranslation';
-
 export default function AmbassadorDashboard() {
   const { t } = useTranslation();
   return (
