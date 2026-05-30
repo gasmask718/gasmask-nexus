@@ -615,7 +615,7 @@ const Stores = () => {
       return true;
     })();
     
-    return matchesSearch && matchesStatus && matchesTag && matchesSticker && matchesPaymentType && matchesNoName && matchesNewStores && matchesMonth;
+    return matchesSearch && matchesStatus && matchesRelationship && matchesTag && matchesSticker && matchesPaymentType && matchesNoName && matchesNewStores && matchesMonth;
   });
 
   const getStatusColor = (status: string) => {
