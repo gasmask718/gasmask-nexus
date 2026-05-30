@@ -167,7 +167,9 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
 function StoresListContent() {
   const navigate = useNavigate();
   const { initiateCall } = useCall();
+  const { t } = useTranslation();
   const { stores, metrics, isLoading, unassignStore, isUnassigningStore, ambassador } = useAmbassadorPortfolio();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
