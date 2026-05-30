@@ -802,24 +802,25 @@ const Map = () => {
           </div>
         </div>
 
-        {/* Map Legend */}
+        {/* Map Legend — pin color = order/visit recency */}
         <div className="absolute bottom-4 right-4 bg-card/95 backdrop-blur rounded-lg px-4 py-3 border border-border/50 shadow-lg">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1.5">Recency</div>
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full bg-green-500 border-2 border-white shadow-sm"></div>
-              <span>Active</span>
+              <span>&lt; 1 month</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full bg-yellow-500 border-2 border-white shadow-sm"></div>
-              <span>Prospect</span>
+              <span>1–2 months</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
-              <div className="w-3 h-3 rounded-full bg-orange-500 border-2 border-white shadow-sm"></div>
-              <span>Follow Up</span>
+              <div className="w-3 h-3 rounded-full bg-red-500 border-2 border-white shadow-sm"></div>
+              <span>Overdue (2mo+)</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full bg-gray-500 border-2 border-white shadow-sm"></div>
-              <span>Inactive</span>
+              <span>Never / no data</span>
             </div>
           </div>
         </div>
