@@ -11,7 +11,7 @@
 import { useLocation, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Store, Target, ShoppingBag,
-  MapPin, DollarSign, Package, MessageSquare, BarChart3, UserPlus, Users,
+  MapPin, DollarSign, Package, MessageSquare, BarChart3, UserPlus, Users, Wallet, TrendingUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -29,6 +29,8 @@ const AMBASSADOR_NAV_ITEMS = [
   { id: 'communications', label: 'Messages', path: '/ambassador/communications', icon: MessageSquare },
   { id: 'recruitment', label: 'Recruitment', path: '/ambassador/recruitment', icon: Users },
   { id: 'request-ambassador', label: 'Team Expansion', path: '/ambassador/request-ambassador', icon: UserPlus },
+  { id: 'payouts', label: 'Payouts', path: '/ambassador/payouts', icon: Wallet },
+  { id: 'earnings', label: 'Earnings', path: '/ambassador/reports/earnings', icon: TrendingUp },
 ] as const;
 
 export function AmbassadorPortalNav() {
