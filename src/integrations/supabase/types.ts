@@ -84709,6 +84709,7 @@ export type Database = {
           is_active: boolean
           needs_starter_kit: boolean
           payment_type: Database["public"]["Enums"]["payment_type_enum"] | null
+          payment_type_chosen: boolean
           relationship_health: Database["public"]["Enums"]["relationship_health_enum"]
           sampling_status: Database["public"]["Enums"]["sampling_status_enum"]
           starter_kit_date: string | null
@@ -84724,6 +84725,7 @@ export type Database = {
           is_active?: boolean
           needs_starter_kit?: boolean
           payment_type?: Database["public"]["Enums"]["payment_type_enum"] | null
+          payment_type_chosen?: boolean
           relationship_health?: Database["public"]["Enums"]["relationship_health_enum"]
           sampling_status?: Database["public"]["Enums"]["sampling_status_enum"]
           starter_kit_date?: string | null
@@ -84739,6 +84741,7 @@ export type Database = {
           is_active?: boolean
           needs_starter_kit?: boolean
           payment_type?: Database["public"]["Enums"]["payment_type_enum"] | null
+          payment_type_chosen?: boolean
           relationship_health?: Database["public"]["Enums"]["relationship_health_enum"]
           sampling_status?: Database["public"]["Enums"]["sampling_status_enum"]
           starter_kit_date?: string | null
