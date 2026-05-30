@@ -121,8 +121,8 @@ export default function AmbassadorRoutes() {
   if (isLoading) {
     return (
       <AmbassadorLayout 
-        title="Route Planner" 
-        subtitle="Plan visits, optimize routes, and track outcomes"
+        title={t("amb.routes.title")} 
+        subtitle={t("amb.routes.subtitle")}
         backPath="/ambassador/dashboard"
       >
         <div className="p-6 space-y-6">
@@ -138,8 +138,8 @@ export default function AmbassadorRoutes() {
 
   return (
     <AmbassadorLayout 
-      title="Route Planner" 
-      subtitle="Plan visits, optimize routes, and track outcomes"
+      title={t("amb.routes.title")} 
+      subtitle={t("amb.routes.subtitle")}
       backPath="/ambassador/dashboard"
     >
       <div className="p-6 space-y-6">

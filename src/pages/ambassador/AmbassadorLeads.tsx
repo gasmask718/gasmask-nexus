@@ -410,8 +410,8 @@ export default function AmbassadorLeads() {
   if (isLoading) {
     return (
       <AmbassadorLayout 
-        title="Leads Pipeline" 
-        subtitle="Manage prospects across all channels"
+        title={t("amb.leads.title")} 
+        subtitle={t("amb.leads.subtitle")}
         backPath="/ambassador/dashboard"
       >
         <div className="p-6 space-y-6">
@@ -427,7 +427,7 @@ export default function AmbassadorLeads() {
   if (routeAmbassadorId && isTargetAmbassadorLoading) {
     return (
       <AmbassadorLayout 
-        title="Leads Pipeline" 
+        title={t("amb.leads.title")} 
         subtitle="Loading pipeline context…"
         backPath={routeAmbassadorId ? `/profile/ambassador/${routeAmbassadorId}` : "/ambassador/dashboard"}
       >

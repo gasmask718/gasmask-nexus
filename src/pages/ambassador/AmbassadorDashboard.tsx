@@ -560,8 +560,8 @@ export default function AmbassadorDashboard() {
   return (
     <PortalRBACGate allowedRoles={['ambassador', 'admin']} portalName="Ambassador Portal" key={AMBASSADOR_UI_VERSION}>
       <AmbassadorLayout 
-        title="Ambassador Dashboard" 
-        subtitle="Portfolio command center"
+        title={t("amb.dashboard.title")} 
+        subtitle={t("amb.dashboard.subtitle")}
         portalIcon={<Users className="h-4 w-4 text-primary-foreground" />}
       >
         {/* Debug version stamp - visible in dev */}
