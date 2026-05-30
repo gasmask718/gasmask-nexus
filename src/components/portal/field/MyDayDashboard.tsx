@@ -62,6 +62,12 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
   const [shiftStatus, setShiftStatus] = useState<ShiftStatus>('not_started');
   const [shiftStartTime, setShiftStartTime] = useState<Date | null>(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [newStoreOpen, setNewStoreOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
+  }, []);
 
   // Real-time delivery task notifications
   useDeliveryTaskNotifications();
