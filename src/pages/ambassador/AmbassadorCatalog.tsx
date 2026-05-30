@@ -166,33 +166,34 @@ function CatalogSkeleton() {
 
 export default function AmbassadorCatalog() {
   const { data: products = [], isLoading, error } = useCatalogProducts();
+  const { t } = useTranslation();
 
   return (
     <PortalRBACGate allowedRoles={['admin', 'ambassador']} portalName="Ambassador Portal">
       <AmbassadorLayout
-        title="Product Pricing"
-        subtitle="All tiers shown per-tube and per-box (×units/box). Prices are read-only."
+        title={t('amb.catalog.title')}
+        subtitle={t('amb.catalog.subtitle')}
       >
         <div className="space-y-4">
           <div className="flex items-center justify-end">
             <Badge variant="outline" className="text-xs">
-              {products.length} active
+              {products.length} {t('amb.catalog.active')}
             </Badge>
           </div>
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">All products</CardTitle>
+              <CardTitle className="text-base">{t('amb.catalog.all_products')}</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <CatalogSkeleton />
               ) : error ? (
                 <p className="text-sm text-destructive">
-                  Failed to load products: {(error as Error).message}
+                  {t('amb.catalog.failed_load')}: {(error as Error).message}
                 </p>
               ) : products.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No active products.</p>
+                <p className="text-sm text-muted-foreground">{t('amb.catalog.no_products')}</p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {products.map((p) => (
@@ -207,3 +208,4 @@ export default function AmbassadorCatalog() {
     </PortalRBACGate>
   );
 }
+
