@@ -38,14 +38,18 @@ export function RelationshipStatusSelect({
 
   const mutation = useMutation({
     mutationFn: async (next: StoreRelationshipStatus) => {
-      if (isFieldRole(role)) {
-        const r = await submitFieldChange({
-          store_id: storeId,
-          entity_type: 'store_update',
-          action_type: 'update',
-          payload_before: { relationship_status: current },
-          payload_after:  { relationship_status: next },
-        });
+      if (isFieldRole(role) && user?.id) {
+        const r = await submitFieldChange(
+          {
+            store_id: storeId,
+            entity_type: 'store_update',
+            action_type: 'update',
+            payload_before: { relationship_status: current },
+            payload_after:  { relationship_status: next },
+          },
+          user.id,
+          role,
+        );
         if (!r.success) throw new Error(r.error || 'Submission failed');
         return next;
       }
