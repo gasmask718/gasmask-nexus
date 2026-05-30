@@ -829,7 +829,7 @@ export default function AmbassadorCommunications() {
       />
 
       {/* Call type dialog */}
-      <Dialog open={callDialogOpen} onOpenChange={(v) => { setCallDialogOpen(v); if (!v) { setCallMode('choose'); setSelectedScriptId(''); } }}>
+      <Dialog open={callDialogOpen} onOpenChange={setCallDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Call {callTarget?.store_name}</DialogTitle>
