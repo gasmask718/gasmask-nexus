@@ -2923,6 +2923,13 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+      <Route path="/ambassador/catalog" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <AmbassadorCatalog />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
       <Route path="/ambassador/stores" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
