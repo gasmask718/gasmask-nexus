@@ -24,8 +24,10 @@ import { useAmbassadorRoutes, type AmbassadorRoute, type RouteStop } from '@/hoo
 import { format, addDays, startOfWeek, isSameDay } from 'date-fns';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { toast } from 'sonner';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AmbassadorRoutes() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { stores } = useAmbassadorPortfolio();
   const { routes, isLoading, createRoute, isCreatingRoute, addStop, isAddingStop, completeStop, isCompletingStop } = useAmbassadorRoutes();
