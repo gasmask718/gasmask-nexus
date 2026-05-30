@@ -10,6 +10,7 @@
 import { ReactNode } from 'react';
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
 import { AmbassadorPortalNav } from '@/components/ambassador/AmbassadorPortalNav';
+import { AmbassadorMobileBottomNav } from '@/components/ambassador/AmbassadorMobileBottomNav';
 import { FeedbackFloatingButton } from '@/components/feedback/FeedbackFloatingButton';
 
 interface AmbassadorLayoutProps {
