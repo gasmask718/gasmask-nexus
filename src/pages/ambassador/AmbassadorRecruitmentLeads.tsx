@@ -193,8 +193,9 @@ function RecruitmentLeadsContent() {
       {/* Leads Table */}
       <Card>
         <CardContent className="p-0">
-          <ScrollArea className="max-h-[500px]">
+          <div className="max-h-[500px] w-full overflow-auto">
             <Table>
+
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
@@ -253,7 +254,7 @@ function RecruitmentLeadsContent() {
                 })}
               </TableBody>
             </Table>
-          </ScrollArea>
+          </div>
         </CardContent>
       </Card>
 

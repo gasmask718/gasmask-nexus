@@ -309,8 +309,9 @@ export default function AmbassadorCommissions() {
 
             {/* Ledger Table - Real data from commission_ledger */}
             <Card>
-              <ScrollArea className="h-[400px]">
+              <div className="max-h-[400px] w-full overflow-auto">
                 <Table>
+
                   <TableHeader>
                     <TableRow>
                       <TableHead>Store / Source</TableHead>
@@ -359,7 +360,7 @@ export default function AmbassadorCommissions() {
                     )}
                   </TableBody>
                 </Table>
-              </ScrollArea>
+              </div>
             </Card>
           </TabsContent>
 
@@ -375,7 +376,9 @@ export default function AmbassadorCommissions() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="w-full overflow-x-auto">
                 <Table>
+
                   <TableHeader>
                     <TableRow>
                       <TableHead>Period</TableHead>
@@ -412,7 +415,9 @@ export default function AmbassadorCommissions() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
+
             </Card>
           </TabsContent>
         </Tabs>
