@@ -275,7 +275,7 @@ export default function ProductionPortalPage() {
                     onClick={() => navigate('/portals/production/staff')}
                   >
                     <UserPlus className="h-4 w-4 mr-1" />
-                    Staff
+                    {t('production.staff')}
                   </Button>
                 </div>
               </div>
