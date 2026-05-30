@@ -315,20 +315,25 @@ const RouteSuggestionsPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Assignment Dialog */}
+        {/* Assignment Dialog — canonical route + dispatch in one flow */}
         {selectedSuggestion && (
-          <BikerAssignmentDialog
+          <RouteAssignmentDialog
             open={assignDialogOpen}
             onOpenChange={(open) => {
               setAssignDialogOpen(open);
-              if (!open) setSelectedSuggestion(null);
+              if (!open) {
+                setSelectedSuggestion(null);
+                setPreselectedStoreIds([]);
+              }
             }}
-            entityType="route"
-            entityId={selectedSuggestion.id}
-            entityName={selectedSuggestion.summary || 'Route Suggestion'}
-            onAssigned={handleBikerAssigned}
+            assigneeId=""
+            assigneeName=""
+            assigneeType="biker"
+            preselectedStores={preselectedStoreIds}
+            onAssigned={handleRouteAssigned}
           />
         )}
+
       </div>
     </Layout>
   );
