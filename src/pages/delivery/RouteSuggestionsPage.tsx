@@ -19,8 +19,10 @@ import {
 } from '@/hooks/useRouteSuggestions';
 import { useBoroList } from '@/hooks/useTerritoryStats';
 import { format } from 'date-fns';
-import { BikerAssignmentDialog } from '@/components/biker/BikerAssignmentDialog';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
 
 const RouteSuggestionsPage: React.FC = () => {
   const navigate = useNavigate();
