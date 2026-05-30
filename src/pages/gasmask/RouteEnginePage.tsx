@@ -148,8 +148,11 @@ export default function RouteEnginePage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'gasmask_visit_triggers' }, () => {
         queryClient.invalidateQueries({ queryKey: ['gasmask-visit-triggers'] });
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'gasmask_route_runs' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['gasmask-route-runs'] });
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'routes', filter: 'source=eq.gasmask_agent' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['gasmask-routes-canonical'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'route_stops' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['gasmask-routes-canonical'] });
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
