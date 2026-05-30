@@ -1,15 +1,30 @@
 /**
  * StoreReconCard — shows Dynasty Direct product-intelligence answers
  * captured via the GasMask field questionnaire.
+ *
+ * Surfaces ALL approved questionnaire fields (the legacy 3 open-text
+ * fields PLUS security_level / sells_flowers / interested_cleaning_service)
+ * so reps and admins can see the recon submitted via the field portal.
  */
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Package, Shield, Flower2, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Props {
   storeId: string;
+}
+
+interface ReconRow {
+  security_level: string | null;
+  sells_flowers: boolean | null;
+  interested_cleaning_service: boolean | null;
+  additional_items_wanted: string | null;
+  top_selling_items: string | null;
+  most_needed_items: string | null;
+  last_verified_at: string | null;
 }
 
 export function StoreReconCard({ storeId }: Props) {
@@ -18,30 +33,34 @@ export function StoreReconCard({ storeId }: Props) {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from('store_questionnaire')
-        .select('additional_items_wanted, top_selling_items, most_needed_items, last_verified_at')
+        .select(
+          'security_level, sells_flowers, interested_cleaning_service, additional_items_wanted, top_selling_items, most_needed_items, last_verified_at'
+        )
         .eq('store_id', storeId)
         .maybeSingle();
       if (error) throw error;
-      return (data ?? null) as {
-        additional_items_wanted: string | null;
-        top_selling_items: string | null;
-        most_needed_items: string | null;
-        last_verified_at: string | null;
-      } | null;
+      return (data ?? null) as ReconRow | null;
     },
     enabled: !!storeId,
     staleTime: 60 * 1000,
   });
 
   const hasAny =
-    data && (data.additional_items_wanted || data.top_selling_items || data.most_needed_items);
+    data && (
+      data.security_level ||
+      data.sells_flowers !== null ||
+      data.interested_cleaning_service !== null ||
+      data.additional_items_wanted ||
+      data.top_selling_items ||
+      data.most_needed_items
+    );
 
   return (
     <Card className="glass-card border-border/50">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Package className="h-5 w-5 text-amber-500" />
-          Product Intelligence
+          Product & Store Intelligence
           {data?.last_verified_at && (
             <span className="ml-auto text-xs font-normal text-muted-foreground">
               Updated {formatDistanceToNow(new Date(data.last_verified_at), { addSuffix: true })}
@@ -58,6 +77,26 @@ export function StoreReconCard({ storeId }: Props) {
           </p>
         ) : (
           <>
+            <div className="flex flex-wrap gap-2">
+              {data?.security_level && (
+                <Badge variant="outline" className="gap-1">
+                  <Shield className="h-3 w-3" />
+                  Security: {data.security_level}
+                </Badge>
+              )}
+              {data?.sells_flowers !== null && data?.sells_flowers !== undefined && (
+                <Badge variant="outline" className="gap-1">
+                  <Flower2 className="h-3 w-3" />
+                  {data.sells_flowers ? 'Sells flowers' : 'No flowers'}
+                </Badge>
+              )}
+              {data?.interested_cleaning_service !== null && data?.interested_cleaning_service !== undefined && (
+                <Badge variant="outline" className="gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  {data.interested_cleaning_service ? 'Wants cleaning service' : 'Not interested in cleaning'}
+                </Badge>
+              )}
+            </div>
             <Row label="Additional items they would buy if offered" value={data?.additional_items_wanted} />
             <Row label="Items that sell a lot in their store" value={data?.top_selling_items} />
             <Row label="Items they are most in need of" value={data?.most_needed_items} />
