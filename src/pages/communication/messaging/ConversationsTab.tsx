@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
-import { Bot, User, MessageSquare, AlertTriangle, CheckCircle, Phone, Search, Filter, FileText, Mail, PhoneCall, RefreshCw } from "lucide-react";
+import { Bot, User, MessageSquare, AlertTriangle, CheckCircle, Phone, Search, Filter, FileText, Mail, PhoneCall, RefreshCw, MapPin } from "lucide-react";
+import { useStoreIdentityMap, phoneToKey, type StoreIdentityMatch } from "@/hooks/useStoreIdentityMap";
 
 interface UnifiedMessage {
   id: string;
@@ -33,6 +34,16 @@ export default function ConversationsTab() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [directionFilter, setDirectionFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const { data: identityMap } = useStoreIdentityMap();
+
+  const resolveIdentity = useCallback(
+    (rawPhone: string | null | undefined): StoreIdentityMatch | null => {
+      const key = phoneToKey(rawPhone);
+      if (!key || !identityMap) return null;
+      return identityMap.get(key) || null;
+    },
+    [identityMap]
+  );
 
   // Fetch Twilio message history via edge function
   const fetchTwilioMessages = useCallback(async (): Promise<UnifiedMessage[]> => {
@@ -169,7 +180,14 @@ export default function ConversationsTab() {
 
   // Apply filters
   const filteredThreads = (threads || []).filter((t: any) => {
-    if (searchPhone && !t.phone?.includes(searchPhone) && !t.cleanPhone?.includes(searchPhone.replace(/\D/g, ""))) return false;
+    if (searchPhone) {
+      const q = searchPhone.toLowerCase();
+      const id = resolveIdentity(t.phone);
+      const inPhone = t.phone?.toLowerCase().includes(q) || t.cleanPhone?.includes(searchPhone.replace(/\D/g, ""));
+      const inName = id?.primaryName?.toLowerCase().includes(q);
+      const inAddress = id?.address?.toLowerCase().includes(q);
+      if (!inPhone && !inName && !inAddress) return false;
+    }
     if (statusFilter === "needs_review" && !t.hasInbound) return false;
     if (statusFilter === "failed" && !t.hasFailed) return false;
     if (statusFilter === "sent" && (t.hasInbound || t.hasFailed)) return false;
@@ -352,13 +370,24 @@ export default function ConversationsTab() {
             <div className="divide-y">
               {filteredThreads.length === 0 ? (
                 <div className="p-6 text-center text-muted-foreground text-sm">No conversations match filters.</div>
-              ) : filteredThreads.map((thread: any) => (
+              ) : filteredThreads.map((thread: any) => {
+                const id = resolveIdentity(thread.phone);
+                const displayName = id?.primaryName || thread.phone || "Unknown";
+                const subtitle = id
+                  ? (id.isMultiple ? `${id.storeIds.length} locations · ${thread.phone}` : (id.address || thread.phone))
+                  : null;
+                return (
                 <div key={thread.key} onClick={() => setSelectedThreadKey(thread.key)}
                   className={`p-4 cursor-pointer hover:bg-muted/50 transition-colors ${selectedThreadKey === thread.key ? "bg-muted" : ""}`}>
-                  <div className="flex justify-between items-start mb-1">
-                    <p className="text-sm font-semibold truncate">{thread.phone || "Unknown"}</p>
+                  <div className="flex justify-between items-start mb-1 gap-2">
+                    <p className="text-sm font-semibold truncate" title={displayName}>{displayName}</p>
                     {getStatusBadge(thread)}
                   </div>
+                  {subtitle && (
+                    <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1 mb-1" title={subtitle}>
+                      <MapPin className="h-3 w-3 shrink-0" /> {subtitle}
+                    </p>
+                  )}
                   <p className="text-xs text-primary truncate mb-2">{thread.campaignName || getSourceLabel(thread.source)}</p>
                   <p className="text-sm text-muted-foreground truncate">{thread.lastMessage}</p>
                   <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
@@ -366,7 +395,8 @@ export default function ConversationsTab() {
                     <span>{new Date(thread.lastMessageAt).toLocaleDateString()}</span>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
         </Card>
@@ -375,10 +405,45 @@ export default function ConversationsTab() {
           {selectedThreadKey && selectedThread ? (
             <>
               <CardHeader className="py-4 border-b bg-background">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle className="text-lg flex items-center gap-2">{selectedThread.phone}</CardTitle>
-                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="min-w-0">
+                    {(() => {
+                      const id = resolveIdentity(selectedThread.phone);
+                      if (!id) {
+                        return (
+                          <>
+                            <CardTitle className="text-lg flex items-center gap-2">{selectedThread.phone || "Unknown"}</CardTitle>
+                            <p className="text-[11px] text-muted-foreground mt-1">No matching store record found</p>
+                          </>
+                        );
+                      }
+                      return (
+                        <>
+                          <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
+                            <span>{id.primaryName}</span>
+                            {id.isMultiple && (
+                              <Badge variant="outline" className="text-[10px] font-normal">
+                                {id.storeIds.length} locations
+                              </Badge>
+                            )}
+                          </CardTitle>
+                          {id.isMultiple ? (
+                            <p className="text-xs text-muted-foreground mt-1 flex items-start gap-1">
+                              <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                              <span className="truncate">{id.storeNames.slice(0, 3).join(" · ")}{id.storeNames.length > 3 ? ` · +${id.storeNames.length - 3}` : ""}</span>
+                            </p>
+                          ) : id.address ? (
+                            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                              <MapPin className="h-3 w-3" /> {id.address}
+                            </p>
+                          ) : null}
+                          <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+                            <Phone className="h-3 w-3" /> {selectedThread.phone}
+                          </p>
+                        </>
+                      );
+                    })()}
+                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
                       Source: <span className="font-medium text-foreground">{selectedThread.campaignName || getSourceLabel(selectedThread.source)}</span>
                       <Badge variant="outline" className="ml-2 bg-green-50 text-green-600 border-green-200 gap-1"><Phone className="h-3 w-3" /> Twilio</Badge>
                     </p>
