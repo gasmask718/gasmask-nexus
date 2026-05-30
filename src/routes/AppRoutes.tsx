@@ -2959,6 +2959,13 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+      <Route path="/ambassador/visit/:storeId" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <AmbassadorStoreVisit portalType="ambassador" />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
       <Route path="/ambassador/wholesalers/:id" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
