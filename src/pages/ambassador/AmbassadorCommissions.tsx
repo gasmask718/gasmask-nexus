@@ -17,11 +17,13 @@ import {
   Store, ShoppingCart, Users, Download, Search, Receipt
 } from 'lucide-react';
 import { useCommissionPage, type CommissionLedgerEntry, type SourceChannel } from '@/hooks/useCommissionLedger';
+import { useEffectiveAmbassadorId } from '@/hooks/useAmbassadorComms';
 import { format } from 'date-fns';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 
 export default function AmbassadorCommissions() {
-  const { ledger, totals, channels, payouts, isLoading } = useCommissionPage();
+  const ambassadorId = useEffectiveAmbassadorId();
+  const { ledger, totals, channels, payouts, isLoading } = useCommissionPage({ ambassadorId });
   const [searchQuery, setSearchQuery] = useState('');
   const [channelFilter, setChannelFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');

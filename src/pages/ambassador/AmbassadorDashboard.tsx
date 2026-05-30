@@ -22,6 +22,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAmbassadorPortfolio, type PortfolioStore } from '@/hooks/useAmbassadorPortfolio';
 import { useCommissionTotals, useCommissionLedger } from '@/hooks/useCommissionLedger';
+import { useEffectiveAmbassadorId } from '@/hooks/useAmbassadorComms';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -220,7 +221,8 @@ function DashboardContent() {
   const { ambassador, stores, metrics, isLoading: portfolioLoading } = useAmbassadorPortfolio();
   // Real commission data from SQL views
   const { data: commissionTotals, isLoading: totalsLoading } = useCommissionTotals();
-  const { data: recentLedger, isLoading: ledgerLoading } = useCommissionLedger({ limit: 5 });
+  const ambassadorId = useEffectiveAmbassadorId();
+  const { data: recentLedger, isLoading: ledgerLoading } = useCommissionLedger({ limit: 5, ambassadorId });
   const [selectedKpi, setSelectedKpi] = useState<string | null>(null);
   const [captureOpen, setCaptureOpen] = useState(false);
   

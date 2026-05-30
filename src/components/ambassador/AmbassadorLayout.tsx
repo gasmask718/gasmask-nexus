@@ -10,6 +10,7 @@
 import { ReactNode } from 'react';
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
 import { AmbassadorPortalNav } from '@/components/ambassador/AmbassadorPortalNav';
+import { AmbassadorMobileBottomNav } from '@/components/ambassador/AmbassadorMobileBottomNav';
 import { FeedbackFloatingButton } from '@/components/feedback/FeedbackFloatingButton';
 
 interface AmbassadorLayoutProps {
@@ -44,8 +45,10 @@ export function AmbassadorLayout({
       className={className}
     >
       <AmbassadorPortalNav />
-      {children}
+      {/* Mobile-only bottom-pad so fixed nav doesn't cover content */}
+      <div className="pb-20 md:pb-0">{children}</div>
       <FeedbackFloatingButton />
+      <AmbassadorMobileBottomNav />
     </EnhancedPortalLayout>
   );
 }
