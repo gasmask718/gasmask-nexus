@@ -325,9 +325,20 @@ function StoresListContent() {
                   onRemove={() => handleRemoveClick(store)}
                   onToggle={(selected) => toggleSelect(store.store_id, selected)}
                   onDispatch={() => setDispatchStores([store.store_id])}
+                  onCall={() => {
+                    if (!store.store_phone) { toast.error('No phone on file'); return; }
+                    initiateCall({
+                      destinationPhone: store.store_phone,
+                      entityType: 'store',
+                      entityId: store.store_id,
+                      entityName: store.store_name,
+                    });
+                  }}
+                  onMessage={() => navigate(`/ambassador/communications?store=${store.store_id}`)}
                   selected={selectedIds.includes(store.store_id)}
                   losSnapshots={losMap?.get(store.store_id)}
                 />
+
               ))}
             </div>
           )}
