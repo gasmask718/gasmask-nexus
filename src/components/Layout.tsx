@@ -882,21 +882,31 @@ const Layout = ({ children }: LayoutProps) => {
             { path: '/territory/ai-violations', label: 'AI Violations', icon: AlertTriangle },
             { path: '/territory/ai-review-queue', label: 'AI Review Queue', icon: ClipboardList },
             { path: '/territory/playbooks', label: 'Playbooks', icon: FileText },
-          ].map(item => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex items-center gap-2 px-2 py-1 text-xs rounded-md transition-colors",
-                isPathActive(item.path)
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-              )}
-            >
-              <item.icon className="h-3 w-3 shrink-0" />
-              <span className="truncate">{item.label}</span>
-            </Link>
-          ))}
+          ].map(item => {
+            const wired = isDispatchWired(item.path);
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "flex items-center gap-2 px-2 py-1 text-xs rounded-md transition-colors",
+                  isPathActive(item.path)
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                )}
+              >
+                <item.icon className="h-3 w-3 shrink-0" />
+                <span className="truncate flex-1">{item.label}</span>
+                {wired && (
+                  <span
+                    title={DISPATCH_TOOLTIP}
+                    aria-label={DISPATCH_TOOLTIP}
+                    className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.7)] shrink-0"
+                  />
+                )}
+              </Link>
+            );
+          })}
         </div>
       </div>
 
