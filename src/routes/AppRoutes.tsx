@@ -286,6 +286,7 @@ const CRMContactDetail = lazy(() => import('@/pages/CRMContactDetail'));
 const CRMCustomers = lazy(() => import('@/pages/CRMCustomers'));
 const ContactProfile = lazy(() => import('@/pages/crm/ContactProfile'));
 const GlobalCRM = lazy(() => import('@/pages/crm/GlobalCRM'));
+const RelationshipHealthRollup = lazy(() => import('@/pages/crm/RelationshipHealthRollup'));
 const GlobalCRMDashboard = lazy(() => import('@/pages/crm/GlobalCRMDashboard'));
 const BusinessCRMDashboard = lazy(() => import('@/pages/crm/BusinessCRMDashboard'));
 const CRMRouter = lazy(() => import('@/pages/crm/CRMRouter'));
@@ -1616,6 +1617,7 @@ export default function AppRoutes() {
         <Route path="/crm/global" element={<GlobalCRMDashboard />} />
         <Route path="/crm/legacy" element={<GlobalCRM />} />
         <Route path="/crm/contact-management" element={<ContactManagementPage />} />
+        <Route path="/crm/relationship-health" element={<RelationshipHealthRollup />} />
         
         {/* Business-scoped CRM routes - CANONICAL PATTERN: /crm/:businessSlug/* */}
         {/* CRMRouter handles legacy vs new CRM routing: Grabba → Legacy, Others → Blueprint */}

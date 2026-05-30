@@ -34,6 +34,12 @@ import { CardHelper } from '@/components/portal/guidance/CardHelper';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getBrandIdentity } from '@/config/brands';
 import { cn } from '@/lib/utils';
+import {
+  STORE_RELATIONSHIP_STATUSES,
+  RELATIONSHIP_STATUS_COLORS,
+  RELATIONSHIP_STATUS_SHORT,
+} from '@/config/storeRelationshipStatus';
+import { RelationshipStatusSelect } from '@/components/store/RelationshipStatusSelect';
 import { format } from 'date-fns';
 
 interface StoreContact {
@@ -112,6 +118,7 @@ interface Store {
   health_status: string | null;
   last_active_date?: string | null;
   reactivation_priority?: string | null;
+  relationship_status?: string | null;
 }
 
 const Stores = () => {
@@ -123,6 +130,7 @@ const Stores = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('active');
   const [tagFilter, setTagFilter] = useState<string>('all');
+  const [relationshipFilter, setRelationshipFilter] = useState<string>('all');
   const [stickerFilter, setStickerFilter] = useState<string>('all');
   const [newStoresOnly, setNewStoresOnly] = useState(false);
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all');
@@ -360,6 +368,7 @@ const Stores = () => {
         invoice_amount_paid: store.invoice_amount_paid || null,
         last_active_date: null,
         reactivation_priority: null,
+        relationship_status: (store as any).relationship_status || 'Non-active (New - need to speak)',
       }));
 
       // Fetch contacts for these stores
@@ -552,6 +561,9 @@ const Stores = () => {
     const matchesStatus = activeFilter === 'all' 
       || (activeFilter === 'active' && isStoreActive(store.id))
       || (activeFilter === 'inactive' && !isStoreActive(store.id));
+
+    const matchesRelationship = relationshipFilter === 'all'
+      || store.relationship_status === relationshipFilter;
     
     const matchesTag =
       tagFilter === 'all' ||
@@ -609,7 +621,7 @@ const Stores = () => {
       return true;
     })();
     
-    return matchesSearch && matchesStatus && matchesTag && matchesSticker && matchesPaymentType && matchesNoName && matchesNewStores && matchesMonth;
+    return matchesSearch && matchesStatus && matchesRelationship && matchesTag && matchesSticker && matchesPaymentType && matchesNoName && matchesNewStores && matchesMonth;
   });
 
   const getStatusColor = (status: string) => {
@@ -849,7 +861,40 @@ const Stores = () => {
             })}
           </div>
         </div>
-        
+
+        {/* Relationship Status (9-state) Filter */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs text-muted-foreground mr-1">Relationship:</span>
+          {(() => {
+            const counts: Record<string, number> = { all: stores.length };
+            for (const s of STORE_RELATIONSHIP_STATUSES) counts[s] = 0;
+            for (const st of stores) {
+              const v = st.relationship_status || 'Non-active (New - need to speak)';
+              counts[v] = (counts[v] || 0) + 1;
+            }
+            const chips: Array<{ key: string; label: string; cls?: string }> = [
+              { key: 'all', label: 'All' },
+              ...STORE_RELATIONSHIP_STATUSES.map((s) => ({
+                key: s,
+                label: RELATIONSHIP_STATUS_SHORT[s],
+                cls: RELATIONSHIP_STATUS_COLORS[s],
+              })),
+            ];
+            return chips.map(({ key, label, cls }) => (
+              <Button
+                key={key}
+                variant={relationshipFilter === key ? 'default' : 'outline'}
+                size="sm"
+                className={cn('h-8 gap-1.5 text-xs', relationshipFilter !== key && cls)}
+                onClick={() => setRelationshipFilter(key)}
+              >
+                {label}
+                <Badge variant="secondary" className="text-[10px]">{counts[key] || 0}</Badge>
+              </Button>
+            ));
+          })()}
+        </div>
+
         {/* Additional Filters Row */}
         <div className="flex flex-wrap gap-2">
           {/* Tag Filter */}
@@ -1377,6 +1422,15 @@ const Stores = () => {
                 autoFocus
               />
             </div>
+            {editingStore && (
+              <div className="space-y-2">
+                <Label>Relationship Status</Label>
+                <RelationshipStatusSelect
+                  storeId={editingStore.id}
+                  value={editingStore.relationship_status}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter className="gap-2">
             <Button

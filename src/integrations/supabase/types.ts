@@ -85788,6 +85788,7 @@ export type Database = {
           phone_verified_at: string | null
           photo_url: string | null
           preferred_channel: string | null
+          relationship_status: string
           risk_score: string | null
           sms_capable: boolean | null
           sourced_at: string | null
@@ -85870,6 +85871,7 @@ export type Database = {
           phone_verified_at?: string | null
           photo_url?: string | null
           preferred_channel?: string | null
+          relationship_status?: string
           risk_score?: string | null
           sms_capable?: boolean | null
           sourced_at?: string | null
@@ -85952,6 +85954,7 @@ export type Database = {
           phone_verified_at?: string | null
           photo_url?: string | null
           preferred_channel?: string | null
+          relationship_status?: string
           risk_score?: string | null
           sms_capable?: boolean | null
           sourced_at?: string | null
@@ -114492,6 +114495,33 @@ export type Database = {
           },
         ]
       }
+      v_store_relationship_rollup: {
+        Row: {
+          active_good: number | null
+          borough_id: string | null
+          city: string | null
+          closed_permanently: number | null
+          follow_up: number | null
+          need_promo: number | null
+          neighborhood: string | null
+          no_tobacco: number | null
+          non_active_new: number | null
+          not_interested: number | null
+          not_interested_sold_past: number | null
+          selling_slow: number | null
+          state: string | null
+          total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_master_borough_id_fkey"
+            columns: ["borough_id"]
+            isOneToOne: false
+            referencedRelation: "boroughs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_store_tube_intel_summary: {
         Row: {
           method_count: number | null
@@ -116627,6 +116657,10 @@ export type Database = {
       }
       is_developer: { Args: { _user_id: string }; Returns: boolean }
       is_developer_or_admin: { Args: never; Returns: boolean }
+      is_dispatch_eligible_store: {
+        Args: { _store_id: string }
+        Returns: boolean
+      }
       is_elevated_admin: { Args: { _user_id: string }; Returns: boolean }
       is_elevated_user:
         | { Args: never; Returns: boolean }
@@ -117075,6 +117109,7 @@ export type Database = {
           phone_verified_at: string | null
           photo_url: string | null
           preferred_channel: string | null
+          relationship_status: string
           risk_score: string | null
           sms_capable: boolean | null
           sourced_at: string | null
