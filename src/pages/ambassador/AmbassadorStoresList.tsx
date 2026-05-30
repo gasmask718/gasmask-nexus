@@ -141,6 +141,12 @@ function StoresListContent() {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [dispatchStores, setDispatchStores] = useState<string[] | null>(null);
+  const [newStoreOpen, setNewStoreOpen] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+  }, []);
 
   // Batch fetch LOS for all portfolio stores
   const storeIds = useMemo(() => stores.map(s => s.store_id), [stores]);
