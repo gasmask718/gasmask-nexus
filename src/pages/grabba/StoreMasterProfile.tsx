@@ -76,6 +76,8 @@ import { getExtractedProfile } from "@/services/profileExtractionService";
 import { getStoreRelationshipScore, RelationshipScore } from "@/services/crmInsightsService";
 import { UnifiedInteractionModal } from "@/components/store/UnifiedInteractionModal";
 import { CreateStoreInvoiceModal } from "@/components/store/CreateStoreInvoiceModal";
+import { RouteIntelligence } from "@/components/store/RouteIntelligence";
+import { RouteAssignmentDialog } from "@/components/delivery/RouteAssignmentDialog";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
