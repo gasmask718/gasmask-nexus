@@ -245,17 +245,23 @@ export default function GrabbaDeliveries() {
   });
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // FETCH BIKER ROUTES (LEGACY SYSTEM)
+  // FETCH BIKER ROUTES (CANONICAL: routes WHERE source='grabba_biker')
   // ─────────────────────────────────────────────────────────────────────────────
   const { data: bikerRoutes } = useQuery({
     queryKey: ["grabba-biker-routes"],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
       const { data } = await supabase
-        .from("biker_routes")
-        .select("*")
-        .eq("route_date", today);
-      return data || [];
+        .from("routes")
+        .select("id, status, assigned_to, profiles:assigned_to ( name, phone )")
+        .eq("source", "grabba_biker")
+        .eq("date", today);
+      return (data || []).map((r: any) => ({
+        id: r.id,
+        biker_name: r.profiles?.name || "Unassigned",
+        biker_phone: r.profiles?.phone || "",
+        completed: r.status === "completed",
+      }));
     },
   });
 
