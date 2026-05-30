@@ -98,6 +98,7 @@ serve(async (req) => {
 
         if (!existing) {
           await supabase.from("gasmask_visit_triggers").insert({
+            store_id: store.id,
             store_name: store.name,
             store_city: store.address_city,
             store_state: store.address_state,
