@@ -16,27 +16,29 @@ import {
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { isDispatchWired, DISPATCH_TOOLTIP } from '@/config/dispatchRegistry';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const AMBASSADOR_NAV_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', path: '/ambassador/dashboard', icon: LayoutDashboard },
-  { id: 'stores', label: 'My Stores', path: '/ambassador/stores', icon: Store },
-  { id: 'sell-through', label: 'Sell-Through', path: '/ambassador/sell-through', icon: BarChart3 },
-  { id: 'leads', label: 'Leads', path: '/ambassador/leads', icon: Target },
-  { id: 'catalog', label: 'Product Pricing', path: '/ambassador/catalog', icon: Package },
-  { id: 'purchases', label: 'My Purchases', path: '/ambassador/purchases', icon: ShoppingBag },
-  { id: 'commissions', label: 'Commissions', path: '/ambassador/commissions', icon: DollarSign },
-  { id: 'orders', label: 'Orders', path: '/ambassador/orders', icon: Package },
-  { id: 'routes', label: 'Routes', path: '/ambassador/routes', icon: MapPin },
-  { id: 'communications', label: 'Messages', path: '/ambassador/communications', icon: MessageSquare },
-  { id: 'recruitment', label: 'Recruitment', path: '/ambassador/recruitment', icon: Users },
-  { id: 'request-ambassador', label: 'Team Expansion', path: '/ambassador/request-ambassador', icon: UserPlus },
-  { id: 'payouts', label: 'Payouts', path: '/ambassador/payouts', icon: Wallet },
-  { id: 'earnings', label: 'Earnings', path: '/ambassador/reports/earnings', icon: TrendingUp },
-  { id: 'feedback', label: 'Feedback', path: '/ambassador/feedback', icon: MessageSquareWarning },
+  { id: 'dashboard', i18n: 'ambassador.nav.dashboard', label: 'Dashboard', path: '/ambassador/dashboard', icon: LayoutDashboard },
+  { id: 'stores', i18n: 'ambassador.nav.stores', label: 'My Stores', path: '/ambassador/stores', icon: Store },
+  { id: 'sell-through', i18n: 'ambassador.nav.sell_through', label: 'Sell-Through', path: '/ambassador/sell-through', icon: BarChart3 },
+  { id: 'leads', i18n: 'ambassador.nav.leads', label: 'Leads', path: '/ambassador/leads', icon: Target },
+  { id: 'catalog', i18n: 'ambassador.nav.catalog', label: 'Product Pricing', path: '/ambassador/catalog', icon: Package },
+  { id: 'purchases', i18n: 'ambassador.nav.purchases', label: 'My Purchases', path: '/ambassador/purchases', icon: ShoppingBag },
+  { id: 'commissions', i18n: 'ambassador.nav.commissions', label: 'Commissions', path: '/ambassador/commissions', icon: DollarSign },
+  { id: 'orders', i18n: 'ambassador.nav.orders', label: 'Orders', path: '/ambassador/orders', icon: Package },
+  { id: 'routes', i18n: 'ambassador.nav.routes', label: 'Routes', path: '/ambassador/routes', icon: MapPin },
+  { id: 'communications', i18n: 'ambassador.nav.messages', label: 'Messages', path: '/ambassador/communications', icon: MessageSquare },
+  { id: 'recruitment', i18n: 'ambassador.nav.recruitment', label: 'Recruitment', path: '/ambassador/recruitment', icon: Users },
+  { id: 'request-ambassador', i18n: 'ambassador.nav.team_expansion', label: 'Team Expansion', path: '/ambassador/request-ambassador', icon: UserPlus },
+  { id: 'payouts', i18n: 'ambassador.nav.payouts', label: 'Payouts', path: '/ambassador/payouts', icon: Wallet },
+  { id: 'earnings', i18n: 'ambassador.nav.earnings', label: 'Earnings', path: '/ambassador/reports/earnings', icon: TrendingUp },
+  { id: 'feedback', i18n: 'ambassador.nav.feedback', label: 'Feedback', path: '/ambassador/feedback', icon: MessageSquareWarning },
 ] as const;
 
 export function AmbassadorPortalNav() {
   const location = useLocation();
+  const { t, language } = useTranslation();
 
   // Regression guard: log warning if this component renders without expected route context
   if (import.meta.env.DEV && !location.pathname.startsWith('/ambassador')) {
