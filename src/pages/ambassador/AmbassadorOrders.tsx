@@ -294,8 +294,9 @@ export default function AmbassadorOrders() {
 
         {/* Orders Table */}
         <Card>
-          <ScrollArea className="h-[500px]">
+          <div className="max-h-[500px] w-full overflow-auto">
             <Table>
+
               <TableHeader>
                 <TableRow>
                   <TableHead>Order #</TableHead>
