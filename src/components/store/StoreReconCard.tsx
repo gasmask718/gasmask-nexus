@@ -16,13 +16,13 @@ export function StoreReconCard({ storeId }: Props) {
   const { data, isLoading } = useQuery({
     queryKey: ['store-recon', storeId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('store_questionnaire' as any)
+      const { data, error } = await (supabase as any)
+        .from('store_questionnaire')
         .select('additional_items_wanted, top_selling_items, most_needed_items, last_verified_at')
         .eq('store_id', storeId)
         .maybeSingle();
       if (error) throw error;
-      return data as {
+      return (data ?? null) as {
         additional_items_wanted: string | null;
         top_selling_items: string | null;
         most_needed_items: string | null;
