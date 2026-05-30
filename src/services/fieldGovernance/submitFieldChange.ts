@@ -81,7 +81,7 @@ export async function submitFieldChange(
     const insertData: Record<string, unknown> = {
       submitted_by_user_id: userId,
       submitted_by_role: role,
-      store_id: payload.store_id,
+      store_id: payload.store_id ?? null,
       entity_type: payload.entity_type,
       entity_id: payload.entity_id || null,
       action_type: payload.action_type,
