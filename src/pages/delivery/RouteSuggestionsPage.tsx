@@ -96,17 +96,20 @@ const RouteSuggestionsPage: React.FC = () => {
     setAssignDialogOpen(true);
   };
 
-  const handleRouteAssigned = (routeIds: string[]) => {
+  const handleRouteAssigned = async (routeIds: string[]) => {
     if (selectedSuggestion && routeIds.length > 0) {
-      // Mark the suggestion as applied (no biker — assignee is on routes.assigned_to now)
-      applyRoute.mutate({
-        suggestionId: selectedSuggestion.id,
-        bikerId: selectedSuggestion.suggested_for_biker_id || '',
-      });
+      // Mark the suggestion as applied — assignee now lives on routes.assigned_to
+      const { error } = await supabase
+        .from('route_suggestions')
+        .update({ status: 'applied' })
+        .eq('id', selectedSuggestion.id);
+      if (error) toast.error(`Failed to mark suggestion applied: ${error.message}`);
+      else toast.success('Suggestion marked as applied');
     }
     setSelectedSuggestion(null);
     setPreselectedStoreIds([]);
   };
+
 
 
   const handleDismiss = (suggestionId: string) => {
