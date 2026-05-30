@@ -32,8 +32,10 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AmbassadorLeads() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -410,8 +412,8 @@ export default function AmbassadorLeads() {
   if (isLoading) {
     return (
       <AmbassadorLayout 
-        title="Leads Pipeline" 
-        subtitle="Manage prospects across all channels"
+        title={t("amb.leads.title")} 
+        subtitle={t("amb.leads.subtitle")}
         backPath="/ambassador/dashboard"
       >
         <div className="p-6 space-y-6">
@@ -427,7 +429,7 @@ export default function AmbassadorLeads() {
   if (routeAmbassadorId && isTargetAmbassadorLoading) {
     return (
       <AmbassadorLayout 
-        title="Leads Pipeline" 
+        title={t("amb.leads.title")} 
         subtitle="Loading pipeline context…"
         backPath={routeAmbassadorId ? `/profile/ambassador/${routeAmbassadorId}` : "/ambassador/dashboard"}
       >

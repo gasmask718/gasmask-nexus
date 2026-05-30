@@ -18,6 +18,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Package, ImageOff, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
+import { useTranslation } from '@/hooks/useTranslation';
+
 
 const BRAND_COLORS: Record<string, { border: string; tint: string; label: string }> = {
   'fb52b0e6-39b2-4e13-bea9-cd016f51efb0': { border: 'border-red-500/40',    tint: 'bg-red-500/5',    label: 'GasMask' },
@@ -63,6 +65,7 @@ function useCatalogProducts() {
 }
 
 function TierRow({ label, perTube, unitsPerBox }: { label: string; perTube: number | null; unitsPerBox: number }) {
+  const { t } = useTranslation();
   if (perTube == null) {
     return (
       <div className="rounded-md bg-background/60 border border-border/60 px-2 py-1.5">
@@ -76,15 +79,17 @@ function TierRow({ label, perTube, unitsPerBox }: { label: string; perTube: numb
     <div className="rounded-md bg-background/60 border border-border/60 px-2 py-1.5">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="text-[11px] font-semibold leading-tight">
-        {formatCurrency(perTube)}<span className="font-normal text-muted-foreground">/tube</span>
+        {formatCurrency(perTube)}<span className="font-normal text-muted-foreground">/{t('amb.catalog.tube')}</span>
         <span className="text-muted-foreground"> · </span>
-        {formatCurrency(perBox)}<span className="font-normal text-muted-foreground">/box</span>
+        {formatCurrency(perBox)}<span className="font-normal text-muted-foreground">/{t('amb.catalog.box')}</span>
       </p>
     </div>
   );
 }
 
+
 function ProductCard({ p }: { p: CatalogProduct }) {
+  const { t } = useTranslation();
   const brand = p.brand_id ? BRAND_COLORS[p.brand_id] : undefined;
   const isHero = (p.hero_score ?? 0) >= 80;
   const unitsPerBox = p.units_per_box ?? 100;
@@ -100,7 +105,7 @@ function ProductCard({ p }: { p: CatalogProduct }) {
       {isHero && (
         <div className="absolute top-2 right-2 z-10">
           <Badge className="bg-sky-500 text-white text-[10px] gap-0.5 px-1.5 py-0.5">
-            <Sparkles className="h-3 w-3" /> New
+            <Sparkles className="h-3 w-3" /> {t('amb.catalog.new')}
           </Badge>
         </div>
       )}
@@ -123,16 +128,16 @@ function ProductCard({ p }: { p: CatalogProduct }) {
         <div>
           <p className="font-semibold text-sm leading-tight">{p.name}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            {brand?.label ?? 'Brand'}
+            {brand?.label ?? t('amb.catalog.brand')}
             {p.sku ? <> · {p.sku}</> : null}
           </p>
         </div>
 
         {/* All three tiers — per-tube (stored) + per-box (computed × units_per_box) */}
         <div className="space-y-1">
-          <TierRow label="Store" perTube={p.store_price} unitsPerBox={unitsPerBox} />
-          <TierRow label="Wholesale" perTube={p.wholesale_price} unitsPerBox={unitsPerBox} />
-          <TierRow label="Street" perTube={p.street_price} unitsPerBox={unitsPerBox} />
+          <TierRow label={t('amb.catalog.store')} perTube={p.store_price} unitsPerBox={unitsPerBox} />
+          <TierRow label={t('amb.catalog.wholesale')} perTube={p.wholesale_price} unitsPerBox={unitsPerBox} />
+          <TierRow label={t('amb.catalog.street')} perTube={p.street_price} unitsPerBox={unitsPerBox} />
         </div>
 
         <div className="flex items-center justify-between pt-1">
@@ -140,13 +145,14 @@ function ProductCard({ p }: { p: CatalogProduct }) {
             {p.category ?? 'product'}
           </Badge>
           <span className="text-[11px] text-muted-foreground">
-            {unitsPerBox} / box
+            {unitsPerBox} {t('amb.catalog.per_box_suffix')}
           </span>
         </div>
       </CardContent>
     </Card>
   );
 }
+
 
 function CatalogSkeleton() {
   return (
@@ -160,33 +166,34 @@ function CatalogSkeleton() {
 
 export default function AmbassadorCatalog() {
   const { data: products = [], isLoading, error } = useCatalogProducts();
+  const { t } = useTranslation();
 
   return (
     <PortalRBACGate allowedRoles={['admin', 'ambassador']} portalName="Ambassador Portal">
       <AmbassadorLayout
-        title="Product Pricing"
-        subtitle="All tiers shown per-tube and per-box (×units/box). Prices are read-only."
+        title={t('amb.catalog.title')}
+        subtitle={t('amb.catalog.subtitle')}
       >
         <div className="space-y-4">
           <div className="flex items-center justify-end">
             <Badge variant="outline" className="text-xs">
-              {products.length} active
+              {products.length} {t('amb.catalog.active')}
             </Badge>
           </div>
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">All products</CardTitle>
+              <CardTitle className="text-base">{t('amb.catalog.all_products')}</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <CatalogSkeleton />
               ) : error ? (
                 <p className="text-sm text-destructive">
-                  Failed to load products: {(error as Error).message}
+                  {t('amb.catalog.failed_load')}: {(error as Error).message}
                 </p>
               ) : products.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No active products.</p>
+                <p className="text-sm text-muted-foreground">{t('amb.catalog.no_products')}</p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {products.map((p) => (
@@ -201,3 +208,4 @@ export default function AmbassadorCatalog() {
     </PortalRBACGate>
   );
 }
+

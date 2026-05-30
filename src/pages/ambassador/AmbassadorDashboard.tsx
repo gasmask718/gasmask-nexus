@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/sheet';
 import { StoreCaptureForm } from '@/components/store/StoreCaptureForm';
 import { AmbassadorStoreMap } from '@/components/ambassador/AmbassadorStoreMap';
+import { useTranslation } from '@/hooks/useTranslation';
 
 // MASTER GENIUS ARCHITECT: Lead KPI config - all lead types must be represented
 const LEAD_KPI_CONFIG = {
@@ -555,13 +556,12 @@ function DashboardContent() {
 const AMBASSADOR_UI_VERSION = 'ambassador-ui-v3';
 
 export default function AmbassadorDashboard() {
-
-  
+  const { t } = useTranslation();
   return (
     <PortalRBACGate allowedRoles={['ambassador', 'admin']} portalName="Ambassador Portal" key={AMBASSADOR_UI_VERSION}>
       <AmbassadorLayout 
-        title="Ambassador Dashboard" 
-        subtitle="Portfolio command center"
+        title={t("amb.dashboard.title")} 
+        subtitle={t("amb.dashboard.subtitle")}
         portalIcon={<Users className="h-4 w-4 text-primary-foreground" />}
       >
         {/* Debug version stamp - visible in dev */}

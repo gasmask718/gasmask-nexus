@@ -12,14 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Inbox } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-
-const STATUS_LABEL: Record<string, string> = {
-  new: 'New',
-  reviewing: 'Reviewing',
-  in_progress: 'In progress',
-  resolved: 'Resolved',
-  wont_fix: "Won't fix",
-};
+import { useTranslation } from '@/hooks/useTranslation';
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   new: 'secondary',
@@ -31,6 +24,18 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
 
 export default function AmbassadorFeedback() {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
+
+  const statusLabel = (s: string) => {
+    const map: Record<string, string> = {
+      new: t('amb.feedback.status.new'),
+      reviewing: t('amb.feedback.status.reviewing'),
+      in_progress: t('amb.feedback.status.in_progress'),
+      resolved: t('amb.feedback.status.resolved'),
+      wont_fix: t('amb.feedback.status.wont_fix'),
+    };
+    return map[s] ?? s;
+  };
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['feedback_submissions', 'mine'],
@@ -45,25 +50,25 @@ export default function AmbassadorFeedback() {
   });
 
   return (
-    <AmbassadorLayout title="Feedback" subtitle="Report problems and track responses">
+    <AmbassadorLayout title={t('amb.feedback.title')} subtitle={t('amb.feedback.subtitle')}>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <p className="text-sm text-muted-foreground">
-            Your submissions. Staff will review and update the status here.
+            {t('amb.feedback.your_subs')}
           </p>
           <Button onClick={() => setOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> New feedback
+            <Plus className="mr-2 h-4 w-4" /> {t('amb.feedback.new')}
           </Button>
         </div>
 
         {isLoading ? (
-          <Card><CardContent className="py-12 text-center text-muted-foreground">Loading…</CardContent></Card>
+          <Card><CardContent className="py-12 text-center text-muted-foreground">{t('amb.feedback.loading')}</CardContent></Card>
         ) : items.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground space-y-2">
               <Inbox className="h-8 w-8 mx-auto opacity-50" />
-              <p>No feedback submitted yet.</p>
-              <p className="text-xs">Use the Report button anywhere in the portal — it'll show up here.</p>
+              <p>{t('amb.feedback.none_yet')}</p>
+              <p className="text-xs">{t('amb.feedback.use_report_btn')}</p>
             </CardContent>
           </Card>
         ) : (
@@ -79,7 +84,7 @@ export default function AmbassadorFeedback() {
                       </p>
                     </div>
                     <Badge variant={STATUS_VARIANT[it.status] || 'secondary'}>
-                      {STATUS_LABEL[it.status] || it.status}
+                      {statusLabel(it.status)}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -87,7 +92,7 @@ export default function AmbassadorFeedback() {
                   <p className="text-sm whitespace-pre-wrap">{it.description}</p>
                   {it.admin_notes && (
                     <div className="mt-3 p-3 rounded bg-muted text-sm">
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Reply from team</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">{t('amb.feedback.reply_from_team')}</p>
                       <p className="whitespace-pre-wrap">{it.admin_notes}</p>
                     </div>
                   )}

@@ -24,8 +24,10 @@ import { useAmbassadorRoutes, type AmbassadorRoute, type RouteStop } from '@/hoo
 import { format, addDays, startOfWeek, isSameDay } from 'date-fns';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { toast } from 'sonner';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AmbassadorRoutes() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { stores } = useAmbassadorPortfolio();
   const { routes, isLoading, createRoute, isCreatingRoute, addStop, isAddingStop, completeStop, isCompletingStop } = useAmbassadorRoutes();
@@ -121,8 +123,8 @@ export default function AmbassadorRoutes() {
   if (isLoading) {
     return (
       <AmbassadorLayout 
-        title="Route Planner" 
-        subtitle="Plan visits, optimize routes, and track outcomes"
+        title={t("amb.routes.title")} 
+        subtitle={t("amb.routes.subtitle")}
         backPath="/ambassador/dashboard"
       >
         <div className="p-6 space-y-6">
@@ -138,8 +140,8 @@ export default function AmbassadorRoutes() {
 
   return (
     <AmbassadorLayout 
-      title="Route Planner" 
-      subtitle="Plan visits, optimize routes, and track outcomes"
+      title={t("amb.routes.title")} 
+      subtitle={t("amb.routes.subtitle")}
       backPath="/ambassador/dashboard"
     >
       <div className="p-6 space-y-6">

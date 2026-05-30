@@ -29,6 +29,8 @@ import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import { useAmbassadorPortfolio, type PortfolioStore } from '@/hooks/useAmbassadorPortfolio';
 import { formatDistanceToNow } from 'date-fns';
+import { useTranslation } from '@/hooks/useTranslation';
+
 
 interface StoreCardProps {
   store: PortfolioStore;
@@ -43,6 +45,7 @@ interface StoreCardProps {
 }
 
 function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onMessage, selected, losSnapshots }: StoreCardProps) {
+  const { t } = useTranslation();
   const handleRemoveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onRemove();
@@ -86,7 +89,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
                 {store.assignment_type}
               </Badge>
               {store.is_primary && (
-                <Badge variant="outline" className="text-xs shrink-0">Primary</Badge>
+                <Badge variant="outline" className="text-xs shrink-0">{t('amb.stores.primary')}</Badge>
               )}
             </div>
             <p className="text-sm text-muted-foreground truncate mb-2">
@@ -111,7 +114,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
             </div>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <span className="text-xs text-muted-foreground">Commission</span>
+            <span className="text-xs text-muted-foreground">{t('amb.dashboard.commission')}</span>
             <span className="font-semibold text-primary">{store.commission_rate}%</span>
             <div className="flex items-center gap-2 mt-2">
               <Button
@@ -120,7 +123,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
                 className="h-6 w-6 text-muted-foreground hover:text-primary disabled:opacity-40"
                 onClick={handleCall}
                 disabled={!store.store_phone}
-                title={store.store_phone ? `Call ${store.store_phone}` : 'No phone on file'}
+                title={store.store_phone ? `${t('amb.stores.call')} ${store.store_phone}` : t('amb.stores.no_phone')}
               >
                 <Phone className="h-3.5 w-3.5" />
               </Button>
@@ -129,7 +132,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
                 size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-primary"
                 onClick={handleMessage}
-                title="Send message"
+                title={t('amb.stores.send_message')}
               >
                 <MessageSquare className="h-3.5 w-3.5" />
               </Button>
@@ -138,7 +141,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
                 size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-primary"
                 onClick={handleDispatch}
-                title="Add to Route"
+                title={t('amb.stores.add_to_route')}
               >
                 <RouteIcon className="h-3.5 w-3.5" />
               </Button>
@@ -147,7 +150,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
                 size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-destructive"
                 onClick={handleRemoveClick}
-                title="Remove from My Stores"
+                title={t('amb.stores.remove_from')}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -160,10 +163,13 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
   );
 }
 
+
 function StoresListContent() {
   const navigate = useNavigate();
   const { initiateCall } = useCall();
+  const { t } = useTranslation();
   const { stores, metrics, isLoading, unassignStore, isUnassigningStore, ambassador } = useAmbassadorPortfolio();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -249,19 +255,19 @@ function StoresListContent() {
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-3xl font-bold text-primary">{metrics.totalStores}</p>
-            <p className="text-sm text-muted-foreground">Total Stores</p>
+            <p className="text-sm text-muted-foreground">{t('amb.kpi.total_stores')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-3xl font-bold">{metrics.assignedStores}</p>
-            <p className="text-sm text-muted-foreground">Assigned</p>
+            <p className="text-sm text-muted-foreground">{t('amb.stores.tab_assigned')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-3xl font-bold text-green-500">{metrics.sourcedStores}</p>
-            <p className="text-sm text-muted-foreground">Sourced</p>
+            <p className="text-sm text-muted-foreground">{t('amb.stores.tab_sourced')}</p>
           </CardContent>
         </Card>
       </div>
@@ -271,7 +277,7 @@ function StoresListContent() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Search stores by name, address, or owner..."
+            placeholder={t('amb.stores.search_placeholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -279,7 +285,7 @@ function StoresListContent() {
         </div>
         <Button onClick={() => setNewStoreOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Store
+          {t('amb.stores.add_store')}
         </Button>
         <Button
           variant="outline"
@@ -287,11 +293,11 @@ function StoresListContent() {
           onClick={() => setDispatchStores(selectedIds)}
         >
           <RouteIcon className="h-4 w-4 mr-2" />
-          Dispatch Selected{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
+          {t('amb.stores.dispatch_selected')}{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
         </Button>
         {selectedIds.length > 0 && (
           <Button variant="ghost" size="sm" onClick={clearSelection}>
-            Clear selection
+            {t('amb.stores.clear_selection')}
           </Button>
         )}
       </div>
@@ -299,9 +305,9 @@ function StoresListContent() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); clearSelection(); }}>
         <TabsList>
-          <TabsTrigger value="all">All ({stores.length})</TabsTrigger>
-          <TabsTrigger value="assigned">Assigned ({metrics.assignedStores})</TabsTrigger>
-          <TabsTrigger value="sourced">Sourced ({metrics.sourcedStores})</TabsTrigger>
+          <TabsTrigger value="all">{t('amb.stores.tab_all')} ({stores.length})</TabsTrigger>
+          <TabsTrigger value="assigned">{t('amb.stores.tab_assigned')} ({metrics.assignedStores})</TabsTrigger>
+          <TabsTrigger value="sourced">{t('amb.stores.tab_sourced')} ({metrics.sourcedStores})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-4">
@@ -309,9 +315,9 @@ function StoresListContent() {
             <Card>
               <CardContent className="py-12 text-center">
                 <Store className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-lg font-medium">No stores found</p>
+                <p className="text-lg font-medium">{t('amb.stores.no_found')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {searchQuery ? 'Try a different search term' : 'No stores in this category'}
+                  {searchQuery ? t('amb.stores.try_another') : t('amb.stores.no_in_category')}
                 </p>
               </CardContent>
             </Card>
@@ -326,7 +332,7 @@ function StoresListContent() {
                   onToggle={(selected) => toggleSelect(store.store_id, selected)}
                   onDispatch={() => setDispatchStores([store.store_id])}
                   onCall={() => {
-                    if (!store.store_phone) { toast.error('No phone on file'); return; }
+                    if (!store.store_phone) { toast.error(t('amb.stores.no_phone')); return; }
                     initiateCall({
                       destinationPhone: store.store_phone,
                       entityType: 'store',
@@ -349,10 +355,11 @@ function StoresListContent() {
       <DeleteConfirmModal
         open={removeModalOpen}
         onOpenChange={setRemoveModalOpen}
-        title="Remove Store from Portfolio"
+        title={t('amb.stores.remove_title')}
         description={`This removes "${storeToRemove?.store_name}" from your portfolio. It does not delete the store - you can be reassigned to it later.`}
         onConfirm={handleConfirmRemove}
       />
+
 
       {/* Dispatch — RouteAssignmentDialog pre-filled with this ambassador */}
       {dispatchStores && ambassador && (
@@ -387,11 +394,12 @@ function StoresListContent() {
 }
 
 export default function AmbassadorStoresList() {
+  const { t } = useTranslation();
   return (
     <PortalRBACGate allowedRoles={['ambassador']} portalName="Ambassador Portal">
       <AmbassadorLayout 
-        title="My Stores" 
-        subtitle="All stores in your portfolio"
+        title={t('amb.stores.title')}
+        subtitle={t('amb.stores.subtitle')}
         portalIcon={<Users className="h-4 w-4 text-primary-foreground" />}
       >
         <StoresListContent />
@@ -399,3 +407,4 @@ export default function AmbassadorStoresList() {
     </PortalRBACGate>
   );
 }
+
