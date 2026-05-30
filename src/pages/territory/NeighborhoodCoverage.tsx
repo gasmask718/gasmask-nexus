@@ -277,6 +277,15 @@ export default function NeighborhoodCoverage() {
                               <Users className="h-3.5 w-3.5 mr-1" /> View stores (#13)
                             </Link>
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => handleDispatchNeighborhood(r.neighborhood)}
+                            disabled={isLoadingDispatch}
+                          >
+                            <RouteIcon className="h-3.5 w-3.5 mr-1" />
+                            {isLoadingDispatch && dispatchNeighborhood === r.neighborhood ? 'Loading…' : `Dispatch ${r.neighborhood}`}
+                          </Button>
                         </div>
                       </div>
                     )}
