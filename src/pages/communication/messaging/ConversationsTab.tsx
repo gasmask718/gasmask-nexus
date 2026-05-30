@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
-import { Bot, User, MessageSquare, AlertTriangle, CheckCircle, Phone, Search, Filter, FileText, Mail, PhoneCall, RefreshCw } from "lucide-react";
+import { Bot, User, MessageSquare, AlertTriangle, CheckCircle, Phone, Search, Filter, FileText, Mail, PhoneCall, RefreshCw, MapPin } from "lucide-react";
+import { useStoreIdentityMap, phoneToKey, type StoreIdentityMatch } from "@/hooks/useStoreIdentityMap";
 
 interface UnifiedMessage {
   id: string;
