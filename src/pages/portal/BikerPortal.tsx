@@ -14,6 +14,7 @@ import {
   BikerDeliveryTasks,
 } from "@/components/portal/field";
 import { AssignedOrdersPage } from "@/components/portal/field/AssignedOrdersPage";
+import BikerTodaysRoutesPage from "@/pages/delivery/biker/TodaysRoutesPage";
 import { PortalAuthGuard } from "@/components/portal/PortalAuthGuard";
 import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
 import { Button } from "@/components/ui/button";
