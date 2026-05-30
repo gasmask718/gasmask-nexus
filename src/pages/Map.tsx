@@ -12,6 +12,7 @@ import { CommandMetrics } from '@/components/map/CommandMetrics';
 import { CommandSidebar } from '@/components/map/CommandSidebar';
 import { Alert } from '@/components/map/AlertsPanel';
 import { RouteOptimizerPanel } from '@/components/map/RouteOptimizerPanel';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import { Package, Users, Layers, Star, Building2, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -93,6 +94,7 @@ const Map = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [showSidebar, setShowSidebar] = useState(true);
   const [recencyFilter, setRecencyFilter] = useState<'all' | RecencyBucket>('all');
+  const [dispatchOpen, setDispatchOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | StoreRelationshipStatus>('all');
   const [neighborhoodFilter, setNeighborhoodFilter] = useState<string>('all');
   const driverMarkersRef = useRef<mapboxgl.Marker[]>([]);
@@ -892,8 +894,8 @@ const Map = () => {
           </div>
         )}
 
-        {/* Store Counter */}
-        <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur rounded-lg px-4 py-3 border border-border/50 shadow-lg">
+        {/* Store Counter + Dispatch */}
+        <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur rounded-lg px-4 py-3 border border-border/50 shadow-lg flex items-center gap-3">
           <div className="flex items-center gap-2 text-sm">
             <Package className="h-4 w-4 text-primary" />
             <span className="font-semibold">{filteredStores.length}</span>
@@ -901,7 +903,28 @@ const Map = () => {
               {selectedTerritory ? `${selectedTerritory} stores` : activeFilter === 'all' ? 'stores on map' : `${activeFilter} stores`}
             </span>
           </div>
+          <Button
+            size="sm"
+            variant="default"
+            disabled={filteredStores.length === 0}
+            onClick={() => setDispatchOpen(true)}
+            title="Dispatch the currently visible/filtered stores as a route"
+          >
+            Dispatch {filteredStores.length} Visible
+          </Button>
         </div>
+
+        <RouteAssignmentDialog
+          open={dispatchOpen}
+          onOpenChange={setDispatchOpen}
+          assigneeId=""
+          assigneeName=""
+          assigneeType="driver"
+          assigneeUserId={null}
+          bulkMode={filteredStores.length > 1}
+          preselectedStores={filteredStores.map((s) => s.id)}
+          prefilledTerritory={selectedTerritory || undefined}
+        />
 
         {/* Map Legend — pin color = order/visit recency */}
         <div className="absolute bottom-4 right-4 bg-card/95 backdrop-blur rounded-lg px-4 py-3 border border-border/50 shadow-lg">
