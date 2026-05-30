@@ -189,6 +189,9 @@ export default function NeighborhoodDetailPage() {
           <Button variant="outline" onClick={() => navigate(`/communication/messaging?neighborhood=${encodeURIComponent(neighborhood)}`)}>
             <MessageSquare className="h-4 w-4" /> SMS Blast
           </Button>
+          <Button variant="default" onClick={handleDispatchNeighborhood} disabled={isLoadingDispatch}>
+            <Truck className="h-4 w-4" /> {isLoadingDispatch ? 'Loading…' : `Dispatch ${neighborhood}`}
+          </Button>
         </CardContent>
       </Card>
 
