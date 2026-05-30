@@ -148,11 +148,28 @@ function StoreProfileContent() {
                 <ClipboardList className="mr-1 h-4 w-4" />
                 Recon Visit
               </Button>
-              <Button size="sm" variant="outline">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!store.phone}
+                onClick={() => {
+                  if (!store.phone) { toast.error('No phone on file'); return; }
+                  initiateCall({
+                    destinationPhone: store.phone,
+                    entityType: 'store',
+                    entityId: store.id,
+                    entityName: store.store_name,
+                  });
+                }}
+              >
                 <Phone className="mr-1 h-4 w-4" />
                 Call
               </Button>
-              <Button size="sm" variant="outline">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate(`/ambassador/communications?store=${store.id}`)}
+              >
                 <MessageSquare className="mr-1 h-4 w-4" />
                 Message
               </Button>
