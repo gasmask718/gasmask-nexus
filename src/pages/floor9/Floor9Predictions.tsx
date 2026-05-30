@@ -157,12 +157,28 @@ export default function Floor9Predictions() {
                     store.health_status === 'At Risk' && "border-orange-500/30",
                   )}>
                     <CardContent className="p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Store className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium text-sm">{store.store_name}</span>
+                      <div className="flex items-center justify-between mb-2 gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Checkbox
+                            checked={selectedIds.includes(store.store_id)}
+                            onCheckedChange={() => toggleOne(store.store_id)}
+                            aria-label={`Select ${store.store_name}`}
+                          />
+                          <Store className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="font-medium text-sm truncate">{store.store_name}</span>
                         </div>
-                        <StoreHealthBadge score={store.overall_score} status={store.health_status} size="md" />
+                        <div className="flex items-center gap-2 shrink-0">
+                          <StoreHealthBadge score={store.overall_score} status={store.health_status} size="md" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => setDispatchStores([store.store_id])}
+                            title="Add to route"
+                          >
+                            <RouteIcon className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </div>
                       <Progress value={store.overall_score} className="h-1.5 mb-2" />
                       <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
