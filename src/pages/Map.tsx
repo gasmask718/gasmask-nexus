@@ -27,7 +27,30 @@ interface Store {
   phone: string | null;
   address_street: string | null;
   address_city: string | null;
+  last_order_at: string | null;
+  last_visit_at: string | null;
 }
+
+type RecencyBucket = 'fresh' | 'warm' | 'overdue' | 'unknown';
+
+const RECENCY_COLORS: Record<RecencyBucket, string> = {
+  fresh: '#22c55e',      // < 1 month — green
+  warm: '#eab308',       // 1–2 months — yellow
+  overdue: '#ef4444',    // > 2 months — red
+  unknown: '#6b7280',    // never / no data — grey
+};
+
+const getRecencyBucket = (s: Pick<Store, 'last_order_at' | 'last_visit_at'>): RecencyBucket => {
+  const latest = [s.last_order_at, s.last_visit_at]
+    .filter(Boolean)
+    .map(d => new Date(d as string).getTime())
+    .sort((a, b) => b - a)[0];
+  if (!latest) return 'unknown';
+  const days = (Date.now() - latest) / (1000 * 60 * 60 * 24);
+  if (days < 30) return 'fresh';
+  if (days < 60) return 'warm';
+  return 'overdue';
+};
 
 interface DemoDriver {
   id: string;
