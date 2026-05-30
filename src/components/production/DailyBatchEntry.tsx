@@ -600,28 +600,28 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Production Override Required
+              <BilingualLabel tKey="production.override_required" en="Production Override Required" inline />
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Production quantity deviates <strong>{gate.deviationPct}%</strong> from the demand-based recommendation of <strong>{gate.recommended} lbs</strong>.
+              <strong>{gate.deviationPct}%</strong> · <strong>{gate.recommended} {t('production.lbs')}</strong>
               {gate.isHighOverride && (
                 <span className="block mt-1 text-destructive font-medium">
-                  ⚠️ HIGH OVERRIDE — This will be flagged for executive review.
+                  {t('production.override_high_warning')}
                 </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label htmlFor="override-reason">Override Reason (min 20 characters) *</Label>
+              <Label htmlFor="override-reason"><BilingualLabel tKey="production.override_reason" en="Override Reason (min 20 characters) *" inline /></Label>
               <Textarea
                 id="override-reason"
                 value={overrideReason}
                 onChange={(e) => setOverrideReason(e.target.value)}
-                placeholder="Explain why this override is necessary..."
+                placeholder={t('production.override_reason_placeholder')}
                 rows={3}
               />
-              <p className="text-xs text-muted-foreground mt-1">{overrideReason.length}/20 characters minimum</p>
+              <p className="text-xs text-muted-foreground mt-1">{overrideReason.length}/20 {t('production.override_chars_minimum')}</p>
             </div>
             <div className="flex items-center gap-2">
               <Checkbox
@@ -630,20 +630,21 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                 onCheckedChange={(checked) => setOverrideAcknowledged(checked === true)}
               />
               <label htmlFor="override-ack" className="text-sm cursor-pointer">
-                I understand this overrides demand intelligence.
+                {t('production.override_ack')}
               </label>
             </div>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => { setShowOverrideModal(false); setOverrideReason(''); setOverrideAcknowledged(false); }}>
-              Cancel
+              <BilingualLabel tKey="production.cancel" en="Cancel" inline />
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleOverrideConfirm}
               disabled={overrideReason.length < 20 || !overrideAcknowledged || createBatch.isPending}
             >
-              Confirm Override & Create Batch
+              <BilingualLabel tKey="production.override_confirm" en="Confirm Override & Create Batch" inline />
             </AlertDialogAction>
+
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
