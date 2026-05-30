@@ -672,9 +672,11 @@ interface BatchDetailModalProps {
 }
 
 function BatchDetailModal({ batch, officeId, onClose }: BatchDetailModalProps) {
+  const { t } = useTranslation();
   const { data: outputs = [], isLoading } = useBatchOutputs(batch.id);
   const { data: workers = [] } = useProductionWorkers(officeId);
   const recordOutput = useRecordOutput();
+
   
   const [outputForm, setOutputForm] = useState({
     brand: 'gasmask' as const,
