@@ -260,11 +260,22 @@ export default function StoreIntelligencePage() {
             Tiered view of every active store — revenue, engagement, and dead weight at a glance.
           </p>
         </div>
-        <Button onClick={handleRefresh} disabled={refreshing} variant="outline">
-          <RefreshCw className={cn('h-4 w-4 mr-2', refreshing && 'animate-spin')} />
-          Refresh Data
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            disabled={selectedIds.length === 0}
+            onClick={() => setDispatchStores(selectedIds)}
+          >
+            <RouteIcon className="h-4 w-4 mr-2" />
+            Dispatch Selected{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
+          </Button>
+          <Button onClick={handleRefresh} disabled={refreshing} variant="outline">
+            <RefreshCw className={cn('h-4 w-4 mr-2', refreshing && 'animate-spin')} />
+            Refresh Data
+          </Button>
+        </div>
       </div>
+
 
       {/* Tier summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
