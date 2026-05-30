@@ -38,6 +38,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet';
 import { StoreCaptureForm } from '@/components/store/StoreCaptureForm';
+import { AmbassadorStoreMap } from '@/components/ambassador/AmbassadorStoreMap';
 
 // MASTER GENIUS ARCHITECT: Lead KPI config - all lead types must be represented
 const LEAD_KPI_CONFIG = {
@@ -302,6 +303,9 @@ function DashboardContent() {
           </p>
         </div>
       </div>
+
+      {/* Portfolio map — RLS-scoped to this ambassador's stores */}
+      <AmbassadorStoreMap />
 
       {/* My Captured Stores - portfolio of stores ambassador captured */}
       <MyCapturedStores />
