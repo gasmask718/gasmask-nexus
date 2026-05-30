@@ -182,6 +182,15 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
               columns={exportColumns}
               disabled={filtered.length === 0}
             />
+            <Button
+              size="sm"
+              className="h-8 text-xs"
+              disabled={selectedIds.length === 0}
+              onClick={() => setDispatchStores(selectedIds)}
+            >
+              <RouteIcon className="h-3 w-3 mr-1" />
+              Dispatch Selected ({selectedIds.length})
+            </Button>
           </div>
         </div>
 
