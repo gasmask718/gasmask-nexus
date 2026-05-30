@@ -33,7 +33,7 @@ import {
 import { useStoreContext } from '@/hooks/useStoreContext';
 import { StoreContextSidebar } from '@/components/ambassador/StoreContextSidebar';
 import { BulkSmsModal } from '@/components/ambassador/BulkSmsModal';
-import { BulkAiCallModal } from '@/components/ambassador/BulkAiCallModal';
+// BulkAiCallModal intentionally NOT imported — AI calling is company-level only, not for ambassadors.
 import { BulkJobsPanel } from '@/components/ambassador/BulkJobsPanel';
 import { useBulkJobKpis } from '@/hooks/useBulkOutreach';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -132,16 +132,12 @@ export default function AmbassadorCommunications() {
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [callTarget, setCallTarget] = useState<MessageThread | null>(null);
-  const [callMode, setCallMode] = useState<'choose' | 'ai-config'>('choose');
-  const [selectedScriptId, setSelectedScriptId] = useState<string>('');
-  const [aiScripts, setAiScripts] = useState<any[]>([]);
   const [personalPhoneOpen, setPersonalPhoneOpen] = useState(false);
   const [personalPhoneInput, setPersonalPhoneInput] = useState('');
   const [isPlacing, setIsPlacing] = useState(false);
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [selectedStoreIds, setSelectedStoreIds] = useState<Set<string>>(new Set());
   const [bulkSmsOpen, setBulkSmsOpen] = useState(false);
-  const [bulkAiOpen, setBulkAiOpen] = useState(false);
   const [jobsPanelOpen, setJobsPanelOpen] = useState(false);
   const [smartFilter, setSmartFilter] = useState<string | null>(null);
 
@@ -247,19 +243,9 @@ export default function AmbassadorCommunications() {
     setTemplatePickerOpen(false);
   };
 
-  const openCallDialog = async (thread: MessageThread) => {
+  const openCallDialog = (thread: MessageThread) => {
     setCallTarget(thread);
-    setCallMode('choose');
     setCallDialogOpen(true);
-    // Lazy-load scripts on first open
-    if (aiScripts.length === 0) {
-      const { data } = await (await import('@/integrations/supabase/client')).supabase
-        .from('ambassador_call_scripts' as any)
-        .select('id,name,objective,language,opening_line,voice_persona_id,max_duration_seconds,is_global,usage_count')
-        .order('is_global', { ascending: false })
-        .order('usage_count', { ascending: false });
-      setAiScripts((data as any[]) || []);
-    }
   };
 
   const startDirectCall = async () => {
@@ -288,26 +274,7 @@ export default function AmbassadorCommunications() {
     }
   };
 
-  const startAiCall = async () => {
-    if (!callTarget || !selectedScriptId || isPlacing) return;
-    setIsPlacing(true);
-    try {
-      const script = aiScripts.find((s) => s.id === selectedScriptId);
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { data, error } = await supabase.functions.invoke('ambassador-ai-call', {
-        body: { store_id: callTarget.store_id, script_template_id: selectedScriptId, objective: script?.objective },
-      });
-      if (error || data?.error) throw new Error(data?.error || error?.message || 'AI call failed');
-      toast.success('🤖 AI call queued — you\'ll be notified when it completes');
-      setCallDialogOpen(false);
-      setCallMode('choose');
-      setSelectedScriptId('');
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setIsPlacing(false);
-    }
-  };
+  // AI-call helpers removed — AI calling is company-level only, not for ambassadors.
 
   const savePersonalPhone = async () => {
     if (!/^\+\d{10,15}$/.test(personalPhoneInput)) {
@@ -376,10 +343,6 @@ export default function AmbassadorCommunications() {
                     if (selectedStoreIds.size > 50 && !confirm(`Send to ${selectedStoreIds.size} stores?`)) return;
                     setBulkSmsOpen(true);
                   }}>📱 Send SMS Blast</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    if (selectedStoreIds.size > 50 && !confirm(`Queue ${selectedStoreIds.size} AI calls?`)) return;
-                    setBulkAiOpen(true);
-                  }}>🤖 Schedule AI Call Blast</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setSelectedStoreIds(new Set())}>✖ Clear selection</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -866,7 +829,7 @@ export default function AmbassadorCommunications() {
       />
 
       {/* Call type dialog */}
-      <Dialog open={callDialogOpen} onOpenChange={(v) => { setCallDialogOpen(v); if (!v) { setCallMode('choose'); setSelectedScriptId(''); } }}>
+      <Dialog open={callDialogOpen} onOpenChange={setCallDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Call {callTarget?.store_name}</DialogTitle>
@@ -878,63 +841,13 @@ export default function AmbassadorCommunications() {
             </DialogDescription>
           </DialogHeader>
 
-          {callMode === 'choose' && (
-            <div className="grid grid-cols-2 gap-3 py-2">
-              <Button onClick={startDirectCall} disabled={isPlacing} className="h-24 flex-col gap-2">
-                <Phone className="h-5 w-5" />
-                <div className="text-sm font-semibold">Direct Call</div>
-                <div className="text-[10px] opacity-80">Bridge through your phone</div>
-              </Button>
-              <Button onClick={() => setCallMode('ai-config')} variant="secondary" className="h-24 flex-col gap-2">
-                <Sparkles className="h-5 w-5" />
-                <div className="text-sm font-semibold">AI-Assisted</div>
-                <div className="text-[10px] opacity-80">Sara handles the call</div>
-              </Button>
-            </div>
-          )}
-
-          {callMode === 'ai-config' && (() => {
-            const storeLang = (storeContext as any)?.store?.language_preference || 'en';
-            const sorted = [...aiScripts].sort((a, b) => ((a.language === storeLang ? -1 : 1) - (b.language === storeLang ? -1 : 1)));
-            const chosen = aiScripts.find((s) => s.id === selectedScriptId);
-            return (
-              <div className="space-y-3 py-2">
-                <div className="text-xs text-muted-foreground">
-                  Store prefers <Badge variant="outline" className="ml-1">{storeLang.toUpperCase()}</Badge>
-                  {storeLang === 'ar' && ' — Arabic voice falls back to English until provisioned.'}
-                </div>
-                <Select value={selectedScriptId} onValueChange={setSelectedScriptId}>
-                  <SelectTrigger><SelectValue placeholder="Pick a script…" /></SelectTrigger>
-                  <SelectContent>
-                    {sorted.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.language === 'ar' ? '🇸🇦' : '🇺🇸'} {s.name} · {s.objective.replace('_', ' ')}
-                        {s.usage_count > 0 && ` · ${s.usage_count} uses`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {chosen && (
-                  <Card className="p-3 bg-muted/30">
-                    <div className="text-[11px] uppercase text-muted-foreground mb-1">Opening line preview</div>
-                    <div className="text-sm" dir={chosen.language === 'ar' ? 'rtl' : 'ltr'}>
-                      {(chosen.opening_line || '').replace(/\{\{owner_name\}\}/g, callTarget?.contact_name || 'there').replace(/\{\{store_name\}\}/g, callTarget?.store_name || '')}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-2">
-                      Max duration: {Math.round((chosen.max_duration_seconds || 240) / 60)} min
-                    </div>
-                  </Card>
-                )}
-                <DialogFooter>
-                  <Button variant="ghost" onClick={() => setCallMode('choose')}>Back</Button>
-                  <Button onClick={startAiCall} disabled={!selectedScriptId || isPlacing}>
-                    <Sparkles className="h-4 w-4 mr-1" />
-                    {isPlacing ? 'Initiating…' : 'Initiate AI Call'}
-                  </Button>
-                </DialogFooter>
-              </div>
-            );
-          })()}
+          <div className="py-2">
+            <Button onClick={startDirectCall} disabled={isPlacing} className="w-full h-24 flex-col gap-2">
+              <Phone className="h-5 w-5" />
+              <div className="text-sm font-semibold">{isPlacing ? 'Connecting…' : 'Direct Call'}</div>
+              <div className="text-[10px] opacity-80">Bridge through your phone</div>
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -977,21 +890,7 @@ export default function AmbassadorCommunications() {
               }))}
             onSent={() => { setSelectedStoreIds(new Set()); setMultiSelectMode(false); }}
           />
-          <BulkAiCallModal
-            open={bulkAiOpen}
-            onOpenChange={setBulkAiOpen}
-            ambassadorId={ambassador.id}
-            ambassadorName={(ambassador as any).name || 'your rep'}
-            selectedStores={threads
-              .filter((t) => selectedStoreIds.has(t.store_id))
-              .map((t) => ({
-                id: t.store_id,
-                store_name: t.store_name,
-                phone: t.contact_phone,
-                owner_name: t.contact_name,
-              }))}
-            onSent={() => { setSelectedStoreIds(new Set()); setMultiSelectMode(false); }}
-          />
+          {/* BulkAiCallModal removed — AI calling is company-level only. */}
           <BulkJobsPanel open={jobsPanelOpen} onOpenChange={setJobsPanelOpen} ambassadorId={ambassador.id} />
         </>
       )}
