@@ -241,6 +241,7 @@ export default function SellThroughAnalytics() {
             columns={exportColumns}
             disabled={processed.length === 0}
           />
+        </div>
       </div>
 
       {/* KPI Strip */}
