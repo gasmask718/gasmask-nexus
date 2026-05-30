@@ -3299,6 +3299,17 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
 
+      {/* Dispatch Map — reference of dispatch wiring across floors */}
+      <Route path="/admin/dispatch-map" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']}>
+            <Layout><DispatchMap /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
+
+
       {/* QA Command Center - Production Readiness */}
       <Route path="/admin/qa-command-center" element={
         <ProtectedRoute>
