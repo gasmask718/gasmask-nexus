@@ -225,7 +225,7 @@ export function ConversionIntelligencePanel() {
                 <div className="text-sm font-medium">
                   {stats.bestBatch.units_per_lb?.toFixed(2)} {unitLabel}/lb
                   <span className="text-xs text-muted-foreground ml-2">
-                    {stats.bestBatch.brand} • {stats.bestBatch.batch_date ? format(new Date(stats.bestBatch.batch_date), 'MMM d') : '—'}
+                    {stats.bestBatch.brand} • {stats.bestBatch.batch_date ? format(new Date(stats.bestBatch.batch_date), 'MMM d, yyyy') : '—'}
                   </span>
                 </div>
               </div>
@@ -239,7 +239,7 @@ export function ConversionIntelligencePanel() {
                 <div className="text-sm font-medium">
                   {stats.worstBatch.units_per_lb?.toFixed(2)} {unitLabel}/lb
                   <span className="text-xs text-muted-foreground ml-2">
-                    {stats.worstBatch.brand} • {stats.worstBatch.batch_date ? format(new Date(stats.worstBatch.batch_date), 'MMM d') : '—'}
+                    {stats.worstBatch.brand} • {stats.worstBatch.batch_date ? format(new Date(stats.worstBatch.batch_date), 'MMM d, yyyy') : '—'}
                   </span>
                 </div>
               </div>

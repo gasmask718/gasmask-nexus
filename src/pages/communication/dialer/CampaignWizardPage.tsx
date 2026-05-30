@@ -1166,7 +1166,7 @@ export default function CampaignWizardPage() {
 
                         <div className="flex w-full justify-between items-center mt-1">
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(c.created_at), "MMM d, h:mm a")}
+                            {format(new Date(c.created_at), "MMM d, yyyy, h:mm a")}
                           </span>
 
                           <Badge variant="outline" className="text-[9px] h-4 px-1">

@@ -981,7 +981,7 @@ export default function MasterOpportunities() {
                             <TableCell>{row.last_order_date ? <span className="text-sm">{format(new Date(row.last_order_date), 'MMM d, yyyy')}</span> : <span className="text-sm text-muted-foreground">Never</span>}</TableCell>
                             <TableCell><div className="flex flex-wrap gap-1">{getSignalBadges(row)}</div></TableCell>
                             <TableCell>{getRoleBadge(row.last_updated_by_role)}</TableCell>
-                            <TableCell><div className="flex items-center gap-1 text-sm text-muted-foreground"><Clock className="h-3 w-3" />{format(new Date(row.last_updated_at), 'MMM d, h:mm a')}</div></TableCell>
+                            <TableCell><div className="flex items-center gap-1 text-sm text-muted-foreground"><Clock className="h-3 w-3" />{format(new Date(row.last_updated_at), 'MMM d, yyyy, h:mm a')}</div></TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
                                 <Button variant="ghost" size="icon" onClick={() => setDispatchStores([row.store_id])} className="h-8 w-8" title="Dispatch this store">

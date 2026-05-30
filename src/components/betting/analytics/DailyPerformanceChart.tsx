@@ -32,7 +32,7 @@ export function DailyPerformanceChart({ data }: DailyPerformanceChartProps) {
     return {
       ...d,
       drawdown: -drawdown,
-      formattedDate: format(parseISO(d.date), 'MMM d'),
+      formattedDate: format(parseISO(d.date), 'MMM d, yyyy'),
     };
   });
 

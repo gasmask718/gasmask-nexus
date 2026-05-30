@@ -190,7 +190,7 @@ export default function LineShopping() {
                             {line.under_odds}
                           </TableCell>
                           <TableCell className="text-right text-muted-foreground text-sm">
-                            {line.uploaded_at ? format(new Date(line.uploaded_at), 'MMM d, h:mm a') : '-'}
+                            {line.uploaded_at ? format(new Date(line.uploaded_at), 'MMM d, yyyy, h:mm a') : '-'}
                           </TableCell>
                         </TableRow>
                       );

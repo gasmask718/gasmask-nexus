@@ -215,7 +215,7 @@ export function InteractionTimeline({
 
                     {/* Timestamp */}
                     <div className="text-xs text-muted-foreground whitespace-nowrap">
-                      {format(new Date(interaction.created_at), 'MMM d, h:mm a')}
+                      {format(new Date(interaction.created_at), 'MMM d, yyyy, h:mm a')}
                     </div>
                   </div>
                 </div>

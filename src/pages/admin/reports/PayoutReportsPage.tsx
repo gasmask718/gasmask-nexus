@@ -149,7 +149,7 @@ export default function PayoutReportsPage() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {batch.period_start && batch.period_end
-                        ? `${format(new Date(batch.period_start), 'MMM d')} - ${format(new Date(batch.period_end), 'MMM d, yyyy')}`
+                        ? `${format(new Date(batch.period_start), 'MMM d, yyyy')} - ${format(new Date(batch.period_end), 'MMM d, yyyy')}`
                         : '-'}
                     </TableCell>
                     <TableCell className="text-center">

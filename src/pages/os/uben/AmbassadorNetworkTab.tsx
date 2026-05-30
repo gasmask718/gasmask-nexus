@@ -356,7 +356,7 @@ function AmbassadorRoster() {
                         <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground text-xs py-4">No sales yet</TableCell></TableRow>
                       ) : getAmbSales(selectedAmb.id).map(l => (
                         <TableRow key={l.id}>
-                          <TableCell className="text-xs">{format(new Date(l.sale_date), 'MMM d')}</TableCell>
+                          <TableCell className="text-xs">{format(new Date(l.sale_date), 'MMM d, yyyy')}</TableCell>
                           <TableCell className="text-xs font-mono">${Number(l.sale_amount).toLocaleString()}</TableCell>
                           <TableCell className="text-xs font-mono">${Number(l.ambassador_commission).toLocaleString()}</TableCell>
                           <TableCell><Badge variant={l.status === 'paid' ? 'default' : 'secondary'} className="text-[10px]">{l.status}</Badge></TableCell>

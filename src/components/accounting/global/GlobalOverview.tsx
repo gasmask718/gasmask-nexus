@@ -220,7 +220,7 @@ export default function GlobalOverview() {
                         <>
                           <span className="text-xs text-muted-foreground">•</span>
                           <span className="text-xs text-muted-foreground">
-                            Last sync: {format(new Date(biz.last_data_sync_at), 'MMM d')}
+                            Last sync: {format(new Date(biz.last_data_sync_at), 'MMM d, yyyy')}
                           </span>
                         </>
                       )}

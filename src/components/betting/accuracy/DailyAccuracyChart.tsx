@@ -49,7 +49,7 @@ export function DailyAccuracyChart({ data }: DailyAccuracyChartProps) {
   // Format data for chart
   const chartData = data.map(d => ({
     ...d,
-    dateLabel: format(parseISO(d.date), 'MMM d'),
+    dateLabel: format(parseISO(d.date), 'MMM d, yyyy'),
     shortDate: format(parseISO(d.date), 'MM/dd'),
   }));
 
@@ -179,7 +179,7 @@ export function DailyAccuracyChart({ data }: DailyAccuracyChartProps) {
               {data.reduce((a, b) => a.winRate > b.winRate ? a : b).winRate.toFixed(0)}%
             </p>
             <p className="text-xs text-muted-foreground">
-              {format(parseISO(data.reduce((a, b) => a.winRate > b.winRate ? a : b).date), 'MMM d')}
+              {format(parseISO(data.reduce((a, b) => a.winRate > b.winRate ? a : b).date), 'MMM d, yyyy')}
             </p>
           </div>
           <div className="p-2 bg-muted/50 rounded-lg">
@@ -188,7 +188,7 @@ export function DailyAccuracyChart({ data }: DailyAccuracyChartProps) {
               {data.reduce((a, b) => a.total > b.total ? a : b).total} picks
             </p>
             <p className="text-xs text-muted-foreground">
-              {format(parseISO(data.reduce((a, b) => a.total > b.total ? a : b).date), 'MMM d')}
+              {format(parseISO(data.reduce((a, b) => a.total > b.total ? a : b).date), 'MMM d, yyyy')}
             </p>
           </div>
           <div className="p-2 bg-muted/50 rounded-lg">

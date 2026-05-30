@@ -344,7 +344,7 @@ export default function InfluencerProfilePage() {
                         <Badge variant="outline" className="capitalize">{p.role}</Badge>
                         {p.agreed_rate && <span>${Number(p.agreed_rate).toLocaleString()} rate</span>}
                         {p.campaign?.start_date && (
-                          <span>{format(new Date(p.campaign.start_date), 'MMM d')} → {p.campaign.end_date ? format(new Date(p.campaign.end_date), 'MMM d, yyyy') : 'Ongoing'}</span>
+                          <span>{format(new Date(p.campaign.start_date), 'MMM d, yyyy')} → {p.campaign.end_date ? format(new Date(p.campaign.end_date), 'MMM d, yyyy') : 'Ongoing'}</span>
                         )}
                       </div>
                     </div>

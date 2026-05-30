@@ -93,7 +93,7 @@ const BikerIssuesTab: React.FC<BikerIssuesTabProps> = ({ bikerId }) => {
                         {slaStatus.text}
                       </span>
                       <span className="text-muted-foreground">
-                        {format(new Date(issue.created_at), 'MMM d, HH:mm')}
+                        {format(new Date(issue.created_at), 'MMM d, yyyy HH:mm')}
                       </span>
                     </div>
                   </div>

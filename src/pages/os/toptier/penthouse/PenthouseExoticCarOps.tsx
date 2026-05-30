@@ -468,7 +468,7 @@ function RequestTable({ requests, isLoading, onSelect, onUpdateStatus, onAssign 
               <TableCell className="font-medium text-sm">{req.customer_name || 'Unknown'}</TableCell>
               <TableCell className="text-sm">{[req.requested_make, req.requested_model].filter(Boolean).join(' ') || '—'}</TableCell>
               <TableCell className="text-sm">{req.city || req.selected_city || '—'}</TableCell>
-              <TableCell className="text-sm">{req.requested_date ? format(new Date(req.requested_date), 'MMM d') : '—'}</TableCell>
+              <TableCell className="text-sm">{req.requested_date ? format(new Date(req.requested_date), 'MMM d, yyyy') : '—'}</TableCell>
               <TableCell><Badge variant="outline" className="text-[10px] capitalize border-[#333]">{(req.booking_type || req.drive_mode || '—').replace(/_/g, ' ')}</Badge></TableCell>
               <TableCell className="text-xs capitalize">{req.occasion_type || '—'}</TableCell>
               <TableCell className="text-[#C9A84C] font-medium">{req.estimated_value ? `$${Number(req.estimated_value).toLocaleString()}` : '—'}</TableCell>
@@ -1038,7 +1038,7 @@ function QuotePanel({ quotes }: any) {
                     </div>
                     <div className="flex justify-between items-center text-[10px]">
                       <Badge variant="outline" className={STATUS_COLORS[q.quote_status] || ''}>{q.quote_status}</Badge>
-                      {q.expires_at && <span className="text-neutral-600">Exp: {format(new Date(q.expires_at), 'MMM d')}</span>}
+                      {q.expires_at && <span className="text-neutral-600">Exp: {format(new Date(q.expires_at), 'MMM d, yyyy')}</span>}
                     </div>
                     <div className="flex gap-1">
                       <Button size="sm" variant="outline" className="text-[10px] h-6 flex-1 border-[#333]">Send</Button>
@@ -1088,8 +1088,8 @@ function DeliveryPanel({ deliveries }: any) {
               <TableRow key={d.id} className="border-[#222]">
                 <TableCell className="capitalize">{d.delivery_type || '—'}</TableCell>
                 <TableCell className="text-sm">{d.delivery_address || '—'}</TableCell>
-                <TableCell className="text-sm">{d.delivery_time ? format(new Date(d.delivery_time), 'MMM d, h:mm a') : '—'}</TableCell>
-                <TableCell className="text-sm">{d.pickup_time ? format(new Date(d.pickup_time), 'MMM d, h:mm a') : '—'}</TableCell>
+                <TableCell className="text-sm">{d.delivery_time ? format(new Date(d.delivery_time), 'MMM d, yyyy, h:mm a') : '—'}</TableCell>
+                <TableCell className="text-sm">{d.pickup_time ? format(new Date(d.pickup_time), 'MMM d, yyyy, h:mm a') : '—'}</TableCell>
                 <TableCell><Badge variant="outline" className={STATUS_COLORS[d.fulfillment_status] || 'border-[#333]'}>{d.fulfillment_status}</Badge></TableCell>
                 <TableCell className="text-xs text-neutral-400 max-w-[200px] truncate">{d.notes || '—'}</TableCell>
               </TableRow>
@@ -1128,8 +1128,8 @@ function ChauffeurPanel({ chauffeurs }: any) {
               <TableRow key={c.id} className="border-[#222]">
                 <TableCell className="font-medium">{c.chauffeur_name || '—'}</TableCell>
                 <TableCell>{c.chauffeur_phone || '—'}</TableCell>
-                <TableCell>{c.start_time ? format(new Date(c.start_time), 'MMM d, h:mm a') : '—'}</TableCell>
-                <TableCell>{c.end_time ? format(new Date(c.end_time), 'MMM d, h:mm a') : '—'}</TableCell>
+                <TableCell>{c.start_time ? format(new Date(c.start_time), 'MMM d, yyyy, h:mm a') : '—'}</TableCell>
+                <TableCell>{c.end_time ? format(new Date(c.end_time), 'MMM d, yyyy, h:mm a') : '—'}</TableCell>
                 <TableCell><Badge variant="outline" className={STATUS_COLORS[c.assignment_status] || 'border-[#333]'}>{c.assignment_status}</Badge></TableCell>
                 <TableCell className="text-xs text-neutral-400 max-w-[200px] truncate">{c.notes || '—'}</TableCell>
               </TableRow>
@@ -1168,8 +1168,8 @@ function PaymentPanel({ payments }: any) {
               <TableRow key={p.id} className="border-[#222]">
                 <TableCell className="font-bold text-[#C9A84C]">${(p.payment_amount || 0).toLocaleString()}</TableCell>
                 <TableCell><Badge variant="outline" className={p.payment_status === 'received' ? 'border-green-500/30 text-green-400' : p.payment_status === 'pending' ? 'border-yellow-500/30 text-yellow-400' : 'border-[#333]'}>{p.payment_status}</Badge></TableCell>
-                <TableCell>{p.payment_due_at ? format(new Date(p.payment_due_at), 'MMM d') : '—'}</TableCell>
-                <TableCell>{p.payment_received_at ? format(new Date(p.payment_received_at), 'MMM d') : '—'}</TableCell>
+                <TableCell>{p.payment_due_at ? format(new Date(p.payment_due_at), 'MMM d, yyyy') : '—'}</TableCell>
+                <TableCell>{p.payment_received_at ? format(new Date(p.payment_received_at), 'MMM d, yyyy') : '—'}</TableCell>
                 <TableCell className="capitalize">{p.payment_method || '—'}</TableCell>
                 <TableCell className="font-mono text-xs">{p.payment_reference || '—'}</TableCell>
               </TableRow>

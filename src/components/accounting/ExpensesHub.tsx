@@ -304,7 +304,7 @@ export default function ExpensesHub() {
                       {expense.recurring && <Badge variant="outline" className="text-[10px] py-0">Recurring</Badge>}
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{format(new Date(expense.expense_date), 'MMM d')}</span>
+                      <span>{format(new Date(expense.expense_date), 'MMM d, yyyy')}</span>
                       {expense.vendor && <span>• {expense.vendor}</span>}
                       {expense.payment_method && <span>• {expense.payment_method}</span>}
                     </div>

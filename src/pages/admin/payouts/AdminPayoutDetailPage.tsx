@@ -131,7 +131,7 @@ export default function AdminPayoutDetailPage() {
           <div className="flex-1">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">
-                Payout Batch: {format(new Date(batch.period_start), 'MMM d')} - {format(new Date(batch.period_end), 'MMM d, yyyy')}
+                Payout Batch: {format(new Date(batch.period_start), 'MMM d, yyyy')} - {format(new Date(batch.period_end), 'MMM d, yyyy')}
               </h1>
               <Badge variant={batchConfig.variant} className="gap-1">
                 <StatusIcon className="h-3 w-3" />

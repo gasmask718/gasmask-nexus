@@ -136,9 +136,9 @@ export function EquipmentAssignmentPanel({ officeId }: EquipmentAssignmentPanelP
                         <TableRow key={a.id}>
                           <TableCell className="text-xs">{a.equipment_name}</TableCell>
                           <TableCell className="text-xs font-mono">{a.equipment_serial || '—'}</TableCell>
-                          <TableCell className="text-xs">{format(new Date(a.assigned_at), 'MMM d')}</TableCell>
+                          <TableCell className="text-xs">{format(new Date(a.assigned_at), 'MMM d, yyyy')}</TableCell>
                           <TableCell className="text-xs">
-                            {a.unassigned_at ? format(new Date(a.unassigned_at), 'MMM d') : (
+                            {a.unassigned_at ? format(new Date(a.unassigned_at), 'MMM d, yyyy') : (
                               <Badge variant="default" className="text-[9px]">Active</Badge>
                             )}
                           </TableCell>

@@ -103,7 +103,7 @@ export default function OpsDeviceManager() {
                   <div className="text-xs text-muted-foreground">
                     {device.platform} · {device.browser}
                     {' · Last seen '}
-                    {format(new Date(device.last_seen_at), 'MMM d, HH:mm')}
+                    {format(new Date(device.last_seen_at), 'MMM d, yyyy HH:mm')}
                   </div>
                 </div>
                 <div className="shrink-0 ml-2">

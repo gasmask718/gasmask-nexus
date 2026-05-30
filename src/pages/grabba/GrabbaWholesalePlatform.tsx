@@ -431,7 +431,7 @@ export default function GrabbaWholesalePlatform() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {order.created_at ? format(new Date(order.created_at), "MMM d") : '-'}
+                          {order.created_at ? format(new Date(order.created_at), "MMM d, yyyy") : '-'}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -474,7 +474,7 @@ export default function GrabbaWholesalePlatform() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {order.created_at ? format(new Date(order.created_at), "MMM d") : '-'}
+                          {order.created_at ? format(new Date(order.created_at), "MMM d, yyyy") : '-'}
                         </TableCell>
                       </TableRow>
                     ))}

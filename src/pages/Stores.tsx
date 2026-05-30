@@ -1305,7 +1305,7 @@ const Stores = () => {
                                  )}>
                                    {snap.is_placeholder
                                      ? 'Never'
-                                     : `${format(new Date(snap.last_order_date), 'MMM d')} · ${snap.last_order_size_label}`
+                                     : `${format(new Date(snap.last_order_date), 'MMM d, yyyy')} · ${snap.last_order_size_label}`
                                    }
                                  </span>
                                </div>

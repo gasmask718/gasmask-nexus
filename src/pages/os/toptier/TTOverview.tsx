@@ -205,7 +205,7 @@ export default function TTOverview() {
                     <td className="px-3 py-2.5 text-sm text-white/80">{b.client_name || '—'}</td>
                     <td className="px-3 py-2.5 text-xs text-white/60 max-w-[120px] truncate">{b.pickup_location || b.pickup_city || '—'}</td>
                     <td className="px-3 py-2.5 text-xs text-white/60">
-                      {b.scheduled_at ? format(new Date(b.scheduled_at), 'MMM d, h:mm a') : '—'}
+                      {b.scheduled_at ? format(new Date(b.scheduled_at), 'MMM d, yyyy, h:mm a') : '—'}
                     </td>
                     <td className="px-3 py-2.5">
                       <Badge className={`text-[10px] ${STATUS_COLORS[b.status] || ''}`}>{b.status}</Badge>

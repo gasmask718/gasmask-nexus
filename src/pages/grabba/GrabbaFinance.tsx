@@ -664,7 +664,7 @@ export default function GrabbaFinance() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {order.created_at ? format(new Date(order.created_at), "MMM d") : '-'}
+                          {order.created_at ? format(new Date(order.created_at), "MMM d, yyyy") : '-'}
                         </TableCell>
                         <TableCell>
                           <TableRowActions
@@ -742,7 +742,7 @@ export default function GrabbaFinance() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {comm.created_at ? format(new Date(comm.created_at), "MMM d") : '-'}
+                          {comm.created_at ? format(new Date(comm.created_at), "MMM d, yyyy") : '-'}
                         </TableCell>
                       </TableRow>
                     ))}

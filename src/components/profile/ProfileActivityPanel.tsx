@@ -219,7 +219,7 @@ export function ProfileActivityPanel({ userId, entityName }: ProfileActivityPane
                       <p className="font-medium text-sm truncate">{task.title}</p>
                       <p className="text-xs text-muted-foreground">
                         {task.task_type} • {formatDistanceToNow(new Date(task.created_at), { addSuffix: true })}
-                        {task.due_at && ` • Due ${format(new Date(task.due_at), 'MMM d')}`}
+                        {task.due_at && ` • Due ${format(new Date(task.due_at), 'MMM d, yyyy')}`}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">

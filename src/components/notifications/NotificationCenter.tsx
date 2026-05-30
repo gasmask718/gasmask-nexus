@@ -103,7 +103,7 @@ export const NotificationCenter = () => {
               {notification.title}
             </span>
             <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {format(new Date(notification.created_at), 'MMM d, h:mm a')}
+              {format(new Date(notification.created_at), 'MMM d, yyyy, h:mm a')}
             </span>
           </div>
           <p className="text-xs text-muted-foreground line-clamp-2">

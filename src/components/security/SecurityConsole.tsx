@@ -246,7 +246,7 @@ export function SecurityConsole() {
                       </TableCell>
                       <TableCell>{getSeverityBadge(event.severity)}</TableCell>
                       <TableCell className="text-sm">
-                        {format(new Date(event.created_at), 'MMM d, HH:mm')}
+                        {format(new Date(event.created_at), 'MMM d, yyyy HH:mm')}
                       </TableCell>
                       <TableCell>
                         {event.acknowledged_at ? (

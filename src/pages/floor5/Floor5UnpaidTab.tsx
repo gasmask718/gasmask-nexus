@@ -113,7 +113,7 @@ export default function Floor5UnpaidTab() {
                           <p className="font-bold">${inv.balance_due.toLocaleString()}</p>
                           <p className="text-xs text-muted-foreground flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {inv.due_date ? format(new Date(inv.due_date), 'MMM d') : '—'}
+                            {inv.due_date ? format(new Date(inv.due_date), 'MMM d, yyyy') : '—'}
                           </p>
                         </div>
                         {daysOverdue > 0 && (

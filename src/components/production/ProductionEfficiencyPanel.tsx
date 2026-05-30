@@ -192,7 +192,7 @@ export function ProductionEfficiencyPanel() {
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-medium">{batch.brand}</span>
                         <span className="text-xs text-muted-foreground">
-                          {batch.batch_date ? format(new Date(batch.batch_date), 'MMM d') : '—'}
+                          {batch.batch_date ? format(new Date(batch.batch_date), 'MMM d, yyyy') : '—'}
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {batch.product_output_units?.toLocaleString()} {unitLabel} → {batch.boxes_produced} boxes • {batch.production_time_minutes?.toFixed(0)} min

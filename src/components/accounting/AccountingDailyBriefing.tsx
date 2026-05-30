@@ -83,7 +83,7 @@ function useDailyBriefing() {
         paidToday,
         followUpsDue: (followUps || []).map(a => ({
           name: a.entity_name || 'Unknown',
-          next_action: a.next_action_at ? format(new Date(a.next_action_at), 'MMM d') : 'TBD',
+          next_action: a.next_action_at ? format(new Date(a.next_action_at), 'MMM d, yyyy') : 'TBD',
           amount: Number(a.total_outstanding || 0),
         })),
         topSpenders: [], // Populated by TopSpenders component

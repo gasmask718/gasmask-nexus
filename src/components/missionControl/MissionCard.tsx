@@ -153,7 +153,7 @@ export function MissionCard({ mission, onStatusChange, onDelete, compact = false
                 >
                   <Calendar className="h-2.5 w-2.5 mr-0.5" />
                   {isOverdue ? 'Overdue: ' : ''}
-                  {format(new Date(mission.due_date), 'MMM d')}
+                  {format(new Date(mission.due_date), 'MMM d, yyyy')}
                 </Badge>
               )}
 

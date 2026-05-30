@@ -207,7 +207,7 @@ export default function UTLeadIntelligence() {
                   <p className="font-semibold text-sm">{cfg.label}</p>
                   <p className="text-xs text-muted-foreground">{(src?.config as any)?.description || ''}</p>
                   <div className="text-xs text-muted-foreground space-y-0.5">
-                    <p>Last run: {src?.last_run_at ? format(new Date(src.last_run_at), 'MMM d, h:mm a') : 'Never'}</p>
+                    <p>Last run: {src?.last_run_at ? format(new Date(src.last_run_at), 'MMM d, yyyy, h:mm a') : 'Never'}</p>
                     <p>Total pulled: {src?.total_leads_pulled || 0}</p>
                   </div>
                   {!connected && (
@@ -276,7 +276,7 @@ export default function UTLeadIntelligence() {
                   <TableRow key={run.id}>
                     <TableCell className="font-medium">{run.source}</TableCell>
                     <TableCell>{run.run_type}</TableCell>
-                    <TableCell className="text-xs">{run.started_at ? format(new Date(run.started_at), 'MMM d, h:mm a') : '—'}</TableCell>
+                    <TableCell className="text-xs">{run.started_at ? format(new Date(run.started_at), 'MMM d, yyyy, h:mm a') : '—'}</TableCell>
                     <TableCell>{run.leads_found}</TableCell>
                     <TableCell>
                       <Badge className={run.status === 'completed' ? 'bg-green-500/20 text-green-400' : run.status === 'running' ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'}>

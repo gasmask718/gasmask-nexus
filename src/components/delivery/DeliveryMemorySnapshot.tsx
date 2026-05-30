@@ -86,7 +86,7 @@ export function DeliveryMemorySnapshot({ storeId, storeName }: DeliveryMemorySna
               <span className="text-muted-foreground">Last Payment</span>
               <p className="font-medium">
                 {payment.last_payment_date
-                  ? `$${payment.last_payment_amount?.toFixed(2)} · ${format(new Date(payment.last_payment_date), 'MMM d')}`
+                  ? `$${payment.last_payment_amount?.toFixed(2)} · ${format(new Date(payment.last_payment_date), 'MMM d, yyyy')}`
                   : 'No payments on record'
                 }
               </p>

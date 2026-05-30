@@ -201,7 +201,7 @@ export default function MessagesPage() {
                       )}
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {format(new Date(msg.created_at), "MMM d, h:mm a")}
+                        {format(new Date(msg.created_at), "MMM d, yyyy, h:mm a")}
                       </span>
                       {msg.owner_user_id && (
                         <span className="flex items-center gap-1">

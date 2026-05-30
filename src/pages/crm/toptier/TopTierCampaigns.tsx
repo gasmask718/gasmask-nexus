@@ -249,7 +249,7 @@ export default function TopTierCampaigns() {
                         </Badge>
                       </td>
                       <td className="py-3 px-4 text-sm">
-                        {format(new Date(campaign.start_date), 'MMM d')} - {format(new Date(campaign.end_date), 'MMM d')}
+                        {format(new Date(campaign.start_date), 'MMM d, yyyy')} - {format(new Date(campaign.end_date), 'MMM d, yyyy')}
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div>

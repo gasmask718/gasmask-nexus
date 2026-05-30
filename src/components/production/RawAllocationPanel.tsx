@@ -299,7 +299,7 @@ export function RawAllocationPanel({ officeId }: Props) {
                       {o.reason && <p className="text-muted-foreground mt-0.5">{o.reason}</p>}
                     </div>
                     <span className="text-muted-foreground whitespace-nowrap">
-                      {format(new Date(o.created_at), 'MMM d, h:mm a')}
+                      {format(new Date(o.created_at), 'MMM d, yyyy, h:mm a')}
                     </span>
                   </div>
                 ))}

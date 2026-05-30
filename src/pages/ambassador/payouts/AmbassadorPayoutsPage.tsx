@@ -153,7 +153,7 @@ export default function AmbassadorPayoutsPage() {
                         <TableCell className="font-medium">
                           {payout.payout_batches ? (
                             <>
-                              {format(new Date(payout.payout_batches.period_start), 'MMM d')} - {format(new Date(payout.payout_batches.period_end), 'MMM d, yyyy')}
+                              {format(new Date(payout.payout_batches.period_start), 'MMM d, yyyy')} - {format(new Date(payout.payout_batches.period_end), 'MMM d, yyyy')}
                             </>
                           ) : 'N/A'}
                         </TableCell>

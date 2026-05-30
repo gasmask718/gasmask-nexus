@@ -262,7 +262,7 @@ export function RawMaterialIntake({ officeId }: RawMaterialIntakeProps) {
                           {m.supplier_name || '—'}
                         </td>
                         <td className="py-2 text-muted-foreground">
-                          {format(new Date(m.received_at), 'MMM d, h:mm a')}
+                          {format(new Date(m.received_at), 'MMM d, yyyy, h:mm a')}
                         </td>
                         <td className="py-2">
                           <Button

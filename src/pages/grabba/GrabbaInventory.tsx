@@ -412,7 +412,7 @@ export default function GrabbaInventory() {
                         </TableCell>
                         <TableCell>{inv.boxes_on_hand || Math.floor((inv.current_tubes_left || 0) / 100)}</TableCell>
                         <TableCell>
-                          {inv.last_updated ? format(new Date(inv.last_updated), "MMM d, h:mm a") : '-'}
+                          {inv.last_updated ? format(new Date(inv.last_updated), "MMM d, yyyy, h:mm a") : '-'}
                         </TableCell>
                         <TableCell>
                           <TableRowActions

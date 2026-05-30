@@ -153,7 +153,7 @@ export default function AuditCenterPage() {
                 logs?.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell className="text-sm">
-                      {format(new Date(log.created_at), 'MMM d, h:mm:ss a')}
+                      {format(new Date(log.created_at), 'MMM d, yyyy, h:mm:ss a')}
                     </TableCell>
                     <TableCell className="font-mono text-sm">{log.table_name}</TableCell>
                     <TableCell>

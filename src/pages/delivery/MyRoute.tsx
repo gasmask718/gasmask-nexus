@@ -680,7 +680,7 @@ export default function MyRoute() {
                     <CheckCircle2 className="h-12 w-12 mx-auto mb-2" />
                     <p className="font-medium">Completed</p>
                     <p className="text-sm text-muted-foreground">
-                      {format(new Date(selectedStop.completion_time), "MMM d, h:mm a")}
+                      {format(new Date(selectedStop.completion_time), "MMM d, yyyy, h:mm a")}
                     </p>
                   </div>
                 )}

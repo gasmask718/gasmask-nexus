@@ -100,7 +100,7 @@ export function SupplyPredictionPanel({ officeId }: Props) {
             </CardTitle>
             <CardDescription className="mt-1">
               {lastPredicted
-                ? `Last updated ${format(parseISO(lastPredicted), 'MMM d, h:mm a')}`
+                ? `Last updated ${format(parseISO(lastPredicted), 'MMM d, yyyy, h:mm a')}`
                 : 'No predictions yet — run your first forecast'}
             </CardDescription>
           </div>
@@ -243,13 +243,13 @@ function PredictionCard({
               {prediction.predicted_stockout_date && (
                 <div className="flex items-center gap-1.5 text-xs">
                   <AlertTriangle className="h-3 w-3" />
-                  <span>Stockout: {format(parseISO(prediction.predicted_stockout_date), 'MMM d')}</span>
+                  <span>Stockout: {format(parseISO(prediction.predicted_stockout_date), 'MMM d, yyyy')}</span>
                 </div>
               )}
               {prediction.recommended_reorder_date && (
                 <div className="flex items-center gap-1.5 text-xs">
                   <Calendar className="h-3 w-3" />
-                  <span>Reorder by: {format(parseISO(prediction.recommended_reorder_date), 'MMM d')}</span>
+                  <span>Reorder by: {format(parseISO(prediction.recommended_reorder_date), 'MMM d, yyyy')}</span>
                 </div>
               )}
               {prediction.recommended_order_quantity && (

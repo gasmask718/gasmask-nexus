@@ -175,7 +175,7 @@ export function ForensicReplayViewer({ businessId }: Props) {
                       {session.replay_purpose || 'Forensic Replay'}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      {format(new Date(session.replayed_at), 'MMM d, HH:mm')}
+                      {format(new Date(session.replayed_at), 'MMM d, yyyy HH:mm')}
                     </div>
                   </div>
                 ))}
@@ -193,7 +193,7 @@ export function ForensicReplayViewer({ businessId }: Props) {
                         <div className="flex items-center justify-between">
                           <Badge variant="outline">{session.status}</Badge>
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(session.created_at), 'MMM d')}
+                            {format(new Date(session.created_at), 'MMM d, yyyy')}
                           </span>
                         </div>
                         <Button

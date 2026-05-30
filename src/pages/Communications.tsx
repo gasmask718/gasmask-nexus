@@ -95,7 +95,7 @@ export default function Communications() {
       // Communication frequency by day
       const dayGroups: { [key: string]: number } = {};
       comms.forEach(c => {
-        const day = format(new Date(c.created_at), 'MMM dd');
+        const day = format(new Date(c.created_at), 'MMM dd, yyyy');
         dayGroups[day] = (dayGroups[day] || 0) + 1;
       });
 

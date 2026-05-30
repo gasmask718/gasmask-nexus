@@ -387,7 +387,7 @@ export default function BrandStoreProfile() {
                           <p className="text-xs text-muted-foreground">{event.description}</p>
                         )}
                         <p className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(event.created_at), "MMM d, h:mm a")}
+                          {format(new Date(event.created_at), "MMM d, yyyy, h:mm a")}
                         </p>
                       </div>
                     </div>

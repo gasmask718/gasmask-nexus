@@ -250,7 +250,7 @@ export function StoreContextSidebar({ storeId, open, onClose, onCall }: Props) {
                             >
                               <div className="flex-1 min-w-0">
                                 <div className="font-medium">
-                                  {o.placed_at ? format(new Date(o.placed_at), 'MMM d') : 'Pending'}
+                                  {o.placed_at ? format(new Date(o.placed_at), 'MMM d, yyyy') : 'Pending'}
                                 </div>
                                 <div className="text-muted-foreground">{o.item_count} items</div>
                               </div>

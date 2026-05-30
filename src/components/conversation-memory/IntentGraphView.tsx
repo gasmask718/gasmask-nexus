@@ -117,7 +117,7 @@ export function IntentGraphView({ conversationId }: IntentGraphViewProps) {
               {graph.intent_velocity_score.toFixed(1)}
             </Badge>
             <span className="text-muted-foreground ml-auto text-xs">
-              Last analyzed: {graph.last_analyzed_at ? format(new Date(graph.last_analyzed_at), 'MMM d, h:mm a') : 'Never'}
+              Last analyzed: {graph.last_analyzed_at ? format(new Date(graph.last_analyzed_at), 'MMM d, yyyy, h:mm a') : 'Never'}
             </span>
           </div>
         )}

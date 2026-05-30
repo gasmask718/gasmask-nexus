@@ -66,13 +66,13 @@ export default function TaskPanel({ threadId, threadTitle, threadPriority, isAdm
             <Badge className={priorityColors[task.priority] || ''}>{task.priority}</Badge>
             {task.expected_role && <Badge variant="secondary">{task.expected_role}</Badge>}
             {task.due_at && (
-              <span className="text-muted-foreground">Due: {format(new Date(task.due_at), 'MMM d, h:mm a')}</span>
+              <span className="text-muted-foreground">Due: {format(new Date(task.due_at), 'MMM d, yyyy, h:mm a')}</span>
             )}
           </div>
 
           {task.completed_at && (
             <p className="text-xs text-green-600">
-              Completed {format(new Date(task.completed_at), 'MMM d, h:mm a')}
+              Completed {format(new Date(task.completed_at), 'MMM d, yyyy, h:mm a')}
             </p>
           )}
 

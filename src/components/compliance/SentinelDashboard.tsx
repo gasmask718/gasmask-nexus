@@ -399,7 +399,7 @@ export function SentinelDashboard({ businessId }: Props) {
                           <div className="text-xs text-muted-foreground">
                             {evaluation.evaluation_type} • 
                             {evaluation.completed_at 
-                              ? format(new Date(evaluation.completed_at), 'MMM d, HH:mm:ss')
+                              ? format(new Date(evaluation.completed_at), 'MMM d, yyyy HH:mm:ss')
                               : 'Running...'}
                           </div>
                         </div>
@@ -454,7 +454,7 @@ export function SentinelDashboard({ businessId }: Props) {
                             <div className="text-sm mt-2">{action.action_reason}</div>
                             <div className="text-xs text-muted-foreground mt-1">
                               {action.previous_mode} → {action.new_mode} • 
-                              {format(new Date(action.executed_at), 'MMM d, HH:mm:ss')}
+                              {format(new Date(action.executed_at), 'MMM d, yyyy HH:mm:ss')}
                             </div>
                           </div>
                           <div className="text-right text-xs font-mono text-muted-foreground">

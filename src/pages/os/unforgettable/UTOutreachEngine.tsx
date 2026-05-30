@@ -182,7 +182,7 @@ export default function UTOutreachEngine() {
                           <Badge variant="outline" className="text-xs">{seq.channel}</Badge>
                         </TableCell>
                         <TableCell className="text-sm">Step {seq.step_number}</TableCell>
-                        <TableCell className="text-xs">{seq.sent_at ? format(new Date(seq.sent_at), 'MMM d, h:mm a') : '—'}</TableCell>
+                        <TableCell className="text-xs">{seq.sent_at ? format(new Date(seq.sent_at), 'MMM d, yyyy, h:mm a') : '—'}</TableCell>
                         <TableCell>
                           <Badge className={seq.status === 'sent' ? 'bg-green-500/20 text-green-400' : seq.status === 'replied' ? 'bg-purple-500/20 text-purple-400' : 'bg-muted text-muted-foreground'}>
                             {seq.status}

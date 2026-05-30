@@ -104,7 +104,7 @@ export function HistoricalPredictions() {
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
                 <CalendarIcon className="h-4 w-4" />
-                {format(startDate, "MMM d")} - {format(endDate, "MMM d")}
+                {format(startDate, "MMM d, yyyy")} - {format(endDate, "MMM d, yyyy")}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">

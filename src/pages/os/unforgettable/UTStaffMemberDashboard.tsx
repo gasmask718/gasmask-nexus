@@ -161,7 +161,7 @@ export default function UTStaffMemberDashboard() {
                 <TableBody>
                   {inquiries.map((inq: any) => (
                     <TableRow key={inq.id}>
-                      <TableCell>{format(new Date(inq.created_at), 'MMM d')}</TableCell>
+                      <TableCell>{format(new Date(inq.created_at), 'MMM d, yyyy')}</TableCell>
                       <TableCell>{inq.requester_name}</TableCell>
                       <TableCell>{inq.event_date ? format(new Date(inq.event_date), 'MMM d, yyyy') : '—'}</TableCell>
                       <TableCell>{inq.event_type || '—'}</TableCell>

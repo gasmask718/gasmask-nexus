@@ -305,7 +305,7 @@ export const RouteDetailDrawer: React.FC<RouteDetailDrawerProps> = ({
                           <div className="flex items-center justify-between">
                             <Badge variant="outline" className="capitalize text-xs">{int.intervention_type?.replace(/_/g, ' ')}</Badge>
                             <span className="text-xs text-muted-foreground">
-                              {int.created_at ? format(new Date(int.created_at), 'MMM d, h:mm a') : ''}
+                              {int.created_at ? format(new Date(int.created_at), 'MMM d, yyyy, h:mm a') : ''}
                             </span>
                           </div>
                           <p className="text-muted-foreground mt-1">{int.reason}</p>

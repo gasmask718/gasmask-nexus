@@ -235,7 +235,7 @@ export const WholesalerMarketplaceTab: React.FC<WholesalerMarketplaceTabProps> =
                       <div>
                         <p className="text-sm font-medium">
                           {payout.period_start && payout.period_end 
-                            ? `${format(new Date(payout.period_start), 'MMM d')} – ${format(new Date(payout.period_end), 'MMM d, yyyy')}`
+                            ? `${format(new Date(payout.period_start), 'MMM d, yyyy')} – ${format(new Date(payout.period_end), 'MMM d, yyyy')}`
                             : format(new Date(payout.created_at), 'MMM d, yyyy')}
                         </p>
                         <p className="text-xs text-muted-foreground">{payout.payout_method || 'N/A'} • Fee: ${(payout.platform_fee || 0).toLocaleString()}</p>

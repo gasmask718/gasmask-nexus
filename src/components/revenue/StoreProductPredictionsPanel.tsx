@@ -105,7 +105,7 @@ export function StoreProductPredictionsPanel({ storeId }: StoreProductPrediction
                     {pred.last_order_at && (
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        <span>Last: {format(new Date(pred.last_order_at), 'MMM d')}</span>
+                        <span>Last: {format(new Date(pred.last_order_at), 'MMM d, yyyy')}</span>
                       </div>
                     )}
                   </div>

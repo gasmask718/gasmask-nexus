@@ -342,7 +342,7 @@ export default function ExternalResultsPanel() {
                               {log.status}
                             </Badge>
                           </td>
-                          <td className="py-2 text-muted-foreground">{format(new Date(log.created_at), 'MMM d HH:mm')}</td>
+                          <td className="py-2 text-muted-foreground">{format(new Date(log.created_at), 'MMM d, yyyy HH:mm')}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -465,7 +465,7 @@ export default function ExternalResultsPanel() {
                             {JSON.stringify(log.match_details).slice(0, 80)}
                           </td>
                           <td className="py-2 text-muted-foreground">
-                            {format(new Date(log.created_at), 'MMM d HH:mm')}
+                            {format(new Date(log.created_at), 'MMM d, yyyy HH:mm')}
                           </td>
                         </tr>
                       ))}

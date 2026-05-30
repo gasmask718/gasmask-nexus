@@ -182,7 +182,7 @@ export default function AmbassadorDisputeDetail() {
                         }`}>
                           <div className="text-xs text-muted-foreground mb-1">
                             {msg.author_role === 'ambassador' ? 'You' : 'Admin'} •{' '}
-                            {format(new Date(msg.created_at), 'MMM d, h:mm a')}
+                            {format(new Date(msg.created_at), 'MMM d, yyyy, h:mm a')}
                           </div>
                           <div className="whitespace-pre-wrap">{msg.message}</div>
                         </div>

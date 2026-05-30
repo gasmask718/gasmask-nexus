@@ -169,7 +169,7 @@ export function RegulatoryEvidencePanel({ businessId }: Props) {
                           )}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
-                          {format(new Date(pack.generated_at), 'MMM d, HH:mm')}
+                          {format(new Date(pack.generated_at), 'MMM d, yyyy HH:mm')}
                         </span>
                       </div>
                       <div className="font-medium mt-2 text-sm">
@@ -178,7 +178,7 @@ export function RegulatoryEvidencePanel({ businessId }: Props) {
                       <div className="text-xs text-muted-foreground mt-1">
                         {pack.date_range_start && pack.date_range_end && (
                           <>
-                            {format(new Date(pack.date_range_start), 'MMM d')} - {format(new Date(pack.date_range_end), 'MMM d, yyyy')}
+                            {format(new Date(pack.date_range_start), 'MMM d, yyyy')} - {format(new Date(pack.date_range_end), 'MMM d, yyyy')}
                           </>
                         )}
                       </div>

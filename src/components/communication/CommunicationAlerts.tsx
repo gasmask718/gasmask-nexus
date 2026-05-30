@@ -105,7 +105,7 @@ export function CommunicationAlerts({ alerts, onResolve, onViewDetails }: Commun
                         </div>
                         <p className="text-sm">{alert.message}</p>
                         <p className="text-xs mt-1 opacity-70">
-                          {format(new Date(alert.created_at), "MMM d, h:mm a")}
+                          {format(new Date(alert.created_at), "MMM d, yyyy, h:mm a")}
                         </p>
                       </div>
                       <div className="flex gap-2">

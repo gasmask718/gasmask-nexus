@@ -339,7 +339,7 @@ export default function GrabbaProduction() {
                         <TableCell>{batch.tubes_total || (batch.boxes_produced || 0) * 100}</TableCell>
                         <TableCell>{batch.produced_by || '-'}</TableCell>
                         <TableCell>
-                          {batch.created_at ? format(new Date(batch.created_at), "MMM d, h:mm a") : '-'}
+                          {batch.created_at ? format(new Date(batch.created_at), "MMM d, yyyy, h:mm a") : '-'}
                         </TableCell>
                         <TableCell>
                           <TableRowActions
@@ -417,7 +417,7 @@ export default function GrabbaProduction() {
                         <TableCell>{tool.office?.name || 'N/A'}</TableCell>
                         <TableCell>{tool.issued_to || '-'}</TableCell>
                         <TableCell>
-                          {tool.issued_at ? format(new Date(tool.issued_at), "MMM d") : '-'}
+                          {tool.issued_at ? format(new Date(tool.issued_at), "MMM d, yyyy") : '-'}
                         </TableCell>
                         <TableCell>
                           <Badge variant={tool.returned_at ? 'default' : 'secondary'}>
@@ -464,7 +464,7 @@ export default function GrabbaProduction() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {ticket.created_at ? format(new Date(ticket.created_at), "MMM d") : '-'}
+                          {ticket.created_at ? format(new Date(ticket.created_at), "MMM d, yyyy") : '-'}
                         </TableCell>
                       </TableRow>
                     ))}

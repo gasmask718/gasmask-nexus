@@ -350,7 +350,7 @@ export function ComplianceDashboard({ businessId }: Props) {
                       </div>
                     )}
                     <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                      <span>{format(new Date(alert.created_at), 'MMM d, HH:mm')}</span>
+                      <span>{format(new Date(alert.created_at), 'MMM d, yyyy HH:mm')}</span>
                       <span className="capitalize">{alert.alert_type.replace(/_/g, ' ')}</span>
                       {alert.acknowledged && (
                         <Badge variant="outline" className="text-xs">

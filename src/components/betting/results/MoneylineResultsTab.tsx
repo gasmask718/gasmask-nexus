@@ -108,7 +108,7 @@ export function MoneylineResultsTab() {
                   </Badge>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Settled: {format(new Date(game.confirmed_at), 'MMM d, HH:mm')}
+                  Settled: {format(new Date(game.confirmed_at), 'MMM d, yyyy HH:mm')}
                 </div>
               </div>
             </div>

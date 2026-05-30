@@ -205,7 +205,7 @@ export function TeamManagement({ orgId, orgType }: TeamManagementProps) {
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Badge variant="outline">{getRoleDisplayName(invite.invited_role)}</Badge>
                             <span>•</span>
-                            <span>Expires {format(new Date(invite.expires_at), 'MMM d')}</span>
+                            <span>Expires {format(new Date(invite.expires_at), 'MMM d, yyyy')}</span>
                           </div>
                         </div>
                       </div>
@@ -261,7 +261,7 @@ export function TeamManagement({ orgId, orgType }: TeamManagementProps) {
                             <span className="text-muted-foreground">{log.description}</span>
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(log.created_at), 'MMM d, h:mm a')}
+                            {format(new Date(log.created_at), 'MMM d, yyyy, h:mm a')}
                           </p>
                         </div>
                       </div>

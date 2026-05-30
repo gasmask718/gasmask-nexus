@@ -177,7 +177,7 @@ export function StoreRevenueIntelligenceTab({ storeId }: StoreRevenueIntelligenc
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Restock Window</span>
                     <span className="font-medium text-primary">
-                      {format(new Date(score.restock_window_start), 'MMM d')} - {format(new Date(score.restock_window_end), 'MMM d')}
+                      {format(new Date(score.restock_window_start), 'MMM d, yyyy')} - {format(new Date(score.restock_window_end), 'MMM d, yyyy')}
                     </span>
                   </div>
                 )}

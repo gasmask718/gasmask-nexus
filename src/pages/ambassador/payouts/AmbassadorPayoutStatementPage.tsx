@@ -85,7 +85,7 @@ export default function AmbassadorPayoutStatementPage() {
             <h1 className="text-2xl font-bold">Payout Statement</h1>
             {item?.payout_batches && (
               <p className="text-muted-foreground">
-                {format(new Date(item.payout_batches.period_start), 'MMM d')} - {format(new Date(item.payout_batches.period_end), 'MMM d, yyyy')}
+                {format(new Date(item.payout_batches.period_start), 'MMM d, yyyy')} - {format(new Date(item.payout_batches.period_end), 'MMM d, yyyy')}
               </p>
             )}
           </div>

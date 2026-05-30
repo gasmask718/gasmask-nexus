@@ -195,7 +195,7 @@ export function UTLeadTable({ leads, isLoading, selectedLead, onSelectLead, onUp
                           <Badge className={`text-[10px] ${log.outcome === 'interested' || log.outcome === 'closed' ? 'bg-green-500/10 text-green-500' : ''}`}>{log.outcome}</Badge>
                         </div>
                         {log.notes && <p className="mt-1 text-muted-foreground">{log.notes}</p>}
-                        <p className="mt-1 text-muted-foreground/60">{format(new Date(log.created_at), 'MMM d, h:mm a')}</p>
+                        <p className="mt-1 text-muted-foreground/60">{format(new Date(log.created_at), 'MMM d, yyyy, h:mm a')}</p>
                       </div>
                     ))}
                   </div>

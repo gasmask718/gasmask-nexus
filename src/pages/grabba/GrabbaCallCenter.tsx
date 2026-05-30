@@ -212,7 +212,7 @@ export default function GrabbaCallCenter() {
                             <div className="flex items-center gap-1 text-muted-foreground">
                               <Clock className="h-3 w-3" />
                               <span className="text-sm">
-                                {log.created_at ? format(new Date(log.created_at), "MMM d, h:mm a") : ''}
+                                {log.created_at ? format(new Date(log.created_at), "MMM d, yyyy, h:mm a") : ''}
                               </span>
                             </div>
                             <Button variant="ghost" size="sm">

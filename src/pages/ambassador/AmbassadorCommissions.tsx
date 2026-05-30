@@ -391,7 +391,7 @@ export default function AmbassadorCommissions() {
                     {payouts.map((payout) => (
                       <TableRow key={payout.id}>
                         <TableCell className="font-medium">
-                          {format(new Date(payout.period_start), 'MMM d')} - {format(new Date(payout.period_end), 'MMM d, yyyy')}
+                          {format(new Date(payout.period_start), 'MMM d, yyyy')} - {format(new Date(payout.period_end), 'MMM d, yyyy')}
                         </TableCell>
                         <TableCell className="text-right font-semibold text-green-500">
                           ${Number(payout.total_amount).toFixed(2)}

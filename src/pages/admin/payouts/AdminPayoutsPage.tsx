@@ -222,7 +222,7 @@ export default function AdminPayoutsPage() {
                         onClick={() => navigate(`/admin/payouts/${batch.id}`)}
                       >
                         <TableCell className="font-medium">
-                          {format(new Date(batch.period_start), 'MMM d')} - {format(new Date(batch.period_end), 'MMM d, yyyy')}
+                          {format(new Date(batch.period_start), 'MMM d, yyyy')} - {format(new Date(batch.period_end), 'MMM d, yyyy')}
                         </TableCell>
                         <TableCell>
                           <Badge variant={config.variant} className="gap-1">
@@ -240,7 +240,7 @@ export default function AdminPayoutsPage() {
                           ${batch.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">
-                          {format(new Date(batch.created_at), 'MMM d, h:mm a')}
+                          {format(new Date(batch.created_at), 'MMM d, yyyy, h:mm a')}
                         </TableCell>
                         <TableCell>
                           <ArrowRight className="h-4 w-4 text-muted-foreground" />

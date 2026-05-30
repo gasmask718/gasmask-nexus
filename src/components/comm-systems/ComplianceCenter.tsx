@@ -229,7 +229,7 @@ export function ComplianceCenter() {
                           <div className="text-right text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {format(new Date(log.logged_at), 'MMM d, h:mm a')}
+                              {format(new Date(log.logged_at), 'MMM d, yyyy, h:mm a')}
                             </div>
                             {log.business_name && (
                               <span className="text-xs">{log.business_name}</span>

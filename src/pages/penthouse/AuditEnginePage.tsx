@@ -272,7 +272,7 @@ export default function AuditEnginePage() {
                   ) : events.map(evt => (
                     <TableRow key={evt.id}>
                       <TableCell className="text-sm">
-                        {evt.event_date ? format(new Date(evt.event_date), 'MMM d') : '—'}
+                        {evt.event_date ? format(new Date(evt.event_date), 'MMM d, yyyy') : '—'}
                       </TableCell>
                       <TableCell className="text-sm">
                         <div className="flex items-center gap-1">
@@ -863,7 +863,7 @@ export default function AuditEnginePage() {
                   ) : batches.map(batch => (
                     <TableRow key={batch.id} className={selectedBatchId === batch.id ? 'bg-muted/50' : ''}>
                       <TableCell className="text-sm">
-                        {format(new Date(batch.created_at), 'MMM d, h:mm a')}
+                        {format(new Date(batch.created_at), 'MMM d, yyyy, h:mm a')}
                       </TableCell>
                       <TableCell>
                         <Badge variant={batch.status === 'completed' ? 'default' : batch.status === 'failed' ? 'destructive' : 'secondary'}>

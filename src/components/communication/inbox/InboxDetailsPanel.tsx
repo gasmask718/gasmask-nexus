@@ -154,7 +154,7 @@ export function InboxDetailsPanel({ item, onClose, onMarkReviewed }: InboxDetail
                 {item.metadata.due_at && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Due</span>
-                    <span>{format(new Date(item.metadata.due_at), "MMM d, h:mm a")}</span>
+                    <span>{format(new Date(item.metadata.due_at), "MMM d, yyyy, h:mm a")}</span>
                   </div>
                 )}
               </CardContent>
