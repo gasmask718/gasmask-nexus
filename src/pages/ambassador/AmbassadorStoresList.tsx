@@ -334,6 +334,16 @@ function StoresListContent() {
           preselectedStores={dispatchStores}
         />
       )}
+
+      {/* New store proposal — goes through field governance */}
+      {userId && (
+        <NewStoreSubmissionDialog
+          open={newStoreOpen}
+          onOpenChange={setNewStoreOpen}
+          userId={userId}
+          role="ambassador"
+        />
+      )}
     </div>
   );
 }
