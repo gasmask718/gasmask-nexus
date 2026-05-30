@@ -89,6 +89,7 @@ function TierRow({ label, perTube, unitsPerBox }: { label: string; perTube: numb
 
 
 function ProductCard({ p }: { p: CatalogProduct }) {
+  const { t } = useTranslation();
   const brand = p.brand_id ? BRAND_COLORS[p.brand_id] : undefined;
   const isHero = (p.hero_score ?? 0) >= 80;
   const unitsPerBox = p.units_per_box ?? 100;
@@ -104,7 +105,7 @@ function ProductCard({ p }: { p: CatalogProduct }) {
       {isHero && (
         <div className="absolute top-2 right-2 z-10">
           <Badge className="bg-sky-500 text-white text-[10px] gap-0.5 px-1.5 py-0.5">
-            <Sparkles className="h-3 w-3" /> New
+            <Sparkles className="h-3 w-3" /> {t('amb.catalog.new')}
           </Badge>
         </div>
       )}
@@ -127,16 +128,16 @@ function ProductCard({ p }: { p: CatalogProduct }) {
         <div>
           <p className="font-semibold text-sm leading-tight">{p.name}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            {brand?.label ?? 'Brand'}
+            {brand?.label ?? t('amb.catalog.brand')}
             {p.sku ? <> · {p.sku}</> : null}
           </p>
         </div>
 
         {/* All three tiers — per-tube (stored) + per-box (computed × units_per_box) */}
         <div className="space-y-1">
-          <TierRow label="Store" perTube={p.store_price} unitsPerBox={unitsPerBox} />
-          <TierRow label="Wholesale" perTube={p.wholesale_price} unitsPerBox={unitsPerBox} />
-          <TierRow label="Street" perTube={p.street_price} unitsPerBox={unitsPerBox} />
+          <TierRow label={t('amb.catalog.store')} perTube={p.store_price} unitsPerBox={unitsPerBox} />
+          <TierRow label={t('amb.catalog.wholesale')} perTube={p.wholesale_price} unitsPerBox={unitsPerBox} />
+          <TierRow label={t('amb.catalog.street')} perTube={p.street_price} unitsPerBox={unitsPerBox} />
         </div>
 
         <div className="flex items-center justify-between pt-1">
@@ -144,13 +145,14 @@ function ProductCard({ p }: { p: CatalogProduct }) {
             {p.category ?? 'product'}
           </Badge>
           <span className="text-[11px] text-muted-foreground">
-            {unitsPerBox} / box
+            {unitsPerBox} {t('amb.catalog.per_box_suffix')}
           </span>
         </div>
       </CardContent>
     </Card>
   );
 }
+
 
 function CatalogSkeleton() {
   return (
