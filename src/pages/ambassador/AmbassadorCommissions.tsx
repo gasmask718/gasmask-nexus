@@ -415,7 +415,9 @@ export default function AmbassadorCommissions() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
+
             </Card>
           </TabsContent>
         </Tabs>
