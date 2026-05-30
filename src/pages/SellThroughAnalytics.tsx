@@ -336,6 +336,19 @@ export default function SellThroughAnalytics() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-8">
+                  <Checkbox
+                    checked={paginated.length > 0 && paginated.every((r) => selectedStoreIds.includes(r.store_id))}
+                    onCheckedChange={(checked) => {
+                      const pageIds = paginated.map((r) => r.store_id);
+                      setSelectedStoreIds((prev) => {
+                        const rest = prev.filter((id) => !pageIds.includes(id));
+                        return checked ? Array.from(new Set([...rest, ...pageIds])) : rest;
+                      });
+                    }}
+                    aria-label="Select all on page"
+                  />
+                </TableHead>
                 <TableHead>
                   <button className="flex items-center text-xs font-medium" onClick={() => toggleSort("store_name")}>
                     Store <SortIcon field="store_name" />
@@ -375,13 +388,13 @@ export default function SellThroughAnalytics() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-12 text-muted-foreground animate-pulse">
+                  <TableCell colSpan={11} className="text-center py-12 text-muted-foreground animate-pulse">
                     Loading sell-through analytics…
                   </TableCell>
                 </TableRow>
               ) : paginated.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
                     No results found. Adjust your filters.
                   </TableCell>
                 </TableRow>
@@ -392,6 +405,15 @@ export default function SellThroughAnalytics() {
                     row={row}
                     onNavigate={navigate}
                     isInactive={row.total_orders_lifetime === 0 && showInactive}
+                    isSelected={selectedStoreIds.includes(row.store_id)}
+                    onToggleSelect={() => {
+                      setSelectedStoreIds((prev) =>
+                        prev.includes(row.store_id)
+                          ? prev.filter((id) => id !== row.store_id)
+                          : [...prev, row.store_id]
+                      );
+                    }}
+                    onDispatch={(storeId) => setDispatchStores([storeId])}
                   />
                 ))
               )}
@@ -399,6 +421,25 @@ export default function SellThroughAnalytics() {
           </Table>
         </div>
       </Card>
+
+      {/* Dispatch — reuses working RouteAssignmentDialog with empty assignee so picker opens */}
+      {dispatchStores && (
+        <RouteAssignmentDialog
+          open={!!dispatchStores}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDispatchStores(null);
+              setSelectedStoreIds([]);
+            }
+          }}
+          assigneeId=""
+          assigneeName=""
+          assigneeType="driver"
+          assigneeUserId={null}
+          bulkMode={dispatchStores.length > 1}
+          preselectedStores={dispatchStores}
+        />
+      )}
     </div>
   );
 }
