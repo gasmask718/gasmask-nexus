@@ -47,8 +47,8 @@ export type SubmissionSource =
  * Payload for submitting a field change through governance
  */
 export interface FieldSubmissionPayload {
-  // Required
-  store_id: string;
+  // Required (except for 'new_store' which has no store yet)
+  store_id: string | null;
   entity_type: FieldEntityType;
   action_type: FieldActionType;
   payload_after: Record<string, unknown>;
