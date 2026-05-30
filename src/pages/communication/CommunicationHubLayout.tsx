@@ -205,6 +205,7 @@ export default function CommunicationHubLayout() {
 
               const isExpanded = expandedFloors.includes(floorIdx);
               const FloorIcon = floor.icon;
+              const floorWired = sectionHasDispatch(floor.items.map(i => `/communication/${i.path}`));
 
               return (
                 <div key={floor.label}>
@@ -217,6 +218,13 @@ export default function CommunicationHubLayout() {
                       <span className="flex items-center gap-2">
                         <FloorIcon className="h-3 w-3" />
                         {floor.label}
+                        {floorWired && (
+                          <span
+                            title={DISPATCH_TOOLTIP}
+                            aria-label={DISPATCH_TOOLTIP}
+                            className="inline-block h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]"
+                          />
+                        )}
                       </span>
                       {isExpanded ? (
                         <ChevronLeft className="h-3 w-3 rotate-[-90deg]" />
@@ -231,10 +239,12 @@ export default function CommunicationHubLayout() {
                   {/* Floor Items */}
                   {(collapsed || isExpanded) && floor.items.map((item) => {
                     if (item.adminOnly && !isAdmin) return null;
+                    const fullPath = `/communication/${item.path}`;
+                    const wired = isDispatchWired(fullPath);
                     return (
                       <NavLink
                         key={item.path}
-                        to={`/communication/${item.path}`}
+                        to={fullPath}
                         className={({ isActive }) =>
                           cn(
                             "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors relative",
@@ -251,6 +261,13 @@ export default function CommunicationHubLayout() {
                         {!collapsed && (
                           <>
                             <span className="flex-1 truncate">{item.label}</span>
+                            {wired && (
+                              <span
+                                title={DISPATCH_TOOLTIP}
+                                aria-label={DISPATCH_TOOLTIP}
+                                className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.7)] shrink-0"
+                              />
+                            )}
                             {item.badge && (
                               <Badge 
                                 variant="destructive" 
@@ -260,6 +277,9 @@ export default function CommunicationHubLayout() {
                               </Badge>
                             )}
                           </>
+                        )}
+                        {collapsed && wired && (
+                          <span className="absolute -top-0.5 -left-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.7)]" />
                         )}
                         {collapsed && item.badge && (
                           <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive" />
