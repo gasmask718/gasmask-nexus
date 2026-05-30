@@ -251,6 +251,17 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={pageRows.length > 0 && pageRows.every(r => selectedIds.includes(r.store_id))}
+                        onCheckedChange={(c) => {
+                          const ids = pageRows.map(r => r.store_id);
+                          setSelectedIds(prev => c
+                            ? Array.from(new Set([...prev, ...ids]))
+                            : prev.filter(id => !ids.includes(id)));
+                        }}
+                      />
+                    </TableHead>
                     <SortHeader label="Store" sortKeyVal="store_name" />
                     <TableHead>Location</TableHead>
                     <SortHeader label="Orders" sortKeyVal="total_orders_lifetime" />
@@ -261,13 +272,13 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
                     <SortHeader label="Velocity" sortKeyVal="order_frequency_class" />
                     <TableHead>Health</TableHead>
                     <TableHead>Ambassador</TableHead>
-                    <TableHead className="w-10"></TableHead>
+                    <TableHead className="w-16"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pageRows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
                         No stores found for current filters.
                       </TableCell>
                     </TableRow>
@@ -278,6 +289,16 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => navigate(`/store-master/${row.store_id}`)}
                       >
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedIds.includes(row.store_id)}
+                            onCheckedChange={(c) => {
+                              setSelectedIds(prev => c
+                                ? [...prev, row.store_id]
+                                : prev.filter(id => id !== row.store_id));
+                            }}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium max-w-[200px] truncate">
                           {row.store_name}
                         </TableCell>
@@ -302,15 +323,26 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
                         <TableCell className="text-xs text-muted-foreground max-w-[100px] truncate">
                           {row.ambassador_name || '—'}
                         </TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 p-0"
-                            onClick={e => { e.stopPropagation(); navigate(`/store-master/${row.store_id}`); }}
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              title="Add to Route"
+                              onClick={() => setDispatchStores([row.store_id])}
+                            >
+                              <RouteIcon className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              onClick={() => navigate(`/store-master/${row.store_id}`)}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
