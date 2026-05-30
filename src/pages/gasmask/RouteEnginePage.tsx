@@ -128,6 +128,23 @@ export default function RouteEnginePage() {
     },
   });
 
+  // Fetch assignable people across all 3 roles (active + has user_id)
+  const { data: assignablePeople = [] } = useQuery({
+    queryKey: ['route-engine-assignable-people'],
+    queryFn: async () => {
+      const [drv, bk, amb] = await Promise.all([
+        (supabase as any).from('drivers').select('id, full_name, user_id').eq('status', 'active').not('user_id', 'is', null).order('full_name'),
+        (supabase as any).from('bikers').select('id, full_name, user_id').eq('status', 'active').not('user_id', 'is', null).order('full_name'),
+        (supabase as any).from('ambassadors').select('id, name, user_id').eq('is_active', true).not('user_id', 'is', null).order('name'),
+      ]);
+      const drivers = (drv.data || []).map((r: any) => ({ id: r.id, name: r.full_name || 'Driver', userId: r.user_id, role: 'driver' as const }));
+      const bikers = (bk.data || []).map((r: any) => ({ id: r.id, name: r.full_name || 'Biker', userId: r.user_id, role: 'biker' as const }));
+      const ambs = (amb.data || []).map((r: any) => ({ id: r.id, name: (r.name || '').trim() || 'Ambassador', userId: r.user_id, role: 'ambassador' as const }));
+      return [...drivers, ...bikers, ...ambs];
+    },
+  });
+
+
   // Fetch store history for detail panel
   const { data: storeHistory = [] } = useQuery({
     queryKey: ['trigger-store-history', detailTrigger?.store_name],
