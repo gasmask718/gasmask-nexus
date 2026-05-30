@@ -6,11 +6,15 @@ import { TUBE_BRAND_COLORS, getTubeBrandColor } from '@/constants/tubeColors';
 import { getColorStatusClasses } from '@/hooks/useStoreTubeKPI';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TubeIntelAttribution } from '@/components/store/TubeIntelAttribution';
+import { normalizeBrandId, CANONICAL_BRANDS } from '@/config/brands';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE KPI BADGE — CANONICAL RENDERER
 // ALWAYS renders ALL known brands — even if data is missing
 // NO truncation. NO hiding. Full operational visibility.
+// Dedupe legacy duplicate brand ids (e.g. 'grabba' + 'grabba_r_us') by collapsing
+// into their canonical brand. Distinct SKU variants (gasmask vs gasmasktubes,
+// hotscolatti light/dark) stay separate.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface StoreKPIBadgeProps {
@@ -19,11 +23,31 @@ interface StoreKPIBadgeProps {
   intelSummary?: TubeIntelSummary | null;
 }
 
-// Canonical brand list — ALWAYS render all of these
-const ALL_TUBE_BRANDS = Object.entries(TUBE_BRAND_COLORS).map(([id, config]) => ({
-  brand_id: id,
-  brand_name: config.name,
-}));
+// Group key: canonical id ONLY when the raw key is an exact alias of a
+// canonical brand (so 'grabba' → 'grabba_r_us'). SKU variants like
+// 'gasmasktubes' or 'hotscolatti-light' keep their raw key.
+function groupKeyFor(rawId: string): string {
+  const canon = normalizeBrandId(rawId);
+  if (canon && CANONICAL_BRANDS[canon].aliases.some(a => a.toLowerCase() === rawId.toLowerCase())) {
+    return canon;
+  }
+  return rawId;
+}
+
+// Canonical brand list — deduped by group key, preserving order.
+const ALL_TUBE_BRANDS = (() => {
+  const seen = new Set<string>();
+  const out: { brand_id: string; brand_name: string }[] = [];
+  for (const [id, config] of Object.entries(TUBE_BRAND_COLORS)) {
+    const key = groupKeyFor(id);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const canon = normalizeBrandId(key);
+    const name = canon && key === canon ? CANONICAL_BRANDS[canon].displayName : config.name;
+    out.push({ brand_id: key, brand_name: name });
+  }
+  return out;
+})();
 
 export function StoreKPIBadge({ summary, isLoading, intelSummary }: StoreKPIBadgeProps) {
   // Loading state — show skeleton for all brands
@@ -43,10 +67,28 @@ export function StoreKPIBadge({ summary, isLoading, intelSummary }: StoreKPIBadg
     );
   }
 
-  // Build lookup map from existing KPI data
-  const kpiLookup = new Map(
-    (summary?.kpiRows || []).map(row => [row.brand_id, row])
-  );
+  // Build lookup map from existing KPI data — merge rows that share a group key
+  // (sum tube_count, take most-recent last_order_date, prefer non-muted status).
+  const kpiLookup = new Map<string, { brand_id: string; brand_name: string; tube_count: number; last_order_date: string | null; color_status: string }>();
+  for (const row of summary?.kpiRows || []) {
+    const key = groupKeyFor(row.brand_id);
+    const existing = kpiLookup.get(key);
+    if (!existing) {
+      kpiLookup.set(key, {
+        brand_id: key,
+        brand_name: row.brand_name,
+        tube_count: Number(row.tube_count || 0),
+        last_order_date: row.last_order_date ?? null,
+        color_status: row.color_status || 'muted',
+      });
+    } else {
+      existing.tube_count += Number(row.tube_count || 0);
+      if (row.last_order_date && (!existing.last_order_date || row.last_order_date > existing.last_order_date)) {
+        existing.last_order_date = row.last_order_date;
+      }
+      if (existing.color_status === 'muted' && row.color_status) existing.color_status = row.color_status;
+    }
+  }
 
   // Calculate total tubes across all brands
   const totalTubes = summary?.totalTubes ?? 0;
