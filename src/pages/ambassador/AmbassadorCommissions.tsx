@@ -309,8 +309,9 @@ export default function AmbassadorCommissions() {
 
             {/* Ledger Table - Real data from commission_ledger */}
             <Card>
-              <ScrollArea className="h-[400px]">
+              <div className="max-h-[400px] w-full overflow-auto">
                 <Table>
+
                   <TableHeader>
                     <TableRow>
                       <TableHead>Store / Source</TableHead>
