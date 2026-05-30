@@ -845,63 +845,13 @@ export default function AmbassadorCommunications() {
             </DialogDescription>
           </DialogHeader>
 
-          {callMode === 'choose' && (
-            <div className="grid grid-cols-2 gap-3 py-2">
-              <Button onClick={startDirectCall} disabled={isPlacing} className="h-24 flex-col gap-2">
-                <Phone className="h-5 w-5" />
-                <div className="text-sm font-semibold">Direct Call</div>
-                <div className="text-[10px] opacity-80">Bridge through your phone</div>
-              </Button>
-              <Button onClick={() => setCallMode('ai-config')} variant="secondary" className="h-24 flex-col gap-2">
-                <Sparkles className="h-5 w-5" />
-                <div className="text-sm font-semibold">AI-Assisted</div>
-                <div className="text-[10px] opacity-80">Sara handles the call</div>
-              </Button>
-            </div>
-          )}
-
-          {callMode === 'ai-config' && (() => {
-            const storeLang = (storeContext as any)?.store?.language_preference || 'en';
-            const sorted = [...aiScripts].sort((a, b) => ((a.language === storeLang ? -1 : 1) - (b.language === storeLang ? -1 : 1)));
-            const chosen = aiScripts.find((s) => s.id === selectedScriptId);
-            return (
-              <div className="space-y-3 py-2">
-                <div className="text-xs text-muted-foreground">
-                  Store prefers <Badge variant="outline" className="ml-1">{storeLang.toUpperCase()}</Badge>
-                  {storeLang === 'ar' && ' — Arabic voice falls back to English until provisioned.'}
-                </div>
-                <Select value={selectedScriptId} onValueChange={setSelectedScriptId}>
-                  <SelectTrigger><SelectValue placeholder="Pick a script…" /></SelectTrigger>
-                  <SelectContent>
-                    {sorted.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.language === 'ar' ? '🇸🇦' : '🇺🇸'} {s.name} · {s.objective.replace('_', ' ')}
-                        {s.usage_count > 0 && ` · ${s.usage_count} uses`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {chosen && (
-                  <Card className="p-3 bg-muted/30">
-                    <div className="text-[11px] uppercase text-muted-foreground mb-1">Opening line preview</div>
-                    <div className="text-sm" dir={chosen.language === 'ar' ? 'rtl' : 'ltr'}>
-                      {(chosen.opening_line || '').replace(/\{\{owner_name\}\}/g, callTarget?.contact_name || 'there').replace(/\{\{store_name\}\}/g, callTarget?.store_name || '')}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-2">
-                      Max duration: {Math.round((chosen.max_duration_seconds || 240) / 60)} min
-                    </div>
-                  </Card>
-                )}
-                <DialogFooter>
-                  <Button variant="ghost" onClick={() => setCallMode('choose')}>Back</Button>
-                  <Button onClick={startAiCall} disabled={!selectedScriptId || isPlacing}>
-                    <Sparkles className="h-4 w-4 mr-1" />
-                    {isPlacing ? 'Initiating…' : 'Initiate AI Call'}
-                  </Button>
-                </DialogFooter>
-              </div>
-            );
-          })()}
+          <div className="py-2">
+            <Button onClick={startDirectCall} disabled={isPlacing} className="w-full h-24 flex-col gap-2">
+              <Phone className="h-5 w-5" />
+              <div className="text-sm font-semibold">{isPlacing ? 'Connecting…' : 'Direct Call'}</div>
+              <div className="text-[10px] opacity-80">Bridge through your phone</div>
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
