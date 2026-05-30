@@ -74,7 +74,7 @@ export default function AmbassadorEarningsPage() {
                 {formatCurrency(Number(summary?.pending_amount || 0) + Number(summary?.approved_amount || 0))}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Awaiting payout</p>
+            <p className="text-xs text-muted-foreground mt-1">Outstanding — to be paid</p>
           </CardContent>
         </Card>
 

@@ -5,16 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   ArrowLeft,
-  CreditCard, 
   CheckCircle2, 
   AlertCircle,
   Loader2,
   Banknote,
-  ExternalLink
+  Info
 } from 'lucide-react';
 import { useMyPayoutAccounts, useUpsertPayoutAccount } from '@/hooks/usePayouts';
 import { useQuery } from '@tanstack/react-query';
@@ -25,7 +23,6 @@ export default function AmbassadorPayoutSettingsPage() {
   const { data: accounts, isLoading } = useMyPayoutAccounts();
   const upsertAccount = useUpsertPayoutAccount();
 
-  const [provider, setProvider] = useState<'stripe' | 'manual'>('stripe');
   const [manualDetails, setManualDetails] = useState('');
 
   // Get current ambassador ID
@@ -43,7 +40,6 @@ export default function AmbassadorPayoutSettingsPage() {
     },
   });
 
-  const stripeAccount = accounts?.find((a: any) => a.provider === 'stripe');
   const manualAccount = accounts?.find((a: any) => a.provider === 'manual');
 
   const handleSaveManual = async () => {
@@ -54,15 +50,8 @@ export default function AmbassadorPayoutSettingsPage() {
       provider: 'manual',
       provider_account_id: manualDetails,
       payouts_enabled: true,
-      kyc_status: 'verified', // Manual accounts are self-verified
+      kyc_status: 'verified',
     });
-  };
-
-  const kycStatusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-    unverified: { label: 'Not Verified', variant: 'secondary' },
-    pending: { label: 'Pending Review', variant: 'outline' },
-    verified: { label: 'Verified', variant: 'default' },
-    rejected: { label: 'Rejected', variant: 'destructive' },
   };
 
   return (
@@ -75,9 +64,17 @@ export default function AmbassadorPayoutSettingsPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Payout Settings</h1>
-            <p className="text-muted-foreground">Configure how you receive payments</p>
+            <p className="text-muted-foreground">How you receive your commission payments</p>
           </div>
         </div>
+
+        {/* Cash Notice */}
+        <Alert className="border-amber-500/30 bg-amber-500/10">
+          <Info className="h-4 w-4 text-amber-500" />
+          <AlertDescription className="text-amber-700 dark:text-amber-300">
+            Payouts are currently handled directly in cash. Online payout setup (Stripe, bank transfer, etc.) is coming soon.
+          </AlertDescription>
+        </Alert>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -91,36 +88,13 @@ export default function AmbassadorPayoutSettingsPage() {
                 <CardTitle>Current Payout Method</CardTitle>
               </CardHeader>
               <CardContent>
-                {stripeAccount?.payouts_enabled ? (
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <CreditCard className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">Stripe Connect</p>
-                      <p className="text-sm text-muted-foreground">
-                        Account: {stripeAccount.provider_account_id?.slice(0, 12)}...
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={kycStatusConfig[stripeAccount.kyc_status]?.variant || 'secondary'}>
-                        {kycStatusConfig[stripeAccount.kyc_status]?.label || stripeAccount.kyc_status}
-                      </Badge>
-                      {stripeAccount.payouts_enabled && (
-                        <Badge variant="default" className="gap-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Active
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ) : manualAccount?.payouts_enabled ? (
+                {manualAccount?.payouts_enabled ? (
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                       <Banknote className="h-6 w-6 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium">Manual Payout</p>
+                      <p className="font-medium">Cash / Manual Payout</p>
                       <p className="text-sm text-muted-foreground">
                         {manualAccount.provider_account_id || 'Details on file'}
                       </p>
@@ -136,87 +110,46 @@ export default function AmbassadorPayoutSettingsPage() {
                       <AlertCircle className="h-6 w-6 text-destructive" />
                     </div>
                     <div>
-                      <p className="font-medium">No payout method configured</p>
-                      <p className="text-sm text-muted-foreground">Set up a method below to receive payments</p>
+                      <p className="font-medium">No payout details on file</p>
+                      <p className="text-sm text-muted-foreground">
+                        Add your preferred cash contact info below so admin knows how to reach you
+                      </p>
                     </div>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Setup Options */}
+            {/* Manual Payout Details */}
             <Card>
               <CardHeader>
-                <CardTitle>Setup Payout Method</CardTitle>
-                <CardDescription>Choose how you want to receive your commission payments</CardDescription>
+                <CardTitle>Your Payout Details</CardTitle>
+                <CardDescription>
+                  How admin should contact you for cash payouts (optional — for record-keeping)
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <RadioGroup value={provider} onValueChange={(v: 'stripe' | 'manual') => setProvider(v)}>
-                  <div className="flex items-start space-x-3 p-4 rounded-lg border cursor-pointer hover:bg-muted/50">
-                    <RadioGroupItem value="stripe" id="stripe" className="mt-1" />
-                    <div className="flex-1">
-                      <Label htmlFor="stripe" className="cursor-pointer">
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="h-4 w-4" />
-                          Stripe Connect (Recommended)
-                        </div>
-                      </Label>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Automatic deposits to your bank account. Secure, fast, and reliable.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-3 p-4 rounded-lg border cursor-pointer hover:bg-muted/50">
-                    <RadioGroupItem value="manual" id="manual" className="mt-1" />
-                    <div className="flex-1">
-                      <Label htmlFor="manual" className="cursor-pointer">
-                        <div className="flex items-center gap-2">
-                          <Banknote className="h-4 w-4" />
-                          Manual Payout
-                        </div>
-                      </Label>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Cash, Zelle, PayPal, or other methods handled outside the platform.
-                      </p>
-                    </div>
-                  </div>
-                </RadioGroup>
-
-                {provider === 'stripe' && (
-                  <Alert>
-                    <CreditCard className="h-4 w-4" />
-                    <AlertDescription>
-                      Stripe Connect setup requires admin assistance. Please contact your administrator to link your Stripe account.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {provider === 'manual' && (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Payment Details</Label>
-                      <Input
-                        value={manualDetails}
-                        onChange={(e) => setManualDetails(e.target.value)}
-                        placeholder="e.g., PayPal: email@example.com, Zelle: (555) 123-4567"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Enter your preferred payment method and contact details
-                      </p>
-                    </div>
-                    <Button onClick={handleSaveManual} disabled={!manualDetails || upsertAccount.isPending}>
-                      {upsertAccount.isPending ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        'Save Manual Payout Method'
-                      )}
-                    </Button>
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <Label>Payment Preference / Contact</Label>
+                  <Input
+                    value={manualDetails}
+                    onChange={(e) => setManualDetails(e.target.value)}
+                    placeholder="e.g., Pick up at office, Zelle: (555) 123-4567, PayPal: email@example.com"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This is optional. Admin will coordinate cash payouts directly with you.
+                  </p>
+                </div>
+                <Button onClick={handleSaveManual} disabled={!manualDetails || upsertAccount.isPending}>
+                  {upsertAccount.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Payout Details'
+                  )}
+                </Button>
               </CardContent>
             </Card>
 
@@ -236,8 +169,8 @@ export default function AmbassadorPayoutSettingsPage() {
                     <span className="font-medium">$25.00</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Processing Time</span>
-                    <span className="font-medium">1-3 business days</span>
+                    <span className="text-muted-foreground">Processing</span>
+                    <span className="font-medium">Handled directly by admin</span>
                   </div>
                 </div>
               </CardContent>
