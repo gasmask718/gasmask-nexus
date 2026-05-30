@@ -10,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, MapPin, Phone, Plus, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload, Package, Sparkles, CalendarDays, ShoppingCart, Clock } from 'lucide-react';
+import { Search, MapPin, Phone, Plus, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload, Package, Sparkles, CalendarDays, ShoppingCart, Clock, Route as RouteIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { useCall } from '@/components/communication/CallProvider';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
@@ -140,6 +142,8 @@ const Stores = () => {
   // Add Store Modal State
   const [showAddStore, setShowAddStore] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
+  const [dispatchStores, setDispatchStores] = useState<string[] | null>(null);
   const [newStoreData, setNewStoreData] = useState({
     name: '',
     type: 'retail',
@@ -790,6 +794,14 @@ const Stores = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            disabled={selectedStoreIds.length === 0}
+            onClick={() => setDispatchStores(selectedStoreIds)}
+          >
+            <RouteIcon className="h-4 w-4 mr-2" />
+            Dispatch Selected{selectedStoreIds.length > 0 ? ` (${selectedStoreIds.length})` : ''}
+          </Button>
           <Button variant="outline" onClick={() => setShowBulkUpload(true)}>
             <Upload className="h-4 w-4 mr-2" />
             Bulk Upload
@@ -1036,9 +1048,36 @@ const Stores = () => {
                       </Badge>
                     </div>
                   <div className="flex items-start gap-2">
+                    <Checkbox
+                      checked={selectedStoreIds.includes(store.id)}
+                      onCheckedChange={(checked) => {
+                        setSelectedStoreIds((prev) =>
+                          checked
+                            ? Array.from(new Set([...prev, store.id]))
+                            : prev.filter((id) => id !== store.id)
+                        );
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={`Select ${store.name}`}
+                      className="mt-1"
+                    />
                     <Badge className={getStatusColor(store.status)}>
                       {store.status === 'needsFollowUp' ? 'Follow-up' : store.status}
                     </Badge>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setDispatchStores([store.id]);
+                      }}
+                      aria-label={`Add ${store.name} to a route`}
+                      title="Add to Route"
+                    >
+                      <RouteIcon className="h-4 w-4" />
+                    </Button>
                     <Button
                       type="button"
                       variant="ghost"
@@ -1516,6 +1555,25 @@ const Stores = () => {
         onOpenChange={setShowBulkUpload}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['stores-with-contacts'] })}
       />
+
+      {/* Dispatch — reuses working RouteAssignmentDialog with empty assignee so picker opens */}
+      {dispatchStores && (
+        <RouteAssignmentDialog
+          open={!!dispatchStores}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDispatchStores(null);
+              setSelectedStoreIds([]);
+            }
+          }}
+          assigneeId=""
+          assigneeName=""
+          assigneeType="driver"
+          assigneeUserId={null}
+          bulkMode={dispatchStores.length > 1}
+          preselectedStores={dispatchStores}
+        />
+      )}
     </div>
   );
 };
