@@ -1,10 +1,15 @@
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Building, Upload, Truck, BarChart3, Users, MessageSquare, Brain } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Building, Upload, Truck, BarChart3, Users, MessageSquare, Brain, Route as RouteIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 
 import { CANONICAL_BRANDS } from '@/config/brands';
 
