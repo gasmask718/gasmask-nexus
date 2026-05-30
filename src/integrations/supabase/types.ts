@@ -110823,14 +110823,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -116414,69 +116414,6 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string
       }
-      get_ambassador_profit_breakdown: {
-        Args: {
-          p_ambassador_id: string
-          p_brand?: string
-          p_sale_channel?: string
-          p_store_id?: string
-        }
-        Returns: {
-          ambassador_id: string | null
-          ambassador_user_id: string | null
-          attribution_method: string | null
-          attribution_valid: boolean | null
-          brand: string | null
-          brand_id: string | null
-          first_sale_at: string | null
-          last_sale_at: string | null
-          margin_pct: number | null
-          net_profit: number | null
-          product_id: string | null
-          product_name: string | null
-          profit_confidence_score: number | null
-          profit_status: string | null
-          retail_revenue: number | null
-          sale_channel: string | null
-          sale_month: string | null
-          store_id: string | null
-          store_name: string | null
-          units_sold: number | null
-          wholesale_cost: number | null
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "v_ambassador_profit_breakdown"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
-      get_ambassador_profit_dashboard: {
-        Args: { p_ambassador_id: string }
-        Returns: {
-          ambassador_id: string | null
-          ambassador_name: string | null
-          ambassador_user_id: string | null
-          avg_confidence_score: number | null
-          avg_margin_pct: number | null
-          brands_sold: number | null
-          confirmed_row_count: number | null
-          estimated_row_count: number | null
-          products_sold: number | null
-          stores_served: number | null
-          total_invoices: number | null
-          total_profit: number | null
-          total_revenue: number | null
-          total_units_sold: number | null
-          total_wholesale_cost: number | null
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "v_ambassador_profit_dashboard"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
       get_audit_integrity: {
         Args: never
         Returns: {
@@ -116536,64 +116473,6 @@ export type Database = {
       get_current_user_role: { Args: never; Returns: string }
       get_intent_queue_health: { Args: never; Returns: Json }
       get_managed_office_ids: { Args: { _user_id: string }; Returns: string[] }
-      get_my_profit_breakdown: {
-        Args: { p_brand?: string; p_sale_channel?: string; p_store_id?: string }
-        Returns: {
-          ambassador_id: string | null
-          ambassador_user_id: string | null
-          attribution_method: string | null
-          attribution_valid: boolean | null
-          brand: string | null
-          brand_id: string | null
-          first_sale_at: string | null
-          last_sale_at: string | null
-          margin_pct: number | null
-          net_profit: number | null
-          product_id: string | null
-          product_name: string | null
-          profit_confidence_score: number | null
-          profit_status: string | null
-          retail_revenue: number | null
-          sale_channel: string | null
-          sale_month: string | null
-          store_id: string | null
-          store_name: string | null
-          units_sold: number | null
-          wholesale_cost: number | null
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "v_ambassador_profit_breakdown"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
-      get_my_profit_dashboard: {
-        Args: never
-        Returns: {
-          ambassador_id: string | null
-          ambassador_name: string | null
-          ambassador_user_id: string | null
-          avg_confidence_score: number | null
-          avg_margin_pct: number | null
-          brands_sold: number | null
-          confirmed_row_count: number | null
-          estimated_row_count: number | null
-          products_sold: number | null
-          stores_served: number | null
-          total_invoices: number | null
-          total_profit: number | null
-          total_revenue: number | null
-          total_units_sold: number | null
-          total_wholesale_cost: number | null
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "v_ambassador_profit_dashboard"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
       get_payout_statement: { Args: { p_batch_id: string }; Returns: Json }
       get_phase5_mode: { Args: never; Returns: Json }
       get_portal_queue_health: { Args: never; Returns: Json }
