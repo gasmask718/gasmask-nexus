@@ -45,8 +45,10 @@ export function AmbassadorLayout({
       className={className}
     >
       <AmbassadorPortalNav />
-      {children}
+      {/* Mobile-only bottom-pad so fixed nav doesn't cover content */}
+      <div className="pb-20 md:pb-0">{children}</div>
       <FeedbackFloatingButton />
+      <AmbassadorMobileBottomNav />
     </EnhancedPortalLayout>
   );
 }
