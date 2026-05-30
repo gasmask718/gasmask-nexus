@@ -31,10 +31,10 @@ export const DISPATCH_REGISTRY: DispatchRow[] = [
   { floor: 'Sell-Through Analytics', path: '/sell-through-analytics', shows: 'Stores ranked by inventory velocity', status: 'wired' },
   { floor: 'All Opportunities', path: '/opportunities', shows: 'Merged high-intent store signals', status: 'wired' },
   { floor: 'Store Detail', path: '/stores/:id', shows: 'Single store dispatch action', status: 'wired' },
-  { floor: 'CRM Follow-Ups', path: '/communication/follow-ups', shows: 'Stores with pending follow-up', status: 'wired' },
-  { floor: 'Manual Call Console', path: '/communication/manual-calls', shows: 'Stores queued for outbound', status: 'wired' },
-  { floor: 'Pending Route Stops', path: '/dispatch/pending-stops', shows: 'Stops awaiting assignment', status: 'wired' },
-  { floor: 'Territory Map', path: '/territory', shows: 'Geospatial store view', status: 'wired' },
+  { floor: 'CRM Follow-Ups', path: '/communication/follow-ups', shows: 'Stores with pending follow-up', status: 'unwired', note: 'Communication-only surface; dispatch lives on store-list surfaces' },
+  { floor: 'Manual Call Console', path: '/communication/manual-calls', shows: 'Stores queued for outbound', status: 'unwired', note: 'Communication-only surface; dispatch lives on store-list surfaces' },
+  { floor: 'Pending Route Stops', path: '/dispatch/pending-stops', shows: 'Stops awaiting assignment', status: 'wired', note: 'Uses SendToRouteModal (dispatch-equivalent) instead of RouteAssignmentDialog' },
+  { floor: 'Territory Map', path: '/territory', shows: 'Geospatial store view', status: 'wired', note: 'Dispatch Visible Stores button opens RouteAssignmentDialog with filtered set preselected' },
 
   // Additional wired surfaces
   { floor: 'Store Intelligence', path: '/gasmask/store-intelligence', shows: 'AI-scored stores (0-100)', status: 'wired' },
