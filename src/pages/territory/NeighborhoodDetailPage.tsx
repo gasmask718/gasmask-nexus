@@ -1,15 +1,17 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Phone, MessageSquare, Bot, ChevronRight, Users, Flame, Percent, Tag } from 'lucide-react';
+import { Phone, MessageSquare, Bot, ChevronRight, Users, Flame, Percent, Tag, Truck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePriorCustomerSegmentMap, FLOW_STATUS_META, type FlowStatus } from '@/hooks/usePriorCustomerSegmentMap';
 import { NeighborhoodStoreBreakdown } from '@/components/territory/NeighborhoodStoreBreakdown';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 
 const fmt = (n: number) => Number(n || 0).toLocaleString();
 
