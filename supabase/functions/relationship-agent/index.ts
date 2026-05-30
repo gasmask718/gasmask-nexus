@@ -669,6 +669,16 @@ Tube intel signals: ${hasSignals ? JSON.stringify(tubeSignals) : 'None'}
         });
       }
 
+      // GasMask-only scope: refuse to process inbound replies for non-GasMask stores
+      if (store_id && !(await isGasMaskStore(supabase, store_id))) {
+        return new Response(JSON.stringify({
+          success: false,
+          skipped: true,
+          reason: 'store_outside_gasmask_vertical',
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+
       // Get store context
       let storeContext = `Store: ${store_name || 'Unknown'}\nTier: ${tier || 'unknown'}\nPhone: ${phone_number || ''}`;
 
