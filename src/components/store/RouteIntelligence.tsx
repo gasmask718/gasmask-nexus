@@ -16,9 +16,11 @@ import { AddToRouteModal } from "./AddToRouteModal";
 interface RouteIntelligenceProps {
   storeId: string;
   storeName?: string;
+  /** Optional callback that overrides the default AddToRouteModal. Use this to wire in RouteAssignmentDialog. */
+  onAddToRoute?: () => void;
 }
 
-export function RouteIntelligence({ storeId, storeName }: RouteIntelligenceProps) {
+export function RouteIntelligence({ storeId, storeName, onAddToRoute }: RouteIntelligenceProps) {
   const [addToRouteModalOpen, setAddToRouteModalOpen] = useState(false);
   // Fetch recent routes for this store
   const { data: routeHistory } = useQuery({
