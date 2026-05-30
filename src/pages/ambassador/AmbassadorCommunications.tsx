@@ -156,6 +156,15 @@ export default function AmbassadorCommunications() {
     try { localStorage.setItem('amb_comm_sidebar_open', sidebarOpen ? '1' : '0'); } catch {}
   }, [sidebarOpen]);
 
+  // Sync preselected store from URL into selection (once, on mount/param change)
+  useEffect(() => {
+    if (preselectStoreId && preselectStoreId !== selectedId) {
+      setSelectedId(preselectStoreId);
+      setTab('messages');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselectStoreId]);
+
   const { initiateCall } = useCall();
   const { viewAsAmbassador } = useViewAs();
   const { roles } = useUserRole();
