@@ -98,6 +98,22 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { useTranslation } from '@/hooks/useTranslation';
+
+/** Renders a label; in ES learn-mode, shows the English string as a small subtitle. */
+function BilingualLabel({ tKey, en }: { tKey: string; en: string }) {
+  const { t, language } = useTranslation();
+  const translated = t(tKey);
+  if (language === 'es' && translated !== en) {
+    return (
+      <span className="flex flex-col leading-tight items-start">
+        <span>{translated}</span>
+        <span className="text-[9px] opacity-60">{en}</span>
+      </span>
+    );
+  }
+  return <span>{translated}</span>;
+}
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   active: { label: 'Active', color: 'bg-emerald-100 text-emerald-800', icon: <CheckCircle className="h-3 w-3" /> },
