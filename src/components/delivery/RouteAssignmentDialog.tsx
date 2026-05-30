@@ -424,9 +424,30 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
           {/* Store selection */}
           <div className="space-y-2">
             <Label>Stops ({selectedStores.length} selected)</Label>
+
+            {/* Neighborhood bulk-add */}
+            <div className="flex items-center gap-2">
+              <Select value={neighborhood || 'none'} onValueChange={(v) => loadNeighborhoodStores(v === 'none' ? '' : v)}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Add all stores from a neighborhood..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Pick a neighborhood —</SelectItem>
+                  {neighborhoods.map((n) => (
+                    <SelectItem key={n} value={n}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedStores.length > 0 && (
+                <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedStores([])}>
+                  Clear
+                </Button>
+              )}
+            </div>
+
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search stores..." value={storeSearch} onChange={(e) => setStoreSearch(e.target.value)} className="pl-9" />
+              <Input placeholder="Search stores (individual / bulk multi-select)..." value={storeSearch} onChange={(e) => setStoreSearch(e.target.value)} className="pl-9" />
             </div>
             <ScrollArea className="h-48 rounded-md border p-2">
               {stores.map((store) => (
