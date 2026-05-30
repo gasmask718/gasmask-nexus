@@ -211,15 +211,16 @@ export default function MultiBrandDelivery() {
   const criticalTriggers = allTriggers.filter((t: any) => t.urgency === 'critical');
   const pendingTriggerCount = allTriggers.length;
 
-  // Routes today
+  // Routes today (canonical routes table, gasmask_agent source)
   const { data: routesToday = [] } = useQuery({
     queryKey: ['delivery-routes-today'],
     queryFn: async () => {
       const today = format(new Date(), 'yyyy-MM-dd');
       const { data } = await (supabase as any)
-        .from('gasmask_route_runs')
+        .from('routes')
         .select('*')
-        .eq('scheduled_date', today);
+        .eq('source', 'gasmask_agent')
+        .eq('date', today);
       return data || [];
     },
   });
