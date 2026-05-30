@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Users, Search, Download, ChevronRight,
   TrendingUp, TrendingDown, Minus, Phone, MessageSquare,
-  MoreHorizontal, Store, DollarSign, ArrowUpDown
+  MoreHorizontal, Store, DollarSign, ArrowUpDown, Route as RouteIcon
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAdminAmbassadorCommand, type AdminAmbassadorProfile } from '@/hooks/useAdminAmbassadorCommand';
 import { formatDistanceToNow } from 'date-fns';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 
 type SortField = 'name' | 'stores_acquired' | 'revenue_generated' | 'pending_payout' | 'last_activity' | 'tier';
 type SortDirection = 'asc' | 'desc';
@@ -96,6 +97,8 @@ export default function AllAmbassadorsTable() {
   const [regionFilter, setRegionFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('revenue_generated');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [showRouteAssign, setShowRouteAssign] = useState(false);
+  const [selectedAmbassador, setSelectedAmbassador] = useState<AdminAmbassadorProfile | null>(null);
 
   // Get unique regions for filter
   const regions = useMemo(() => {
@@ -403,6 +406,10 @@ export default function AllAmbassadorsTable() {
                             <ChevronRight className="h-4 w-4 mr-2" />
                             View Profile
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setSelectedAmbassador(amb); setShowRouteAssign(true); }}>
+                            <RouteIcon className="h-4 w-4 mr-2" />
+                            Assign Route
+                          </DropdownMenuItem>
                           {amb.phone_primary && (
                             <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
                               <Phone className="h-4 w-4 mr-2" />
@@ -431,6 +438,20 @@ export default function AllAmbassadorsTable() {
           </Table>
         </CardContent>
       </Card>
+
+      {selectedAmbassador && (
+        <RouteAssignmentDialog
+          open={showRouteAssign}
+          onOpenChange={(open) => {
+            setShowRouteAssign(open);
+            if (!open) setSelectedAmbassador(null);
+          }}
+          assigneeId={selectedAmbassador.id}
+          assigneeName={selectedAmbassador.name}
+          assigneeType="ambassador"
+          assigneeUserId={selectedAmbassador.user_id || null}
+        />
+      )}
     </div>
   );
 }

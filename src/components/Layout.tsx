@@ -275,7 +275,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/dispatch/pending-stops', label: 'Pending Stops (AI)', icon: ClipboardList },
         { path: '/grabba/deliveries', label: 'Deliveries Dashboard', icon: Truck },
         { path: '/grabba/assignments', label: 'Order Assignments', icon: ClipboardList },
-        { path: '/grabba/multi-brand-delivery', label: 'Multi-Brand Delivery', icon: Layers },
+        { path: '/grabba/multi-brand-delivery', label: 'Dispatch Console', icon: Layers },
         { path: '/gasmask/route-engine', label: 'Route Engine', icon: Route },
         { path: '/gasmask/driver-route', label: 'Driver View', icon: MapPin },
         { path: '/grabba/routes', label: 'Route Manager', icon: Route },
