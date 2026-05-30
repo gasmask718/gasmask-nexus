@@ -36,13 +36,15 @@ interface StoreCardProps {
   onRemove: () => void;
   onToggle: (selected: boolean) => void;
   onDispatch: () => void;
+  onCall: () => void;
+  onMessage: () => void;
   selected: boolean;
   losSnapshots?: import('@/hooks/useLastOrderSnapshot').LastOrderSnapshot[];
 }
 
-function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, selected, losSnapshots }: StoreCardProps) {
+function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onMessage, selected, losSnapshots }: StoreCardProps) {
   const handleRemoveClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click navigation
+    e.stopPropagation();
     onRemove();
   };
 
@@ -55,6 +57,9 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, selected, l
     e.stopPropagation();
     onDispatch();
   };
+
+  const handleCall = (e: React.MouseEvent) => { e.stopPropagation(); onCall(); };
+  const handleMessage = (e: React.MouseEvent) => { e.stopPropagation(); onMessage(); };
 
   return (
     <Card 
