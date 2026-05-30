@@ -45,6 +45,7 @@ import {
   Calculator,
   PhoneCall,
   MessageSquare,
+  MessageSquareWarning,
   Mail,
   Radio,
   ShoppingCart,
