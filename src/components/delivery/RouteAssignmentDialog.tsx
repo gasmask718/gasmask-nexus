@@ -221,7 +221,11 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
       if (selectedStores.length === 0) throw new Error('Select at least one stop');
 
       const dates = isBulkMode ? bulkDates : [routeDate];
-      const assignees = isBulkMode ? selectedAssignees : [{ id: assigneeId, name: assigneeName, userId: assigneeUserId }];
+      const assignees: AssignablePerson[] = isBulkMode
+        ? selectedAssignees
+        : (selectedAssignees[0]
+            ? [selectedAssignees[0]]
+            : [{ id: assigneeId, name: assigneeName, userId: assigneeUserId ?? null, role: assigneeType }]);
 
       if (assignees.length === 0) throw new Error('Select at least one assignee');
 
@@ -235,7 +239,7 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
           const { data: route, error: routeError } = await supabase
             .from('routes')
             .insert({
-              type: assigneeType,
+              type: assignee.role,
               assigned_to: assignedTo,
               date,
               status: 'pending',
