@@ -399,11 +399,28 @@ export default function NeighborhoodIntelligencePage() {
                 )}
               </TableBody>
             </Table>
-              </TableBody>
-            </Table>
           )}
         </CardContent>
       </Card>
+
+      {/* Dispatch — RouteAssignmentDialog */}
+      {dispatchStores && (
+        <RouteAssignmentDialog
+          open={!!dispatchStores}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDispatchStores(null);
+              setSelectedIds([]);
+            }
+          }}
+          assigneeId=""
+          assigneeName=""
+          assigneeType="driver"
+          assigneeUserId={null}
+          bulkMode={dispatchStores.length > 1}
+          preselectedStores={dispatchStores}
+        />
+      )}
     </div>
   );
 }
