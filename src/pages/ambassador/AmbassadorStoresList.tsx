@@ -28,24 +28,46 @@ interface StoreCardProps {
   store: PortfolioStore;
   onClick: () => void;
   onRemove: () => void;
+  onToggle: (selected: boolean) => void;
+  onDispatch: () => void;
+  selected: boolean;
   losSnapshots?: import('@/hooks/useLastOrderSnapshot').LastOrderSnapshot[];
 }
 
-function StoreCard({ store, onClick, onRemove, losSnapshots }: StoreCardProps) {
+function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, selected, losSnapshots }: StoreCardProps) {
   const handleRemoveClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click navigation
     onRemove();
   };
 
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggle(!selected);
+  };
+
+  const handleDispatch = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDispatch();
+  };
+
   return (
     <Card 
-      className="cursor-pointer hover:border-primary/50 transition-colors group"
+      className={cn(
+        "cursor-pointer hover:border-primary/50 transition-colors group",
+        selected && "border-primary ring-1 ring-primary/20"
+      )}
       onClick={onClick}
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
+              <Checkbox
+                checked={selected}
+                onClick={handleToggle}
+                className="shrink-0"
+                aria-label={`Select ${store.store_name}`}
+              />
               <h3 className="font-semibold truncate group-hover:text-primary transition-colors">
                 {store.store_name}
               </h3>
@@ -81,6 +103,15 @@ function StoreCard({ store, onClick, onRemove, losSnapshots }: StoreCardProps) {
             <span className="text-xs text-muted-foreground">Commission</span>
             <span className="font-semibold text-primary">{store.commission_rate}%</span>
             <div className="flex items-center gap-2 mt-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-primary"
+                onClick={handleDispatch}
+                title="Add to Route"
+              >
+                <RouteIcon className="h-3.5 w-3.5" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
