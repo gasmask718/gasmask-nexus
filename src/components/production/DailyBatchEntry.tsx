@@ -226,11 +226,11 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <Boxes className="h-5 w-5" />
-            Today's Batches ({batches.length})
+            <BilingualLabel tKey="production.todays_batches" en="Today's Batches" inline /> ({batches.length})
           </CardTitle>
           <Button size="sm" onClick={() => setIsCreateModalOpen(true)}>
             <Plus className="h-4 w-4 mr-1" />
-            New Batch
+            <BilingualLabel tKey="production.new_batch" en="New Batch" inline />
           </Button>
         </CardHeader>
         <CardContent>
@@ -243,9 +243,9 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
           ) : batches.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Boxes className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No batches created today.</p>
+              <p>{t('production.no_batches')}</p>
               <Button variant="link" onClick={() => setIsCreateModalOpen(true)}>
-                Start your first batch
+                <BilingualLabel tKey="production.start_first_batch" en="Start your first batch" inline />
               </Button>
             </div>
           ) : (
@@ -270,27 +270,27 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                               {batch.shift_label}
                             </Badge>
                             <Badge className={cn('text-xs', statusConfig?.color)}>
-                              {statusConfig?.label}
+                              {statusConfig ? t(statusConfig.tKey) : ''}
                             </Badge>
                             {(batch as any).generated_by_system && (
                               <Badge variant="secondary" className="text-xs flex items-center gap-1">
-                                <Bot className="h-3 w-3" /> System Draft
+                                <Bot className="h-3 w-3" /> <BilingualLabel tKey="production.system_draft" en="System Draft" inline />
                               </Badge>
                             )}
                             <Badge variant="outline" className="text-xs capitalize">
-                              {(batch as any).product_type || 'tubes'}
+                              {(batch as any).product_type === 'bags' ? t('production.bags') : t('production.tubes')}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                             <span className="flex items-center gap-1">
                               <Scale className="h-3 w-3" />
-                              {batch.tobacco_lbs ?? 0} lbs
+                              {batch.tobacco_lbs ?? 0} {t('production.lbs')}
                             </span>
                             <span>
-                              {(batch as any).product_output_units || 0} {(batch as any).product_type === 'bags' ? 'bags' : 'tubes'}
+                              {(batch as any).product_output_units || 0} {(batch as any).product_type === 'bags' ? t('production.bags').toLowerCase() : t('production.tubes').toLowerCase()}
                             </span>
                             <span className="text-primary font-medium">
-                              {(batch as any).boxes_full || batch.boxes_produced || 0} boxes
+                              {(batch as any).boxes_full || batch.boxes_produced || 0} {t('production.boxes_lower')}
                               {((batch as any).units_remainder || 0) > 0 && (
                                 <span className="text-muted-foreground text-xs ml-1">+{(batch as any).units_remainder}</span>
                               )}
@@ -298,7 +298,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                             {(batch.total_defects || 0) > 0 && (
                               <span className="text-destructive flex items-center gap-1">
                                 <AlertTriangle className="h-3 w-3" />
-                                {batch.total_defects} defects
+                                {batch.total_defects} {t('production.defects_lower')}
                               </span>
                             )}
                           </div>
@@ -313,7 +313,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                             onClick={(e) => { e.stopPropagation(); handleStartBatch(batch); }}
                           >
                             <Play className="h-4 w-4 mr-1" />
-                            Start
+                            <BilingualLabel tKey="production.start" en="Start" inline />
                           </Button>
                         )}
                         {batch.status === 'in_progress' && (
@@ -322,11 +322,12 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                             onClick={(e) => { e.stopPropagation(); handleCompleteBatch(batch); }}
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
-                            Complete
+                            <BilingualLabel tKey="production.complete" en="Complete" inline />
                           </Button>
                         )}
                         <ChevronRight className="h-5 w-5 text-muted-foreground" />
                       </div>
+
                     </div>
                   </div>
                 );
