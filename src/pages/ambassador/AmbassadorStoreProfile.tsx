@@ -8,7 +8,7 @@ import {
   Store, Phone, Mail, MapPin, Clock, User, 
   Package, DollarSign, FileText, MessageSquare,
   ArrowLeft, Plus, ExternalLink, Calendar, Edit,
-  CheckCircle, AlertTriangle
+  CheckCircle, AlertTriangle, ClipboardList
 } from 'lucide-react';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
@@ -142,7 +142,11 @@ function StoreProfileContent() {
 
             {/* Quick Actions */}
             <div className="flex flex-wrap gap-2">
-              <Button size="sm">
+              <Button size="sm" onClick={() => navigate(`/ambassador/visit/${store.id}`)}>
+                <ClipboardList className="mr-1 h-4 w-4" />
+                Recon Visit
+              </Button>
+              <Button size="sm" variant="outline">
                 <Phone className="mr-1 h-4 w-4" />
                 Call
               </Button>

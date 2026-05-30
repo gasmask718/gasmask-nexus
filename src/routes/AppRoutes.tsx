@@ -109,6 +109,7 @@ const Ambassadors = lazy(() => import('@/pages/Ambassadors'));
 
 // Ambassador pages (barrel import → individual lazy)
 const AmbassadorDashboard = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorDashboard })));
+const AmbassadorStoreVisit = lazy(() => import('@/components/portal/field').then(m => ({ default: m.StoreVisitEngine })));
 const AmbassadorStoreProfile = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorStoreProfile })));
 const AmbassadorStoresList = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorStoresList })));
 const AmbassadorWholesalersList = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorWholesalersList })));
@@ -2955,6 +2956,13 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
             <StoreDetail />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/ambassador/visit/:storeId" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <AmbassadorStoreVisit portalType="ambassador" />
           </RequireRole>
         </ProtectedRoute>
       } />

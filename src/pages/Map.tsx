@@ -27,7 +27,30 @@ interface Store {
   phone: string | null;
   address_street: string | null;
   address_city: string | null;
+  last_order_at: string | null;
+  last_visit_at: string | null;
 }
+
+type RecencyBucket = 'fresh' | 'warm' | 'overdue' | 'unknown';
+
+const RECENCY_COLORS: Record<RecencyBucket, string> = {
+  fresh: '#22c55e',      // < 1 month — green
+  warm: '#eab308',       // 1–2 months — yellow
+  overdue: '#ef4444',    // > 2 months — red
+  unknown: '#6b7280',    // never / no data — grey
+};
+
+const getRecencyBucket = (s: Pick<Store, 'last_order_at' | 'last_visit_at'>): RecencyBucket => {
+  const latest = [s.last_order_at, s.last_visit_at]
+    .filter(Boolean)
+    .map(d => new Date(d as string).getTime())
+    .sort((a, b) => b - a)[0];
+  if (!latest) return 'unknown';
+  const days = (Date.now() - latest) / (1000 * 60 * 60 * 24);
+  if (days < 30) return 'fresh';
+  if (days < 60) return 'warm';
+  return 'overdue';
+};
 
 interface DemoDriver {
   id: string;
@@ -59,6 +82,7 @@ const Map = () => {
   const [selectedRoute, setSelectedRoute] = useState<DemoRoute | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [recencyFilter, setRecencyFilter] = useState<'all' | RecencyBucket>('all');
   const driverMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const routeLayersRef = useRef<string[]>([]);
 
@@ -73,9 +97,40 @@ const Map = () => {
 
     if (error) {
       console.error('Error fetching stores:', error);
-    } else {
-      setStores(data || []);
+      setLoading(false);
+      return;
     }
+
+    const baseStores = data || [];
+
+    // Pull recency data (last_order_at / last_visit_at) from store_master
+    // and merge by id. store_master.id is the canonical id shared with stores.
+    const ids = baseStores.map(s => s.id);
+    const recencyMap: Record<string, { last_order_at: string | null; last_visit_at: string | null }> = {};
+    if (ids.length > 0) {
+      const { data: masterData, error: masterError } = await supabase
+        .from('store_master')
+        .select('id, last_order_at, last_visit_at')
+        .in('id', ids);
+      if (masterError) {
+        console.warn('Could not fetch store_master recency:', masterError);
+      } else {
+        (masterData || []).forEach(m => {
+          recencyMap[m.id] = { last_order_at: m.last_order_at, last_visit_at: m.last_visit_at };
+        });
+      }
+    }
+
+    const enriched: Store[] = baseStores.map(s => {
+      const r = recencyMap[s.id];
+      return {
+        ...s,
+        last_order_at: r?.last_order_at ?? null,
+        last_visit_at: r?.last_visit_at ?? null,
+      };
+    });
+
+    setStores(enriched);
     setLoading(false);
   };
 
@@ -292,6 +347,11 @@ const Map = () => {
       }
     }
 
+    // Filter by recency bucket
+    if (recencyFilter !== 'all') {
+      filtered = filtered.filter((store) => getRecencyBucket(store) === recencyFilter);
+    }
+
     setFilteredStores(filtered);
 
     // Calculate counts
@@ -309,7 +369,7 @@ const Map = () => {
     });
 
     setStoreCounts(counts);
-  }, [stores, activeFilter, selectedTerritory]);
+  }, [stores, activeFilter, selectedTerritory, recencyFilter]);
 
   // Render store markers and heatmap
   useEffect(() => {
@@ -394,11 +454,8 @@ const Map = () => {
       filteredStores.forEach((store) => {
       if (!map.current) return;
 
-      const color =
-        store.status === 'active' ? '#22c55e' :
-        store.status === 'prospect' ? '#eab308' :
-        store.status === 'needsFollowUp' ? '#f97316' :
-        '#6b7280';
+      // Pin color = visit/order recency (status info still in click popup)
+      const color = RECENCY_COLORS[getRecencyBucket(store)];
 
       // Create marker element
       const el = document.createElement('div');
@@ -674,6 +731,35 @@ const Map = () => {
         storeCounts={storeCounts}
       />
 
+      {/* Recency filter — color pins by last order/visit */}
+      <div className="flex flex-wrap items-center gap-2 px-1">
+        <span className="text-xs text-muted-foreground mr-1">Recency:</span>
+        {([
+          { key: 'all', label: 'All', dot: 'bg-foreground/60' },
+          { key: 'fresh', label: 'This month', dot: 'bg-green-500' },
+          { key: 'warm', label: '1–2 months', dot: 'bg-yellow-500' },
+          { key: 'overdue', label: 'Overdue (2mo+)', dot: 'bg-red-500' },
+          { key: 'unknown', label: 'Never / no data', dot: 'bg-gray-500' },
+        ] as const).map(opt => {
+          const count = opt.key === 'all'
+            ? stores.length
+            : stores.filter(s => getRecencyBucket(s) === opt.key).length;
+          return (
+            <Button
+              key={opt.key}
+              size="sm"
+              variant={recencyFilter === opt.key ? 'default' : 'outline'}
+              onClick={() => setRecencyFilter(opt.key)}
+              className="h-8"
+            >
+              <span className={`inline-block h-2.5 w-2.5 rounded-full mr-2 ${opt.dot}`} />
+              {opt.label}
+              <span className="ml-2 text-xs opacity-70">{count}</span>
+            </Button>
+          );
+        })}
+      </div>
+
       <div className="flex gap-4">
         <div className={`relative rounded-xl overflow-hidden border border-border/50 shadow-2xl transition-all duration-300 ${showSidebar ? 'w-2/3' : 'w-full'}`} style={{ height: 'calc(100vh - 280px)' }}>
         {loading && (
@@ -716,24 +802,25 @@ const Map = () => {
           </div>
         </div>
 
-        {/* Map Legend */}
+        {/* Map Legend — pin color = order/visit recency */}
         <div className="absolute bottom-4 right-4 bg-card/95 backdrop-blur rounded-lg px-4 py-3 border border-border/50 shadow-lg">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1.5">Recency</div>
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full bg-green-500 border-2 border-white shadow-sm"></div>
-              <span>Active</span>
+              <span>&lt; 1 month</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full bg-yellow-500 border-2 border-white shadow-sm"></div>
-              <span>Prospect</span>
+              <span>1–2 months</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
-              <div className="w-3 h-3 rounded-full bg-orange-500 border-2 border-white shadow-sm"></div>
-              <span>Follow Up</span>
+              <div className="w-3 h-3 rounded-full bg-red-500 border-2 border-white shadow-sm"></div>
+              <span>Overdue (2mo+)</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full bg-gray-500 border-2 border-white shadow-sm"></div>
-              <span>Inactive</span>
+              <span>Never / no data</span>
             </div>
           </div>
         </div>

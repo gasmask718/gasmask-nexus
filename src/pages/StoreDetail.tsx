@@ -27,6 +27,7 @@ import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
 import { StoreReconCard } from "@/components/store/StoreReconCard";
+import { useUserRole } from "@/hooks/useUserRole";
 import { QuickStatsStickersSummary } from "@/components/store/QuickStatsStickersSummary";
 import { StoreHealthBadge } from "@/components/delivery/StoreHealthBadge";
 import { QuickStatsContactSnapshot } from "@/components/store/QuickStatsContactSnapshot";
@@ -205,6 +206,8 @@ const StoreDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { roles } = useUserRole();
+  const isAmbassador = roles?.includes('ambassador' as any);
   const [store, setStore] = useState<Store | null>(null);
   const [inventory, setInventory] = useState<ProductInventory[]>([]);
   const [visits, setVisits] = useState<VisitLog[]>([]);
@@ -652,6 +655,15 @@ const StoreDetail = () => {
               <Button className="bg-primary hover:bg-primary-hover" onClick={() => setUnifiedInteractionModalOpen(true)}>
                 Log Interaction
               </Button>
+              {isAmbassador && (
+                <Button
+                  variant="outline"
+                  className="border-primary/40"
+                  onClick={() => navigate(`/ambassador/visit/${id}`)}
+                >
+                  Recon Visit / Questionnaire
+                </Button>
+              )}
             </div>
           </div>
         </div>

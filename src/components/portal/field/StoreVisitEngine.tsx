@@ -110,7 +110,7 @@ export interface StoreVisitData {
 }
 
 interface StoreVisitEngineProps {
-  portalType: 'driver' | 'biker';
+  portalType: 'driver' | 'biker' | 'ambassador';
 }
 
 export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {

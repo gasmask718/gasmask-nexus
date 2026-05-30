@@ -23,7 +23,7 @@ interface Contact {
 interface ContactsTabProps {
   contacts: Contact[];
   onContactsChange: (contacts: Contact[]) => void;
-  portalType: 'driver' | 'biker';
+  portalType: 'driver' | 'biker' | 'ambassador';
 }
 
 const SHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
