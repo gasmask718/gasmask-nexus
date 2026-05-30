@@ -1555,6 +1555,25 @@ const Stores = () => {
         onOpenChange={setShowBulkUpload}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['stores-with-contacts'] })}
       />
+
+      {/* Dispatch — reuses working RouteAssignmentDialog with empty assignee so picker opens */}
+      {dispatchStores && (
+        <RouteAssignmentDialog
+          open={!!dispatchStores}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDispatchStores(null);
+              setSelectedStoreIds([]);
+            }
+          }}
+          assigneeId=""
+          assigneeName=""
+          assigneeType="driver"
+          assigneeUserId={null}
+          bulkMode={dispatchStores.length > 1}
+          preselectedStores={dispatchStores}
+        />
+      )}
     </div>
   );
 };
