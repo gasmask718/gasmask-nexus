@@ -112,6 +112,7 @@ interface Store {
   health_status: string | null;
   last_active_date?: string | null;
   reactivation_priority?: string | null;
+  relationship_status?: string | null;
 }
 
 const Stores = () => {
