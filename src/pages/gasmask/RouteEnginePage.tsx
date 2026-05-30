@@ -115,7 +115,7 @@ export default function RouteEnginePage() {
           *,
           route_stops (
             id, planned_order, status, store_id, notes,
-            stores ( id, name, address )
+            stores ( id, name, address_street, address_city, address_state )
           )
         `)
         .eq('source', 'gasmask_agent')
