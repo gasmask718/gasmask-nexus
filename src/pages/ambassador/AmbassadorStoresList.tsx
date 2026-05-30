@@ -45,6 +45,7 @@ interface StoreCardProps {
 }
 
 function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onMessage, selected, losSnapshots }: StoreCardProps) {
+  const { t } = useTranslation();
   const handleRemoveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onRemove();
@@ -88,7 +89,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
                 {store.assignment_type}
               </Badge>
               {store.is_primary && (
-                <Badge variant="outline" className="text-xs shrink-0">Primary</Badge>
+                <Badge variant="outline" className="text-xs shrink-0">{t('amb.stores.primary')}</Badge>
               )}
             </div>
             <p className="text-sm text-muted-foreground truncate mb-2">
@@ -113,7 +114,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
             </div>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <span className="text-xs text-muted-foreground">Commission</span>
+            <span className="text-xs text-muted-foreground">{t('amb.dashboard.commission')}</span>
             <span className="font-semibold text-primary">{store.commission_rate}%</span>
             <div className="flex items-center gap-2 mt-2">
               <Button
@@ -122,7 +123,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
                 className="h-6 w-6 text-muted-foreground hover:text-primary disabled:opacity-40"
                 onClick={handleCall}
                 disabled={!store.store_phone}
-                title={store.store_phone ? `Call ${store.store_phone}` : 'No phone on file'}
+                title={store.store_phone ? `${t('amb.stores.call')} ${store.store_phone}` : t('amb.stores.no_phone')}
               >
                 <Phone className="h-3.5 w-3.5" />
               </Button>
@@ -131,7 +132,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
                 size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-primary"
                 onClick={handleMessage}
-                title="Send message"
+                title={t('amb.stores.send_message')}
               >
                 <MessageSquare className="h-3.5 w-3.5" />
               </Button>
@@ -140,7 +141,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
                 size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-primary"
                 onClick={handleDispatch}
-                title="Add to Route"
+                title={t('amb.stores.add_to_route')}
               >
                 <RouteIcon className="h-3.5 w-3.5" />
               </Button>
@@ -149,7 +150,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
                 size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-destructive"
                 onClick={handleRemoveClick}
-                title="Remove from My Stores"
+                title={t('amb.stores.remove_from')}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -161,6 +162,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
     </Card>
   );
 }
+
 
 function StoresListContent() {
   const navigate = useNavigate();
