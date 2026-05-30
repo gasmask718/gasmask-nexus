@@ -92,12 +92,9 @@ export function NewStoreSubmissionDialog({
     }
     const handle = setTimeout(async () => {
       setCheckingDup(true);
-      const { data } = await supabase
-        .from('store_master')
-        .select('id, store_name, address, city, state')
-        .ilike('address', `%${normalized}%`)
-        .is('deleted_at', null)
-        .limit(5);
+      const { data } = await supabase.rpc('check_store_address_duplicates', {
+        p_address: form.address.trim(),
+      });
       setDuplicates((data as PotentialDuplicate[] | null) ?? []);
       setCheckingDup(false);
     }, 400);
