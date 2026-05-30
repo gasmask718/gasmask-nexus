@@ -77,8 +77,8 @@ export default function AmbassadorCommissions() {
   if (isLoading) {
     return (
       <AmbassadorLayout 
-        title="Commission Center" 
-        subtitle="Track earnings, view ledger, and manage payouts"
+        title={t("amb.commissions.title")} 
+        subtitle={t("amb.commissions.subtitle")}
         backPath="/ambassador/dashboard"
       >
         <div className="p-6 space-y-6">
@@ -93,8 +93,8 @@ export default function AmbassadorCommissions() {
 
   return (
     <AmbassadorLayout 
-      title="Commission Center" 
-      subtitle="Track earnings, view ledger, and manage payouts"
+      title={t("amb.commissions.title")} 
+      subtitle={t("amb.commissions.subtitle")}
       backPath="/ambassador/dashboard"
     >
       <div className="p-6 space-y-6">
@@ -278,7 +278,7 @@ export default function AmbassadorCommissions() {
               <Button
                 variant="outline"
                 size="icon"
-                title="Export visible rows to CSV"
+                title={t("amb.commissions.export_csv")}
                 disabled={filteredEntries.length === 0}
                 onClick={() => {
                   const header = ['Date','Store/Source','Channel','Gross','Rate (%)','Commission','Status','Reversal Of'];
