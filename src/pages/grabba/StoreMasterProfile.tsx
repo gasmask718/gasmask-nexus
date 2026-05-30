@@ -548,6 +548,22 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
         storeName={store.store_name}
         onSuccess={() => {}}
       />
+
+      {/* Dispatch — RouteAssignmentDialog with single store preselected */}
+      {dispatchStore && (
+        <RouteAssignmentDialog
+          open={!!dispatchStore}
+          onOpenChange={(open) => {
+            if (!open) setDispatchStore(null);
+          }}
+          assigneeId=""
+          assigneeName=""
+          assigneeType="driver"
+          assigneeUserId={null}
+          bulkMode={false}
+          preselectedStores={[dispatchStore]}
+        />
+      )}
     </div>
   );
 }
