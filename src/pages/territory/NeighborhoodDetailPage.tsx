@@ -271,6 +271,22 @@ export default function NeighborhoodDetailPage() {
           )}
         </CardContent>
       </Card>
+      </Card>
+
+      <RouteAssignmentDialog
+        open={dispatchOpen}
+        onOpenChange={(open) => {
+          setDispatchOpen(open);
+          if (!open) setDispatchStoreIds([]);
+        }}
+        assigneeId=""
+        assigneeName=""
+        assigneeType="driver"
+        assigneeUserId={null}
+        bulkMode={dispatchStoreIds.length > 1}
+        preselectedStores={dispatchStoreIds}
+        prefilledTerritory={neighborhood}
+      />
     </div>
   );
 }
