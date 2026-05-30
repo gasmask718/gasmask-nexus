@@ -794,6 +794,14 @@ const Stores = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            disabled={selectedStoreIds.length === 0}
+            onClick={() => setDispatchStores(selectedStoreIds)}
+          >
+            <RouteIcon className="h-4 w-4 mr-2" />
+            Dispatch Selected{selectedStoreIds.length > 0 ? ` (${selectedStoreIds.length})` : ''}
+          </Button>
           <Button variant="outline" onClick={() => setShowBulkUpload(true)}>
             <Upload className="h-4 w-4 mr-2" />
             Bulk Upload
