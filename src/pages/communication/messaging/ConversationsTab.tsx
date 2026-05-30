@@ -34,6 +34,16 @@ export default function ConversationsTab() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [directionFilter, setDirectionFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const { data: identityMap } = useStoreIdentityMap();
+
+  const resolveIdentity = useCallback(
+    (rawPhone: string | null | undefined): StoreIdentityMatch | null => {
+      const key = phoneToKey(rawPhone);
+      if (!key || !identityMap) return null;
+      return identityMap.get(key) || null;
+    },
+    [identityMap]
+  );
 
   // Fetch Twilio message history via edge function
   const fetchTwilioMessages = useCallback(async (): Promise<UnifiedMessage[]> => {
