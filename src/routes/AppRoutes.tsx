@@ -991,6 +991,7 @@ const SBOHistoryPage = lazy(() => import('@/pages/sports-betting/pages/HistoryPa
 const SBOHealthPage = lazy(() => import('@/pages/sports-betting/pages/HealthPage'));
 const SBOSyncPage = lazy(() => import('@/pages/sports-betting/pages/SyncPage'));
 const BikerDashboard = lazy(() => import('@/pages/os/biker/BikerDashboard'));
+const BikerTodaysRoutesPage = lazy(() => import('@/pages/delivery/biker/TodaysRoutesPage'));
 const ModuleDiagnosticsPage = lazy(() => import('@/pages/ModuleDiagnosticsPage'));
 const InvoiceForensicsConsole = lazy(() => import('@/pages/diagnostics/InvoiceForensicsConsole'));
 
@@ -1963,6 +1964,8 @@ export default function AppRoutes() {
         <Route path="/sbo-ai-engine/sync" element={<SBOSyncPage />} />
         <Route path="/admin/system-integrity" element={<SystemIntegrity />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
+        <Route path="/biker/route" element={<BikerTodaysRoutesPage />} />
+        <Route path="/biker/routes" element={<BikerTodaysRoutesPage />} />
 
         {/* Legacy payouts aliases (keep old links working) */}
         <Route path="/biker-payouts" element={<Navigate to="/delivery/payouts" replace />} />
