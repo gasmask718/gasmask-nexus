@@ -523,6 +523,9 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
           security_level: visitData.questionnaire.secureLevel,
           sells_flowers: visitData.questionnaire.sellsFlowers,
           interested_cleaning_service: visitData.questionnaire.interestedInCleaning,
+          additional_items_wanted: visitData.questionnaire.additionalItemsWanted || null,
+          top_selling_items: visitData.questionnaire.topSellingItems || null,
+          most_needed_items: visitData.questionnaire.mostNeededItems || null,
         },
       }, user.id, portalType as FieldRole);
 
