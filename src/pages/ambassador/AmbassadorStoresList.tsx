@@ -4,9 +4,10 @@
  */
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { 
   Store, Search, Filter, MapPin, Phone, Calendar,
-  ArrowRight, Users, Trash2
+  ArrowRight, Users, Trash2, Route as RouteIcon
 } from 'lucide-react';
 import { useLastOrderSnapshotBatch } from '@/hooks/useLastOrderSnapshot';
 import { LastOrderKPIBadge } from '@/components/store/LastOrderKPIBadge';
@@ -18,7 +19,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import { useAmbassadorPortfolio, type PortfolioStore } from '@/hooks/useAmbassadorPortfolio';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -26,24 +29,46 @@ interface StoreCardProps {
   store: PortfolioStore;
   onClick: () => void;
   onRemove: () => void;
+  onToggle: (selected: boolean) => void;
+  onDispatch: () => void;
+  selected: boolean;
   losSnapshots?: import('@/hooks/useLastOrderSnapshot').LastOrderSnapshot[];
 }
 
-function StoreCard({ store, onClick, onRemove, losSnapshots }: StoreCardProps) {
+function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, selected, losSnapshots }: StoreCardProps) {
   const handleRemoveClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click navigation
     onRemove();
   };
 
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggle(!selected);
+  };
+
+  const handleDispatch = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDispatch();
+  };
+
   return (
     <Card 
-      className="cursor-pointer hover:border-primary/50 transition-colors group"
+      className={cn(
+        "cursor-pointer hover:border-primary/50 transition-colors group",
+        selected && "border-primary ring-1 ring-primary/20"
+      )}
       onClick={onClick}
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
+              <Checkbox
+                checked={selected}
+                onClick={handleToggle}
+                className="shrink-0"
+                aria-label={`Select ${store.store_name}`}
+              />
               <h3 className="font-semibold truncate group-hover:text-primary transition-colors">
                 {store.store_name}
               </h3>
@@ -82,6 +107,15 @@ function StoreCard({ store, onClick, onRemove, losSnapshots }: StoreCardProps) {
               <Button
                 variant="ghost"
                 size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-primary"
+                onClick={handleDispatch}
+                title="Add to Route"
+              >
+                <RouteIcon className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-destructive"
                 onClick={handleRemoveClick}
                 title="Remove from My Stores"
@@ -99,9 +133,11 @@ function StoreCard({ store, onClick, onRemove, losSnapshots }: StoreCardProps) {
 
 function StoresListContent() {
   const navigate = useNavigate();
-  const { stores, metrics, isLoading, unassignStore, isUnassigningStore } = useAmbassadorPortfolio();
+  const { stores, metrics, isLoading, unassignStore, isUnassigningStore, ambassador } = useAmbassadorPortfolio();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [dispatchStores, setDispatchStores] = useState<string[] | null>(null);
 
   // Batch fetch LOS for all portfolio stores
   const storeIds = useMemo(() => stores.map(s => s.store_id), [stores]);
@@ -149,6 +185,14 @@ function StoresListContent() {
     await unassignStore(storeToRemove.store_id);
   };
 
+  const toggleSelect = (storeId: string, selected: boolean) => {
+    setSelectedIds(prev =>
+      selected ? [...prev, storeId] : prev.filter(id => id !== storeId)
+    );
+  };
+
+  const clearSelection = () => setSelectedIds([]);
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -186,19 +230,34 @@ function StoresListContent() {
         </Card>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input 
-          placeholder="Search stores by name, address, or owner..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search + Dispatch */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Search stores by name, address, or owner..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Button
+          variant="outline"
+          disabled={selectedIds.length === 0}
+          onClick={() => setDispatchStores(selectedIds)}
+        >
+          <RouteIcon className="h-4 w-4 mr-2" />
+          Dispatch Selected{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
+        </Button>
+        {selectedIds.length > 0 && (
+          <Button variant="ghost" size="sm" onClick={clearSelection}>
+            Clear selection
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); clearSelection(); }}>
         <TabsList>
           <TabsTrigger value="all">All ({stores.length})</TabsTrigger>
           <TabsTrigger value="assigned">Assigned ({metrics.assignedStores})</TabsTrigger>
@@ -224,6 +283,9 @@ function StoresListContent() {
                   store={store}
                   onClick={() => handleStoreClick(store.store_id)}
                   onRemove={() => handleRemoveClick(store)}
+                  onToggle={(selected) => toggleSelect(store.store_id, selected)}
+                  onDispatch={() => setDispatchStores([store.store_id])}
+                  selected={selectedIds.includes(store.store_id)}
                   losSnapshots={losMap?.get(store.store_id)}
                 />
               ))}
@@ -240,6 +302,25 @@ function StoresListContent() {
         description={`This removes "${storeToRemove?.store_name}" from your portfolio. It does not delete the store - you can be reassigned to it later.`}
         onConfirm={handleConfirmRemove}
       />
+
+      {/* Dispatch — RouteAssignmentDialog pre-filled with this ambassador */}
+      {dispatchStores && ambassador && (
+        <RouteAssignmentDialog
+          open={!!dispatchStores}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDispatchStores(null);
+              setSelectedIds([]);
+            }
+          }}
+          assigneeId={ambassador.id}
+          assigneeName={ambassador.name || 'Me'}
+          assigneeType="ambassador"
+          assigneeUserId={ambassador.user_id}
+          bulkMode={dispatchStores.length > 1}
+          preselectedStores={dispatchStores}
+        />
+      )}
     </div>
   );
 }

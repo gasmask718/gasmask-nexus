@@ -33,7 +33,7 @@ const ROWS: Row[] = [
   { floor: 'Floor9 Predictions', path: '/grabba/floor9/predictions', shows: 'Stores predicted to need visit', status: 'unwired', note: 'Predicted list is read-only — no dispatch' },
   { floor: 'Grabba ClusterDashboard', path: '/grabba/clusters', shows: 'Stores grouped into clusters', status: 'unwired', note: 'Cluster cards have no dispatch action' },
   { floor: 'Floor1 BrandCRM', path: '/floor1/brand-crm', shows: 'Brand-level CRM store roster', status: 'unwired', note: 'Roster table needs Dispatch column' },
-  { floor: 'Ambassador StoresList', path: '/ambassador/stores', shows: 'Ambassador-portal store list', status: 'unwired', note: 'Read-only — admin view of same data is wired, portal is not' },
+  { floor: 'Ambassador StoresList', path: '/ambassador/stores', shows: 'Ambassador-portal store list', status: 'wired', note: 'Pre-filled assignee = self (ambassador role), RLS-scoped' },
 ];
 
 const wiredCount = ROWS.filter((r) => r.status === 'wired').length;
