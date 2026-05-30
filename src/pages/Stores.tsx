@@ -124,6 +124,7 @@ const Stores = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('active');
   const [tagFilter, setTagFilter] = useState<string>('all');
+  const [relationshipFilter, setRelationshipFilter] = useState<string>('all');
   const [stickerFilter, setStickerFilter] = useState<string>('all');
   const [newStoresOnly, setNewStoresOnly] = useState(false);
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all');
