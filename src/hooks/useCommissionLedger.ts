@@ -458,8 +458,9 @@ export function downloadCSV(csv: string, filename: string): void {
 /**
  * Combined hook for commission page - all data in one call
  */
-export function useCommissionPage() {
-  const ledger = useCommissionLedger({ limit: 100 });
+export function useCommissionPage(options: { ambassadorId?: string | null } = {}) {
+  const { ambassadorId } = options;
+  const ledger = useCommissionLedger({ limit: 100, ambassadorId });
   const totals = useCommissionTotals();
   const channels = useChannelBreakdown();
   const payouts = usePayoutHistory();
