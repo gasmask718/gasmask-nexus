@@ -62,9 +62,32 @@ function useCatalogProducts() {
   });
 }
 
+function TierRow({ label, perTube, unitsPerBox }: { label: string; perTube: number | null; unitsPerBox: number }) {
+  if (perTube == null) {
+    return (
+      <div className="rounded-md bg-background/60 border border-border/60 px-2 py-1.5">
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="text-[11px] font-semibold">—</p>
+      </div>
+    );
+  }
+  const perBox = perTube * unitsPerBox;
+  return (
+    <div className="rounded-md bg-background/60 border border-border/60 px-2 py-1.5">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-[11px] font-semibold leading-tight">
+        {formatCurrency(perTube)}<span className="font-normal text-muted-foreground">/tube</span>
+        <span className="text-muted-foreground"> · </span>
+        {formatCurrency(perBox)}<span className="font-normal text-muted-foreground">/box</span>
+      </p>
+    </div>
+  );
+}
+
 function ProductCard({ p }: { p: CatalogProduct }) {
   const brand = p.brand_id ? BRAND_COLORS[p.brand_id] : undefined;
   const isHero = (p.hero_score ?? 0) >= 80;
+  const unitsPerBox = p.units_per_box ?? 100;
 
   return (
     <Card
@@ -85,7 +108,6 @@ function ProductCard({ p }: { p: CatalogProduct }) {
       {/* Image / placeholder */}
       <div className="aspect-square w-full bg-muted/40 flex items-center justify-center overflow-hidden">
         {p.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={p.image_url}
             alt={p.name}
@@ -106,30 +128,11 @@ function ProductCard({ p }: { p: CatalogProduct }) {
           </p>
         </div>
 
-        {/* Headline price = store price (the default ambassadors quote) */}
-        <div className="flex items-baseline justify-between">
-          <span className="text-xl font-bold tracking-tight">
-            {formatCurrency(p.store_price ?? 0)}
-          </span>
-          <span className="text-[11px] text-muted-foreground uppercase tracking-wide">
-            Store price
-          </span>
-        </div>
-
-        {/* Secondary tiers */}
-        <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-          <div className="rounded-md bg-background/60 border border-border/60 px-2 py-1">
-            <p className="text-muted-foreground">Wholesale</p>
-            <p className="font-semibold">
-              {p.wholesale_price != null ? formatCurrency(p.wholesale_price) : '—'}
-            </p>
-          </div>
-          <div className="rounded-md bg-background/60 border border-border/60 px-2 py-1">
-            <p className="text-muted-foreground">Street</p>
-            <p className="font-semibold">
-              {p.street_price != null ? formatCurrency(p.street_price) : '—'}
-            </p>
-          </div>
+        {/* All three tiers — per-tube (stored) + per-box (computed × units_per_box) */}
+        <div className="space-y-1">
+          <TierRow label="Store" perTube={p.store_price} unitsPerBox={unitsPerBox} />
+          <TierRow label="Wholesale" perTube={p.wholesale_price} unitsPerBox={unitsPerBox} />
+          <TierRow label="Street" perTube={p.street_price} unitsPerBox={unitsPerBox} />
         </div>
 
         <div className="flex items-center justify-between pt-1">
@@ -137,7 +140,7 @@ function ProductCard({ p }: { p: CatalogProduct }) {
             {p.category ?? 'product'}
           </Badge>
           <span className="text-[11px] text-muted-foreground">
-            {p.units_per_box ?? 100} / box
+            {unitsPerBox} / box
           </span>
         </div>
       </CardContent>
@@ -161,8 +164,8 @@ export default function AmbassadorCatalog() {
   return (
     <PortalRBACGate allowedRoles={['admin', 'ambassador']} portalName="Ambassador Portal">
       <AmbassadorLayout
-        title="Product Catalog"
-        subtitle="Active product line — store, wholesale, and street pricing for the field."
+        title="Product Pricing"
+        subtitle="All tiers shown per-tube and per-box (×units/box). Prices are read-only."
       >
         <div className="space-y-4">
           <div className="flex items-center justify-end">
