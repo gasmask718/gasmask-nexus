@@ -549,8 +549,7 @@ function DashboardContent() {
 const AMBASSADOR_UI_VERSION = 'ambassador-ui-v3';
 
 export default function AmbassadorDashboard() {
-  // Log version for debugging
-  console.log(`🎯 Ambassador Portal UI Version: ${AMBASSADOR_UI_VERSION}`);
+
   
   return (
     <PortalRBACGate allowedRoles={['ambassador', 'admin']} portalName="Ambassador Portal" key={AMBASSADOR_UI_VERSION}>
