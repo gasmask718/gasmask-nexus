@@ -133,13 +133,33 @@ Deno.serve(async (req) => {
     }
   }
 
+  const failures = results.filter(r => r.error);
   const summary = {
     total: numbers.length,
     configured: results.filter(r => r.ok).length,
-    failed: results.filter(r => r.error).length,
+    failed: failures.length,
     skipped: results.filter(r => r.skipped).length,
     excluded_brandaro: excludedCount,
   };
+
+  // Persist run for drift/alerting. Cron sets ?triggered_by=cron.
+  const url = new URL(req.url);
+  const triggeredBy = url.searchParams.get('triggered_by') || 'manual';
+  const hasCredIssue = failures.some((f: any) => f.credential_issue);
+  await sbFetch('/rest/v1/dc_webhook_assertion_log', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({
+      total: summary.total,
+      configured: summary.configured,
+      failed: summary.failed,
+      excluded_brandaro: summary.excluded_brandaro,
+      failures,
+      has_credential_issue: hasCredIssue,
+      triggered_by: triggeredBy,
+    }),
+  });
+
   return new Response(JSON.stringify({ success: true, summary, results }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
