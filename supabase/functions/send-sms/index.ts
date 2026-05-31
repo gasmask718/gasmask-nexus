@@ -355,7 +355,7 @@ serve(async (req: Request) => {
     // ── 10. Call Provider ────────────────────────────────────────────
     let result: ProviderResult;
     if (chosenProvider === "twilio") {
-      result = await sendViaTwilio(formattedTo, message_body);
+      result = await sendViaTwilio(formattedTo, message_body, fromOverride);
     } else {
       result = await sendViaBizText(formattedTo, message_body);
     }
@@ -366,7 +366,7 @@ serve(async (req: Request) => {
     if (!result.success && fallbackProvider && fallbackProvider !== chosenProvider) {
       console.log(`⚠️ Primary ${chosenProvider} failed, falling back to ${fallbackProvider}`);
       if (fallbackProvider === "twilio") {
-        result = await sendViaTwilio(formattedTo, message_body);
+        result = await sendViaTwilio(formattedTo, message_body, fromOverride);
       } else {
         result = await sendViaBizText(formattedTo, message_body);
       }
