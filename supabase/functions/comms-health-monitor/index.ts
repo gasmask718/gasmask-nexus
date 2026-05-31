@@ -344,6 +344,13 @@ async function checkA2P(): Promise<Result[]> {
       }
     }
 
+    // Centralized outbound guard (send-sms + _shared/twilio-operator.ts) forces
+    // the verified toll-free as From for any US destination whenever the From
+    // would otherwise be an unregistered long code. So an unregistered long
+    // code being PRESENT in the account is not a fail — it would only be a
+    // fail if a sender bypassed the guard. Treat as warn (visibility), with
+    // the guard noted; toll-free + MS-attached remain pass.
+    const guardActive = true; // both send-sms and twilio-operator enforce pickSafeFrom
     for (const n of d.incoming_phone_numbers || []) {
       const num = n.phone_number;
       const tollFree = isTollFree(num);
@@ -353,16 +360,18 @@ async function checkA2P(): Promise<Result[]> {
       let msg = "";
       if (tollFree) {
         msg = `Toll-free — A2P-safe`;
+      } else if (longCode && inMS) {
+        msg = `Long code attached to Messaging Service (assumed A2P-registered)`;
+      } else if (longCode && !inMS && guardActive) {
+        status = "warn";
+        msg = `Unregistered US long code — would 30034 if used as From, but centralized A2P guard (send-sms + twilio-operator) redirects outbound to verified toll-free ${VERIFIED_TOLL_FREE}. Register via A2P or attach to a Messaging Service to use this number directly.`;
       } else if (longCode && !inMS) {
         status = "fail";
-        msg = `US long code NOT attached to a Messaging Service — outbound will silently 30034 to most carriers`;
-      } else if (longCode && inMS) {
-        status = "pass";
-        msg = `Long code attached to Messaging Service (assumed A2P-registered)`;
+        msg = `US long code NOT attached to a Messaging Service AND no outbound guard — outbound will silently 30034`;
       } else {
-        status = "pass";
         msg = `Non-US or short code`;
       }
+
       out.push({
         layer: "a2p_sending",
         target: num,
