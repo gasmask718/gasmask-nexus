@@ -126,8 +126,18 @@ export function verifyTwilio(
   if ((Deno.env.get("DIALER_SKIP_TWILIO_VERIFY") || "").toLowerCase() === "true") {
     return { ok: true, reason: "skipped_by_env" };
   }
-  const token = Deno.env.get("TWILIO_AUTH_TOKEN");
+  // Prefer the dedicated webhook token (Account Auth Token for AC5833...).
+  // Fall back to TWILIO_AUTH_TOKEN only if the dedicated one isn't set — note
+  // that if TWILIO_AUTH_TOKEN holds an API Key Secret (starts with the API Key
+  // pair), signature verification will ALWAYS fail. Twilio signs webhooks with
+  // the Account Auth Token, not API Key secrets.
+  const token =
+    Deno.env.get("TWILIO_WEBHOOK_AUTH_TOKEN") ||
+    Deno.env.get("TWILIO_AUTH_TOKEN");
   if (!token) return { ok: false, reason: "no_auth_token" };
+  const tokenSource = Deno.env.get("TWILIO_WEBHOOK_AUTH_TOKEN")
+    ? "TWILIO_WEBHOOK_AUTH_TOKEN"
+    : "TWILIO_AUTH_TOKEN";
   const sig = req.headers.get("x-twilio-signature");
   if (!sig) return { ok: false, reason: "no_signature_header" };
 
