@@ -109,12 +109,29 @@ Deno.serve(async (req) => {
     if (req.method === 'POST') {
       const payload = await req.json().catch(() => ({}));
       const to = payload.to || '+17183089391';
-      const from = payload.from
+
+      // Safe default: verified toll-free. Reject US long codes unless a
+      // MessagingServiceSid is configured — they get silently dropped by
+      // carriers (Twilio error 30034) without A2P 10DLC registration.
+      const VERIFIED_TF = '+18776818621';
+      const isUsTF = (n: string) => /^\+1(800|833|844|855|866|877|888)\d{7}$/.test(n);
+      const isUsLongCode = (n: string) => /^\+1\d{10}$/.test(n) && !isUsTF(n);
+      const hasMsgSvc = !!Deno.env.get('TWILIO_MESSAGING_SERVICE_SID');
+      const a2pBypass = Deno.env.get('TWILIO_A2P_BYPASS') === 'true';
+
+      const requested = payload.from
         || Deno.env.get('TWILIO_FROM_NUMBER')
         || Deno.env.get('TWILIO_PHONE_NUMBER')
-        || Deno.env.get('GASMASK_PHONE_NUMBER')
-        || Deno.env.get('DC_PHONE_NUMBER')
-        || '';
+        || VERIFIED_TF;
+      const isUsDest = to.startsWith('+1');
+      let from = requested;
+      let fromSwapped: string | null = null;
+      if (isUsDest && isUsLongCode(from) && !hasMsgSvc && !a2pBypass) {
+        fromSwapped = from;
+        from = VERIFIED_TF;
+        console.warn(`🚫 comms-loop-probe: rejected long code ${fromSwapped} → using verified TF ${VERIFIED_TF} (A2P 30034 guard)`);
+      }
+
       const body = payload.body
         || `Loop test ${new Date().toISOString().slice(11,19)} UTC — reply YES to confirm webhook routing.`;
 
