@@ -97,7 +97,8 @@ async function sendSMS(
   to: string,
   body: string
 ) {
-  const fixedSid = sid.startsWith("AC") ? sid : "AC" + sid.slice(2);
+  // TWILIO_ACCOUNT_SID must be the real AC-prefixed Account SID (no rewriting).
+  const fixedSid = sid;
   const url = `https://api.twilio.com/2010-04-01/Accounts/${fixedSid}/Messages.json`;
   const auth = btoa(`${fixedSid}:${token}`);
   await fetch(url, {
