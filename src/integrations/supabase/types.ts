@@ -35738,6 +35738,42 @@ export type Database = {
         }
         Relationships: []
       }
+      dc_webhook_assertion_log: {
+        Row: {
+          configured: number
+          excluded_brandaro: number
+          failed: number
+          failures: Json
+          has_credential_issue: boolean
+          id: string
+          ran_at: string
+          total: number
+          triggered_by: string
+        }
+        Insert: {
+          configured: number
+          excluded_brandaro?: number
+          failed: number
+          failures?: Json
+          has_credential_issue?: boolean
+          id?: string
+          ran_at?: string
+          total: number
+          triggered_by?: string
+        }
+        Update: {
+          configured?: number
+          excluded_brandaro?: number
+          failed?: number
+          failures?: Json
+          has_credential_issue?: boolean
+          id?: string
+          ran_at?: string
+          total?: number
+          triggered_by?: string
+        }
+        Relationships: []
+      }
       deal_closings: {
         Row: {
           acquisition_id: string | null

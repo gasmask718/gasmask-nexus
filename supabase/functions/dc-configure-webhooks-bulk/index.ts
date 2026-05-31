@@ -46,9 +46,22 @@ Deno.serve(async (req) => {
 
   // Pull every active number from the canonical view
   const dirResp = await sbFetch(`/rest/v1/v_phone_directory?is_active=eq.true&select=id,phone_e164,source_table,twilio_webhook_configured`);
-  const numbers = await dirResp.json() as Array<{
+  const allNumbers = await dirResp.json() as Array<{
     id: string; phone_e164: string; source_table: string; twilio_webhook_configured: boolean | null;
   }>;
+
+  // Exclude numbers that belong to the Brandaro Twilio account (different creds).
+  // Brandaro numbers live in dynasty_phone_numbers with friendly_name ILIKE 'Brandaro%'.
+  const brandaroResp = await sbFetch(
+    `/rest/v1/dynasty_phone_numbers?friendly_name=ilike.Brandaro*&select=id`
+  );
+  const brandaroRows = await brandaroResp.json() as Array<{ id: string }>;
+  const brandaroIds = new Set(brandaroRows.map(r => r.id));
+  const numbers = allNumbers.filter(
+    n => !(n.source_table === 'dynasty_phone_numbers' && brandaroIds.has(n.id))
+  );
+  const excludedCount = allNumbers.length - numbers.length;
+
 
   const results: any[] = [];
   for (const n of numbers) {
@@ -120,12 +133,33 @@ Deno.serve(async (req) => {
     }
   }
 
+  const failures = results.filter(r => r.error);
   const summary = {
     total: numbers.length,
     configured: results.filter(r => r.ok).length,
-    failed: results.filter(r => r.error).length,
+    failed: failures.length,
     skipped: results.filter(r => r.skipped).length,
+    excluded_brandaro: excludedCount,
   };
+
+  // Persist run for drift/alerting. Cron sets ?triggered_by=cron.
+  const url = new URL(req.url);
+  const triggeredBy = url.searchParams.get('triggered_by') || 'manual';
+  const hasCredIssue = failures.some((f: any) => f.credential_issue);
+  await sbFetch('/rest/v1/dc_webhook_assertion_log', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({
+      total: summary.total,
+      configured: summary.configured,
+      failed: summary.failed,
+      excluded_brandaro: summary.excluded_brandaro,
+      failures,
+      has_credential_issue: hasCredIssue,
+      triggered_by: triggeredBy,
+    }),
+  });
+
   return new Response(JSON.stringify({ success: true, summary, results }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
