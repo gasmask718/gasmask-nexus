@@ -30354,6 +30354,39 @@ export type Database = {
           },
         ]
       }
+      comms_health_checks: {
+        Row: {
+          created_at: string
+          detail: Json
+          id: string
+          layer: string
+          message: string | null
+          provider: string
+          status: string
+          target: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: Json
+          id?: string
+          layer: string
+          message?: string | null
+          provider?: string
+          status: string
+          target: string
+        }
+        Update: {
+          created_at?: string
+          detail?: Json
+          id?: string
+          layer?: string
+          message?: string | null
+          provider?: string
+          status?: string
+          target?: string
+        }
+        Relationships: []
+      }
       communication_alerts: {
         Row: {
           alert_type: string
@@ -112530,6 +112563,18 @@ export type Database = {
             referencedColumns: ["store_id"]
           },
         ]
+      }
+      v_comms_health_latest: {
+        Row: {
+          created_at: string | null
+          detail: Json | null
+          layer: string | null
+          message: string | null
+          provider: string | null
+          status: string | null
+          target: string | null
+        }
+        Relationships: []
       }
       v_confidence_drift_metrics: {
         Row: {
