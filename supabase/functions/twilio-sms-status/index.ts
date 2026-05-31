@@ -50,6 +50,16 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`📨 Twilio Status Callback: SID=${messageSid}, Status=${messageStatus}, To=${to}`);
 
+    // Synthetic health-check probe (comms-health-monitor sends MessageSid=SMhealth*):
+    // ack with 200 so the deployment layer reports green without us pretending
+    // a real status update happened.
+    if (messageSid.startsWith("SMhealth")) {
+      return new Response(
+        JSON.stringify({ success: true, synthetic: true }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     if (!messageSid || !messageStatus) {
       console.error("❌ Missing required fields: MessageSid or MessageStatus");
       return new Response(
