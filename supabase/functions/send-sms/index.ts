@@ -152,6 +152,7 @@ interface SendRequest {
   explicit_provider?: "twilio" | "biztext";
   skip_cooldown?: boolean;
   metadata?: Record<string, any>;
+  from_number?: string;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────
