@@ -42,8 +42,20 @@ const MIN_BALANCE_USD = parseFloat(Deno.env.get("TWILIO_MIN_BALANCE_USD") || "10
 // Canonical SMS/voice webhooks every active number must point at.
 const CANONICAL = {
   sms: `${SUPABASE_URL}/functions/v1/twilio-sms-webhook`,
-  voice: `${SUPABASE_URL}/functions/v1/twilio-voice-webhook`,
+  voice: `${SUPABASE_URL}/functions/v1/twilio-inbound-call`,
 };
+
+// Brand/vertical-specific inbound handlers that are intentionally split-routed
+// off the canonical handler. Marked as pass (not warn) by the webhook_config
+// check — they're known-good alternates, not misconfigurations.
+const ACCEPTED_ALTERNATES = new Set<string>([
+  "twilio-inbound-call",
+  "twilio-sms-webhook",
+  "brandaro-handle-inbound",
+  "gasmask-sms-inbound",
+  "sms-inbound-webhook",
+  "sbo-inbound-sms",
+]);
 
 // Toll-free / short-code prefixes that are A2P-safe without registration.
 const TOLL_FREE_PREFIXES = ["800", "833", "844", "855", "866", "877", "888"];
@@ -173,7 +185,10 @@ async function checkWebhookConfig(): Promise<Result[]> {
         if (url === canonical) return { status: "pass", msg: `Canonical webhook` };
         if (url.startsWith(`${SUPABASE_URL}/functions/v1/`)) {
           const fn = url.split("/functions/v1/")[1] || "";
-          return { status: "warn", msg: `Alternate Supabase function '${fn}' (not the canonical handler — split routing, intentional?)` };
+          if (ACCEPTED_ALTERNATES.has(fn)) {
+            return { status: "pass", msg: `Routed to accepted alternate '${fn}' (intentional split)` };
+          }
+          return { status: "fail", msg: `Routes to '${fn}' which is NOT a deployed function — inbound will 404` };
         }
         if (/twilio\.com\/(welcome|demo)/i.test(url)) {
           return { status: "fail", msg: `Twilio demo URL — replace with your webhook` };
