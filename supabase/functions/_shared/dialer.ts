@@ -75,6 +75,24 @@ export function originalUrl(req: Request): string {
   return req.url;
 }
 
+/**
+ * Build the canonical Supabase functions URL for this request, ignoring any
+ * x-forwarded-* headers. This is what Twilio actually signs when the webhook
+ * was configured with the canonical `https://<ref>.supabase.co/functions/v1/<fn>`
+ * URL — which is the only stable form across the Supabase edge gateway.
+ */
+export function canonicalUrl(req: Request): string {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+  const u = new URL(req.url);
+  // u.pathname for edge requests looks like "/<fn-name>" inside the runtime.
+  // The public URL is "<SUPABASE_URL>/functions/v1<pathname>".
+  let path = u.pathname;
+  if (!path.startsWith("/functions/v1")) {
+    path = `/functions/v1${path.startsWith("/") ? "" : "/"}${path}`;
+  }
+  return `${supabaseUrl.replace(/\/$/, "")}${path}${u.search}`;
+}
+
 /** Read form params into a plain object (for signature validation + business logic). */
 export async function readForm(req: Request): Promise<Record<string, string>> {
   try {
@@ -87,24 +105,62 @@ export async function readForm(req: Request): Promise<Record<string, string>> {
   }
 }
 
+function computeSig(token: string, url: string, params: Record<string, string>): string {
+  const sortedKeys = Object.keys(params).sort();
+  let data = url;
+  for (const k of sortedKeys) data += k + params[k];
+  return createHmac("sha1", token).update(data).digest("base64");
+}
+
 /**
  * Verify Twilio request OR allow if explicitly disabled (DIALER_SKIP_TWILIO_VERIFY=true).
- * Returns true if request should be processed.
+ * Tries multiple candidate URLs (canonical Supabase URL, x-forwarded URL, raw req.url)
+ * because the edge gateway rewrites host headers — Twilio signs the exact configured URL,
+ * which is the canonical `<SUPABASE_URL>/functions/v1/<fn>` form.
+ * Logs a structured diagnostic when verification fails so the mismatch is visible.
  */
 export function verifyTwilio(
   req: Request,
   params: Record<string, string>,
-): { ok: boolean; reason?: string } {
+): { ok: boolean; reason?: string; matchedUrl?: string } {
   if ((Deno.env.get("DIALER_SKIP_TWILIO_VERIFY") || "").toLowerCase() === "true") {
     return { ok: true, reason: "skipped_by_env" };
   }
   const token = Deno.env.get("TWILIO_AUTH_TOKEN");
   if (!token) return { ok: false, reason: "no_auth_token" };
   const sig = req.headers.get("x-twilio-signature");
-  const url = originalUrl(req);
-  const valid = validateTwilioSignature({ authToken: token, signature: sig, url, params });
-  return valid ? { ok: true } : { ok: false, reason: "invalid_signature" };
+  if (!sig) return { ok: false, reason: "no_signature_header" };
+
+  const candidates: { label: string; url: string }[] = [
+    { label: "canonical", url: canonicalUrl(req) },
+    { label: "x-forwarded", url: originalUrl(req) },
+    { label: "req.url", url: req.url },
+  ];
+
+  const computed: Record<string, string> = {};
+  for (const c of candidates) {
+    const s = computeSig(token, c.url, params);
+    computed[c.label] = s;
+    if (s.length === sig.length) {
+      let diff = 0;
+      for (let i = 0; i < s.length; i++) diff |= s.charCodeAt(i) ^ sig.charCodeAt(i);
+      if (diff === 0) return { ok: true, matchedUrl: c.label };
+    }
+  }
+
+  // Diagnostic — surface the exact mismatch so we can fix the URL/token.
+  console.error("[verifyTwilio] signature mismatch", JSON.stringify({
+    received_signature: sig,
+    candidates: candidates.map((c) => ({ label: c.label, url: c.url, computed: computed[c.label] })),
+    x_forwarded_proto: req.headers.get("x-forwarded-proto"),
+    x_forwarded_host: req.headers.get("x-forwarded-host"),
+    host: req.headers.get("host"),
+    twilio_account_sid_from_form: params.AccountSid || null,
+    param_keys: Object.keys(params).sort(),
+  }));
+  return { ok: false, reason: "invalid_signature" };
 }
+
 
 /**
  * Verify Bland webhook via shared secret header (X-Bland-Secret) or query token.
