@@ -46,9 +46,22 @@ Deno.serve(async (req) => {
 
   // Pull every active number from the canonical view
   const dirResp = await sbFetch(`/rest/v1/v_phone_directory?is_active=eq.true&select=id,phone_e164,source_table,twilio_webhook_configured`);
-  const numbers = await dirResp.json() as Array<{
+  const allNumbers = await dirResp.json() as Array<{
     id: string; phone_e164: string; source_table: string; twilio_webhook_configured: boolean | null;
   }>;
+
+  // Exclude numbers that belong to the Brandaro Twilio account (different creds).
+  // Brandaro numbers live in dynasty_phone_numbers with friendly_name ILIKE 'Brandaro%'.
+  const brandaroResp = await sbFetch(
+    `/rest/v1/dynasty_phone_numbers?friendly_name=ilike.Brandaro*&select=id`
+  );
+  const brandaroRows = await brandaroResp.json() as Array<{ id: string }>;
+  const brandaroIds = new Set(brandaroRows.map(r => r.id));
+  const numbers = allNumbers.filter(
+    n => !(n.source_table === 'dynasty_phone_numbers' && brandaroIds.has(n.id))
+  );
+  const excludedCount = allNumbers.length - numbers.length;
+
 
   const results: any[] = [];
   for (const n of numbers) {
