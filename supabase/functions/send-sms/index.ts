@@ -9,12 +9,21 @@ const corsHeaders = {
 
 // ── Provider Adapters ──────────────────────────────────────────────────
 
-async function sendViaTwilio(to: string, body: string): Promise<ProviderResult> {
+// US toll-free numbers (800/833/844/855/866/877/888) use Twilio's Toll-Free
+// Verification flow — they are NOT subject to A2P 10DLC. Once verified, they
+// can send to US carriers without a Messaging Service.
+function isUsTollFree(e164: string): boolean {
+  const m = e164.match(/^\+1(8\d{2})\d{7}$/);
+  if (!m) return false;
+  return ["800", "833", "844", "855", "866", "877", "888"].includes(m[1]);
+}
+
+async function sendViaTwilio(to: string, body: string, fromOverride?: string): Promise<ProviderResult> {
   const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
   const token = Deno.env.get("TWILIO_AUTH_TOKEN");
   const apiSid = Deno.env.get("TWILIO_API_SID") || Deno.env.get("TWILIO_API_KEY") || undefined;
   const apiSecret = Deno.env.get("TWILIO_API_SECRET") || undefined;
-  const from = Deno.env.get("TWILIO_PHONE_NUMBER") || "+18484004179";
+  const from = fromOverride || Deno.env.get("TWILIO_PHONE_NUMBER") || "+18776818621";
   const messagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID") || undefined;
 
   if (!sid) return { success: false, error_code: "NO_CREDENTIALS", error_message: "Missing TWILIO_ACCOUNT_SID" };
@@ -26,21 +35,24 @@ async function sendViaTwilio(to: string, body: string): Promise<ProviderResult> 
   }
 
   // ── A2P 10DLC pre-send guard ─────────────────────────────────────────
-  // US carriers (esp. T-Mobile) hard-drop A2P traffic from unregistered long
-  // codes with error 30034. Twilio returns 201 queued, but the message never
-  // delivers. Refuse to send unless we have a MessagingServiceSid (which ties
-  // the send to a registered Brand+Campaign) OR an explicit bypass set for
-  // verified test traffic.
+  // US carriers hard-drop A2P traffic from unregistered long codes (err 30034).
+  // Allow when: MessagingServiceSid set, sender is a verified toll-free, or
+  // TWILIO_A2P_BYPASS=true.
   const a2pBypass = Deno.env.get("TWILIO_A2P_BYPASS") === "true";
   const isUsDestination = to.startsWith("+1");
-  if (isUsDestination && !messagingServiceSid && !a2pBypass) {
+  const senderIsTollFree = isUsTollFree(from);
+  if (isUsDestination && !messagingServiceSid && !senderIsTollFree && !a2pBypass) {
     const msg =
       `A2P_UNREGISTERED: Number ${from} not registered for A2P 10DLC — message to ${to} NOT sent. ` +
       `US carriers will silently drop (Twilio error 30034). Register a Brand + Campaign, attach the ` +
       `number to a Messaging Service, then set TWILIO_MESSAGING_SERVICE_SID. ` +
+      `Or send From a verified toll-free (+1 800/833/844/855/866/877/888). ` +
       `Set TWILIO_A2P_BYPASS=true only for verified test numbers.`;
     console.error(`🚫 ${msg}`);
     return { success: false, error_code: "A2P_UNREGISTERED", error_message: msg };
+  }
+  if (senderIsTollFree && !messagingServiceSid) {
+    console.log(`✅ Toll-free sender ${from} → bypassing A2P 10DLC guard`);
   }
 
   const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
@@ -140,6 +152,7 @@ interface SendRequest {
   explicit_provider?: "twilio" | "biztext";
   skip_cooldown?: boolean;
   metadata?: Record<string, any>;
+  from_number?: string;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -174,7 +187,8 @@ serve(async (req: Request) => {
   try {
     // ── 1. Parse & Validate ──────────────────────────────────────────
     const body: SendRequest = await req.json();
-    const { to_number, message_body, idempotency_key, store_id, campaign_id, explicit_provider, skip_cooldown, metadata } = body;
+    const { to_number, message_body, idempotency_key, store_id, campaign_id, explicit_provider, skip_cooldown, metadata, from_number } = body;
+    const fromOverride = from_number ? normalizePhone(from_number) : undefined;
 
     if (!to_number || !message_body || !idempotency_key) {
       return respond(400, { error: "Missing required fields: to_number, message_body, idempotency_key" });
@@ -341,7 +355,7 @@ serve(async (req: Request) => {
     // ── 10. Call Provider ────────────────────────────────────────────
     let result: ProviderResult;
     if (chosenProvider === "twilio") {
-      result = await sendViaTwilio(formattedTo, message_body);
+      result = await sendViaTwilio(formattedTo, message_body, fromOverride);
     } else {
       result = await sendViaBizText(formattedTo, message_body);
     }
@@ -352,7 +366,7 @@ serve(async (req: Request) => {
     if (!result.success && fallbackProvider && fallbackProvider !== chosenProvider) {
       console.log(`⚠️ Primary ${chosenProvider} failed, falling back to ${fallbackProvider}`);
       if (fallbackProvider === "twilio") {
-        result = await sendViaTwilio(formattedTo, message_body);
+        result = await sendViaTwilio(formattedTo, message_body, fromOverride);
       } else {
         result = await sendViaBizText(formattedTo, message_body);
       }
