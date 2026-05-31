@@ -138,6 +138,7 @@ Deno.serve(async (req) => {
     configured: results.filter(r => r.ok).length,
     failed: results.filter(r => r.error).length,
     skipped: results.filter(r => r.skipped).length,
+    excluded_brandaro: excludedCount,
   };
   return new Response(JSON.stringify({ success: true, summary, results }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
