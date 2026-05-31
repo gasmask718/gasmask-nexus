@@ -55,7 +55,7 @@ export default function CommsHealthDashboard() {
     if (error) {
       toast({ title: 'Failed to load', description: error.message, variant: 'destructive' });
     } else {
-      setRows((data as Row[]) || []);
+      setRows(((data as unknown) as Row[]) || []);
       setLastRefresh(new Date());
     }
     setLoading(false);
