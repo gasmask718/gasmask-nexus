@@ -161,6 +161,7 @@ export function verifyTwilio(
   // Diagnostic — surface the exact mismatch so we can fix the URL/token.
   console.error("[verifyTwilio] signature mismatch", JSON.stringify({
     received_signature: sig,
+    token_source: tokenSource,
     candidates: candidates.map((c) => ({ label: c.label, url: c.url, computed: computed[c.label] })),
     x_forwarded_proto: req.headers.get("x-forwarded-proto"),
     x_forwarded_host: req.headers.get("x-forwarded-host"),
