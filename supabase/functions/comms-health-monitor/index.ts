@@ -95,26 +95,25 @@ function isUsLongCode(num: string): boolean {
 async function checkCredentials(): Promise<Result[]> {
   const out: Result[] = [];
   try {
-    const r = await tw(`.json`);
+    // Liveness probe via Messages list — works with both Main and API Key auth.
+    const r = await tw(`/Messages.json?PageSize=1`);
     if (!r.ok) {
+      const body = await r.text();
       out.push({
         layer: "credentials",
         target: "twilio_account",
         status: "fail",
-        message: `Twilio API returned ${r.status} ${r.statusText} — credentials invalid or account suspended`,
-        detail: { status: r.status },
+        message: `Twilio API returned ${r.status} — credentials invalid, account suspended, or key lacks Messages scope. Body: ${body.slice(0, 200)}`,
+        detail: { http_status: r.status, body_preview: body.slice(0, 200) },
       });
       return out;
     }
-    const acct = await r.json();
     out.push({
       layer: "credentials",
       target: "twilio_account",
-      status: acct.status === "active" ? "pass" : "fail",
-      message: acct.status === "active"
-        ? `Account ${acct.sid} active`
-        : `Account status: ${acct.status}`,
-      detail: { sid: acct.sid, status: acct.status, friendly_name: acct.friendly_name },
+      status: "pass",
+      message: `Twilio Messages API reachable (${TWILIO_API_SID ? "API Key" : "Account Auth Token"})`,
+      detail: { account_sid: TWILIO_ACCOUNT_SID, auth_mode: TWILIO_API_SID ? "api_key" : "auth_token" },
     });
 
     const br = await tw(`/Balance.json`);
@@ -130,6 +129,14 @@ async function checkCredentials(): Promise<Result[]> {
           ? `Balance $${bal.toFixed(2)} below threshold $${MIN_BALANCE_USD.toFixed(2)} — top up to prevent account suspension`
           : `Balance $${bal.toFixed(2)} (threshold $${MIN_BALANCE_USD.toFixed(2)})`,
         detail: { balance_usd: bal, currency: b.currency, threshold: MIN_BALANCE_USD },
+      });
+    } else {
+      out.push({
+        layer: "credentials",
+        target: "twilio_balance",
+        status: "warn",
+        message: `Balance endpoint returned ${br.status} (API Key may lack Account read scope — main credentials needed for balance check)`,
+        detail: { http_status: br.status },
       });
     }
   } catch (e) {
@@ -159,28 +166,37 @@ async function checkWebhookConfig(): Promise<Result[]> {
       });
     } else {
       const d = await r.json();
+      const classifyUrl = (url: string | null | undefined, canonical: string, hasAppSid: boolean):
+        { status: "pass" | "warn" | "fail"; msg: string } => {
+        if (hasAppSid) return { status: "pass", msg: "Routed via TwiML App SID" };
+        if (!url) return { status: "warn", msg: "EMPTY — Messaging Service must override or inbound will be dropped" };
+        if (url === canonical) return { status: "pass", msg: `Canonical webhook` };
+        if (url.startsWith(`${SUPABASE_URL}/functions/v1/`)) {
+          const fn = url.split("/functions/v1/")[1] || "";
+          return { status: "warn", msg: `Alternate Supabase function '${fn}' (not the canonical handler — split routing, intentional?)` };
+        }
+        if (/twilio\.com\/(welcome|demo)/i.test(url)) {
+          return { status: "fail", msg: `Twilio demo URL — replace with your webhook` };
+        }
+        return { status: "fail", msg: `Non-Supabase URL '${url}' — Twilio will receive non-TwiML (12200 class)` };
+      };
       for (const n of d.incoming_phone_numbers || []) {
         const num = n.phone_number;
-        const smsOk = n.sms_url === CANONICAL.sms || !!n.sms_application_sid;
-        const voiceOk = n.voice_url === CANONICAL.voice || !!n.voice_application_sid;
-
+        const smsC = classifyUrl(n.sms_url, CANONICAL.sms, !!n.sms_application_sid);
+        const voiceC = classifyUrl(n.voice_url, CANONICAL.voice, !!n.voice_application_sid);
         out.push({
           layer: "webhook_config",
           target: `${num}/sms`,
-          status: smsOk ? "pass" : (n.sms_url ? "fail" : "warn"),
-          message: smsOk
-            ? `SMS → ${n.sms_url || "app SID"}`
-            : `SMS URL is ${n.sms_url ? `'${n.sms_url}' (expected '${CANONICAL.sms}')` : "EMPTY — Messaging Service may override; verify below"}`,
-          detail: { sms_url: n.sms_url, expected: CANONICAL.sms, sid: n.sid },
+          status: smsC.status,
+          message: `SMS: ${smsC.msg} (${n.sms_url || "<empty>"})`,
+          detail: { sms_url: n.sms_url, canonical: CANONICAL.sms, sid: n.sid, sms_application_sid: n.sms_application_sid },
         });
         out.push({
           layer: "webhook_config",
           target: `${num}/voice`,
-          status: voiceOk ? "pass" : (n.voice_url ? "fail" : "warn"),
-          message: voiceOk
-            ? `Voice → ${n.voice_url || "app SID"}`
-            : `Voice URL is ${n.voice_url ? `'${n.voice_url}' (expected '${CANONICAL.voice}')` : "EMPTY"}`,
-          detail: { voice_url: n.voice_url, expected: CANONICAL.voice, sid: n.sid },
+          status: voiceC.status,
+          message: `Voice: ${voiceC.msg} (${n.voice_url || "<empty>"})`,
+          detail: { voice_url: n.voice_url, canonical: CANONICAL.voice, sid: n.sid, voice_application_sid: n.voice_application_sid },
         });
       }
     }
@@ -451,6 +467,7 @@ async function checkSyntheticLoop(): Promise<Result[]> {
       .eq("channel", "sms")
       .eq("direction", "inbound")
       .gte("created_at", since)
+      .not("twilio_sid", "ilike", "SMhealthcheck%")
       .order("created_at", { ascending: false })
       .limit(1);
     if (error) {
