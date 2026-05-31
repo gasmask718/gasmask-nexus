@@ -496,6 +496,7 @@ const LanguagePage = lazy(() => import('@/pages/communication/language/LanguageP
 const VoiceMatrixPage = lazy(() => import('@/pages/communication/voicematrix/VoiceMatrixPage'));
 const CommSettingsPage = lazy(() => import('@/pages/communication/settings/SettingsPage'));
 const PhoneNumbersSettingsPage = lazy(() => import('@/pages/communication/settings/PhoneNumbersPage'));
+const CommsHealthDashboard = lazy(() => import('@/pages/communication/CommsHealthDashboard'));
 const BusinessPhoneNumbersPage = lazy(() => import('@/pages/communication/BusinessPhoneNumbers'));
 const PhoneProvisioningPage = lazy(() => import('@/pages/communication/PhoneProvisioningPage'));
 const UserCallSettingsPage = lazy(() => import('@/pages/communication/call-settings').then(m => ({ default: m.UserCallSettingsPage })));
@@ -2270,6 +2271,7 @@ export default function AppRoutes() {
           <Route path="routing" element={<RoutingPage />} />
           <Route path="call-diagnostics" element={<CallSystemDiagnosticsPage />} />
           <Route path="dialer-health" element={<DialerHealthPage />} />
+          <Route path="comms-health" element={<CommsHealthDashboard />} />
           <Route path="shadow-mode" element={<ShadowModePage />} />
 
           {/* ═══ LEGACY REDIRECTS — Safe, no broken links ═══ */}
