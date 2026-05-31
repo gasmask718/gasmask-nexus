@@ -23,7 +23,14 @@ async function sendViaTwilio(to: string, body: string, fromOverride?: string): P
   const token = Deno.env.get("TWILIO_AUTH_TOKEN");
   const apiSid = Deno.env.get("TWILIO_API_SID") || Deno.env.get("TWILIO_API_KEY") || undefined;
   const apiSecret = Deno.env.get("TWILIO_API_SECRET") || undefined;
-  const from = fromOverride || Deno.env.get("TWILIO_PHONE_NUMBER") || "+18776818621";
+  // Default From: the verified toll-free. If TWILIO_PHONE_NUMBER is set to a
+  // US long code (anything other than 800/833/844/855/866/877/888), we IGNORE
+  // it and fall back to the toll-free — carriers drop unregistered long codes
+  // (error 30034) and we refuse to silently queue dead messages.
+  const envFrom = Deno.env.get("TWILIO_PHONE_NUMBER");
+  const VERIFIED_TOLL_FREE = "+18776818621";
+  const envFromSafe = envFrom && (isUsTollFree(envFrom) || !envFrom.startsWith("+1")) ? envFrom : VERIFIED_TOLL_FREE;
+  const from = fromOverride || envFromSafe;
   const messagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID") || undefined;
 
   if (!sid) return { success: false, error_code: "NO_CREDENTIALS", error_message: "Missing TWILIO_ACCOUNT_SID" };
