@@ -18149,8 +18149,12 @@ export type Database = {
           notes: string | null
           phone_number: string
           purpose: string | null
+          sms_webhook_url: string | null
           twilio_sid: string | null
+          twilio_webhook_configured: boolean | null
+          twilio_webhook_configured_at: string | null
           updated_at: string | null
+          voice_webhook_url: string | null
         }
         Insert: {
           assigned_campaign?: string | null
@@ -18173,8 +18177,12 @@ export type Database = {
           notes?: string | null
           phone_number: string
           purpose?: string | null
+          sms_webhook_url?: string | null
           twilio_sid?: string | null
+          twilio_webhook_configured?: boolean | null
+          twilio_webhook_configured_at?: string | null
           updated_at?: string | null
+          voice_webhook_url?: string | null
         }
         Update: {
           assigned_campaign?: string | null
@@ -18197,8 +18205,12 @@ export type Database = {
           notes?: string | null
           phone_number?: string
           purpose?: string | null
+          sms_webhook_url?: string | null
           twilio_sid?: string | null
+          twilio_webhook_configured?: boolean | null
+          twilio_webhook_configured_at?: string | null
           updated_at?: string | null
+          voice_webhook_url?: string | null
         }
         Relationships: [
           {
@@ -22230,6 +22242,8 @@ export type Database = {
       }
       business_phone_numbers: {
         Row: {
+          assigned_agent_id: string | null
+          assigned_va_id: string | null
           business_id: string
           created_at: string | null
           id: string
@@ -22240,10 +22254,17 @@ export type Database = {
           max_sms_per_minute: number | null
           phone_number: string
           provider: string | null
+          sms_webhook_url: string | null
+          twilio_sid: string | null
+          twilio_webhook_configured: boolean | null
+          twilio_webhook_configured_at: string | null
           type: string
           updated_at: string | null
+          voice_webhook_url: string | null
         }
         Insert: {
+          assigned_agent_id?: string | null
+          assigned_va_id?: string | null
           business_id: string
           created_at?: string | null
           id?: string
@@ -22254,10 +22275,17 @@ export type Database = {
           max_sms_per_minute?: number | null
           phone_number: string
           provider?: string | null
+          sms_webhook_url?: string | null
+          twilio_sid?: string | null
+          twilio_webhook_configured?: boolean | null
+          twilio_webhook_configured_at?: string | null
           type?: string
           updated_at?: string | null
+          voice_webhook_url?: string | null
         }
         Update: {
+          assigned_agent_id?: string | null
+          assigned_va_id?: string | null
           business_id?: string
           created_at?: string | null
           id?: string
@@ -22268,8 +22296,13 @@ export type Database = {
           max_sms_per_minute?: number | null
           phone_number?: string
           provider?: string | null
+          sms_webhook_url?: string | null
+          twilio_sid?: string | null
+          twilio_webhook_configured?: boolean | null
+          twilio_webhook_configured_at?: string | null
           type?: string
           updated_at?: string | null
+          voice_webhook_url?: string | null
         }
         Relationships: [
           {
@@ -35631,6 +35664,7 @@ export type Database = {
         Row: {
           assigned_agent_id: string | null
           assigned_agent_name: string | null
+          assigned_va_id: string | null
           business: string | null
           created_at: string | null
           display_name: string | null
@@ -35645,14 +35679,17 @@ export type Database = {
           phone_number: string
           purchased_at: string | null
           sid: string | null
+          sms_webhook_url: string | null
           status: string | null
           twilio_sid: string | null
           twilio_webhook_configured: boolean
+          twilio_webhook_configured_at: string | null
           webhook_url: string | null
         }
         Insert: {
           assigned_agent_id?: string | null
           assigned_agent_name?: string | null
+          assigned_va_id?: string | null
           business?: string | null
           created_at?: string | null
           display_name?: string | null
@@ -35667,14 +35704,17 @@ export type Database = {
           phone_number: string
           purchased_at?: string | null
           sid?: string | null
+          sms_webhook_url?: string | null
           status?: string | null
           twilio_sid?: string | null
           twilio_webhook_configured?: boolean
+          twilio_webhook_configured_at?: string | null
           webhook_url?: string | null
         }
         Update: {
           assigned_agent_id?: string | null
           assigned_agent_name?: string | null
+          assigned_va_id?: string | null
           business?: string | null
           created_at?: string | null
           display_name?: string | null
@@ -35689,9 +35729,11 @@ export type Database = {
           phone_number?: string
           purchased_at?: string | null
           sid?: string | null
+          sms_webhook_url?: string | null
           status?: string | null
           twilio_sid?: string | null
           twilio_webhook_configured?: boolean
+          twilio_webhook_configured_at?: string | null
           webhook_url?: string | null
         }
         Relationships: []
@@ -42821,31 +42863,52 @@ export type Database = {
       }
       dynasty_phone_numbers: {
         Row: {
+          assigned_agent_id: string | null
+          assigned_va_id: string | null
           created_at: string | null
           friendly_name: string | null
           id: string
           is_active: boolean | null
           phone_number: string
+          sms_webhook_url: string | null
           state: string
+          twilio_sid: string | null
+          twilio_webhook_configured: boolean | null
+          twilio_webhook_configured_at: string | null
           updated_at: string | null
+          voice_webhook_url: string | null
         }
         Insert: {
+          assigned_agent_id?: string | null
+          assigned_va_id?: string | null
           created_at?: string | null
           friendly_name?: string | null
           id?: string
           is_active?: boolean | null
           phone_number: string
+          sms_webhook_url?: string | null
           state: string
+          twilio_sid?: string | null
+          twilio_webhook_configured?: boolean | null
+          twilio_webhook_configured_at?: string | null
           updated_at?: string | null
+          voice_webhook_url?: string | null
         }
         Update: {
+          assigned_agent_id?: string | null
+          assigned_va_id?: string | null
           created_at?: string | null
           friendly_name?: string | null
           id?: string
           is_active?: boolean | null
           phone_number?: string
+          sms_webhook_url?: string | null
           state?: string
+          twilio_sid?: string | null
+          twilio_webhook_configured?: boolean | null
+          twilio_webhook_configured_at?: string | null
           updated_at?: string | null
+          voice_webhook_url?: string | null
         }
         Relationships: []
       }
@@ -113829,6 +113892,25 @@ export type Database = {
           currency: string | null
           liability_amount: number | null
           pending_items: number | null
+        }
+        Relationships: []
+      }
+      v_phone_directory: {
+        Row: {
+          agent_provider: string | null
+          assigned_agent_id: string | null
+          assigned_va_id: string | null
+          business: string | null
+          id: string | null
+          is_active: boolean | null
+          phone_e164: string | null
+          provider: string | null
+          sms_webhook_url: string | null
+          source_table: string | null
+          twilio_sid: string | null
+          twilio_webhook_configured: boolean | null
+          twilio_webhook_configured_at: string | null
+          voice_webhook_url: string | null
         }
         Relationships: []
       }
