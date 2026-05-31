@@ -69,8 +69,8 @@ Deno.serve(async (req) => {
           const message = `⚠️ DYNASTY FUNDING: ${bill.bill_name} due ${dueDate} for $${amount} — card balance may be insufficient. Log in to resolve.`;
 
           try {
-            // Ensure AC prefix
-            const sid = twilioSid.startsWith("AC") ? twilioSid : `AC${twilioSid.replace(/^US/, "")}`;
+            // TWILIO_ACCOUNT_SID must be the real AC-prefixed Account SID (validated by check-twilio-health).
+            const sid = twilioSid;
             
             await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
               method: "POST",
