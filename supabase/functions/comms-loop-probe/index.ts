@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
           sender_phone: from,
           twilio_sid: sendRes.sid,
           delivery_status: 'sent',
-          performed_by: 'comms-loop-probe',
+          performed_by: 'system',
           status: 'sent',
         });
       }
