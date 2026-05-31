@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useUserRole } from "@/hooks/useUserRole";
-import { navigationItems } from "@/components/layout/navigationItems";
+// navigationItems.ts removed — Layout.tsx is the source of truth. Stub kept for this debug page.
+const navigationItems: any[] = [];
 import { realEstateNavItems } from "@/components/layout/realEstateNavigation";
 import { podNavigationItems } from "@/components/layout/podNavigation";
 import { callCenterNavItems } from "@/components/layout/callCenterNavigation";

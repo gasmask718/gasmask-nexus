@@ -105,7 +105,8 @@ serve(async (req) => {
       const davidPhone = Deno.env.get("DAVID_PHONE_NUMBER") || Deno.env.get("YOUR_PHONE_NUMBER");
 
       if (twilioSid && twilioAuth && twilioFrom && davidPhone) {
-        const sid = twilioSid.startsWith("AC") ? twilioSid : `AC${twilioSid.replace(/^US/, "")}`;
+        // TWILIO_ACCOUNT_SID must be the real AC-prefixed Account SID. No rewriting — surface bad creds loudly.
+        const sid = twilioSid;
         const smsBody = `🏦 DYNASTY FUNDING: New client submitted: ${clientData.full_name} — ${clientData.phone || "No phone"} — Score: ${clientData.credit_score_estimate || "N/A"}`;
 
         await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
