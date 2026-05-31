@@ -25,6 +25,24 @@ async function sendViaTwilio(to: string, body: string): Promise<ProviderResult> 
     return { success: false, error_code: "NO_CREDENTIALS", error_message: "Missing Twilio auth credentials" };
   }
 
+  // ── A2P 10DLC pre-send guard ─────────────────────────────────────────
+  // US carriers (esp. T-Mobile) hard-drop A2P traffic from unregistered long
+  // codes with error 30034. Twilio returns 201 queued, but the message never
+  // delivers. Refuse to send unless we have a MessagingServiceSid (which ties
+  // the send to a registered Brand+Campaign) OR an explicit bypass set for
+  // verified test traffic.
+  const a2pBypass = Deno.env.get("TWILIO_A2P_BYPASS") === "true";
+  const isUsDestination = to.startsWith("+1");
+  if (isUsDestination && !messagingServiceSid && !a2pBypass) {
+    const msg =
+      `A2P_UNREGISTERED: Number ${from} not registered for A2P 10DLC — message to ${to} NOT sent. ` +
+      `US carriers will silently drop (Twilio error 30034). Register a Brand + Campaign, attach the ` +
+      `number to a Messaging Service, then set TWILIO_MESSAGING_SERVICE_SID. ` +
+      `Set TWILIO_A2P_BYPASS=true only for verified test numbers.`;
+    console.error(`🚫 ${msg}`);
+    return { success: false, error_code: "A2P_UNREGISTERED", error_message: msg };
+  }
+
   const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
   const form = new URLSearchParams();
   form.append("To", to);
