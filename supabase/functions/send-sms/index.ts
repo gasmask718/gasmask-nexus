@@ -187,7 +187,8 @@ serve(async (req: Request) => {
   try {
     // ── 1. Parse & Validate ──────────────────────────────────────────
     const body: SendRequest = await req.json();
-    const { to_number, message_body, idempotency_key, store_id, campaign_id, explicit_provider, skip_cooldown, metadata } = body;
+    const { to_number, message_body, idempotency_key, store_id, campaign_id, explicit_provider, skip_cooldown, metadata, from_number } = body;
+    const fromOverride = from_number ? normalizePhone(from_number) : undefined;
 
     if (!to_number || !message_body || !idempotency_key) {
       return respond(400, { error: "Missing required fields: to_number, message_body, idempotency_key" });
