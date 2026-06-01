@@ -123,11 +123,33 @@ Deno.serve(async (req) => {
       return json(500, { error: "TWILIO_ACCOUNT_SID must start with 'AC'" });
     }
 
+    // ---- Service-role admin client (used by shortener + logger) ----
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
     // ---- Shorten + compose ----
-    const shortUrl = await shortenUrl(checkout_url);
+    const shortUrl = await shortenUrl(checkout_url, admin, invoice_id);
     const greeting = customer_name?.trim() ? `Hi ${customer_name.trim()}` : "Hello";
     const label = invoice_number ? ` ${invoice_number}` : "";
     const message = `${greeting}, here's your invoice${label}: ${shortUrl}`;
+
+    // ---- Send via Twilio ----
+    const twilioRes = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Basic " + btoa(`${sid}:${authToken}`),
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({ To: to, From: from, Body: message }),
+      },
+    );
+    const twilioData = await twilioRes.json();
+
+
 
     // ---- Send via Twilio ----
     const twilioRes = await fetch(
