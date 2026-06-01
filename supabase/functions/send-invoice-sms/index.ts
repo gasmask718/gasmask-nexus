@@ -24,18 +24,56 @@ function toE164(raw: string): string | null {
   return null;
 }
 
-async function shortenUrl(longUrl: string): Promise<string> {
+// Branded short link via our own short_links table → /p/:code redirect.
+// Falls back to TinyURL, then to the long URL. Always returns the shortest
+// working URL we can produce.
+async function shortenUrl(
+  longUrl: string,
+  admin: ReturnType<typeof createClient>,
+  invoiceId?: string,
+): Promise<string> {
+  // 1) DB-backed branded short link (preferred — survives TinyURL outages)
+  try {
+    const { data: code, error } = await admin.rpc("create_short_link", {
+      p_url: longUrl,
+      p_purpose: "invoice_payment",
+      p_invoice_id: invoiceId ?? null,
+    });
+    if (!error && code) {
+      const base = (Deno.env.get("PUBLIC_APP_URL") || "https://gasmask-os-nexus.lovable.app").replace(/\/$/, "");
+      const branded = `${base}/p/${code}`;
+      // Try TinyURL on top of the branded URL for maximum compactness;
+      // if that fails, the branded URL is already short enough for SMS.
+      try {
+        const res = await fetch(
+          `https://tinyurl.com/api-create.php?url=${encodeURIComponent(branded)}`,
+          { method: "GET" },
+        );
+        if (res.ok) {
+          const text = (await res.text()).trim();
+          if (text.startsWith("http") && text.length < branded.length) return text;
+        }
+      } catch { /* keep branded */ }
+      return branded;
+    }
+  } catch (e) {
+    console.error("create_short_link failed", e);
+  }
+
+  // 2) TinyURL directly on the Stripe URL
   try {
     const res = await fetch(
       `https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`,
       { method: "GET" },
     );
-    if (!res.ok) return longUrl;
-    const text = (await res.text()).trim();
-    return text.startsWith("http") ? text : longUrl;
-  } catch {
-    return longUrl;
-  }
+    if (res.ok) {
+      const text = (await res.text()).trim();
+      if (text.startsWith("http") && text.length < longUrl.length) return text;
+    }
+  } catch { /* fall through */ }
+
+  // 3) Give up — return the original
+  return longUrl;
 }
 
 Deno.serve(async (req) => {
@@ -85,8 +123,14 @@ Deno.serve(async (req) => {
       return json(500, { error: "TWILIO_ACCOUNT_SID must start with 'AC'" });
     }
 
+    // ---- Service-role admin client (used by shortener + logger) ----
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
     // ---- Shorten + compose ----
-    const shortUrl = await shortenUrl(checkout_url);
+    const shortUrl = await shortenUrl(checkout_url, admin, invoice_id);
     const greeting = customer_name?.trim() ? `Hi ${customer_name.trim()}` : "Hello";
     const label = invoice_number ? ` ${invoice_number}` : "";
     const message = `${greeting}, here's your invoice${label}: ${shortUrl}`;
@@ -104,12 +148,8 @@ Deno.serve(async (req) => {
       },
     );
     const twilioData = await twilioRes.json();
-
     // ---- Log to communication_logs via service role (bypass RLS) ----
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+
     await admin.from("communication_logs").insert({
       channel: "sms",
       direction: "outbound",
