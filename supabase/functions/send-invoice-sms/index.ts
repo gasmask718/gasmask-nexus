@@ -148,28 +148,8 @@ Deno.serve(async (req) => {
       },
     );
     const twilioData = await twilioRes.json();
-
-
-
-    // ---- Send via Twilio ----
-    const twilioRes = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: "Basic " + btoa(`${sid}:${authToken}`),
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({ To: to, From: from, Body: message }),
-      },
-    );
-    const twilioData = await twilioRes.json();
-
     // ---- Log to communication_logs via service role (bypass RLS) ----
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+
     await admin.from("communication_logs").insert({
       channel: "sms",
       direction: "outbound",
