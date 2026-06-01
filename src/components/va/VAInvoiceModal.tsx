@@ -178,14 +178,29 @@ export function VAInvoiceModal({ open, onClose, lead, sendOnSave }: VAInvoiceMod
 
       if (sendOnSave && invoiceId) {
         try {
-          const recipient = form.sendChannel === 'email' ? form.customerEmail : form.customerPhone;
-          const { data: sendData, error: sendErr } = await supabase.functions.invoke('va-send-invoice', {
-            body: { invoice_id: invoiceId, channel: form.sendChannel, recipient },
-          });
-          if (sendErr || (sendData as any)?.error) {
-            throw new Error(sendErr?.message || (sendData as any)?.error);
+          if (form.sendChannel === 'sms') {
+            // Dedicated TinyURL + Twilio path
+            const { sendInvoiceSms } = await import('@/services/invoice/sendInvoiceSms');
+            const checkoutUrl = (stripeData as any)?.payment_link;
+            if (!checkoutUrl) throw new Error('No Stripe checkout URL returned');
+            const res = await sendInvoiceSms({
+              checkoutUrl,
+              customerPhone: form.customerPhone,
+              customerName: form.customerName,
+              invoiceId,
+              silent: true,
+            });
+            if (!res.success) throw new Error(res.error || 'SMS send failed');
+            toast.success(`Invoice texted to ${res.to}`);
+          } else {
+            const { data: sendData, error: sendErr } = await supabase.functions.invoke('va-send-invoice', {
+              body: { invoice_id: invoiceId, channel: 'email', recipient: form.customerEmail },
+            });
+            if (sendErr || (sendData as any)?.error) {
+              throw new Error(sendErr?.message || (sendData as any)?.error);
+            }
+            toast.success(`Invoice sent via EMAIL to ${(sendData as any)?.sent_to || 'customer'}`);
           }
-          toast.success(`Invoice sent via ${form.sendChannel.toUpperCase()} to ${(sendData as any)?.sent_to || 'customer'}`);
           qc.invalidateQueries({ queryKey: ['va-invoices', user?.id] });
         } catch (e: any) {
           toast.warning(`Invoice + Stripe link saved — ${form.sendChannel} send failed: ${e.message}`);
