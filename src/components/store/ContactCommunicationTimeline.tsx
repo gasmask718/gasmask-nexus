@@ -330,7 +330,28 @@ export function ContactCommunicationTimeline({
                 <audio controls className="w-full h-7" src={e.recording_url} preload="none" />
               )}
 
-              {e.transcript && (
+              {e.source === "dynasty_ai_calls" && e.call_id ? (
+                <details className="group">
+                  <summary className="text-[10px] text-purple-400 cursor-pointer hover:text-purple-300 flex items-center gap-1">
+                    <Sparkles className="h-3 w-3" /> AI Analysis & Transcript
+                    <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="mt-2 space-y-3 rounded border border-purple-500/20 bg-purple-500/5 p-2">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                        Analysis
+                      </div>
+                      <CallAnalysisPanel callId={e.call_id} />
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+                        <FileText className="h-3 w-3" /> Transcript
+                      </div>
+                      <CallTranscriptViewer callId={e.call_id} maxHeight="240px" />
+                    </div>
+                  </div>
+                </details>
+              ) : e.transcript ? (
                 <details className="group">
                   <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-1">
                     Transcript
@@ -340,7 +361,7 @@ export function ContactCommunicationTimeline({
                     {e.transcript}
                   </pre>
                 </details>
-              )}
+              ) : null}
             </div>
           ))}
         </div>
