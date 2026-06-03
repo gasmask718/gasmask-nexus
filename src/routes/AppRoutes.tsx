@@ -737,6 +737,7 @@ const InsightsPage = lazy(() => import('@/pages/os/inventory').then(m => ({ defa
 const NeighborhoodIntelligencePage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.NeighborhoodIntelligencePage })));
 const ProductConversions = lazy(() => import('@/pages/os/ProductConversions'));
 const LegacyInvoiceRepair = lazy(() => import('@/pages/admin/LegacyInvoiceRepair'));
+const HistoricalImportReview = lazy(() => import('@/pages/admin/HistoricalImportReview'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
 const OSLayout = lazy(() => import('@/pages/os/OSLayout'));
 const StoreInventoryPage = lazy(() => import('@/pages/os/inventory/StoreInventoryPage'));
