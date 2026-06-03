@@ -16,6 +16,7 @@ import { useStoreContactsWithResponsiveness } from '@/hooks/useContactResponsive
 import { ContactResponsivenessBadge } from '@/components/contact/ContactResponsivenessBadge';
 import { ContactLastInteraction } from '@/components/contact/ContactLastInteraction';
 import { ContactCommunicationTimeline } from './ContactCommunicationTimeline';
+import { VerifyNumberButton } from './VerifyNumberButton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface StoreContact {
