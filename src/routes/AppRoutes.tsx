@@ -1876,6 +1876,14 @@ export default function AppRoutes() {
           }
         />
         {/* Aliases — route DD sub-paths into the existing scattered pages */}
+        <Route
+          path="/dynasty-direct/catalog/onboard"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
+              <DynastyDirectCatalogOnboard />
+            </RequireRole>
+          }
+        />
         <Route path="/dynasty-direct/catalog" element={<MarketplaceAdminPortalPage />} />
         <Route path="/dynasty-direct/store-storefront" element={<StorePortalPage />} />
         <Route path="/dynasty-direct/d2c-storefront" element={<Shop />} />
