@@ -11,7 +11,7 @@
 import { useLocation, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Store, Target, ShoppingBag,
-  MapPin, DollarSign, Package, MessageSquare, BarChart3, UserPlus, Users, Wallet, TrendingUp, MessageSquareWarning,
+  MapPin, DollarSign, Package, MessageSquare, BarChart3, UserPlus, Users, Wallet, TrendingUp, MessageSquareWarning, ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -34,6 +34,7 @@ const AMBASSADOR_NAV_ITEMS = [
   { id: 'payouts', i18n: 'ambassador.nav.payouts', label: 'Payouts', path: '/ambassador/payouts', icon: Wallet },
   { id: 'earnings', i18n: 'ambassador.nav.earnings', label: 'Earnings', path: '/ambassador/reports/earnings', icon: TrendingUp },
   { id: 'feedback', i18n: 'ambassador.nav.feedback', label: 'Feedback', path: '/ambassador/feedback', icon: MessageSquareWarning },
+  { id: 'end-of-day', i18n: 'ambassador.nav.end_of_day', label: 'End-of-Day', path: '/ambassador/end-of-day', icon: ClipboardList },
 ] as const;
 
 export function AmbassadorPortalNav() {

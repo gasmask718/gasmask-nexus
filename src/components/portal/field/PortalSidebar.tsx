@@ -11,7 +11,8 @@ import {
   User,
   ChevronLeft,
   ChevronRight,
-  Package
+  Package,
+  ClipboardList
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,7 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
     { label: t('portal.nav.changes'), path: `${basePath}/changes`, icon: <FileText className="h-5 w-5" /> },
     { label: t('portal.nav.history'), path: `${basePath}/history`, icon: <History className="h-5 w-5" /> },
     { label: t('portal.nav.messages'), path: `${basePath}/messages`, icon: <MessageSquare className="h-5 w-5" /> },
+    { label: 'End-of-Day Notes', path: `${basePath}/end-of-day`, icon: <ClipboardList className="h-5 w-5" /> },
     { label: t('portal.nav.profile'), path: `${basePath}/profile`, icon: <User className="h-5 w-5" /> },
   ];
 

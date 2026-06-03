@@ -12,6 +12,7 @@ import {
   MessagesPage,
   ProfilePage,
   DriverDeliveryTasks,
+  EndOfDayNotes,
 } from "@/components/portal/field";
 import { AssignedOrdersPage } from "@/components/portal/field/AssignedOrdersPage";
 import { PortalAuthGuard } from "@/components/portal/PortalAuthGuard";
@@ -51,6 +52,7 @@ export default function DriverPortal() {
           <Route path="messages" element={<MessagesPage portalType="driver" />} />
           <Route path="messages/:threadId" element={<MessagesPage portalType="driver" />} />
           <Route path="profile" element={<ProfilePage portalType="driver" />} />
+          <Route path="end-of-day" element={<EndOfDayNotes role="driver" />} />
           <Route path="*" element={<Navigate to="/portal/driver" replace />} />
         </Routes>
       </FieldPortalLayout>

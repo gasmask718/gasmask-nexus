@@ -12,6 +12,7 @@ import {
   MessagesPage,
   ProfilePage,
   BikerDeliveryTasks,
+  EndOfDayNotes,
 } from "@/components/portal/field";
 import { AssignedOrdersPage } from "@/components/portal/field/AssignedOrdersPage";
 import BikerTodaysRoutesPage from "@/pages/delivery/biker/TodaysRoutesPage";
@@ -54,6 +55,7 @@ export default function BikerPortal() {
           <Route path="messages" element={<MessagesPage portalType="biker" />} />
           <Route path="messages/:threadId" element={<MessagesPage portalType="biker" />} />
           <Route path="profile" element={<ProfilePage portalType="biker" />} />
+          <Route path="end-of-day" element={<EndOfDayNotes role="biker" />} />
           <Route path="*" element={<Navigate to="/portal/biker" replace />} />
         </Routes>
       </FieldPortalLayout>
