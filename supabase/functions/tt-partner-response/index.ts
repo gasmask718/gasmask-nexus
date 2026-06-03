@@ -420,6 +420,48 @@ serve(async (req) => {
         if (!resp.ok) {
           console.error('[tt-partner-response] customer SMS failed', resp.status, await resp.text())
         }
+
+        // ====== ADMIN/FOUNDER OPERATIONAL ALERT ON ACCEPT ======
+        try {
+          const adminPhone = Deno.env.get('DAVID_PHONE_NUMBER')
+          if (adminPhone) {
+            const adminMsg =
+              `TopTier: Partner accepted booking.` +
+              ` Ref: ${dispatchRequest.booking_reference}.` +
+              ` Service: ${(dispatchRequest.service_type || '').replace(/_/g, ' ')}.` +
+              ` Customer: ${dispatchRequest.customer_name || 'N/A'}.` +
+              ` Partner: ${partner?.partner_name || 'N/A'}.`
+            const adminResp = await fetch(
+              `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Basic ${btoa(`${twilioSid}:${twilioToken}`)}`,
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                  To: adminPhone,
+                  From: fromTwilio,
+                  Body: adminMsg,
+                }),
+              }
+            )
+            if (!adminResp.ok) {
+              console.error('[tt-partner-response] admin SMS failed', adminResp.status, await adminResp.text())
+            } else {
+              await supabase.from('tt_notifications_log').insert({
+                booking_id: dispatchRequest.booking_id,
+                type: 'partner_accepted_admin_alert',
+                channel: 'sms', recipient: adminPhone, status: 'sent',
+                message: adminMsg,
+              })
+            }
+          } else {
+            console.warn('[tt-partner-response] DAVID_PHONE_NUMBER not set, admin alert skipped')
+          }
+        } catch (adminErr) {
+          console.error('[tt-partner-response] admin SMS exception (non-critical):', adminErr)
+        }
       }
 
       // ====== DUAL SMS for truck-with-decor when meeting point saved ======
