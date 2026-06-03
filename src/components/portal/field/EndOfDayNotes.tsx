@@ -1,7 +1,6 @@
 // End-of-Day Notes — shared between Driver, Biker, Ambassador portals.
 // Saves one row per rep per day to public.field_day_notes.
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
