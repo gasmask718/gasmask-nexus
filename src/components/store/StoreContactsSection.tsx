@@ -176,9 +176,13 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
             </div>
           ) : (
             <div className="space-y-3">
-              {contacts.map((contact) => (
-                <div
+              {contacts.map((contact) => {
+                const isOpen = !!openTimelines[contact.id];
+                return (
+                <Collapsible
                   key={contact.id}
+                  open={isOpen}
+                  onOpenChange={(v) => setOpenTimelines((s) => ({ ...s, [contact.id]: v }))}
                   className="flex flex-col p-3 rounded-lg bg-muted/30 border border-border/30 gap-3"
                 >
                   {/* Top row: Name, badges, actions */}
@@ -221,6 +225,12 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                       </div>
                     </div>
                     <div className="flex items-center gap-1 flex-wrap">
+                      <CollapsibleTrigger asChild>
+                        <Button size="sm" variant="outline" title="Communication Timeline">
+                          <History className="h-4 w-4" />
+                          <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                        </Button>
+                      </CollapsibleTrigger>
                       <Button
                         size="sm"
                         variant="outline"
@@ -275,8 +285,21 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                     last_text_received_at={contact.last_text_received_at}
                     className="ml-13 pl-13"
                   />
-                </div>
-              ))}
+
+                  <CollapsibleContent>
+                    <div className="pt-3 mt-1 border-t border-border/30">
+                      <ContactCommunicationTimeline
+                        storeId={storeId}
+                        contactId={contact.id}
+                        contactName={contact.name}
+                        contactPhone={contact.phone}
+                        canReceiveSms={contact.can_receive_sms}
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+              })}
             </div>
           )}
         </CardContent>
