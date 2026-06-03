@@ -523,3 +523,12 @@ verify_jwt = false
 
 [functions.comms-health-monitor]
 verify_jwt = false
+
+[functions.twilio-inbound-call]
+verify_jwt = false
+
+[functions.voicemail-webhook]
+verify_jwt = false
+
+[functions.gasmask-missed-call-handler]
+verify_jwt = false
