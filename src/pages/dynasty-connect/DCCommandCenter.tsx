@@ -87,7 +87,7 @@ export default function DCCommandCenter() {
               <CardContent className="space-y-3">
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between text-muted-foreground"><span>Phone:</span><span className="font-mono text-xs">{stats.phone || biz.phoneDefault || 'Not set'}</span></div>
-                  <div className="flex justify-between text-muted-foreground"><span>Agents:</span><span>{stats.agentCount || biz.agents.length} active</span></div>
+                  <div className="flex justify-between text-muted-foreground"><span>Agents:</span><span>{stats.agentCount} active{stats.agentCount === 0 ? ' (not seeded)' : ''}</span></div>
                   <div className="flex justify-between text-muted-foreground"><span>Calls Today:</span><span>{stats.callCount}</span></div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Status:</span>
