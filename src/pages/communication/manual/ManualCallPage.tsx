@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { usePriorCustomerSegmentMap, FLOW_STATUS_META, FLOW_STATUS_ORDER, type FlowStatus } from '@/hooks/usePriorCustomerSegmentMap';
 import { SendToRouteModal } from '@/components/scheduling/SendToRouteModal';
+import { useCall } from '@/components/communication/CallProvider';
 
 interface Contact {
   id: string;
