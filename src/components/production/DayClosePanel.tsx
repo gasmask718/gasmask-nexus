@@ -6,6 +6,8 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
+import { BilingualLabel } from '@/components/portal/BilingualLabel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +23,8 @@ interface DayClosePanelProps {
   isAdmin?: boolean;
 }
 
-export function DayClosePanel({ officeId, date, isAdmin = false }: DayClosePanelProps) {
+export function DayClosePanel({
+  const { t } = useTranslation(); officeId, date, isAdmin = false }: DayClosePanelProps) {
   const targetDate = date || new Date();
   const { data: closeout, isLoading: closeoutLoading } = useDailyCloseout(officeId, targetDate);
   const { data: kpis } = useDailyKPIs(officeId, targetDate);
@@ -91,14 +94,14 @@ export function DayClosePanel({ officeId, date, isAdmin = false }: DayClosePanel
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">Day Closed</span>
+                      <span className="font-medium"><BilingualLabel tKey="production.day_closed" en="Day Closed" inline /></span>
                       <Badge className="bg-emerald-100 text-emerald-800">
                         <CheckCircle className="h-3 w-3 mr-1" />
-                        Locked
+                        {t("production.locked")}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Closed {closeout?.closed_at ? format(new Date(closeout.closed_at), 'h:mm a') : ''}
+                      {t("production.closed_at", { time: closeout?.closed_at ? format(new Date(closeout.closed_at), "h:mm a") : "" })}
                     </p>
                   </div>
                 </>
@@ -109,13 +112,13 @@ export function DayClosePanel({ officeId, date, isAdmin = false }: DayClosePanel
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">Day Open</span>
+                      <span className="font-medium"><BilingualLabel tKey="production.day_open" en="Day Open" inline /></span>
                       <Badge variant="outline" className="text-amber-600 border-amber-300">
-                        Editable
+                        {t("production.editable")}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {kpis?.totalBoxes || 0} boxes completed today
+                      {t("production.boxes_completed_today", { count: kpis?.totalBoxes || 0 })}
                     </p>
                   </div>
                 </>
@@ -131,7 +134,7 @@ export function DayClosePanel({ officeId, date, isAdmin = false }: DayClosePanel
                     onClick={() => setShowConfirmUnlock(true)}
                   >
                     <Unlock className="h-4 w-4 mr-1" />
-                    Unlock Day
+                    <BilingualLabel tKey="production.unlock_day" en="Unlock Day" inline />
                   </Button>
                 )
               ) : (
@@ -141,7 +144,7 @@ export function DayClosePanel({ officeId, date, isAdmin = false }: DayClosePanel
                   disabled={!kpis || kpis.totalBoxes === 0}
                 >
                   <Lock className="h-4 w-4 mr-1" />
-                  Close Day
+                  <BilingualLabel tKey="production.close_day" en="Close Day" inline />
                 </Button>
               )}
             </div>
@@ -152,49 +155,49 @@ export function DayClosePanel({ officeId, date, isAdmin = false }: DayClosePanel
             <div className="mt-4 pt-4 border-t grid grid-cols-4 gap-4 text-center">
               <div>
                 <p className="text-xl font-bold">{closeout.total_boxes}</p>
-                <p className="text-xs text-muted-foreground">Total Boxes</p>
+                <p className="text-xs text-muted-foreground"><BilingualLabel tKey="production.total_boxes" en="Total Boxes" inline /></p>
               </div>
               <div>
                 <p className="text-xl font-bold">{closeout.total_tobacco_lbs}</p>
-                <p className="text-xs text-muted-foreground">Tobacco (lbs)</p>
+                <p className="text-xs text-muted-foreground"><BilingualLabel tKey="production.tobacco_lbs" en="Tobacco (lbs)" inline /></p>
               </div>
               <div>
                 <p className="text-xl font-bold">{closeout.total_tubes_used}</p>
-                <p className="text-xs text-muted-foreground">Tubes Used</p>
+                <p className="text-xs text-muted-foreground"><BilingualLabel tKey="production.tubes_used" en="Tubes Used" inline /></p>
               </div>
               <div>
                 <p className="text-xl font-bold">{closeout.total_defects}</p>
-                <p className="text-xs text-muted-foreground">Defects</p>
+                <p className="text-xs text-muted-foreground"><BilingualLabel tKey="production.defects" en="Defects" inline /></p>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Close Day Confirmation */}
+      {/* <BilingualLabel tKey="production.close_day" en="Close Day" inline /> Confirmation */}
       <Dialog open={showConfirmClose} onOpenChange={setShowConfirmClose}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Lock className="h-5 w-5" />
-              Close Production Day
+              <BilingualLabel tKey="production.close_production_day_title" en="Close Production Day" />
             </DialogTitle>
             <DialogDescription>
-              This will lock all batches for {format(targetDate, 'MMMM d, yyyy')} and prevent further edits.
+              {t("production.close_production_day_desc", { date: format(targetDate, "MMMM d, yyyy") })}
             </DialogDescription>
           </DialogHeader>
 
           {kpis && (
             <div className="py-4 space-y-3">
               <div className="p-3 bg-muted rounded-lg">
-                <h4 className="font-medium mb-2">Day Summary</h4>
+                <h4 className="font-medium mb-2"><BilingualLabel tKey="production.day_summary" en="Day Summary" /></h4>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>Total Boxes: <strong>{kpis.totalBoxes}</strong></div>
-                  <div>Tobacco Used: <strong>{kpis.tobaccoUsed} lbs</strong></div>
-                  <div>Tubes Used: <strong>{kpis.tubesUsed}</strong></div>
-                  <div>Defects: <strong>{kpis.totalDefects}</strong></div>
-                  <div>Efficiency: <strong>{kpis.efficiencyPct}%</strong></div>
-                  <div>Workers: <strong>{kpis.workersPresent}</strong></div>
+                  <div><BilingualLabel tKey="production.total_boxes_label" en="Total Boxes:" inline /> <strong>{kpis.totalBoxes}</strong></div>
+                  <div><BilingualLabel tKey="production.tobacco_used_label" en="Tobacco Used:" inline /> <strong>{kpis.tobaccoUsed} lbs</strong></div>
+                  <div><BilingualLabel tKey="production.tubes_used_label" en="Tubes Used:" inline /> <strong>{kpis.tubesUsed}</strong></div>
+                  <div><BilingualLabel tKey="production.defects_label" en="Defects:" inline /> <strong>{kpis.totalDefects}</strong></div>
+                  <div><BilingualLabel tKey="production.efficiency_label" en="Efficiency:" inline /> <strong>{kpis.efficiencyPct}%</strong></div>
+                  <div><BilingualLabel tKey="production.workers_label" en="Workers:" inline /> <strong>{kpis.workersPresent}</strong></div>
                 </div>
               </div>
 
@@ -202,7 +205,7 @@ export function DayClosePanel({ officeId, date, isAdmin = false }: DayClosePanel
                 <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg text-amber-800 dark:text-amber-200">
                   <AlertTriangle className="h-4 w-4" />
                   <span className="text-sm">
-                    Tube variance of {variance.tubesVariance > 0 ? '+' : ''}{variance.tubesVariance} will be recorded
+                    {t("production.tube_variance_warning", { amount: (variance.tubesVariance > 0 ? "+" : "") + variance.tubesVariance })}
                   </span>
                 </div>
               )}
@@ -218,23 +221,22 @@ export function DayClosePanel({ officeId, date, isAdmin = false }: DayClosePanel
               disabled={closeDay.isPending}
             >
               <Lock className="h-4 w-4 mr-1" />
-              Confirm Close Day
+              Confirm <BilingualLabel tKey="production.close_day" en="Close Day" inline />
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Unlock Day Confirmation */}
+      {/* <BilingualLabel tKey="production.unlock_day" en="Unlock Day" inline /> Confirmation */}
       <Dialog open={showConfirmUnlock} onOpenChange={setShowConfirmUnlock}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Unlock className="h-5 w-5" />
-              Unlock Production Day
+              <BilingualLabel tKey="production.unlock_production_day_title" en="Unlock Production Day" />
             </DialogTitle>
             <DialogDescription>
-              This will allow editing of batches for {format(targetDate, 'MMMM d, yyyy')}. 
-              This action is logged for audit purposes.
+              {t("production.unlock_production_day_desc", { date: format(targetDate, "MMMM d, yyyy") })}
             </DialogDescription>
           </DialogHeader>
 
@@ -248,7 +250,7 @@ export function DayClosePanel({ officeId, date, isAdmin = false }: DayClosePanel
               disabled={unlockDay.isPending}
             >
               <Unlock className="h-4 w-4 mr-1" />
-              Confirm Unlock
+              <BilingualLabel tKey="production.confirm_unlock" en="Confirm Unlock" inline />
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -4,6 +4,8 @@
  */
 
 import { useMemo } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
+import { BilingualLabel } from '@/components/portal/BilingualLabel';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -26,6 +28,7 @@ const MATERIAL_LABELS: Record<string, { label: string; unit: string; icon: React
 };
 
 export function MaterialConsumptionPanel({ officeId }: MaterialConsumptionPanelProps) {
+  const { t } = useTranslation();
   const { data: dailyData = [], isLoading } = useDailyMaterialSummary(officeId);
   const { data: lifetimeData = [] } = useLifetimeMaterialSummary(officeId);
 
@@ -69,7 +72,7 @@ export function MaterialConsumptionPanel({ officeId }: MaterialConsumptionPanelP
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">Loading material data...</CardContent>
+        <CardContent className="py-8 text-center text-muted-foreground">{t("production.loading_material_data")}</CardContent>
       </Card>
     );
   }
@@ -80,11 +83,11 @@ export function MaterialConsumptionPanel({ officeId }: MaterialConsumptionPanelP
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Leaf className="h-5 w-5 text-emerald-600" />
-            Material Consumption Intelligence
+            <BilingualLabel tKey="production.material_consumption_intel" en="Material Consumption Intelligence" />
           </CardTitle>
         </CardHeader>
         <CardContent className="text-center py-8 text-muted-foreground text-sm">
-          No material usage recorded yet. Data populates automatically when batches complete.
+          {t("production.no_material_usage")}
         </CardContent>
       </Card>
     );
@@ -95,19 +98,19 @@ export function MaterialConsumptionPanel({ officeId }: MaterialConsumptionPanelP
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Leaf className="h-5 w-5 text-emerald-600" />
-          Material Consumption Intelligence
+          <BilingualLabel tKey="production.material_consumption_intel" en="Material Consumption Intelligence" />
         </CardTitle>
-        <CardDescription>Daily, rolling averages, and lifetime totals</CardDescription>
+        <CardDescription>{t("production.material_consumption_intel_desc")}</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs">Material</TableHead>
-              <TableHead className="text-xs text-right">Today</TableHead>
-              <TableHead className="text-xs text-right">7d Avg</TableHead>
-              <TableHead className="text-xs text-right">30d Avg</TableHead>
-              <TableHead className="text-xs text-right">Lifetime</TableHead>
+              <TableHead className="text-xs"><BilingualLabel tKey="production.material" en="Material" /></TableHead>
+              <TableHead className="text-xs text-right"><BilingualLabel tKey="production.today" en="Today" /></TableHead>
+              <TableHead className="text-xs text-right"><BilingualLabel tKey="production.avg_7d" en="7d Avg" /></TableHead>
+              <TableHead className="text-xs text-right"><BilingualLabel tKey="production.avg_30d" en="30d Avg" /></TableHead>
+              <TableHead className="text-xs text-right"><BilingualLabel tKey="production.lifetime" en="Lifetime" /></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

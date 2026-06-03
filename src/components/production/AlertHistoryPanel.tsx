@@ -6,6 +6,8 @@
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from '@/hooks/useTranslation';
+import { BilingualLabel } from '@/components/portal/BilingualLabel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -16,6 +18,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 export function AlertHistoryPanel() {
+  const { t } = useTranslation();
   const { tier } = useProductionRBAC();
   const queryClient = useQueryClient();
 
@@ -62,7 +65,7 @@ export function AlertHistoryPanel() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Bell className="h-5 w-5" />
-          System Alerts
+          <BilingualLabel tKey="production.system_alerts" en="System Alerts" />
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -73,7 +76,7 @@ export function AlertHistoryPanel() {
             ))}
           </div>
         ) : alerts.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">No alerts recorded.</p>
+          <p className="text-sm text-muted-foreground text-center py-6">{t("production.no_alerts")}</p>
         ) : (
           <div className="space-y-2 max-h-[500px] overflow-y-auto">
             {alerts.map((alert: any) => {
@@ -89,7 +92,7 @@ export function AlertHistoryPanel() {
                       {alert.brand && <Badge variant="secondary" className="text-xs">{alert.brand}</Badge>}
                       {alert.resolved && (
                         <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300">
-                          <CheckCircle className="h-3 w-3 mr-1" /> Resolved
+                          <CheckCircle className="h-3 w-3 mr-1" /> {t("production.resolved")}
                         </Badge>
                       )}
                     </div>
@@ -108,7 +111,7 @@ export function AlertHistoryPanel() {
                       onClick={() => resolveAlert.mutate(alert.id)}
                       disabled={resolveAlert.isPending}
                     >
-                      Resolve
+                      <BilingualLabel tKey="production.resolve" en="Resolve" inline />
                     </Button>
                   )}
                 </div>
