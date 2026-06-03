@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { DataTablePagination } from "@/components/crud/DataTablePagination";
 import { ExportButton } from "@/components/crud/ExportButton";
 import { RouteAssignmentDialog } from "@/components/delivery/RouteAssignmentDialog";
+import { SendToRouteBoardButton } from "@/components/delivery/SendToRouteBoardButton";
 import {
   BarChart3, Search, ArrowUpDown, ArrowUp, ArrowDown, ExternalLink, Route as RouteIcon,
 } from "lucide-react";
@@ -218,6 +219,20 @@ export default function SellThroughAnalytics() {
           </p>
         </div>
         <div className="flex gap-2">
+          <SendToRouteBoardButton
+            signalSource="sell_through"
+            defaultBusiness="gasmask"
+            defaultReason="Sell-through signal: aging / slow / restock-needed"
+            stores={selectedStoreIds.map((id) => {
+              const row = processed.find((p: any) => p.store_id === id) as any;
+              const days = row?.days_since_last_order;
+              const reason = days
+                ? `No order in ${days}d (sell-through analytics)`
+                : "Sell-through signal";
+              return { storeId: id, reason };
+            })}
+            disabled={selectedStoreIds.length === 0}
+          />
           <Button
             variant="outline"
             disabled={selectedStoreIds.length === 0}

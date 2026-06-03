@@ -64,6 +64,7 @@ import { ExportButton } from '@/components/crud/ExportButton';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
+import { SendToRouteBoardButton } from '@/components/delivery/SendToRouteBoardButton';
 import { toast } from 'sonner';
 import { useCall } from '@/components/communication/CallProvider';
 
@@ -731,6 +732,16 @@ export default function MasterOpportunities() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <SendToRouteBoardButton
+            signalSource="opportunities"
+            defaultReason="High-intent opportunity signal"
+            stores={[...new Set(selectedSignalStores)].map((id) => ({
+              storeId: id,
+              reason: "High-intent opportunity signal",
+              priority: 4,
+            }))}
+            disabled={selectedSignalStores.length === 0}
+          />
           <Button
             size="sm"
             variant={selectedSignalStores.length > 0 ? 'default' : 'outline'}
