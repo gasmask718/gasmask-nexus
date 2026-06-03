@@ -1027,6 +1027,8 @@ Deno.serve(async (req) => {
     { name: "checkElevenLabsCredentials", provider: "elevenlabs", fn: checkElevenLabsCredentials },
     { name: "checkElevenLabsAgents", provider: "elevenlabs", fn: checkElevenLabsAgents },
     { name: "checkElevenLabsPhoneNumbers", provider: "elevenlabs", fn: checkElevenLabsPhoneNumbers },
+    // Feature/Surface matrix — Calling & Texting Features
+    { name: "checkFeatureModes", provider: "twilio", fn: checkFeatureModes },
   ];
   for (const { name, provider, fn } of layers) {
     try {
