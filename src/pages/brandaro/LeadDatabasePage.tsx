@@ -1040,7 +1040,7 @@ export default function LeadDatabasePage() {
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="w-48">
                                     {lead.phone_number && (
-                                      <DropdownMenuItem onClick={() => window.open(`tel:${lead.phone_number}`)}>
+                                      <DropdownMenuItem onClick={() => initiateCall({ destinationPhone: lead.phone_number!, entityType: 'store', entityId: lead.id, entityName: lead.business_name })}>
                                         <Phone className="h-3 w-3 mr-2" /> Manual Call
                                       </DropdownMenuItem>
                                     )}
