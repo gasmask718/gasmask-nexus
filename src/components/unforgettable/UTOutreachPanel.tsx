@@ -93,9 +93,14 @@ export function UTOutreachPanel({ leads, onLogOutreach }: Props) {
                   </Badge>
                   <Badge variant="outline" className="text-xs">{lead.status}</Badge>
                   {lead.phone && (
-                    <Button size="sm" variant="ghost" className="h-7 gap-1" onClick={() => window.open(`tel:${lead.phone}`)}>
-                      <Phone className="h-3.5 w-3.5" />
-                    </Button>
+                    <OutreachActions
+                      phone={lead.phone}
+                      entityName={lead.business_name}
+                      entityType="store"
+                      entityId={lead.id}
+                      businessKey="unforgettable"
+                      compact
+                    />
                   )}
                 </div>
               </div>
