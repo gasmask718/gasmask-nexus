@@ -78,10 +78,10 @@ export function BatchStateControls({
   const [laborConfirmed, setLaborConfirmed] = useState(false);
   const [reopenReason, setReopenReason] = useState('');
 
-  const handleTransition = async (to<BilingualLabel tKey="production.state" en="State:" inline /> InventoryState, reason?: string) => {
+  const handleTransition = async (toState: InventoryState, reason?: string) => {
     transition.mutate({
       batchId,
-      from<BilingualLabel tKey="production.state" en="State:" inline /> currentState,
+      fromState: currentState,
       toState,
       officeId,
       reason,
