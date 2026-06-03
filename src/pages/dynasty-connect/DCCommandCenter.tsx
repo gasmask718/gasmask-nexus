@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, Brain, Zap, Building2, Music, Sparkles, Shield, Wrench } from 'lucide-react';
+import { Phone, Brain, Zap, Building2, Music, Sparkles, Shield, Wrench, Rocket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { OutreachLauncherDialog } from '@/components/dynasty-connect/OutreachLauncherDialog';
 
 const BUSINESSES = [
   { key: 'gasmask', name: 'GasMask / Hot Mama', icon: Building2, color: 'bg-green-500', phoneDefault: '+18484004179', agents: ['Sales', 'Follow-up', 'Reactivation'], isLive: true },
@@ -19,6 +21,7 @@ const BUSINESSES = [
 
 export default function DCCommandCenter() {
   const navigate = useNavigate();
+  const [launcherBiz, setLauncherBiz] = useState<{ key: string; name: string; phone?: string } | null>(null);
   const { data: agents = [] } = useQuery({
     queryKey: ['dc-agents-all'],
     queryFn: async () => {
@@ -98,7 +101,20 @@ export default function DCCommandCenter() {
                 </div>
                 <div className="text-xs text-muted-foreground">{biz.agents.join(', ')}</div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => navigate('/dynasty-connect/campaigns/outbound')}><Phone className="h-3 w-3 mr-1" /> Campaign</Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 text-xs"
+                    disabled={stats.agentCount === 0}
+                    onClick={() =>
+                      setLauncherBiz({
+                        key: biz.key,
+                        name: biz.name,
+                        phone: stats.phone || biz.phoneDefault,
+                      })
+                    }
+                  >
+                    <Rocket className="h-3 w-3 mr-1" /> Launch
+                  </Button>
                   <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => navigate('/dynasty-connect/intelligence')}><Brain className="h-3 w-3 mr-1" /> Calls</Button>
                 </div>
               </CardContent>
@@ -113,6 +129,16 @@ export default function DCCommandCenter() {
         <Card><CardContent className="pt-4"><div className="text-2xl font-bold">{totalCallsToday}</div><p className="text-xs text-muted-foreground">Calls Today</p></CardContent></Card>
         <Card><CardContent className="pt-4"><div className="text-2xl font-bold">{totalMinutesToday}</div><p className="text-xs text-muted-foreground">Minutes Today</p></CardContent></Card>
       </div>
+
+      {launcherBiz && (
+        <OutreachLauncherDialog
+          open={!!launcherBiz}
+          onClose={() => setLauncherBiz(null)}
+          businessKey={launcherBiz.key}
+          businessName={launcherBiz.name}
+          defaultFromNumber={launcherBiz.phone}
+        />
+      )}
     </div>
   );
 }
