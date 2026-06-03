@@ -46550,6 +46550,48 @@ export type Database = {
           },
         ]
       }
+      field_day_notes: {
+        Row: {
+          completed_count: number
+          created_at: string
+          helpful: string | null
+          id: string
+          needs: string | null
+          note_date: string
+          observations: string | null
+          rep_id: string
+          rep_role: string | null
+          updated_at: string
+          wrong_addresses: Json
+        }
+        Insert: {
+          completed_count?: number
+          created_at?: string
+          helpful?: string | null
+          id?: string
+          needs?: string | null
+          note_date?: string
+          observations?: string | null
+          rep_id: string
+          rep_role?: string | null
+          updated_at?: string
+          wrong_addresses?: Json
+        }
+        Update: {
+          completed_count?: number
+          created_at?: string
+          helpful?: string | null
+          id?: string
+          needs?: string | null
+          note_date?: string
+          observations?: string | null
+          rep_id?: string
+          rep_role?: string | null
+          updated_at?: string
+          wrong_addresses?: Json
+        }
+        Relationships: []
+      }
       field_submission_rules: {
         Row: {
           action_type: Database["public"]["Enums"]["field_action_type"]
