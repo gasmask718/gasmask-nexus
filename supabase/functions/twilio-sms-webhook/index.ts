@@ -118,7 +118,55 @@ Deno.serve(async (req) => {
     return new Response(EMPTY_TWIML, { headers: xmlHeaders });
   }
 
+  // ── NUMBER VERIFICATION — confirm contact if recent verification text is pending ──
+  // Runs for ALL inbound numbers, regardless of which Twilio number received the YES.
+  try {
+    const body_lower_v = Body.trim().toLowerCase();
+    const isYes = /^(y|yes|yep|yeah|yup|ok|okay|sure|confirmed|got it|gotit|saved|👍)\b/.test(body_lower_v);
+    if (isYes) {
+      const last10 = (From || "").replace(/\D/g, "").slice(-10);
+      if (last10.length === 10) {
+        const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const { data: pendingVerif } = await sb
+          .from("store_contacts")
+          .select("id, name, store_id")
+          .ilike("phone", `%${last10}`)
+          .in("number_verification_status", ["sent", "delivered"])
+          .gte("number_verification_sent_at", sinceIso)
+          .order("number_verification_sent_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (pendingVerif) {
+          await sb.from("store_contacts").update({
+            number_verification_status: "confirmed",
+            number_verification_confirmed_at: new Date().toISOString(),
+            verified_at: new Date().toISOString(),
+          }).eq("id", pendingVerif.id);
+          console.log(`[twilio-sms-webhook][VERIFY] ✅ Contact ${pendingVerif.id} (${pendingVerif.name}) CONFIRMED via YES from ${From} to ${To}`);
+
+          await sb.from("communication_logs").insert({
+            store_id: pendingVerif.store_id ?? null,
+            contact_id: null, // store_contacts.id not FK-compatible with people
+            channel: "sms",
+            direction: "inbound",
+            summary: `Number verification CONFIRMED by ${pendingVerif.name}`,
+            message_content: Body.trim(),
+            sender_phone: From,
+            recipient_phone: To,
+            twilio_sid: MessageSid,
+            delivery_status: "received",
+            outcome: "verification_confirmed",
+          });
+        }
+      }
+    }
+  } catch (vErr) {
+    console.error("[twilio-sms-webhook][VERIFY] error:", (vErr as Error).message);
+  }
+
   // Lookup store_contact (must NOT be opted out)
+
   const { data: contact } = await sb
     .from("store_contacts")
     .select("id, store_id")
