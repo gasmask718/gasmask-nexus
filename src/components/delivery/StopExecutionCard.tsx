@@ -29,6 +29,7 @@ export default function StopExecutionCard({
   onReportIssue,
 }: StopExecutionCardProps) {
   const { updateStopStatus } = useDeliveryActions();
+  const { initiateCall } = useCall();
   const store = stop.store;
   
   const isCompleted = stop.status === 'completed';
