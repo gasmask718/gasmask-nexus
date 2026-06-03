@@ -125,6 +125,8 @@ function StoreCard({ store, onClick }: { store: PortfolioStore; onClick: () => v
 function MyCapturedStores() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation();
+
 
   // Resolve ambassador_id for this user (store_master uses ambassador_id, not user_id)
   const { data: ambassadorId } = useQuery({
@@ -218,6 +220,7 @@ function MyCapturedStores() {
 function DashboardContent() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const { ambassador, stores, metrics, isLoading: portfolioLoading } = useAmbassadorPortfolio();
   // Real commission data from SQL views
   const { data: commissionTotals, isLoading: totalsLoading } = useCommissionTotals();

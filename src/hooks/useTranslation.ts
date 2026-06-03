@@ -31,7 +31,15 @@ export function useTranslation() {
     }
   }, [data?.profile?.preferred_language]);
 
-  const translate = useCallback((key: string): string => t(key, language), [language]);
+  const translate = useCallback((key: string, params?: Record<string, string | number>): string => {
+    let str = t(key, language);
+    if (params) {
+      for (const [k, v] of Object.entries(params)) {
+        str = str.split(`{${k}}`).join(String(v)).split(`{{${k}}}`).join(String(v));
+      }
+    }
+    return str;
+  }, [language]);
 
   const changeLanguage = useCallback(async (newLang: SupportedLanguage, newDialect?: string) => {
     // 1) Flip UI instantly
