@@ -61,22 +61,24 @@ export default function PartnerAccept() {
   async function handleAccept() {
     if (!token) return;
     setOutcome({ kind: "submitting" });
-    const { data, error } = await supabase.rpc("tt_claim_dispatch", {
-      p_token: token,
+    const { data, error } = await supabase.functions.invoke("tt-claim-via-link", {
+      body: { token },
     });
     if (error) {
       setOutcome({ kind: "error", message: error.message });
       return;
     }
-    const result = data as { outcome: string; partner_name?: string };
+    const result = data as { outcome: string; finalize_result?: any; reason?: string };
     if (result.outcome === "won") {
       setOutcome({ kind: "won", ref: info?.booking_reference });
       load();
     } else if (result.outcome === "lost") {
       setOutcome({ kind: "lost" });
       load();
+    } else if (result.outcome === "invalid") {
+      setOutcome({ kind: "error", message: result.reason || "Invalid link" });
     } else {
-      setOutcome({ kind: "error", message: result.outcome });
+      setOutcome({ kind: "error", message: result.reason || result.outcome });
     }
   }
 
