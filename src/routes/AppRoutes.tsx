@@ -110,6 +110,8 @@ const Ambassadors = lazy(() => import('@/pages/Ambassadors'));
 // Ambassador pages (barrel import → individual lazy)
 const AmbassadorDashboard = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorDashboard })));
 const AmbassadorStoreVisit = lazy(() => import('@/components/portal/field').then(m => ({ default: m.StoreVisitEngine })));
+const AmbassadorEndOfDay = lazy(() => import('@/components/portal/field').then(m => ({ default: m.EndOfDayNotes })));
+const FieldDayNotesAdmin = lazy(() => import('@/pages/admin/FieldDayNotesAdmin'));
 const AmbassadorStoreProfile = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorStoreProfile })));
 const AmbassadorStoresList = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorStoresList })));
 const AmbassadorWholesalersList = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorWholesalersList })));
