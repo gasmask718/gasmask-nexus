@@ -60,7 +60,7 @@ export default function StopExecutionCard({
 
   const handleCall = () => {
     if (store?.phone) {
-      window.open(`tel:${store.phone}`, '_self');
+      initiateCall({ destinationPhone: store.phone, entityType: 'store', entityId: store.id, entityName: store.name });
     }
   };
 
