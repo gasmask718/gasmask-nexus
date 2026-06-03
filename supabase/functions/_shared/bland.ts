@@ -80,6 +80,7 @@ export async function placeBlandCall(opts: PlaceBlandCallOptions): Promise<Bland
   if (opts.first_sentence) body.first_sentence = opts.first_sentence;
   if (opts.webhook) body.webhook = opts.webhook;
   if (opts.metadata) body.metadata = opts.metadata;
+  if (opts.request_data) body.request_data = opts.request_data;
 
   const res = await fetch(`${BLAND_API}/calls`, {
     method: "POST",
