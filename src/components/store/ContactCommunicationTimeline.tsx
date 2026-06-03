@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Phone, MessageSquare, Bot, Voicemail, ArrowUpRight, ArrowDownLeft,
-  Loader2, ChevronDown, Send, AlertCircle,
+  Loader2, ChevronDown, Send, AlertCircle, Sparkles, FileText,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CallTranscriptViewer } from "@/components/communication/CallTranscriptViewer";
+import { CallAnalysisPanel } from "@/components/communication/CallAnalysisPanel";
 
 interface Props {
   storeId: string;
@@ -35,6 +37,7 @@ type Entry = {
   transcript: string | null;
   recording_url: string | null;
   status: string | null;
+  call_id?: string | null; // Bland/dynasty call_id for transcript+analysis lookup
 };
 
 const normalize = (p?: string | null) => (p || "").replace(/\D/g, "").slice(-10);
@@ -174,6 +177,7 @@ export function ContactCommunicationTimeline({
           transcript: c.transcript,
           recording_url: c.recording_url,
           status: c.outcome,
+          call_id: c.call_id,
         });
       }
 
@@ -326,7 +330,28 @@ export function ContactCommunicationTimeline({
                 <audio controls className="w-full h-7" src={e.recording_url} preload="none" />
               )}
 
-              {e.transcript && (
+              {e.source === "dynasty_ai_calls" && e.call_id ? (
+                <details className="group">
+                  <summary className="text-[10px] text-purple-400 cursor-pointer hover:text-purple-300 flex items-center gap-1">
+                    <Sparkles className="h-3 w-3" /> AI Analysis & Transcript
+                    <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="mt-2 space-y-3 rounded border border-purple-500/20 bg-purple-500/5 p-2">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                        Analysis
+                      </div>
+                      <CallAnalysisPanel callId={e.call_id} />
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+                        <FileText className="h-3 w-3" /> Transcript
+                      </div>
+                      <CallTranscriptViewer callId={e.call_id} maxHeight="240px" />
+                    </div>
+                  </div>
+                </details>
+              ) : e.transcript ? (
                 <details className="group">
                   <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-1">
                     Transcript
@@ -336,7 +361,7 @@ export function ContactCommunicationTimeline({
                     {e.transcript}
                   </pre>
                 </details>
-              )}
+              ) : null}
             </div>
           ))}
         </div>
