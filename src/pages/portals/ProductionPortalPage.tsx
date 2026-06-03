@@ -64,6 +64,7 @@ import {
   EquipmentAssignmentPanel,
   DailyExecutionDashboard,
   SupervisorScorecard,
+  BrandYieldAnalyticsPanel,
 } from '@/components/production';
 import { WorkerTaskTimer } from '@/components/production/WorkerTaskTimer';
 import { LaborEfficiencyPanel } from '@/components/production/LaborEfficiencyPanel';
@@ -442,6 +443,10 @@ export default function ProductionPortalPage() {
                 <Award className="h-4 w-4" />
                 <span className="hidden sm:inline"><BilingualLabel tKey="production.supervisor" en="Supervisor" /></span>
               </TabsTrigger>
+              <TabsTrigger value="yield" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.yield" en="Yield" /></span>
+              </TabsTrigger>
             </TabsList>
 
             {/* ── OPERATE CONTENT ── */}
@@ -570,6 +575,10 @@ export default function ProductionPortalPage() {
 
             <TabsContent value="supervisor">
               <SupervisorScorecard officeId={selectedOfficeId} />
+            </TabsContent>
+
+            <TabsContent value="yield">
+              <BrandYieldAnalyticsPanel officeId={selectedOfficeId} />
             </TabsContent>
           </Tabs>
         </>
