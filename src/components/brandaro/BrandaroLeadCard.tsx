@@ -247,7 +247,7 @@ export function BrandaroLeadCard({
           {/* Action buttons - bottom */}
           <div className="border-t border-border/50" onClick={(e) => e.stopPropagation()}>
             <div className="grid grid-cols-3 divide-x divide-border/30">
-              <button onClick={() => lead.phone_number && window.open(`tel:${lead.phone_number}`)} disabled={!lead.phone_number}
+              <button onClick={handleManualCall} disabled={!lead.phone_number}
                 className="flex items-center justify-center gap-1 py-1.5 text-[10px] hover:bg-muted disabled:opacity-40 transition-colors">
                 <Phone className="h-3 w-3" />Call
               </button>
