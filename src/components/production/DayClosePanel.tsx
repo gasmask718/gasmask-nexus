@@ -23,8 +23,8 @@ interface DayClosePanelProps {
   isAdmin?: boolean;
 }
 
-export function DayClosePanel({
-  const { t } = useTranslation(); officeId, date, isAdmin = false }: DayClosePanelProps) {
+export function DayClosePanel({ officeId, date, isAdmin = false }: DayClosePanelProps) {
+  const { t } = useTranslation();
   const targetDate = date || new Date();
   const { data: closeout, isLoading: closeoutLoading } = useDailyCloseout(officeId, targetDate);
   const { data: kpis } = useDailyKPIs(officeId, targetDate);

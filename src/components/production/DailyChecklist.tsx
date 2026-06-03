@@ -43,7 +43,6 @@ interface DailyChecklistProps {
 }
 
 export function DailyChecklist({
-  const { t } = useTranslation();
   hasBatch,
   hasOutput,
   hasVarianceReview,
@@ -53,6 +52,7 @@ export function DailyChecklist({
   isClosing,
   isDayClosed,
 }: DailyChecklistProps) {
+  const { t } = useTranslation();
   const items: ChecklistItem[] = [
     {
       id: 'batch',

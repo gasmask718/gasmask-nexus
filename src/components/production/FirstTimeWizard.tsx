@@ -43,7 +43,6 @@ interface WizardStep {
 }
 
 export function FirstTimeWizard({
-  const { t } = useTranslation(); 
   officeId, 
   officeName, 
   hasBatch, 
@@ -51,6 +50,7 @@ export function FirstTimeWizard({
   isClosed,
   onDismiss 
 }: FirstTimeWizardProps) {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps: WizardStep[] = [
