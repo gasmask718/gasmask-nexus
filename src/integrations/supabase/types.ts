@@ -111242,14 +111242,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -114498,6 +114498,23 @@ export type Database = {
           momentum_pct: number | null
           prev_7d_profit: number | null
           prev_7d_revenue: number | null
+        }
+        Relationships: []
+      }
+      v_route_candidates: {
+        Row: {
+          address: string | null
+          boro: string | null
+          candidate_type: string | null
+          city: string | null
+          last_visit_date: string | null
+          neighborhood: string | null
+          priority: number | null
+          signal_at: string | null
+          store_id: string | null
+          store_name: string | null
+          value: number | null
+          why: string | null
         }
         Relationships: []
       }

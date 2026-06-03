@@ -285,6 +285,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/routes', label: 'All Routes', icon: Map },
         { path: '/route-optimizer', label: 'Route Optimizer', icon: Zap },
         { path: '/route-ops-center', label: 'Route Ops Center', icon: Target },
+        { path: '/routes/command-center', label: '🚀 Route Command Center', icon: Target },
         { path: '/live-map', label: 'Live Map', icon: MapPin },
         { path: '/delivery-capacity', label: 'Delivery Capacity', icon: BarChart3 },
       ],
