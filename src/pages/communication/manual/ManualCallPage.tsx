@@ -158,14 +158,21 @@ const ManualCallPage = () => {
     };
   }, []);
 
+  const { initiateCall } = useCall();
   const handleStartCall = () => {
     const number = phoneNumber.trim();
     if (!number) {
       toast.error('Please enter a phone number');
       return;
     }
-    // Open tel: link for actual calling
-    window.open(`tel:${number}`, '_self');
+    // Route through logged pipeline (CallProvider → twilio-manual-call) instead of raw tel:.
+    initiateCall({
+      destinationPhone: number,
+      entityType: (selectedContact?.type as any) || 'other',
+      entityId: selectedContact?.id,
+      entityName: selectedContact?.name,
+      businessId: currentBusiness?.id,
+    });
     setCallStatus('connected');
     setCallDuration(0);
     intervalRef.current = setInterval(() => {
