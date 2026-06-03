@@ -2939,6 +2939,22 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+      <Route path="/ambassador/end-of-day" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <AmbassadorLayout title="End-of-Day Notes" subtitle="Log today's observations and flag wrong addresses">
+              <AmbassadorEndOfDay role="ambassador" />
+            </AmbassadorLayout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/field-day-notes" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']} showLocked>
+            <Layout><FieldDayNotesAdmin /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
       <Route path="/ambassador/catalog" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
