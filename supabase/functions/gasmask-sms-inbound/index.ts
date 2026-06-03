@@ -1,10 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyTwilio } from "../_shared/dialer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-twilio-signature",
 };
 
 function normalizePhone(raw: string): string {
@@ -28,13 +29,25 @@ serve(async (req) => {
     // Parse body — support form-encoded (Twilio) and JSON
     const contentType = req.headers.get("content-type") || "";
     let body: Record<string, string> = {};
+    let isTwilioForm = false;
 
     if (contentType.includes("application/x-www-form-urlencoded")) {
+      isTwilioForm = true;
       const text = await req.text();
       const params = new URLSearchParams(text);
       params.forEach((v, k) => (body[k] = v));
     } else {
       body = await req.json().catch(() => ({}));
+    }
+
+    // ── Signature verification (Twilio form-encoded only; internal JSON
+    //     calls from sms-inbound-webhook use service-role auth). ──
+    if (isTwilioForm) {
+      const v = verifyTwilio(req, body);
+      if (!v.ok) {
+        console.error(`[gasmask-sms-inbound] signature invalid: ${v.reason}`);
+        return new Response("Forbidden", { status: 403, headers: corsHeaders });
+      }
     }
 
     const fromNumber = body.From || body.from_number || "";

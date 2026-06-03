@@ -1,8 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { verifyTwilio } from '../_shared/dialer.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-twilio-signature',
 };
 
 interface VoicemailPayload {
@@ -32,9 +33,18 @@ Deno.serve(async (req) => {
     // Parse form data from Twilio
     const formData = await req.formData();
     const payload: Partial<VoicemailPayload> = {};
-    
+    const sigParams: Record<string, string> = {};
+
     for (const [key, value] of formData.entries()) {
       payload[key as keyof VoicemailPayload] = value as string;
+      sigParams[key] = String(value);
+    }
+
+    // ── Signature verification ──
+    const v = verifyTwilio(req, sigParams);
+    if (!v.ok) {
+      console.error(`[voicemail-webhook] signature invalid: ${v.reason}`);
+      return new Response('Forbidden', { status: 403, headers: corsHeaders });
     }
 
     console.log('Voicemail webhook received:', JSON.stringify(payload));
