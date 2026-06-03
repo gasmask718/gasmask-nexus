@@ -58,10 +58,10 @@ export default function FieldDayNotesAdmin() {
     if (ids.length) {
       const { data: ps } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
+        .select('id, name, email')
         .in('id', ids);
       profiles = Object.fromEntries(
-        (ps ?? []).map((p: any) => [p.id, { name: p.full_name, email: p.email }])
+        (ps ?? []).map((p: any) => [p.id, { name: p.name, email: p.email }])
       );
     }
     setRows(
