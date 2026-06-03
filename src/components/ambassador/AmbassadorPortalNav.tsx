@@ -34,6 +34,7 @@ const AMBASSADOR_NAV_ITEMS = [
   { id: 'payouts', i18n: 'ambassador.nav.payouts', label: 'Payouts', path: '/ambassador/payouts', icon: Wallet },
   { id: 'earnings', i18n: 'ambassador.nav.earnings', label: 'Earnings', path: '/ambassador/reports/earnings', icon: TrendingUp },
   { id: 'feedback', i18n: 'ambassador.nav.feedback', label: 'Feedback', path: '/ambassador/feedback', icon: MessageSquareWarning },
+  { id: 'end-of-day', i18n: 'ambassador.nav.end_of_day', label: 'End-of-Day', path: '/ambassador/end-of-day', icon: ClipboardList },
 ] as const;
 
 export function AmbassadorPortalNav() {
