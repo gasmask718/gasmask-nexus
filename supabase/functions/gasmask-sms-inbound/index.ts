@@ -89,50 +89,10 @@ serve(async (req) => {
         source: "gasmask_inbound",
       },
     });
+    // NOTE: Number-verification YES detection moved to twilio-sms-webhook
+    // (the canonical inbound handler) so it fires regardless of which Twilio
+    // number receives the reply. Do NOT re-add the duplicate block here.
 
-    // ── NUMBER VERIFICATION — confirm contact if recent verification text is pending ──
-    try {
-      const body_lower_v = messageBody.trim().toLowerCase();
-      const isYes = /^(y|yes|yep|yeah|yup|ok|okay|sure|confirmed|got it|gotit|saved|👍)\b/.test(body_lower_v);
-      if (isYes) {
-        const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        const { data: pendingVerif } = await supabase
-          .from("store_contacts")
-          .select("id, name")
-          .ilike("phone", `%${last10}`)
-          .in("number_verification_status", ["sent", "delivered"])
-          .gte("number_verification_sent_at", sinceIso)
-          .order("number_verification_sent_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (pendingVerif) {
-          await supabase.from("store_contacts").update({
-            number_verification_status: "confirmed",
-            number_verification_confirmed_at: new Date().toISOString(),
-            verified_at: new Date().toISOString(),
-          }).eq("id", pendingVerif.id);
-          console.log(`[VERIFY] ✅ Contact ${pendingVerif.id} (${pendingVerif.name}) number CONFIRMED via YES reply`);
-
-          if (store) {
-            await supabase.from("communication_logs").insert({
-              store_id: store.id,
-              contact_id: pendingVerif.id,
-              channel: "sms",
-              direction: "inbound",
-              summary: `Number verification CONFIRMED by ${pendingVerif.name}`,
-              message_content: messageBody.trim(),
-              sender_phone: normalizedFrom,
-              delivery_status: "received",
-              performed_by: "system",
-              outcome: "verification_confirmed",
-            });
-          }
-        }
-      }
-    } catch (vErr) {
-      console.error("[VERIFY] error:", vErr);
-    }
 
 
     // If it's a known store and message shows interest, create visit trigger
