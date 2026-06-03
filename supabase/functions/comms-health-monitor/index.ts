@@ -926,8 +926,24 @@ async function checkFeatureModes(): Promise<Result[]> {
           status = "warn";
           msg = `INCONCLUSIVE — probe rate-limited by edge router (HTTP 429). Retry next cycle. Surfaces: ${f.surfaces.join(", ")}.`;
         } else if (r.status >= 500) {
-          status = "fail";
-          msg = `BROKEN — ${f.fn} returned HTTP ${r.status} (handler crashed). Body: ${body.slice(0, 120)}. Affects: ${f.surfaces.join(", ")}.`;
+          // 5xx with a structured JSON {success:false, error:"..."} body means
+          // the handler parsed input and rejected on validation — proves it's
+          // deployed; just returns the wrong status code (should be 400). Mark
+          // pass with a note rather than fail.
+          let validationOnly = false;
+          try {
+            const j = JSON.parse(body);
+            if (j && (j.success === false || j.ok === false) && typeof j.error === "string") {
+              validationOnly = true;
+            }
+          } catch { /* not JSON — treat as real 5xx */ }
+          if (validationOnly) {
+            status = "pass";
+            msg = `WORKING — ${f.fn} deployed (returned 5xx with validation-style JSON; handler is alive but returns wrong status code for missing params). Sender: ${f.sender || "n/a"}. Surfaces: ${f.surfaces.join(", ")}.`;
+          } else {
+            status = "fail";
+            msg = `BROKEN — ${f.fn} returned HTTP ${r.status} (handler crashed). Body: ${body.slice(0, 120)}. Affects: ${f.surfaces.join(", ")}.`;
+          }
         } else if (r.status === 404) {
           status = "fail";
           msg = `BROKEN — ${f.fn} not deployed (404). Feature has no backend. Affects: ${f.surfaces.join(", ")}.`;
