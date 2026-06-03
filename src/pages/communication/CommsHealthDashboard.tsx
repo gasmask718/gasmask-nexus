@@ -24,6 +24,7 @@ const LAYER_LABELS: Record<string, string> = {
   a2p_sending: 'A2P / Sending',
   signature_verify: 'Signature Verify',
   synthetic_loop: 'Synthetic Loop (24h)',
+  feature_mode: 'Feature & Surface Probe',
 };
 
 const PROVIDERS: { id: string; label: string; layers: string[] }[] = [
