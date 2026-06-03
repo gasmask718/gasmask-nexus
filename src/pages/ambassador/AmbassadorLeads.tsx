@@ -997,7 +997,7 @@ export default function AmbassadorLeads() {
           <DialogHeader>
             <DialogTitle>{t("amb.leads.delete_confirm_title")}</DialogTitle>
             <DialogDescription>
-              t("amb.leads.delete_confirm", { name: leadToDelete?.name })
+              {t("amb.leads.delete_confirm", { name: leadToDelete?.name })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">

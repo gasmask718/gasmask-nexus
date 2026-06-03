@@ -378,7 +378,7 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
                 <EmptyState
                   icon={FileText}
                   title={t("production.no_payments_yet")}
-                  description="Payment records will appear here after you issue your first worker payout. Use the '<BilingualLabel tKey="production.pay" en="Pay Worker" inline />' button above to get started."
+                  description={`${t("production.payments_empty_prefix")} '${t("production.pay")}'`}
                 />
               ) : (
                 <Table>

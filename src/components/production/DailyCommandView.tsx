@@ -461,7 +461,7 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
                     {throughputMetrics.minutesToComplete}m
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {t("production.to_complete_{t("production.remaining")}", { count: targetBoxes - throughputMetrics.totalBoxesToday })}
+                    {t("production.to_complete_remaining", { count: targetBoxes - throughputMetrics.totalBoxesToday })}
                   </p>
                 </div>
               </div>
