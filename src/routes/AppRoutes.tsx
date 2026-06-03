@@ -737,6 +737,7 @@ const InsightsPage = lazy(() => import('@/pages/os/inventory').then(m => ({ defa
 const NeighborhoodIntelligencePage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.NeighborhoodIntelligencePage })));
 const ProductConversions = lazy(() => import('@/pages/os/ProductConversions'));
 const LegacyInvoiceRepair = lazy(() => import('@/pages/admin/LegacyInvoiceRepair'));
+const HistoricalImportReview = lazy(() => import('@/pages/admin/HistoricalImportReview'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
 const OSLayout = lazy(() => import('@/pages/os/OSLayout'));
 const StoreInventoryPage = lazy(() => import('@/pages/os/inventory/StoreInventoryPage'));
@@ -1817,6 +1818,16 @@ export default function AppRoutes() {
           element={
             <RequireRole allowedRoles={['admin']} showLocked>
               <LegacyInvoiceRepair />
+            </RequireRole>
+          }
+        />
+
+        {/* Historical Import — staging review & commit (David's Excels/notepads) */}
+        <Route
+          path="/admin/historical-import"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner']} showLocked>
+              <HistoricalImportReview />
             </RequireRole>
           }
         />
