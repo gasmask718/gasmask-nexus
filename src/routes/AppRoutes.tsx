@@ -739,6 +739,10 @@ const ProductConversions = lazy(() => import('@/pages/os/ProductConversions'));
 const LegacyInvoiceRepair = lazy(() => import('@/pages/admin/LegacyInvoiceRepair'));
 const HistoricalImportReview = lazy(() => import('@/pages/admin/HistoricalImportReview'));
 const DynastyDirectOps = lazy(() => import('@/pages/admin/DynastyDirectOps'));
+// Dynasty Direct Hub — Sprint 2
+const DynastyDirectHubHome = lazy(() => import('@/pages/dynasty-direct/DynastyDirectHubHome'));
+const DynastyDirectOrders = lazy(() => import('@/pages/dynasty-direct/DynastyDirectOrders'));
+const DynastyDirectSupplierNetwork = lazy(() => import('@/pages/dynasty-direct/DynastyDirectSupplierNetwork'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
 const OSLayout = lazy(() => import('@/pages/os/OSLayout'));
 const StoreInventoryPage = lazy(() => import('@/pages/os/inventory/StoreInventoryPage'));
