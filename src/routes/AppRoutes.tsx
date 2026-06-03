@@ -743,6 +743,7 @@ const DynastyDirectOps = lazy(() => import('@/pages/admin/DynastyDirectOps'));
 const DynastyDirectHubHome = lazy(() => import('@/pages/dynasty-direct/DynastyDirectHubHome'));
 const DynastyDirectOrders = lazy(() => import('@/pages/dynasty-direct/DynastyDirectOrders'));
 const DynastyDirectSupplierNetwork = lazy(() => import('@/pages/dynasty-direct/DynastyDirectSupplierNetwork'));
+const DynastyDirectCatalogOnboard = lazy(() => import('@/pages/dynasty-direct/DynastyDirectCatalogOnboard'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
 const OSLayout = lazy(() => import('@/pages/os/OSLayout'));
 const StoreInventoryPage = lazy(() => import('@/pages/os/inventory/StoreInventoryPage'));
