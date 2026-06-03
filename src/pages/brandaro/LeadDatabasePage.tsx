@@ -25,6 +25,7 @@ import { BrandaroLeadAssignmentButtons } from "@/components/brandaro/BrandaroLea
 import { BrandaroUnifiedCallHistory } from "@/components/brandaro/BrandaroUnifiedCallHistory";
 import { exportData } from "@/utils/exportUtils";
 import { useNavigate } from "react-router-dom";
+import { useCall } from "@/components/communication/CallProvider";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   Database, Phone, Star, MapPin, Filter, MessageSquare, Loader2,
