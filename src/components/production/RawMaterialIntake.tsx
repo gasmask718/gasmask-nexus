@@ -4,6 +4,8 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
+import { BilingualLabel } from '@/components/portal/BilingualLabel';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +22,7 @@ interface RawMaterialIntakeProps {
 }
 
 export function RawMaterialIntake({ officeId }: RawMaterialIntakeProps) {
+  const { t } = useTranslation();
   const { data: materials = [], isLoading } = useRawMaterials(officeId);
   const { data: levels = [] } = useRawMaterialLevels(officeId);
   const createMaterial = useCreateRawMaterial();
@@ -107,7 +110,9 @@ export function RawMaterialIntake({ officeId }: RawMaterialIntakeProps) {
                 <Package className="h-4 w-4" />
                 Raw Material Intake
               </CardTitle>
-              <CardDescription>Record incoming materials from suppliers</CardDescription>
+              <CardDescription>
+                <BilingualLabel tKey="production.raw_material_intake_desc" en="Record incoming materials from suppliers" />
+              </CardDescription>
             </div>
             <Button
               size="sm"
@@ -115,7 +120,7 @@ export function RawMaterialIntake({ officeId }: RawMaterialIntakeProps) {
               variant={showForm ? 'outline' : 'default'}
             >
               <Plus className="h-4 w-4 mr-1" />
-              {showForm ? 'Cancel' : 'Record Receipt'}
+              {showForm ? <BilingualLabel tKey="production.cancel" en="Cancel" inline /> : <BilingualLabel tKey="production.record_receipt" en="Record Receipt" inline />}
             </Button>
           </div>
         </CardHeader>
@@ -124,7 +129,7 @@ export function RawMaterialIntake({ officeId }: RawMaterialIntakeProps) {
           <CardContent className="space-y-4 border-t pt-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label>Material Type *</Label>
+                <Label><BilingualLabel tKey="production.material_type_req" en="Material Type *" /></Label>
                 <Select
                   value={form.material_type}
                   onValueChange={(val) => {
@@ -132,7 +137,7 @@ export function RawMaterialIntake({ officeId }: RawMaterialIntakeProps) {
                     setForm(f => ({ ...f, material_type: val, unit: mt?.unit || 'units' }));
                   }}
                 >
-                  <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("production.select_type")} /></SelectTrigger>
                   <SelectContent>
                     {MATERIAL_TYPES.map(t => (
                       <SelectItem key={t.value} value={t.value}>
@@ -144,7 +149,7 @@ export function RawMaterialIntake({ officeId }: RawMaterialIntakeProps) {
               </div>
 
               <div>
-                <Label>Quantity * ({selectedType?.unit || form.unit})</Label>
+                <Label><BilingualLabel tKey="production.quantity_req" en="Quantity *" /> ({selectedType?.unit || form.unit})</Label>
                 <Input
                   type="number"
                   value={form.quantity}
@@ -156,7 +161,7 @@ export function RawMaterialIntake({ officeId }: RawMaterialIntakeProps) {
               <div>
                 <Label className="flex items-center gap-1">
                   <DollarSign className="h-3 w-3" />
-                  Cost per {selectedType?.unit || 'unit'}
+                  <BilingualLabel tKey="production.cost_per_unit" en="Cost per" /> {selectedType?.unit || 'unit'}
                 </Label>
                 <Input
                   type="number"
@@ -170,15 +175,15 @@ export function RawMaterialIntake({ officeId }: RawMaterialIntakeProps) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Supplier Name</Label>
+                <Label><BilingualLabel tKey="production.supplier_name" en="Supplier Name" /></Label>
                 <Input
                   value={form.supplier_name}
                   onChange={e => setForm(f => ({ ...f, supplier_name: e.target.value }))}
-                  placeholder="Supplier name..."
+                  placeholder={t("production.supplier_name_placeholder")}
                 />
               </div>
               <div>
-                <Label>Supplier Batch/Lot #</Label>
+                <Label><BilingualLabel tKey="production.supplier_batch_lot" en="Supplier Batch/Lot #" /></Label>
                 <Input
                   value={form.batch_number}
                   onChange={e => setForm(f => ({ ...f, batch_number: e.target.value }))}
@@ -188,18 +193,18 @@ export function RawMaterialIntake({ officeId }: RawMaterialIntakeProps) {
             </div>
 
             <div>
-              <Label>Notes</Label>
+              <Label><BilingualLabel tKey="production.notes" en="Notes" /></Label>
               <Textarea
                 value={form.notes}
                 onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                placeholder="Additional details about this receipt..."
+                placeholder={t("production.additional_details_placeholder")}
                 className="whitespace-pre-wrap"
               />
             </div>
 
             {form.quantity && form.cost_per_unit && (
               <div className="p-3 bg-muted/50 rounded-md text-sm">
-                <strong>Total Cost:</strong> $
+                <strong><BilingualLabel tKey="production.total_cost" en="Total Cost" inline />:</strong> $
                 {(parseFloat(form.quantity) * parseFloat(form.cost_per_unit)).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -211,7 +216,7 @@ export function RawMaterialIntake({ officeId }: RawMaterialIntakeProps) {
               onClick={handleSubmit}
               disabled={!form.material_type || !form.quantity || createMaterial.isPending}
             >
-              {createMaterial.isPending ? 'Recording...' : 'Record Material Receipt'}
+              {createMaterial.isPending ? t("production.recording") : t("production.record_material_receipt")}
             </Button>
           </CardContent>
         )}
@@ -220,25 +225,26 @@ export function RawMaterialIntake({ officeId }: RawMaterialIntakeProps) {
       {/* Recent Receipts Table */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Recent Receipts</CardTitle>
+          <CardTitle className="text-base"><BilingualLabel tKey="production.recent_receipts" en="Recent Receipts" />
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading...</p>
+            <p className="text-sm text-muted-foreground">{t("production.loading")}</p>
           ) : materials.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              No materials recorded yet. Click "Record Receipt" to start.
+              {t("production.no_materials_recorded")}
             </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left">
-                    <th className="pb-2 font-medium">Type</th>
-                    <th className="pb-2 font-medium">Qty</th>
-                    <th className="pb-2 font-medium">Cost</th>
-                    <th className="pb-2 font-medium">Supplier</th>
-                    <th className="pb-2 font-medium">Received</th>
+                    <th className="pb-2 font-medium"><BilingualLabel tKey="production.type" en="Type" /></th>
+                    <th className="pb-2 font-medium"><BilingualLabel tKey="production.qty" en="Qty" /></th>
+                    <th className="pb-2 font-medium"><BilingualLabel tKey="production.cost" en="Cost" /></th>
+                    <th className="pb-2 font-medium"><BilingualLabel tKey="production.supplier" en="Supplier" /></th>
+                    <th className="pb-2 font-medium"><BilingualLabel tKey="production.received" en="Received" /></th>
                     <th className="pb-2 font-medium w-10"></th>
                   </tr>
                 </thead>

@@ -33,6 +33,7 @@ import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import { BilingualLabel } from '@/components/portal/BilingualLabel';
 
 export default function AmbassadorLeads() {
   const { t } = useTranslation();
@@ -339,11 +340,11 @@ export default function AmbassadorLeads() {
   // Get conversion button text based on lead type
   const getConversionButtonText = (leadType: string) => {
     switch (leadType) {
-      case 'store': return 'Convert to Store & Assign';
-      case 'wholesaler': return 'Convert to Wholesaler';
-      case 'ambassador': return 'Convert to Ambassador';
-      case 'influencer': return 'Activate Influencer';
-      default: return 'Convert';
+      case 'store': return t('amb.leads.convert_store');
+      case 'wholesaler': return t('amb.leads.convert_wholesaler');
+      case 'ambassador': return t('amb.leads.convert_ambassador');
+      case 'influencer': return t('amb.leads.activate_influencer');
+      default: return t('amb.leads.convert_default');
     }
   };
 
@@ -445,8 +446,8 @@ export default function AmbassadorLeads() {
 
   return (
     <AmbassadorLayout 
-      title={isReadOnly && targetAmbassador ? `Pipeline for ${targetAmbassador.name || 'Ambassador'}` : "Leads Pipeline"}
-      subtitle={isReadOnly ? "Read-only view — Leads created by this ambassador" : "Manage prospects across all channels"}
+      title={isReadOnly && targetAmbassador ? t("amb.leads.viewing_pipeline", { name: targetAmbassador.name || "Ambassador" }) : t("amb.leads.title")}
+      subtitle={isReadOnly ? t("amb.leads.read_only") : t("amb.leads.subtitle")}
       backPath={routeAmbassadorId ? `/profile/ambassador/${routeAmbassadorId}` : "/ambassador/dashboard"}
     >
       <div className="p-6 space-y-6">
@@ -456,8 +457,8 @@ export default function AmbassadorLeads() {
             <Eye className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between">
               <span>
-                <strong>Viewing Pipeline for {targetAmbassador.name}</strong>
-                <span className="ml-2 text-muted-foreground">· Read-only mode · Leads created by this ambassador</span>
+                <strong>{t("amb.leads.viewing_pipeline", { name: targetAmbassador.name })}</strong>
+                <span className="ml-2 text-muted-foreground">· {t("amb.leads.read_only_notice")}</span>
               </span>
             </AlertDescription>
           </Alert>
@@ -575,7 +576,7 @@ export default function AmbassadorLeads() {
                       {pipeline.icon}
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">{pipeline.name}</p>
+                      <p className="text-sm text-muted-foreground"><BilingualLabel tKey={`amb.lead.${pipeline.id.replace("s", "")}_leads`} en={pipeline.name} /></p>
                       <p className="text-2xl font-bold font-mono">{count}</p>
                     </div>
                   </div>
@@ -592,7 +593,7 @@ export default function AmbassadorLeads() {
               {pipelines.map((pipeline) => (
                 <TabsTrigger key={pipeline.id} value={pipeline.id} className="gap-2">
                   {pipeline.icon}
-                  <span className="hidden sm:inline">{pipeline.name}</span>
+                  <span className="hidden sm:inline"><BilingualLabel tKey={`amb.lead.${pipeline.id.replace("s", "")}_leads`} en={pipeline.name} /></span>
                   <Badge variant="secondary" className="ml-1">
                     {Number.isNaN(Number(kpiCounts?.[laneToLeadType[pipeline.id as keyof typeof laneToLeadType]] ?? 0))
                       ? 0
@@ -605,7 +606,7 @@ export default function AmbassadorLeads() {
             {!isReadOnly && (
               <Button onClick={() => setAddLeadOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Lead
+                <BilingualLabel tKey="amb.leads.add_lead" en="Add Lead" inline />
               </Button>
             )}
           </div>
@@ -616,7 +617,7 @@ export default function AmbassadorLeads() {
               <div className="relative w-full md:w-[300px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder={`Search ${pipeline.name.toLowerCase()}...`}
+                  placeholder={t("amb.leads.search_placeholder", { name: pipeline.name })}
                   className="pl-9"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -680,7 +681,7 @@ export default function AmbassadorLeads() {
                                   <div className="mt-3 pt-3 border-t">
                                     <div className="flex items-center gap-2 text-xs">
                                       <Calendar className="h-3 w-3 text-primary" />
-                                      <span className="text-primary font-medium">Follow up</span>
+                                      <span className="text-primary font-medium">{t("amb.leads.follow_up_label")}</span>
                                     </div>
                                     <div className="text-xs text-muted-foreground mt-1">
                                       {format(new Date(lead.next_follow_up), 'MMM d, yyyy')}
@@ -690,7 +691,7 @@ export default function AmbassadorLeads() {
                                 
                                 <div className="flex items-center justify-between mt-3 pt-3 border-t">
                                   <span className="text-xs text-muted-foreground">
-                                    Added {format(new Date(lead.created_at), 'MMM d, yyyy')}
+                                    {t("amb.leads.added_date", { date: format(new Date(lead.created_at), "MMM d, yyyy") })}
                                   </span>
                                   <Button variant="ghost" size="sm" className="h-7 px-2">
                                     <ArrowRight className="h-3 w-3" />
@@ -702,7 +703,7 @@ export default function AmbassadorLeads() {
                           
                           {stageLeads.length === 0 && (
                             <div className="border-2 border-dashed rounded-lg p-6 text-center text-muted-foreground">
-                              <p className="text-sm">No leads in this stage</p>
+                              <p className="text-sm">{t("amb.leads.no_leads_in_stage")}</p>
                             </div>
                           )}
                         </div>
@@ -718,11 +719,9 @@ export default function AmbassadorLeads() {
                   <div className="p-3 rounded-full bg-muted/50 w-fit mx-auto mb-4">
                     {pipeline.icon}
                   </div>
-                  <h3 className="font-medium mb-2">No {pipeline.name}</h3>
+                  <h3 className="font-medium mb-2"><BilingualLabel tKey="amb.leads.no_leads" en={`No ${pipeline.name}`} /></h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    {isReadOnly 
-                      ? 'This ambassador has not created any leads in this pipeline yet'
-                      : 'Start building your pipeline by adding leads'
+                    {isReadOnly ? t("amb.leads.no_pipeline_other") : t("amb.leads.start_building")
                     }
                   </p>
                   {!isReadOnly && (
@@ -737,7 +736,7 @@ export default function AmbassadorLeads() {
                       setAddLeadOpen(true);
                     }}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Add {pipeline.name.replace(' Leads', '')}
+                      <BilingualLabel tKey="amb.leads.add_type_lead" en={`Add ${pipeline.name.replace(" Leads", "")}`} inline />
                     </Button>
                   )}
                 </div>
@@ -751,30 +750,28 @@ export default function AmbassadorLeads() {
       <Dialog open={addLeadOpen} onOpenChange={setAddLeadOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add New Lead</DialogTitle>
-            <DialogDescription>
-              Enter details for the new prospect
-            </DialogDescription>
+            <DialogTitle><BilingualLabel tKey="amb.leads.add_new" en="Add New Lead" /></DialogTitle>
+            <DialogDescription>{t("amb.leads.enter_details")}</DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Lead Type</Label>
+              <Label>{t("amb.leads.lead_type")}</Label>
               <Select value={selectedLeadType} onValueChange={(v) => setSelectedLeadType(v as 'store' | 'wholesaler' | 'ambassador' | 'influencer')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="store">Store</SelectItem>
-                  <SelectItem value="wholesaler">Wholesaler</SelectItem>
-                  <SelectItem value="influencer">Influencer / Street Team</SelectItem>
-                  <SelectItem value="ambassador">Ambassador Recruit</SelectItem>
+                  <SelectItem value="store">{t("amb.leads.store")}</SelectItem>
+                  <SelectItem value="wholesaler">{t("amb.leads.wholesaler")}</SelectItem>
+                  <SelectItem value="influencer">{t("amb.leads.influencer")}</SelectItem>
+                  <SelectItem value="ambassador">{t("amb.leads.ambassador")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>Business / Contact Name *</Label>
+              <Label>{t("amb.leads.business_name")}</Label>
               <Input 
                 value={newLead.name}
                 onChange={(e) => setNewLead({ ...newLead, name: e.target.value })}
@@ -784,7 +781,7 @@ export default function AmbassadorLeads() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Contact Name</Label>
+                <Label>{t("amb.leads.contact_name")}</Label>
                 <Input 
                   value={newLead.contact_name}
                   onChange={(e) => setNewLead({ ...newLead, contact_name: e.target.value })}
@@ -792,7 +789,7 @@ export default function AmbassadorLeads() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Phone</Label>
+                <Label>{t("amb.leads.phone")}</Label>
                 <Input 
                   value={newLead.phone}
                   onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })}
@@ -802,7 +799,7 @@ export default function AmbassadorLeads() {
             </div>
 
             <div className="space-y-2">
-              <Label>Email</Label>
+              <Label>{t("amb.leads.email")}</Label>
               <Input 
                 type="email"
                 value={newLead.email}
@@ -812,7 +809,7 @@ export default function AmbassadorLeads() {
             </div>
 
             <div className="space-y-2">
-              <Label>Address</Label>
+              <Label>{t("amb.leads.address")}</Label>
               <AddressAutocomplete
                 value={newLead.address}
                 onChange={(val) => setNewLead({ ...newLead, address: val })}
@@ -829,7 +826,7 @@ export default function AmbassadorLeads() {
 
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-2">
-                <Label>City</Label>
+                <Label>{t("amb.leads.city")}</Label>
                 <Input 
                   value={newLead.city}
                   onChange={(e) => setNewLead({ ...newLead, city: e.target.value })}
@@ -837,7 +834,7 @@ export default function AmbassadorLeads() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>State</Label>
+                <Label>{t("amb.leads.state")}</Label>
                 <Input 
                   value={newLead.state}
                   onChange={(e) => setNewLead({ ...newLead, state: e.target.value })}
@@ -845,7 +842,7 @@ export default function AmbassadorLeads() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Zip Code</Label>
+                <Label>{t("amb.leads.zipcode")}</Label>
                 <Input 
                   value={newLead.zipcode}
                   onChange={(e) => setNewLead({ ...newLead, zipcode: e.target.value })}
@@ -855,21 +852,21 @@ export default function AmbassadorLeads() {
             </div>
 
             <div className="space-y-2">
-              <Label>Notes</Label>
+              <Label>{t("amb.leads.notes")}</Label>
               <Textarea 
                 value={newLead.notes}
                 onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })}
-                placeholder="Any additional notes..."
+                placeholder={t("amb.leads.notes_placeholder")}
                 rows={3}
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddLeadOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setAddLeadOpen(false)}>{t("amb.routes.cancel")}</Button>
             <Button onClick={handleCreateLead} disabled={isCreatingLead}>
               {isCreatingLead && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Add Lead
+              <BilingualLabel tKey="amb.leads.add_lead" en="Add Lead" inline />
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -880,9 +877,7 @@ export default function AmbassadorLeads() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{selectedLead?.name}</DialogTitle>
-            <DialogDescription>
-              Lead details and actions
-            </DialogDescription>
+            <DialogDescription>{t("amb.leads.details_header")}</DialogDescription>
           </DialogHeader>
           
           {selectedLead && (
@@ -895,25 +890,25 @@ export default function AmbassadorLeads() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 {selectedLead.contact_name && (
                   <div>
-                    <p className="text-muted-foreground">Contact</p>
+                    <p className="text-muted-foreground">{t("amb.leads.contact_header")}</p>
                     <p className="font-medium">{selectedLead.contact_name}</p>
                   </div>
                 )}
                 {selectedLead.phone && (
                   <div>
-                    <p className="text-muted-foreground">Phone</p>
+                    <p className="text-muted-foreground">{t("amb.leads.phone")}</p>
                     <p className="font-medium">{selectedLead.phone}</p>
                   </div>
                 )}
                 {selectedLead.email && (
                   <div>
-                    <p className="text-muted-foreground">Email</p>
+                    <p className="text-muted-foreground">{t("amb.leads.email")}</p>
                     <p className="font-medium">{selectedLead.email}</p>
                   </div>
                 )}
                 {selectedLead.address && (
                   <div className="col-span-2">
-                    <p className="text-muted-foreground">Address</p>
+                    <p className="text-muted-foreground">{t("amb.leads.address")}</p>
                     <p className="font-medium">{selectedLead.address}{selectedLead.city ? `, ${selectedLead.city}` : ''}{selectedLead.state ? `, ${selectedLead.state}` : ''}</p>
                   </div>
                 )}
@@ -921,7 +916,7 @@ export default function AmbassadorLeads() {
 
               {selectedLead.notes && (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Notes</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t("amb.leads.notes")}</p>
                   <p className="text-sm bg-muted/50 p-3 rounded-lg">{selectedLead.notes}</p>
                 </div>
               )}
@@ -929,7 +924,7 @@ export default function AmbassadorLeads() {
               {/* Stage movement - disabled in read-only mode */}
               {!isReadOnly && (
                 <div className="pt-4 border-t space-y-3">
-                  <p className="text-sm font-medium">Move to Stage</p>
+                  <p className="text-sm font-medium">{t("amb.leads.move_to_stage")}</p>
                   <div className="flex flex-wrap gap-2">
                     {(selectedLead.lead_type === 'store' ? storeStages :
                       selectedLead.lead_type === 'wholesaler' ? wholesalerStages :
@@ -961,10 +956,10 @@ export default function AmbassadorLeads() {
                     {getConversionButtonText(selectedLead.lead_type)}
                   </Button>
                   <p className="text-xs text-muted-foreground text-center mt-2">
-                    {selectedLead.lead_type === 'store' && 'This will create a store record and assign it to you'}
-                    {selectedLead.lead_type === 'wholesaler' && 'This will create a wholesaler record'}
-                    {selectedLead.lead_type === 'ambassador' && 'This will submit for ambassador onboarding'}
-                    {selectedLead.lead_type === 'influencer' && 'This will activate the influencer'}
+                    {selectedLead.lead_type === 'store' && t('amb.leads.convert_to_store_desc')}
+                    {selectedLead.lead_type === 'wholesaler' && t('amb.leads.convert_to_wholesaler_desc')}
+                    {selectedLead.lead_type === 'ambassador' && t('amb.leads.convert_to_ambassador_desc')}
+                    {selectedLead.lead_type === 'influencer' && t('amb.leads.convert_to_influencer_desc')}
                   </p>
                 </div>
               )}
@@ -980,7 +975,7 @@ export default function AmbassadorLeads() {
                   >
                     {isDeletingLead && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Lead
+                    {t("amb.leads.delete_lead")}
                   </Button>
                 </div>
               )}
@@ -988,9 +983,7 @@ export default function AmbassadorLeads() {
               {/* Read-only notice */}
               {isReadOnly && (
                 <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground text-center">
-                    You are viewing this lead in read-only mode
-                  </p>
+                  <p className="text-sm text-muted-foreground text-center">{t("amb.leads.read_only_notice")}</p>
                 </div>
               )}
             </div>
@@ -1002,18 +995,16 @@ export default function AmbassadorLeads() {
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Delete Lead</DialogTitle>
+            <DialogTitle>{t("amb.leads.delete_confirm_title")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{leadToDelete?.name}"? This action cannot be undone.
+              t("amb.leads.delete_confirm", { name: leadToDelete?.name })
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} disabled={isDeletingLead}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} disabled={isDeletingLead}>{t("amb.routes.cancel")}</Button>
             <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeletingLead}>
               {isDeletingLead && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Delete
+              {t("amb.leads.delete_lead")}
             </Button>
           </DialogFooter>
         </DialogContent>

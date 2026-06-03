@@ -21,6 +21,7 @@ import { useEffectiveAmbassadorId } from '@/hooks/useAmbassadorComms';
 import { format } from 'date-fns';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { useTranslation } from '@/hooks/useTranslation';
+import { BilingualLabel } from '@/components/portal/BilingualLabel';
 
 export default function AmbassadorCommissions() {
   const { t } = useTranslation();
@@ -107,11 +108,11 @@ export default function AmbassadorCommissions() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Pending</p>
+                  <p className="text-sm text-muted-foreground"><BilingualLabel tKey="amb.kpi.pending" en="Pending" /></p>
                   <p className="text-2xl font-bold text-yellow-500">
                     ${Number(totals.pending_total || 0).toFixed(2)}
                   </p>
-                  <p className="text-xs text-muted-foreground">{totals.pending_count} entries</p>
+                  <p className="text-xs text-muted-foreground">{totals.pending_count} {t('amb.kpi.entries')}</p>
                 </div>
                 <Clock className="h-8 w-8 text-yellow-500/50" />
               </div>
@@ -125,11 +126,11 @@ export default function AmbassadorCommissions() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Approved</p>
+                  <p className="text-sm text-muted-foreground"><BilingualLabel tKey="amb.kpi.approved" en="Approved" /></p>
                   <p className="text-2xl font-bold text-blue-500">
                     ${Number(totals.approved_total || 0).toFixed(2)}
                   </p>
-                  <p className="text-xs text-muted-foreground">{totals.approved_count} entries</p>
+                  <p className="text-xs text-muted-foreground">{totals.approved_count} {t('amb.kpi.entries')}</p>
                 </div>
                 <CheckCircle className="h-8 w-8 text-blue-500/50" />
               </div>
@@ -143,11 +144,11 @@ export default function AmbassadorCommissions() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Paid (Lifetime)</p>
+                  <p className="text-sm text-muted-foreground"><BilingualLabel tKey="amb.kpi.paid_lifetime" en="Paid (Lifetime)" /></p>
                   <p className="text-2xl font-bold text-green-500">
                     ${Number(totals.paid_total || 0).toFixed(2)}
                   </p>
-                  <p className="text-xs text-muted-foreground">{totals.paid_count} entries</p>
+                  <p className="text-xs text-muted-foreground">{totals.paid_count} {t('amb.kpi.entries')}</p>
                 </div>
                 <DollarSign className="h-8 w-8 text-green-500/50" />
               </div>
@@ -161,7 +162,7 @@ export default function AmbassadorCommissions() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Lifetime Total</p>
+                  <p className="text-sm text-muted-foreground"><BilingualLabel tKey="amb.kpi.lifetime_total" en="Lifetime Total" /></p>
                   <p className="text-2xl font-bold text-purple-500">
                     ${Number(totals.lifetime_total || 0).toFixed(2)}
                   </p>
@@ -175,8 +176,8 @@ export default function AmbassadorCommissions() {
         {/* Channel Breakdown - Data from SQL view */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Earnings by Channel</CardTitle>
-            <CardDescription>Commission breakdown by source type</CardDescription>
+            <CardTitle className="text-lg"><BilingualLabel tKey="amb.commissions.earnings_by_channel" en="Earnings by Channel" /></CardTitle>
+            <CardDescription><BilingualLabel tKey="amb.commissions.channel_breakdown" en="Commission breakdown by source type" /></CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -188,7 +189,7 @@ export default function AmbassadorCommissions() {
                   <Store className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Store Orders</p>
+                  <p className="text-xs text-muted-foreground"><BilingualLabel tKey="amb.commissions.store_orders" en="Store Orders" /></p>
                   <p className="font-semibold">${Number(channels.store_order || 0).toFixed(2)}</p>
                 </div>
               </div>
@@ -200,7 +201,7 @@ export default function AmbassadorCommissions() {
                   <ShoppingCart className="h-4 w-4 text-blue-500" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Wholesale</p>
+                  <p className="text-xs text-muted-foreground"><BilingualLabel tKey="amb.commissions.wholesale" en="Wholesale" /></p>
                   <p className="font-semibold">${Number(channels.wholesale_order || 0).toFixed(2)}</p>
                 </div>
               </div>
@@ -212,7 +213,7 @@ export default function AmbassadorCommissions() {
                   <TrendingUp className="h-4 w-4 text-green-500" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Affiliate</p>
+                  <p className="text-xs text-muted-foreground"><BilingualLabel tKey="amb.commissions.affiliate" en="Affiliate" /></p>
                   <p className="font-semibold">${Number(channels.affiliate || 0).toFixed(2)}</p>
                 </div>
               </div>
@@ -224,7 +225,7 @@ export default function AmbassadorCommissions() {
                   <Users className="h-4 w-4 text-purple-500" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Team Override</p>
+                  <p className="text-xs text-muted-foreground"><BilingualLabel tKey="amb.commissions.team_override" en="Team Override" /></p>
                   <p className="font-semibold">${Number(channels.team_override || 0).toFixed(2)}</p>
                 </div>
               </div>
@@ -235,8 +236,8 @@ export default function AmbassadorCommissions() {
         {/* Tabs: Ledger & Payouts */}
         <Tabs defaultValue="ledger" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="ledger">Commission Ledger</TabsTrigger>
-            <TabsTrigger value="payouts">Payout History</TabsTrigger>
+            <TabsTrigger value="ledger"><BilingualLabel tKey="amb.commissions.commission_ledger" en="Commission Ledger" /></TabsTrigger>
+            <TabsTrigger value="payouts"><BilingualLabel tKey="amb.commissions.payout_history" en="Payout History" /></TabsTrigger>
           </TabsList>
 
           <TabsContent value="ledger" className="space-y-4">
@@ -245,7 +246,7 @@ export default function AmbassadorCommissions() {
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Search by store or source ID..." 
+                  placeholder={t('amb.commissions.search_ledger')} 
                   className="pl-9"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -253,26 +254,26 @@ export default function AmbassadorCommissions() {
               </div>
               <Select value={channelFilter} onValueChange={setChannelFilter}>
                 <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Channel" />
+                  <SelectValue placeholder={t('amb.commissions.channel')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Channels</SelectItem>
-                  <SelectItem value="store_order">Store Orders</SelectItem>
-                  <SelectItem value="wholesale_order">Wholesale</SelectItem>
-                  <SelectItem value="affiliate">Affiliate</SelectItem>
-                  <SelectItem value="team_override">Team Override</SelectItem>
+                  <SelectItem value="all">{t('amb.commissions.all_channels')}</SelectItem>
+                  <SelectItem value="store_order">{t('amb.commissions.store_orders')}</SelectItem>
+                  <SelectItem value="wholesale_order">{t('amb.commissions.wholesale')}</SelectItem>
+                  <SelectItem value="affiliate">{t('amb.commissions.affiliate')}</SelectItem>
+                  <SelectItem value="team_override">{t('amb.commissions.team_override')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[130px]">
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t('amb.commissions.status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="reversed">Reversed</SelectItem>
+                  <SelectItem value="all">{t('amb.commissions.all_status')}</SelectItem>
+                  <SelectItem value="pending">{t('amb.status.pending')}</SelectItem>
+                  <SelectItem value="approved">{t('amb.status.approved')}</SelectItem>
+                  <SelectItem value="paid">{t('amb.status.paid')}</SelectItem>
+                  <SelectItem value="reversed">{t('amb.status.reversed')}</SelectItem>
                 </SelectContent>
               </Select>
               <Button
@@ -281,7 +282,7 @@ export default function AmbassadorCommissions() {
                 title={t("amb.commissions.export_csv")}
                 disabled={filteredEntries.length === 0}
                 onClick={() => {
-                  const header = ['Date','Store/Source','Channel','Gross','Rate (%)','Commission','Status','Reversal Of'];
+                  const header = [t('amb.commissions.earned'), t('amb.commissions.store_or_source'), t('amb.commissions.channel'), t('amb.commissions.gross'), t('amb.commissions.rate'), t('amb.commissions.commission'), t('amb.commissions.status'), t('amb.commissions.reversal')];
                   const escape = (v: any) => {
                     const s = v == null ? '' : String(v);
                     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -319,13 +320,13 @@ export default function AmbassadorCommissions() {
 
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Store / Source</TableHead>
-                      <TableHead>Channel</TableHead>
-                      <TableHead className="text-right">Gross</TableHead>
-                      <TableHead className="text-right">Rate</TableHead>
-                      <TableHead className="text-right">Commission</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Earned</TableHead>
+                      <TableHead><BilingualLabel tKey="amb.commissions.store_or_source" en="Store / Source" /></TableHead>
+                      <TableHead><BilingualLabel tKey="amb.commissions.channel" en="Channel" /></TableHead>
+                      <TableHead className="text-right"><BilingualLabel tKey="amb.commissions.gross" en="Gross" /></TableHead>
+                      <TableHead className="text-right"><BilingualLabel tKey="amb.commissions.rate" en="Rate" /></TableHead>
+                      <TableHead className="text-right"><BilingualLabel tKey="amb.commissions.commission" en="Commission" /></TableHead>
+                      <TableHead><BilingualLabel tKey="amb.commissions.status" en="Status" /></TableHead>
+                      <TableHead><BilingualLabel tKey="amb.commissions.earned" en="Earned" /></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -333,7 +334,7 @@ export default function AmbassadorCommissions() {
                       <TableRow key={entry.id} className={entry.reversal_of ? 'opacity-60' : ''}>
                         <TableCell className="font-medium max-w-[200px] truncate">
                           {entry.store_name || entry.source_id.slice(0, 8)}
-                          {entry.reversal_of && <span className="text-red-500 ml-1">(Reversal)</span>}
+                          {entry.reversal_of && <span className="text-red-500 ml-1">({t('amb.commissions.reversal')})</span>}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -357,9 +358,7 @@ export default function AmbassadorCommissions() {
                     {filteredEntries.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                          {ledger.length === 0 
-                            ? 'No commission entries yet. Start earning by completing store orders!'
-                            : 'No entries match your filters'}
+                          {ledger.length === 0 ? t('amb.commissions.no_entries_yet') : t('amb.commissions.no_match_filters')}
                         </TableCell>
                       </TableRow>
                     )}
@@ -374,10 +373,10 @@ export default function AmbassadorCommissions() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Receipt className="h-5 w-5" />
-                  Payout History
+                  <BilingualLabel tKey="amb.commissions.payout_history" en="Payout History" />
                 </CardTitle>
                 <CardDescription>
-                  All completed payout batches and statements
+                  <BilingualLabel tKey="amb.commissions.payouts_desc" en="All completed payout batches and statements" />
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -386,10 +385,10 @@ export default function AmbassadorCommissions() {
 
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Period</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Paid Date</TableHead>
+                      <TableHead><BilingualLabel tKey="amb.commissions.period" en="Period" /></TableHead>
+                      <TableHead className="text-right"><BilingualLabel tKey="amb.commissions.amount" en="Amount" /></TableHead>
+                      <TableHead><BilingualLabel tKey="amb.commissions.status" en="Status" /></TableHead>
+                      <TableHead><BilingualLabel tKey="amb.commissions.paid_date" en="Paid Date" /></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -414,7 +413,7 @@ export default function AmbassadorCommissions() {
                     {payouts.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                          No payouts yet. Approved commissions will be batched for payment.
+                          {t('amb.commissions.no_payouts')}
                         </TableCell>
                       </TableRow>
                     )}

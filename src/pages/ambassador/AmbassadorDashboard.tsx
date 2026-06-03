@@ -41,11 +41,12 @@ import {
 import { StoreCaptureForm } from '@/components/store/StoreCaptureForm';
 import { AmbassadorStoreMap } from '@/components/ambassador/AmbassadorStoreMap';
 import { useTranslation } from '@/hooks/useTranslation';
+import { BilingualLabel } from '@/components/portal/BilingualLabel';
 
 // MASTER GENIUS ARCHITECT: Lead KPI config - all lead types must be represented
 const LEAD_KPI_CONFIG = {
   store: { 
-    label: 'Store Leads', 
+    tKey: 'amb.lead.store_leads', label: 'Store Leads', 
     icon: Store, 
     variant: 'rose' as const,
     bgClass: 'bg-rose-500/10',
@@ -53,7 +54,7 @@ const LEAD_KPI_CONFIG = {
     iconClass: 'text-rose-400'
   },
   wholesaler: { 
-    label: 'Wholesaler Leads', 
+    tKey: 'amb.lead.wholesaler_leads', label: 'Wholesaler Leads', 
     icon: ShoppingCart, 
     variant: 'amber' as const,
     bgClass: 'bg-amber-500/10',
@@ -61,7 +62,7 @@ const LEAD_KPI_CONFIG = {
     iconClass: 'text-amber-400'
   },
   influencer: { 
-    label: 'Influencer / Street Team', 
+    tKey: 'amb.lead.influencer_leads', label: 'Influencer / Street Team', 
     icon: Users, 
     variant: 'purple' as const,
     bgClass: 'bg-purple-500/10',
@@ -69,7 +70,7 @@ const LEAD_KPI_CONFIG = {
     iconClass: 'text-purple-400'
   },
   ambassador: { 
-    label: 'Ambassador Recruits', 
+    tKey: 'amb.lead.ambassador_leads', label: 'Ambassador Recruits', 
     icon: UserPlus, 
     variant: 'cyan' as const,
     bgClass: 'bg-cyan-500/10',
@@ -164,13 +165,11 @@ function MyCapturedStores() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Store className="h-4 w-4" />
-            My Stores
+            <BilingualLabel tKey="amb.dashboard.my_stores" en="My Stores" />
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Stores you capture will appear here. Tap the Capture New Store button to add your first.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("amb.dashboard.my_stores_empty")}</p>
         </CardContent>
       </Card>
     );
@@ -181,7 +180,7 @@ function MyCapturedStores() {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Store className="h-4 w-4" />
-          My Stores
+          <BilingualLabel tKey="amb.dashboard.my_stores" en="My Stores" />
           <Badge variant="secondary" className="ml-1">{myStores.length}</Badge>
         </CardTitle>
       </CardHeader>
@@ -300,9 +299,9 @@ function DashboardContent() {
       <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 flex items-center gap-3">
         <MapPin className="h-5 w-5 text-primary" />
         <div className="flex-1">
-          <p className="text-sm font-medium">Your Portfolio</p>
+          <p className="text-sm font-medium"><BilingualLabel tKey="amb.dashboard.your_portfolio" en="Your Portfolio" /></p>
           <p className="text-xs text-muted-foreground">
-            Viewing data for {metrics.totalStores} stores you manage ({metrics.assignedStores} assigned, {metrics.sourcedStores} sourced)
+            {t("amb.dashboard.viewing_portfolio", { total: metrics.totalStores, assigned: metrics.assignedStores, sourced: metrics.sourcedStores })}
           </p>
         </div>
       </div>
@@ -334,7 +333,7 @@ function DashboardContent() {
                     <Icon className={`h-5 w-5 ${config.iconClass}`} />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">{config.label}</p>
+                    <p className="text-sm text-muted-foreground"><BilingualLabel tKey={config.tKey} en={config.label} /></p>
                     <p className="text-2xl font-bold font-mono">{count}</p>
                   </div>
                 </div>
@@ -347,7 +346,7 @@ function DashboardContent() {
       {/* Portfolio KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <CommandCenterKPI
-          label="Total Stores"
+          label={t("amb.kpi.total_stores")}
           value={metrics.totalStores}
           icon={Store}
           variant="cyan"
@@ -355,7 +354,7 @@ function DashboardContent() {
           onClick={() => setSelectedKpi(selectedKpi === 'stores' ? null : 'stores')}
         />
         <CommandCenterKPI
-          label="Total Commission"
+          label={t("amb.kpi.total_commission")}
           value={`$${lifetimeTotal.toFixed(2)}`}
           icon={DollarSign}
           trend={pendingTotal > 0 ? `$${pendingTotal.toFixed(2)} pending` : undefined}
@@ -364,19 +363,19 @@ function DashboardContent() {
           onClick={() => setSelectedKpi(selectedKpi === 'commissions' ? null : 'commissions')}
         />
         <CommandCenterKPI
-          label="Approved"
+          label={t("amb.kpi.approved")}
           value={`$${approvedTotal.toFixed(2)}`}
           icon={TrendingUp}
           variant="purple"
         />
         <CommandCenterKPI
-          label="Total Orders"
+          label={t("amb.kpi.total_orders")}
           value={metrics.totalOrders}
           icon={Package}
           variant="amber"
         />
         <CommandCenterKPI
-          label="Revenue Generated"
+          label={t("amb.kpi.revenue")}
           value={`$${metrics.totalRevenue.toFixed(2)}`}
           icon={BarChart3}
           variant="cyan"
@@ -407,14 +406,12 @@ function DashboardContent() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5" />
-                  Recent Commissions
+                  <BilingualLabel tKey="amb.dashboard.recent_commissions" en="Recent Commissions" />
                 </CardTitle>
-                <CardDescription>
-                  Your latest earnings
-                </CardDescription>
+                <CardDescription>{t("amb.dashboard.latest_earnings")}</CardDescription>
               </div>
               <Button variant="outline" size="sm" onClick={() => navigate('/ambassador/commissions')}>
-                View All
+                {t("amb.dashboard.view_all")}
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </div>
@@ -424,8 +421,8 @@ function DashboardContent() {
               {(!recentLedger || recentLedger.length === 0) ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No commissions yet</p>
-                  <p className="text-sm">Start acquiring stores to earn</p>
+                  <p>{t("amb.dashboard.no_commissions")}</p>
+                  <p className="text-sm">{t("amb.dashboard.start_acquiring")}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -460,7 +457,7 @@ function DashboardContent() {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <CardTitle><BilingualLabel tKey="amb.dashboard.quick_actions" en="Quick Actions" /></CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
@@ -469,7 +466,7 @@ function DashboardContent() {
               onClick={() => navigate('/ambassador/stores')}
             >
               <Store className="h-5 w-5" />
-              <span>View Stores</span>
+              <span>{t("amb.quick.view_stores")}</span>
             </Button>
             <Button 
               variant="outline" 
@@ -477,7 +474,7 @@ function DashboardContent() {
               onClick={() => navigate('/ambassador/orders?action=create')}
             >
               <Package className="h-5 w-5" />
-              <span>Create Order</span>
+              <span>{t("amb.quick.create_order")}</span>
             </Button>
             <Button 
               variant="outline" 
@@ -485,7 +482,7 @@ function DashboardContent() {
               onClick={() => navigate('/ambassador/purchases')}
             >
               <ShoppingCart className="h-5 w-5" />
-              <span>My Purchases</span>
+              <span>{t("amb.quick.my_purchases")}</span>
             </Button>
             <Button 
               variant="outline" 
@@ -493,7 +490,7 @@ function DashboardContent() {
               onClick={() => navigate('/ambassador/profit')}
             >
               <TrendingUp className="h-5 w-5 text-green-500" />
-              <span>My Profits</span>
+              <span>{t("amb.quick.my_profits")}</span>
             </Button>
             <Button 
               variant="outline" 
@@ -501,7 +498,7 @@ function DashboardContent() {
               onClick={() => navigate('/ambassador/commissions')}
             >
               <DollarSign className="h-5 w-5" />
-              <span>Commissions</span>
+              <span>{t("amb.quick.commissions")}</span>
             </Button>
             <Button 
               variant="outline" 
@@ -509,7 +506,7 @@ function DashboardContent() {
               onClick={() => navigate('/ambassador/routes')}
             >
               <MapPin className="h-5 w-5" />
-              <span>Plan Route</span>
+              <span>{t("amb.quick.plan_route")}</span>
             </Button>
             <Button 
               variant="outline" 
@@ -517,7 +514,7 @@ function DashboardContent() {
               onClick={() => navigate('/ambassador/leads')}
             >
               <Plus className="h-5 w-5" />
-              <span>Add Lead</span>
+              <span>{t("amb.quick.add_lead")}</span>
             </Button>
           </div>
         </CardContent>
@@ -530,15 +527,13 @@ function DashboardContent() {
             className="fixed bottom-6 right-6 h-14 rounded-full shadow-lg gap-2 z-50"
           >
             <Camera className="h-5 w-5" />
-            <span className="hidden sm:inline">Capture New Store</span>
+            <span className="hidden sm:inline"><BilingualLabel tKey="amb.dashboard.capture_new_store" en="Capture New Store" inline /></span>
           </Button>
         </SheetTrigger>
         <SheetContent side="bottom" className="h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Capture New Store</SheetTitle>
-            <SheetDescription>
-              Found a new shop? Add it here. Owner will review before it goes live.
-            </SheetDescription>
+            <SheetTitle><BilingualLabel tKey="amb.dashboard.capture_new_store" en="Capture New Store" /></SheetTitle>
+            <SheetDescription>{t("amb.dashboard.capture_new_store_desc")}</SheetDescription>
           </SheetHeader>
           <div className="mt-4">
             <StoreCaptureForm

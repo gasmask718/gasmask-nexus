@@ -1,3 +1,5 @@
+import { useTranslation } from "@/hooks/useTranslation";
+import { BilingualLabel } from "@/components/portal/BilingualLabel";
 /**
  * ACTIVE BATCH BANNER
  * 
@@ -34,6 +36,7 @@ const BRAND_COLORS: Record<string, string> = {
 };
 
 export function ActiveBatchBanner({ batches, onSelectBatch, onCreateBatch }: ActiveBatchBannerProps) {
+  const { t } = useTranslation();
   // Find active batch (open or in_progress)
   const activeBatch = batches.find(b => b.status === 'in_progress') || batches.find(b => b.status === 'open');
   const todayBatches = batches.filter(b => b.status !== 'cancelled');
@@ -48,15 +51,15 @@ export function ActiveBatchBanner({ batches, onSelectBatch, onCreateBatch }: Act
                 <AlertTriangle className="h-5 w-5 text-amber-600" />
               </div>
               <div>
-                <p className="font-medium text-amber-800">No Active Batch</p>
+                <p className="font-medium text-amber-800"><BilingualLabel tKey="production.no_active_batch" en="No Active Batch" /></p>
                 <p className="text-sm text-amber-600">
-                  Create a batch to begin production tracking
+                  {t("production.no_active_batch_description")}
                 </p>
               </div>
             </div>
             <Button onClick={onCreateBatch}>
               <Boxes className="h-4 w-4 mr-2" />
-              Create Batch
+              <BilingualLabel tKey="production.create_batch" en="Create Batch" inline />
             </Button>
           </div>
         </CardContent>
@@ -76,16 +79,16 @@ export function ActiveBatchBanner({ batches, onSelectBatch, onCreateBatch }: Act
               </div>
               <div>
                 <p className="font-medium text-emerald-800">
-                  All Batches Completed ({todayBatches.length} today)
+                  <BilingualLabel tKey="production.all_batches_completed" en="All Batches Completed" /> ({todayBatches.length} today)
                 </p>
                 <p className="text-sm text-emerald-600">
-                  Ready to close the day or create another batch
+                  {t("production.all_batches_completed_description")}
                 </p>
               </div>
             </div>
             <Button variant="outline" onClick={onCreateBatch}>
               <Boxes className="h-4 w-4 mr-2" />
-              New Batch
+              <BilingualLabel tKey="production.new_batch" en="New Batch" inline />
             </Button>
           </div>
         </CardContent>
@@ -130,13 +133,13 @@ export function ActiveBatchBanner({ batches, onSelectBatch, onCreateBatch }: Act
                       ? "bg-primary/20 text-primary" 
                       : "bg-blue-100 text-blue-800"
                   )}>
-                    {isInProgress ? 'In Progress' : 'Open'}
+                    {isInProgress ? <BilingualLabel tKey="production.status.in_progress" en="In Progress" inline /> : <BilingualLabel tKey="production.status.open" en="Open" inline />}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    Started {createdAt}
+                    {t("production.started")} {createdAt}
                   </span>
                 </div>
               </div>
@@ -145,15 +148,15 @@ export function ActiveBatchBanner({ batches, onSelectBatch, onCreateBatch }: Act
               <div className="flex items-center gap-4 ml-4 pl-4 border-l">
                 <div className="text-center">
                   <p className="text-lg font-bold">{activeBatch.tobacco_lbs || 0}</p>
-                  <p className="text-xs text-muted-foreground">lbs</p>
+                  <p className="text-xs text-muted-foreground">{t("production.lbs")}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-lg font-bold">{(activeBatch.tubes_total || 0).toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">tubes issued</p>
+                  <p className="text-xs text-muted-foreground">{t("production.tubes_issued_qty")}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-lg font-bold text-primary">{(activeBatch.boxes_produced || 0).toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">boxes</p>
+                  <p className="text-xs text-muted-foreground">{t("production.boxes_produced")}</p>
                 </div>
               </div>
             </div>
@@ -166,7 +169,7 @@ export function ActiveBatchBanner({ batches, onSelectBatch, onCreateBatch }: Act
               size="sm"
               onClick={() => onSelectBatch?.(activeBatch)}
             >
-              View Details
+              <BilingualLabel tKey="production.batch_details" en="View Details" inline />
             </Button>
             {todayBatches.length > 1 && (
               <Badge variant="secondary">
