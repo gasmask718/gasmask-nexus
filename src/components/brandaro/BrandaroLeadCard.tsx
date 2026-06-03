@@ -280,7 +280,7 @@ export function BrandaroLeadCard({
 
       {/* Right-click context menu */}
       <ContextMenuContent>
-        <ContextMenuItem onClick={() => lead.phone_number && window.open(`tel:${lead.phone_number}`)} disabled={!lead.phone_number}>
+        <ContextMenuItem onClick={handleManualCall} disabled={!lead.phone_number}>
           📞 Manual call
         </ContextMenuItem>
         <ContextMenuItem onClick={handleAiCall} disabled={!lead.phone_number || aiCallLoading}>
