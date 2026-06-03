@@ -1847,6 +1847,44 @@ export default function AppRoutes() {
           }
         />
 
+        {/* ═══════════════════════════════════════════════════════════════════════════ */}
+        {/* DYNASTY DIRECT HUB — Sprint 2 (unified shell for all DD surfaces)          */}
+        {/* ═══════════════════════════════════════════════════════════════════════════ */}
+        <Route
+          path="/dynasty-direct"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
+              <DynastyDirectHubHome />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/dynasty-direct/orders"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
+              <DynastyDirectOrders />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/dynasty-direct/suppliers/network"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
+              <DynastyDirectSupplierNetwork />
+            </RequireRole>
+          }
+        />
+        {/* Aliases — route DD sub-paths into the existing scattered pages */}
+        <Route path="/dynasty-direct/catalog" element={<MarketplaceAdminPortalPage />} />
+        <Route path="/dynasty-direct/store-storefront" element={<StorePortalPage />} />
+        <Route path="/dynasty-direct/d2c-storefront" element={<Shop />} />
+        <Route path="/dynasty-direct/fulfillment" element={<MarketplaceControlTowerPage />} />
+        <Route path="/dynasty-direct/suppliers/portal" element={<WholesalerPortalPage />} />
+        <Route path="/dynasty-direct/suppliers/inventory" element={<WholesalerPortalPage />} />
+        <Route path="/dynasty-direct/shipping" element={<MarketplaceControlTowerPage />} />
+        <Route path="/dynasty-direct/grabba-bridge" element={<MarketplaceControlTowerPage />} />
+        <Route path="/dynasty-direct/analytics" element={<MarketplaceControlTowerPage />} />
+
         {/* Marketplace Connection Pack - Dev Only, Admin/Owner */}
         <Route
           path="/admin/dev/marketplace-connection"
