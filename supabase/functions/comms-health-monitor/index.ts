@@ -959,18 +959,15 @@ async function checkFeatureModes(): Promise<Result[]> {
           msg = `BROKEN — ${f.fn} unreachable: ${errMsg}. Affects: ${f.surfaces.join(", ")}.`;
         }
       }
-      return {
+      out.push({
         provider: f.provider === "mixed" ? "twilio" : f.provider,
         layer: "feature_mode",
         target: `${f.channel}:${f.key}`,
         status,
         message: msg,
         detail: { ...detail, label: f.label },
-      } as Result;
-    }));
-    out.push(...rows);
-    // Tiny gap between batches to ease per-trace rate limit
-    if (i + BATCH < FEATURE_MODES.length) await new Promise((r) => setTimeout(r, 250));
+      });
+    }
   }
 
   // ── Recent-activity heartbeat per channel (synthetic delivery proxy) ────
