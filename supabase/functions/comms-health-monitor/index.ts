@@ -534,28 +534,338 @@ async function checkSyntheticLoop(): Promise<Result[]> {
   return out;
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// BLAND AI — separate provider section
+// ════════════════════════════════════════════════════════════════════════════
+const BLAND_API_KEY = Deno.env.get("BLAND_API_KEY") || "";
+const BLAND_MIN_BALANCE_USD = parseFloat(Deno.env.get("BLAND_MIN_BALANCE_USD") || "5");
+const BLAND_AGENTS: Record<string, string> = {
+  DC_INBOUND_AGENT_ID: Deno.env.get("DC_INBOUND_AGENT_ID") || "",
+  DC_SALES_AGENT_ID: Deno.env.get("DC_SALES_AGENT_ID") || "",
+  DC_FOLLOWUP_AGENT_ID: Deno.env.get("DC_FOLLOWUP_AGENT_ID") || "",
+  DC_REACTIVATION_AGENT_ID: Deno.env.get("DC_REACTIVATION_AGENT_ID") || "",
+  BRANDARO_SALES_AGENT_ID: Deno.env.get("BRANDARO_SALES_AGENT_ID") || "",
+  BRANDARO_CLOSER_AGENT_ID: Deno.env.get("BRANDARO_CLOSER_AGENT_ID") || "",
+  BRANDARO_REL_AGENT_ID: Deno.env.get("BRANDARO_REL_AGENT_ID") || "",
+  BRANDARO_ES_CLOSER_ID: Deno.env.get("BRANDARO_ES_CLOSER_ID") || "",
+  BRANDARO_ES_REL_ID: Deno.env.get("BRANDARO_ES_REL_ID") || "",
+  RE_QUALIFIER_AGENT_ID: Deno.env.get("RE_QUALIFIER_AGENT_ID") || "",
+  RE_SPECIALIST_AGENT_ID: Deno.env.get("RE_SPECIALIST_AGENT_ID") || "",
+  RE_CLOSER_AGENT_ID: Deno.env.get("RE_CLOSER_AGENT_ID") || "",
+  SF_CLIENT_AGENT_ID: Deno.env.get("SF_CLIENT_AGENT_ID") || "",
+  SF_ATTORNEY_AGENT_ID: Deno.env.get("SF_ATTORNEY_AGENT_ID") || "",
+  TT_CONCIERGE_AGENT_ID: Deno.env.get("TT_CONCIERGE_AGENT_ID") || "",
+  TT_AMBASSADOR_AGENT_ID: Deno.env.get("TT_AMBASSADOR_AGENT_ID") || "",
+  UT_CONCIERGE_AGENT_ID: Deno.env.get("UT_CONCIERGE_AGENT_ID") || "",
+  UT_AMBASSADOR_AGENT_ID: Deno.env.get("UT_AMBASSADOR_AGENT_ID") || "",
+  UT_PARTNER_AGENT_ID: Deno.env.get("UT_PARTNER_AGENT_ID") || "",
+  ICLEAN_BOOKING_AGENT_ID: Deno.env.get("ICLEAN_BOOKING_AGENT_ID") || "",
+};
+
+async function bland(path: string, init?: RequestInit): Promise<Response> {
+  return fetch(`https://api.bland.ai${path}`, {
+    ...init,
+    headers: {
+      ...(init?.headers || {}),
+      authorization: BLAND_API_KEY,
+      "Content-Type": "application/json",
+    },
+  });
+}
+
+async function checkBlandCredentials(): Promise<Result[]> {
+  const out: Result[] = [];
+  if (!BLAND_API_KEY) {
+    return [{ provider: "bland", layer: "credentials", target: "bland_api_key", status: "fail", message: "BLAND_API_KEY is not configured" }];
+  }
+  try {
+    const r = await bland("/v1/me");
+    const body = await r.text();
+    if (r.status === 401 || r.status === 403) {
+      out.push({ provider: "bland", layer: "credentials", target: "bland_account", status: "fail", message: `Bland API rejected key (HTTP ${r.status}) — BLAND_API_KEY invalid`, detail: { http_status: r.status, body_preview: body.slice(0, 200) } });
+      return out;
+    }
+    if (!r.ok) {
+      out.push({ provider: "bland", layer: "credentials", target: "bland_account", status: "fail", message: `Bland /v1/me returned ${r.status}`, detail: { http_status: r.status, body_preview: body.slice(0, 200) } });
+      return out;
+    }
+    let parsed: any = {};
+    try { parsed = JSON.parse(body); } catch { /* ignore */ }
+    out.push({ provider: "bland", layer: "credentials", target: "bland_account", status: "pass", message: `Bland API reachable, BLAND_API_KEY valid`, detail: { ...(parsed.billing ? { billing: parsed.billing } : {}) } });
+    // Balance: Bland exposes balance under billing.current_balance or top-level
+    const bal = parseFloat(parsed?.billing?.current_balance ?? parsed?.balance ?? parsed?.credits ?? "NaN");
+    if (Number.isFinite(bal)) {
+      const low = bal < BLAND_MIN_BALANCE_USD;
+      out.push({
+        provider: "bland",
+        layer: "credentials",
+        target: "bland_balance",
+        status: low ? "warn" : "pass",
+        message: low
+          ? `Bland balance $${bal.toFixed(2)} below threshold $${BLAND_MIN_BALANCE_USD.toFixed(2)} — top up to prevent call interruptions`
+          : `Bland balance $${bal.toFixed(2)} (threshold $${BLAND_MIN_BALANCE_USD.toFixed(2)})`,
+        detail: { balance_usd: bal, threshold: BLAND_MIN_BALANCE_USD },
+      });
+    } else {
+      out.push({ provider: "bland", layer: "credentials", target: "bland_balance", status: "warn", message: "Bland /v1/me did not expose a balance field — cannot verify credits" });
+    }
+  } catch (e) {
+    out.push({ provider: "bland", layer: "credentials", target: "bland_account", status: "fail", message: `Bland credential check threw: ${(e as Error).message}` });
+  }
+  return out;
+}
+
+async function checkBlandAgents(): Promise<Result[]> {
+  const out: Result[] = [];
+  if (!BLAND_API_KEY) return [];
+  const configured = Object.entries(BLAND_AGENTS).filter(([, v]) => v);
+  if (configured.length === 0) {
+    return [{ provider: "bland", layer: "credentials", target: "bland_agents", status: "warn", message: "No Bland agent IDs configured in secrets" }];
+  }
+  // Fetch full agent list once and check membership
+  let known = new Set<string>();
+  let listOk = false;
+  try {
+    const r = await bland("/v1/agents");
+    if (r.ok) {
+      const j = await r.json();
+      const arr = j?.agents || j?.data || j || [];
+      for (const a of Array.isArray(arr) ? arr : []) {
+        if (a?.agent_id) known.add(a.agent_id);
+        if (a?.id) known.add(a.id);
+      }
+      listOk = true;
+    }
+  } catch { /* fall through to per-agent fetch */ }
+
+  for (const [name, id] of configured) {
+    if (listOk && known.has(id)) {
+      out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "pass", message: `Agent ${id} present in Bland account`, detail: { agent_id: id } });
+      continue;
+    }
+    // Per-agent verification fallback
+    try {
+      const r = await bland(`/v1/agents/${id}`);
+      if (r.status === 404) {
+        out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "fail", message: `Agent ${id} not found in Bland account (404) — stale secret or deleted agent`, detail: { agent_id: id } });
+      } else if (r.status === 401 || r.status === 403) {
+        out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "fail", message: `Agent ${id} fetch unauthorized (HTTP ${r.status})`, detail: { agent_id: id } });
+      } else if (r.ok) {
+        out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "pass", message: `Agent ${id} valid`, detail: { agent_id: id } });
+      } else {
+        out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "warn", message: `Agent ${id} fetch returned HTTP ${r.status}`, detail: { agent_id: id, http_status: r.status } });
+      }
+    } catch (e) {
+      out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "warn", message: `Could not verify agent ${id}: ${(e as Error).message}`, detail: { agent_id: id } });
+    }
+  }
+  return out;
+}
+
+async function checkBlandWebhooks(): Promise<Result[]> {
+  const out: Result[] = [];
+  const fns = ["bland-webhook", "bland-agent-webhook", "bland-call-webhook"];
+  for (const fn of fns) {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ healthcheck: true, call_id: "health_" + Date.now() }),
+      });
+      const body = await r.text();
+      const ct = r.headers.get("content-type") || "";
+      // Reachable + handler responded. 200/202/400/401/403 all indicate the
+      // function is deployed and parsing input. 404/5xx with HTML = stale build.
+      const reachable = r.status >= 200 && r.status < 500;
+      const status: "pass" | "fail" = reachable ? "pass" : "fail";
+      out.push({
+        provider: "bland",
+        layer: "function_deployment",
+        target: fn,
+        status,
+        message: status === "pass"
+          ? `Reachable (HTTP ${r.status})`
+          : `Unhealthy: HTTP ${r.status}, content-type ${ct}, body preview: ${body.slice(0, 120)}`,
+        detail: { http_status: r.status, content_type: ct, body_preview: body.slice(0, 200) },
+      });
+    } catch (e) {
+      out.push({ provider: "bland", layer: "function_deployment", target: fn, status: "fail", message: `Unreachable: ${(e as Error).message}` });
+    }
+  }
+  return out;
+}
+
+async function checkBlandSynthetic(): Promise<Result[]> {
+  const out: Result[] = [];
+  try {
+    const supa = sb();
+    const since = new Date(Date.now() - 25 * 3600 * 1000).toISOString();
+    const { data, error } = await supa
+      .from("dynasty_ai_calls")
+      .select("id, created_at, call_id")
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (error) {
+      out.push({ provider: "bland", layer: "synthetic_loop", target: "dynasty_ai_calls_25h", status: "warn", message: `Could not query dynasty_ai_calls: ${error.message}` });
+    } else if (!data || data.length === 0) {
+      out.push({ provider: "bland", layer: "synthetic_loop", target: "dynasty_ai_calls_25h", status: "warn", message: "No Bland calls recorded in dynasty_ai_calls in the last 25h — pipeline may be idle or broken" });
+    } else {
+      out.push({ provider: "bland", layer: "synthetic_loop", target: "dynasty_ai_calls_25h", status: "pass", message: `Last Bland call recorded ${data[0].created_at}`, detail: { last_call_id: (data[0] as any).call_id, last_at: data[0].created_at } });
+    }
+  } catch (e) {
+    out.push({ provider: "bland", layer: "synthetic_loop", target: "dynasty_ai_calls_25h", status: "fail", message: `Bland synthetic check threw: ${(e as Error).message}` });
+  }
+  return out;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ELEVENLABS — separate provider section
+// ════════════════════════════════════════════════════════════════════════════
+const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY") || "";
+const ELEVENLABS_MIN_CREDITS = parseInt(Deno.env.get("ELEVENLABS_MIN_CREDITS") || "10000", 10);
+const ELEVENLABS_AGENTS: Record<string, string> = {
+  ELEVENLABS_AGENT_ID: Deno.env.get("ELEVENLABS_AGENT_ID") || "",
+};
+
+async function el(path: string): Promise<Response> {
+  return fetch(`https://api.elevenlabs.io${path}`, {
+    headers: { "xi-api-key": ELEVENLABS_API_KEY },
+  });
+}
+
+async function checkElevenLabsCredentials(): Promise<Result[]> {
+  const out: Result[] = [];
+  if (!ELEVENLABS_API_KEY) {
+    return [{ provider: "elevenlabs", layer: "credentials", target: "elevenlabs_api_key", status: "fail", message: "ELEVENLABS_API_KEY is not configured" }];
+  }
+  try {
+    const r = await el("/v1/user/subscription");
+    const body = await r.text();
+    if (r.status === 401 || r.status === 403) {
+      return [{ provider: "elevenlabs", layer: "credentials", target: "elevenlabs_account", status: "fail", message: `ElevenLabs rejected key (HTTP ${r.status}) — ELEVENLABS_API_KEY invalid`, detail: { http_status: r.status, body_preview: body.slice(0, 200) } }];
+    }
+    if (!r.ok) {
+      return [{ provider: "elevenlabs", layer: "credentials", target: "elevenlabs_account", status: "fail", message: `ElevenLabs /v1/user/subscription returned ${r.status}`, detail: { http_status: r.status, body_preview: body.slice(0, 200) } }];
+    }
+    const j = JSON.parse(body);
+    out.push({ provider: "elevenlabs", layer: "credentials", target: "elevenlabs_account", status: "pass", message: `ElevenLabs API reachable, ELEVENLABS_API_KEY valid (tier: ${j.tier || "unknown"})`, detail: { tier: j.tier, status: j.status } });
+    const used = Number(j.character_count ?? 0);
+    const limit = Number(j.character_limit ?? 0);
+    const remaining = limit - used;
+    const low = remaining < ELEVENLABS_MIN_CREDITS;
+    out.push({
+      provider: "elevenlabs",
+      layer: "credentials",
+      target: "elevenlabs_balance",
+      status: low ? "warn" : "pass",
+      message: low
+        ? `ElevenLabs credits remaining ${remaining.toLocaleString()} below threshold ${ELEVENLABS_MIN_CREDITS.toLocaleString()} — top up or upgrade to prevent TTS/STT failures`
+        : `ElevenLabs credits remaining ${remaining.toLocaleString()} / ${limit.toLocaleString()} (threshold ${ELEVENLABS_MIN_CREDITS.toLocaleString()})`,
+      detail: { used, limit, remaining, threshold: ELEVENLABS_MIN_CREDITS, next_reset_unix: j.next_character_count_reset_unix },
+    });
+  } catch (e) {
+    out.push({ provider: "elevenlabs", layer: "credentials", target: "elevenlabs_account", status: "fail", message: `ElevenLabs credential check threw: ${(e as Error).message}` });
+  }
+  return out;
+}
+
+async function checkElevenLabsAgents(): Promise<Result[]> {
+  const out: Result[] = [];
+  if (!ELEVENLABS_API_KEY) return [];
+  const configured = Object.entries(ELEVENLABS_AGENTS).filter(([, v]) => v);
+  if (configured.length === 0) {
+    return [{ provider: "elevenlabs", layer: "credentials", target: "elevenlabs_agents", status: "warn", message: "No ElevenLabs agent IDs configured in secrets" }];
+  }
+  for (const [name, id] of configured) {
+    try {
+      const r = await el(`/v1/convai/agents/${id}`);
+      if (r.status === 404) {
+        out.push({ provider: "elevenlabs", layer: "credentials", target: `agent:${name}`, status: "fail", message: `Convai agent ${id} not found (404) — stale secret or deleted agent`, detail: { agent_id: id } });
+      } else if (r.status === 401 || r.status === 403) {
+        out.push({ provider: "elevenlabs", layer: "credentials", target: `agent:${name}`, status: "fail", message: `Convai agent ${id} fetch unauthorized (HTTP ${r.status})`, detail: { agent_id: id } });
+      } else if (r.ok) {
+        const j = await r.json().catch(() => ({}));
+        out.push({ provider: "elevenlabs", layer: "credentials", target: `agent:${name}`, status: "pass", message: `Convai agent ${id} valid (${j?.name || "unnamed"})`, detail: { agent_id: id, name: j?.name } });
+      } else {
+        out.push({ provider: "elevenlabs", layer: "credentials", target: `agent:${name}`, status: "warn", message: `Convai agent ${id} fetch HTTP ${r.status}`, detail: { agent_id: id, http_status: r.status } });
+      }
+    } catch (e) {
+      out.push({ provider: "elevenlabs", layer: "credentials", target: `agent:${name}`, status: "warn", message: `Could not verify agent ${id}: ${(e as Error).message}`, detail: { agent_id: id } });
+    }
+  }
+  return out;
+}
+
+async function checkElevenLabsPhoneNumbers(): Promise<Result[]> {
+  const out: Result[] = [];
+  if (!ELEVENLABS_API_KEY) return [];
+  try {
+    const r = await el("/v1/convai/phone-numbers");
+    if (r.status === 401 || r.status === 403) {
+      return [{ provider: "elevenlabs", layer: "webhook_config", target: "elevenlabs_phone_numbers", status: "fail", message: `Phone-number list unauthorized (HTTP ${r.status})` }];
+    }
+    if (!r.ok) {
+      return [{ provider: "elevenlabs", layer: "webhook_config", target: "elevenlabs_phone_numbers", status: "warn", message: `Phone-number list returned HTTP ${r.status}` }];
+    }
+    const j = await r.json();
+    const nums = j?.phone_numbers || j || [];
+    if (!Array.isArray(nums) || nums.length === 0) {
+      out.push({ provider: "elevenlabs", layer: "webhook_config", target: "elevenlabs_phone_numbers", status: "warn", message: "No Convai phone numbers registered (no inbound EL answering)" });
+      return out;
+    }
+    for (const n of nums) {
+      const num = n.phone_number || n.number || n.id;
+      const assigned = n.assigned_agent?.agent_id || n.agent_id;
+      out.push({
+        provider: "elevenlabs",
+        layer: "webhook_config",
+        target: `convai:${num}`,
+        status: assigned ? "pass" : "warn",
+        message: assigned ? `Registered, agent ${assigned} assigned` : `Registered but no agent assigned — inbound will not answer`,
+        detail: { phone_number: num, agent_id: assigned, provider: n.provider },
+      });
+    }
+  } catch (e) {
+    out.push({ provider: "elevenlabs", layer: "webhook_config", target: "elevenlabs_phone_numbers", status: "fail", message: `EL phone-number check threw: ${(e as Error).message}` });
+  }
+  return out;
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const t0 = Date.now();
   const results: Result[] = [];
-  const layers = [
-    checkCredentials,
-    checkWebhookConfig,
-    checkFunctionDeployment,
-    checkA2P,
-    checkSignatureVerify,
-    checkSyntheticLoop,
+  const layers: Array<{ name: string; provider: string; fn: () => Promise<Result[]> }> = [
+    // Twilio
+    { name: "checkCredentials", provider: "twilio", fn: checkCredentials },
+    { name: "checkWebhookConfig", provider: "twilio", fn: checkWebhookConfig },
+    { name: "checkFunctionDeployment", provider: "twilio", fn: checkFunctionDeployment },
+    { name: "checkA2P", provider: "twilio", fn: checkA2P },
+    { name: "checkSignatureVerify", provider: "twilio", fn: checkSignatureVerify },
+    { name: "checkSyntheticLoop", provider: "twilio", fn: checkSyntheticLoop },
+    // Bland
+    { name: "checkBlandCredentials", provider: "bland", fn: checkBlandCredentials },
+    { name: "checkBlandAgents", provider: "bland", fn: checkBlandAgents },
+    { name: "checkBlandWebhooks", provider: "bland", fn: checkBlandWebhooks },
+    { name: "checkBlandSynthetic", provider: "bland", fn: checkBlandSynthetic },
+    // ElevenLabs
+    { name: "checkElevenLabsCredentials", provider: "elevenlabs", fn: checkElevenLabsCredentials },
+    { name: "checkElevenLabsAgents", provider: "elevenlabs", fn: checkElevenLabsAgents },
+    { name: "checkElevenLabsPhoneNumbers", provider: "elevenlabs", fn: checkElevenLabsPhoneNumbers },
   ];
-  for (const fn of layers) {
+  for (const { name, provider, fn } of layers) {
     try {
       const r = await fn();
+      for (const row of r) if (!row.provider) row.provider = provider;
       results.push(...r);
     } catch (e) {
-      console.error(`[comms-health] layer ${fn.name} threw:`, e);
+      console.error(`[comms-health] layer ${name} threw:`, e);
       results.push({
-        layer: fn.name.replace(/^check/, "").toLowerCase(),
+        provider,
+        layer: name.replace(/^check/, "").toLowerCase().includes("synthetic") ? "synthetic_loop" : "credentials",
         target: "exception",
         status: "fail",
         message: (e as Error).message,
@@ -568,7 +878,7 @@ Deno.serve(async (req) => {
     const supa = sb();
     const rows = results.map((r) => ({
       layer: r.layer,
-      provider: "twilio",
+      provider: r.provider || "twilio",
       target: r.target,
       status: r.status,
       message: r.message || null,
@@ -579,6 +889,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error("[comms-health] persist threw:", e);
   }
+
 
   const failed = results.filter((r) => r.status === "fail");
   const warned = results.filter((r) => r.status === "warn");
