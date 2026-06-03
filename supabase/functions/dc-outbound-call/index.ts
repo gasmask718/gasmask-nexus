@@ -162,14 +162,16 @@ Deno.serve(async (req) => {
     }
 
     if (SUPABASE_URL && SUPABASE_KEY) {
+      const restHeaders = {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      };
+
       await fetch(`${SUPABASE_URL}/rest/v1/dc_call_logs`, {
         method: "POST",
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-        },
+        headers: restHeaders,
         body: JSON.stringify({
           call_sid: result.call_id, // Bland call_id stored where Twilio SID used to be
           to_number,
@@ -183,7 +185,26 @@ Deno.serve(async (req) => {
           status: "initiated",
         }),
       }).catch((e) => console.error("dc_call_logs insert error:", e));
+
+      // Seed a dynasty_ai_calls shell row so the post-call webhook's UPDATE
+      // (transcript / recording / outcome / duration) has a target to land on.
+      await fetch(`${SUPABASE_URL}/rest/v1/dynasty_ai_calls`, {
+        method: "POST",
+        headers: { ...restHeaders, Prefer: "resolution=ignore-duplicates" },
+        body: JSON.stringify({
+          call_id: result.call_id,
+          business_unit: biz,
+          agent_id: agentId || "unknown",
+          direction: "outbound",
+          from_number: fromNumber,
+          to_number,
+          contact_name: lead_name || null,
+          call_started_at: new Date().toISOString(),
+          call_type: "ai_outbound",
+        }),
+      }).catch((e) => console.error("dynasty_ai_calls seed error:", e));
     }
+
 
     return new Response(
       JSON.stringify({
