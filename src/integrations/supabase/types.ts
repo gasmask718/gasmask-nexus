@@ -93167,11 +93167,13 @@ export type Database = {
           default_markup_pct: number | null
           default_partner_cost: number | null
           email: string | null
+          hourly_rate: number | null
           id: string
           invited_at: string | null
           is_active: boolean
           last_active_at: string | null
           name: string
+          notes: string | null
           offers_red_carpet: boolean
           offers_star_ceiling: boolean
           partner_type: string | null
@@ -93206,11 +93208,13 @@ export type Database = {
           default_markup_pct?: number | null
           default_partner_cost?: number | null
           email?: string | null
+          hourly_rate?: number | null
           id?: string
           invited_at?: string | null
           is_active?: boolean
           last_active_at?: string | null
           name: string
+          notes?: string | null
           offers_red_carpet?: boolean
           offers_star_ceiling?: boolean
           partner_type?: string | null
@@ -93245,11 +93249,13 @@ export type Database = {
           default_markup_pct?: number | null
           default_partner_cost?: number | null
           email?: string | null
+          hourly_rate?: number | null
           id?: string
           invited_at?: string | null
           is_active?: boolean
           last_active_at?: string | null
           name?: string
+          notes?: string | null
           offers_red_carpet?: boolean
           offers_star_ceiling?: boolean
           partner_type?: string | null
@@ -117550,11 +117556,13 @@ export type Database = {
           default_markup_pct: number | null
           default_partner_cost: number | null
           email: string | null
+          hourly_rate: number | null
           id: string
           invited_at: string | null
           is_active: boolean
           last_active_at: string | null
           name: string
+          notes: string | null
           offers_red_carpet: boolean
           offers_star_ceiling: boolean
           partner_type: string | null
