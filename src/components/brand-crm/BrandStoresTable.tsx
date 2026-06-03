@@ -24,6 +24,7 @@ import { Search, ExternalLink, ArrowUpDown, ChevronLeft, ChevronRight, Route as 
 import { useNavigate } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
+import { SendToRouteBoardButton } from '@/components/delivery/SendToRouteBoardButton';
 import type { BrandCRMStoreRow } from '@/hooks/useBrandCRMAnalytics';
 import { getBrandDisplayName } from '@/config/brands';
 
@@ -182,6 +183,18 @@ export function BrandStoresTable({ stores, isLoading, brandColor, brandId }: Bra
               filename={`${getBrandDisplayName(brandId)}_Brand_CRM`}
               columns={exportColumns}
               disabled={filtered.length === 0}
+            />
+            <SendToRouteBoardButton
+              signalSource="brand_crm"
+              defaultBusiness={brandId}
+              defaultReason={`${getBrandDisplayName(brandId)} — brand execution priority`}
+              stores={selectedIds.map((id) => ({
+                storeId: id,
+                reason: `${getBrandDisplayName(brandId)} — brand execution priority`,
+                business: brandId,
+                priority: 4,
+              }))}
+              disabled={selectedIds.length === 0}
             />
             <Button
               size="sm"

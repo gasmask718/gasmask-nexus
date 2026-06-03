@@ -259,6 +259,30 @@ Deno.serve(async (req) => {
         .eq("id", session.store_id);
     }
 
+    // 11. Task 19b — Route-board bridge for visit-implying dispositions
+    if (session.store_id && dispConfig?.code) {
+      const code = String(dispConfig.code).toUpperCase();
+      const visitCodes = ["NEEDS_VISIT", "VISIT_REQUESTED", "COLLECT", "COLLECT_PAYMENT", "SEND_REP", "IN_PERSON_FOLLOWUP", "DELIVERY_REQUESTED", "INTERESTED", "ORDER_PLACED"];
+      if (visitCodes.includes(code)) {
+        const { error: promoteErr } = await supabase.rpc("promote_store_to_route_board", {
+          _store_id: session.store_id,
+          _signal_source: "manual_disposition",
+          _reason: notes ? `Disposition ${code}: ${String(notes).slice(0, 200)}` : `Disposition ${code} — needs in-person visit`,
+          _source_ref: session_id,
+          _business: null,
+          _priority: code === "ORDER_PLACED" || code === "DELIVERY_REQUESTED" ? 5 : 4,
+          _estimated_revenue: revenue_amount || null,
+          _urgency: "this_week",
+          _intent_summary: notes || `Manual disposition: ${code}`,
+        });
+        if (promoteErr) {
+          console.warn("[apply-call-disposition] promote_store_to_route_board failed:", promoteErr.message);
+        } else {
+          console.log(`[apply-call-disposition] promoted store ${session.store_id} → route board (manual_disposition: ${code})`);
+        }
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
       disposition: dispConfig.code,

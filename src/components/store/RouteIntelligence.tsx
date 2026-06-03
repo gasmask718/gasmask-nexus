@@ -5,6 +5,7 @@
  * Do not write new logic against routes_generated.
  */
 import { useState } from "react";
+import { SendToRouteBoardButton } from "@/components/delivery/SendToRouteBoardButton";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -159,14 +160,28 @@ export function RouteIntelligence({ storeId, storeName, onAddToRoute }: RouteInt
           </div>
         </div>
 
-        <Button 
-          variant="outline" 
-          className="w-full"
-          onClick={() => onAddToRoute ? onAddToRoute() : setAddToRouteModalOpen(true)}
-        >
-          <Navigation className="mr-2 h-4 w-4" />
-          Add to Route Request
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => onAddToRoute ? onAddToRoute() : setAddToRouteModalOpen(true)}
+          >
+            <Navigation className="mr-2 h-4 w-4" />
+            Add to Route Request
+          </Button>
+          <SendToRouteBoardButton
+            signalSource="ai_score"
+            defaultReason={`${storeName} — flagged by Store Intelligence`}
+            stores={[{
+              storeId,
+              reason: `${storeName} — flagged by Store Intelligence`,
+              priority: 4,
+            }]}
+            variant="secondary"
+            size="default"
+            label="Send to Route Board"
+          />
+        </div>
 
         {!onAddToRoute && (
           <AddToRouteModal
