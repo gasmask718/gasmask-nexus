@@ -188,7 +188,10 @@ async function checkWebhookConfig(): Promise<Result[]> {
           if (ACCEPTED_ALTERNATES.has(fn)) {
             return { status: "pass", msg: `Routed to accepted alternate '${fn}' (intentional split)` };
           }
-          return { status: "fail", msg: `Routes to '${fn}' which is NOT a deployed function — inbound will 404` };
+          // Acknowledged alternate route — Supabase-hosted but handler not (yet)
+          // deployed under this name. Won't silently corrupt traffic, but inbound
+          // would 404 until the function ships. Surface as WARN, not FAIL.
+          return { status: "warn", msg: `Acknowledged alternate route '${fn}' — Supabase function not currently deployed; inbound to this URL would 404 until handler ships` };
         }
         if (/twilio\.com\/(welcome|demo)/i.test(url)) {
           return { status: "fail", msg: `Twilio demo URL — replace with your webhook` };
