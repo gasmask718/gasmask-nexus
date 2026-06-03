@@ -205,6 +205,7 @@ Deno.serve(async (req) => {
         source_business,
       },
       request_data: requestData,
+      record: true,
     });
 
     if (!result.ok) {
