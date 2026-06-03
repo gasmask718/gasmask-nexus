@@ -206,317 +206,49 @@ serve(async (req) => {
           .eq('id', dispatchRequest.booking_id)
       }
 
-      if (partner?.id) {
-        await supabase
-          .from('tt_partner_assets')
-          .update({ is_available: false })
-          .eq('id', partner.id)
+      // ====== UNIFIED FINALIZATION ======
+      // All post-claim side effects (partner asset lock, Stripe capture,
+      // truck-with-decor meeting point, customer SMS, admin SMS, dual decor SMS,
+      // notification log) live in tt-finalize-accept and run for BOTH accept
+      // paths (YES-reply here, link-tap via tt-claim-via-link).
+      let finalizeData: any = null
+      let finalizeError: any = null
+      try {
+        const fr = await supabase.functions.invoke('tt-finalize-accept', {
+          body: {
+            dispatch_id: dispatchRequest.id,
+            trigger_source: 'yes_reply',
+            meeting_point_address,
+            meeting_point_time,
+          },
+        })
+        finalizeData = fr.data
+        finalizeError = fr.error
+      } catch (invErr) {
+        console.error('[tt-partner-response] finalize invoke threw:', invErr)
+        finalizeError = invErr
       }
 
-      // ====== CAPTURE-ON-ACCEPT (auth-then-capture flow) ======
-      // For slingshot/jetski/helicopter the booking was created with a manual-capture
-      // PaymentIntent (payment_hold_status='hold_placed'). On a successful partner
-      // claim, capture the PI now. Surface failures loudly — never silently leave a
-      // held-but-uncaptured booking.
-      try {
-        const { data: bk } = await supabase
-          .from('tt_bookings')
-          .select('id, stripe_payment_intent_id, payment_hold_status, booking_reference, client_phone, total_price')
-          .eq('id', dispatchRequest.booking_id)
-          .maybeSingle()
-
-        if (bk && bk.payment_hold_status === 'hold_placed' && bk.stripe_payment_intent_id) {
-          const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')
-          if (!stripeKey) {
-            console.error('[tt-partner-response] STRIPE_SECRET_KEY missing — cannot capture')
-            await supabase.from('tt_bookings').update({
-              status: 'capture_failed', payment_hold_status: 'capture_failed',
-            }).eq('id', bk.id)
-            await supabase.from('tt_notifications_log').insert({
-              booking_id: bk.id, type: 'capture_failure_alert', channel: 'internal',
-              recipient: 'admin', status: 'sent',
-              message: `Capture failed for ${bk.booking_reference}: STRIPE_SECRET_KEY not configured. Partner already won — manual reconciliation required.`,
-            })
-          } else {
-            const capRes = await fetch(
-              `https://api.stripe.com/v1/payment_intents/${bk.stripe_payment_intent_id}/capture`,
-              {
-                method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${stripeKey}`,
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                },
-              }
-            )
-            const capJson: any = await capRes.json().catch(() => ({}))
-            if (capRes.ok && capJson?.status === 'succeeded') {
-              await supabase.from('tt_bookings').update({
-                status: 'confirmed',
-                payment_status: 'captured',
-                payment_hold_status: 'charged',
-              }).eq('id', bk.id)
-              await supabase.from('tt_notifications_log').insert({
-                booking_id: bk.id, type: 'payment_captured', channel: 'internal',
-                recipient: 'system', status: 'sent',
-                message: `Captured $${bk.total_price} for ${bk.booking_reference} (PI ${bk.stripe_payment_intent_id}) on partner accept.`,
-              })
-            } else {
-              const errMsg = capJson?.error?.message || `HTTP ${capRes.status}`
-              console.error('[tt-partner-response] capture failed:', errMsg, capJson)
-              await supabase.from('tt_bookings').update({
-                status: 'capture_failed', payment_hold_status: 'capture_failed',
-              }).eq('id', bk.id)
-              await supabase.from('tt_notifications_log').insert({
-                booking_id: bk.id, type: 'capture_failure_alert', channel: 'internal',
-                recipient: 'admin', status: 'sent',
-                message: `Capture FAILED for ${bk.booking_reference} (PI ${bk.stripe_payment_intent_id}): ${errMsg}. Partner ${partner?.partner_name || partner?.name} already won — ops must contact customer for new card or release partner.`,
-              })
-              // Also alert ops via SMS
-              const sid = Deno.env.get('TWILIO_ACCOUNT_SID')
-              const tok = Deno.env.get('TWILIO_AUTH_TOKEN')
-              const from = Deno.env.get('TT_PHONE_NUMBER')
-              const ops = Deno.env.get('DAVID_PHONE_NUMBER')
-              if (sid && tok && from && ops) {
-                try {
-                  await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-                    method: 'POST',
-                    headers: { Authorization: `Basic ${btoa(`${sid}:${tok}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({
-                      To: ops, From: from,
-                      Body: `⚠️ CAPTURE FAILED: ${bk.booking_reference} — partner accepted but card capture failed (${errMsg}). Manual action needed.`,
-                    }),
-                  })
-                } catch (_) { /* non-critical */ }
-              }
-            }
-          }
+      if (finalizeError || (finalizeData && finalizeData.success === false)) {
+        console.error('[tt-partner-response] finalize failed:', finalizeError, finalizeData)
+        // Surface meeting-point rollback (422) to caller transparently
+        if (finalizeData && finalizeData.error === 'meeting_point_required') {
+          return new Response(JSON.stringify(finalizeData), {
+            status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
         }
-      } catch (capErr) {
-        console.error('[tt-partner-response] capture pipeline error:', capErr)
+        // For other finalize failures: claim already succeeded so we MUST NOT
+        // tell partner "no" — log loudly, let downstream ops reconcile, and
+        // still confirm the accept to the partner.
         try {
           await supabase.from('tt_notifications_log').insert({
             booking_id: dispatchRequest.booking_id,
-            type: 'capture_failure_alert', channel: 'internal',
-            recipient: 'admin', status: 'sent',
-            message: `Capture pipeline error for ${dispatchRequest.booking_reference}: ${(capErr as any)?.message ?? capErr}`,
+            type: 'finalize_invoke_failed',
+            channel: 'internal', recipient: 'admin', status: 'sent',
+            message: `Finalize invoke failed for ${dispatchRequest.booking_reference} (YES-reply path): ${finalizeError?.message || JSON.stringify(finalizeData)}`,
           })
         } catch (_) {}
       }
-
-
-      // ====== TRUCK-WITH-DECOR MEETING-POINT (cross-row write to decor sibling) ======
-      // When the accepted dispatch is a black-truck pool_style row AND the booking
-      // has decor_addon=true, there is a sibling marketplace_direct row for the
-      // decorator. The driver MUST submit meeting_point_address + meeting_point_time
-      // on accept; we write them to the DECOR row (service_role bypasses RLS).
-      // Failure path: surface needs_review + admin alert, set truck status to
-      // 'accepted_meeting_point_pending', send SMS without meeting point. Driver
-      // is NOT blocked from the job.
-      let decorRow: any = null
-      let meetingPointStatus: 'none' | 'saved' | 'failed' | 'missing' = 'none'
-      const { data: booking } = await supabase
-        .from('tt_bookings').select('id, decor_addon, decor_partner_id')
-        .eq('id', dispatchRequest.booking_id).maybeSingle()
-      const isTruckWithDecor =
-        dispatchRequest.dispatch_pattern === 'pool_style' &&
-        booking?.decor_addon === true &&
-        !!booking?.decor_partner_id
-
-      if (isTruckWithDecor) {
-        const { data: sibling } = await supabase
-          .from('tt_dispatch_requests').select('*')
-          .eq('booking_id', dispatchRequest.booking_id)
-          .eq('dispatch_pattern', 'marketplace_direct')
-          .maybeSingle()
-        decorRow = sibling
-
-        if (!meeting_point_address || !meeting_point_time) {
-          meetingPointStatus = 'missing'
-          // 422 — driver MUST provide meeting point. Roll back truck accept.
-          await supabase.from('tt_dispatch_requests')
-            .update({ status: 'sent', accepted_partner_id: null, accepted_partner_name: null, accepted_at: null })
-            .eq('id', dispatchRequest.id)
-          if (partner?.id) {
-            await supabase.from('tt_partner_assets').update({ is_available: true }).eq('id', partner.id)
-          }
-          return new Response(JSON.stringify({
-            success: false,
-            error: 'meeting_point_required',
-            message: 'This booking includes decor — set meeting point (address + time) to accept.',
-          }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
-
-        if (decorRow) {
-          const { error: mpErr } = await supabase
-            .from('tt_dispatch_requests')
-            .update({
-              meeting_point_address,
-              meeting_point_time,
-              meeting_point_set_at: new Date().toISOString(),
-              meeting_point_set_by: partner?.id ?? null,
-            })
-            .eq('id', decorRow.id)
-          if (mpErr) {
-            console.error('meeting-point write failed:', mpErr.message)
-            meetingPointStatus = 'failed'
-            await supabase.from('tt_dispatch_requests')
-              .update({ status: 'needs_review' })
-              .eq('id', decorRow.id)
-            await supabase.from('tt_dispatch_requests')
-              .update({ status: 'accepted_meeting_point_pending' })
-              .eq('id', dispatchRequest.id)
-            await supabase.from('tt_notifications_log').insert({
-              booking_id: dispatchRequest.booking_id,
-              type: 'truck_decor_meeting_point_failed',
-              channel: 'internal', recipient: 'admin', status: 'sent',
-              message: `Driver accepted ${dispatchRequest.booking_reference} but meeting-point write failed: ${mpErr.message}. Ops must contact driver+decorator.`,
-            })
-          } else {
-            meetingPointStatus = 'saved'
-          }
-        } else {
-          // Decor sibling missing — soft fail, accept proceeds, alert ops
-          meetingPointStatus = 'failed'
-          await supabase.from('tt_dispatch_requests')
-            .update({ status: 'accepted_meeting_point_pending' })
-            .eq('id', dispatchRequest.id)
-          await supabase.from('tt_notifications_log').insert({
-            booking_id: dispatchRequest.booking_id,
-            type: 'truck_decor_sibling_missing',
-            channel: 'internal', recipient: 'admin', status: 'sent',
-            message: `Truck-with-decor booking ${dispatchRequest.booking_reference}: no decor dispatch sibling found. Coordination broken.`,
-          })
-        }
-      }
-
-      const twilioSid = Deno.env.get('TWILIO_ACCOUNT_SID')
-      const twilioToken = Deno.env.get('TWILIO_AUTH_TOKEN')
-      const fromTwilio = Deno.env.get('TT_PHONE_NUMBER')
-
-      if (!fromTwilio) {
-        console.error('[tt-partner-response] TT_PHONE_NUMBER not set, customer confirmation SMS not sent')
-      } else if (twilioSid && twilioToken && dispatchRequest.customer_phone) {
-        const customerMsg =
-          `TopTier: Your ${(dispatchRequest.service_type || '').replace(/_/g, ' ')} booking is confirmed!` +
-          ` ${partner?.partner_name || 'Your provider'} has accepted.` +
-          ` Ref: ${dispatchRequest.booking_reference}.` +
-          ` We'll send details shortly.`
-
-        const resp = await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Basic ${btoa(`${twilioSid}:${twilioToken}`)}`,
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-              To: dispatchRequest.customer_phone,
-              From: fromTwilio,
-              Body: customerMsg,
-            }),
-          }
-        )
-        if (!resp.ok) {
-          console.error('[tt-partner-response] customer SMS failed', resp.status, await resp.text())
-        }
-
-        // ====== ADMIN/FOUNDER OPERATIONAL ALERT ON ACCEPT ======
-        try {
-          const adminPhone = Deno.env.get('DAVID_PHONE_NUMBER')
-          if (adminPhone) {
-            const adminMsg =
-              `TopTier: Partner accepted booking.` +
-              ` Ref: ${dispatchRequest.booking_reference}.` +
-              ` Service: ${(dispatchRequest.service_type || '').replace(/_/g, ' ')}.` +
-              ` Customer: ${dispatchRequest.customer_name || 'N/A'}.` +
-              ` Partner: ${partner?.partner_name || 'N/A'}.`
-            const adminResp = await fetch(
-              `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
-              {
-                method: 'POST',
-                headers: {
-                  Authorization: `Basic ${btoa(`${twilioSid}:${twilioToken}`)}`,
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                  To: adminPhone,
-                  From: fromTwilio,
-                  Body: adminMsg,
-                }),
-              }
-            )
-            if (!adminResp.ok) {
-              console.error('[tt-partner-response] admin SMS failed', adminResp.status, await adminResp.text())
-            } else {
-              await supabase.from('tt_notifications_log').insert({
-                booking_id: dispatchRequest.booking_id,
-                type: 'partner_accepted_admin_alert',
-                channel: 'sms', recipient: adminPhone, status: 'sent',
-                message: adminMsg,
-              })
-            }
-          } else {
-            console.warn('[tt-partner-response] DAVID_PHONE_NUMBER not set, admin alert skipped')
-          }
-        } catch (adminErr) {
-          console.error('[tt-partner-response] admin SMS exception (non-critical):', adminErr)
-        }
-      }
-
-      // ====== DUAL SMS for truck-with-decor when meeting point saved ======
-      if (isTruckWithDecor && meetingPointStatus === 'saved' && twilioSid && twilioToken && fromTwilio) {
-        const mpDate = meeting_point_time
-          ? new Date(meeting_point_time).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
-          : 'TBD'
-        // Driver SMS: pickup + meeting point
-        if (partner?.partner_phone || partner?.phone) {
-          const driverPhone = partner.partner_phone || partner.phone
-          const driverMsg =
-            `TopTier ${dispatchRequest.booking_reference} CONFIRMED.\n` +
-            `Pickup: ${dispatchRequest.pickup_location || 'TBD'}\n` +
-            `Meet decorator first: ${meeting_point_address} @ ${mpDate}\n` +
-            `Decorator will load decor for setup at venue.`
-          try {
-            await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
-              method: 'POST',
-              headers: { Authorization: `Basic ${btoa(`${twilioSid}:${twilioToken}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-              body: new URLSearchParams({ To: driverPhone, From: fromTwilio, Body: driverMsg }),
-            })
-          } catch (e) { console.error('driver SMS failed:', e) }
-        }
-        // Decorator SMS: meeting point + driver name/phone
-        if (decorRow) {
-          const decorPartners = (decorRow.matched_partners || []) as any[]
-          const decorContact = decorPartners[0]
-          const decorPhone = decorContact?.partner_phone || decorContact?.phone
-          if (decorPhone) {
-            const decorMsg =
-              `TopTier ${dispatchRequest.booking_reference}: Driver assigned.\n` +
-              `Meet: ${meeting_point_address} @ ${mpDate}\n` +
-              `Driver: ${partner?.partner_name || 'Driver'} ${partner?.partner_phone || partner?.phone || ''}\n` +
-              `Load decor onto truck at meeting point for venue setup.`
-            try {
-              await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
-                method: 'POST',
-                headers: { Authorization: `Basic ${btoa(`${twilioSid}:${twilioToken}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ To: decorPhone, From: fromTwilio, Body: decorMsg }),
-              })
-            } catch (e) { console.error('decorator SMS failed:', e) }
-          }
-        }
-      }
-
-      try {
-        await supabase.from('tt_notifications_log').insert({
-          booking_id: dispatchRequest.booking_id,
-          type: 'partner_accepted',
-          channel: 'sms',
-          recipient: dispatchRequest.customer_phone || 'customer',
-          message: `Partner ${partner?.partner_name} accepted booking ${dispatchRequest.booking_reference}`,
-          status: 'sent',
-        })
-      } catch (_) { /* non-critical */ }
 
       if (source === 'twilio_webhook') {
         return new Response(
