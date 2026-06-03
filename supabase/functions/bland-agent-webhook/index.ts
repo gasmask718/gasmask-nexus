@@ -362,6 +362,80 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ===== Mirror into Dynasty Connect tables so the calling UI =====
+    // (transcripts / analysis / call history) actually populates.
+    if (call_id) {
+      const business = (meta.business as string) || null;
+      const duration =
+        payload.call_length || payload.duration || payload.call_duration || payload.corrected_duration || null;
+
+      // Upsert dynasty_ai_calls by call_id. UNIQUE(call_id) constraint already exists.
+      const { error: dcErr } = await supabase
+        .from("dynasty_ai_calls")
+        .upsert(
+          {
+            call_id,
+            business_unit: business || "gasmask",
+            agent_id: (meta.agent_id as string) || agent_type || "unknown",
+            direction: "outbound",
+            from_number: payload.from || null,
+            to_number: payload.to || phone_number || null,
+            contact_name: (meta.lead_name as string) || null,
+            transcript: transcript || null,
+            recording_url: recording_url || null,
+            duration_seconds: duration ? Math.round(Number(duration)) : null,
+            outcome: call_outcome || (transcript ? "completed" : null),
+            call_ended_at: new Date().toISOString(),
+          },
+          { onConflict: "call_id" },
+        );
+      if (dcErr) console.error("dynasty_ai_calls upsert error:", dcErr.message);
+
+      // Per-utterance transcript rows for the live transcript pane.
+      if (Array.isArray(payload.transcripts) && payload.transcripts.length) {
+        const transcriptRows = payload.transcripts
+          .map((t: any) => {
+            const who = (t.user || t.speaker || "").toLowerCase();
+            const text = (t.text || "").trim();
+            if (!text) return null;
+            return {
+              call_id,
+              timestamp: t.timestamp || Date.now(),
+              speaker: who.includes("user") || who.includes("caller") || who === "human" ? "prospect" : "ai",
+              text,
+            };
+          })
+          .filter(Boolean);
+        if (transcriptRows.length) {
+          const { error: trErr } = await supabase
+            .from("dynasty_call_transcripts")
+            .insert(transcriptRows);
+          if (trErr) console.error("dynasty_call_transcripts insert error:", trErr.message);
+        }
+      }
+
+      // Kick Claude analysis (writes dynasty_call_analysis row + lead_quality).
+      if (transcript) {
+        supabase.functions
+          .invoke("claude-call-analyzer", {
+            body: {
+              call_id,
+              business_unit: business || "gasmask",
+              transcript,
+              duration_seconds: duration ? Math.round(Number(duration)) : null,
+              contact_name: (meta.lead_name as string) || null,
+              company_name: (meta.company_name as string) || null,
+            },
+          })
+          .then(({ error }: { error: any }) => {
+            if (error) console.error("claude-call-analyzer invoke error:", error);
+          })
+          .catch((e: unknown) => console.error("claude-call-analyzer threw:", e));
+      }
+    }
+
+
+
     return new Response(JSON.stringify({ ok: true }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
