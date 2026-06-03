@@ -832,6 +832,41 @@ async function checkElevenLabsPhoneNumbers(): Promise<Result[]> {
   return out;
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// FEATURE MODES — delegated to comms-feature-prober (runs in its own edge
+// trace so it gets its own outbound-fetch quota; this monitor was hitting
+// the per-trace rate limit when probing 30+ feature endpoints inline).
+// We just invoke the prober and merge its results — it persists its own
+// rows under layer='feature_mode' too, so the dashboard always has data.
+// ════════════════════════════════════════════════════════════════════════════
+async function checkFeatureModes(): Promise<Result[]> {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/comms-feature-prober`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${SERVICE_KEY}` },
+      body: JSON.stringify({ source: "comms-health-monitor" }),
+    });
+    if (!r.ok) {
+      return [{ provider: "twilio", layer: "feature_mode", target: "feature_prober", status: "fail", message: `comms-feature-prober returned HTTP ${r.status}`, detail: { http_status: r.status } }];
+    }
+    const j = await r.json();
+    // Prober already persisted; we still surface results so the immediate
+    // /run response includes the rollup. De-dupe-safe: dashboard reads from
+    // v_comms_health_latest which collapses to one row per (layer,target).
+    return (j.results || []).map((row: any) => ({
+      provider: row.provider,
+      layer: row.layer,
+      target: row.target,
+      status: row.status,
+      message: row.message,
+      detail: row.detail || {},
+    } as Result));
+  } catch (e) {
+    return [{ provider: "twilio", layer: "feature_mode", target: "feature_prober", status: "fail", message: `Could not invoke comms-feature-prober: ${(e as Error).message}` }];
+  }
+}
+
+
 // ────────────────────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -855,6 +890,8 @@ Deno.serve(async (req) => {
     { name: "checkElevenLabsCredentials", provider: "elevenlabs", fn: checkElevenLabsCredentials },
     { name: "checkElevenLabsAgents", provider: "elevenlabs", fn: checkElevenLabsAgents },
     { name: "checkElevenLabsPhoneNumbers", provider: "elevenlabs", fn: checkElevenLabsPhoneNumbers },
+    // Feature/Surface matrix — Calling & Texting Features
+    { name: "checkFeatureModes", provider: "twilio", fn: checkFeatureModes },
   ];
   for (const { name, provider, fn } of layers) {
     try {
