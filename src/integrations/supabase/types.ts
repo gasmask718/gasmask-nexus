@@ -35417,6 +35417,131 @@ export type Database = {
         }
         Relationships: []
       }
+      dc_bulk_batches: {
+        Row: {
+          agent_bland_id: string | null
+          agent_name: string | null
+          agent_type: string | null
+          business: string
+          completed_at: string | null
+          concurrency: number
+          connected_count: number
+          created_at: string
+          created_by: string | null
+          dialing_count: number
+          done_count: number
+          error_summary: Json | null
+          failed_count: number
+          id: string
+          queued_count: number
+          skipped_count: number
+          source: string | null
+          source_metadata: Json | null
+          started_at: string | null
+          status: string
+          total_count: number
+        }
+        Insert: {
+          agent_bland_id?: string | null
+          agent_name?: string | null
+          agent_type?: string | null
+          business: string
+          completed_at?: string | null
+          concurrency?: number
+          connected_count?: number
+          created_at?: string
+          created_by?: string | null
+          dialing_count?: number
+          done_count?: number
+          error_summary?: Json | null
+          failed_count?: number
+          id?: string
+          queued_count?: number
+          skipped_count?: number
+          source?: string | null
+          source_metadata?: Json | null
+          started_at?: string | null
+          status?: string
+          total_count?: number
+        }
+        Update: {
+          agent_bland_id?: string | null
+          agent_name?: string | null
+          agent_type?: string | null
+          business?: string
+          completed_at?: string | null
+          concurrency?: number
+          connected_count?: number
+          created_at?: string
+          created_by?: string | null
+          dialing_count?: number
+          done_count?: number
+          error_summary?: Json | null
+          failed_count?: number
+          id?: string
+          queued_count?: number
+          skipped_count?: number
+          source?: string | null
+          source_metadata?: Json | null
+          started_at?: string | null
+          status?: string
+          total_count?: number
+        }
+        Relationships: []
+      }
+      dc_bulk_targets: {
+        Row: {
+          batch_id: string
+          call_id: string | null
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          lead_name: string | null
+          skip_reason: string | null
+          started_at: string | null
+          status: string
+          store_id: string | null
+          to_number: string
+        }
+        Insert: {
+          batch_id: string
+          call_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lead_name?: string | null
+          skip_reason?: string | null
+          started_at?: string | null
+          status?: string
+          store_id?: string | null
+          to_number: string
+        }
+        Update: {
+          batch_id?: string
+          call_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lead_name?: string | null
+          skip_reason?: string | null
+          started_at?: string | null
+          status?: string
+          store_id?: string | null
+          to_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dc_bulk_targets_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "dc_bulk_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dc_business_pipelines: {
         Row: {
           billing_start_date: string | null
