@@ -162,7 +162,16 @@ Deno.serve(async (req) => {
       agent_id: agentId,
       first_sentence: lead_name ? `Hi, is this ${lead_name}?` : undefined,
       webhook: `${SUPABASE_URL}/functions/v1/bland-agent-webhook`,
-      metadata: { lead_id: lead_id || null, lead_name: lead_name || null, campaign_id: campaign_id || null, business: biz, agent_type: agent_type || null },
+      metadata: {
+        lead_id: lead_id || null,
+        lead_name: lead_name || null,
+        campaign_id: campaign_id || null,
+        business: biz,
+        agent_type: agent_type || null,
+        source_table,
+        source_id,
+        source_business,
+      },
       record: true,
     });
 
@@ -176,16 +185,34 @@ Deno.serve(async (req) => {
       const restHeaders = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" };
       await fetch(`${SUPABASE_URL}/rest/v1/dc_call_logs`, {
         method: "POST", headers: restHeaders,
-        body: JSON.stringify({ call_sid: result.call_id, to_number, from_number: fromNumber, lead_name: lead_name || null, lead_id: lead_id || null, campaign_id: campaign_id || null, direction: "outbound", agent_id: agentId, business: biz, status: "initiated" }),
+        body: JSON.stringify({
+          call_sid: result.call_id, to_number, from_number: fromNumber,
+          lead_name: lead_name || null, lead_id: lead_id || null,
+          campaign_id: campaign_id || null, direction: "outbound",
+          agent_id: agentId, business: biz, status: "initiated",
+          source_table, source_id, source_business,
+        }),
       }).catch((e) => console.error("dc_call_logs insert error:", e));
 
       await fetch(`${SUPABASE_URL}/rest/v1/dynasty_ai_calls`, {
         method: "POST", headers: { ...restHeaders, Prefer: "resolution=ignore-duplicates" },
-        body: JSON.stringify({ call_id: result.call_id, business_unit: biz, agent_id: agentId, direction: "outbound", from_number: fromNumber, to_number, contact_name: lead_name || null, call_started_at: new Date().toISOString(), call_type: "ai_outbound" }),
+        body: JSON.stringify({
+          call_id: result.call_id, business_unit: biz, agent_id: agentId,
+          direction: "outbound", from_number: fromNumber, to_number,
+          contact_name: lead_name || null, call_started_at: new Date().toISOString(),
+          call_type: "ai_outbound",
+          source_table, source_id, source_business,
+          source_lead_id: source_id || null,
+        }),
       }).catch((e) => console.error("dynasty_ai_calls seed error:", e));
     }
 
-    return new Response(JSON.stringify({ success: true, call_id: result.call_id, agent_id: agentId, from: fromNumber, provider: "bland_ai", resolution: { agent_source: agentSource, phone_source: phoneSource } }),
+    return new Response(JSON.stringify({
+      success: true, call_id: result.call_id, agent_id: agentId, from: fromNumber,
+      provider: "bland_ai",
+      resolution: { agent_source: agentSource, phone_source: phoneSource },
+      source: { source_table, source_id, source_business },
+    }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
