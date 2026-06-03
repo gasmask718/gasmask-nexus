@@ -21,6 +21,7 @@ const BUSINESSES = [
 
 export default function DCCommandCenter() {
   const navigate = useNavigate();
+  const [launcherBiz, setLauncherBiz] = useState<{ key: string; name: string; phone?: string } | null>(null);
   const { data: agents = [] } = useQuery({
     queryKey: ['dc-agents-all'],
     queryFn: async () => {
