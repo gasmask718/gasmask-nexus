@@ -17,7 +17,19 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const payload = await req.json();
+    const payload = await req.json().catch(() => null);
+    if (!payload || typeof payload !== "object") {
+      return new Response(
+        JSON.stringify({ error: "Invalid or empty JSON body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!payload.call_id) {
+      return new Response(
+        JSON.stringify({ error: "Missing required field: call_id" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     console.log("Bland.ai webhook received:", JSON.stringify(payload).slice(0, 500));
 
     // Extract business unit from agent metadata
