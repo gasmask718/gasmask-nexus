@@ -13,6 +13,7 @@ const dcNavSections = [
     items: [
       { path: '/dynasty-connect', label: 'Dashboard', icon: BarChart3 },
       { path: '/dynasty-connect/live', label: 'Live Calls', icon: Radio },
+      { path: '/dynasty-connect/finished', label: 'Finished Calls', icon: FileText },
     ],
   },
   {
