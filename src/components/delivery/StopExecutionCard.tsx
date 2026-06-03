@@ -11,6 +11,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { useDeliveryActions } from "@/hooks/useDeliveryExecution";
+import { useCall } from "@/components/communication/CallProvider";
 
 interface StopExecutionCardProps {
   stop: any;
