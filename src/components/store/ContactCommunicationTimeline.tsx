@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Phone, MessageSquare, Bot, Voicemail, ArrowUpRight, ArrowDownLeft,
-  Loader2, ChevronDown, Send, AlertCircle,
+  Loader2, ChevronDown, Send, AlertCircle, Sparkles, FileText,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CallTranscriptViewer } from "@/components/communication/CallTranscriptViewer";
+import { CallAnalysisPanel } from "@/components/communication/CallAnalysisPanel";
 
 interface Props {
   storeId: string;
