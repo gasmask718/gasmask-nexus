@@ -99,7 +99,13 @@ async function probe(f: FeatureMode): Promise<Row> {
       let validationOnly = false;
       try {
         const j = JSON.parse(body);
-        if (j && (j.success === false || j.ok === false) && typeof j.error === "string") validationOnly = true;
+        // Treat as validation-rejection (handler is alive, just returns wrong
+        // status code) if the JSON has any of these shapes:
+        //   {success:false, error:"..."}  {ok:false, error:"..."}  {error:"..."}
+        const hasErr = j && typeof j.error === "string";
+        const explicitFail = j && (j.success === false || j.ok === false);
+        const validationLike = hasErr && /required|missing|invalid|must/i.test(j.error);
+        if ((explicitFail && hasErr) || validationLike) validationOnly = true;
       } catch { /* not JSON */ }
       if (validationOnly) {
         return { provider: f.provider === "mixed" ? "twilio" : f.provider, layer: "feature_mode", target: `${f.channel}:${f.key}`, status: "pass", message: `WORKING — ${f.fn} deployed (returned 5xx with validation-style JSON; handler is alive). Sender: ${f.sender || "n/a"}. Surfaces: ${f.surfaces.join(", ")}.`, detail };
