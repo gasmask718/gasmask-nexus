@@ -1,3 +1,5 @@
+import { useTranslation } from "@/hooks/useTranslation";
+import { BilingualLabel } from "@/components/portal/BilingualLabel";
 /**
  * PRODUCTION KPI CARDS
  * 
@@ -34,6 +36,7 @@ const BRAND_LABELS: Record<string, string> = {
 };
 
 export function ProductionKPICards({ kpis, isLoading, closedBy, closedAt }: ProductionKPICardsProps) {
+  const { t } = useTranslation();
   const getEfficiencyColor = (pct: number) => {
     if (pct >= 90) return 'text-emerald-600';
     if (pct >= 70) return 'text-amber-600';
@@ -80,8 +83,8 @@ export function ProductionKPICards({ kpis, isLoading, closedBy, closedAt }: Prod
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-emerald-800 dark:text-emerald-200">DAY CLOSED</span>
-                  <Badge className="bg-emerald-200 text-emerald-800 text-xs">Locked</Badge>
+                  <span className="font-semibold text-emerald-800 dark:text-emerald-200"><BilingualLabel tKey="production.day_closed" en="DAY CLOSED" /></span>
+                  <Badge className="bg-emerald-200 text-emerald-800 text-xs"><BilingualLabel tKey="production.locked" en="Locked" inline /></Badge>
                 </div>
                 {closedAt && (
                   <p className="text-xs text-emerald-700 dark:text-emerald-300">
@@ -97,11 +100,11 @@ export function ProductionKPICards({ kpis, isLoading, closedBy, closedAt }: Prod
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-amber-800 dark:text-amber-200">DAY OPEN</span>
-                  <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">Editable</Badge>
+                  <span className="font-semibold text-amber-800 dark:text-amber-200"><BilingualLabel tKey="production.day_open" en="DAY OPEN" /></span>
+                  <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs"><BilingualLabel tKey="production.editable" en="Editable" inline /></Badge>
                 </div>
                 <p className="text-xs text-amber-700 dark:text-amber-300">
-                  Batches and outputs can be modified
+                  {t("production.editable_description")}
                 </p>
               </div>
             </>
@@ -118,7 +121,7 @@ export function ProductionKPICards({ kpis, isLoading, closedBy, closedAt }: Prod
             <span className={cn(
               kpis.tubesVariance < 0 ? 'text-red-700' : 'text-amber-700'
             )}>
-              Tube variance: {kpis.tubesVariance > 0 ? '+' : ''}{kpis.tubesVariance}
+              {t("production.tube_variance")}: {kpis.tubesVariance > 0 ? '+' : ''}{kpis.tubesVariance}
             </span>
           </div>
         )}
@@ -131,7 +134,7 @@ export function ProductionKPICards({ kpis, isLoading, closedBy, closedAt }: Prod
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Boxes className="h-4 w-4" />
-              <span className="text-xs font-medium uppercase tracking-wide">Boxes Today</span>
+              <span className="text-xs font-medium uppercase tracking-wide"><BilingualLabel tKey="production.boxes_today" en="Boxes Today" /></span>
             </div>
             <p className="text-3xl font-bold text-primary">{kpis.totalBoxes.toLocaleString()}</p>
           </CardContent>
@@ -142,18 +145,18 @@ export function ProductionKPICards({ kpis, isLoading, closedBy, closedAt }: Prod
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Scale className="h-4 w-4" />
-              <span className="text-xs font-medium uppercase tracking-wide">Tobacco (lbs)</span>
+              <span className="text-xs font-medium uppercase tracking-wide"><BilingualLabel tKey="production.tobacco_lbs" en="Tobacco (lbs)" /></span>
             </div>
             <p className="text-3xl font-bold">{kpis.tobaccoUsed.toFixed(1)}</p>
           </CardContent>
         </Card>
 
-        {/* Efficiency */}
+        {/* <BilingualLabel tKey="production.efficiency" en="Efficiency" /> */}
         <Card className={cn(kpis.isDayClosed && 'opacity-90')}>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Gauge className="h-4 w-4" />
-              <span className="text-xs font-medium uppercase tracking-wide">Efficiency</span>
+              <span className="text-xs font-medium uppercase tracking-wide"><BilingualLabel tKey="production.efficiency" en="Efficiency" /></span>
             </div>
             <p className={cn('text-3xl font-bold', getEfficiencyColor(kpis.efficiencyPct))}>
               {kpis.efficiencyPct}%
@@ -166,7 +169,7 @@ export function ProductionKPICards({ kpis, isLoading, closedBy, closedAt }: Prod
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Users className="h-4 w-4" />
-              <span className="text-xs font-medium uppercase tracking-wide">Workers</span>
+              <span className="text-xs font-medium uppercase tracking-wide"><BilingualLabel tKey="production.workers" en="Workers" /></span>
             </div>
             <p className="text-3xl font-bold">{kpis.workersPresent}</p>
           </CardContent>
@@ -177,12 +180,12 @@ export function ProductionKPICards({ kpis, isLoading, closedBy, closedAt }: Prod
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Wrench className="h-4 w-4" />
-              <span className="text-xs font-medium uppercase tracking-wide">Tools</span>
+              <span className="text-xs font-medium uppercase tracking-wide"><BilingualLabel tKey="production.tools" en="Tools" /></span>
             </div>
             <p className={cn('text-3xl font-bold', getToolsStatusColor(kpis.toolsOperational, kpis.toolsTotal))}>
               {kpis.toolsOperational}/{kpis.toolsTotal}
             </p>
-            <p className="text-xs text-muted-foreground">operational</p>
+            <p className="text-xs text-muted-foreground">{t("production.operational")}</p>
           </CardContent>
         </Card>
 
@@ -191,7 +194,7 @@ export function ProductionKPICards({ kpis, isLoading, closedBy, closedAt }: Prod
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <TrendingUp className="h-4 w-4" />
-              <span className="text-xs font-medium uppercase tracking-wide">Defects</span>
+              <span className="text-xs font-medium uppercase tracking-wide"><BilingualLabel tKey="production.defects" en="Defects" /></span>
             </div>
             <p className={cn(
               'text-3xl font-bold',
@@ -199,7 +202,7 @@ export function ProductionKPICards({ kpis, isLoading, closedBy, closedAt }: Prod
             )}>
               {kpis.defectRate}%
             </p>
-            <p className="text-xs text-muted-foreground">{kpis.totalDefects} total</p>
+            <p className="text-xs text-muted-foreground">{kpis.totalDefects} {t("production.total")}</p>
           </CardContent>
         </Card>
       </div>
@@ -209,7 +212,7 @@ export function ProductionKPICards({ kpis, isLoading, closedBy, closedAt }: Prod
         <Card className={cn(kpis.isDayClosed && 'opacity-90')}>
           <CardContent className="p-4">
             <h4 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wide">
-              Boxes by Brand
+              <BilingualLabel tKey="production.stickers_boxes_by_brand" en="Boxes by Brand" />
             </h4>
             <div className="flex flex-wrap gap-3">
               {Object.entries(kpis.boxesByBrand).map(([brand, count]) => (

@@ -4,6 +4,8 @@
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from '@/hooks/useTranslation';
+import { BilingualLabel } from '@/components/portal/BilingualLabel';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, Factory } from 'lucide-react';
 import { INVENTORY_STATES, type InventoryState } from '@/hooks/useInventoryState';
@@ -15,6 +17,7 @@ interface InventoryPipelineProps {
 }
 
 export function InventoryPipeline({ officeId }: InventoryPipelineProps) {
+  const { t } = useTranslation();
   const { data: batches = [] } = useTodayBatches(officeId);
 
   // Count batches in each state
@@ -34,13 +37,13 @@ export function InventoryPipeline({ officeId }: InventoryPipelineProps) {
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <Factory className="h-4 w-4" />
-          Inventory Pipeline
+          <BilingualLabel tKey="production.inventory_pipeline" en="Inventory Pipeline" />
         </CardTitle>
       </CardHeader>
       <CardContent>
         {totalBatches === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
-            No batches today. Create a batch to see the pipeline.
+            {t("production.no_batches_today_pipeline")}
           </p>
         ) : (
           <div className="flex items-center gap-1 overflow-x-auto pb-2">
@@ -76,7 +79,7 @@ export function InventoryPipeline({ officeId }: InventoryPipelineProps) {
         <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
           <span>🔒</span>
           <span>
-            <strong>Hard Gate:</strong> CRM and distribution can only see batches in "Approved" or "Sent to Office" state.
+            <strong><BilingualLabel tKey="production.hard_gate" en="Hard Gate:" inline /></strong> CRM and distribution can only see batches in "Approved" or "Sent to Office" state.
             Currently <strong>{(stateCounts['approved'] || 0) + (stateCounts['sent_to_office'] || 0)}</strong> batch(es) available.
           </span>
         </div>

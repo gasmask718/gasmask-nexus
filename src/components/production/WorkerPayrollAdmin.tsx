@@ -1,10 +1,12 @@
+import { useTranslation } from "@/hooks/useTranslation";
+import { BilingualLabel } from "@/components/portal/BilingualLabel";
 /**
  * WORKER PAYROLL ADMIN — Command Console
  * 
  * Operational payroll tab for admins/managers:
- * - Sticky action bar with Approve All, Pay Worker, Export
+ * - Sticky action bar with <BilingualLabel tKey="production.approve_all" en="Approve All" inline />, <BilingualLabel tKey="production.pay" en="Pay Worker" inline />, Export
  * - Worker balance table with inline actions
- * - Pay Worker modal with worker selector
+ * - <BilingualLabel tKey="production.pay" en="Pay Worker" inline /> modal with worker selector
  * - Payment audit log
  * - Empty state guidance
  */
@@ -46,6 +48,7 @@ interface WorkerPayrollAdminProps {
 }
 
 export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
+  const { t } = useTranslation();
   const { data: summaries = [], isLoading: summariesLoading } = useWorkerPaySummaries(officeId);
   const { data: earnings = [] } = useOfficeEarnings(officeId);
   const { data: payments = [] } = useOfficePayments(officeId);
@@ -53,12 +56,12 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
   const issuePayment = useIssuePayment();
   const approveEarnings = useApproveEarnings();
 
-  // Pay Worker dialog — can be opened from action bar or inline
+  // <BilingualLabel tKey="production.pay" en="Pay Worker" inline /> dialog — can be opened from action bar or inline
   const [payDialog, setPayDialog] = useState<WorkerPaySummary | null>(null);
   const [payMethod, setPayMethod] = useState('cash');
   const [payNotes, setPayNotes] = useState('');
 
-  // Standalone "Pay Worker" flow (select worker from action bar)
+  // Standalone "<BilingualLabel tKey="production.pay" en="Pay Worker" inline />" flow (select worker from action bar)
   const [showWorkerSelector, setShowWorkerSelector] = useState(false);
   const [selectedPayWorkerId, setSelectedPayWorkerId] = useState('');
 
@@ -156,22 +159,22 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
                 <Wallet className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm">Payroll Console</h3>
+                <h3 className="font-semibold text-sm"><BilingualLabel tKey="production.payroll" en="Payroll Console" /></h3>
                 <p className="text-xs text-muted-foreground">
                   {totalPendingApproval > 0 && (
-                    <span className="text-amber-600 font-medium">{totalPendingApproval} pending approval</span>
+                    <span className="text-amber-600 font-medium">{totalPendingApproval} {t("production.pending_approval")}</span>
                   )}
                   {totalPendingApproval > 0 && totalApprovedReady > 0 && ' · '}
                   {totalApprovedReady > 0 && (
-                    <span className="text-primary font-medium">{payableWorkers.length} ready to pay</span>
+                    <span className="text-primary font-medium">{payableWorkers.length} {t("production.ready_to_pay")}</span>
                   )}
-                  {totalPendingApproval === 0 && totalApprovedReady === 0 && 'All caught up'}
+                  {totalPendingApproval === 0 && totalApprovedReady === 0 && t("production.all_caught_up")}
                 </p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              {/* Approve All Pending */}
+              {/* <BilingualLabel tKey="production.approve_all" en="Approve All" inline /> Pending */}
               <Button
                 size="sm"
                 variant="outline"
@@ -180,10 +183,10 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
                 title={totalPendingApproval === 0 ? 'No pending earnings to approve' : undefined}
               >
                 <CheckCheck className="h-4 w-4 mr-1" />
-                Approve All ({totalPendingApproval})
+                <BilingualLabel tKey="production.approve_all" en="Approve All" inline /> ({totalPendingApproval})
               </Button>
 
-              {/* Pay Worker (opens selector) */}
+              {/* <BilingualLabel tKey="production.pay" en="Pay Worker" inline /> (opens selector) */}
               <Button
                 size="sm"
                 onClick={openPayWorkerSelector}
@@ -191,7 +194,7 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
                 title={payableWorkers.length === 0 ? 'No workers with approved unpaid earnings' : undefined}
               >
                 <CreditCard className="h-4 w-4 mr-1" />
-                Pay Worker
+                <BilingualLabel tKey="production.pay" en="Pay Worker" inline />
               </Button>
 
               {/* Export */}
@@ -210,7 +213,7 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1">
-              <Users className="h-3 w-3" /> Active Workers
+              <Users className="h-3 w-3" /> <BilingualLabel tKey="production.active_workers" en="Active Workers" />
             </CardDescription>
             <CardTitle className="text-2xl">{summaries.length}</CardTitle>
           </CardHeader>
@@ -218,7 +221,7 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
         <Card className={totalUnpaid > 0 ? 'border-amber-300/50' : ''}>
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3" /> Total Unpaid
+              <AlertTriangle className="h-3 w-3" /> <BilingualLabel tKey="production.total_unpaid" en="Total Unpaid" />
             </CardDescription>
             <CardTitle className={`text-2xl ${totalUnpaid > 0 ? 'text-amber-600' : ''}`}>
               ${totalUnpaid.toFixed(2)}
@@ -228,7 +231,7 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1">
-              <CheckCircle className="h-3 w-3" /> Pending Approval
+              <CheckCircle className="h-3 w-3" /> <BilingualLabel tKey="production.pending_approval" en="Pending Approval" />
             </CardDescription>
             <CardTitle className="text-2xl">{totalPendingApproval}</CardTitle>
           </CardHeader>
@@ -239,10 +242,10 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
       <Tabs defaultValue="balances">
         <TabsList>
           <TabsTrigger value="balances" className="flex items-center gap-1">
-            <Wallet className="h-3 w-3" /> Balances
+            <Wallet className="h-3 w-3" /> <BilingualLabel tKey="production.balances" en="Balances" inline />
           </TabsTrigger>
           <TabsTrigger value="audit" className="flex items-center gap-1">
-            <History className="h-3 w-3" /> Payment Log
+            <History className="h-3 w-3" /> <BilingualLabel tKey="production.payment_log" en="Payment Log" inline />
           </TabsTrigger>
         </TabsList>
 
@@ -253,9 +256,9 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" /> Worker Balances
+                    <DollarSign className="h-4 w-4" /> Worker <BilingualLabel tKey="production.balances" en="Balances" inline />
                   </CardTitle>
-                  <CardDescription>Approve pending earnings and issue payments</CardDescription>
+                  <CardDescription>{t("production.worker_balances_description")}</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -265,21 +268,21 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
               ) : summaries.length === 0 ? (
                 <EmptyState
                   icon={Users}
-                  title="No Active Workers"
-                  description="Add workers to this office to start tracking earnings and managing payroll. Payroll actions will appear once workers have completed batches."
+                  title={t("production.no_active_workers")}
+                  description={t("production.no_active_workers_description")}
                 />
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Worker</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Pay Type</TableHead>
-                      <TableHead className="text-right">Earned</TableHead>
-                      <TableHead className="text-right">Paid</TableHead>
-                      <TableHead className="text-right">Unpaid</TableHead>
-                      <TableHead className="text-center">Pending</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>{t("production.worker")}</TableHead>
+                      <TableHead>{t("production.role")}</TableHead>
+                      <TableHead>{t("production.pay_type")}</TableHead>
+                      <TableHead className="text-right">{t("production.earned")}</TableHead>
+                      <TableHead className="text-right">{t("production.paid")}</TableHead>
+                      <TableHead className="text-right">{t("production.unpaid")}</TableHead>
+                      <TableHead className="text-center">{t("production.pending")}</TableHead>
+                      <TableHead>{t("production.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -332,7 +335,7 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
                                 </Button>
                               )}
                               {summary.pending_count === 0 && (summary.approved_count === 0 || summary.unpaid_balance <= 0) && (
-                                <span className="text-xs text-muted-foreground italic">No action needed</span>
+                                <span className="text-xs text-muted-foreground italic">{t("production.no_action_needed")}</span>
                               )}
                             </div>
                           </TableCell>
@@ -353,9 +356,9 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <History className="h-4 w-4" /> Payment Audit Log
+                    <History className="h-4 w-4" /> <BilingualLabel tKey="production.payment_audit_log" en="Payment Audit Log" />
                   </CardTitle>
-                  <CardDescription>Complete history of all payments issued</CardDescription>
+                  <CardDescription>{t("production.payment_audit_log_description")}</CardDescription>
                 </div>
                 <ExportButton
                   data={payments.map(p => ({
@@ -374,19 +377,19 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
               {payments.length === 0 ? (
                 <EmptyState
                   icon={FileText}
-                  title="No Payments Yet"
-                  description="Payment records will appear here after you issue your first worker payout. Use the 'Pay Worker' button above to get started."
+                  title={t("production.no_payments_yet")}
+                  description={`${t("production.payments_empty_prefix")} '${t("production.pay")}'`}
                 />
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Worker</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead>Method</TableHead>
-                      <TableHead>Earnings</TableHead>
-                      <TableHead>Notes</TableHead>
+                      <TableHead>{t("production.date")}</TableHead>
+                      <TableHead>{t("production.worker")}</TableHead>
+                      <TableHead className="text-right">{t("production.amount")}</TableHead>
+                      <TableHead>{t("production.method")}</TableHead>
+                      <TableHead>{t("production.earnings")}</TableHead>
+                      <TableHead>{t("production.notes")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -491,7 +494,7 @@ export function WorkerPayrollAdmin({ officeId }: WorkerPayrollAdminProps) {
                 </span>
               </div>
               <div className="flex justify-between items-center mt-2 text-sm text-muted-foreground">
-                <span>Approved earnings ready to pay</span>
+                <span>Approved earnings {t("production.ready_to_pay")}</span>
                 <span>{payDialog?.approved_count} items</span>
               </div>
             </div>

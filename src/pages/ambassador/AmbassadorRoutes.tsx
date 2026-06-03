@@ -25,6 +25,7 @@ import { format, addDays, startOfWeek, isSameDay } from 'date-fns';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { toast } from 'sonner';
 import { useTranslation } from '@/hooks/useTranslation';
+import { BilingualLabel } from '@/components/portal/BilingualLabel';
 
 export default function AmbassadorRoutes() {
   const { t } = useTranslation();
@@ -54,7 +55,7 @@ export default function AmbassadorRoutes() {
 
   const handleCreateRoute = async () => {
     if (!newRoute.title.trim()) {
-      toast.error('Please enter a route name');
+      toast.error(t('amb.routes.toast_name_required'));
       return;
     }
     try {
@@ -68,7 +69,7 @@ export default function AmbassadorRoutes() {
 
   const handleAddStop = async () => {
     if (!selectedRoute || !selectedStoreId) {
-      toast.error('Please select a store');
+      toast.error(t('amb.routes.toast_store_required'));
       return;
     }
     try {
@@ -149,28 +150,28 @@ export default function AmbassadorRoutes() {
         <Card>
           <CardContent className="py-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">Week of {format(weekStart, 'MMMM d, yyyy')}</h3>
+              <h3 className="font-semibold"><BilingualLabel tKey="amb.routes.week_of" en="Week of" inline /> {format(weekStart, 'MMMM d, yyyy')}</h3>
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => setSelectedDate(addDays(selectedDate, -7))}
                 >
-                  Previous
+                  {t('amb.routes.previous')}
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => setSelectedDate(new Date())}
                 >
-                  Today
+                  {t('amb.routes.today')}
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => setSelectedDate(addDays(selectedDate, 7))}
                 >
-                  Next
+                  {t('amb.routes.next')}
                 </Button>
               </div>
             </div>
@@ -211,19 +212,19 @@ export default function AmbassadorRoutes() {
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <div>
                 <CardTitle className="text-lg">
-                  {todaysRoute?.title || `Route for ${format(selectedDate, 'EEEE, MMM d')}`}
+                  {todaysRoute?.title || `${t('amb.routes.route_for')} ${format(selectedDate, 'EEEE, MMM d')}`}
                 </CardTitle>
                 <CardDescription>
                   {todaysRoute 
-                    ? `${completedStops} of ${totalStops} stops completed`
-                    : 'No route planned for this day'
+                    ? `${completedStops} ${t('amb.routes.stops_of')} ${totalStops} ${t('amb.routes.completed_suffix')}`
+                    : t('amb.routes.no_route_today')
                   }
                 </CardDescription>
               </div>
               {todaysRoute && (
                 <Button onClick={() => openAddStop(todaysRoute)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Stop
+                  <BilingualLabel tKey="amb.routes.add_stop" en="Add Stop" inline />
                 </Button>
               )}
             </CardHeader>
@@ -274,12 +275,12 @@ export default function AmbassadorRoutes() {
                               <Store className="h-4 w-4" />
                             </Button>
                             <Button size="sm" onClick={() => openCompleteStop(stop)}>
-                              Complete
+                              {t('amb.routes.complete')}
                             </Button>
                           </>
                         ) : (
                           <Button variant="ghost" size="sm" onClick={() => navigateToStore(stop.store_id)}>
-                            View Details
+                            {t('amb.routes.view_details')}
                           </Button>
                         )}
                       </div>
@@ -289,9 +290,9 @@ export default function AmbassadorRoutes() {
               ) : todaysRoute ? (
                 <div className="text-center py-8">
                   <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="font-medium mb-2">No Stops Yet</h3>
+                  <h3 className="font-medium mb-2"><BilingualLabel tKey="amb.routes.no_stops_yet" en="No Stops Yet" /></h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Add stores to your route
+                    <BilingualLabel tKey="amb.routes.add_stores_to_route" en="Add stores to your route" />
                   </p>
                   <Button onClick={() => openAddStop(todaysRoute)}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -301,16 +302,16 @@ export default function AmbassadorRoutes() {
               ) : (
                 <div className="text-center py-12">
                   <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="font-medium mb-2">No Route Planned</h3>
+                  <h3 className="font-medium mb-2"><BilingualLabel tKey="amb.routes.no_route_planned" en="No Route Planned" /></h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Create a route for this day to optimize your store visits
+                    <BilingualLabel tKey="amb.routes.create_route_help" en="Create a route for this day to optimize your store visits" />
                   </p>
                   <Button onClick={() => {
                     setNewRoute({ ...newRoute, date: format(selectedDate, 'yyyy-MM-dd') });
                     setCreateRouteOpen(true);
                   }}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Create Route
+                    <BilingualLabel tKey="amb.routes.create_route" en="Create Route" inline />
                   </Button>
                 </div>
               )}
@@ -323,7 +324,7 @@ export default function AmbassadorRoutes() {
               <CardContent className="pt-6">
                 <div className="text-center">
                   <div className="text-4xl font-bold text-primary">{completedStops}/{totalStops}</div>
-                  <p className="text-sm text-muted-foreground">Stops Completed</p>
+                  <p className="text-sm text-muted-foreground"><BilingualLabel tKey="amb.routes.stops_completed" en="Stops Completed" /></p>
                 </div>
                 <div className="mt-4 h-2 bg-muted rounded-full overflow-hidden">
                   <div 
@@ -336,7 +337,7 @@ export default function AmbassadorRoutes() {
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Available Stores</CardTitle>
+                <CardTitle className="text-sm"><BilingualLabel tKey="amb.routes.available_stores" en="Available Stores" /></CardTitle>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[200px]">
@@ -370,7 +371,7 @@ export default function AmbassadorRoutes() {
                       ))
                     ) : (
                       <p className="text-sm text-muted-foreground text-center py-4">
-                        No stores assigned yet
+                        {t('amb.routes.no_stores_assigned')}
                       </p>
                     )}
                   </div>
@@ -383,8 +384,8 @@ export default function AmbassadorRoutes() {
         {/* Route History */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Recent Routes</CardTitle>
-            <CardDescription>Your past routes and visit history</CardDescription>
+            <CardTitle className="text-lg"><BilingualLabel tKey="amb.routes.recent_routes" en="Recent Routes" /></CardTitle>
+            <CardDescription><BilingualLabel tKey="amb.routes.past_routes" en="Your past routes and visit history" /></CardDescription>
           </CardHeader>
           <CardContent>
             {routes.length > 0 ? (
@@ -408,7 +409,7 @@ export default function AmbassadorRoutes() {
                     </div>
                     <div className="flex items-center gap-4">
                       <Badge variant="secondary">
-                        {route.completed_stops}/{route.stops_count} completed
+                        {route.completed_stops}/{route.stops_count} {t('amb.routes.stops_completed_count')}
                       </Badge>
                       <ChevronRight className="h-5 w-5 text-muted-foreground" />
                     </div>
@@ -418,8 +419,8 @@ export default function AmbassadorRoutes() {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <MapPin className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No routes yet</p>
-                <p className="text-sm">Create your first route to get started</p>
+                <p><BilingualLabel tKey="amb.routes.no_routes" en="No routes yet" /></p>
+                <p className="text-sm"><BilingualLabel tKey="amb.routes.first_route" en="Create your first route to get started" /></p>
               </div>
             )}
           </CardContent>
@@ -430,24 +431,24 @@ export default function AmbassadorRoutes() {
       <Dialog open={createRouteOpen} onOpenChange={setCreateRouteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New Route</DialogTitle>
+            <DialogTitle><BilingualLabel tKey="amb.routes.create_new_route" en="Create New Route" /></DialogTitle>
             <DialogDescription>
-              Plan your store visits for the day
+              <BilingualLabel tKey="amb.routes.plan_visits" en="Plan your store visits for the day" />
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Route Name</Label>
+              <Label><BilingualLabel tKey="amb.routes.route_name" en="Route Name" /></Label>
               <Input 
                 value={newRoute.title}
                 onChange={(e) => setNewRoute({ ...newRoute, title: e.target.value })}
-                placeholder="e.g. Manhattan Route, Bronx Stores"
+                placeholder={t('amb.routes.route_name')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Date</Label>
+              <Label><BilingualLabel tKey="amb.routes.date" en="Date" /></Label>
               <Input 
                 type="date"
                 value={newRoute.date}
@@ -457,10 +458,10 @@ export default function AmbassadorRoutes() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateRouteOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setCreateRouteOpen(false)}>{t('amb.routes.cancel')}</Button>
             <Button onClick={handleCreateRoute} disabled={isCreatingRoute}>
               {isCreatingRoute && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Create Route
+              {t('amb.routes.create_route')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -470,18 +471,18 @@ export default function AmbassadorRoutes() {
       <Dialog open={addStopOpen} onOpenChange={setAddStopOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Stop to Route</DialogTitle>
+            <DialogTitle><BilingualLabel tKey="amb.routes.add_stop_to_route" en="Add Stop to Route" /></DialogTitle>
             <DialogDescription>
-              Select a store to add to your route
+              <BilingualLabel tKey="amb.routes.select_store_help" en="Select a store to add to your route" />
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Select Store</Label>
+              <Label><BilingualLabel tKey="amb.routes.select_store" en="Select Store" /></Label>
               <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a store..." />
+                  <SelectValue placeholder={t('amb.routes.choose_store')} />
                 </SelectTrigger>
                 <SelectContent>
                   {stores?.map((store) => (
@@ -495,10 +496,10 @@ export default function AmbassadorRoutes() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddStopOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setAddStopOpen(false)}>{t('amb.routes.cancel')}</Button>
             <Button onClick={handleAddStop} disabled={isAddingStop || !selectedStoreId}>
               {isAddingStop && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Add Stop
+              {t('amb.routes.add_stop')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -508,26 +509,26 @@ export default function AmbassadorRoutes() {
       <Dialog open={completeStopOpen} onOpenChange={setCompleteStopOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Complete Stop</DialogTitle>
+            <DialogTitle><BilingualLabel tKey="amb.routes.complete_stop" en="Complete Stop" /></DialogTitle>
             <DialogDescription>
-              Record the outcome of your visit
+              <BilingualLabel tKey="amb.routes.record_outcome" en="Record the outcome of your visit" />
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Outcome Notes</Label>
+              <Label><BilingualLabel tKey="amb.routes.outcome_notes" en="Outcome Notes" /></Label>
               <Textarea 
                 value={outcomeNotes}
                 onChange={(e) => setOutcomeNotes(e.target.value)}
-                placeholder="What happened during the visit?"
+                placeholder={t('amb.routes.what_happened')}
                 rows={4}
               />
             </div>
           </div>
 
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setCompleteStopOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setCompleteStopOpen(false)}>{t('amb.routes.cancel')}</Button>
             <Button 
               variant="destructive" 
               onClick={() => handleCompleteStop('skipped')}
@@ -535,12 +536,12 @@ export default function AmbassadorRoutes() {
             >
               {isCompletingStop && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               <XCircle className="h-4 w-4 mr-2" />
-              Skip
+              {t('amb.routes.skip')}
             </Button>
             <Button onClick={() => handleCompleteStop('complete')} disabled={isCompletingStop}>
               {isCompletingStop && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               <CheckCircle className="h-4 w-4 mr-2" />
-              Complete
+              {t('amb.routes.complete')}
             </Button>
           </DialogFooter>
         </DialogContent>

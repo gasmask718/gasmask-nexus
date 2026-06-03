@@ -6,6 +6,8 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
+import { BilingualLabel } from '@/components/portal/BilingualLabel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -68,6 +70,7 @@ export function BatchStateControls({
   compact = false,
   batchData,
 }: BatchStateControlsProps) {
+  const { t } = useTranslation();
   const transition = useTransitionBatchState();
   const createSnapshot = useCreateCostSnapshot();
   const config = getStateConfig(currentState);
@@ -132,66 +135,64 @@ export function BatchStateControls({
             disabled={transition.isPending}
           >
             {compact ? <ArrowRight className="h-3 w-3 mr-1" /> : <ArrowRight className="h-4 w-4 mr-1" />}
-            {compact ? nsConfig.label : `Move to ${nsConfig.label}`}
+            {compact ? nsConfig.label : t("production.move_to", { label: nsConfig.label })}
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
-              Approve for Distribution?
+              <BilingualLabel tKey="production.approve_distribution_title" en="Approve for Distribution?" />
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
-                <p>
-                  Approving this batch locks all conversion fields permanently and makes it visible to CRM and distribution.
-                </p>
+                <p>{t("production.approve_distribution_desc")}</p>
 
-                {/* Conversion Summary */}
+                {/* <BilingualLabel tKey="production.conversion_summary" en="Conversion Summary" inline /> */}
                  <div className="rounded-md border bg-muted/30 p-3 space-y-1.5 text-sm">
-                   <p className="font-semibold text-foreground">Conversion Summary <span className="capitalize text-xs text-muted-foreground">({productType})</span></p>
+                   <p className="font-semibold text-foreground"><BilingualLabel tKey="production.conversion_summary" en="Conversion Summary" inline /> <span className="capitalize text-xs text-muted-foreground">({productType})</span></p>
                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-xs">
-                     <span className="text-muted-foreground">Material Input:</span>
+                     <span className="text-muted-foreground"><BilingualLabel tKey="production.material_input" en="Material Input:" inline /></span>
                      <span className="font-medium text-foreground">{lbs} lbs</span>
-                     <span className="text-muted-foreground">{unitLabel} produced:</span>
+                     <span className="text-muted-foreground">{unitLabel} <BilingualLabel tKey="production.produced" en="produced:" inline /></span>
                      <span className="font-medium text-foreground">{outputUnits.toLocaleString()}</span>
-                     <span className="text-muted-foreground">Full Boxes / Remainder:</span>
+                     <span className="text-muted-foreground"><BilingualLabel tKey="production.full_boxes_remainder" en="Full Boxes / Remainder:" inline /></span>
                      <span className="font-medium text-foreground">{boxesFull} boxes + {unitsRemainder} units</span>
-                     <span className="text-muted-foreground">Boxes (equivalent):</span>
+                     <span className="text-muted-foreground"><BilingualLabel tKey="production.boxes_equivalent_label" en="Boxes (equivalent):" inline /></span>
                      <span className="font-medium text-foreground">{boxesEquiv.toFixed(2)}</span>
-                     <span className="text-muted-foreground">LBS / {unitLabel.slice(0, -1)}:</span>
+                     <span className="text-muted-foreground"><BilingualLabel tKey="production.lbs_per" en="LBS /" inline /> {unitLabel.slice(0, -1)}:</span>
                      <span className="font-medium text-foreground">{lbsPerUnit}</span>
-                     <span className="text-muted-foreground">{unitLabel} / LB:</span>
+                     <span className="text-muted-foreground">{unitLabel} / <BilingualLabel tKey="production.lbs" en="LB" inline />:</span>
                      <span className="font-medium text-foreground">{unitsPerLb}</span>
-                     <span className="text-muted-foreground">LBS / box:</span>
+                     <span className="text-muted-foreground"><BilingualLabel tKey="production.lbs_per" en="LBS /" inline /> box:</span>
                      <span className="font-medium text-foreground">{lbsPerBox}</span>
-                     <span className="text-muted-foreground">Boxes / LB:</span>
+                     <span className="text-muted-foreground"><BilingualLabel tKey="production.boxes" en="Boxes" inline /> / LB:</span>
                      <span className="font-medium text-foreground">{boxesPerLb}</span>
                      {changeover > 0 && (
                        <>
-                         <span className="text-muted-foreground">Changeover:</span>
+                         <span className="text-muted-foreground"><BilingualLabel tKey="production.changeover" en="Changeover:" inline /></span>
                          <span className="font-medium text-foreground">{changeover} min</span>
-                         <span className="text-muted-foreground">Gross Time:</span>
+                         <span className="text-muted-foreground"><BilingualLabel tKey="production.gross_time" en="Gross Time:" inline /></span>
                          <span className="font-medium text-foreground">{grossTime} min</span>
-                         <span className="text-muted-foreground">Net Time:</span>
+                         <span className="text-muted-foreground"><BilingualLabel tKey="production.net_time" en="Net Time:" inline /></span>
                          <span className="font-medium text-foreground">{netTime} min</span>
                        </>
                      )}
                      {timePerUnit && (
                        <>
-                         <span className="text-muted-foreground">Net Time / {unitLabel.slice(0, -1)}:</span>
+                         <span className="text-muted-foreground"><BilingualLabel tKey="production.net_time" en="Net Time" inline /> / {unitLabel.slice(0, -1)}:</span>
                          <span className="font-medium text-foreground">{timePerUnit} min</span>
                        </>
                      )}
                      {timePerBox && (
                        <>
-                         <span className="text-muted-foreground">Net Time / box:</span>
+                         <span className="text-muted-foreground"><BilingualLabel tKey="production.net_time" en="Net Time" inline /> / box:</span>
                          <span className="font-medium text-foreground">{timePerBox} min</span>
                        </>
                      )}
                      {wastePct && (
                        <>
-                         <span className="text-muted-foreground">Waste:</span>
+                         <span className="text-muted-foreground"><BilingualLabel tKey="production.waste" en="Waste:" inline /></span>
                          <span className={cn('font-medium', parseFloat(wastePct) > 5 ? 'text-destructive' : 'text-foreground')}>
                            {wastePct}%
                          </span>
@@ -200,32 +201,32 @@ export function BatchStateControls({
                    </div>
                  </div>
 
-                {/* Labor Cost Summary */}
+                {/* <BilingualLabel tKey="production.labor_cost_summary" en="Labor Cost Summary" /> */}
                 {laborModel && (
                   <div className="rounded-md border bg-muted/30 p-3 space-y-1.5 text-sm">
-                    <p className="font-semibold text-foreground">Labor Cost Summary</p>
+                    <p className="font-semibold text-foreground"><BilingualLabel tKey="production.labor_cost_summary" en="Labor Cost Summary" /></p>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-xs">
-                      <span className="text-muted-foreground">Labor Model:</span>
+                      <span className="text-muted-foreground"><BilingualLabel tKey="production.labor_model" en="Labor Model:" inline /></span>
                       <span className="font-medium text-foreground">{LABOR_MODEL_LABELS[laborModel] || laborModel}</span>
-                      <span className="text-muted-foreground">Worker Count:</span>
+                      <span className="text-muted-foreground"><BilingualLabel tKey="production.worker_count" en="Worker Count:" inline /></span>
                       <span className="font-medium text-foreground">{workerCount}</span>
-                      <span className="text-muted-foreground">Selected Workers:</span>
+                      <span className="text-muted-foreground"><BilingualLabel tKey="production.selected_workers" en="Selected Workers:" inline /></span>
                       <span className="font-medium text-foreground">{selectedWorkers.length > 0 ? `${selectedWorkers.length} specific` : 'Generic'}</span>
                       {laborModel === 'hourly' && batchData?.labor_hourly_rate_snapshot && (
                         <>
-                          <span className="text-muted-foreground">Rate Snapshot:</span>
+                          <span className="text-muted-foreground"><BilingualLabel tKey="production.rate_snapshot" en="Rate Snapshot:" inline /></span>
                           <span className="font-medium text-foreground">${batchData.labor_hourly_rate_snapshot.toFixed(2)}/hr</span>
                         </>
                       )}
                       {laborModel === 'per_box' && batchData?.labor_per_box_rate_snapshot && (
                         <>
-                          <span className="text-muted-foreground">Rate Snapshot:</span>
+                          <span className="text-muted-foreground"><BilingualLabel tKey="production.rate_snapshot" en="Rate Snapshot:" inline /></span>
                           <span className="font-medium text-foreground">${batchData.labor_per_box_rate_snapshot.toFixed(2)}/box</span>
                         </>
                       )}
                       {laborModel === 'flat_day' && batchData?.labor_flat_day_rate_snapshot && (
                         <>
-                          <span className="text-muted-foreground">Rate Snapshot:</span>
+                          <span className="text-muted-foreground"><BilingualLabel tKey="production.rate_snapshot" en="Rate Snapshot:" inline /></span>
                           <span className="font-medium text-foreground">${batchData.labor_flat_day_rate_snapshot.toFixed(2)}/day</span>
                         </>
                       )}
@@ -242,7 +243,7 @@ export function BatchStateControls({
                       onCheckedChange={(v) => setConfirmed(v === true)}
                     />
                     <label htmlFor="confirm-conversion" className="text-xs leading-tight cursor-pointer text-foreground">
-                      I confirm material-to-output numbers are accurate and ready for permanent lock.
+                      {t("production.confirm_conversion_lock")}
                     </label>
                   </div>
                   {laborModel && (
@@ -253,7 +254,7 @@ export function BatchStateControls({
                         onCheckedChange={(v) => setLaborConfirmed(v === true)}
                       />
                       <label htmlFor="confirm-labor" className="text-xs leading-tight cursor-pointer text-foreground">
-                        I confirm labor model and rates are correct.
+                        {t("production.confirm_labor_correct")}
                       </label>
                     </div>
                   )}
@@ -269,7 +270,7 @@ export function BatchStateControls({
               className={cn(!bothConfirmed && 'opacity-50 cursor-not-allowed')}
             >
               <CheckCircle className="h-4 w-4 mr-1" />
-              Confirm Approval
+              <BilingualLabel tKey="production.confirm_approval" en="Confirm Approval" inline />
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -288,20 +289,20 @@ export function BatchStateControls({
             disabled={transition.isPending}
           >
             <RotateCcw className="h-3 w-3 mr-1" />
-            Reopen Batch
+            <BilingualLabel tKey="production.reopen_batch" en="Reopen Batch" inline />
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <RotateCcw className="h-5 w-5 text-amber-600" />
-              Reopen Completed Batch?
+              <BilingualLabel tKey="production.reopen_batch_title" en="Reopen Completed Batch?" />
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
-                <p>This will revert the batch to <strong>In Production</strong>. A reason is required and will be logged.</p>
+                <p>{t("production.reopen_batch_desc")}</p>
                 <div className="grid gap-2">
-                  <Label className="text-xs">Reason for reopening *</Label>
+                  <Label className="text-xs"><BilingualLabel tKey="production.reopen_reason_req" en="Reason for reopening *" /></Label>
                   <Input
                     value={reopenReason}
                     onChange={e => setReopenReason(e.target.value)}
@@ -320,7 +321,7 @@ export function BatchStateControls({
               className={cn(reopenReason.length < 5 && 'opacity-50 cursor-not-allowed')}
             >
               <RotateCcw className="h-4 w-4 mr-1" />
-              Confirm Reopen
+              <BilingualLabel tKey="production.confirm_reopen" en="Confirm Reopen" inline />
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -343,7 +344,7 @@ export function BatchStateControls({
         disabled={transition.isPending}
       >
         {compact ? <ArrowRight className="h-3 w-3 mr-1" /> : <ArrowRight className="h-4 w-4 mr-1" />}
-        {compact ? nsConfig.label : `Move to ${nsConfig.label}`}
+        {compact ? nsConfig.label : t("production.move_to", { label: nsConfig.label })}
       </Button>
     );
   };
@@ -358,7 +359,7 @@ export function BatchStateControls({
         {nextStates.length === 0 && (
           <span className="text-xs text-muted-foreground flex items-center gap-1">
             <Lock className="h-3 w-3" />
-            Final state
+            <BilingualLabel tKey="production.final_state" en="Final state" inline />
           </span>
         )}
       </div>
@@ -368,21 +369,21 @@ export function BatchStateControls({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">State:</span>
+        <span className="text-sm text-muted-foreground"><BilingualLabel tKey="production.state" en="State:" inline /></span>
         <Badge className={cn('border', config.color)}>
           {config.icon} {config.label}
         </Badge>
       </div>
       {nextStates.length > 0 && (
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Next:</span>
+          <span className="text-sm text-muted-foreground"><BilingualLabel tKey="production.next" en="Next:" inline /></span>
           {nextStates.map(renderButton)}
         </div>
       )}
       {nextStates.length === 0 && (
         <p className="text-xs text-muted-foreground flex items-center gap-1">
           <Lock className="h-3 w-3" />
-          This batch has reached its final distribution state.
+          {t("production.final_state_desc")}
         </p>
       )}
     </div>

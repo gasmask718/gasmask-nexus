@@ -1,3 +1,5 @@
+import { useTranslation } from "@/hooks/useTranslation";
+import { BilingualLabel } from "@/components/portal/BilingualLabel";
 /**
  * DAILY PRODUCTION COMMAND VIEW
  * 
@@ -105,6 +107,7 @@ const TREND_ICONS = {
 };
 
 export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandViewProps) {
+  const { t } = useTranslation();
   const today = new Date();
   const { data: profiles = [], isLoading: profilesLoading } = useWorkerSkillProfiles(officeId);
   const { data: workers = [], isLoading: workersLoading } = useProductionWorkers(officeId);
@@ -303,7 +306,7 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* Scenario Mode Banner */}
+        {/* <BilingualLabel tKey="production.scenario_mode" en="Scenario Mode" inline /> Banner */}
         {scenario.isScenarioMode && (
           <ScenarioBanner onExit={scenario.exitScenarioMode} />
         )}
@@ -313,7 +316,7 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
           <div>
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Activity className="h-6 w-6 text-primary" />
-              Daily Production Command
+              <BilingualLabel tKey="production.command" en="Daily Production Command" />
             </h2>
             <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
               <Clock className="h-4 w-4" />
@@ -321,7 +324,7 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
               {!scenario.isScenarioMode && (
                 <Badge variant="outline" className="ml-2 text-xs">
                   <Info className="h-3 w-3 mr-1" />
-                  Live View
+                  <BilingualLabel tKey="production.live_view" en="Live View" inline />
                 </Badge>
               )}
             </p>
@@ -337,7 +340,7 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
         {!scenario.isScenarioMode && (
           <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 flex items-center gap-2">
             <Shield className="h-4 w-4" />
-            Metrics are rolling 7-day indicators for operational planning, not disciplinary decisions.
+            {t("production.metrics_notice")}
           </div>
         )}
 
@@ -389,7 +392,7 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
           <>
             {/* Main Stats Grid */}
         <div className="grid md:grid-cols-4 gap-4">
-          {/* Workers Present */}
+          {/* <BilingualLabel tKey="production.workers_present" en="Workers Present" /> */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -398,7 +401,7 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
                 </div>
                 <div>
                   <p className="text-3xl font-bold">{presentWorkerIds.length}</p>
-                  <p className="text-sm text-muted-foreground">Workers Present</p>
+                  <p className="text-sm text-muted-foreground"><BilingualLabel tKey="production.workers_present" en="Workers Present" /></p>
                 </div>
               </div>
             </CardContent>
@@ -415,7 +418,7 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
                   <p className="text-3xl font-bold">
                     {throughputMetrics.totalCapacity.toFixed(1)}
                   </p>
-                  <p className="text-sm text-muted-foreground">Boxes/Hour Capacity</p>
+                  <p className="text-sm text-muted-foreground"><BilingualLabel tKey="production.boxes_per_hour" en="Boxes/Hour Capacity" /></p>
                 </div>
               </div>
             </CardContent>
@@ -430,7 +433,7 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
                 </div>
                 <div>
                   <p className="text-3xl font-bold">{throughputMetrics.totalBoxesToday}</p>
-                  <p className="text-sm text-muted-foreground">Boxes Today</p>
+                  <p className="text-sm text-muted-foreground"><BilingualLabel tKey="production.boxes_today" en="Boxes Today" /></p>
                 </div>
               </div>
             </CardContent>
@@ -458,7 +461,7 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
                     {throughputMetrics.minutesToComplete}m
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    to complete {targetBoxes - throughputMetrics.totalBoxesToday} remaining
+                    {t("production.to_complete_remaining", { count: targetBoxes - throughputMetrics.totalBoxesToday })}
                   </p>
                 </div>
               </div>
@@ -471,7 +474,7 @@ export function DailyCommandView({ officeId, targetBoxes = 100 }: DailyCommandVi
           <CardContent className="pt-6">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="font-medium">Daily Target Progress</span>
+                <span className="font-medium"><BilingualLabel tKey="production.daily_target_progress" en="Daily Target Progress" /></span>
                 <span className="text-muted-foreground">
                   {throughputMetrics.totalBoxesToday} / {targetBoxes} boxes
                 </span>

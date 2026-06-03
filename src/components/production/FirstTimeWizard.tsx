@@ -6,6 +6,8 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
+import { BilingualLabel } from '@/components/portal/BilingualLabel';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +42,7 @@ interface WizardStep {
   action?: string;
 }
 
-export function FirstTimeWizard({ 
+export function FirstTimeWizard({
   officeId, 
   officeName, 
   hasBatch, 
@@ -48,32 +50,33 @@ export function FirstTimeWizard({
   isClosed,
   onDismiss 
 }: FirstTimeWizardProps) {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps: WizardStep[] = [
     {
       id: 'batch',
-      title: 'Create Your First Batch',
-      description: 'A batch represents a production run. Click "+ New Batch" in the Batches tab to create one.',
+      title: t('production.wizard.step1_title'),
+      description: t('production.wizard.step1_desc'),
       icon: <Boxes className="h-5 w-5" />,
       completed: hasBatch,
-      action: 'Go to Batches tab and click "+ New Batch"',
+      action: t('production.wizard.step1_action'),
     },
     {
       id: 'output',
-      title: 'Enter Today\'s Output',
-      description: 'Record the boxes completed, tubes used, and any defects for your batch.',
+      title: t('production.wizard.step2_title'),
+      description: t('production.wizard.step2_desc'),
       icon: <FileOutput className="h-5 w-5" />,
       completed: hasOutput,
-      action: 'Click on your batch and enter production numbers',
+      action: t('production.wizard.step2_action'),
     },
     {
       id: 'close',
-      title: 'Close the Day',
-      description: 'Lock all data for the day. This finalizes variance and creates an audit record.',
+      title: t('production.wizard.step3_title'),
+      description: t('production.wizard.step3_desc'),
       icon: <Lock className="h-5 w-5" />,
       completed: isClosed,
-      action: 'Click "Close Day" in the right panel',
+      action: t('production.wizard.step3_action'),
     },
   ];
 
@@ -97,14 +100,14 @@ export function FirstTimeWizard({
             <GraduationCap className="h-8 w-8 text-emerald-600" />
           </div>
           <h3 className="text-xl font-bold text-emerald-800 dark:text-emerald-200 mb-2">
-            Training Complete! 🎉
+            <BilingualLabel tKey="production.training_complete" en="Training Complete! 🎉" />
           </h3>
           <p className="text-emerald-700 dark:text-emerald-300 mb-4">
-            You've successfully completed your first production day at {officeName}.
-            You're now ready to run this office independently.
+            {t("production.training_complete_desc", { officeName })}
+            
           </p>
           <Button onClick={onDismiss} className="bg-emerald-600 hover:bg-emerald-700">
-            Start Managing Production
+            <BilingualLabel tKey="production.start_managing" en="Start Managing Production" inline />
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardContent>
@@ -121,12 +124,12 @@ export function FirstTimeWizard({
               <Sparkles className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-lg">Welcome to {officeName}</CardTitle>
-              <CardDescription>Complete these steps to finish your training</CardDescription>
+              <CardTitle className="text-lg"><BilingualLabel tKey="production.welcome_to" en={`Welcome to ${officeName}`} /></CardTitle>
+              <CardDescription>{t("production.complete_training_steps")}</CardDescription>
             </div>
           </div>
           <Badge variant="outline" className="text-primary">
-            {completedCount} of {steps.length} complete
+            {t("production.steps_complete", { count: completedCount, total: steps.length })}
           </Badge>
         </div>
       </CardHeader>
@@ -134,7 +137,7 @@ export function FirstTimeWizard({
         {/* Progress Bar */}
         <div className="space-y-1">
           <Progress value={progressPct} className="h-2" />
-          <p className="text-xs text-muted-foreground text-right">{Math.round(progressPct)}% complete</p>
+          <p className="text-xs text-muted-foreground text-right">{Math.round(progressPct)}{t("production.pct_complete")}</p>
         </div>
 
         {/* Steps */}
@@ -177,7 +180,7 @@ export function FirstTimeWizard({
                       {step.title}
                     </h4>
                     {isPast && (
-                      <Badge className="bg-emerald-100 text-emerald-800 text-xs">Done</Badge>
+                      <Badge className="bg-emerald-100 text-emerald-800 text-xs">{t("production.done")}</Badge>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">{step.description}</p>

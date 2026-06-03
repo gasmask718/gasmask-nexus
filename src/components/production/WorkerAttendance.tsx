@@ -1,3 +1,5 @@
+import { useTranslation } from "@/hooks/useTranslation";
+import { BilingualLabel } from "@/components/portal/BilingualLabel";
 /**
  * WORKER ATTENDANCE COMPONENT
  * 
@@ -28,14 +30,15 @@ interface WorkerAttendanceProps {
   isDayLocked?: boolean;
 }
 
-const SHIFT_OPTIONS = [
-  { value: 'Morning', label: 'Morning (6am-2pm)' },
-  { value: 'Afternoon', label: 'Afternoon (2pm-10pm)' },
-  { value: 'Evening', label: 'Evening (10pm-6am)' },
-  { value: 'Full Day', label: 'Full Day' },
-];
 
 export function WorkerAttendance({ officeId, date, isDayLocked = false }: WorkerAttendanceProps) {
+  const { t } = useTranslation();
+  const SHIFT_OPTIONS = [
+    { value: "Morning", label: `${t("production.shift.morning")} (6am-2pm)` },
+    { value: "Afternoon", label: `${t("production.shift.afternoon")} (2pm-10pm)` },
+    { value: "Evening", label: `${t("production.shift.evening")} (10pm-6am)` },
+    { value: "Full Day", label: t("production.shift.full_day") },
+  ];
   const targetDate = date || new Date();
   const { data: workers = [] } = useProductionWorkers(officeId);
   const { data: attendance = [], isLoading } = useWorkerAttendance(officeId, targetDate);
@@ -77,7 +80,7 @@ export function WorkerAttendance({ officeId, date, isDayLocked = false }: Worker
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Attendance ({attendance.length} checked in)
+            {t("production.attendance")} ({attendance.length} {t("production.status.in_progress")})
           </CardTitle>
           {!isDayLocked && (
             <Button 
@@ -100,10 +103,10 @@ export function WorkerAttendance({ officeId, date, isDayLocked = false }: Worker
           ) : attendance.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No workers checked in today.</p>
+              <p>{t("production.no_workers_checked_in")}</p>
               {!isDayLocked && availableToCheckIn.length > 0 && (
                 <Button variant="link" onClick={() => setShowCheckIn(true)}>
-                  Check in a worker
+                  {t("production.check_in_worker")}
                 </Button>
               )}
             </div>
@@ -183,16 +186,16 @@ export function WorkerAttendance({ officeId, date, isDayLocked = false }: Worker
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <LogIn className="h-5 w-5" />
-              Check In Worker
+              <BilingualLabel tKey="production.check_in_worker" en="Check In Worker" />
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Worker</label>
+              <label className="text-sm font-medium"><BilingualLabel tKey="production.worker" en="Worker" /></label>
               <Select value={selectedWorker} onValueChange={setSelectedWorker}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select worker..." />
+                  <SelectValue placeholder={t("production.select_worker")} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableToCheckIn.map(worker => (
@@ -205,7 +208,7 @@ export function WorkerAttendance({ officeId, date, isDayLocked = false }: Worker
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Shift</label>
+              <label className="text-sm font-medium"><BilingualLabel tKey="production.shift" en="Shift" /></label>
               <Select value={selectedShift} onValueChange={setSelectedShift}>
                 <SelectTrigger>
                   <SelectValue />
