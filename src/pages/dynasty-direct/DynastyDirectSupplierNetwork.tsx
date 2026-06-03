@@ -130,56 +130,57 @@ export default function DynastyDirectSupplierNetwork() {
     const m = map.current;
 
     const apply = () => {
-      // Build per-state counts
+      // Build per-state counts keyed by state NAME (matches public GeoJSON `name` prop)
       const counts: Record<string, number> = {};
-      byState.forEach((list, st) => { counts[st] = list.length; });
-      const matchExpr: any = ['match', ['get', 'STUSPS']];
-      Object.entries(counts).forEach(([st, n]) => {
-        matchExpr.push(st, n);
+      byState.forEach((list, st) => {
+        const entry = Object.entries(STATE_ABBR).find(([, abbr]) => abbr === st);
+        if (!entry) return;
+        const name = entry[0].replace(/\b\w/g, (c) => c.toUpperCase());
+        counts[name] = list.length;
       });
-      matchExpr.push(0);
+      const matchPairs: any[] = [];
+      Object.entries(counts).forEach(([name, n]) => matchPairs.push(name, n));
+      const colorExpr: any = [
+        'interpolate', ['linear'],
+        matchPairs.length
+          ? ['match', ['get', 'name'], ...matchPairs, 0]
+          : ['literal', 0],
+        0, '#f3f4f6',
+        1, '#bfdbfe',
+        3, '#60a5fa',
+        6, '#2563eb',
+        10, '#1e3a8a',
+      ];
 
-      // US states source — Mapbox public vector tileset
+      // Public US-states GeoJSON (PublicaMundi)
       if (!m.getSource('us-states')) {
         m.addSource('us-states', {
-          type: 'vector',
-          url: 'mapbox://mapbox.boundaries-adm1-v3',
+          type: 'geojson',
+          data: 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json',
         });
         m.addLayer({
           id: 'state-fills',
           type: 'fill',
           source: 'us-states',
-          'source-layer': 'boundaries_admin_1',
-          filter: ['==', ['get', 'iso_3166_1'], 'US'],
-          paint: {
-            'fill-color': [
-              'interpolate', ['linear'], matchExpr,
-              0, '#f3f4f6',
-              1, '#bfdbfe',
-              3, '#60a5fa',
-              6, '#2563eb',
-              10, '#1e3a8a',
-            ],
-            'fill-opacity': 0.7,
-            'fill-outline-color': '#1f2937',
-          },
+          paint: { 'fill-color': colorExpr, 'fill-opacity': 0.7 },
+        });
+        m.addLayer({
+          id: 'state-borders',
+          type: 'line',
+          source: 'us-states',
+          paint: { 'line-color': '#1f2937', 'line-width': 0.5 },
         });
         m.on('click', 'state-fills', (e) => {
           const f = e.features?.[0] as any;
-          const st = f?.properties?.iso_3166_2?.split('-')?.[1] || f?.properties?.unit_code;
-          if (st) setSelectedState(st);
+          const name = f?.properties?.name as string | undefined;
+          if (!name) return;
+          const abbr = STATE_ABBR[name.toLowerCase()];
+          if (abbr) setSelectedState(abbr);
         });
         m.on('mouseenter', 'state-fills', () => { m.getCanvas().style.cursor = 'pointer'; });
         m.on('mouseleave', 'state-fills', () => { m.getCanvas().style.cursor = ''; });
       } else {
-        m.setPaintProperty('state-fills', 'fill-color', [
-          'interpolate', ['linear'], matchExpr,
-          0, '#f3f4f6',
-          1, '#bfdbfe',
-          3, '#60a5fa',
-          6, '#2563eb',
-          10, '#1e3a8a',
-        ]);
+        m.setPaintProperty('state-fills', 'fill-color', colorExpr);
       }
 
       // Markers for geocoded suppliers
