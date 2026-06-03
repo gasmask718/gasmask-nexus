@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, Brain, Zap, Building2, Music, Sparkles, Shield, Wrench } from 'lucide-react';
+import { Phone, Brain, Zap, Building2, Music, Sparkles, Shield, Wrench, Rocket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { OutreachLauncherDialog } from '@/components/dynasty-connect/OutreachLauncherDialog';
 
 const BUSINESSES = [
   { key: 'gasmask', name: 'GasMask / Hot Mama', icon: Building2, color: 'bg-green-500', phoneDefault: '+18484004179', agents: ['Sales', 'Follow-up', 'Reactivation'], isLive: true },
