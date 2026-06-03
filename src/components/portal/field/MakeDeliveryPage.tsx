@@ -382,6 +382,9 @@ export function MakeDeliveryPage({ portalType }: MakeDeliveryPageProps) {
       {/* Per-stop intelligence cards (Step 7) */}
       <DeliveryStopIntelligenceCards storeId={stop.store_id} routeStopId={stop.id} />
 
+      {/* Number-verification push: confirm working contact numbers in person */}
+      <FieldVerifyContactsCard storeId={stop.store_id} storeName={stop.store_name} />
+
       {/* Delivery Task Checklist — shown after arrival */}
       {stop.status !== 'pending' && (
         <>
