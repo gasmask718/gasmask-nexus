@@ -6,6 +6,8 @@
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from '@/hooks/useTranslation';
+import { BilingualLabel } from '@/components/portal/BilingualLabel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
@@ -41,6 +43,7 @@ interface DailyChecklistProps {
 }
 
 export function DailyChecklist({
+  const { t } = useTranslation();
   hasBatch,
   hasOutput,
   hasVarianceReview,
@@ -53,26 +56,26 @@ export function DailyChecklist({
   const items: ChecklistItem[] = [
     {
       id: 'batch',
-      label: 'Batch created',
-      description: 'At least one production batch exists',
+      label: t('production.checklist.batch_created'),
+      description: t('production.checklist.batch_created_desc'),
       icon: <Boxes className="h-4 w-4" />,
       completed: hasBatch,
       required: true,
     },
     {
       id: 'output',
-      label: 'Output entered',
-      description: 'Production numbers have been recorded',
+      label: t('production.checklist.output_entered'),
+      description: t('production.checklist.output_entered_desc'),
       icon: <FileOutput className="h-4 w-4" />,
       completed: hasOutput,
       required: true,
     },
     {
       id: 'variance',
-      label: 'Variance reviewed',
+      label: t('production.checklist.variance_reviewed'),
       description: varianceAmount !== 0 
-        ? `Variance of ${varianceAmount > 0 ? '+' : ''}${varianceAmount} acknowledged`
-        : 'No variance to review',
+        ? t('production.checklist.variance_acknowledged', { amount: (varianceAmount > 0 ? '+' : '') + varianceAmount })
+        : t('production.checklist.no_variance_to_review'),
       icon: <Scale className="h-4 w-4" />,
       completed: hasVarianceReview || varianceAmount === 0,
       required: varianceAmount !== 0,
@@ -95,9 +98,9 @@ export function DailyChecklist({
               <Lock className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <h4 className="font-semibold text-emerald-800 dark:text-emerald-200">Day Closed</h4>
+              <h4 className="font-semibold text-emerald-800 dark:text-emerald-200"><BilingualLabel tKey="production.day_closed" en="Day Closed" /></h4>
               <p className="text-sm text-emerald-700 dark:text-emerald-300">
-                All data is locked and finalized
+                {t("production.day_closed_desc")}
               </p>
             </div>
           </div>
@@ -112,7 +115,7 @@ export function DailyChecklist({
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <ClipboardCheck className="h-4 w-4" />
-            Daily Checklist
+            <BilingualLabel tKey="production.daily_checklist" en="Daily Checklist" />
           </CardTitle>
           <Badge variant={allRequiredComplete ? 'default' : 'secondary'}>
             {completedCount}/{items.length}
@@ -150,7 +153,7 @@ export function DailyChecklist({
                   {item.label}
                 </span>
                 {item.required && !item.completed && (
-                  <Badge variant="outline" className="text-xs">Required</Badge>
+                  <Badge variant="outline" className="text-xs">{t("production.required")}</Badge>
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
@@ -164,10 +167,10 @@ export function DailyChecklist({
             <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                Zero boxes recorded
+                <BilingualLabel tKey="production.zero_boxes_recorded" en="Zero boxes recorded" />
               </p>
               <p className="text-xs text-amber-700 dark:text-amber-300">
-                Are you sure no production occurred today? This will be logged.
+                {t("production.zero_boxes_recorded_desc")}
               </p>
             </div>
           </div>
@@ -181,12 +184,12 @@ export function DailyChecklist({
           variant={allRequiredComplete ? 'default' : 'secondary'}
         >
           <Lock className="h-4 w-4 mr-2" />
-          {isClosing ? 'Closing Day...' : 'Close Day'}
+          {isClosing ? t("production.closing_day") : t("production.close_day")}
         </Button>
 
         {!allRequiredComplete && (
           <p className="text-xs text-center text-muted-foreground">
-            Complete all required items before closing
+            {t("production.complete_required_before_closing")}
           </p>
         )}
       </CardContent>
