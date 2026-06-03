@@ -25,6 +25,8 @@ export interface PlaceBlandCallOptions {
   first_sentence?: string;
   webhook?: string; // post-call webhook
   metadata?: Record<string, unknown>;
+  /** Pre-call context variables injected into the Bland prompt (e.g. display_name, company, recent_calls). */
+  request_data?: Record<string, unknown>;
   record?: boolean;
   answered_by_enabled?: boolean;
 }
