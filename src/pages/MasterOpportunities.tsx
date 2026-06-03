@@ -65,6 +65,7 @@ import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import { toast } from 'sonner';
+import { useCall } from '@/components/communication/CallProvider';
 
 type MainTab = 'signals' | 'opportunities' | 'messaging' | 'dialer' | 'visits' | 'ready-close' | 'ai-opps';
 type SignalTab = 'all' | 'needs_order' | 'bring_samples' | 'starter_kit' | 'switch_tubes' | 'interested' | 'not_interested';
