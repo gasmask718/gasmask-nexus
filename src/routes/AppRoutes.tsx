@@ -739,6 +739,10 @@ const ProductConversions = lazy(() => import('@/pages/os/ProductConversions'));
 const LegacyInvoiceRepair = lazy(() => import('@/pages/admin/LegacyInvoiceRepair'));
 const HistoricalImportReview = lazy(() => import('@/pages/admin/HistoricalImportReview'));
 const DynastyDirectOps = lazy(() => import('@/pages/admin/DynastyDirectOps'));
+// Dynasty Direct Hub — Sprint 2
+const DynastyDirectHubHome = lazy(() => import('@/pages/dynasty-direct/DynastyDirectHubHome'));
+const DynastyDirectOrders = lazy(() => import('@/pages/dynasty-direct/DynastyDirectOrders'));
+const DynastyDirectSupplierNetwork = lazy(() => import('@/pages/dynasty-direct/DynastyDirectSupplierNetwork'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
 const OSLayout = lazy(() => import('@/pages/os/OSLayout'));
 const StoreInventoryPage = lazy(() => import('@/pages/os/inventory/StoreInventoryPage'));
@@ -1842,6 +1846,44 @@ export default function AppRoutes() {
             </RequireRole>
           }
         />
+
+        {/* ═══════════════════════════════════════════════════════════════════════════ */}
+        {/* DYNASTY DIRECT HUB — Sprint 2 (unified shell for all DD surfaces)          */}
+        {/* ═══════════════════════════════════════════════════════════════════════════ */}
+        <Route
+          path="/dynasty-direct"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
+              <DynastyDirectHubHome />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/dynasty-direct/orders"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
+              <DynastyDirectOrders />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/dynasty-direct/suppliers/network"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
+              <DynastyDirectSupplierNetwork />
+            </RequireRole>
+          }
+        />
+        {/* Aliases — route DD sub-paths into the existing scattered pages */}
+        <Route path="/dynasty-direct/catalog" element={<MarketplaceAdminPortalPage />} />
+        <Route path="/dynasty-direct/store-storefront" element={<StorePortalPage />} />
+        <Route path="/dynasty-direct/d2c-storefront" element={<Shop />} />
+        <Route path="/dynasty-direct/fulfillment" element={<MarketplaceControlTowerPage />} />
+        <Route path="/dynasty-direct/suppliers/portal" element={<WholesalerPortalPage />} />
+        <Route path="/dynasty-direct/suppliers/inventory" element={<WholesalerPortalPage />} />
+        <Route path="/dynasty-direct/shipping" element={<MarketplaceControlTowerPage />} />
+        <Route path="/dynasty-direct/grabba-bridge" element={<MarketplaceControlTowerPage />} />
+        <Route path="/dynasty-direct/analytics" element={<MarketplaceControlTowerPage />} />
 
         {/* Marketplace Connection Pack - Dev Only, Admin/Owner */}
         <Route

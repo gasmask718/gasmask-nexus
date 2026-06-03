@@ -480,6 +480,25 @@ const DYNASTY_NAVIGATION = {
       { path: '/comm-systems/insights', label: 'Comm Insights', icon: Eye },
     ],
   },
+  dynastyDirect: {
+    id: 'dynasty-direct',
+    name: '🚀 Dynasty Direct Hub',
+    items: [
+      { path: '/dynasty-direct', label: '🏠 DD Home', icon: LayoutDashboard },
+      { path: '/dynasty-direct/catalog', label: '📦 Catalog', icon: Package },
+      { path: '/dynasty-direct/store-storefront', label: '🏪 Store Storefront', icon: Store },
+      { path: '/dynasty-direct/d2c-storefront', label: '🛒 D2C Storefront', icon: ShoppingCart },
+      { path: '/dynasty-direct/orders', label: '📋 Orders', icon: ClipboardList },
+      { path: '/dynasty-direct/fulfillment', label: '🚚 Fulfillment', icon: Truck },
+      { path: '/dynasty-direct/suppliers/network', label: '🗺️ Supplier Network', icon: Map },
+      { path: '/dynasty-direct/suppliers/portal', label: '👥 Supplier Portal', icon: Users },
+      { path: '/dynasty-direct/suppliers/inventory', label: '📊 Inventory', icon: Boxes },
+      { path: '/dynasty-direct/shipping', label: '📮 Shipping', icon: Send },
+      { path: '/dynasty-direct/grabba-bridge', label: '⚡ Grabba Bridge', icon: Zap },
+      { path: '/dynasty-direct/analytics', label: '📈 Analytics', icon: BarChart3 },
+      { path: '/admin/dynasty-direct-ops', label: '⚙️ Ops Console', icon: Settings },
+    ],
+  },
   marketplaces: {
     id: 'marketplaces',
     name: '🛍️ Marketplaces & E-Commerce',
@@ -691,7 +710,8 @@ const Layout = ({ children }: LayoutProps) => {
     'surplus-funds-os', 'dynasty-funding-hub', 'uben-hq', 'real-estate-os', 'solar-os',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
     'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
-    'brandaro-hub', 'dynasty-connect', 'voice-ops', 'global-dashboard', 'portals'
+    'brandaro-hub', 'dynasty-connect', 'voice-ops', 'global-dashboard', 'portals',
+    'dynasty-direct'
   ]);
   
   const currentPath = location.pathname;
@@ -1110,6 +1130,20 @@ const Layout = ({ children }: LayoutProps) => {
           DYNASTY_NAVIGATION.communicationSystems.id,
           DYNASTY_NAVIGATION.communicationSystems.name,
           DYNASTY_NAVIGATION.communicationSystems.items
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🚀 DYNASTY DIRECT HUB — unified DD shell */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-blue-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-blue-400/80 tracking-wider">
+          🚀 Dynasty Direct
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.dynastyDirect.id,
+          DYNASTY_NAVIGATION.dynastyDirect.name,
+          DYNASTY_NAVIGATION.dynastyDirect.items
         )}
       </div>
 
