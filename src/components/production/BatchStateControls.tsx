@@ -42,7 +42,7 @@ const LABOR_MODEL_LABELS: Record<string, string> = {
 
 interface BatchStateControlsProps {
   batchId: string;
-  current<BilingualLabel tKey="production.state" en="State:" inline /> InventoryState;
+  currentState: InventoryState;
   officeId: string;
   compact?: boolean;
   /** Batch data for displaying conversion summary before approval */
@@ -64,7 +64,6 @@ interface BatchStateControlsProps {
 }
 
 export function BatchStateControls({
-  const { t } = useTranslation();
   batchId,
   currentState,
   officeId,
