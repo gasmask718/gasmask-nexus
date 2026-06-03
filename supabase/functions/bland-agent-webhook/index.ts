@@ -144,6 +144,9 @@ Deno.serve(async (req) => {
     // Use upsert by (call_id) where possible to dedupe.
     const { error: insertErr } = await supabase.from("bland_call_logs").insert({
       lead_id, agent_type, call_id, transcript, recording_url, call_outcome, raw_payload: payload,
+      source_table: (meta.source_table as string) || null,
+      source_id: (meta.source_id as string) || null,
+      source_business: (meta.source_business as string) || (meta.business as string) || null,
     });
     if (insertErr && !/duplicate/i.test(insertErr.message)) {
       console.error("bland_call_logs insert error:", insertErr);
