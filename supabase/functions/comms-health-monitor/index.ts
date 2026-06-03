@@ -895,13 +895,11 @@ const FEATURE_MODES: FeatureMode[] = [
 
 async function checkFeatureModes(): Promise<Result[]> {
   const out: Result[] = [];
-  // Probe sequentially in small batches — parallel fetch from a single edge
-  // invocation hits Supabase's per-trace rate limit (~25 concurrent), which
-  // would produce false "BROKEN — Rate limit exceeded" results.
-  const BATCH = 4;
-  for (let i = 0; i < FEATURE_MODES.length; i += BATCH) {
-    const slice = FEATURE_MODES.slice(i, i + BATCH);
-    const rows = await Promise.all(slice.map(async (f) => {
+  // Probe sequentially — parallel fetch from a single edge invocation hits
+  // Supabase's per-trace rate limit (~25 concurrent), which produces false
+  // "BROKEN — Rate limit exceeded" results. Sequential is slower but accurate.
+  for (const f of FEATURE_MODES) {
+    {
       const url = `${SUPABASE_URL}/functions/v1/${f.fn}`;
       let status: "pass" | "warn" | "fail" = "pass";
       let msg = "";
