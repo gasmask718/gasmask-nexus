@@ -76,7 +76,6 @@ export default function GrabbaTextCenter() {
         .from('communication_logs')
         .select(`
           *,
-          contact:people(name),
           store:stores(name)
         `)
         .eq('channel', 'sms')
@@ -251,7 +250,7 @@ export default function GrabbaTextCenter() {
                   <div key={text.id} className="p-3 rounded-lg border border-border/50 bg-muted/30">
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-medium text-sm">
-                        {text.contact?.name || text.store?.name || 'Unknown'}
+                        {(text as any).contact?.name || text.store?.name || 'Unknown'}
                       </p>
                       <div className="flex items-center gap-2">
                         {brandConfig && (

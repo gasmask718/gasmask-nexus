@@ -31076,13 +31076,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "communication_logs_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "people"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "communication_logs_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false

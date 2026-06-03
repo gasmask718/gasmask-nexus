@@ -71,7 +71,6 @@ const TextCenter = () => {
         .from('communication_logs')
         .select(`
           *,
-          contact:people(name),
           store:stores(name)
         `)
         .eq('channel', 'sms')
@@ -244,7 +243,7 @@ const TextCenter = () => {
               >
                 <div className="flex items-center justify-between mb-2">
                   <p className="font-medium text-sm">
-                    {text.contact?.name || text.store?.name || 'Unknown'}
+                    {(text as any).contact?.name || text.store?.name || 'Unknown'}
                   </p>
                   <Badge variant="outline" className="capitalize text-xs">
                     {text.direction}

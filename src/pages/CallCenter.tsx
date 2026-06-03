@@ -59,7 +59,6 @@ const CallCenter = () => {
         .from('communication_logs')
         .select(`
           *,
-          contact:people(name),
           store:stores(name)
         `)
         .eq('follow_up_required', true)
@@ -247,7 +246,7 @@ const CallCenter = () => {
                 className="p-3 rounded-lg border hover:bg-secondary/50 transition-colors"
               >
                 <p className="font-medium text-sm">
-                  {call.contact?.name || call.store?.name || 'Unknown'}
+                  {(call as any).contact?.name || call.store?.name || 'Unknown'}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                   {call.summary}
