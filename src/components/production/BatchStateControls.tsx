@@ -70,6 +70,7 @@ export function BatchStateControls({
   compact = false,
   batchData,
 }: BatchStateControlsProps) {
+  const { t } = useTranslation();
   const transition = useTransitionBatchState();
   const createSnapshot = useCreateCostSnapshot();
   const config = getStateConfig(currentState);
