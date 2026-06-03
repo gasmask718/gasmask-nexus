@@ -323,3 +323,54 @@ export default function NeighborhoodCoverage() {
     </div>
   );
 }
+
+// Coverage-gap funnel writer: loads prospect stores in the neighborhood on demand,
+// then writes them to pending_route_stops via the universal RPC (Task 19b).
+function CoverageSendToRouteBoard({ neighborhood }: { neighborhood: string }) {
+  const [stores, setStores] = useState<Array<{ storeId: string; reason: string; priority: number }>>([]);
+  const [loading, setLoading] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id')
+        .is('deleted_at', null)
+        .eq('approval_status', 'approved')
+        .eq('neighborhood', neighborhood)
+        .eq('status', 'prospect')
+        .limit(500);
+      if (error) throw error;
+      const next = (data || []).map((s: any) => ({
+        storeId: s.id,
+        reason: `Coverage gap — prospect in ${neighborhood}`,
+        priority: 3,
+      }));
+      setStores(next);
+      if (next.length === 0) toast.warning(`No prospect stores in ${neighborhood}`);
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to load coverage gap stores');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (stores.length === 0) {
+    return (
+      <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+        <RouteIcon className="h-3.5 w-3.5 mr-1" />
+        {loading ? 'Loading…' : 'Send Coverage Gap to Route Board'}
+      </Button>
+    );
+  }
+
+  return (
+    <SendToRouteBoardButton
+      signalSource="coverage_gap"
+      defaultReason={`Coverage gap — ${neighborhood}`}
+      stores={stores}
+      size="sm"
+    />
+  );
+}
