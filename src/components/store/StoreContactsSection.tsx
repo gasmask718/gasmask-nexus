@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Phone, MessageSquare, Star, User, Eye, Edit, Trash2 } from 'lucide-react';
+import { Users, Plus, Phone, MessageSquare, Star, User, Eye, Edit, Trash2, History, ChevronDown } from 'lucide-react';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { toast } from 'sonner';
 import { AddContactModal } from './AddContactModal';
@@ -15,6 +15,8 @@ import { useMessage } from '@/components/communication/MessageProvider';
 import { useStoreContactsWithResponsiveness } from '@/hooks/useContactResponsiveness';
 import { ContactResponsivenessBadge } from '@/components/contact/ContactResponsivenessBadge';
 import { ContactLastInteraction } from '@/components/contact/ContactLastInteraction';
+import { ContactCommunicationTimeline } from './ContactCommunicationTimeline';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface StoreContact {
   id: string;
