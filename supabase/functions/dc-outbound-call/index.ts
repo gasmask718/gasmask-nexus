@@ -111,10 +111,11 @@ Deno.serve(async (req) => {
         default: Deno.env.get("ICLEAN_BOOKING_BLAND_AGENT_ID") || "",
       },
       gasmask: {
-        sales: Deno.env.get("DC_SALES_BLAND_AGENT_ID") || "",
-        followup: Deno.env.get("DC_FOLLOWUP_BLAND_AGENT_ID") || "",
-        reactivation: Deno.env.get("DC_REACTIVATION_BLAND_AGENT_ID") || "",
-        default: Deno.env.get("DC_SALES_BLAND_AGENT_ID") || "",
+        sales: Deno.env.get("DC_SALES_AGENT_ID") || "",
+        followup: Deno.env.get("DC_FOLLOWUP_AGENT_ID") || "",
+        reactivation: Deno.env.get("DC_REACTIVATION_AGENT_ID") || "",
+        inbound: Deno.env.get("DC_INBOUND_AGENT_ID") || "",
+        default: Deno.env.get("DC_SALES_AGENT_ID") || "",
       },
     };
 
