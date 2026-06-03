@@ -66,7 +66,9 @@ type Result = {
   status: "pass" | "warn" | "fail";
   message?: string;
   detail?: Record<string, unknown>;
+  provider?: string; // defaults to "twilio" at persist time
 };
+
 
 const sb = () => createClient(SUPABASE_URL, SERVICE_KEY);
 
