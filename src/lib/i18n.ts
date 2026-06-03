@@ -864,7 +864,7 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'production.no_alerts': "No alerts recorded.",
     'production.no_batches_today_pipeline': "No batches today. Create a batch to see the pipeline.",
     'production.no_material_usage': "No material usage recorded yet. Data populates automatically when batches complete.",
-    'production.notes': "Notes",
+    
     'production.paid': "Paid",
     'production.pay_type': "Pay Type",
     'production.pct_complete': "% complete",
@@ -1765,7 +1765,7 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'production.no_alerts': "No se registraron alertas.",
     'production.no_batches_today_pipeline': "No hay lotes hoy. Cree un lote para ver la tuber\u00eda.",
     'production.no_material_usage': "A\u00fan no se ha registrado el uso de material. Los datos se completan autom\u00e1ticamente cuando se terminan los lotes.",
-    'production.notes': "Notas",
+    
     'production.paid': "Pagado",
     'production.pay_type': "Tipo de pago",
     'production.pct_complete': "% completado",
