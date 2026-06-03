@@ -95,7 +95,16 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { to_number, lead_name, lead_id, business, agent_type, campaign_id, agent_id_override } = await req.json();
+    const body = await req.json();
+    const {
+      to_number, lead_name, lead_id, business, agent_type, campaign_id, agent_id_override,
+      source_table: rawSourceTable, source_id: rawSourceId, source_business: rawSourceBusiness,
+      store_id, // legacy from OutreachActions
+    } = body;
+    // Resolve source: explicit > store_id legacy mapping > none
+    const source_table: string | null = rawSourceTable || (store_id ? "store_master" : null);
+    const source_id: string | null = rawSourceId || store_id || lead_id || null;
+    const source_business: string | null = rawSourceBusiness || (business || null);
 
     if (!to_number) {
       return new Response(JSON.stringify({ success: false, error: "to_number is required" }),
@@ -147,13 +156,55 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // ===== Pre-call context pull (Step 5) =====
+    // If we have a source row, hydrate {{display_name}}, {{company}}, {{recent_calls}}
+    // into the Bland prompt so the agent knows who they're talking to + history.
+    let requestData: Record<string, unknown> = { lead_name: lead_name || null };
+    if (source_table && source_id) {
+      try {
+        const ctxUrl = new URL(`${SUPABASE_URL}/functions/v1/bland-context-api`);
+        ctxUrl.searchParams.set("source_table", source_table);
+        ctxUrl.searchParams.set("source_id", source_id);
+        ctxUrl.searchParams.set("api_key", Deno.env.get("BLAND_API_KEY") || "");
+        const ctxRes = await fetch(ctxUrl.toString());
+        if (ctxRes.ok) {
+          const ctx = await ctxRes.json();
+          if (ctx?.matched) {
+            requestData = {
+              ...requestData,
+              display_name: ctx.display_name,
+              company: ctx.company,
+              source_table,
+              source_id,
+              recent_calls_summary: Array.isArray(ctx.recent_calls)
+                ? ctx.recent_calls.map((c: any) => `${c.at?.slice(0,10) || "?"} ${c.outcome || "—"}`).join("; ")
+                : "",
+              details_json: JSON.stringify(ctx.details || {}).slice(0, 800),
+            };
+          }
+        }
+      } catch (e) {
+        console.warn("[dc-outbound-call] context pull failed (non-fatal):", e);
+      }
+    }
+
     const result = await placeBlandCall({
       to: to_number,
       from: fromNumber,
       agent_id: agentId,
       first_sentence: lead_name ? `Hi, is this ${lead_name}?` : undefined,
       webhook: `${SUPABASE_URL}/functions/v1/bland-agent-webhook`,
-      metadata: { lead_id: lead_id || null, lead_name: lead_name || null, campaign_id: campaign_id || null, business: biz, agent_type: agent_type || null },
+      metadata: {
+        lead_id: lead_id || null,
+        lead_name: lead_name || null,
+        campaign_id: campaign_id || null,
+        business: biz,
+        agent_type: agent_type || null,
+        source_table,
+        source_id,
+        source_business,
+      },
+      request_data: requestData,
       record: true,
     });
 
@@ -167,16 +218,34 @@ Deno.serve(async (req) => {
       const restHeaders = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" };
       await fetch(`${SUPABASE_URL}/rest/v1/dc_call_logs`, {
         method: "POST", headers: restHeaders,
-        body: JSON.stringify({ call_sid: result.call_id, to_number, from_number: fromNumber, lead_name: lead_name || null, lead_id: lead_id || null, campaign_id: campaign_id || null, direction: "outbound", agent_id: agentId, business: biz, status: "initiated" }),
+        body: JSON.stringify({
+          call_sid: result.call_id, to_number, from_number: fromNumber,
+          lead_name: lead_name || null, lead_id: lead_id || null,
+          campaign_id: campaign_id || null, direction: "outbound",
+          agent_id: agentId, business: biz, status: "initiated",
+          source_table, source_id, source_business,
+        }),
       }).catch((e) => console.error("dc_call_logs insert error:", e));
 
       await fetch(`${SUPABASE_URL}/rest/v1/dynasty_ai_calls`, {
         method: "POST", headers: { ...restHeaders, Prefer: "resolution=ignore-duplicates" },
-        body: JSON.stringify({ call_id: result.call_id, business_unit: biz, agent_id: agentId, direction: "outbound", from_number: fromNumber, to_number, contact_name: lead_name || null, call_started_at: new Date().toISOString(), call_type: "ai_outbound" }),
+        body: JSON.stringify({
+          call_id: result.call_id, business_unit: biz, agent_id: agentId,
+          direction: "outbound", from_number: fromNumber, to_number,
+          contact_name: lead_name || null, call_started_at: new Date().toISOString(),
+          call_type: "ai_outbound",
+          source_table, source_id, source_business,
+          source_lead_id: source_id || null,
+        }),
       }).catch((e) => console.error("dynasty_ai_calls seed error:", e));
     }
 
-    return new Response(JSON.stringify({ success: true, call_id: result.call_id, agent_id: agentId, from: fromNumber, provider: "bland_ai", resolution: { agent_source: agentSource, phone_source: phoneSource } }),
+    return new Response(JSON.stringify({
+      success: true, call_id: result.call_id, agent_id: agentId, from: fromNumber,
+      provider: "bland_ai",
+      resolution: { agent_source: agentSource, phone_source: phoneSource },
+      source: { source_table, source_id, source_business },
+    }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";

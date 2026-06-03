@@ -46,11 +46,17 @@ export function useUTAIDialer() {
         body: {
           to_number: lead.phone,
           agent_id: agentId,
+          source_table: 'ut_partner_leads',
+          source_id: lead.id,
+          source_business: 'unforgettable_times',
           metadata: {
             brand: 'unforgettable_times',
             lead_id: lead.id,
             business_name: lead.business_name,
             category: lead.category,
+            source_table: 'ut_partner_leads',
+            source_id: lead.id,
+            source_business: 'unforgettable_times',
           },
         },
       });

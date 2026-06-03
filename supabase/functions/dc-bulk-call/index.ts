@@ -95,6 +95,10 @@ async function dialOne(
         agent_type: batch.agent_type || undefined,
         agent_id_override: batch.agent_bland_id || undefined,
         campaign_id: batch.id,
+        // Bidirectional sync: tag every bulk-dialed call with its source row
+        source_table: target.store_id ? "store_master" : null,
+        source_id: target.store_id || null,
+        source_business: batch.business || null,
       }),
     });
     const body = await resp.json().catch(() => ({}));

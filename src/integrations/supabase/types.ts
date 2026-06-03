@@ -10800,6 +10800,9 @@ export type Database = {
           preferred_window: string | null
           raw_payload: Json | null
           recording_url: string | null
+          source_business: string | null
+          source_id: string | null
+          source_table: string | null
           structured_outcome_received_at: string | null
           transcript: string | null
           urgency: string | null
@@ -10818,6 +10821,9 @@ export type Database = {
           preferred_window?: string | null
           raw_payload?: Json | null
           recording_url?: string | null
+          source_business?: string | null
+          source_id?: string | null
+          source_table?: string | null
           structured_outcome_received_at?: string | null
           transcript?: string | null
           urgency?: string | null
@@ -10836,6 +10842,9 @@ export type Database = {
           preferred_window?: string | null
           raw_payload?: Json | null
           recording_url?: string | null
+          source_business?: string | null
+          source_id?: string | null
+          source_table?: string | null
           structured_outcome_received_at?: string | null
           transcript?: string | null
           urgency?: string | null
@@ -30900,6 +30909,9 @@ export type Database = {
           sender_email: string | null
           sender_phone: string | null
           sentiment: string | null
+          source_business: string | null
+          source_id: string | null
+          source_table: string | null
           started_at: string | null
           status: string | null
           store_id: string | null
@@ -30954,6 +30966,9 @@ export type Database = {
           sender_email?: string | null
           sender_phone?: string | null
           sentiment?: string | null
+          source_business?: string | null
+          source_id?: string | null
+          source_table?: string | null
           started_at?: string | null
           status?: string | null
           store_id?: string | null
@@ -31008,6 +31023,9 @@ export type Database = {
           sender_email?: string | null
           sender_phone?: string | null
           sentiment?: string | null
+          source_business?: string | null
+          source_id?: string | null
+          source_table?: string | null
           started_at?: string | null
           status?: string | null
           store_id?: string | null
@@ -35653,6 +35671,9 @@ export type Database = {
           lead_name: string | null
           outcome: string | null
           recording_url: string | null
+          source_business: string | null
+          source_id: string | null
+          source_table: string | null
           status: string | null
           to_number: string | null
           transcript: string | null
@@ -35675,6 +35696,9 @@ export type Database = {
           lead_name?: string | null
           outcome?: string | null
           recording_url?: string | null
+          source_business?: string | null
+          source_id?: string | null
+          source_table?: string | null
           status?: string | null
           to_number?: string | null
           transcript?: string | null
@@ -35697,6 +35721,9 @@ export type Database = {
           lead_name?: string | null
           outcome?: string | null
           recording_url?: string | null
+          source_business?: string | null
+          source_id?: string | null
+          source_table?: string | null
           status?: string | null
           to_number?: string | null
           transcript?: string | null
@@ -41580,6 +41607,8 @@ export type Database = {
           next_action: string | null
           outcome: string | null
           recording_url: string | null
+          source_business: string | null
+          source_id: string | null
           source_lead_id: string | null
           source_table: string | null
           to_number: string | null
@@ -41609,6 +41638,8 @@ export type Database = {
           next_action?: string | null
           outcome?: string | null
           recording_url?: string | null
+          source_business?: string | null
+          source_id?: string | null
           source_lead_id?: string | null
           source_table?: string | null
           to_number?: string | null
@@ -41638,6 +41669,8 @@ export type Database = {
           next_action?: string | null
           outcome?: string | null
           recording_url?: string | null
+          source_business?: string | null
+          source_id?: string | null
           source_lead_id?: string | null
           source_table?: string | null
           to_number?: string | null

@@ -144,6 +144,9 @@ Deno.serve(async (req) => {
     // Use upsert by (call_id) where possible to dedupe.
     const { error: insertErr } = await supabase.from("bland_call_logs").insert({
       lead_id, agent_type, call_id, transcript, recording_url, call_outcome, raw_payload: payload,
+      source_table: (meta.source_table as string) || null,
+      source_id: (meta.source_id as string) || null,
+      source_business: (meta.source_business as string) || (meta.business as string) || null,
     });
     if (insertErr && !/duplicate/i.test(insertErr.message)) {
       console.error("bland_call_logs insert error:", insertErr);
@@ -369,6 +372,11 @@ Deno.serve(async (req) => {
       const duration =
         payload.call_length || payload.duration || payload.call_duration || payload.corrected_duration || null;
 
+      // Bidirectional sync: source linkage from metadata
+      const source_table = (meta.source_table as string) || null;
+      const source_id = (meta.source_id as string) || null;
+      const source_business = (meta.source_business as string) || business;
+
       // Upsert dynasty_ai_calls by call_id. UNIQUE(call_id) constraint already exists.
       const { error: dcErr } = await supabase
         .from("dynasty_ai_calls")
@@ -386,10 +394,31 @@ Deno.serve(async (req) => {
             duration_seconds: duration ? Math.round(Number(duration)) : null,
             outcome: call_outcome || (transcript ? "completed" : null),
             call_ended_at: new Date().toISOString(),
+            source_table,
+            source_id,
+            source_business,
+            source_lead_id: source_id || null,
           },
           { onConflict: "call_id" },
         );
       if (dcErr) console.error("dynasty_ai_calls upsert error:", dcErr.message);
+
+      // ===== POST-CALL WRITE-BACK to the originating hub row =====
+      // (allow-listed, business-checked — see sync-call-to-source)
+      if (source_table && source_id) {
+        supabase.functions.invoke("sync-call-to-source", {
+          body: {
+            source_table,
+            source_id,
+            source_business,
+            outcome: call_outcome,
+            call_summary: transcript ? transcript.slice(0, 1000) : null,
+            call_completed_at: new Date().toISOString(),
+          },
+        }).then(({ error }: { error: any }) => {
+          if (error) console.error("sync-call-to-source invoke error:", error);
+        }).catch((e: unknown) => console.error("sync-call-to-source threw:", e));
+      }
 
       // Per-utterance transcript rows for the live transcript pane.
       if (Array.isArray(payload.transcripts) && payload.transcripts.length) {

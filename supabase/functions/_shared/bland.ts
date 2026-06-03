@@ -25,6 +25,8 @@ export interface PlaceBlandCallOptions {
   first_sentence?: string;
   webhook?: string; // post-call webhook
   metadata?: Record<string, unknown>;
+  /** Pre-call context variables injected into the Bland prompt (e.g. display_name, company, recent_calls). */
+  request_data?: Record<string, unknown>;
   record?: boolean;
   answered_by_enabled?: boolean;
 }
@@ -78,6 +80,7 @@ export async function placeBlandCall(opts: PlaceBlandCallOptions): Promise<Bland
   if (opts.first_sentence) body.first_sentence = opts.first_sentence;
   if (opts.webhook) body.webhook = opts.webhook;
   if (opts.metadata) body.metadata = opts.metadata;
+  if (opts.request_data) body.request_data = opts.request_data;
 
   const res = await fetch(`${BLAND_API}/calls`, {
     method: "POST",
