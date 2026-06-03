@@ -346,7 +346,7 @@ const CRM = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">
-                    {log.contact?.name || log.store?.name || 'Unknown'}
+                    {(log as any).contact?.name || log.store?.name || 'Unknown'}
                   </p>
                   <p className="text-sm text-muted-foreground truncate">
                     {log.summary}
@@ -380,7 +380,7 @@ const CRM = () => {
                 <Calendar className="h-5 w-5 text-primary mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">
-                    {log.contact?.name || log.store?.name || 'Unknown'}
+                    {(log as any).contact?.name || log.store?.name || 'Unknown'}
                   </p>
                   <p className="text-sm text-muted-foreground truncate">
                     {log.summary}

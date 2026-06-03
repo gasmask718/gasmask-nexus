@@ -220,7 +220,7 @@ const CRMFollowUps = () => {
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium hover:underline">
-                            {followUp.contact?.name || followUp.store?.name || 'Unknown'}
+                            {(followUp as any).contact?.name || followUp.store?.name || 'Unknown'}
                           </p>
                           <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                             {followUp.summary}
@@ -233,9 +233,9 @@ const CRMFollowUps = () => {
                             <Badge variant="outline" className="capitalize text-xs">
                               {followUp.channel}
                             </Badge>
-                            {followUp.contact?.type && (
+                            {(followUp as any).contact?.type && (
                               <Badge variant="outline" className="capitalize text-xs">
-                                {followUp.contact.type}
+                                {(followUp as any).contact.type}
                               </Badge>
                             )}
                           </div>
@@ -281,7 +281,7 @@ const CRMFollowUps = () => {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium hover:underline">
-                          {followUp.contact?.name || followUp.store?.name || 'Unknown'}
+                          {(followUp as any).contact?.name || followUp.store?.name || 'Unknown'}
                         </p>
                         <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                           {followUp.summary}
@@ -294,9 +294,9 @@ const CRMFollowUps = () => {
                           <Badge variant="outline" className="capitalize text-xs">
                             {followUp.channel}
                           </Badge>
-                          {followUp.contact?.type && (
+                          {(followUp as any).contact?.type && (
                             <Badge variant="outline" className="capitalize text-xs">
-                              {followUp.contact.type}
+                              {(followUp as any).contact.type}
                             </Badge>
                           )}
                         </div>

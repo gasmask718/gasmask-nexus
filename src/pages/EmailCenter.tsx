@@ -250,7 +250,7 @@ const EmailCenter = () => {
               >
                 <div className="flex items-center justify-between mb-2">
                   <p className="font-medium text-sm">
-                    {email.contact?.name || email.store?.name || 'Unknown'}
+                    {(email as any).contact?.name || email.store?.name || 'Unknown'}
                   </p>
                   <Badge variant="outline" className="capitalize text-xs">
                     {email.direction}

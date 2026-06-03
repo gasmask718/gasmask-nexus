@@ -256,7 +256,7 @@ export default function GrabbaEmailCenter() {
                   <div key={email.id} className="p-3 rounded-lg border border-border/50 bg-muted/30">
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-medium text-sm">
-                        {email.contact?.name || email.store?.name || 'Unknown'}
+                        {(email as any).contact?.name || email.store?.name || 'Unknown'}
                       </p>
                       <div className="flex items-center gap-2">
                         {brandConfig && (
