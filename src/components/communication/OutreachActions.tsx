@@ -34,6 +34,16 @@ export interface OutreachActionsProps {
   businessKey?: string;
   /** Bland agent_type to use when AI call selected */
   agentType?: string;
+  /**
+   * Source table for bidirectional sync (e.g. "store_master", "brandaro_qualified_leads",
+   * "ut_partner_leads", "re_leads", "dc_leads"). Defaults inferred from entityType=store
+   * → "store_master". For non-store sources, callers MUST pass this explicitly.
+   */
+  sourceTable?: string;
+  /** Source row id (defaults to entityId). */
+  sourceId?: string;
+  /** Source business — used by post-call write-back for cross-business safety. */
+  sourceBusiness?: string;
   size?: "sm" | "default" | "icon";
   variant?: "default" | "outline" | "ghost" | "secondary";
   className?: string;
