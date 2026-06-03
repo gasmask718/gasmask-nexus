@@ -51867,6 +51867,201 @@ export type Database = {
           },
         ]
       }
+      import_contacts_staging: {
+        Row: {
+          candidate_ids: string[] | null
+          created_at: string
+          error: string | null
+          id: string
+          import_batch_id: string
+          match_status: string
+          matched_id: string | null
+          raw_payload: Json
+          reviewer_decision: string | null
+          reviewer_decision_at: string | null
+          reviewer_id: string | null
+          source_file: string | null
+          source_row_num: number | null
+        }
+        Insert: {
+          candidate_ids?: string[] | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          import_batch_id: string
+          match_status?: string
+          matched_id?: string | null
+          raw_payload: Json
+          reviewer_decision?: string | null
+          reviewer_decision_at?: string | null
+          reviewer_id?: string | null
+          source_file?: string | null
+          source_row_num?: number | null
+        }
+        Update: {
+          candidate_ids?: string[] | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          import_batch_id?: string
+          match_status?: string
+          matched_id?: string | null
+          raw_payload?: Json
+          reviewer_decision?: string | null
+          reviewer_decision_at?: string | null
+          reviewer_id?: string | null
+          source_file?: string | null
+          source_row_num?: number | null
+        }
+        Relationships: []
+      }
+      import_invoices_staging: {
+        Row: {
+          candidate_ids: string[] | null
+          composite_hash: string | null
+          created_at: string
+          error: string | null
+          id: string
+          import_batch_id: string
+          match_status: string
+          matched_id: string | null
+          raw_payload: Json
+          reviewer_decision: string | null
+          reviewer_decision_at: string | null
+          reviewer_id: string | null
+          source_file: string | null
+          source_row_num: number | null
+        }
+        Insert: {
+          candidate_ids?: string[] | null
+          composite_hash?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          import_batch_id: string
+          match_status?: string
+          matched_id?: string | null
+          raw_payload: Json
+          reviewer_decision?: string | null
+          reviewer_decision_at?: string | null
+          reviewer_id?: string | null
+          source_file?: string | null
+          source_row_num?: number | null
+        }
+        Update: {
+          candidate_ids?: string[] | null
+          composite_hash?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          import_batch_id?: string
+          match_status?: string
+          matched_id?: string | null
+          raw_payload?: Json
+          reviewer_decision?: string | null
+          reviewer_decision_at?: string | null
+          reviewer_id?: string | null
+          source_file?: string | null
+          source_row_num?: number | null
+        }
+        Relationships: []
+      }
+      import_notes_staging: {
+        Row: {
+          candidate_ids: string[] | null
+          created_at: string
+          error: string | null
+          id: string
+          import_batch_id: string
+          match_status: string
+          matched_id: string | null
+          raw_payload: Json
+          reviewer_decision: string | null
+          reviewer_decision_at: string | null
+          reviewer_id: string | null
+          source_file: string | null
+          source_row_num: number | null
+        }
+        Insert: {
+          candidate_ids?: string[] | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          import_batch_id: string
+          match_status?: string
+          matched_id?: string | null
+          raw_payload: Json
+          reviewer_decision?: string | null
+          reviewer_decision_at?: string | null
+          reviewer_id?: string | null
+          source_file?: string | null
+          source_row_num?: number | null
+        }
+        Update: {
+          candidate_ids?: string[] | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          import_batch_id?: string
+          match_status?: string
+          matched_id?: string | null
+          raw_payload?: Json
+          reviewer_decision?: string | null
+          reviewer_decision_at?: string | null
+          reviewer_id?: string | null
+          source_file?: string | null
+          source_row_num?: number | null
+        }
+        Relationships: []
+      }
+      import_stores_staging: {
+        Row: {
+          candidate_ids: string[] | null
+          created_at: string
+          error: string | null
+          id: string
+          import_batch_id: string
+          match_status: string
+          matched_id: string | null
+          raw_payload: Json
+          reviewer_decision: string | null
+          reviewer_decision_at: string | null
+          reviewer_id: string | null
+          source_file: string | null
+          source_row_num: number | null
+        }
+        Insert: {
+          candidate_ids?: string[] | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          import_batch_id: string
+          match_status?: string
+          matched_id?: string | null
+          raw_payload: Json
+          reviewer_decision?: string | null
+          reviewer_decision_at?: string | null
+          reviewer_id?: string | null
+          source_file?: string | null
+          source_row_num?: number | null
+        }
+        Update: {
+          candidate_ids?: string[] | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          import_batch_id?: string
+          match_status?: string
+          matched_id?: string | null
+          raw_payload?: Json
+          reviewer_decision?: string | null
+          reviewer_decision_at?: string | null
+          reviewer_id?: string | null
+          source_file?: string | null
+          source_row_num?: number | null
+        }
+        Relationships: []
+      }
       inbound_call_routes: {
         Row: {
           business_id: string
@@ -55153,6 +55348,7 @@ export type Database = {
         Row: {
           amount_paid: number
           brand: string | null
+          business_date: string
           company_id: string | null
           created_at: string
           created_by: string | null
@@ -55204,6 +55400,7 @@ export type Database = {
         Insert: {
           amount_paid?: number
           brand?: string | null
+          business_date?: string
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -55255,6 +55452,7 @@ export type Database = {
         Update: {
           amount_paid?: number
           brand?: string | null
+          business_date?: string
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -86172,6 +86370,7 @@ export type Database = {
           invoice_payment_method: string | null
           invoice_payment_status: string | null
           invoice_received_by: string | null
+          is_historical: boolean
           is_simulation: boolean | null
           language_preference: string | null
           languages: string[] | null
@@ -86255,6 +86454,7 @@ export type Database = {
           invoice_payment_method?: string | null
           invoice_payment_status?: string | null
           invoice_received_by?: string | null
+          is_historical?: boolean
           is_simulation?: boolean | null
           language_preference?: string | null
           languages?: string[] | null
@@ -86338,6 +86538,7 @@ export type Database = {
           invoice_payment_method?: string | null
           invoice_payment_status?: string | null
           invoice_received_by?: string | null
+          is_historical?: boolean
           is_simulation?: boolean | null
           language_preference?: string | null
           languages?: string[] | null
@@ -86475,6 +86676,7 @@ export type Database = {
           note_date: string | null
           note_text: string
           original_note: string | null
+          source: string | null
           store_id: string | null
         }
         Insert: {
@@ -86490,6 +86692,7 @@ export type Database = {
           note_date?: string | null
           note_text: string
           original_note?: string | null
+          source?: string | null
           store_id?: string | null
         }
         Update: {
@@ -86505,6 +86708,7 @@ export type Database = {
           note_date?: string | null
           note_text?: string
           original_note?: string | null
+          source?: string | null
           store_id?: string | null
         }
         Relationships: [
@@ -111250,14 +111454,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -115979,6 +116183,8 @@ export type Database = {
         }
         Returns: Json
       }
+      _norm_phone: { Args: { p: string }; Returns: string }
+      _norm_text: { Args: { p: string }; Returns: string }
       _test_merge_bypass_matrix: {
         Args: {
           p_invoice_id: string
@@ -116583,6 +116789,16 @@ export type Database = {
       cleanup_old_recalc_items: {
         Args: { p_days_old?: number }
         Returns: number
+      }
+      commit_import_batch: {
+        Args: { _batch_id: string; _committed_by?: string }
+        Returns: {
+          error: string
+          inserted_id: string
+          kind: string
+          stage_id: string
+          status: string
+        }[]
       }
       complete_ops_task: { Args: { p_task_id: string }; Returns: undefined }
       complete_territory_task: {
@@ -117291,6 +117507,32 @@ export type Database = {
           specialties: string[]
         }[]
       }
+      match_import_contacts: {
+        Args: { _batch_id: string }
+        Returns: {
+          match_status: string
+          matched_id: string
+          stage_id: string
+        }[]
+      }
+      match_import_invoices: {
+        Args: { _batch_id: string }
+        Returns: {
+          composite_hash: string
+          match_status: string
+          matched_id: string
+          stage_id: string
+        }[]
+      }
+      match_import_stores: {
+        Args: { _batch_id: string }
+        Returns: {
+          candidate_ids: string[]
+          match_status: string
+          matched_id: string
+          stage_id: string
+        }[]
+      }
       match_photographers_by_location: {
         Args: { equipment?: string; req_lat: number; req_lng: number }
         Returns: {
@@ -117563,6 +117805,7 @@ export type Database = {
           invoice_payment_method: string | null
           invoice_payment_status: string | null
           invoice_received_by: string | null
+          is_historical: boolean
           is_simulation: boolean | null
           language_preference: string | null
           languages: string[] | null
