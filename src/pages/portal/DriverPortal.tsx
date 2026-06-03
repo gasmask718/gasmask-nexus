@@ -12,6 +12,7 @@ import {
   MessagesPage,
   ProfilePage,
   DriverDeliveryTasks,
+  EndOfDayNotes,
 } from "@/components/portal/field";
 import { AssignedOrdersPage } from "@/components/portal/field/AssignedOrdersPage";
 import { PortalAuthGuard } from "@/components/portal/PortalAuthGuard";
