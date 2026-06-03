@@ -64,6 +64,7 @@ import {
   EquipmentAssignmentPanel,
   DailyExecutionDashboard,
   SupervisorScorecard,
+  BrandYieldAnalyticsPanel,
 } from '@/components/production';
 import { WorkerTaskTimer } from '@/components/production/WorkerTaskTimer';
 import { LaborEfficiencyPanel } from '@/components/production/LaborEfficiencyPanel';

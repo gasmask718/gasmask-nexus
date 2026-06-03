@@ -73,6 +73,9 @@ export { LaborEfficiencyPanel } from './LaborEfficiencyPanel';
 // Phase 11: Profit Per Pound Intelligence
 export { ProfitPerPoundPanel } from './ProfitPerPoundPanel';
 
+// Brand Yield Analytics (Lbs → Boxes per brand over time)
+export { BrandYieldAnalyticsPanel } from './BrandYieldAnalyticsPanel';
+
 // Phase 12: Production Control Hardening
 export { MaterialConsumptionPanel } from './MaterialConsumptionPanel';
 export { EquipmentAssignmentPanel } from './EquipmentAssignmentPanel';
