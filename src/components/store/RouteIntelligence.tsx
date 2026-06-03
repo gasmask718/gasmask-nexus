@@ -5,6 +5,7 @@
  * Do not write new logic against routes_generated.
  */
 import { useState } from "react";
+import { SendToRouteBoardButton } from "@/components/delivery/SendToRouteBoardButton";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
