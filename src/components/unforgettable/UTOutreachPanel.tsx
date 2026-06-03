@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Phone, MessageSquare, Bot, Mail, PlayCircle } from 'lucide-react';
 import { UTPartnerLead } from '@/hooks/useUTPartnerLeads';
+import { OutreachActions } from '@/components/communication/OutreachActions';
 
 interface Props {
   leads: UTPartnerLead[];
