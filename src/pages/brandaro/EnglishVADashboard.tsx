@@ -13,6 +13,7 @@ import {
   BarChart3, FileText, Loader2, User, Building2, Headset, Brain
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useCall } from "@/components/communication/CallProvider";
 
 interface Lead {
   id: string;
@@ -47,6 +48,7 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 
 export default function EnglishVADashboard() {
   const queryClient = useQueryClient();
+  const { initiateCall } = useCall();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
   const [coachingOpen, setCoachingOpen] = useState(false);
@@ -266,7 +268,7 @@ export default function EnglishVADashboard() {
                           className="text-xs"
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.open(`tel:${lead.phone}`);
+                            initiateCall({ destinationPhone: lead.phone, entityType: 'store', entityId: lead.id, entityName: lead.business_name });
                             updateStatus.mutate({ leadId: lead.id, status: "contacted" });
                           }}
                         >

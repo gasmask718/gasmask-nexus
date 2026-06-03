@@ -18,6 +18,7 @@ import {
   ArrowRight, Send, Calendar, Star, Shield, RefreshCw, Copy, BarChart3,
   Link as LinkIcon, ExternalLink, FileSpreadsheet, MapPin, Package, PartyPopper
 } from 'lucide-react';
+import { useCall } from '@/components/communication/CallProvider';
 import { format, isBefore, isToday, addHours } from 'date-fns';
 import {
   useUTPartnerLeads, useUTOutreachLogs, useUTLeadMutations, useUTLeadStats,
@@ -69,6 +70,7 @@ const QUEUE_FILTERS = [
 // ── MAIN COMPONENT ────────────────────────────────────────────────
 export default function UTOutreachCommand() {
   const navigate = useNavigate();
+  const { initiateCall } = useCall();
   const [queueMode, setQueueMode] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchText, setSearchText] = useState('');
@@ -425,7 +427,7 @@ export default function UTOutreachCommand() {
                 <div className="flex gap-2">
                   {selectedLead.phone ? (
                     <>
-                      <Button className="gap-1.5 flex-1" onClick={() => window.open(`tel:${selectedLead.phone}`)}>
+                      <Button className="gap-1.5 flex-1" onClick={() => initiateCall({ destinationPhone: selectedLead.phone!, entityType: 'store', entityId: selectedLead.id, entityName: selectedLead.business_name })}>
                         <Phone className="h-4 w-4" /> Call
                       </Button>
                       <Button variant="outline" className="gap-1.5 flex-1" onClick={() => setShowSmsTemplates(!showSmsTemplates)}>

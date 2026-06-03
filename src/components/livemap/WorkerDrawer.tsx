@@ -72,8 +72,9 @@ export function WorkerDrawer({
   };
 
   const handleCall = () => {
-    // In a real app, this would use the worker's phone number
-    window.open(`tel:+1234567890`, '_self');
+    // Phone not yet exposed on WorkerLocation — route through logged pipeline once available.
+    // Avoid tel: bypass (was creating invisible calls).
+    import("sonner").then(({ toast }) => toast.info("Worker phone not available — assign via dispatch."));
   };
 
   const handleNavigate = () => {

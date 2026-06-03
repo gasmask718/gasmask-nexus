@@ -25,6 +25,7 @@ import { BrandaroLeadAssignmentButtons } from "@/components/brandaro/BrandaroLea
 import { BrandaroUnifiedCallHistory } from "@/components/brandaro/BrandaroUnifiedCallHistory";
 import { exportData } from "@/utils/exportUtils";
 import { useNavigate } from "react-router-dom";
+import { useCall } from "@/components/communication/CallProvider";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   Database, Phone, Star, MapPin, Filter, MessageSquare, Loader2,
@@ -107,6 +108,7 @@ function getInitialCols(): string[] {
 export default function LeadDatabasePage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { initiateCall } = useCall();
 
   // ── State ──
   const [search, setSearch] = useState("");
@@ -1038,7 +1040,7 @@ export default function LeadDatabasePage() {
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="w-48">
                                     {lead.phone_number && (
-                                      <DropdownMenuItem onClick={() => window.open(`tel:${lead.phone_number}`)}>
+                                      <DropdownMenuItem onClick={() => initiateCall({ destinationPhone: lead.phone_number!, entityType: 'store', entityId: lead.id, entityName: lead.business_name })}>
                                         <Phone className="h-3 w-3 mr-2" /> Manual Call
                                       </DropdownMenuItem>
                                     )}

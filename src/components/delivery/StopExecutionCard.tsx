@@ -11,6 +11,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { useDeliveryActions } from "@/hooks/useDeliveryExecution";
+import { useCall } from "@/components/communication/CallProvider";
 
 interface StopExecutionCardProps {
   stop: any;
@@ -28,6 +29,7 @@ export default function StopExecutionCard({
   onReportIssue,
 }: StopExecutionCardProps) {
   const { updateStopStatus } = useDeliveryActions();
+  const { initiateCall } = useCall();
   const store = stop.store;
   
   const isCompleted = stop.status === 'completed';
@@ -58,7 +60,7 @@ export default function StopExecutionCard({
 
   const handleCall = () => {
     if (store?.phone) {
-      window.open(`tel:${store.phone}`, '_self');
+      initiateCall({ destinationPhone: store.phone, entityType: 'store', entityId: store.id, entityName: store.name });
     }
   };
 

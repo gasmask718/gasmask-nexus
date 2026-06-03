@@ -18,6 +18,7 @@ import {
 import { PipelineLead, PIPELINE_STAGES } from "@/hooks/useBrandaroPipeline";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useCall } from "@/components/communication/CallProvider";
 
 const STAGE_COLORS: Record<string, string> = {
   new: "bg-muted text-muted-foreground",
@@ -48,6 +49,12 @@ export function BrandaroLeadCard({
   const [aiCallLoading, setAiCallLoading] = useState(false);
   const [bookLoading, setBookLoading] = useState(false);
   const [pitchLoading, setPitchLoading] = useState(false);
+
+  const { initiateCall } = useCall();
+  const handleManualCall = () => {
+    if (!lead.phone_number) return;
+    initiateCall({ destinationPhone: lead.phone_number, entityType: 'store', entityId: lead.id, entityName: lead.business_name });
+  };
 
   const stageIdx = PIPELINE_STAGES.findIndex((s) => s.key === lead.pipeline_stage);
   const nextStage = PIPELINE_STAGES[stageIdx + 1];
@@ -240,7 +247,7 @@ export function BrandaroLeadCard({
           {/* Action buttons - bottom */}
           <div className="border-t border-border/50" onClick={(e) => e.stopPropagation()}>
             <div className="grid grid-cols-3 divide-x divide-border/30">
-              <button onClick={() => lead.phone_number && window.open(`tel:${lead.phone_number}`)} disabled={!lead.phone_number}
+              <button onClick={handleManualCall} disabled={!lead.phone_number}
                 className="flex items-center justify-center gap-1 py-1.5 text-[10px] hover:bg-muted disabled:opacity-40 transition-colors">
                 <Phone className="h-3 w-3" />Call
               </button>
@@ -273,7 +280,7 @@ export function BrandaroLeadCard({
 
       {/* Right-click context menu */}
       <ContextMenuContent>
-        <ContextMenuItem onClick={() => lead.phone_number && window.open(`tel:${lead.phone_number}`)} disabled={!lead.phone_number}>
+        <ContextMenuItem onClick={handleManualCall} disabled={!lead.phone_number}>
           📞 Manual call
         </ContextMenuItem>
         <ContextMenuItem onClick={handleAiCall} disabled={!lead.phone_number || aiCallLoading}>

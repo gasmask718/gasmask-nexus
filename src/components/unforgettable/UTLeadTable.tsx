@@ -9,6 +9,7 @@ import { Phone, MessageSquare, Bot, Trash2, Eye } from 'lucide-react';
 import { UTPartnerLead, UTOutreachLog } from '@/hooks/useUTPartnerLeads';
 import { useState } from 'react';
 import { format } from 'date-fns';
+import { OutreachActions } from '@/components/communication/OutreachActions';
 
 const STATUS_COLORS: Record<string, string> = {
   new: 'bg-blue-500/10 text-blue-500',
@@ -139,17 +140,13 @@ export function UTLeadTable({ leads, isLoading, selectedLead, onSelectLead, onUp
                 {/* Quick Actions */}
                 <div className="flex gap-2">
                   {selectedLead.phone && (
-                    <>
-                      <Button size="sm" variant="outline" className="gap-1" onClick={() => window.open(`tel:${selectedLead.phone}`)}>
-                        <Phone className="h-3.5 w-3.5" /> Call
-                      </Button>
-                      <Button size="sm" variant="outline" className="gap-1">
-                        <MessageSquare className="h-3.5 w-3.5" /> SMS
-                      </Button>
-                      <Button size="sm" variant="outline" className="gap-1">
-                        <Bot className="h-3.5 w-3.5" /> AI Call
-                      </Button>
-                    </>
+                    <OutreachActions
+                      phone={selectedLead.phone}
+                      entityName={selectedLead.business_name}
+                      entityType="store"
+                      entityId={selectedLead.id}
+                      businessKey="unforgettable"
+                    />
                   )}
                 </div>
 

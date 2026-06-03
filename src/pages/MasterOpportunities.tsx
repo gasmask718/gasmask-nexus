@@ -65,6 +65,7 @@ import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import { toast } from 'sonner';
+import { useCall } from '@/components/communication/CallProvider';
 
 type MainTab = 'signals' | 'opportunities' | 'messaging' | 'dialer' | 'visits' | 'ready-close' | 'ai-opps';
 type SignalTab = 'all' | 'needs_order' | 'bring_samples' | 'starter_kit' | 'switch_tubes' | 'interested' | 'not_interested';
@@ -242,6 +243,7 @@ export default function MasterOpportunities() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { initiateCall } = useCall();
 
   // ── State ──
   const [mainTab, setMainTab] = useState<MainTab>('signals');
@@ -499,8 +501,8 @@ export default function MasterOpportunities() {
             toast.success(`GasMask AI call initiated to ${opp.name}`);
           } catch (err: any) { toast.error(err.message); }
         } else {
-          // Brandaro website lead — open tel: link
-          window.open(`tel:${opp.phone}`);
+          // Brandaro website lead — manual call via logged pipeline
+          initiateCall({ destinationPhone: opp.phone, entityType: 'store', entityId: opp.id, entityName: opp.name });
         }
         break;
       case 'reply':

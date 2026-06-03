@@ -366,7 +366,7 @@ export default function ClientDemoViewPage() {
           >
             <MessageSquare className="h-4 w-4 mr-2" /> Request Changes
           </Button>
-          <Button variant="ghost" className="text-slate-400 hover:text-white" onClick={() => window.open("tel:+1234567890")}>
+          <Button variant="ghost" className="text-slate-400 hover:text-white" onClick={() => document.getElementById("changes-section")?.scrollIntoView({ behavior: "smooth" })}>
             <Phone className="h-4 w-4 mr-2" /> Talk to a Specialist
           </Button>
         </div>
