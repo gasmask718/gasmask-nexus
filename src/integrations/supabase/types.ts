@@ -85362,6 +85362,14 @@ export type Database = {
           last_text_sent_at: string | null
           name: string
           notes: string | null
+          number_verification_confirmed_at: string | null
+          number_verification_delivered_at: string | null
+          number_verification_error: string | null
+          number_verification_failed_at: string | null
+          number_verification_message_sid: string | null
+          number_verification_sent_at: string | null
+          number_verification_sent_by: string | null
+          number_verification_status: string
           opted_out: boolean
           opted_out_at: string | null
           opted_out_method: string | null
@@ -85407,6 +85415,14 @@ export type Database = {
           last_text_sent_at?: string | null
           name: string
           notes?: string | null
+          number_verification_confirmed_at?: string | null
+          number_verification_delivered_at?: string | null
+          number_verification_error?: string | null
+          number_verification_failed_at?: string | null
+          number_verification_message_sid?: string | null
+          number_verification_sent_at?: string | null
+          number_verification_sent_by?: string | null
+          number_verification_status?: string
           opted_out?: boolean
           opted_out_at?: string | null
           opted_out_method?: string | null
@@ -85452,6 +85468,14 @@ export type Database = {
           last_text_sent_at?: string | null
           name?: string
           notes?: string | null
+          number_verification_confirmed_at?: string | null
+          number_verification_delivered_at?: string | null
+          number_verification_error?: string | null
+          number_verification_failed_at?: string | null
+          number_verification_message_sid?: string | null
+          number_verification_sent_at?: string | null
+          number_verification_sent_by?: string | null
+          number_verification_status?: string
           opted_out?: boolean
           opted_out_at?: string | null
           opted_out_method?: string | null

@@ -16,6 +16,7 @@ import { useStoreContactsWithResponsiveness } from '@/hooks/useContactResponsive
 import { ContactResponsivenessBadge } from '@/components/contact/ContactResponsivenessBadge';
 import { ContactLastInteraction } from '@/components/contact/ContactLastInteraction';
 import { ContactCommunicationTimeline } from './ContactCommunicationTimeline';
+import { VerifyNumberButton } from './VerifyNumberButton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface StoreContact {
@@ -43,6 +44,11 @@ interface StoreContact {
   last_text_received_at?: string | null;
   responsiveness_status?: string | null;
   last_responded_at?: string | null;
+  number_verification_status?: string | null;
+  number_verification_sent_at?: string | null;
+  number_verification_delivered_at?: string | null;
+  number_verification_confirmed_at?: string | null;
+  number_verification_error?: string | null;
 }
 
 interface StoreContactsSectionProps {
@@ -285,6 +291,22 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                     last_text_received_at={contact.last_text_received_at}
                     className="ml-13 pl-13"
                   />
+
+                  {/* Number verification push button */}
+                  <div className="pl-13 ml-13">
+                    <VerifyNumberButton
+                      contactId={contact.id}
+                      storeId={storeId}
+                      contactName={contact.name}
+                      contactPhone={contact.phone}
+                      status={contact.number_verification_status}
+                      sentAt={contact.number_verification_sent_at}
+                      deliveredAt={contact.number_verification_delivered_at}
+                      confirmedAt={contact.number_verification_confirmed_at}
+                      error={contact.number_verification_error}
+                      onChanged={() => queryClient.invalidateQueries({ queryKey: ['store-contacts-responsiveness', storeId] })}
+                    />
+                  </div>
 
                   <CollapsibleContent>
                     <div className="pt-3 mt-1 border-t border-border/30">

@@ -155,7 +155,12 @@ export function useStoreContactsWithResponsiveness(storeId: string) {
           responsive_by_text,
           responsiveness_status,
           last_responded_at,
-          created_at
+          created_at,
+          number_verification_status,
+          number_verification_sent_at,
+          number_verification_delivered_at,
+          number_verification_confirmed_at,
+          number_verification_error
         `)
         .eq('store_id', storeId)
         .eq('is_simulation', false)

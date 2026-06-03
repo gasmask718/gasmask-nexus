@@ -221,6 +221,36 @@ const handler = async (req: Request): Promise<Response> => {
       console.log(`✅ Updated communication_logs for ${to}`);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // NUMBER VERIFICATION — promote store_contacts row when delivery confirmed
+    // ═══════════════════════════════════════════════════════════════════════════
+    try {
+      const { data: verifContact } = await supabase
+        .from("store_contacts")
+        .select("id, number_verification_status")
+        .eq("number_verification_message_sid", messageSid)
+        .maybeSingle();
+
+      if (verifContact) {
+        const verifPatch: Record<string, any> = {};
+        if (dbStatus === "delivered" && verifContact.number_verification_status !== "confirmed") {
+          verifPatch.number_verification_status = "delivered";
+          verifPatch.number_verification_delivered_at = new Date().toISOString();
+        } else if (isError) {
+          verifPatch.number_verification_status = "failed";
+          verifPatch.number_verification_failed_at = new Date().toISOString();
+          verifPatch.number_verification_error = errorMessage || errorCode || "Delivery failed";
+        }
+        if (Object.keys(verifPatch).length > 0) {
+          await supabase.from("store_contacts").update(verifPatch).eq("id", verifContact.id);
+          console.log(`✅ store_contacts ${verifContact.id} verification → ${verifPatch.number_verification_status}`);
+        }
+      }
+    } catch (e) {
+      console.error("verification status sync error:", e);
+    }
+
+
     // Log the webhook event for audit trail
     const webhookPayload = {
       message_sid: messageSid,
