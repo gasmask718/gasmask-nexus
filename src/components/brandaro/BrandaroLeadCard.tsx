@@ -50,6 +50,12 @@ export function BrandaroLeadCard({
   const [bookLoading, setBookLoading] = useState(false);
   const [pitchLoading, setPitchLoading] = useState(false);
 
+  const { initiateCall } = useCall();
+  const handleManualCall = () => {
+    if (!lead.phone_number) return;
+    initiateCall({ destinationPhone: lead.phone_number, entityType: 'store', entityId: lead.id, entityName: lead.business_name });
+  };
+
   const stageIdx = PIPELINE_STAGES.findIndex((s) => s.key === lead.pipeline_stage);
   const nextStage = PIPELINE_STAGES[stageIdx + 1];
 
