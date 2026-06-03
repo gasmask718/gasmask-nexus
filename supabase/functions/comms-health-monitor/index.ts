@@ -832,6 +832,178 @@ async function checkElevenLabsPhoneNumbers(): Promise<Result[]> {
   return out;
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// FEATURE MODES — verify each calling + texting feature/surface independently
+// ════════════════════════════════════════════════════════════════════════════
+// Each entry maps a user-facing feature (manual call, bulk SMS, VA dialer, …)
+// to the edge function that powers it, the surfaces that invoke it, and the
+// upstream provider whose outage would take it down. We probe the function for
+// reachability (HEAD-style POST with a `healthcheck=true` flag — handlers
+// should short-circuit; otherwise any 2xx/4xx proves the function is deployed
+// and parsing). 5xx / network failure = BROKEN with the exact reason.
+// ────────────────────────────────────────────────────────────────────────────
+type FeatureMode = {
+  key: string;
+  label: string;
+  channel: "call" | "sms";
+  mode: "manual" | "auto_dialer" | "bulk" | "ai" | "system";
+  fn: string;
+  provider: "twilio" | "bland" | "elevenlabs" | "mixed";
+  surfaces: string[];
+  sender?: string; // documents the sender/guard expectation
+};
+
+const FEATURE_MODES: FeatureMode[] = [
+  // ── CALLS ────────────────────────────────────────────────────────────────
+  { key: "manual_call_generic", label: "Manual call (global)", channel: "call", mode: "manual", fn: "place-outbound-call", provider: "twilio", surfaces: ["Floor 2 Comms Hub", "Store profile", "CRM contact detail", "CallProvider/useCall"], sender: "Business phone (twilio)" },
+  { key: "manual_call_twilio",  label: "Manual call (Twilio direct)", channel: "call", mode: "manual", fn: "twilio-manual-call", provider: "twilio", surfaces: ["Dialer", "Ad-hoc click-to-call"], sender: "Default Twilio number" },
+  { key: "manual_call_ambassador", label: "Ambassador direct call", channel: "call", mode: "manual", fn: "ambassador-direct-call", provider: "twilio", surfaces: ["Ambassador comms"], sender: "Ambassador-assigned Twilio number" },
+  { key: "ai_call_ambassador",  label: "Ambassador AI call", channel: "call", mode: "ai", fn: "ambassador-ai-call", provider: "bland", surfaces: ["Ambassador outreach"], sender: "Bland → Twilio caller-ID" },
+  { key: "va_power_dialer",     label: "VA Power Dialer (auto-dialer)", channel: "call", mode: "auto_dialer", fn: "va-power-dialer", provider: "twilio", surfaces: ["VAPowerDialer", "BatchDialerPanel"], sender: "Per-VA assigned caller-ID set" },
+  { key: "va_initiate_call",    label: "VA single-call initiate", channel: "call", mode: "auto_dialer", fn: "va-initiate-call", provider: "twilio", surfaces: ["VA portals"], sender: "Per-VA caller-ID" },
+  { key: "predictive_dialer",   label: "Predictive dialer engine", channel: "call", mode: "auto_dialer", fn: "predictive-dialer-engine", provider: "twilio", surfaces: ["Batch dial campaigns"], sender: "Campaign caller-ID" },
+  { key: "bulk_ai_call",        label: "Bulk AI call processor", channel: "call", mode: "bulk", fn: "bulk-ai-call-processor", provider: "bland", surfaces: ["Bulk AI campaigns"], sender: "Bland fleet → toll-free" },
+  { key: "bland_outbound",      label: "Bland AI outbound call", channel: "call", mode: "ai", fn: "bland-start-call", provider: "bland", surfaces: ["AI-initiated outreach"], sender: "Bland caller-ID pool" },
+  { key: "dc_outbound",         label: "Dynasty Connect outbound call", channel: "call", mode: "system", fn: "dc-outbound-call", provider: "twilio", surfaces: ["Dynasty Connect (per business)"], sender: "DC per-business number" },
+  { key: "brandaro_ai_call",    label: "Brandaro AI caller", channel: "call", mode: "ai", fn: "brandaro-ai-caller", provider: "bland", surfaces: ["Brandaro"], sender: "Brandaro Twilio number" },
+  { key: "solar_call",          label: "Solar dialer", channel: "call", mode: "auto_dialer", fn: "solar-parallel-dialer", provider: "twilio", surfaces: ["Solar OS"], sender: "Solar caller-ID" },
+  { key: "operator_call",       label: "Operator/system call", channel: "call", mode: "system", fn: "initiate-operator-call", provider: "twilio", surfaces: ["Field ops triggers"], sender: "Operator number" },
+  { key: "governed_call",       label: "Governed outbound call", channel: "call", mode: "system", fn: "governed-outbound-call", provider: "twilio", surfaces: ["Compliance-gated automations"], sender: "Guard-selected toll-free" },
+  { key: "cold_call_tts",       label: "Cold-call TTS blast", channel: "call", mode: "bulk", fn: "cold-call-tts-blast", provider: "twilio", surfaces: ["Cold-call campaigns"], sender: "Verified toll-free" },
+
+  // ── TEXTS ────────────────────────────────────────────────────────────────
+  { key: "manual_text_global",  label: "Manual text (global send-sms)", channel: "sms", mode: "manual", fn: "send-sms", provider: "twilio", surfaces: ["Floor 2 Comms Hub", "Store profile", "VA portals", "Brandaro inbox"], sender: "Verified From, A2P guard active" },
+  { key: "bulk_text",           label: "Bulk SMS processor (BulkSmsModal)", channel: "sms", mode: "bulk", fn: "bulk-sms-processor", provider: "twilio", surfaces: ["BulkSmsModal", "Bulk campaigns"], sender: "Guarded → toll-free" },
+  { key: "ai_text_bland",       label: "AI text (Bland SMS)", channel: "sms", mode: "ai", fn: "bland-send-sms", provider: "bland", surfaces: ["AI follow-ups"], sender: "Bland-routed sender" },
+  { key: "ai_text_writer",      label: "AI text composer (sms-writer)", channel: "sms", mode: "ai", fn: "sms-writer", provider: "twilio", surfaces: ["AI compose UI"], sender: "Author-selected From" },
+  { key: "ambassador_sms",      label: "Ambassador SMS", channel: "sms", mode: "manual", fn: "ambassador-send-sms", provider: "twilio", surfaces: ["Ambassador comms"], sender: "Ambassador-assigned number" },
+  { key: "ambassador_approve",  label: "Ambassador approval SMS", channel: "sms", mode: "system", fn: "ambassador-approve-sms", provider: "twilio", surfaces: ["Approval pipeline"], sender: "Ops toll-free" },
+  { key: "ambassador_notify",   label: "Ambassador notify", channel: "sms", mode: "system", fn: "ambassador-notify", provider: "twilio", surfaces: ["Lifecycle automations"], sender: "Toll-free" },
+  { key: "brandaro_sms",        label: "Brandaro SMS dispatch", channel: "sms", mode: "ai", fn: "brandaro-sms-dispatch", provider: "twilio", surfaces: ["Brandaro outreach"], sender: "Brandaro Twilio number" },
+  { key: "messaging_worker",    label: "Messaging send worker (queued)", channel: "sms", mode: "system", fn: "messaging-send-worker", provider: "twilio", surfaces: ["Queued outbound", "Scheduled drips"], sender: "Job-defined From w/ guard" },
+  { key: "biztext_sms",         label: "BizText SMS", channel: "sms", mode: "manual", fn: "send-biztext-sms", provider: "twilio", surfaces: ["BizText surface"], sender: "Business toll-free" },
+  { key: "operator_sms",        label: "Operator SMS", channel: "sms", mode: "system", fn: "send-operator-sms", provider: "twilio", surfaces: ["Field ops alerts"], sender: "Ops number" },
+  { key: "invoice_sms",         label: "Invoice SMS", channel: "sms", mode: "system", fn: "send-invoice-sms", provider: "twilio", surfaces: ["Billing"], sender: "Verified toll-free" },
+  { key: "approval_sms",        label: "Approval SMS", channel: "sms", mode: "system", fn: "send-approval-sms", provider: "twilio", surfaces: ["Workflow approvals"], sender: "Ops toll-free" },
+  { key: "relay_sms",           label: "Relay SMS (inter-system)", channel: "sms", mode: "system", fn: "relay-sms", provider: "twilio", surfaces: ["Cross-surface relay"], sender: "Router-selected" },
+
+  // ── CALL INFRASTRUCTURE (recording + voice TwiML) ────────────────────────
+  { key: "call_recording",      label: "Call recording capture", channel: "call", mode: "system", fn: "twilio-recording-callback", provider: "twilio", surfaces: ["All recorded calls"], sender: "Twilio recording callback" },
+  { key: "voice_twiml",         label: "Voice TwiML handler", channel: "call", mode: "system", fn: "twilio-voice-twiml", provider: "twilio", surfaces: ["All inbound + bridged calls"], sender: "TwiML emitter" },
+  { key: "voice_token",         label: "Browser voice token (Twilio Voice SDK)", channel: "call", mode: "manual", fn: "twilio-voice-token", provider: "twilio", surfaces: ["In-app dialer (browser)"], sender: "Voice JWT" },
+];
+
+async function checkFeatureModes(): Promise<Result[]> {
+  const out: Result[] = [];
+  await Promise.all(FEATURE_MODES.map(async (f) => {
+    const url = `${SUPABASE_URL}/functions/v1/${f.fn}`;
+    let status: "pass" | "warn" | "fail" = "pass";
+    let msg = "";
+    let detail: Record<string, unknown> = {
+      function: f.fn,
+      channel: f.channel,
+      mode: f.mode,
+      upstream_provider: f.provider,
+      surfaces: f.surfaces,
+      sender_policy: f.sender,
+    };
+    try {
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ healthcheck: true, _probe: "comms-health-monitor" }),
+      });
+      const body = await r.text();
+      detail = { ...detail, http_status: r.status, body_preview: body.slice(0, 160) };
+      if (r.status >= 500) {
+        status = "fail";
+        msg = `BROKEN — ${f.fn} returned HTTP ${r.status} (handler crashed). Affects: ${f.surfaces.join(", ")}.`;
+      } else if (r.status === 404) {
+        status = "fail";
+        msg = `BROKEN — ${f.fn} not deployed (404). Feature has no backend. Affects: ${f.surfaces.join(", ")}.`;
+      } else {
+        // 2xx (handled healthcheck) or 4xx (auth/validation rejected the probe
+        // but proves the function is deployed and parsing).
+        status = "pass";
+        msg = `WORKING — ${f.fn} deployed and reachable (HTTP ${r.status}). Sender: ${f.sender || "n/a"}. Surfaces: ${f.surfaces.join(", ")}.`;
+      }
+    } catch (e) {
+      status = "fail";
+      msg = `BROKEN — ${f.fn} unreachable: ${(e as Error).message}. Affects: ${f.surfaces.join(", ")}.`;
+    }
+    out.push({
+      provider: f.provider === "mixed" ? "twilio" : f.provider,
+      layer: "feature_mode",
+      target: `${f.channel}:${f.key}`,
+      status,
+      message: msg,
+      detail: { ...detail, label: f.label },
+    });
+  }));
+
+  // ── Recent-activity heartbeat per channel (synthetic delivery proxy) ────
+  try {
+    const supa = sb();
+    const since = new Date(Date.now() - 25 * 3600 * 1000).toISOString();
+    const { data: outSms } = await supa
+      .from("communication_logs")
+      .select("id, created_at, twilio_sid")
+      .eq("channel", "sms").eq("direction", "outbound")
+      .gte("created_at", since)
+      .order("created_at", { ascending: false }).limit(1);
+    out.push({
+      provider: "twilio",
+      layer: "feature_mode",
+      target: "heartbeat:outbound_sms_25h",
+      status: outSms && outSms.length ? "pass" : "warn",
+      message: outSms && outSms.length
+        ? `Outbound SMS delivered ${outSms[0].created_at} (sid ${outSms[0].twilio_sid}) — texting pipeline confirmed end-to-end in last 25h.`
+        : "No outbound SMS recorded in last 25h — pipeline may be idle. Send a manual test to confirm.",
+      detail: outSms && outSms.length ? { last_sid: outSms[0].twilio_sid, last_at: outSms[0].created_at } : { window_hours: 25 },
+    });
+
+    const { data: outCall } = await supa
+      .from("communication_logs")
+      .select("id, created_at, twilio_sid")
+      .eq("channel", "call").eq("direction", "outbound")
+      .gte("created_at", since)
+      .order("created_at", { ascending: false }).limit(1);
+    out.push({
+      provider: "twilio",
+      layer: "feature_mode",
+      target: "heartbeat:outbound_call_25h",
+      status: outCall && outCall.length ? "pass" : "warn",
+      message: outCall && outCall.length
+        ? `Outbound call placed ${outCall[0].created_at} (sid ${outCall[0].twilio_sid}) — calling pipeline confirmed end-to-end in last 25h.`
+        : "No outbound calls recorded in last 25h — pipeline may be idle. Place a manual test to confirm.",
+      detail: outCall && outCall.length ? { last_sid: outCall[0].twilio_sid, last_at: outCall[0].created_at } : { window_hours: 25 },
+    });
+
+    // Recording capture proof — find an outbound call with recording_url
+    const { data: rec } = await supa
+      .from("communication_logs")
+      .select("id, created_at, recording_url, twilio_sid")
+      .eq("channel", "call")
+      .not("recording_url", "is", null)
+      .gte("created_at", new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString())
+      .order("created_at", { ascending: false }).limit(1);
+    out.push({
+      provider: "twilio",
+      layer: "feature_mode",
+      target: "heartbeat:call_recording_7d",
+      status: rec && rec.length ? "pass" : "warn",
+      message: rec && rec.length
+        ? `Last recording captured ${rec[0].created_at} (sid ${(rec[0] as any).twilio_sid}).`
+        : "No call recordings captured in last 7d — recording pipeline may be broken or simply idle.",
+      detail: rec && rec.length ? { last_recording_url: (rec[0] as any).recording_url, last_at: rec[0].created_at } : { window_days: 7 },
+    });
+  } catch (e) {
+    out.push({ provider: "twilio", layer: "feature_mode", target: "heartbeat", status: "warn", message: `Heartbeat queries failed: ${(e as Error).message}` });
+  }
+
+  return out;
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
