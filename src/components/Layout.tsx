@@ -710,7 +710,8 @@ const Layout = ({ children }: LayoutProps) => {
     'surplus-funds-os', 'dynasty-funding-hub', 'uben-hq', 'real-estate-os', 'solar-os',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
     'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
-    'brandaro-hub', 'dynasty-connect', 'voice-ops', 'global-dashboard', 'portals'
+    'brandaro-hub', 'dynasty-connect', 'voice-ops', 'global-dashboard', 'portals',
+    'dynasty-direct'
   ]);
   
   const currentPath = location.pathname;
