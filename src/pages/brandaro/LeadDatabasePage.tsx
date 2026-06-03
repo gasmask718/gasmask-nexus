@@ -108,6 +108,7 @@ function getInitialCols(): string[] {
 export default function LeadDatabasePage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { initiateCall } = useCall();
 
   // ── State ──
   const [search, setSearch] = useState("");
