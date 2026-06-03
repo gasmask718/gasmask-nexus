@@ -73,7 +73,6 @@ const EmailCenter = () => {
         .from('communication_logs')
         .select(`
           *,
-          contact:people(name),
           store:stores(name)
         `)
         .eq('channel', 'email')

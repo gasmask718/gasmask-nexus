@@ -71,7 +71,6 @@ const TextCenter = () => {
         .from('communication_logs')
         .select(`
           *,
-          contact:people(name),
           store:stores(name)
         `)
         .eq('channel', 'sms')

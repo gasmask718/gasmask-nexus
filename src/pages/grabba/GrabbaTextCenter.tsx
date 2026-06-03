@@ -76,7 +76,6 @@ export default function GrabbaTextCenter() {
         .from('communication_logs')
         .select(`
           *,
-          contact:people(name),
           store:stores(name)
         `)
         .eq('channel', 'sms')

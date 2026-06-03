@@ -74,7 +74,6 @@ const CRM = () => {
         .from('communication_logs')
         .select(`
           *,
-          contact:people(name),
           store:stores(name),
           created_by_profile:profiles!communication_logs_created_by_fkey(name)
         `)
@@ -94,7 +93,7 @@ const CRM = () => {
       
       const { data, error } = await supabase
         .from('communication_logs')
-        .select('*, contact:people(name), store:stores(name)')
+        .select('*, store:stores(name)')
         .eq('business_id', selectedBusiness.id)
         .eq('follow_up_required', true)
         .gte('follow_up_date', new Date().toISOString())
