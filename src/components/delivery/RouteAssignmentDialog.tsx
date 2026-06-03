@@ -81,6 +81,13 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('none');
 
+  // Re-sync preselected stores whenever the dialog is (re)opened with new preselections
+  useEffect(() => {
+    if (open && preselectedStores && preselectedStores.length > 0) {
+      setSelectedStores(preselectedStores);
+    }
+  }, [open, preselectedStores]);
+
   // Fetch route templates
   const { data: templates = [] } = useQuery({
     queryKey: ['route-templates-active', assigneeType],
