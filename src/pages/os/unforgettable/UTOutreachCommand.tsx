@@ -70,6 +70,7 @@ const QUEUE_FILTERS = [
 // ── MAIN COMPONENT ────────────────────────────────────────────────
 export default function UTOutreachCommand() {
   const navigate = useNavigate();
+  const { initiateCall } = useCall();
   const [queueMode, setQueueMode] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchText, setSearchText] = useState('');
