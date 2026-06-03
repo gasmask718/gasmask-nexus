@@ -177,6 +177,7 @@ export function ContactCommunicationTimeline({
           transcript: c.transcript,
           recording_url: c.recording_url,
           status: c.outcome,
+          call_id: c.call_id,
         });
       }
 
