@@ -18,6 +18,7 @@ import {
   ArrowRight, Send, Calendar, Star, Shield, RefreshCw, Copy, BarChart3,
   Link as LinkIcon, ExternalLink, FileSpreadsheet, MapPin, Package, PartyPopper
 } from 'lucide-react';
+import { useCall } from '@/components/communication/CallProvider';
 import { format, isBefore, isToday, addHours } from 'date-fns';
 import {
   useUTPartnerLeads, useUTOutreachLogs, useUTLeadMutations, useUTLeadStats,
