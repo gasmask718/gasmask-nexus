@@ -2,7 +2,7 @@ import { Outlet, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   BarChart3, Brain, Phone, Building2, Settings, FileText, 
-  Users, Zap, Radio, BookOpen, Target, Headphones, DollarSign
+  Users, Zap, Radio, BookOpen, Target, Headphones, DollarSign, Rocket
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,7 @@ const dcNavSections = [
   {
     title: '📋 Campaigns',
     items: [
+      { path: '/dynasty-connect/bulk-launch', label: 'Bulk Launch', icon: Rocket },
       { path: '/dynasty-connect/campaigns', label: 'All Campaigns', icon: Target },
       { path: '/dynasty-connect/campaigns/builder', label: 'Campaign Builder', icon: Zap },
       { path: '/dynasty-connect/campaigns/outbound', label: 'Outbound Dialer', icon: Phone },
