@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { verifyTwilio } from "../_shared/dialer.ts";
 
 /**
  * TWILIO VOICE TWIML HANDLER
@@ -13,7 +14,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-twilio-signature",
 };
 
 serve(async (req: Request) => {
@@ -24,6 +25,17 @@ serve(async (req: Request) => {
   try {
     // Twilio sends form-encoded POST data
     const formData = await req.formData();
+    const sigParams: Record<string, string> = {};
+    formData.forEach((v, k) => (sigParams[k] = String(v)));
+
+    // ── Signature verification (Twilio signs this with the Account auth
+    //     token even though the call originates from the browser SDK). ──
+    const v = verifyTwilio(req, sigParams);
+    if (!v.ok) {
+      console.error(`[twilio-voice-twiml] signature invalid: ${v.reason}`);
+      return new Response("Forbidden", { status: 403, headers: corsHeaders });
+    }
+
     const to = formData.get("To")?.toString() || "";
     const rawFrom = formData.get("From")?.toString() || "";
     const isTestCall = formData.get("test_call")?.toString() === "true";

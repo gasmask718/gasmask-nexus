@@ -1,10 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyTwilio } from "../_shared/dialer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-twilio-signature, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const STOP_WORDS = ["STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"];
@@ -29,20 +30,34 @@ serve(async (req: Request) => {
     // Parse body - support both form-encoded (Twilio) and JSON
     const contentType = req.headers.get("content-type") || "";
     let body: Record<string, string> = {};
+    let isTwilioForm = false;
 
     if (contentType.includes("application/x-www-form-urlencoded")) {
+      isTwilioForm = true;
       const text = await req.text();
       const params = new URLSearchParams(text);
       params.forEach((v, k) => (body[k] = v));
     } else if (contentType.includes("multipart/form-data")) {
       try {
+        isTwilioForm = true;
         const formData = await req.formData();
         formData.forEach((v, k) => (body[k] = String(v)));
       } catch {
+        isTwilioForm = false;
         body = await req.json().catch(() => ({}));
       }
     } else {
       body = await req.json().catch(() => ({}));
+    }
+
+    // ── Signature verification (only for Twilio form-encoded webhook hits;
+    //     JSON callers must use the service role authorization). ──
+    if (isTwilioForm) {
+      const v = verifyTwilio(req, body);
+      if (!v.ok) {
+        console.error(`[sms-inbound-webhook] signature invalid: ${v.reason}`);
+        return new Response("Forbidden", { status: 403, headers: corsHeaders });
+      }
     }
 
     const fromNumber = body.From || body.from || body.from_number || "";
