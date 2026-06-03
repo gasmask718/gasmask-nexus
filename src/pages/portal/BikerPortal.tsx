@@ -12,6 +12,7 @@ import {
   MessagesPage,
   ProfilePage,
   BikerDeliveryTasks,
+  EndOfDayNotes,
 } from "@/components/portal/field";
 import { AssignedOrdersPage } from "@/components/portal/field/AssignedOrdersPage";
 import BikerTodaysRoutesPage from "@/pages/delivery/biker/TodaysRoutesPage";
