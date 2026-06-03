@@ -1822,6 +1822,16 @@ export default function AppRoutes() {
           }
         />
 
+        {/* Historical Import — staging review & commit (David's Excels/notepads) */}
+        <Route
+          path="/admin/historical-import"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner']} showLocked>
+              <HistoricalImportReview />
+            </RequireRole>
+          }
+        />
+
         {/* Marketplace Connection Pack - Dev Only, Admin/Owner */}
         <Route
           path="/admin/dev/marketplace-connection"
