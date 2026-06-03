@@ -32,12 +32,16 @@ const ALLOW_LIST: Record<string, AllowEntry> = {
     fixedBusiness: "gasmask",
   },
   brandaro_qualified_leads: {
+    // NOTE: brandaro_qualified_leads.business_name stores the CLIENT's company
+    // name (e.g. "Acme Plumbing"), NOT the brand bucket. Brand is implicit —
+    // the table itself is brandaro-scoped. Use fixedBusiness so the guard
+    // checks the call's bucket, not the client's company.
     columns: [
       "last_called_at", "last_call_at", "last_dc_call_at",
       "call_attempts", "total_dc_calls",
       "call_notes", "excitement_level", "lead_status",
     ],
-    businessColumn: "business_name",
+    fixedBusiness: "brandaro",
   },
   ut_partner_leads: {
     columns: [
