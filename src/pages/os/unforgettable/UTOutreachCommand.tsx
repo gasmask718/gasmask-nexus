@@ -427,7 +427,7 @@ export default function UTOutreachCommand() {
                 <div className="flex gap-2">
                   {selectedLead.phone ? (
                     <>
-                      <Button className="gap-1.5 flex-1" onClick={() => window.open(`tel:${selectedLead.phone}`)}>
+                      <Button className="gap-1.5 flex-1" onClick={() => initiateCall({ destinationPhone: selectedLead.phone!, entityType: 'store', entityId: selectedLead.id, entityName: selectedLead.business_name })}>
                         <Phone className="h-4 w-4" /> Call
                       </Button>
                       <Button variant="outline" className="gap-1.5 flex-1" onClick={() => setShowSmsTemplates(!showSmsTemplates)}>
