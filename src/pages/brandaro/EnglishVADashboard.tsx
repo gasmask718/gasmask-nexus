@@ -268,7 +268,7 @@ export default function EnglishVADashboard() {
                           className="text-xs"
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.open(`tel:${lead.phone}`);
+                            initiateCall({ destinationPhone: lead.phone, entityType: 'store', entityId: lead.id, entityName: lead.business_name });
                             updateStatus.mutate({ leadId: lead.id, status: "contacted" });
                           }}
                         >
