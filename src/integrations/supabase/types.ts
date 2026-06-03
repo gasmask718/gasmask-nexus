@@ -35593,6 +35593,48 @@ export type Database = {
         }
         Relationships: []
       }
+      dc_businesses: {
+        Row: {
+          agents_label: string | null
+          business_key: string
+          color: string
+          created_at: string
+          icon: string
+          is_internal: boolean
+          is_live: boolean
+          name: string
+          phone_default: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          agents_label?: string | null
+          business_key: string
+          color?: string
+          created_at?: string
+          icon?: string
+          is_internal?: boolean
+          is_live?: boolean
+          name: string
+          phone_default?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          agents_label?: string | null
+          business_key?: string
+          color?: string
+          created_at?: string
+          icon?: string
+          is_internal?: boolean
+          is_live?: boolean
+          name?: string
+          phone_default?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dc_call_logs: {
         Row: {
           agent_id: string | null
