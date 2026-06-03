@@ -122,11 +122,6 @@ export default function DCCommandCenter() {
           );
         })}
       </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card><CardContent className="pt-4"><div className="text-2xl font-bold">{agents.length}</div><p className="text-xs text-muted-foreground">Total Agents</p></CardContent></Card>
@@ -134,6 +129,16 @@ export default function DCCommandCenter() {
         <Card><CardContent className="pt-4"><div className="text-2xl font-bold">{totalCallsToday}</div><p className="text-xs text-muted-foreground">Calls Today</p></CardContent></Card>
         <Card><CardContent className="pt-4"><div className="text-2xl font-bold">{totalMinutesToday}</div><p className="text-xs text-muted-foreground">Minutes Today</p></CardContent></Card>
       </div>
+
+      {launcherBiz && (
+        <OutreachLauncherDialog
+          open={!!launcherBiz}
+          onClose={() => setLauncherBiz(null)}
+          businessKey={launcherBiz.key}
+          businessName={launcherBiz.name}
+          defaultFromNumber={launcherBiz.phone}
+        />
+      )}
     </div>
   );
 }
