@@ -895,51 +895,69 @@ const FEATURE_MODES: FeatureMode[] = [
 
 async function checkFeatureModes(): Promise<Result[]> {
   const out: Result[] = [];
-  await Promise.all(FEATURE_MODES.map(async (f) => {
-    const url = `${SUPABASE_URL}/functions/v1/${f.fn}`;
-    let status: "pass" | "warn" | "fail" = "pass";
-    let msg = "";
-    let detail: Record<string, unknown> = {
-      function: f.fn,
-      channel: f.channel,
-      mode: f.mode,
-      upstream_provider: f.provider,
-      surfaces: f.surfaces,
-      sender_policy: f.sender,
-    };
-    try {
-      const r = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ healthcheck: true, _probe: "comms-health-monitor" }),
-      });
-      const body = await r.text();
-      detail = { ...detail, http_status: r.status, body_preview: body.slice(0, 160) };
-      if (r.status >= 500) {
-        status = "fail";
-        msg = `BROKEN — ${f.fn} returned HTTP ${r.status} (handler crashed). Affects: ${f.surfaces.join(", ")}.`;
-      } else if (r.status === 404) {
-        status = "fail";
-        msg = `BROKEN — ${f.fn} not deployed (404). Feature has no backend. Affects: ${f.surfaces.join(", ")}.`;
-      } else {
-        // 2xx (handled healthcheck) or 4xx (auth/validation rejected the probe
-        // but proves the function is deployed and parsing).
-        status = "pass";
-        msg = `WORKING — ${f.fn} deployed and reachable (HTTP ${r.status}). Sender: ${f.sender || "n/a"}. Surfaces: ${f.surfaces.join(", ")}.`;
+  // Probe sequentially in small batches — parallel fetch from a single edge
+  // invocation hits Supabase's per-trace rate limit (~25 concurrent), which
+  // would produce false "BROKEN — Rate limit exceeded" results.
+  const BATCH = 4;
+  for (let i = 0; i < FEATURE_MODES.length; i += BATCH) {
+    const slice = FEATURE_MODES.slice(i, i + BATCH);
+    const rows = await Promise.all(slice.map(async (f) => {
+      const url = `${SUPABASE_URL}/functions/v1/${f.fn}`;
+      let status: "pass" | "warn" | "fail" = "pass";
+      let msg = "";
+      let detail: Record<string, unknown> = {
+        function: f.fn,
+        channel: f.channel,
+        mode: f.mode,
+        upstream_provider: f.provider,
+        surfaces: f.surfaces,
+        sender_policy: f.sender,
+      };
+      try {
+        const r = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ healthcheck: true, _probe: "comms-health-monitor" }),
+        });
+        const body = await r.text();
+        detail = { ...detail, http_status: r.status, body_preview: body.slice(0, 160) };
+        // 429 from Supabase's edge router = inconclusive (our own rate limit), not a function failure.
+        if (r.status === 429 && /rate limit/i.test(body)) {
+          status = "warn";
+          msg = `INCONCLUSIVE — probe rate-limited by edge router (HTTP 429). Retry next cycle. Surfaces: ${f.surfaces.join(", ")}.`;
+        } else if (r.status >= 500) {
+          status = "fail";
+          msg = `BROKEN — ${f.fn} returned HTTP ${r.status} (handler crashed). Body: ${body.slice(0, 120)}. Affects: ${f.surfaces.join(", ")}.`;
+        } else if (r.status === 404) {
+          status = "fail";
+          msg = `BROKEN — ${f.fn} not deployed (404). Feature has no backend. Affects: ${f.surfaces.join(", ")}.`;
+        } else {
+          status = "pass";
+          msg = `WORKING — ${f.fn} deployed and reachable (HTTP ${r.status}). Sender: ${f.sender || "n/a"}. Surfaces: ${f.surfaces.join(", ")}.`;
+        }
+      } catch (e) {
+        const errMsg = (e as Error).message;
+        if (/rate limit/i.test(errMsg)) {
+          status = "warn";
+          msg = `INCONCLUSIVE — probe rate-limited by edge router. Retry next cycle. Affects: ${f.surfaces.join(", ")}.`;
+        } else {
+          status = "fail";
+          msg = `BROKEN — ${f.fn} unreachable: ${errMsg}. Affects: ${f.surfaces.join(", ")}.`;
+        }
       }
-    } catch (e) {
-      status = "fail";
-      msg = `BROKEN — ${f.fn} unreachable: ${(e as Error).message}. Affects: ${f.surfaces.join(", ")}.`;
-    }
-    out.push({
-      provider: f.provider === "mixed" ? "twilio" : f.provider,
-      layer: "feature_mode",
-      target: `${f.channel}:${f.key}`,
-      status,
-      message: msg,
-      detail: { ...detail, label: f.label },
-    });
-  }));
+      return {
+        provider: f.provider === "mixed" ? "twilio" : f.provider,
+        layer: "feature_mode",
+        target: `${f.channel}:${f.key}`,
+        status,
+        message: msg,
+        detail: { ...detail, label: f.label },
+      } as Result;
+    }));
+    out.push(...rows);
+    // Tiny gap between batches to ease per-trace rate limit
+    if (i + BATCH < FEATURE_MODES.length) await new Promise((r) => setTimeout(r, 250));
+  }
 
   // ── Recent-activity heartbeat per channel (synthetic delivery proxy) ────
   try {
