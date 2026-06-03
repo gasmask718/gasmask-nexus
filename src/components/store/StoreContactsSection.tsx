@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Phone, MessageSquare, Star, User, Eye, Edit, Trash2 } from 'lucide-react';
+import { Users, Plus, Phone, MessageSquare, Star, User, Eye, Edit, Trash2, History, ChevronDown } from 'lucide-react';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { toast } from 'sonner';
 import { AddContactModal } from './AddContactModal';
@@ -15,6 +15,8 @@ import { useMessage } from '@/components/communication/MessageProvider';
 import { useStoreContactsWithResponsiveness } from '@/hooks/useContactResponsiveness';
 import { ContactResponsivenessBadge } from '@/components/contact/ContactResponsivenessBadge';
 import { ContactLastInteraction } from '@/components/contact/ContactLastInteraction';
+import { ContactCommunicationTimeline } from './ContactCommunicationTimeline';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface StoreContact {
   id: string;
@@ -66,6 +68,7 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
   const [editingContact, setEditingContact] = useState<StoreContact | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingContact, setDeletingContact] = useState<StoreContact | null>(null);
+  const [openTimelines, setOpenTimelines] = useState<Record<string, boolean>>({});
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -173,9 +176,13 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
             </div>
           ) : (
             <div className="space-y-3">
-              {contacts.map((contact) => (
-                <div
+              {contacts.map((contact) => {
+                const isOpen = !!openTimelines[contact.id];
+                return (
+                <Collapsible
                   key={contact.id}
+                  open={isOpen}
+                  onOpenChange={(v) => setOpenTimelines((s) => ({ ...s, [contact.id]: v }))}
                   className="flex flex-col p-3 rounded-lg bg-muted/30 border border-border/30 gap-3"
                 >
                   {/* Top row: Name, badges, actions */}
@@ -218,6 +225,12 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                       </div>
                     </div>
                     <div className="flex items-center gap-1 flex-wrap">
+                      <CollapsibleTrigger asChild>
+                        <Button size="sm" variant="outline" title="Communication Timeline">
+                          <History className="h-4 w-4" />
+                          <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                        </Button>
+                      </CollapsibleTrigger>
                       <Button
                         size="sm"
                         variant="outline"
@@ -272,8 +285,21 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                     last_text_received_at={contact.last_text_received_at}
                     className="ml-13 pl-13"
                   />
-                </div>
-              ))}
+
+                  <CollapsibleContent>
+                    <div className="pt-3 mt-1 border-t border-border/30">
+                      <ContactCommunicationTimeline
+                        storeId={storeId}
+                        contactId={contact.id}
+                        contactName={contact.name}
+                        contactPhone={contact.phone}
+                        canReceiveSms={contact.can_receive_sms}
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+              })}
             </div>
           )}
         </CardContent>
