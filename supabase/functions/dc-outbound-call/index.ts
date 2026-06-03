@@ -95,7 +95,16 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { to_number, lead_name, lead_id, business, agent_type, campaign_id, agent_id_override } = await req.json();
+    const body = await req.json();
+    const {
+      to_number, lead_name, lead_id, business, agent_type, campaign_id, agent_id_override,
+      source_table: rawSourceTable, source_id: rawSourceId, source_business: rawSourceBusiness,
+      store_id, // legacy from OutreachActions
+    } = body;
+    // Resolve source: explicit > store_id legacy mapping > none
+    const source_table: string | null = rawSourceTable || (store_id ? "store_master" : null);
+    const source_id: string | null = rawSourceId || store_id || lead_id || null;
+    const source_business: string | null = rawSourceBusiness || (business || null);
 
     if (!to_number) {
       return new Response(JSON.stringify({ success: false, error: "to_number is required" }),
