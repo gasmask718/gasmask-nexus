@@ -18,20 +18,11 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Loader2, Rocket, Phone, X } from 'lucide-react';
 import { toast } from 'sonner';
-
-const BUSINESSES = [
-  { key: 'gasmask', name: 'GasMask / Hot Mama' },
-  { key: 'brandaro', name: 'Brandaro Digital' },
-  { key: 'unforgettable_times', name: 'Unforgettable Times' },
-  { key: 'real_estate', name: 'Real Estate' },
-  { key: 'surplus_funds', name: 'Surplus Funds' },
-  { key: 'top_tier', name: 'Top Tier Experience' },
-  { key: 'iclean', name: 'iClean WeClean' },
-  { key: 'playboxxx', name: 'PlayBoxxx' },
-];
+import { useDCBusinesses } from '@/hooks/useDCBusinesses';
 
 export default function DCBulkLaunch() {
   const qc = useQueryClient();
+  const { data: businesses = [] } = useDCBusinesses();
   const [business, setBusiness] = useState('gasmask');
   const [agentId, setAgentId] = useState<string>('');
   const [concurrency, setConcurrency] = useState(3);
@@ -189,8 +180,8 @@ export default function DCBulkLaunch() {
               <Select value={business} onValueChange={setBusiness}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {BUSINESSES.map((b) => (
-                    <SelectItem key={b.key} value={b.key}>{b.name}</SelectItem>
+                  {businesses.map((b) => (
+                    <SelectItem key={b.business_key} value={b.business_key}>{b.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
