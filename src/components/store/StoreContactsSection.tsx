@@ -44,6 +44,11 @@ interface StoreContact {
   last_text_received_at?: string | null;
   responsiveness_status?: string | null;
   last_responded_at?: string | null;
+  number_verification_status?: string | null;
+  number_verification_sent_at?: string | null;
+  number_verification_delivered_at?: string | null;
+  number_verification_confirmed_at?: string | null;
+  number_verification_error?: string | null;
 }
 
 interface StoreContactsSectionProps {
