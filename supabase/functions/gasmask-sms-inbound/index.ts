@@ -173,6 +173,24 @@ serve(async (req) => {
             status: "pending",
           });
         }
+
+        // Task 19b: also push to universal route-board sink
+        const { error: promoteErr } = await supabase.rpc("promote_store_to_route_board", {
+          _store_id: store.id,
+          _signal_source: "sms_outcome",
+          _reason: `SMS reply: "${messageBody.substring(0, 180)}"`,
+          _source_ref: messageSid || null,
+          _business: "gasmask",
+          _priority: 4,
+          _estimated_revenue: null,
+          _urgency: "this_week",
+          _intent_summary: messageBody.substring(0, 240),
+        });
+        if (promoteErr) {
+          console.warn("[GASMASK-SMS] promote_store_to_route_board failed:", promoteErr.message);
+        } else {
+          console.log(`[GASMASK-SMS] promoted store ${store.id} → route board (sms_outcome)`);
+        }
       }
     }
 

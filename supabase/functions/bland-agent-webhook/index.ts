@@ -238,27 +238,38 @@ Deno.serve(async (req) => {
                 storeName = (s as any)?.name ?? null;
               }
 
-              const { error: queueErr } = await supabase
-                .from("pending_route_stops")
-                .insert({
-                  bland_call_log_id: blandLogId,
-                  store_id: storeId,
-                  store_name: storeName,
-                  requested_day: blandOutcome.preferred_day ?? null,
-                  requested_window: blandOutcome.preferred_window ?? null,
-                  urgency: blandOutcome.urgency ?? null,
-                  intent_summary: blandOutcome.intent_summary,
-                  recommended_boxes,
-                  recommended_brand,
-                  estimated_revenue,
-                  confidence_level,
-                  ai_payload: aiPayload,
-                  status: "pending_approval",
-                });
+              // Universal sink via promote_store_to_route_board (dedup-aware)
+              const reasonText = blandOutcome.intent_summary || 'AI call: delivery requested';
+              const { data: promoteId, error: queueErr } = await supabase.rpc(
+                'promote_store_to_route_board',
+                {
+                  _store_id: storeId,
+                  _signal_source: 'ai_call_outcome',
+                  _reason: reasonText,
+                  _source_ref: call_id,
+                  _business: 'gasmask',
+                  _priority: blandOutcome.urgency === 'today' ? 5 : blandOutcome.urgency === 'this_week' ? 4 : 3,
+                  _estimated_revenue: estimated_revenue,
+                  _urgency: blandOutcome.urgency ?? 'this_week',
+                  _intent_summary: blandOutcome.intent_summary,
+                }
+              );
               if (queueErr) {
-                console.error("[bland-agent-webhook] pending_route_stops insert failed:", queueErr);
+                console.error("[bland-agent-webhook] promote_store_to_route_board failed:", queueErr);
               } else {
-                console.log(`[bland-agent-webhook] queued pending stop for store ${storeId}`);
+                console.log(`[bland-agent-webhook] promoted store ${storeId} → pending_route_stops ${promoteId} (ai_call_outcome)`);
+                // Also stamp the bland-side enrichment fields on the row (non-fatal)
+                if (promoteId) {
+                  await supabase.from('pending_route_stops').update({
+                    bland_call_log_id: blandLogId,
+                    requested_day: blandOutcome.preferred_day ?? null,
+                    requested_window: blandOutcome.preferred_window ?? null,
+                    recommended_boxes,
+                    recommended_brand,
+                    confidence_level,
+                    ai_payload: aiPayload,
+                  }).eq('id', promoteId);
+                }
               }
             } else {
               console.warn(

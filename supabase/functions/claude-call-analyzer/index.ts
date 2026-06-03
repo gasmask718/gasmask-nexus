@@ -137,6 +137,47 @@ serve(async (req) => {
       await updateObjectionLibrary(supabase, business_unit, analysis);
     }
 
+    // ─── Task 19b: Comms outcome bridge → Route Command Center ───
+    // If analysis implies an in-person visit, promote the store to the route board.
+    try {
+      const followupText = String(analysis.recommended_followup || "").toLowerCase();
+      const visitKeywords = ["visit", "come by", "stop by", "in person", "in-person", "drop by", "swing by", "send rep", "send a rep", "collect", "pickup", "pick up", "deliver", "delivery"];
+      const visitNextActions = ["visit", "collect", "send_rep", "in_person_followup", "send_sample"];
+      const impliesVisit =
+        visitNextActions.includes(String(nextAction).toLowerCase()) ||
+        visitKeywords.some((kw) => followupText.includes(kw));
+
+      if (impliesVisit) {
+        const { data: callRow } = await supabase
+          .from("dynasty_ai_calls")
+          .select("store_id, business_unit")
+          .eq("call_id", call_id)
+          .maybeSingle();
+        const storeId = (callRow as any)?.store_id;
+        if (storeId) {
+          const reasonText = analysis.recommended_followup || `AI call analysis: ${nextAction}`;
+          const { error: promoteErr } = await supabase.rpc("promote_store_to_route_board", {
+            _store_id: storeId,
+            _signal_source: "ai_call_outcome",
+            _reason: String(reasonText).slice(0, 240),
+            _source_ref: call_id,
+            _business: business_unit || (callRow as any)?.business_unit || null,
+            _priority: leadQuality === "hot" ? 5 : leadQuality === "warm" ? 4 : 3,
+            _estimated_revenue: null,
+            _urgency: "this_week",
+            _intent_summary: analysis.recommended_followup || null,
+          });
+          if (promoteErr) {
+            console.warn("[claude-call-analyzer] promote_store_to_route_board failed:", promoteErr.message);
+          } else {
+            console.log(`[claude-call-analyzer] promoted store ${storeId} → route board (ai_call_outcome)`);
+          }
+        }
+      }
+    } catch (bridgeErr: any) {
+      console.warn("[claude-call-analyzer] route-board bridge error:", bridgeErr?.message);
+    }
+
     console.log(
       `Analysis complete for ${call_id}: score=${analysis.overall_score}, lead=${leadQuality}, cost=${analysisCostCents}¢`
     );
