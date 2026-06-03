@@ -243,6 +243,7 @@ export default function MasterOpportunities() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { initiateCall } = useCall();
 
   // ── State ──
   const [mainTab, setMainTab] = useState<MainTab>('signals');
