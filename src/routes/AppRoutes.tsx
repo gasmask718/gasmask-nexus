@@ -1833,6 +1833,16 @@ export default function AppRoutes() {
           }
         />
 
+        {/* Dynasty Direct Ops — Sprint 1 unification + geocoding console */}
+        <Route
+          path="/admin/dynasty-direct-ops"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner']} showLocked>
+              <DynastyDirectOps />
+            </RequireRole>
+          }
+        />
+
         {/* Marketplace Connection Pack - Dev Only, Admin/Owner */}
         <Route
           path="/admin/dev/marketplace-connection"
