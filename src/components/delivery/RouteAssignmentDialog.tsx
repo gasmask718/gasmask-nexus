@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -80,6 +80,13 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
   const [neighborhood, setNeighborhood] = useState<string>('');
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('none');
+
+  // Re-sync preselected stores whenever the dialog is (re)opened with new preselections
+  useEffect(() => {
+    if (open && preselectedStores && preselectedStores.length > 0) {
+      setSelectedStores(preselectedStores);
+    }
+  }, [open, preselectedStores]);
 
   // Fetch route templates
   const { data: templates = [] } = useQuery({
