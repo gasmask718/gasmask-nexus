@@ -1488,6 +1488,7 @@ export default function AppRoutes() {
           <Route path="clients" element={<DCClients />} />
           <Route path="bulk-launch" element={<DCBulkLaunch />} />
           <Route path="live" element={<DCLiveCallsBoard />} />
+          <Route path="finished" element={<DCFinishedCallsPage />} />
         </Route>
 
         {/* 🎙️ Voice Ops Dashboard */}
