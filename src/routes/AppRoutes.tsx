@@ -738,6 +738,7 @@ const NeighborhoodIntelligencePage = lazy(() => import('@/pages/os/inventory').t
 const ProductConversions = lazy(() => import('@/pages/os/ProductConversions'));
 const LegacyInvoiceRepair = lazy(() => import('@/pages/admin/LegacyInvoiceRepair'));
 const HistoricalImportReview = lazy(() => import('@/pages/admin/HistoricalImportReview'));
+const DynastyDirectOps = lazy(() => import('@/pages/admin/DynastyDirectOps'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
 const OSLayout = lazy(() => import('@/pages/os/OSLayout'));
 const StoreInventoryPage = lazy(() => import('@/pages/os/inventory/StoreInventoryPage'));
