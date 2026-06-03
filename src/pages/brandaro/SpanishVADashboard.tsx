@@ -47,6 +47,7 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 
 export default function SpanishVADashboard() {
   const queryClient = useQueryClient();
+  const { initiateCall } = useCall();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
   const [coachingOpen, setCoachingOpen] = useState(false);
