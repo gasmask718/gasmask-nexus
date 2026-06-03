@@ -28,6 +28,7 @@ const dcNavSections = [
   {
     title: '📋 Campaigns',
     items: [
+      { path: '/dynasty-connect/bulk-launch', label: 'Bulk Launch', icon: Rocket },
       { path: '/dynasty-connect/campaigns', label: 'All Campaigns', icon: Target },
       { path: '/dynasty-connect/campaigns/builder', label: 'Campaign Builder', icon: Zap },
       { path: '/dynasty-connect/campaigns/outbound', label: 'Outbound Dialer', icon: Phone },
