@@ -69,6 +69,9 @@ export default function DCCommandCenter() {
           <span className="text-muted-foreground">{activeAgents} Agents Active</span>
           <span className="font-medium">{totalCallsToday} Calls Today</span>
           <span className="font-medium">{totalMinutesToday} Min Today</span>
+          <Button size="sm" onClick={() => navigate('/dynasty-connect/bulk-launch')}>
+            <Rocket className="h-3 w-3 mr-1" /> Bulk Launch
+          </Button>
         </div>
       </div>
 
