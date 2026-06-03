@@ -501,8 +501,8 @@ export default function MasterOpportunities() {
             toast.success(`GasMask AI call initiated to ${opp.name}`);
           } catch (err: any) { toast.error(err.message); }
         } else {
-          // Brandaro website lead — open tel: link
-          window.open(`tel:${opp.phone}`);
+          // Brandaro website lead — manual call via logged pipeline
+          initiateCall({ destinationPhone: opp.phone, entityType: 'store', entityId: opp.id, entityName: opp.name });
         }
         break;
       case 'reply':
