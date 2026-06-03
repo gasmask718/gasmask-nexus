@@ -1484,6 +1484,7 @@ export default function AppRoutes() {
           <Route path="analytics-dashboard" element={<DCAnalyticsDashboard />} />
           <Route path="lead-pipeline" element={<DCLeadPipeline />} />
           <Route path="clients" element={<DCClients />} />
+          <Route path="bulk-launch" element={<DCBulkLaunch />} />
         </Route>
 
         {/* 🎙️ Voice Ops Dashboard */}
