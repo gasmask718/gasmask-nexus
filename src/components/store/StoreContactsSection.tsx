@@ -68,6 +68,7 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
   const [editingContact, setEditingContact] = useState<StoreContact | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingContact, setDeletingContact] = useState<StoreContact | null>(null);
+  const [openTimelines, setOpenTimelines] = useState<Record<string, boolean>>({});
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
