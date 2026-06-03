@@ -260,6 +260,7 @@ const OpsCommandCenter = lazy(() => import('@/pages/delivery').then(m => ({ defa
 const RouteOptimizerPage = lazy(() => import('@/pages/delivery').then(m => ({ default: m.RouteOptimizerPage })));
 const PendingRouteStopsPage = lazy(() => import('@/pages/dispatch/PendingRouteStopsPage'));
 const MyRoute = lazy(() => import('@/pages/MyRoute'));
+const RouteCommandCenter = lazy(() => import('@/pages/RouteCommandCenter'));
 const SidebarVisualTest = lazy(() => import('@/pages/SidebarVisualTest'));
 const SidebarDebug = lazy(() => import('@/pages/debug/SidebarDebug'));
 const Leaderboard = lazy(() => import('@/pages/Leaderboard'));
@@ -1539,7 +1540,10 @@ export default function AppRoutes() {
         <Route path="/routes" element={<RoutesPage />} />
         <Route path="/routes/optimizer" element={<RouteOptimizer />} />
         <Route path="/routes/ops-center" element={<RouteOpsCenterEnhanced />} />
-        <Route path="/routes/command-center" element={<OpsCommandCenter />} />
+        <Route path="/routes/command-center" element={<RouteCommandCenter />} />
+        <Route path="/routes/command" element={<RouteCommandCenter />} />
+        <Route path="/gasmask/routes/command" element={<RouteCommandCenter />} />
+        <Route path="/dispatch/command" element={<RouteCommandCenter />} />
         <Route path="/route-ops-center" element={<RouteOpsCenterEnhanced />} />
         <Route path="/ops-command-center" element={<OpsCommandCenter />} />
         {/* Route Optimizer - Floor 4 Planning Intelligence */}
