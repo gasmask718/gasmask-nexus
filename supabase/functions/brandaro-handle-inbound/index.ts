@@ -1,9 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyTwilio } from "../_shared/dialer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-twilio-signature, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const STOP_RE = /^\s*(STOP|STOPALL|UNSUBSCRIBE|QUIT|CANCEL|END|REMOVE)\b/i;
 
 /**
  * brandaro-handle-inbound
@@ -13,7 +16,7 @@ const corsHeaders = {
  * 
  * Endpoints:
  *   - POST with JSON body: manual submission
- *   - POST with form data: Twilio webhook
+ *   - POST with form data: Twilio webhook (signature verified)
  */
 
 Deno.serve(async (req) => {
@@ -32,12 +35,24 @@ Deno.serve(async (req) => {
     let messageText = "";
     let senderPhone = "";
     let channel = "sms";
+    let isTwilioForm = false;
 
     if (contentType.includes("application/x-www-form-urlencoded")) {
       // Twilio webhook format
+      isTwilioForm = true;
       const formData = await req.formData();
-      messageText = formData.get("Body")?.toString() || "";
-      senderPhone = formData.get("From")?.toString() || "";
+      const sigParams: Record<string, string> = {};
+      formData.forEach((v, k) => (sigParams[k] = String(v)));
+
+      // ── Signature verification ──
+      const v = verifyTwilio(req, sigParams);
+      if (!v.ok) {
+        console.error(`[brandaro-handle-inbound] signature invalid: ${v.reason}`);
+        return new Response("Forbidden", { status: 403, headers: corsHeaders });
+      }
+
+      messageText = sigParams.Body || "";
+      senderPhone = sigParams.From || "";
       channel = "sms";
     } else {
       const body = await req.json();
@@ -60,6 +75,28 @@ Deno.serve(async (req) => {
 
     // ─── 1. Match sender to a lead ──────────────────────────────
     const normalizedPhone = normalizePhone(senderPhone);
+
+    // ─── 1a. STOP / opt-out enforcement (CTIA-compliant) ────────
+    if (STOP_RE.test(messageText.trim())) {
+      console.log(`[brandaro-handle-inbound] 🛑 STOP from ${normalizedPhone}`);
+      await supabase
+        .from("opt_out_events")
+        .upsert(
+          { phone_number: normalizedPhone, source: "brandaro_inbound", reason: `Inbound STOP: "${messageText.trim().slice(0, 80)}"` },
+          { onConflict: "phone_number" }
+        );
+      await supabase
+        .from("brandaro_qualified_leads")
+        .update({ ai_paused: true, pipeline_stage: "lost", lead_status: "not_interested", updated_at: new Date().toISOString() })
+        .or(`phone.eq.${normalizedPhone},phone.eq.${senderPhone},phone_number.eq.${normalizedPhone}`);
+      return new Response(
+        isTwilioForm
+          ? `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`
+          : JSON.stringify({ ok: true, opted_out: true }),
+        { status: 200, headers: isTwilioForm ? { "Content-Type": "text/xml", ...corsHeaders } : { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { data: lead } = await supabase
       .from("brandaro_qualified_leads")
       .select("id, business_name, status, phone, email")
