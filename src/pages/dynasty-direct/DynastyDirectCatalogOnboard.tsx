@@ -53,7 +53,7 @@ export default function DynastyDirectCatalogOnboard() {
 
   const canStartB = productName.trim().length > 1 && photos.length > 0;
 
-  async function startStep B() {
+  async function startStepB() {
     if (!canStartB) return;
     setStreaming(true);
     setCandidates([]);
