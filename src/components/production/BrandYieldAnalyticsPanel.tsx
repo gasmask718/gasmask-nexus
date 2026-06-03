@@ -98,6 +98,10 @@ export function BrandYieldAnalyticsPanel({ officeId }: Props) {
     () => (data ? pivot(data.points, data.brands, 'boxes_per_lb') : []),
     [data],
   );
+  const gramsRows = useMemo(
+    () => (data ? pivot(data.points, data.brands, 'grams_per_tube') : []),
+    [data],
+  );
   const lbsRows = useMemo(
     () => (data ? pivot(data.points, data.brands, 'lbs_in') : []),
     [data],
