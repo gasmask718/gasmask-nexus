@@ -738,6 +738,7 @@ const NeighborhoodIntelligencePage = lazy(() => import('@/pages/os/inventory').t
 const ProductConversions = lazy(() => import('@/pages/os/ProductConversions'));
 const LegacyInvoiceRepair = lazy(() => import('@/pages/admin/LegacyInvoiceRepair'));
 const HistoricalImportReview = lazy(() => import('@/pages/admin/HistoricalImportReview'));
+const DynastyDirectOps = lazy(() => import('@/pages/admin/DynastyDirectOps'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
 const OSLayout = lazy(() => import('@/pages/os/OSLayout'));
 const StoreInventoryPage = lazy(() => import('@/pages/os/inventory/StoreInventoryPage'));
@@ -1828,6 +1829,16 @@ export default function AppRoutes() {
           element={
             <RequireRole allowedRoles={['admin', 'owner']} showLocked>
               <HistoricalImportReview />
+            </RequireRole>
+          }
+        />
+
+        {/* Dynasty Direct Ops — Sprint 1 unification + geocoding console */}
+        <Route
+          path="/admin/dynasty-direct-ops"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner']} showLocked>
+              <DynastyDirectOps />
             </RequireRole>
           }
         />

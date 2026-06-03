@@ -152,32 +152,68 @@ export function useCheckout() {
 
       if (itemsError) throw itemsError;
 
-      // Create order routing entries for each wholesaler
+      // ═══════════════════════════════════════════════════════════
+      // SPRINT 1: FAN-OUT FULFILLMENTS + RESERVE INVENTORY
+      // One marketplace_fulfillments row per supplier — what brings
+      // the entire supplier portal to life. Inventory is reserved
+      // atomically per item (RPC throws on insufficient_stock).
+      // ═══════════════════════════════════════════════════════════
       for (const [wholesalerId, items] of wholesalerGroups) {
-        if (wholesalerId !== 'unknown') {
-          const { error: routingError } = await supabase
-            .from('order_routing')
-            .insert({
-              order_id: order.id,
-              assigned_wholesaler_id: wholesalerId,
-              pickup_required: data.deliveryType === 'pickup',
-              cash_collection: data.paymentMethod === 'cash',
-              cash_amount: data.paymentMethod === 'cash' ? data.totals.total : 0,
-              delivery_type: data.deliveryType,
-              status: 'pending',
+        if (wholesalerId === 'unknown') continue;
+
+        for (const item of items) {
+          if (!item.product_id) continue;
+          try {
+            await supabase.rpc('reserve_marketplace_inventory', {
+              p_product_id: item.product_id,
+              p_wholesaler_id: wholesalerId,
+              p_qty: item.qty,
             });
-
-          if (routingError) console.error('Routing error:', routingError);
-
-          // Create shipping label placeholder
-          if (data.deliveryType === 'ship') {
-            await supabase
-              .from('shipping_labels')
-              .insert({
-                order_id: order.id,
-                status: 'pending',
-              });
+          } catch (err: any) {
+            const msg = err?.message || String(err);
+            if (msg.includes('insufficient_stock')) {
+              throw new Error(`Out of stock: ${item.product?.product_name || item.product_id}`);
+            }
+            console.error('reserve_marketplace_inventory failed:', err);
           }
+        }
+
+        const itemsSnapshot = items.map((it) => ({
+          product_id: it.product_id,
+          product_name: it.product?.product_name,
+          qty: it.qty,
+          price_each: it.price_locked || 0,
+        }));
+
+        const { error: fulfillmentError } = await supabase
+          .from('marketplace_fulfillments')
+          .insert({
+            order_id: order.id,
+            wholesaler_id: wholesalerId,
+            status: 'pending',
+            items_snapshot: itemsSnapshot,
+            shipping_mode: 'sandbox', // flips to 'live' the moment EASYPOST_API_KEY is set
+          });
+        if (fulfillmentError) console.error('Fulfillment fan-out error:', fulfillmentError);
+
+        const { error: routingError } = await supabase
+          .from('order_routing')
+          .insert({
+            order_id: order.id,
+            assigned_wholesaler_id: wholesalerId,
+            pickup_required: data.deliveryType === 'pickup',
+            cash_collection: data.paymentMethod === 'cash',
+            cash_amount: data.paymentMethod === 'cash' ? data.totals.total : 0,
+            delivery_type: data.deliveryType,
+            status: 'pending',
+          });
+        if (routingError) console.error('Routing error:', routingError);
+
+        if (data.deliveryType === 'ship') {
+          await supabase.from('shipping_labels').insert({
+            order_id: order.id,
+            status: 'pending',
+          });
         }
       }
 
