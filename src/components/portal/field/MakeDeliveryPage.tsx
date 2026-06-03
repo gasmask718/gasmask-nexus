@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCall } from '@/components/communication/CallProvider';
 import { DeliveryTaskCard } from '@/components/delivery/DeliveryTaskCard';
 import { DeliveryStopIntelligenceCards } from '@/components/delivery/DeliveryStopIntelligenceCards';
+import { FieldVerifyContactsCard } from '@/components/portal/field/FieldVerifyContactsCard';
 
 interface DeliveryItem {
   id: string;
