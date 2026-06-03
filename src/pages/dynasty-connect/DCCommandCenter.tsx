@@ -101,9 +101,27 @@ export default function DCCommandCenter() {
                 </div>
                 <div className="text-xs text-muted-foreground">{biz.agents.join(', ')}</div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => navigate('/dynasty-connect/campaigns/outbound')}><Phone className="h-3 w-3 mr-1" /> Campaign</Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 text-xs"
+                    disabled={stats.agentCount === 0}
+                    onClick={() =>
+                      setLauncherBiz({
+                        key: biz.key,
+                        name: biz.name,
+                        phone: stats.phone || biz.phoneDefault,
+                      })
+                    }
+                  >
+                    <Rocket className="h-3 w-3 mr-1" /> Launch
+                  </Button>
                   <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => navigate('/dynasty-connect/intelligence')}><Brain className="h-3 w-3 mr-1" /> Calls</Button>
                 </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
               </CardContent>
             </Card>
           );
