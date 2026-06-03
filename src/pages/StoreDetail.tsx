@@ -49,6 +49,7 @@ import { useStoreMasterResolver } from "@/hooks/useStoreMasterResolver";
 // ═══════════════════════════════════════════════════════════════════════════════
 import { SharedStoreCoreIntelligence } from "@/components/store/SharedStoreCoreIntelligence";
 import { TubesSoldHeroStrip } from "@/components/store-profile/TubesSoldHeroStrip";
+import { BagsSection } from "@/components/store-profile/BagsSection";
 import { EngagementBanner } from "@/components/store-profile/EngagementBanner";
 import { BrandPaymentQuickView } from "@/components/store/BrandPaymentQuickView";
 import { RelationshipStatusInline } from "@/components/store/RelationshipStatusInline";
@@ -761,6 +762,7 @@ const StoreDetail = () => {
           {/* ═══════════════════════════════════════════════════════════ */}
           <StoreContactsSection storeId={id || ""} storeName={store.name} />
           <TubesSoldHeroStrip storeId={id || ""} />
+          <BagsSection storeId={id || ""} />
           <EngagementBanner storeId={id || ""} />
           <SharedStoreCoreIntelligence
             storeId={id || ""}
