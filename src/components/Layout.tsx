@@ -1134,6 +1134,20 @@ const Layout = ({ children }: LayoutProps) => {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🚀 DYNASTY DIRECT HUB — unified DD shell */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-blue-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-blue-400/80 tracking-wider">
+          🚀 Dynasty Direct
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.dynastyDirect.id,
+          DYNASTY_NAVIGATION.dynastyDirect.name,
+          DYNASTY_NAVIGATION.dynastyDirect.items
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 🛍️ MARKETPLACES & E-COMMERCE */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="pt-2 border-t border-border/50">
