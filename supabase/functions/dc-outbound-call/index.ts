@@ -156,6 +156,38 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // ===== Pre-call context pull (Step 5) =====
+    // If we have a source row, hydrate {{display_name}}, {{company}}, {{recent_calls}}
+    // into the Bland prompt so the agent knows who they're talking to + history.
+    let requestData: Record<string, unknown> = { lead_name: lead_name || null };
+    if (source_table && source_id) {
+      try {
+        const ctxUrl = new URL(`${SUPABASE_URL}/functions/v1/bland-context-api`);
+        ctxUrl.searchParams.set("source_table", source_table);
+        ctxUrl.searchParams.set("source_id", source_id);
+        ctxUrl.searchParams.set("api_key", Deno.env.get("BLAND_API_KEY") || "");
+        const ctxRes = await fetch(ctxUrl.toString());
+        if (ctxRes.ok) {
+          const ctx = await ctxRes.json();
+          if (ctx?.matched) {
+            requestData = {
+              ...requestData,
+              display_name: ctx.display_name,
+              company: ctx.company,
+              source_table,
+              source_id,
+              recent_calls_summary: Array.isArray(ctx.recent_calls)
+                ? ctx.recent_calls.map((c: any) => `${c.at?.slice(0,10) || "?"} ${c.outcome || "—"}`).join("; ")
+                : "",
+              details_json: JSON.stringify(ctx.details || {}).slice(0, 800),
+            };
+          }
+        }
+      } catch (e) {
+        console.warn("[dc-outbound-call] context pull failed (non-fatal):", e);
+      }
+    }
+
     const result = await placeBlandCall({
       to: to_number,
       from: fromNumber,
@@ -172,7 +204,7 @@ Deno.serve(async (req) => {
         source_id,
         source_business,
       },
-      record: true,
+      request_data: requestData,
     });
 
     if (!result.ok) {
