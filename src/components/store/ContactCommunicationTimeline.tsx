@@ -37,6 +37,7 @@ type Entry = {
   transcript: string | null;
   recording_url: string | null;
   status: string | null;
+  call_id?: string | null; // Bland/dynasty call_id for transcript+analysis lookup
 };
 
 const normalize = (p?: string | null) => (p || "").replace(/\D/g, "").slice(-10);
