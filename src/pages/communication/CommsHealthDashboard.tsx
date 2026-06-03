@@ -133,8 +133,89 @@ export default function CommsHealthDashboard() {
         <Card><CardContent className="pt-6"><div className="text-3xl font-bold text-red-500">{totalFail}</div><div className="text-xs text-muted-foreground">Failing</div></CardContent></Card>
       </div>
 
+      {/* ── Calling & Texting Features (cross-provider feature matrix) ── */}
+      {(() => {
+        const featureRows = rows.filter((r) => r.layer === 'feature_mode');
+        if (featureRows.length === 0) return null;
+        const featStatus = rollup(featureRows);
+        const callRows = featureRows.filter((r) => r.target.startsWith('call:'));
+        const smsRows = featureRows.filter((r) => r.target.startsWith('sms:'));
+        const heartbeatRows = featureRows.filter((r) => r.target.startsWith('heartbeat:'));
+        const groups: { id: string; label: string; items: Row[] }[] = [
+          { id: 'call', label: 'Call modes', items: callRows },
+          { id: 'sms', label: 'Text modes', items: smsRows },
+          { id: 'heartbeat', label: 'End-to-end heartbeat (synthetic delivery proxy)', items: heartbeatRows },
+        ];
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 border-b pb-2">
+              <StatusIcon s={featStatus} />
+              <h2 className="text-lg font-semibold">Calling & Texting Features</h2>
+              <StatusBadge s={featStatus} />
+              <span className="text-xs text-muted-foreground ml-auto">
+                {featureRows.filter((r) => r.status === 'pass').length}/{featureRows.length} OK
+              </span>
+            </div>
+            {groups.map((g) => {
+              if (g.items.length === 0) return null;
+              const gStatus = rollup(g.items);
+              return (
+                <Card key={`feature-${g.id}`}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <StatusIcon s={gStatus} />
+                      {g.label}
+                      <span className="text-xs text-muted-foreground font-normal">
+                        ({g.items.filter((i) => i.status === 'pass').length}/{g.items.length} OK)
+                      </span>
+                    </CardTitle>
+                    <StatusBadge s={gStatus} />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1">
+                      {g.items
+                        .sort((a, b) => (a.status === b.status ? a.target.localeCompare(b.target) : a.status === 'fail' ? -1 : b.status === 'fail' ? 1 : a.status === 'warn' ? -1 : 1))
+                        .map((r) => {
+                          const label = (r.detail as any)?.label || r.target;
+                          const surfaces = ((r.detail as any)?.surfaces as string[] | undefined) || [];
+                          const provider = (r.detail as any)?.upstream_provider || r.provider;
+                          const fn = (r.detail as any)?.function;
+                          const sender = (r.detail as any)?.sender_policy;
+                          return (
+                            <div key={`feat-${r.target}`} className={`text-sm flex items-start gap-3 p-2 rounded ${r.status === 'fail' ? 'bg-red-500/10' : r.status === 'warn' ? 'bg-yellow-500/10' : 'bg-muted/30'}`}>
+                              <StatusIcon s={r.status} />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-semibold flex items-center gap-2 flex-wrap">
+                                  <span>{label}</span>
+                                  <Badge variant="outline" className="text-[10px] uppercase">{r.status === 'pass' ? 'WORKING' : r.status === 'warn' ? 'IDLE' : 'BROKEN'}</Badge>
+                                  {fn && <span className="font-mono text-[10px] text-muted-foreground">{fn}</span>}
+                                  <span className="text-[10px] text-muted-foreground">upstream: {provider}</span>
+                                </div>
+                                {r.message && <div className="text-xs text-muted-foreground mt-0.5">{r.message}</div>}
+                                {surfaces.length > 0 && (
+                                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                                    Surfaces: {surfaces.join(' · ')}
+                                    {sender && <> &nbsp;|&nbsp; Sender: {sender}</>}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground whitespace-nowrap">
+                                {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        );
+      })()}
+
       {PROVIDERS.map((provider) => {
-        const providerRows = rows.filter((r) => r.provider === provider.id);
+        const providerRows = rows.filter((r) => r.provider === provider.id && r.layer !== 'feature_mode');
         const providerStatus = providerRows.length === 0 ? 'warn' : rollup(providerRows);
         return (
           <div key={provider.id} className="space-y-3">
