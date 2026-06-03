@@ -143,6 +143,7 @@ export function BrandYieldAnalyticsPanel({ officeId }: Props) {
   }
 
   const anomalies = data.summaries.filter(s => s.anomaly !== 'normal');
+  const gramsAnomalies = data.summaries.filter(s => s.grams_anomaly !== 'normal');
 
   return (
     <div className="space-y-4">
@@ -152,7 +153,7 @@ export function BrandYieldAnalyticsPanel({ officeId }: Props) {
           <CardTitle className="flex items-center gap-2">
             <Factory className="h-5 w-5" /> Brand Yield Analytics
             <span className="text-xs font-normal text-muted-foreground ml-2">
-              Lbs tobacco in → Boxes out · {data.range.start} → {data.range.end}
+              Lbs → Boxes → Tubes · {data.range.start} → {data.range.end}
             </span>
           </CardTitle>
           <Tabs value={bucket} onValueChange={v => setBucket(v as YieldBucket)}>
@@ -171,14 +172,20 @@ export function BrandYieldAnalyticsPanel({ officeId }: Props) {
           const color = brandColor(s.brand, i);
           const isLow = s.anomaly === 'low';
           const isHigh = s.anomaly === 'high';
+          const isOver = s.grams_anomaly === 'overstuffed';
+          const isUnder = s.grams_anomaly === 'understuffed';
           return (
             <Card key={s.brand} className="overflow-hidden">
               <div className="h-1" style={{ background: color }} />
               <CardContent className="p-4 space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-1">
                   <div className="font-semibold">{brandLabel(s.brand)}</div>
-                  {isLow && <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" /> Low yield</Badge>}
-                  {isHigh && <Badge variant="secondary" className="gap-1"><TrendingUp className="h-3 w-3" /> High yield</Badge>}
+                  <div className="flex flex-wrap gap-1">
+                    {isLow && <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" /> Low yield</Badge>}
+                    {isHigh && <Badge variant="secondary" className="gap-1"><TrendingUp className="h-3 w-3" /> High yield</Badge>}
+                    {isOver && <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" /> Overstuffed</Badge>}
+                    {isUnder && <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" /> Understuffed</Badge>}
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
@@ -190,11 +197,27 @@ export function BrandYieldAnalyticsPanel({ officeId }: Props) {
                     <div className="font-medium">{s.total_boxes.toLocaleString()}</div>
                   </div>
                   <div>
+                    <div className="text-muted-foreground text-xs">Tubes out</div>
+                    <div className="font-medium">{s.total_tubes.toLocaleString()}</div>
+                  </div>
+                  <div>
                     <div className="text-muted-foreground text-xs">Avg boxes/lb</div>
                     <div className="font-medium">{s.avg_boxes_per_lb.toFixed(2)}</div>
                   </div>
                   <div>
-                    <div className="text-muted-foreground text-xs">Latest vs baseline</div>
+                    <div className="text-muted-foreground text-xs">Lbs/box</div>
+                    <div className="font-medium">{s.avg_lbs_per_box.toFixed(2)}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs">Tubes/box</div>
+                    <div className="font-medium">{s.avg_tubes_per_box.toFixed(1)}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs">Avg g/tube</div>
+                    <div className="font-medium">{s.avg_grams_per_tube > 0 ? `${s.avg_grams_per_tube.toFixed(2)} g` : '—'}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs">Yield Δ vs baseline</div>
                     <div className={`font-medium flex items-center gap-1 ${s.variance_pct < 0 ? 'text-destructive' : s.variance_pct > 0 ? 'text-emerald-600' : ''}`}>
                       {s.variance_pct < 0 ? <TrendingDown className="h-3 w-3" /> : s.variance_pct > 0 ? <TrendingUp className="h-3 w-3" /> : null}
                       {s.variance_pct > 0 ? '+' : ''}{s.variance_pct.toFixed(1)}%
@@ -207,21 +230,40 @@ export function BrandYieldAnalyticsPanel({ officeId }: Props) {
         })}
       </div>
 
-      {anomalies.length > 0 && (
+      {(anomalies.length > 0 || gramsAnomalies.length > 0) && (
         <Card className="border-destructive/40 bg-destructive/5">
           <CardContent className="p-4 flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
-            <div className="text-sm">
-              <div className="font-semibold mb-1">Yield anomalies detected</div>
-              <ul className="space-y-0.5 text-muted-foreground">
-                {anomalies.map(a => (
-                  <li key={a.brand}>
-                    <span className="font-medium text-foreground">{brandLabel(a.brand)}</span>{' '}
-                    latest yield {a.latest_boxes_per_lb.toFixed(2)} boxes/lb vs baseline{' '}
-                    {a.baseline_boxes_per_lb.toFixed(2)} ({a.variance_pct > 0 ? '+' : ''}{a.variance_pct.toFixed(1)}%)
-                  </li>
-                ))}
-              </ul>
+            <div className="text-sm space-y-2">
+              {anomalies.length > 0 && (
+                <div>
+                  <div className="font-semibold mb-1">Yield anomalies</div>
+                  <ul className="space-y-0.5 text-muted-foreground">
+                    {anomalies.map(a => (
+                      <li key={`y-${a.brand}`}>
+                        <span className="font-medium text-foreground">{brandLabel(a.brand)}</span>{' '}
+                        latest yield {a.latest_boxes_per_lb.toFixed(2)} boxes/lb vs baseline{' '}
+                        {a.baseline_boxes_per_lb.toFixed(2)} ({a.variance_pct > 0 ? '+' : ''}{a.variance_pct.toFixed(1)}%)
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {gramsAnomalies.length > 0 && (
+                <div>
+                  <div className="font-semibold mb-1">Tube fill anomalies (±15% g/tube)</div>
+                  <ul className="space-y-0.5 text-muted-foreground">
+                    {gramsAnomalies.map(a => (
+                      <li key={`g-${a.brand}`}>
+                        <span className="font-medium text-foreground">{brandLabel(a.brand)}</span>{' '}
+                        {a.grams_anomaly === 'overstuffed' ? 'overstuffed' : 'understuffed'} —{' '}
+                        latest {a.latest_grams_per_tube.toFixed(2)} g/tube vs baseline{' '}
+                        {a.baseline_grams_per_tube.toFixed(2)} ({a.grams_variance_pct > 0 ? '+' : ''}{a.grams_variance_pct.toFixed(1)}%)
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -255,6 +297,39 @@ export function BrandYieldAnalyticsPanel({ officeId }: Props) {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      {/* Grams-per-tube trend */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Tube fill trend — grams per tube</CardTitle>
+          <div className="text-xs text-muted-foreground">
+            (tobacco_lbs × 453.592) ÷ tubes_total · ±15% drift flagged
+          </div>
+        </CardHeader>
+        <CardContent className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={gramsRows}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis dataKey="bucket" fontSize={11} />
+              <YAxis fontSize={11} unit=" g" />
+              <Tooltip formatter={(v: number) => `${Number(v).toFixed(2)} g`} />
+              <Legend formatter={(v) => brandLabel(String(v))} />
+              {data.brands.map((b, i) => (
+                <Line
+                  key={b}
+                  type="monotone"
+                  dataKey={b}
+                  stroke={brandColor(b, i)}
+                  strokeWidth={2}
+                  dot={false}
+                  connectNulls
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
 
       {/* Lbs in / Boxes out side-by-side */}
       <div className="grid gap-4 lg:grid-cols-2">
