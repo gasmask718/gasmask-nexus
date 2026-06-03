@@ -65735,17 +65735,22 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           bland_call_log_id: string | null
+          business: string | null
           confidence_level: string | null
           created_at: string
           estimated_revenue: number | null
           id: string
           intent_summary: string | null
+          priority: number | null
+          reason: string | null
           recommended_boxes: number | null
           recommended_brand: string | null
           rejection_reason: string | null
           requested_day: string | null
           requested_window: string | null
           route_stop_id: string | null
+          signal_source: string | null
+          source_ref: string | null
           status: string
           store_id: string
           store_name: string | null
@@ -65757,17 +65762,22 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           bland_call_log_id?: string | null
+          business?: string | null
           confidence_level?: string | null
           created_at?: string
           estimated_revenue?: number | null
           id?: string
           intent_summary?: string | null
+          priority?: number | null
+          reason?: string | null
           recommended_boxes?: number | null
           recommended_brand?: string | null
           rejection_reason?: string | null
           requested_day?: string | null
           requested_window?: string | null
           route_stop_id?: string | null
+          signal_source?: string | null
+          source_ref?: string | null
           status?: string
           store_id: string
           store_name?: string | null
@@ -65779,17 +65789,22 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           bland_call_log_id?: string | null
+          business?: string | null
           confidence_level?: string | null
           created_at?: string
           estimated_revenue?: number | null
           id?: string
           intent_summary?: string | null
+          priority?: number | null
+          reason?: string | null
           recommended_boxes?: number | null
           recommended_brand?: string | null
           rejection_reason?: string | null
           requested_day?: string | null
           requested_window?: string | null
           route_stop_id?: string | null
+          signal_source?: string | null
+          source_ref?: string | null
           status?: string
           store_id?: string
           store_name?: string | null
@@ -111242,14 +111257,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -114510,7 +114525,9 @@ export type Database = {
           last_visit_date: string | null
           neighborhood: string | null
           priority: number | null
+          reason: string | null
           signal_at: string | null
+          signal_source: string | null
           store_id: string | null
           store_name: string | null
           value: number | null
@@ -117395,6 +117412,20 @@ export type Database = {
       process_paid_order: { Args: { p_order_id: string }; Returns: Json }
       process_recalc_queue: { Args: never; Returns: Json }
       process_settlement_releases: { Args: never; Returns: number }
+      promote_store_to_route_board: {
+        Args: {
+          _business?: string
+          _estimated_revenue?: number
+          _intent_summary?: string
+          _priority?: number
+          _reason: string
+          _signal_source: string
+          _source_ref?: string
+          _store_id: string
+          _urgency?: string
+        }
+        Returns: string
+      }
       quarantine_portal_device: {
         Args: { _device_id: string; _reason: string }
         Returns: boolean
