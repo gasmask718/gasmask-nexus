@@ -13,6 +13,7 @@ import {
   BarChart3, FileText, Loader2, User, Building2, Headset, Brain
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useCall } from "@/components/communication/CallProvider";
 
 interface Lead {
   id: string;
