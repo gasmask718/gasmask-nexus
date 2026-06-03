@@ -36001,6 +36001,81 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_catalog_drafts: {
+        Row: {
+          candidates: Json
+          copy: Json
+          cost: number | null
+          created_at: string
+          created_by: string | null
+          enhanced: Json
+          id: string
+          input_photos: Json
+          notes: string | null
+          pricing: Json
+          product_name: string
+          published_product_id: string | null
+          selected: Json
+          staged: Json
+          status: string
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          candidates?: Json
+          copy?: Json
+          cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          enhanced?: Json
+          id?: string
+          input_photos?: Json
+          notes?: string | null
+          pricing?: Json
+          product_name: string
+          published_product_id?: string | null
+          selected?: Json
+          staged?: Json
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          candidates?: Json
+          copy?: Json
+          cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          enhanced?: Json
+          id?: string
+          input_photos?: Json
+          notes?: string | null
+          pricing?: Json
+          product_name?: string
+          published_product_id?: string | null
+          selected?: Json
+          staged?: Json
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_closings: {
         Row: {
           acquisition_id: string | null
