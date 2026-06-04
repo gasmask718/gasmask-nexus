@@ -538,7 +538,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/crm/data', label: 'CRM Data', icon: Database },
       { path: '/crm/data/export', label: 'CRM Export', icon: Download },
       { path: '/crm/data/import', label: 'CRM Import', icon: Upload },
-      { path: '/crm/backup', label: 'CRM Backup', icon: Shield },
+      { path: '/crm/data/backup', label: 'CRM Backup', icon: Shield },
       { path: '/communications-center', label: '🎧 Customer Service OS', icon: Headphones },
       { path: '/communications-center/logs', label: 'Service Logs', icon: FileText },
     ],
