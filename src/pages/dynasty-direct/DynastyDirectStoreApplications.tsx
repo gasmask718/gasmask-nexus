@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, X, Mail, Phone, MapPin, Loader2, Store } from 'lucide-react';
+import { ArrowLeft, Check, X, Mail, Phone, MapPin, Loader2, Store, CheckSquare, Square } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
+import { DDBulkBar } from '@/components/dynasty-direct/DDBulkBar';
 
 type Status = 'pending' | 'approved' | 'invited' | 'rejected';
 interface Application {
