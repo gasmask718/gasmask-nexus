@@ -487,6 +487,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/dynasty-direct', label: '🏠 DD Home', icon: LayoutDashboard },
       { path: '/dynasty-direct/catalog', label: '📦 Catalog', icon: Package },
       { path: '/dynasty-direct/catalog/onboard', label: '✨ Onboard Product', icon: Sparkles },
+      { path: '/dynasty-direct/content-library', label: '🎬 Content Library', icon: Sparkles },
       { path: '/dynasty-direct/store-storefront', label: '🏪 Store Storefront', icon: Store },
       { path: '/dynasty-direct/d2c-storefront', label: '🛒 D2C Storefront', icon: ShoppingCart },
       { path: '/dynasty-direct/orders', label: '📋 Orders', icon: ClipboardList },
