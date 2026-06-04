@@ -71990,6 +71990,7 @@ export type Database = {
           id: string
           inventory_state: string
           is_locked: boolean | null
+          is_test: boolean
           labor_flat_day_rate_snapshot: number | null
           labor_hourly_rate_snapshot: number | null
           labor_model: Database["public"]["Enums"]["labor_model"] | null
@@ -72064,6 +72065,7 @@ export type Database = {
           id?: string
           inventory_state?: string
           is_locked?: boolean | null
+          is_test?: boolean
           labor_flat_day_rate_snapshot?: number | null
           labor_hourly_rate_snapshot?: number | null
           labor_model?: Database["public"]["Enums"]["labor_model"] | null
@@ -72138,6 +72140,7 @@ export type Database = {
           id?: string
           inventory_state?: string
           is_locked?: boolean | null
+          is_test?: boolean
           labor_flat_day_rate_snapshot?: number | null
           labor_hourly_rate_snapshot?: number | null
           labor_model?: Database["public"]["Enums"]["labor_model"] | null
@@ -118827,6 +118830,7 @@ export type Database = {
           created_by: string | null
           inventory_state: string | null
           is_locked: boolean | null
+          is_test: boolean | null
           lbs_per_box: number | null
           lbs_per_unit: number | null
           net_production_minutes: number | null

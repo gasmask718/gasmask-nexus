@@ -534,6 +534,7 @@ export function useProductionBatches(officeId: string | undefined, date?: Date) 
         .from('production_batches')
         .select('*, office:production_offices(id, name)')
         .eq('office_id', officeId)
+        .eq('is_test', false)
         .neq('status', 'cancelled') // Exclude cancelled batches
         .order('created_at', { ascending: false });
       
@@ -563,6 +564,7 @@ export function useTodayBatches(officeId: string | undefined) {
         .select('*, office:production_offices(id, name)')
         .eq('office_id', officeId)
         .eq('batch_date', today)
+        .eq('is_test', false)
         .neq('status', 'cancelled')
         .order('created_at', { ascending: false });
       
@@ -1042,7 +1044,8 @@ export function useDailyKPIs(officeId: string | undefined, date?: Date) {
         .from('production_batches')
         .select('id, tobacco_lbs, tubes_total, workers_present, total_tubes_used, total_defects, variance_tubes')
         .eq('office_id', officeId)
-        .eq('batch_date', dateStr);
+        .eq('batch_date', dateStr)
+        .eq('is_test', false);
 
       const batchIds = (batches || []).map(b => b.id);
 
