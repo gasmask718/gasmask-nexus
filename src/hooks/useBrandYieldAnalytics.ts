@@ -96,6 +96,7 @@ export function useBrandYieldAnalytics({ officeId, bucket = 'day', days = 90 }: 
       let q = supabase
         .from('production_batches')
         .select('brand, batch_date, tobacco_lbs, boxes_produced, tubes_total')
+        .eq('is_test', false)
         .gte('batch_date', startIso)
         .order('batch_date', { ascending: true });
 
