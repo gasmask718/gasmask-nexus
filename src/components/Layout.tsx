@@ -562,7 +562,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/hr/interviews', label: 'HR Interviews', icon: Calendar },
       { path: '/hr/documents', label: 'HR Documents', icon: FileText },
       { path: '/hr/onboarding', label: 'HR Onboarding', icon: Check },
-      { path: '/hr/payroll', label: 'HR Payroll', icon: Wallet },
+      // T3 K6: HR Payroll consolidated into Floor 5 Payroll Manager.
       { path: '/my-hr', label: 'My HR', icon: User },
       { path: '/va-performance', label: '📊 VA OS', icon: Activity },
       { path: '/va-ranking', label: 'VA Ranking', icon: Award },
