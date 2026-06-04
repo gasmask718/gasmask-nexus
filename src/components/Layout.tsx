@@ -537,9 +537,8 @@ const DYNASTY_NAVIGATION = {
       { path: '/crm/data', label: 'CRM Data', icon: Database },
       { path: '/crm/data/export', label: 'CRM Export', icon: Download },
       { path: '/crm/data/import', label: 'CRM Import', icon: Upload },
-      { path: '/crm/data/backup', label: 'CRM Backup', icon: Shield },
-      { path: '/communications-center', label: '🎧 Customer Service OS', icon: Headphones },
-      { path: '/communications-center/logs', label: 'Service Logs', icon: FileText },
+      // T3 K5: CRM Backup page killed; backups now live with Floor Exports.
+      // T3 K4: /communications-center ghosts removed; Floor 2 hub is canonical.
     ],
   },
   aiSystems: {
