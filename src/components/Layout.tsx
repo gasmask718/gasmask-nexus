@@ -672,7 +672,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/analytics', label: 'Analytics', icon: BarChart3 },
       { path: '/executive-reports', label: 'Executive Reports', icon: FileText },
       { path: '/revenue-brain', label: 'Revenue Brain', icon: Brain },
-      { path: '/opportunity-radar', label: 'Opportunity Radar', icon: Target },
+      // T1 K8: Opportunity Radar killed (theatre); /opportunities is canonical
       { path: '/missions-hq', label: 'Missions HQ', icon: Zap },
       { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
       { path: '/team', label: 'Team', icon: Users },
