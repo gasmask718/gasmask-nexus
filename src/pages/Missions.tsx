@@ -1,1 +1,4 @@
-fatal: path 'src/pages/Missions.tsx' exists on disk, but not in 'HEAD'
+import { Navigate } from 'react-router-dom';
+export default function Missions() {
+  return <Navigate to="/penthouse/missions" replace />;
+}
