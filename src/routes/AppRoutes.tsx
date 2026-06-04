@@ -1566,7 +1566,8 @@ export default function AppRoutes() {
         <Route path="/brand-crm" element={<BrandCRMPage />} />
         <Route path="/stores/performance" element={<StorePerformance />} />
         <Route path="/stores/order" element={<StoreOrder />} />
-        <Route path="/routes" element={<RoutesPage />} />
+        {/* T3 K1: All Routes redirected to Route Manager (canonical) */}
+        <Route path="/routes" element={<Navigate to="/grabba/routes" replace />} />
         <Route path="/routes/optimizer" element={<RouteOptimizer />} />
         <Route path="/routes/ops-center" element={<RouteOpsCenterEnhanced />} />
         <Route path="/routes/command-center" element={<RouteCommandCenter />} />
