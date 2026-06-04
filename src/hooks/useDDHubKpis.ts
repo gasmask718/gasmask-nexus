@@ -104,6 +104,10 @@ async function fetchDDHubKpis(): Promise<DDHubKpis> {
     newContactMessages: newMessages.count ?? 0,
     cartRecoveryQueued: cartQueued.count ?? 0,
     cartRecoverySent: cartSent.count ?? 0,
+    slowSuppliers: ((slaRows.data as any[]) ?? [])
+      .filter((r) => Number(r?.p50_hours ?? 0) > Number(r?.late_threshold_hours ?? 72)).length,
+    openAnomalies: openAnoms.count ?? 0,
+    criticalAnomalies: critAnoms.count ?? 0,
   };
 }
 
