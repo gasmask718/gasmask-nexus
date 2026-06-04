@@ -242,7 +242,7 @@ const DYNASTY_NAVIGATION = {
       items: [
         { path: '/communication', label: 'Command Center', icon: Radio },
         { path: '/communication/inbox', label: 'Inbox', icon: MessageSquare },
-        { path: '/communication/follow-up', label: 'Follow-Up Manager', icon: Clock },
+        { path: '/communication/follow-ups', label: 'Follow-Up Manager', icon: Clock },
         { path: '/communication/field-submissions', label: 'Field Activity Review', icon: ClipboardList, adminOnly: true },
         { path: '/communication/dialer', label: 'Dialer', icon: PhoneCall },
         { path: '/communication/live', label: 'Live Calls', icon: Phone },
