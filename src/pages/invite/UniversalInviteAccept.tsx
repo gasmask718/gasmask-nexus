@@ -29,26 +29,24 @@ export default function UniversalInviteAccept() {
   useEffect(() => {
     (async () => {
       if (!token) return;
-      const { data, error } = await supabase
-        .from("invites")
-        .select("*")
-        .eq("token", token)
-        .maybeSingle();
-      if (error || !data) {
+      const { data, error } = await supabase.rpc("get_invite_by_token", { p_token: token });
+      const row = Array.isArray(data) ? data[0] : data;
+      if (error || !row) {
         setErr("Invite not found or expired.");
       } else {
-        setInvite(data);
-        setEmail(data.sent_to_email || "");
-        setPhone(data.sent_to_phone || "");
-        setName(data.sent_name || "");
+        setInvite(row);
+        setEmail(row.sent_to_email || "");
+        setPhone(row.sent_to_phone || "");
+        setName(row.sent_name || "");
         supabase.rpc("mark_invite_opened", { p_token: token });
-        if (data.status === "accepted") setErr("This invite has already been used.");
-        if (data.status === "revoked") setErr("This invite was revoked.");
-        if (data.status === "expired" || new Date(data.expires_at) < new Date()) setErr("This invite has expired.");
+        if (row.status === "accepted") setErr("This invite has already been used.");
+        if (row.status === "revoked") setErr("This invite was revoked.");
+        if (row.status === "expired" || (row.expires_at && new Date(row.expires_at) < new Date())) setErr("This invite has expired.");
       }
       setLoading(false);
     })();
   }, [token]);
+
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
