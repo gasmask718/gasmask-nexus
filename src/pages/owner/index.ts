@@ -4,7 +4,7 @@ export { default as OwnerClusterDashboard } from "./OwnerClusterDashboard";
 export { default as OwnerAutopilotConsole } from "./OwnerAutopilotConsole";
 export { default as OwnerAICommandConsole } from "./OwnerAICommandConsole";
 export { default as OwnerRiskRadar } from "./OwnerRiskRadar";
-export { default as OwnerDailyBriefing } from "./OwnerDailyBriefing";
+// T6 cleanup: OwnerDailyBriefing deleted (was merged into Accounting OS)
 export { default as OwnerHoldingsOverview } from "./OwnerHoldingsOverview";
 
 // Detail Pages
@@ -28,6 +28,6 @@ export { default as OwnerVARouting } from "./OwnerVARouting";
 export { default as OwnerAlertCenter } from "./OwnerAlertCenter";
 
 // New Pages
-export { default as OwnerExecutiveReports } from "./OwnerExecutiveReports";
+// T6 cleanup: OwnerExecutiveReports deleted (was merged into OwnerReports)
 export { default as OwnerBroadcastCenter } from "./OwnerBroadcastCenter";
 export { default as OwnerAccountingOS } from "./OwnerAccountingOS";
