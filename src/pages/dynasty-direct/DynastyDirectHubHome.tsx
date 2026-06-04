@@ -12,7 +12,7 @@ import { DDPageHeader } from '@/components/dynasty-direct/DDPageHeader';
 import { useDDHubKpis, type DDHubKpis } from '@/hooks/useDDHubKpis';
 import {
   Package, Store, ShoppingCart, ClipboardList, Truck, Map, Users, Boxes, Send,
-  Zap, BarChart3, Settings, Handshake, Sparkles, Heart, ShieldCheck, Inbox,
+  Zap, BarChart3, Settings, Handshake, Sparkles, Heart, ShieldCheck, Inbox, MailOpen,
 } from 'lucide-react';
 
 interface Tile {
@@ -127,6 +127,18 @@ const SYSTEM: Tile[] = [
       if (k.twilioBalanceUsd < 10) return { label: `Bal ${money(k.twilioBalanceUsd)} — critical`, tone: 'critical' };
       if (k.twilioBalanceUsd < 25) return { label: `Bal ${money(k.twilioBalanceUsd)} — low`, tone: 'warn' };
       return { label: `Bal ${money(k.twilioBalanceUsd)}` };
+    },
+  },
+  {
+    path: '/dynasty-direct/messages', label: 'Lifecycle', icon: MailOpen,
+    desc: 'Cart-recovery drafts → notification queue',
+    badge: (k) => {
+      if (k.cartRecoveryQueued === 0 && k.cartRecoverySent === 0)
+        return { label: 'Queue clear' };
+      const parts: string[] = [];
+      if (k.cartRecoveryQueued) parts.push(`${k.cartRecoveryQueued} queued`);
+      if (k.cartRecoverySent) parts.push(`${k.cartRecoverySent} sent`);
+      return { label: parts.join(' · '), tone: k.cartRecoveryQueued > 0 ? 'warn' : 'default' };
     },
   },
 ];
