@@ -48,6 +48,10 @@ export default function DynastyDirectStoreApplications() {
   const [rejecting, setRejecting] = useState<Application | null>(null);
   const [reason, setReason] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState<string | null>(null);
+  const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
+  const [bulkReason, setBulkReason] = useState('');
 
   const { data: apps = [], isLoading } = useQuery({
     queryKey: ['dd-store-applications', tab],
