@@ -691,6 +691,7 @@ const Stores = () => {
   const { data: tubeIntelMap } = useStoreTubeIntelSummaryBatch(paginatedStoreIds);
   const { data: losMap } = useLastOrderSnapshotBatch(paginatedStoreIds);
   const { map: tubeSummaryMap } = useStoreTubeSummariesBulk();
+  const { data: paymentStatusMap } = useStorePaymentStatusMap();
 
   const formatBrandName = (brand: string) => {
     const normalized = brand.toLowerCase();
