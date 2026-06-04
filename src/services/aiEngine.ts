@@ -25,6 +25,8 @@ export interface AICommandPayload {
   userId?: string | null;
   organizationId?: string | null;
   businessId?: string | null;
+  /** voice = mic→STT, text = typed; defaults to text */
+  mode?: 'voice' | 'text';
 }
 
 export interface AICommandResult {
@@ -32,6 +34,7 @@ export interface AICommandResult {
   response: string;
   timestamp: string;
   confidence?: number;
+  commandId?: string;
 }
 
 // Grabba-only brand keywords for scope filtering
@@ -159,51 +162,70 @@ export async function runOsAiCommand(payload: AICommandPayload): Promise<AIComma
     });
 
     if (!error && data?.response) {
-      // Log the command to database for history
-      await logAICommand(payload, data.response, true);
-      
+      const commandId = await logAICommand(payload, data.response, true);
       return {
         success: true,
         response: data.response,
         timestamp,
-        confidence: data.confidence || 85
+        confidence: data.confidence || 85,
+        commandId,
       };
     }
   } catch (e) {
     console.log('[AI Engine] Edge function not available, using local intelligence');
   }
 
-  // Fallback to smart local response
   const response = generateContextualResponse(payload);
-  
-  // Log the command
-  await logAICommand(payload, response, true);
+  const commandId = await logAICommand(payload, response, true);
 
   return {
     success: true,
     response,
     timestamp,
-    confidence: 90
+    confidence: 90,
+    commandId,
   };
 }
 
 /**
- * Log AI commands for history and analytics
+ * Log AI commands for history and analytics.
+ * Writes to ai_command_logs (legacy) AND owner_ai_commands (canonical for scope='owner').
+ * Returns the owner_ai_commands row id when applicable.
  */
-async function logAICommand(payload: AICommandPayload, response: string, success: boolean) {
+async function logAICommand(payload: AICommandPayload, response: string, success: boolean): Promise<string | undefined> {
+  let commandId: string | undefined;
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    
+
+    // Legacy generic log
     await supabase.from('ai_command_logs').insert({
       input_text: payload.command,
       parsed_intent: { scope: payload.scope, context: payload.context },
       status: success ? 'completed' : 'failed',
       user_id: user?.id,
-      executed_at: new Date().toISOString()
+      executed_at: new Date().toISOString(),
     });
+
+    // Canonical Owner brain log (voice + text share this table)
+    if (payload.scope === 'owner' || payload.scope === 'global') {
+      const { data, error } = await (supabase as any)
+        .from('owner_ai_commands')
+        .insert({
+          user_id: user?.id ?? null,
+          prompt: payload.command,
+          response,
+          scope: payload.scope,
+          mode: payload.mode ?? 'text',
+          metadata: payload.context ?? {},
+        })
+        .select('id')
+        .single();
+      if (!error && data?.id) commandId = data.id as string;
+    }
   } catch (e) {
     console.log('[AI Engine] Command logging skipped:', e);
   }
+  return commandId;
 }
 
 /**
@@ -216,8 +238,8 @@ export async function runGrabbaCommand(command: string, context?: Record<string,
 /**
  * Quick helper for Owner-scoped commands
  */
-export async function runOwnerCommand(command: string, context?: Record<string, any>) {
-  return runOsAiCommand({ scope: 'owner', command, context });
+export async function runOwnerCommand(command: string, context?: Record<string, any>, mode: 'voice' | 'text' = 'text') {
+  return runOsAiCommand({ scope: 'owner', command, context, mode });
 }
 
 /**
