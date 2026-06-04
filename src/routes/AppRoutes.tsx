@@ -2246,11 +2246,8 @@ export default function AppRoutes() {
             <OwnerRiskRadar />
           </RequireRole>
         } />
-        <Route path="/os/owner/briefing" element={
-          <RequireRole allowedRoles={['admin']} showLocked>
-            <OwnerDailyBriefing />
-          </RequireRole>
-        } />
+        {/* T3 K13: OwnerDailyBriefing merged into Accounting OS */}
+        <Route path="/os/owner/briefing" element={<Navigate to="/penthouse/accounting" replace />} />
         <Route path="/os/owner/holdings" element={
           <RequireRole allowedRoles={['admin']} showLocked>
             <OwnerHoldingsOverview />
