@@ -643,6 +643,7 @@ const StoreDetail = () => {
               {/* Brand Payment Quick View — executive intelligence */}
               {/* 🎯 Brand Interest — top-of-profile glance answer for ambassadors */}
               <BrandInterestChips storeId={id || ''} />
+              <div className="mt-1"><StorePaymentBadge storeId={id || ''} /></div>
               <BrandPaymentQuickView storeId={id || ''} />
               {/* 9-state Relationship Status — direct from profile header */}
               {id && <RelationshipStatusInline storeId={id} />}
