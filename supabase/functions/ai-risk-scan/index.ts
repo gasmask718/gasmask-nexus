@@ -324,12 +324,12 @@ serve(async (req) => {
         is_active,
         created_at,
         profiles(full_name),
-        ambassador_commissions(created_at)
+        commission_ledger(created_at)
       `)
       .eq('is_active', true);
 
     for (const ambassador of ambassadors || []) {
-      const commissions = ambassador.ambassador_commissions || [];
+      const commissions = (ambassador as any).commission_ledger || [];
       const lastCommission = commissions.length > 0
         ? commissions.sort((a: any, b: any) => 
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
