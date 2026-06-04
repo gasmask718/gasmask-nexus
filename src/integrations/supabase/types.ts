@@ -85540,6 +85540,89 @@ export type Database = {
           },
         ]
       }
+      store_applications: {
+        Row: {
+          applicant_user_id: string | null
+          business_name: string
+          city: string | null
+          contact_name: string | null
+          created_at: string
+          created_store_id: string | null
+          ein: string | null
+          email: string
+          id: string
+          invite_id: string | null
+          notes: string | null
+          phone: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string | null
+          state: string | null
+          status: string
+          store_address: string | null
+          updated_at: string
+          website: string | null
+          zip: string | null
+        }
+        Insert: {
+          applicant_user_id?: string | null
+          business_name: string
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_store_id?: string | null
+          ein?: string | null
+          email: string
+          id?: string
+          invite_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string
+          store_address?: string | null
+          updated_at?: string
+          website?: string | null
+          zip?: string | null
+        }
+        Update: {
+          applicant_user_id?: string | null
+          business_name?: string
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_store_id?: string | null
+          ein?: string | null
+          email?: string
+          id?: string
+          invite_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string
+          store_address?: string | null
+          updated_at?: string
+          website?: string | null
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_applications_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_brand_accounts: {
         Row: {
           active_status: boolean | null
@@ -116890,6 +116973,14 @@ export type Database = {
         Args: { p_approved_by?: string; p_batch_id: string }
         Returns: undefined
       }
+      approve_store_application: {
+        Args: { p_application_id: string }
+        Returns: {
+          application_id: string
+          invite_id: string
+          invite_token: string
+        }[]
+      }
       approve_store_promotion: {
         Args: { p_promotion_id: string }
         Returns: string
@@ -118239,6 +118330,10 @@ export type Database = {
       reinstate_user_access: { Args: { _invite_id: string }; Returns: boolean }
       reject_enrichment_candidate: {
         Args: { p_candidate_id: string }
+        Returns: undefined
+      }
+      reject_store_application: {
+        Args: { p_application_id: string; p_reason: string }
         Returns: undefined
       }
       reject_store_promotion: {
