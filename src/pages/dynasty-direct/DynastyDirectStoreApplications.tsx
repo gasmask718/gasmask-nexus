@@ -132,6 +132,7 @@ export default function DynastyDirectStoreApplications() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-6">
+        <DDAlertBar />
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate('/dynasty-direct')}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Hub
