@@ -191,8 +191,8 @@ export default function GrabbaFinance() {
   const ordersFromTable = orders?.length || 0;
   const totalTubes = orders?.reduce((sum, o) => sum + (o.tubes_total || (o.boxes || 0) * 100), 0) || 0;
   const totalBoxes = orders?.reduce((sum, o) => sum + (o.boxes || 0), 0) || 0;
-  const pendingCommissions = commissions?.filter(c => c.status === 'pending')?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
-  const paidCommissions = commissions?.filter(c => c.status === 'paid')?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
+  const pendingCommissions = commissions?.filter(c => c.status === 'pending')?.reduce((sum, c: any) => sum + Number(c.commission_amount || 0), 0) || 0;
+  const paidCommissions = commissions?.filter(c => c.status === 'paid')?.reduce((sum, c: any) => sum + Number(c.commission_amount || 0), 0) || 0;
 
   // Filter orders for display
   const filteredOrders = orders?.filter(o => 
