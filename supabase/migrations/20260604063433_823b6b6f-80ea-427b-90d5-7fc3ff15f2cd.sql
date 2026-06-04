@@ -1,0 +1,1 @@
+ALTER VIEW public.v_public_store_locator SET (security_invoker = false);
