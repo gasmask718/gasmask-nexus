@@ -1376,6 +1376,8 @@ const Layout = ({ children }: LayoutProps) => {
       </div>
 
       <SendMessageModal open={sendMessageOpen} onOpenChange={setSendMessageOpen} />
+      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+
     </div>
   );
 };
