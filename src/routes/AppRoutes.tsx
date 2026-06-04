@@ -1671,7 +1671,8 @@ export default function AppRoutes() {
         <Route path="/crm/data/export" element={<CRMExportPage />} />
         <Route path="/crm/data/import" element={<CRMImportPage />} />
         <Route path="/crm/data/bulk-upload" element={<CRMBulkUpload />} />
-        <Route path="/crm/data/backup" element={<CRMBackupPage />} />
+        {/* T3 K5: CRM Backup page killed — redirect to CRM Data hub */}
+        <Route path="/crm/data/backup" element={<Navigate to="/crm/data" replace />} />
         <Route path="/crm/settings" element={<CRMSettingsPage />} />
         <Route path="/crm/user-access" element={<CRMUserAccessPage />} />
         <Route path="/crm/accept-invite" element={<AcceptCRMInvite />} />
