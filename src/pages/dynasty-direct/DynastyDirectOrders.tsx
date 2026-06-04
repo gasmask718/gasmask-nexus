@@ -408,6 +408,23 @@ export default function DynastyDirectOrders() {
                         />
                       )}
                     </td>
+                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      <DDDrillMenu
+                        label={`Order ${r.id.slice(0, 8)}`}
+                        items={[
+                          ddDrill.fulfillment(r.id),
+                          ddDrill.customer(r.id),
+                          ...Array.from(new Set(r.fulfillments.map((f) => f.wholesaler_id).filter(Boolean) as string[])).flatMap((whId) => {
+                            const name = r.fulfillments.find((f) => f.wholesaler_id === whId)?.wholesaler_name;
+                            return [
+                              ddDrill.supplier(whId, name),
+                              ddDrill.supplierOrders(whId),
+                              ddDrill.inventory(whId),
+                            ];
+                          }),
+                        ]}
+                      />
+                    </td>
                   </tr>
                 );
               })}
