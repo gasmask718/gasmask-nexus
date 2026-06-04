@@ -53,15 +53,7 @@ export default function AmbassadorCommissions() {
     }
   };
 
-  const getChannelLabel = (channel: string) => {
-    switch (channel) {
-      case 'store_order': return t('amb.commissions.store_orders');
-      case 'wholesale_order': return t('amb.commissions.wholesale');
-      case 'affiliate': return t('amb.commissions.affiliate');
-      case 'team_override': return t('amb.commissions.team_override');
-      default: return channel;
-    }
-  };
+  // (channel label helper defined above)
 
   const getStatusBadge = (status: string) => {
     switch (status) {

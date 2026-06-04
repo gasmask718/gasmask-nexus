@@ -214,6 +214,7 @@ export function useChannelBreakdown() {
         wholesale_order: 0,
         affiliate: 0,
         team_override: 0,
+        dynasty_direct: 0,
       };
 
       (data || []).forEach((row: any) => {
