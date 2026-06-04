@@ -347,9 +347,19 @@ export function useGrabbaActions() {
   
   const adjustPayout = useMutation({
     mutationFn: async (data: { ambassador_id: string; amount: number; entity_type: string; notes?: string }) => {
+      // Writes go to canonical commission_ledger (legacy ambassador_commissions is now a read-only compat view).
       const { error } = await supabase
-        .from('ambassador_commissions')
-        .insert({ ...data, status: 'pending' });
+        .from('commission_ledger')
+        .insert({
+          ambassador_id: data.ambassador_id,
+          gross_amount: data.amount,
+          commission_rate: 0,
+          commission_amount: data.amount,
+          source_channel: 'store_order',
+          source_id: data.ambassador_id, // manual adjustment — no source entity
+          source_name: data.notes ?? `Manual adjustment (${data.entity_type})`,
+          status: 'pending',
+        } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -360,6 +370,7 @@ export function useGrabbaActions() {
     },
     onError: (e: Error) => toast.error(`Failed: ${e.message}`),
   });
+
 
   // ─────────────────────────────────────────────────────────────────────────────
   // AI ACTIONS (Floor 9)
