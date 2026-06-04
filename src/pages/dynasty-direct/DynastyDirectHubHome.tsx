@@ -19,6 +19,7 @@ import {
   Zap,
   BarChart3,
   Settings,
+  Handshake,
 } from 'lucide-react';
 
 const TILES = [
