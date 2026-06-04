@@ -41,6 +41,7 @@ export default function HREmployees() {
       let query = supabase
         .from("hr_employees")
         .select("*")
+        .or("is_test.is.null,is_test.eq.false")
         .order("created_at", { ascending: false });
 
       if (statusFilter !== "all") {
