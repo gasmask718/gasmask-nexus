@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
   // Pull 7 days of orders to compute baseline + today's slice
   const { data: orders, error } = await admin
     .from("marketplace_orders")
-    .select("id, total, payment_status, customer_email, customer_id, created_at")
+    .select("id, total, payment_status, customer_email, created_at")
     .gte("created_at", sevenDaysAgo.toISOString());
   if (error) return j({ error: error.message }, 500);
 
