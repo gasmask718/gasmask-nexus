@@ -1,24 +1,67 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Trophy, TrendingUp, Target, Activity } from 'lucide-react';
+import { ArrowLeft, Trophy, Target, Activity } from 'lucide-react';
 
-const recentBets = [
-  { id: 1, game: 'NFL: Chiefs vs Ravens', pick: 'Chiefs -3', stake: 200, result: 'W', payout: '+$180' },
-  { id: 2, game: 'NBA: Lakers vs Celtics', pick: 'Over 215.5', stake: 150, result: 'L', payout: '-$150' },
-  { id: 3, game: 'UFC 298: Main Event', pick: 'Fighter A by KO', stake: 300, result: 'W', payout: '+$450' },
-  { id: 4, game: 'NFL: Eagles vs Cowboys', pick: 'Eagles ML', stake: 250, result: 'W', payout: '+$200' },
-  { id: 5, game: 'NBA: Warriors vs Suns', pick: 'Warriors -5', stake: 200, result: 'W', payout: '+$180' },
-];
-
+/**
+ * Sports Betting AI — LIVE (model accuracy + saved-pick volume from SBO).
+ * Bankroll/record sections are honest-empty until sbo_actual_bets/sbo_bankroll are seeded.
+ */
 export default function OwnerSportsDetailPage() {
   const navigate = useNavigate();
 
+  const accuracy = useQuery({
+    queryKey: ['owner-sports:accuracy'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('sbo_accuracy_log')
+        .select('date, accuracy_pct, total_predictions, correct_predictions')
+        .order('date', { ascending: false })
+        .limit(30);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const picks = useQuery({
+    queryKey: ['owner-sports:picks'],
+    queryFn: async () => {
+      const { data, error, count } = await (supabase as any)
+        .from('sbo_saved_picks')
+        .select('id, label, pick_type, sport, confidence, stake, potential_payout, result, pick_date, created_at', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return { rows: data || [], total: count || 0 };
+    },
+  });
+
+  const bankroll = useQuery({
+    queryKey: ['owner-sports:bankroll'],
+    queryFn: async () => {
+      const [bets, br] = await Promise.all([
+        (supabase as any).from('sbo_actual_bets').select('id', { count: 'exact', head: true }),
+        (supabase as any).from('sbo_bankroll').select('id', { count: 'exact', head: true }),
+      ]);
+      return { bets: bets.count || 0, bankroll: br.count || 0 };
+    },
+  });
+
+  const rolling = (() => {
+    const rows = accuracy.data || [];
+    const totalP = rows.reduce((s: number, r: any) => s + (r.total_predictions || 0), 0);
+    const totalC = rows.reduce((s: number, r: any) => s + (r.correct_predictions || 0), 0);
+    return totalP > 0 ? (totalC / totalP) * 100 : null;
+  })();
+
+  const sampleSize = (accuracy.data || []).reduce((s: number, r: any) => s + (r.total_predictions || 0), 0);
+
   return (
     <div className="space-y-6 p-4 md:p-6 lg:p-8">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/os/owner/holdings')}>
           <ArrowLeft className="h-5 w-5" />
@@ -29,7 +72,7 @@ export default function OwnerSportsDetailPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold">Sports Betting AI</h1>
-            <p className="text-sm text-muted-foreground">AI-powered sports analysis</p>
+            <p className="text-sm text-muted-foreground">Live model performance — bankroll activates when bets are logged</p>
           </div>
         </div>
       </div>
@@ -38,78 +81,86 @@ export default function OwnerSportsDetailPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="rounded-xl">
           <CardContent className="pt-6">
+            <div className="text-sm text-muted-foreground">Rolling Accuracy (30d)</div>
+            <div className="text-2xl font-bold text-emerald-400">
+              {rolling === null ? '—' : `${rolling.toFixed(1)}%`}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">{sampleSize} predictions</div>
+          </CardContent>
+        </Card>
+        <Card className="rounded-xl">
+          <CardContent className="pt-6">
+            <div className="text-sm text-muted-foreground">Saved Picks (total)</div>
+            <div className="text-2xl font-bold">{picks.data ? picks.data.total.toLocaleString() : '…'}</div>
+          </CardContent>
+        </Card>
+        <Card className="rounded-xl">
+          <CardContent className="pt-6">
             <div className="text-sm text-muted-foreground">Bankroll</div>
-            <div className="text-2xl font-bold">$15,400</div>
+            <div className="text-base font-medium text-muted-foreground italic">
+              {bankroll.data && bankroll.data.bankroll === 0
+                ? 'Not seeded — log first bet to activate'
+                : '$ live'}
+            </div>
           </CardContent>
         </Card>
         <Card className="rounded-xl">
           <CardContent className="pt-6">
-            <div className="text-sm text-muted-foreground">Win Rate</div>
-            <div className="text-2xl font-bold text-emerald-400">58%</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl">
-          <CardContent className="pt-6">
-            <div className="text-sm text-muted-foreground">Monthly ROI</div>
-            <div className="text-2xl font-bold text-emerald-400">+12.5%</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl">
-          <CardContent className="pt-6">
-            <div className="text-sm text-muted-foreground">Units Won (MTD)</div>
-            <div className="text-2xl font-bold">+8.6</div>
+            <div className="text-sm text-muted-foreground">Record (W-L)</div>
+            <div className="text-base font-medium text-muted-foreground italic">
+              {bankroll.data && bankroll.data.bets === 0
+                ? 'Not seeded — log first bet to activate'
+                : 'live record'}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Bets */}
+      {/* Recent picks */}
       <Card className="rounded-xl">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Target className="h-4 w-4 text-green-400" />
-            Recent Bets
+            Recent Saved Picks
           </CardTitle>
-          <CardDescription className="text-xs">Last 5 wagers</CardDescription>
+          <CardDescription className="text-xs">Last 10 from the SBO pick log</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {recentBets.map((bet) => (
-              <div key={bet.id} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
-                <div>
-                  <p className="font-medium text-sm">{bet.game}</p>
-                  <p className="text-xs text-muted-foreground">{bet.pick} • ${bet.stake}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={bet.result === 'W' ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold'}>
-                    {bet.payout}
-                  </span>
+          {picks.isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : !picks.data || picks.data.rows.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">No saved picks yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {picks.data.rows.map((p: any) => (
+                <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">{p.label || p.pick_type}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {p.sport || '—'} · conf {p.confidence ?? '—'} · {p.pick_date || (p.created_at && new Date(p.created_at).toLocaleDateString())}
+                    </p>
+                  </div>
                   <Badge variant="outline" className={
-                    bet.result === 'W' 
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                      : 'bg-red-500/20 text-red-400 border-red-500/30'
+                    p.result === 'W' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                    : p.result === 'L' ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                    : 'bg-muted text-muted-foreground'
                   }>
-                    {bet.result}
+                    {p.result || 'pending'}
                   </Badge>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* AI Insights */}
       <Card className="rounded-xl border-green-500/30">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <Activity className="h-5 w-5 text-green-400 mt-0.5" />
-            <div>
-              <p className="font-medium text-sm">AI Recommendation</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Bankroll is healthy. Stick to 1-2 unit plays on high-confidence edges. 
-                Avoid parlays and live betting. Today's slate has 2 identified value plays. 
-                Full AI picks dashboard coming in the advanced Owner Suite.
-              </p>
-            </div>
+        <CardContent className="pt-6 flex items-start gap-3">
+          <Activity className="h-5 w-5 text-green-400 mt-0.5" />
+          <div className="text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">Honest empty states: </span>
+            Bankroll, monthly ROI, and W-L appear once <code>sbo_actual_bets</code> and <code>sbo_bankroll</code> are seeded.
+            Model accuracy and pick volume are already live.
           </div>
         </CardContent>
       </Card>

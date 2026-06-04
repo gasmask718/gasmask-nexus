@@ -1,374 +1,112 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/utils';
 import {
   Building,
   TrendingUp,
-  TrendingDown,
-  DollarSign,
   Home,
-  Wallet,
-  PiggyBank,
-  LineChart,
-  ArrowUpRight,
-  Landmark,
   Bot,
   Coins,
   Trophy,
   ChevronRight,
+  LineChart,
+  FileText,
+  Sparkles,
+  Settings2,
 } from 'lucide-react';
 
-const realEstateHoldings = {
-  totalProperties: 8,
-  totalEquity: 450000,
-  totalLoans: 1200000,
-  monthlyIncome: 12500,
-  appreciation: 8.5,
-  properties: [
-    { id: 'prop-1', name: 'Rental Property #1', value: 320000, equity: 120000, income: 2800, status: 'Occupied' },
-    { id: 'prop-2', name: 'Rental Property #2', value: 285000, equity: 95000, income: 2400, status: 'Occupied' },
-    { id: 'prop-3', name: 'Rental Property #3', value: 375000, equity: 135000, income: 3200, status: 'Occupied' },
-    { id: 'prop-4', name: 'Airbnb Unit #1', value: 180000, equity: 60000, income: 2800, status: 'Active' },
-    { id: 'prop-5', name: 'Commercial Space', value: 520000, equity: 40000, income: 1300, status: 'Leased' },
-  ],
-};
-
-const financialHoldings = {
-  portfolioValue: 185000,
-  cashReserves: 75000,
-  cryptoValue: 42000,
-  stocksValue: 143000,
-  monthlyChange: 4.2,
-  allocations: [
-    { id: 'index-funds', name: 'Index Funds', value: 85000, percentage: 46, trend: +3.2 },
-    { id: 'individual-stocks', name: 'Individual Stocks', value: 58000, percentage: 31, trend: +5.8 },
-    { id: 'crypto', name: 'Crypto (BTC/ETH)', value: 42000, percentage: 23, trend: -2.1 },
-  ],
-};
-
-const incomingCapital = {
-  fundingPipeline: 125000,
-  grantsPending: 45000,
-  accountsReceivable: 32000,
-};
-
-const autoTradingAI = {
-  id: 'auto-trading',
-  totalEquity: 28500,
-  monthlyROI: 7.2,
-  winRate: 62,
-  activeBots: 3,
-};
-
-const cryptoHoldings = {
-  id: 'crypto',
-  btcBalance: 0.45,
-  ethBalance: 2.8,
-  btcValue: 19500,
-  ethValue: 5200,
-  totalValue: 24700,
-  avgEntry: { btc: 38000, eth: 1650 },
-};
-
-const sportsBettingAI = {
-  id: 'sports-betting',
-  bankroll: 15400,
-  winRate: 58,
-  monthlyROI: 12.5,
-  lastBets: [
-    { game: 'NFL: Chiefs vs Ravens', result: 'W', amount: 200 },
-    { game: 'NBA: Lakers vs Celtics', result: 'L', amount: 150 },
-    { game: 'UFC: Main Event', result: 'W', amount: 300 },
-  ],
-};
-
+/**
+ * Owner Holdings — INVESTMENT COMMAND DECK
+ * No hardcoded portfolio numbers. Every card is a doorway into a real (or honestly-pending) investment hub.
+ *  - Sports:    live from sbo_accuracy_log + sbo_saved_picks; bankroll honest-empty until sbo_actual_bets/sbo_bankroll seeded.
+ *  - RE:        live-thin from re_deals / re_leads / re_buyers.
+ *  - Business:  rollup link into Accounting OS (revenue_events count).
+ *  - Stocks/Notes: "Investment Engine — in design" (R2-NEW-1).
+ *  - Crypto/Auto-Trading: external platform — connection pending (R2-NEW-2).
+ */
 export default function OwnerHoldingsOverview() {
   const navigate = useNavigate();
-  const totalNetWorth = 
-    realEstateHoldings.totalEquity + 
-    financialHoldings.portfolioValue + 
-    financialHoldings.cashReserves;
+
+  // ── SPORTS: live model accuracy + saved-pick volume ──────────────────────
+  const sports = useQuery({
+    queryKey: ['owner-holdings:sports'],
+    queryFn: async () => {
+      const [acc, picks, bets, bankroll] = await Promise.all([
+        (supabase as any).from('sbo_accuracy_log').select('accuracy_pct, total_predictions, correct_predictions, date').order('date', { ascending: false }).limit(30),
+        (supabase as any).from('sbo_saved_picks').select('id', { count: 'exact', head: true }),
+        (supabase as any).from('sbo_actual_bets').select('id', { count: 'exact', head: true }),
+        (supabase as any).from('sbo_bankroll').select('id', { count: 'exact', head: true }),
+      ]);
+      const rows = acc.data || [];
+      const totalPreds = rows.reduce((s: number, r: any) => s + (r.total_predictions || 0), 0);
+      const totalCorrect = rows.reduce((s: number, r: any) => s + (r.correct_predictions || 0), 0);
+      const rolling = totalPreds > 0 ? (totalCorrect / totalPreds) * 100 : null;
+      return {
+        rollingAccuracy: rolling,
+        sampleSize: totalPreds,
+        savedPicks: picks.count || 0,
+        bets: bets.count || 0,
+        bankrollSeeded: (bankroll.count || 0) > 0,
+      };
+    },
+  });
+
+  // ── REAL ESTATE: live-thin ───────────────────────────────────────────────
+  const re = useQuery({
+    queryKey: ['owner-holdings:re'],
+    queryFn: async () => {
+      const [deals, leads, buyers] = await Promise.all([
+        (supabase as any).from('re_deals').select('id', { count: 'exact', head: true }),
+        (supabase as any).from('re_leads').select('id', { count: 'exact', head: true }),
+        (supabase as any).from('re_buyers').select('id', { count: 'exact', head: true }),
+      ]);
+      return { deals: deals.count || 0, leads: leads.count || 0, buyers: buyers.count || 0 };
+    },
+  });
+
+  // ── BUSINESS ACCOUNTING: rollup count from revenue_events ────────────────
+  const accounting = useQuery({
+    queryKey: ['owner-holdings:accounting'],
+    queryFn: async () => {
+      const firstOfMonth = new Date();
+      firstOfMonth.setDate(1);
+      firstOfMonth.setHours(0, 0, 0, 0);
+      const { count } = await (supabase as any)
+        .from('revenue_events')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', firstOfMonth.toISOString());
+      return { mtdEvents: count || 0 };
+    },
+  });
 
   return (
     <div className="space-y-6 p-4 md:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex items-center gap-4">
           <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30">
             <Building className="h-8 w-8 text-emerald-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Holdings Overview</h1>
-            <p className="text-sm text-muted-foreground">
-              Dynasty wealth and asset management
+            <h1 className="text-2xl font-bold">Investment Command</h1>
+            <p className="text-sm text-muted-foreground max-w-2xl">
+              Each card is a doorway into an investment class. Numbers are live or honestly pending — never fabricated.
             </p>
           </div>
         </div>
-        <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 w-fit">
+        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 w-fit">
           <TrendingUp className="h-3 w-3 mr-1" />
-          Net Worth: ${(totalNetWorth / 1000).toFixed(0)}K
+          Honest-data mode
         </Badge>
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="rounded-xl border-emerald-500/30">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Real Estate Equity</p>
-                <p className="text-2xl font-bold">${(realEstateHoldings.totalEquity / 1000).toFixed(0)}K</p>
-              </div>
-              <Home className="h-6 w-6 text-emerald-400" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl border-blue-500/30">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Investment Portfolio</p>
-                <p className="text-2xl font-bold">${(financialHoldings.portfolioValue / 1000).toFixed(0)}K</p>
-              </div>
-              <LineChart className="h-6 w-6 text-blue-400" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl border-amber-500/30">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Cash Reserves</p>
-                <p className="text-2xl font-bold">${(financialHoldings.cashReserves / 1000).toFixed(0)}K</p>
-              </div>
-              <PiggyBank className="h-6 w-6 text-amber-400" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl border-purple-500/30">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Monthly Income</p>
-                <p className="text-2xl font-bold">${realEstateHoldings.monthlyIncome.toLocaleString()}</p>
-              </div>
-              <DollarSign className="h-6 w-6 text-purple-400" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Real Estate Holdings */}
-        <Card className="rounded-xl">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Home className="h-4 w-4 text-emerald-400" />
-                <CardTitle className="text-base">Real Estate Holdings</CardTitle>
-              </div>
-              <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                +{realEstateHoldings.appreciation}% YoY
-              </Badge>
-            </div>
-            <CardDescription className="text-xs">
-              {realEstateHoldings.totalProperties} properties • ${(realEstateHoldings.totalLoans / 1000).toFixed(0)}K in loans
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {realEstateHoldings.properties.map((property) => (
-                <div 
-                  key={property.id} 
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card/50 cursor-pointer hover:bg-muted/30 transition-colors"
-                  onClick={() => navigate(`/os/owner/holdings/property/${property.id}`)}
-                >
-                  <div>
-                    <p className="text-sm font-medium">{property.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Equity: ${(property.equity / 1000).toFixed(0)}K • Income: ${property.income}/mo
-                    </p>
-                  </div>
-                  <Badge variant="outline" className={cn(
-                    property.status === 'Occupied' || property.status === 'Active' || property.status === 'Leased'
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                      : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                  )}>
-                    {property.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Financial Holdings */}
-        <Card className="rounded-xl">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Wallet className="h-4 w-4 text-blue-400" />
-                <CardTitle className="text-base">Financial Holdings</CardTitle>
-              </div>
-              <Badge variant="outline" className={cn(
-                financialHoldings.monthlyChange > 0
-                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                  : 'bg-red-500/20 text-red-400 border-red-500/30'
-              )}>
-                {financialHoldings.monthlyChange > 0 ? '+' : ''}{financialHoldings.monthlyChange}% MTD
-              </Badge>
-            </div>
-            <CardDescription className="text-xs">
-              Portfolio allocation and performance
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {financialHoldings.allocations.map((allocation) => (
-              <div 
-                key={allocation.id} 
-                className="space-y-2 cursor-pointer hover:bg-muted/30 p-2 rounded-lg transition-colors -mx-2"
-                onClick={() => navigate(`/os/owner/holdings/financial/${allocation.id}`)}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{allocation.name}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">${(allocation.value / 1000).toFixed(0)}K</span>
-                    <Badge variant="outline" className={cn(
-                      "text-[10px]",
-                      allocation.trend > 0
-                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                        : 'bg-red-500/20 text-red-400 border-red-500/30'
-                    )}>
-                      {allocation.trend > 0 ? '+' : ''}{allocation.trend}%
-                    </Badge>
-                  </div>
-                </div>
-                <Progress value={allocation.percentage} className="h-2" />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Incoming Capital */}
-      <Card className="rounded-xl">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <ArrowUpRight className="h-4 w-4 text-purple-400" />
-            <CardTitle className="text-base">Incoming Capital</CardTitle>
-          </div>
-          <CardDescription className="text-xs">
-            Expected inflows from business operations
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="p-4 rounded-lg border bg-card/50">
-              <div className="flex items-center gap-2 mb-2">
-                <Landmark className="h-4 w-4 text-blue-400" />
-                <span className="text-sm text-muted-foreground">Funding Pipeline</span>
-              </div>
-              <p className="text-xl font-bold">${(incomingCapital.fundingPipeline / 1000).toFixed(0)}K</p>
-              <p className="text-xs text-muted-foreground">Expected fees from active files</p>
-            </div>
-            <div className="p-4 rounded-lg border bg-card/50">
-              <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="h-4 w-4 text-emerald-400" />
-                <span className="text-sm text-muted-foreground">Grants Pending</span>
-              </div>
-              <p className="text-xl font-bold">${(incomingCapital.grantsPending / 1000).toFixed(0)}K</p>
-              <p className="text-xs text-muted-foreground">Client grants in approval stage</p>
-            </div>
-            <div className="p-4 rounded-lg border bg-card/50">
-              <div className="flex items-center gap-2 mb-2">
-                <Wallet className="h-4 w-4 text-amber-400" />
-                <span className="text-sm text-muted-foreground">Accounts Receivable</span>
-              </div>
-              <p className="text-xl font-bold">${(incomingCapital.accountsReceivable / 1000).toFixed(0)}K</p>
-              <p className="text-xs text-muted-foreground">Outstanding invoices</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Advanced Holdings Section */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Auto-Trading AI */}
-        <Card 
-          className="rounded-xl border-cyan-500/30 cursor-pointer hover:bg-muted/30 transition-colors"
-          onClick={() => navigate('/os/owner/holdings/auto-trading')}
-        >
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Bot className="h-4 w-4 text-cyan-400" />
-                <CardTitle className="text-base">Auto-Trading AI</CardTitle>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Total Equity</span>
-              <span className="font-bold">${autoTradingAI.totalEquity.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Monthly ROI</span>
-              <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                +{autoTradingAI.monthlyROI}%
-              </Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Win Rate</span>
-              <span className="text-sm">{autoTradingAI.winRate}%</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Active Bots</span>
-              <span className="text-sm">{autoTradingAI.activeBots}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Crypto Holdings */}
-        <Card 
-          className="rounded-xl border-orange-500/30 cursor-pointer hover:bg-muted/30 transition-colors"
-          onClick={() => navigate('/os/owner/holdings/crypto')}
-        >
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Coins className="h-4 w-4 text-orange-400" />
-                <CardTitle className="text-base">Crypto Holdings</CardTitle>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Total Value</span>
-              <span className="font-bold">${cryptoHoldings.totalValue.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">BTC</span>
-              <span className="text-sm">{cryptoHoldings.btcBalance} BTC (${(cryptoHoldings.btcValue / 1000).toFixed(1)}K)</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">ETH</span>
-              <span className="text-sm">{cryptoHoldings.ethBalance} ETH (${(cryptoHoldings.ethValue / 1000).toFixed(1)}K)</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Avg Entry (BTC)</span>
-              <span className="text-sm">${cryptoHoldings.avgEntry.btc.toLocaleString()}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Sports Betting AI */}
-        <Card 
+      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+        {/* ── SPORTS (LIVE) ─────────────────────────────────────────── */}
+        <Card
           className="rounded-xl border-green-500/30 cursor-pointer hover:bg-muted/30 transition-colors"
           onClick={() => navigate('/os/owner/holdings/sports')}
         >
@@ -378,45 +116,163 @@ export default function OwnerHoldingsOverview() {
                 <Trophy className="h-4 w-4 text-green-400" />
                 <CardTitle className="text-base">Sports Betting AI</CardTitle>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30 text-[10px]">LIVE</Badge>
             </div>
+            <CardDescription className="text-xs">Model accuracy & pick volume from SBO</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Bankroll</span>
-              <span className="font-bold">${sportsBettingAI.bankroll.toLocaleString()}</span>
+          <CardContent className="space-y-3 text-sm">
+            <Row label="Rolling accuracy (30d)" value={
+              sports.data?.rollingAccuracy === null
+                ? '—'
+                : sports.data
+                  ? `${sports.data.rollingAccuracy?.toFixed(1)}% (${sports.data.sampleSize} preds)`
+                  : '…'
+            } />
+            <Row label="Saved picks" value={sports.data ? sports.data.savedPicks.toLocaleString() : '…'} />
+            <Row label="Bets logged" value={sports.data ? sports.data.bets.toLocaleString() : '…'} />
+            <div className="pt-2 border-t border-border/50">
+              {sports.data?.bankrollSeeded ? (
+                <span className="text-xs text-emerald-400">Bankroll seeded ✓</span>
+              ) : (
+                <span className="text-xs text-muted-foreground italic">Not seeded — log first bet to activate bankroll/record</span>
+              )}
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Win Rate</span>
-              <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                {sportsBettingAI.winRate}%
-              </Badge>
+            <div className="flex items-center justify-end text-xs text-muted-foreground"><ChevronRight className="h-3 w-3" /></div>
+          </CardContent>
+        </Card>
+
+        {/* ── REAL ESTATE (LIVE-THIN) ───────────────────────────────── */}
+        <Card
+          className="rounded-xl border-emerald-500/30 cursor-pointer hover:bg-muted/30 transition-colors"
+          onClick={() => navigate('/real-estate')}
+        >
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Home className="h-4 w-4 text-emerald-400" />
+                <CardTitle className="text-base">Real Estate OS</CardTitle>
+              </div>
+              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px]">LIVE</Badge>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Monthly ROI</span>
-              <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                +{sportsBettingAI.monthlyROI}%
-              </Badge>
+            <CardDescription className="text-xs">Deal flow, leads, buyer book</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <Row label="Deals" value={re.data ? re.data.deals.toLocaleString() : '…'} />
+            <Row label="Leads" value={re.data ? re.data.leads.toLocaleString() : '…'} />
+            <Row label="Buyers" value={re.data ? re.data.buyers.toLocaleString() : '…'} />
+            {re.data && re.data.deals === 0 && (
+              <div className="pt-2 border-t border-border/50">
+                <span className="text-xs text-muted-foreground italic">Pipeline empty — add deals in the RE OS.</span>
+              </div>
+            )}
+            <div className="flex items-center justify-end text-xs text-muted-foreground"><ChevronRight className="h-3 w-3" /></div>
+          </CardContent>
+        </Card>
+
+        {/* ── BUSINESS ACCOUNTING ROLLUP ────────────────────────────── */}
+        <Card
+          className="rounded-xl border-blue-500/30 cursor-pointer hover:bg-muted/30 transition-colors"
+          onClick={() => navigate('/os/owner/accounting')}
+        >
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-blue-400" />
+                <CardTitle className="text-base">Business Accounting</CardTitle>
+              </div>
+              <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-[10px]">ROLLUP</Badge>
             </div>
-            <div className="space-y-1 mt-2">
-              <span className="text-xs text-muted-foreground">Recent Bets:</span>
-              {sportsBettingAI.lastBets.map((bet, idx) => (
-                <div key={idx} className="flex justify-between text-xs">
-                  <span className="truncate max-w-[150px]">{bet.game}</span>
-                  <Badge variant="outline" className={cn(
-                    "text-[10px]",
-                    bet.result === 'W' 
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                      : 'bg-red-500/20 text-red-400 border-red-500/30'
-                  )}>
-                    {bet.result} ${bet.amount}
-                  </Badge>
-                </div>
-              ))}
+            <CardDescription className="text-xs">Operations revenue feeds the empire ledger</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <Row label="Revenue events MTD" value={accounting.data ? accounting.data.mtdEvents.toLocaleString() : '…'} />
+            <div className="pt-2 border-t border-border/50">
+              <span className="text-xs text-muted-foreground">Open Accounting OS for P&amp;L, invoices, AR.</span>
             </div>
+            <div className="flex items-center justify-end text-xs text-muted-foreground"><ChevronRight className="h-3 w-3" /></div>
+          </CardContent>
+        </Card>
+
+        {/* ── INVESTMENT ENGINE — IN DESIGN (Stocks / Notes) ────────── */}
+        <Card className="rounded-xl border-purple-500/30 opacity-90">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <LineChart className="h-4 w-4 text-purple-400" />
+                <CardTitle className="text-base">Dynasty Investment Engine</CardTitle>
+              </div>
+              <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 text-[10px]">IN DESIGN</Badge>
+            </div>
+            <CardDescription className="text-xs">Stocks · Mortgage notes · Private deal flow</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Hub specification queued for Round 2. No data sources connected yet — placeholder by design (no fake numbers).
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* ── CRYPTO / AUTO-TRADING — EXTERNAL PLATFORM PENDING ─────── */}
+        <Card
+          className="rounded-xl border-orange-500/30 cursor-pointer hover:bg-muted/30 transition-colors"
+          onClick={() => navigate('/os/owner/holdings/crypto')}
+        >
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Coins className="h-4 w-4 text-orange-400" />
+                <CardTitle className="text-base">Crypto Hub</CardTitle>
+              </div>
+              <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/30 text-[10px]">PLANNED</Badge>
+            </div>
+            <CardDescription className="text-xs">External platform — connection pending</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p className="text-muted-foreground">Awaiting platform link from David. Deep-link vs embed vs read-bridge decided on arrival.</p>
+            <div className="flex items-center justify-end text-xs text-muted-foreground"><Settings2 className="h-3 w-3 mr-1" /> Paste link in card →</div>
+          </CardContent>
+        </Card>
+
+        <Card
+          className="rounded-xl border-cyan-500/30 cursor-pointer hover:bg-muted/30 transition-colors"
+          onClick={() => navigate('/os/owner/holdings/auto-trading')}
+        >
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bot className="h-4 w-4 text-cyan-400" />
+                <CardTitle className="text-base">Auto-Trading AI</CardTitle>
+              </div>
+              <Badge variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/30 text-[10px]">PLANNED</Badge>
+            </div>
+            <CardDescription className="text-xs">Bundled with Crypto Hub external link</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Bot performance, strategy config, and live monitoring activate once the external trading platform is connected.
+            </p>
           </CardContent>
         </Card>
       </div>
+
+      <Card className="rounded-xl border-emerald-500/20 bg-emerald-500/5">
+        <CardContent className="pt-6 flex items-start gap-3">
+          <Sparkles className="h-5 w-5 text-emerald-400 mt-0.5" />
+          <div className="text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground">Honest empty states by law.</span> Cards never show fabricated portfolio values.
+            As real data flows in (bets logged, deals closed, platform linked), each card upgrades itself automatically.
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex justify-between items-center">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{value}</span>
     </div>
   );
 }
