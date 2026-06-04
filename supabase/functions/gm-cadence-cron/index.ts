@@ -16,6 +16,19 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  // AI permission gate (T4a)
+  const { data: permOk, error: permErr } = await sb.rpc("has_ai_permission", {
+    p_domain: "cadence",
+    p_action: "promote_followups",
+  });
+  if (permErr || permOk === false) {
+    return new Response(JSON.stringify({ ok: false, blocked: true, reason: permErr?.message || "ai_permission_denied" }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+
+
   // 1. Find cadence-due stores. Default cadence_days resolved via SQL fn when no per-store policy.
   // Strategy: pull all enabled per-store policies + all stores with relationship_status (uses default).
   const { data: dueStores, error } = await sb.rpc("gm_due_cadence_stores").select("*");
