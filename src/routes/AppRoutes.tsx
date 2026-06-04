@@ -1418,7 +1418,7 @@ export default function AppRoutes() {
         <Route path="/finance/trading" element={<WealthEngineDashboard />} />
         <Route path="/finance/economic-analytics" element={<EconomicAnalytics />} />
         <Route path="/finance/revenue-brain" element={<RevenueBrain />} />
-        <Route path="/finance/opportunity-radar" element={<OpportunityRadar />} />
+        <Route path="/finance/opportunity-radar" element={<Navigate to="/opportunities" replace />} />
         <Route path="/finance/*" element={<BrandPlaceholder />} />
         <Route path="/loan-products" element={<LoanProducts />} />
         <Route path="/lender-directory" element={<LenderDirectory />} />
@@ -1617,7 +1617,8 @@ export default function AppRoutes() {
         <Route path="/sales/prospects/new" element={<SalesProspectNew />} />
         <Route path="/sales/prospects/:id" element={<SalesProspectDetail />} />
         <Route path="/sales/report" element={<SalesReport />} />
-        <Route path="/ops/opportunity-radar" element={<OpportunityRadar />} />
+        <Route path="/ops/opportunity-radar" element={<Navigate to="/opportunities" replace />} />
+        <Route path="/opportunity-radar" element={<Navigate to="/opportunities" replace />} />
         <Route path="/opportunities" element={<MasterOpportunities />} />
         <Route path="/payouts/ambassadors" element={<AmbassadorPayouts />} />
         <Route path="/payouts/bikers" element={<BikerPayouts />} />
