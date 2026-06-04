@@ -499,6 +499,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/dynasty-direct/grabba-bridge', label: '⚡ Grabba Bridge', icon: Zap },
       { path: '/dynasty-direct/analytics', label: '📈 Analytics', icon: BarChart3 },
       { path: '/dynasty-direct/invites', label: '✉️ Invites & Access', icon: Send },
+      { path: '/dynasty-direct/store-applications', label: '🏪 Apply-as-Store Queue', icon: Send },
       { path: '/admin/dynasty-direct-ops', label: '⚙️ Ops Console', icon: Settings },
     ],
   },
