@@ -243,6 +243,27 @@ export default function DynastyDirectStoreApplications() {
           </TabsList>
 
           <TabsContent value={tab} className="mt-4 space-y-3">
+            {tab === 'pending' && pendingApps.length > 0 && (
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <button
+                  onClick={toggleAll}
+                  className="inline-flex items-center gap-1.5 hover:text-foreground"
+                >
+                  {allSelected ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+                  {allSelected ? 'Clear selection' : `Select all ${pendingApps.length}`}
+                </button>
+                <DDBulkBar
+                  count={selectedIds.size}
+                  total={pendingApps.length}
+                  onClear={() => setSelectedIds(new Set())}
+                  busy={bulkBusy}
+                  actions={[
+                    { key: 'approve', label: 'Approve + invite', icon: Check, variant: 'default', onRun: bulkApprove },
+                    { key: 'reject',  label: 'Reject…',          icon: X,     variant: 'destructive', onRun: () => setBulkRejectOpen(true) },
+                  ]}
+                />
+              </div>
+            )}
             {isLoading && (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
