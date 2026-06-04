@@ -18,6 +18,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { MaintenanceGuard } from "./components/MaintenanceGuard";
 import { DevOnlyGuard } from "./components/security/DevOnlyGuard";
 import { VACallWidget } from "./components/va/VACallWidget";
+import { GlobalTrainingHelp } from "./components/training/GlobalTrainingHelp";
 
 import './modules';
 import AppRoutes from './routes/AppRoutes';
@@ -53,6 +54,7 @@ const App = () => (
                           <ViewAsBanner />
                           <SimulationModeBanner />
                           <VACallWidget />
+                          <GlobalTrainingHelp />
                           <MaintenanceGuard>
                             <DevOnlyGuard>
                               <AppRoutes />

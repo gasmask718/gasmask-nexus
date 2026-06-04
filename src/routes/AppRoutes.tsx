@@ -594,6 +594,7 @@ const RoleRouter = lazy(() => import('@/components/portal/RoleRouter'));
 const PortalDashboard = lazy(() => import('@/pages/portal/PortalDashboard'));
 const PortalInvoices = lazy(() => import('@/pages/portal/PortalInvoices'));
 const PortalHome = lazy(() => import('@/pages/portal/PortalHome'));
+const TrainingAdminPage = lazy(() => import('@/pages/admin/TrainingAdminPage'));
 const PortalOnboarding = lazy(() => import('@/pages/portal/PortalOnboarding'));
 const DriverPortal = lazy(() => import('@/pages/portal/DriverPortal'));
 const BikerPortal = lazy(() => import('@/pages/portal/BikerPortal'));
@@ -1224,6 +1225,7 @@ export default function AppRoutes() {
 
       <Route path="/install" element={<InstallPwa />} />
       <Route path="/system-health" element={<ProtectedRoute><SystemHealthPage /></ProtectedRoute>} />
+      <Route path="/admin/training" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><TrainingAdminPage /></RequireRole></ProtectedRoute>} />
       <Route path="/twl-landing" element={<TWLLanding />} />
       <Route path="/partner/respond/:token" element={<PartnerRespond />} />
       <Route path="/tt/partner/accept/:token" element={<TTPartnerAccept />} />
