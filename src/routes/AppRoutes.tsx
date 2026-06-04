@@ -744,6 +744,7 @@ const DynastyDirectHubHome = lazy(() => import('@/pages/dynasty-direct/DynastyDi
 const DynastyDirectOrders = lazy(() => import('@/pages/dynasty-direct/DynastyDirectOrders'));
 const DynastyDirectSupplierNetwork = lazy(() => import('@/pages/dynasty-direct/DynastyDirectSupplierNetwork'));
 const DynastyDirectCatalogOnboard = lazy(() => import('@/pages/dynasty-direct/DynastyDirectCatalogOnboard'));
+const DynastyDirectContentLibrary = lazy(() => import('@/pages/dynasty-direct/DynastyDirectContentLibrary'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
 const OSLayout = lazy(() => import('@/pages/os/OSLayout'));
 const StoreInventoryPage = lazy(() => import('@/pages/os/inventory/StoreInventoryPage'));
@@ -1881,6 +1882,14 @@ export default function AppRoutes() {
           element={
             <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
               <DynastyDirectCatalogOnboard />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/dynasty-direct/content-library"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
+              <DynastyDirectContentLibrary />
             </RequireRole>
           }
         />

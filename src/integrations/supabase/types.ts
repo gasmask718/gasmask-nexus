@@ -36076,6 +36076,134 @@ export type Database = {
           },
         ]
       }
+      dd_content_assets: {
+        Row: {
+          asset_type: string
+          brief_id: string | null
+          created_at: string
+          id: string
+          image_url: string
+          metadata: Json
+          product_id: string | null
+          prompt: string | null
+        }
+        Insert: {
+          asset_type: string
+          brief_id?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+          metadata?: Json
+          product_id?: string | null
+          prompt?: string | null
+        }
+        Update: {
+          asset_type?: string
+          brief_id?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          metadata?: Json
+          product_id?: string | null
+          prompt?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_content_assets_brief_id_fkey"
+            columns: ["brief_id"]
+            isOneToOne: false
+            referencedRelation: "dd_content_briefs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_content_assets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_content_assets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_content_briefs: {
+        Row: {
+          brand_name: string | null
+          created_at: string
+          created_by: string | null
+          draft_id: string | null
+          hero_image_url: string | null
+          id: string
+          notes: string | null
+          photoshoot_concepts: Json
+          product_id: string | null
+          product_name: string
+          social_captions: Json
+          status: string
+          ugc_concepts: Json
+          updated_at: string
+        }
+        Insert: {
+          brand_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          draft_id?: string | null
+          hero_image_url?: string | null
+          id?: string
+          notes?: string | null
+          photoshoot_concepts?: Json
+          product_id?: string | null
+          product_name: string
+          social_captions?: Json
+          status?: string
+          ugc_concepts?: Json
+          updated_at?: string
+        }
+        Update: {
+          brand_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          draft_id?: string | null
+          hero_image_url?: string | null
+          id?: string
+          notes?: string | null
+          photoshoot_concepts?: Json
+          product_id?: string | null
+          product_name?: string
+          social_captions?: Json
+          status?: string
+          ugc_concepts?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_content_briefs_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "dd_catalog_drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_content_briefs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_content_briefs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_closings: {
         Row: {
           acquisition_id: string | null
