@@ -148,6 +148,14 @@ export default function RouteCommandCenter() {
             <X className="h-4 w-4 mr-1" /> Clear ({selected.size})
           </Button>
           <Button
+            variant="secondary"
+            disabled={selected.size === 0 || optimizing}
+            onClick={optimizeSelected}
+          >
+            {optimizing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
+            Optimize Selected ({selected.size})
+          </Button>
+          <Button
             size="lg"
             disabled={selected.size === 0}
             onClick={() => setAssignOpen(true)}
