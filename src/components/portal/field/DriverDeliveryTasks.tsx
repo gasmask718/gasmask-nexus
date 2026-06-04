@@ -15,6 +15,7 @@ import { DispatchContextBadges } from "@/components/delivery/DispatchContextBadg
 import { SLAAlertBadges } from "@/components/delivery/SLAAlertBadges";
 import { useSLAAlertForStore } from "@/hooks/useSLAAlerts";
 import { StopResolutionDialog } from "@/components/delivery/StopResolutionDialog";
+import { StopBalanceCallout } from "@/components/portal/field/StopBalanceCallout";
 
 export function DriverDeliveryTasks() {
   const navigate = useNavigate();
@@ -102,6 +103,8 @@ export function DriverDeliveryTasks() {
                   {stop.status.replace("_", " ")}
                 </Badge>
               </div>
+
+              <StopBalanceCallout storeId={stop.store_id} storeName={stop.store?.store_name} />
 
               {stop.brand_id && (
                 <div className="mt-2">
