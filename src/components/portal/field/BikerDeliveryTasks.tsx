@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useUpdateDeliveryTaskStatus } from "@/hooks/useDeliveryTasks";
 import { useMyAssignedRoutes } from "@/hooks/delivery/useMyAssignedRoutes";
+import { StopBalanceCallout } from "@/components/portal/field/StopBalanceCallout";
 
 const STATUS_FLOW: Record<string, { next: string; label: string; variant: "default" | "destructive" }[]> = {
   assigned: [{ next: "picked_up", label: "Mark Picked Up", variant: "default" }],
@@ -120,6 +121,8 @@ export function BikerDeliveryTasks() {
               {stop.notes_to_worker && (
                 <p className="text-xs bg-muted rounded p-2 mt-2">{stop.notes_to_worker}</p>
               )}
+
+              <StopBalanceCallout storeId={stop.store_id} storeName={stop.store?.store_name} />
 
               <div className="flex gap-2 mt-3">
                 {/* Status actions */}
