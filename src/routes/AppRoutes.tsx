@@ -1554,7 +1554,8 @@ export default function AppRoutes() {
         <Route path="/hr/interviews" element={<HRInterviews />} />
         <Route path="/hr/documents" element={<HRDocuments />} />
         <Route path="/hr/onboarding" element={<HROnboarding />} />
-        <Route path="/hr/payroll" element={<HRPayroll />} />
+        {/* T3 K6: HR Payroll merged into Floor 5 Payroll Manager */}
+        <Route path="/hr/payroll" element={<Navigate to="/grabba/payroll-manager" replace />} />
         <Route path="/my-hr" element={<MyHR />} />
         <Route path="/me/hr" element={<MyHR />} />
 
