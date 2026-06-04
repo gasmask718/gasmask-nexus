@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 export type CommissionCategory = 'store' | 'wholesaler' | 'influencer' | 'ambassador';
 export type CommissionStatus = 'pending' | 'approved' | 'paid';
 
-// Map ledger source_channel → category (former commission_events compat layer)
+// Map ledger source_channel → category (former compat layer)
 function channelToCategory(channel: string | null | undefined): CommissionCategory {
   switch (channel) {
     case 'store_order': return 'store';
