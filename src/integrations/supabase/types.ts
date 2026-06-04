@@ -36275,6 +36275,51 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_anomaly_findings: {
+        Row: {
+          ai_generated: boolean
+          created_at: string
+          id: string
+          kind: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          scan_date: string
+          severity: string
+          signals: Json
+          status: string
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          ai_generated?: boolean
+          created_at?: string
+          id?: string
+          kind: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scan_date?: string
+          severity?: string
+          signals?: Json
+          status?: string
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          ai_generated?: boolean
+          created_at?: string
+          id?: string
+          kind?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scan_date?: string
+          severity?: string
+          signals?: Json
+          status?: string
+          summary?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       dd_catalog_drafts: {
         Row: {
           candidates: Json
@@ -36585,6 +36630,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dd_sla_snapshots: {
+        Row: {
+          computed_at: string
+          id: string
+          late_count: number
+          late_threshold_hours: number
+          p50_hours: number | null
+          p90_hours: number | null
+          shipped_count: number
+          wholesaler_id: string
+          window_days: number
+        }
+        Insert: {
+          computed_at?: string
+          id?: string
+          late_count?: number
+          late_threshold_hours?: number
+          p50_hours?: number | null
+          p90_hours?: number | null
+          shipped_count?: number
+          wholesaler_id: string
+          window_days?: number
+        }
+        Update: {
+          computed_at?: string
+          id?: string
+          late_count?: number
+          late_threshold_hours?: number
+          p50_hours?: number | null
+          p90_hours?: number | null
+          shipped_count?: number
+          wholesaler_id?: string
+          window_days?: number
+        }
+        Relationships: []
       }
       dd_wholesaler_store_link: {
         Row: {
