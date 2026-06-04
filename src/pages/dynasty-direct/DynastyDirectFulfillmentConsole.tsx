@@ -318,40 +318,163 @@ function OrderOverridePanel() {
 // LIVE ROUTING FEED
 // ─────────────────────────────────────────────────────────────────────
 function RoutingFeed() {
-  const { data: feed = [] } = useQuery({
-    queryKey: ["dd-routing-feed"],
+  const [supplierFilter, setSupplierFilter] = useState<string>("all");
+  const [rangeHours, setRangeHours] = useState<string>("24");
+  const [paused, setPaused] = useState(false);
+  const [latestSeenAt, setLatestSeenAt] = useState<number>(0);
+  const [pulse, setPulse] = useState(false);
+
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ["dd-routing-feed-suppliers"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("dd_routing_audit")
-        .select("*, w:wholesaler_id(company_name)")
-        .order("created_at", { ascending: false })
-        .limit(100);
+        .from("wholesaler_profiles")
+        .select("id, company_name")
+        .order("company_name");
       return data || [];
     },
-    refetchInterval: 5000,
   });
+
+  const { data: feed = [], isFetching, refetch } = useQuery({
+    queryKey: ["dd-routing-feed", supplierFilter, rangeHours],
+    queryFn: async () => {
+      const sinceIso = new Date(Date.now() - Number(rangeHours) * 3_600_000).toISOString();
+      let q = supabase
+        .from("dd_routing_audit")
+        .select("*, w:wholesaler_id(company_name)")
+        .gte("created_at", sinceIso)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (supplierFilter !== "all") q = q.eq("wholesaler_id", supplierFilter);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data || [];
+    },
+    refetchInterval: paused ? false : 5_000,
+  });
+
+  // Detect new rows since last tick → pulse the LIVE chip
+  useEffect(() => {
+    if (!feed.length) return;
+    const newest = new Date(feed[0].created_at).getTime();
+    if (latestSeenAt && newest > latestSeenAt) {
+      setPulse(true);
+      const t = setTimeout(() => setPulse(false), 1200);
+      return () => clearTimeout(t);
+    }
+    setLatestSeenAt(newest);
+  }, [feed, latestSeenAt]);
+
+  const sevStyle = (eventType: string) => {
+    const e = eventType.toLowerCase();
+    if (e.includes("fail") || e.includes("error") || e.includes("reject"))
+      return { border: "border-red-500", dot: "bg-red-500", badge: "bg-red-500/15 text-red-400 border-red-500/30" };
+    if (e.includes("manual") || e.includes("pin") || e.includes("override") || e.includes("reassign"))
+      return { border: "border-amber-500", dot: "bg-amber-500", badge: "bg-amber-500/15 text-amber-400 border-amber-500/30" };
+    if (e.includes("route") || e.includes("assign") || e.includes("in_state") || e.includes("ship"))
+      return { border: "border-emerald-500", dot: "bg-emerald-500", badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" };
+    return { border: "border-muted-foreground/30", dot: "bg-muted-foreground/60", badge: "bg-muted text-muted-foreground border-transparent" };
+  };
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <Activity className="w-4 h-4" /> Live Routing Feed
-        </CardTitle>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Activity className="w-4 h-4" /> Live Routing Feed
+            <span
+              className={cn(
+                "ml-1 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded",
+                paused
+                  ? "bg-muted text-muted-foreground"
+                  : pulse
+                  ? "bg-emerald-500 text-white"
+                  : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+              )}
+            >
+              <Radio className={cn("h-3 w-3", !paused && "animate-pulse")} />
+              {paused ? "Paused" : "Live"}
+            </span>
+            {isFetching && !paused && (
+              <span className="text-[10px] text-muted-foreground">refreshing…</span>
+            )}
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Select value={rangeHours} onValueChange={setRangeHours}>
+              <SelectTrigger className="h-8 w-[120px] text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Last 1h</SelectItem>
+                <SelectItem value="6">Last 6h</SelectItem>
+                <SelectItem value="24">Last 24h</SelectItem>
+                <SelectItem value="168">Last 7d</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+              <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All suppliers</SelectItem>
+                {suppliers.map((s: any) => (
+                  <SelectItem key={s.id} value={s.id}>{s.company_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button size="sm" variant="outline" onClick={() => setPaused((p) => !p)} className="h-8">
+              {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => refetch()} className="h-8 text-xs">
+              Refresh
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-1 max-h-96 overflow-y-auto">
-          {feed.length === 0 && <div className="text-sm text-muted-foreground">No routing events yet.</div>}
-          {feed.map((e: any) => (
-            <div key={e.id} className="border-l-2 border-primary/40 pl-2 py-1 text-xs">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">{e.event_type}</Badge>
-                {e.w?.company_name && <strong>{e.w.company_name}</strong>}
-                {e.reason && <span className="text-muted-foreground">— {e.reason}</span>}
-                <span className="ml-auto text-muted-foreground">{new Date(e.created_at).toLocaleTimeString()}</span>
+        <div className="space-y-1 max-h-[28rem] overflow-y-auto pr-1">
+          {feed.length === 0 && (
+            <DDEmpty
+              icon={Activity}
+              title="No routing events in this window"
+              description="Routing activates when paid orders arrive. Adjust the time range or seed inventory to start the feed."
+              actionLabel="Open orders"
+              actionHref="/dynasty-direct/orders"
+            />
+          )}
+          {feed.map((e: any) => {
+            const sty = sevStyle(e.event_type);
+            return (
+              <div
+                key={e.id}
+                className={cn(
+                  "border-l-2 pl-2.5 py-1.5 text-xs transition-colors hover:bg-muted/30 rounded-r",
+                  sty.border
+                )}
+              >
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={cn("h-1.5 w-1.5 rounded-full", sty.dot)} />
+                  <Badge variant="outline" className={cn("text-[10px]", sty.badge)}>
+                    {e.event_type}
+                  </Badge>
+                  {e.w?.company_name && (
+                    <Link
+                      to={`/dynasty-direct/suppliers/network?focus=${e.wholesaler_id}`}
+                      className="font-semibold hover:underline"
+                    >
+                      {e.w.company_name}
+                    </Link>
+                  )}
+                  {e.reason && <span className="text-muted-foreground">— {e.reason}</span>}
+                  <span className="ml-auto text-muted-foreground">{new Date(e.created_at).toLocaleTimeString()}</span>
+                </div>
+                {e.order_id && (
+                  <Link
+                    to={`/dynasty-direct/orders?order=${e.order_id}`}
+                    className="text-muted-foreground font-mono hover:text-foreground hover:underline"
+                  >
+                    order {String(e.order_id).slice(0, 8)}
+                  </Link>
+                )}
               </div>
-              {e.order_id && <div className="text-muted-foreground font-mono">order {String(e.order_id).slice(0, 8)}</div>}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
