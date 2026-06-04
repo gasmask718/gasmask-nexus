@@ -199,6 +199,9 @@ export default function NeighborhoodDetailPage() {
       {/* Full per-store roster with relationship status */}
       {neighborhood && <NeighborhoodStoreBreakdown neighborhood={neighborhood} />}
 
+      {/* Full-coverage intelligence — what we have vs what we're missing */}
+      {neighborhood && <NeighborhoodCoverageSection neighborhood={neighborhood} />}
+
       {/* Side-by-side tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <Card>
