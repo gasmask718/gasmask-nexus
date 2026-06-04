@@ -49,7 +49,7 @@ export default function NationalWholesale() {
     return acc;
   }, {});
   const regions = Object.entries(byState).sort((a, b) => b[1].length - a[1].length);
-  const activePartners = wholesalers.filter((w: any) => w.status === 'active').length;
+  const activePartners = (wholesalers as any[]).filter((w: any) => w.status === 'active').length;
 
   return (
     <PortalLayout title="National Wholesale Portal">
@@ -61,7 +61,7 @@ export default function NationalWholesale() {
               National Wholesale Portal
             </h1>
             <p className="text-muted-foreground mt-1">
-              Live data: {wholesalers.length} wholesalers across {regions.length} states · {hubs.length} hubs
+              Live data: {(wholesalers as any[]).length} wholesalers across {regions.length} states · {hubs.length} hubs
             </p>
           </div>
           <Badge variant="outline" className="text-lg px-4 py-1">Enterprise</Badge>
@@ -69,7 +69,7 @@ export default function NationalWholesale() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard icon={MapPin} label="Active Regions (states)" value={String(regions.length)} sub={`${regions[0]?.[0] || '—'} leads w/ ${regions[0]?.[1].length || 0}`} />
-          <StatCard icon={Users} label="Partner Wholesalers" value={String(wholesalers.length)} sub={`${activePartners} active`} />
+          <StatCard icon={Users} label="Partner Wholesalers" value={String((wholesalers as any[]).length)} sub={`${activePartners} active`} />
           <StatCard icon={Truck} label="Wholesale Hubs" value={String(hubs.length)} sub="Distribution nodes" />
           <StatCard icon={Package} label="SKUs Available" value={skuCount.toLocaleString()} sub="From products_all" />
         </div>
@@ -77,7 +77,7 @@ export default function NationalWholesale() {
         <Tabs defaultValue="regions" className="space-y-4">
           <TabsList>
             <TabsTrigger value="regions">Regions</TabsTrigger>
-            <TabsTrigger value="partners">Partners ({wholesalers.length})</TabsTrigger>
+            <TabsTrigger value="partners">Partners ({(wholesalers as any[]).length})</TabsTrigger>
             <TabsTrigger value="hubs">Hubs ({hubs.length})</TabsTrigger>
           </TabsList>
 
@@ -132,7 +132,7 @@ export default function NationalWholesale() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {wholesalers.slice(0, 100).map((w: any) => (
+                    {(wholesalers as any[]).slice(0, 100).map((w: any) => (
                       <TableRow key={w.id}>
                         <TableCell className="font-medium">{w.name}</TableCell>
                         <TableCell>{w.city || '—'}</TableCell>
