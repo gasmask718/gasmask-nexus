@@ -36031,6 +36031,145 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_affiliate_events: {
+        Row: {
+          affiliate_id: string
+          amount: number
+          click_day: string | null
+          commission_amount: number
+          commission_rate: number | null
+          created_at: string
+          earned_at: string | null
+          id: string
+          kind: string
+          meta: Json
+          order_id: string | null
+          paid_at: string | null
+          payout_batch_id: string | null
+          status: string
+          visitor_hash: string | null
+        }
+        Insert: {
+          affiliate_id: string
+          amount?: number
+          click_day?: string | null
+          commission_amount?: number
+          commission_rate?: number | null
+          created_at?: string
+          earned_at?: string | null
+          id?: string
+          kind: string
+          meta?: Json
+          order_id?: string | null
+          paid_at?: string | null
+          payout_batch_id?: string | null
+          status?: string
+          visitor_hash?: string | null
+        }
+        Update: {
+          affiliate_id?: string
+          amount?: number
+          click_day?: string | null
+          commission_amount?: number
+          commission_rate?: number | null
+          created_at?: string
+          earned_at?: string | null
+          id?: string
+          kind?: string
+          meta?: Json
+          order_id?: string | null
+          paid_at?: string | null
+          payout_batch_id?: string | null
+          status?: string
+          visitor_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_affiliate_events_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "dd_affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_affiliate_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_affiliate_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_marketplace_order_timeline"
+            referencedColumns: ["order_id"]
+          },
+        ]
+      }
+      dd_affiliates: {
+        Row: {
+          approved_at: string | null
+          clicks: number
+          code: string
+          commission_rate: number
+          conversions: number
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          notes: string | null
+          payout_details: Json
+          phone: string | null
+          status: string
+          tier: string
+          total_earned: number
+          total_paid: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          clicks?: number
+          code: string
+          commission_rate?: number
+          conversions?: number
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          payout_details?: Json
+          phone?: string | null
+          status?: string
+          tier?: string
+          total_earned?: number
+          total_paid?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          clicks?: number
+          code?: string
+          commission_rate?: number
+          conversions?: number
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          payout_details?: Json
+          phone?: string | null
+          status?: string
+          tier?: string
+          total_earned?: number
+          total_paid?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       dd_catalog_drafts: {
         Row: {
           candidates: Json
@@ -58819,6 +58958,8 @@ export type Database = {
       }
       marketplace_orders: {
         Row: {
+          affiliate_code: string | null
+          affiliate_id: string | null
           billing_address: Json | null
           created_at: string | null
           customer_email: string | null
@@ -58846,6 +58987,8 @@ export type Database = {
           wholesaler_id: string | null
         }
         Insert: {
+          affiliate_code?: string | null
+          affiliate_id?: string | null
           billing_address?: Json | null
           created_at?: string | null
           customer_email?: string | null
@@ -58873,6 +59016,8 @@ export type Database = {
           wholesaler_id?: string | null
         }
         Update: {
+          affiliate_code?: string | null
+          affiliate_id?: string | null
           billing_address?: Json | null
           created_at?: string | null
           customer_email?: string | null
@@ -58900,6 +59045,13 @@ export type Database = {
           wholesaler_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "marketplace_orders_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "dd_affiliates"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "marketplace_orders_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
@@ -117896,6 +118048,18 @@ export type Database = {
         Returns: string
       }
       current_ambassador_id: { Args: never; Returns: string }
+      dd_affiliate_mark_paid: {
+        Args: { p_event_ids: string[]; p_payout_batch_id?: string }
+        Returns: Json
+      }
+      dd_affiliate_self_signup: {
+        Args: { p_display_name: string; p_email?: string; p_phone?: string }
+        Returns: Json
+      }
+      dd_affiliate_track_click: {
+        Args: { p_code: string; p_meta?: Json; p_visitor_hash?: string }
+        Returns: Json
+      }
       dd_consume_order_reservations: {
         Args: { p_order_id: string }
         Returns: undefined
@@ -117913,6 +118077,7 @@ export type Database = {
       }
       dd_create_marketplace_order: {
         Args: {
+          p_affiliate_code?: string
           p_customer_id?: string
           p_discount_code?: string
           p_guest_email?: string
@@ -118108,6 +118273,7 @@ export type Database = {
         Args: { _reason: string; _target_user_id: string }
         Returns: boolean
       }
+      generate_affiliate_code: { Args: { p_seed?: string }; Returns: string }
       generate_store_outreach_plan: {
         Args: { p_store_id: string }
         Returns: string
