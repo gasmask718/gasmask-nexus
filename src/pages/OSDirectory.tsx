@@ -71,7 +71,7 @@ export default function OSDirectory() {
   }, [rows, q, statusFilter]);
 
   const grouped = useMemo(() => {
-    const m = new Map<string, Row[]>();
+    const m = new globalThis.Map<string, Row[]>();
     for (const r of filtered) {
       const arr = m.get(r.floor) ?? [];
       arr.push(r);
