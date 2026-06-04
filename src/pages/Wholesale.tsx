@@ -1,1 +1,4 @@
-fatal: path 'src/pages/Wholesale.tsx' exists on disk, but not in 'HEAD'
+import { Navigate } from 'react-router-dom';
+export default function Wholesale() {
+  return <Navigate to="/wholesale/marketplace" replace />;
+}
