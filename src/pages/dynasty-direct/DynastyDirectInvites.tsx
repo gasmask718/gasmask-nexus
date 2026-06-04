@@ -14,6 +14,8 @@ import { DDBulkBar } from "@/components/dynasty-direct/DDBulkBar";
 
 export default function DynastyDirectInvites() {
   const qc = useQueryClient();
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState<string | null>(null);
   const { data: invites = [], isLoading } = useQuery({
     queryKey: ["dd-invites"],
     queryFn: async () => {
