@@ -33,17 +33,17 @@ export default function NationalWholesale() {
     },
   });
 
-  const { data: skuCount = 0 } = useQuery({
+  const { data: skuCount = 0 } = useQuery<number>({
     queryKey: ['nw-skus'],
     queryFn: async () => {
       const { count } = await (supabase as any)
         .from('products_all')
         .select('id', { count: 'exact', head: true });
-      return count || 0;
+      return (count as number) || 0;
     },
   });
 
-  const byState = wholesalers.reduce<Record<string, any[]>>((acc, w: any) => {
+  const byState = (wholesalers as any[]).reduce<Record<string, any[]>>((acc, w: any) => {
     const k = w.state || 'Unknown';
     (acc[k] = acc[k] || []).push(w);
     return acc;
