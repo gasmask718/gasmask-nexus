@@ -2325,11 +2325,8 @@ export default function AppRoutes() {
             <OwnerAlertCenter />
           </RequireRole>
         } />
-        <Route path="/os/owner/executive-reports" element={
-          <RequireRole allowedRoles={['admin']} showLocked>
-            <OwnerExecutiveReports />
-          </RequireRole>
-        } />
+        {/* T3 K12: OwnerExecutiveReports merged into OwnerReports (canonical) */}
+        <Route path="/os/owner/executive-reports" element={<Navigate to="/os/owner/reports" replace />} />
         <Route path="/os/owner/broadcast" element={
           <RequireRole allowedRoles={['admin']} showLocked>
             <OwnerBroadcastCenter />
