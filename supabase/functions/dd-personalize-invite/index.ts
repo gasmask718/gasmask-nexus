@@ -43,7 +43,6 @@ Deno.serve(async (req) => {
       city: w.warehouse_city,
       state: w.warehouse_state,
       status: w.status,
-      status: w.status,
     };
 
     if (!LOVABLE_API_KEY) {
