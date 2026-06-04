@@ -1042,7 +1042,8 @@ export function useDailyKPIs(officeId: string | undefined, date?: Date) {
         .from('production_batches')
         .select('id, tobacco_lbs, tubes_total, workers_present, total_tubes_used, total_defects, variance_tubes')
         .eq('office_id', officeId)
-        .eq('batch_date', dateStr);
+        .eq('batch_date', dateStr)
+        .eq('is_test', false);
 
       const batchIds = (batches || []).map(b => b.id);
 
