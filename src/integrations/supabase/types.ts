@@ -590,6 +590,36 @@ export type Database = {
           },
         ]
       }
+      addresses: {
+        Row: {
+          address: Json
+          created_at: string
+          id: string
+          is_default: boolean
+          label: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_audit_log: {
         Row: {
           action: string
@@ -39592,6 +39622,48 @@ export type Database = {
           },
         ]
       }
+      discounts: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          expires_at: string | null
+          first_order_only: boolean
+          id: string
+          type: string
+          updated_at: string
+          usage_limit: number | null
+          used_count: number
+          value: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          first_order_only?: boolean
+          id?: string
+          type: string
+          updated_at?: string
+          usage_limit?: number | null
+          used_count?: number
+          value: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          first_order_only?: boolean
+          id?: string
+          type?: string
+          updated_at?: string
+          usage_limit?: number | null
+          used_count?: number
+          value?: number
+        }
+        Relationships: []
+      }
       dispatch_action_executions: {
         Row: {
           after_state: Json
@@ -58751,6 +58823,8 @@ export type Database = {
           created_at: string | null
           customer_email: string | null
           customer_phone: string | null
+          discount_amount: number | null
+          discount_code: string | null
           dispute_opened_at: string | null
           dispute_reason: string | null
           dispute_resolved_at: string | null
@@ -58776,6 +58850,8 @@ export type Database = {
           created_at?: string | null
           customer_email?: string | null
           customer_phone?: string | null
+          discount_amount?: number | null
+          discount_code?: string | null
           dispute_opened_at?: string | null
           dispute_reason?: string | null
           dispute_resolved_at?: string | null
@@ -58801,6 +58877,8 @@ export type Database = {
           created_at?: string | null
           customer_email?: string | null
           customer_phone?: string | null
+          discount_amount?: number | null
+          discount_code?: string | null
           dispute_opened_at?: string | null
           dispute_reason?: string | null
           dispute_resolved_at?: string | null
@@ -75838,6 +75916,45 @@ export type Database = {
           lead_id?: string | null
           metadata?: Json | null
           source_system?: string
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string | null
+          product_id: string
+          rating: number
+          status: string
+          text: string | null
+          updated_at: string
+          user_id: string
+          verified_purchase: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          product_id: string
+          rating: number
+          status?: string
+          text?: string | null
+          updated_at?: string
+          user_id: string
+          verified_purchase?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          product_id?: string
+          rating?: number
+          status?: string
+          text?: string | null
+          updated_at?: string
+          user_id?: string
+          verified_purchase?: boolean
         }
         Relationships: []
       }
@@ -117794,20 +117911,36 @@ export type Database = {
         }
         Returns: Json
       }
-      dd_create_marketplace_order: {
-        Args: {
-          p_customer_id?: string
-          p_guest_email?: string
-          p_guest_phone?: string
-          p_items: Json
-          p_notes?: string
-          p_shipping_address: Json
-          p_shipping_cost?: number
-          p_subtotal?: number
-          p_tax_amount?: number
-        }
-        Returns: Json
-      }
+      dd_create_marketplace_order:
+        | {
+            Args: {
+              p_customer_id?: string
+              p_guest_email?: string
+              p_guest_phone?: string
+              p_items: Json
+              p_notes?: string
+              p_shipping_address: Json
+              p_shipping_cost?: number
+              p_subtotal?: number
+              p_tax_amount?: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_customer_id?: string
+              p_discount_code?: string
+              p_guest_email?: string
+              p_guest_phone?: string
+              p_items: Json
+              p_notes?: string
+              p_shipping_address: Json
+              p_shipping_cost?: number
+              p_subtotal?: number
+              p_tax_amount?: number
+            }
+            Returns: Json
+          }
       dd_link_wholesaler_to_store_master: {
         Args: { p_wholesaler_id: string }
         Returns: string
@@ -118209,6 +118342,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_discount_usage: { Args: { p_code: string }; Returns: undefined }
       increment_received: { Args: { num: string }; Returns: number }
       increment_sent: { Args: { num: string }; Returns: number }
       ingest_portal_actions: { Args: { _actions: Json }; Returns: Json }
@@ -119141,6 +119275,10 @@ export type Database = {
         Returns: boolean
       }
       validate_ambassador_invite: { Args: { p_token: string }; Returns: Json }
+      validate_discount: {
+        Args: { p_code: string; p_guest_email?: string; p_user_id?: string }
+        Returns: Json
+      }
       validate_intent_autonomy: { Args: { p_intent_id: string }; Returns: Json }
       validate_portal_request: {
         Args: {
