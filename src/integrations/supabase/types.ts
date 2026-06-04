@@ -120249,6 +120249,7 @@ export type Database = {
         Returns: Json
       }
       distribute_leads_to_vas: { Args: never; Returns: Json }
+      engagement_scores_tick: { Args: never; Returns: Json }
       enrich_store_contacts: { Args: never; Returns: Json }
       ensure_store_brand_relationships: {
         Args: { p_store_id: string }
@@ -120352,6 +120353,7 @@ export type Database = {
         }
         Returns: string
       }
+      floor9_engine_tick: { Args: never; Returns: Json }
       force_portal_logout: {
         Args: { _reason?: string; _target_user_id: string }
         Returns: boolean
@@ -120564,6 +120566,10 @@ export type Database = {
         Args: { p_method?: string; p_phone: string }
         Returns: string
       }
+      has_ai_permission: {
+        Args: { _action?: string; _domain: string }
+        Returns: boolean
+      }
       has_audit_engine_access: { Args: { _user_id: string }; Returns: boolean }
       has_finance_access: { Args: { _user_id: string }; Returns: boolean }
       has_org_role: {
@@ -120600,8 +120606,10 @@ export type Database = {
       increment_discount_usage: { Args: { p_code: string }; Returns: undefined }
       increment_received: { Args: { num: string }; Returns: number }
       increment_sent: { Args: { num: string }; Returns: number }
+      ingest_bland_cost_tick: { Args: never; Returns: Json }
       ingest_portal_actions: { Args: { _actions: Json }; Returns: Json }
       ingest_territory_addresses: { Args: { p_addresses: Json }; Returns: Json }
+      ingest_twilio_cost_tick: { Args: never; Returns: Json }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_admin_user: { Args: { p_user_id: string }; Returns: boolean }
       is_ambassador_for_store: {
