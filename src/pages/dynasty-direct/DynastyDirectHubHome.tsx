@@ -12,7 +12,7 @@ import { DDPageHeader } from '@/components/dynasty-direct/DDPageHeader';
 import { useDDHubKpis, type DDHubKpis } from '@/hooks/useDDHubKpis';
 import {
   Package, Store, ShoppingCart, ClipboardList, Truck, Map, Users, Boxes, Send,
-  Zap, BarChart3, Settings, Handshake, Sparkles, Heart, ShieldCheck,
+  Zap, BarChart3, Settings, Handshake, Sparkles, Heart, ShieldCheck, Inbox,
 } from 'lucide-react';
 
 interface Tile {
@@ -112,6 +112,13 @@ const GROWTH: Tile[] = [
 
 const SYSTEM: Tile[] = [
   { path: '/admin/dynasty-direct-ops', label: 'Ops Console', icon: Settings, desc: 'Geocoding + profile linking' },
+  {
+    path: '/dynasty-direct/messages', label: 'Contact Inbox', icon: Inbox,
+    desc: 'Public /contact form submissions',
+    badge: (k) => k.newContactMessages === 0
+      ? { label: 'Inbox clear' }
+      : { label: `${fmt(k.newContactMessages)} new`, tone: 'cta' },
+  },
   {
     path: '/compliance/compliance-center', label: 'Comms Health', icon: ShieldCheck,
     desc: 'Twilio balance, webhooks, probes',

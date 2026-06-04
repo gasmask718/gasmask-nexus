@@ -752,6 +752,7 @@ const DynastyDirectStoreApplications = lazy(() => import('@/pages/dynasty-direct
 const DynastyDirectFulfillmentConsole = lazy(() => import('@/pages/dynasty-direct/DynastyDirectFulfillmentConsole'));
 const DynastyDirectGrabbaBridge = lazy(() => import('@/pages/dynasty-direct/DynastyDirectGrabbaBridge'));
 const DynastyDirectAffiliates = lazy(() => import('@/pages/dynasty-direct/DynastyDirectAffiliates'));
+const DynastyDirectMessages = lazy(() => import('@/pages/dynasty-direct/DynastyDirectMessages'));
 const UniversalInviteAccept = lazy(() => import('@/pages/invite/UniversalInviteAccept'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
 const OSLayout = lazy(() => import('@/pages/os/OSLayout'));
@@ -1866,6 +1867,14 @@ export default function AppRoutes() {
           element={
             <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
               <DynastyDirectHubHome />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/dynasty-direct/messages"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
+              <DynastyDirectMessages />
             </RequireRole>
           }
         />
