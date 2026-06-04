@@ -559,6 +559,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/portal/va', label: 'VA Portal', icon: User },
       { path: '/portal/ambassador', label: '🎖️ Ambassador OS', icon: Award },
       { path: '/admin/feedback', label: '📣 Feedback Inbox', icon: MessageSquareWarning },
+      { path: '/admin/field-day-notes', label: '📋 Field Day Notes', icon: ClipboardList },
     ],
   },
   brandaroHub: {
