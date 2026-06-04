@@ -339,7 +339,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/ambassador-regions', label: 'Ambassador Regions', icon: Map },
         { path: '/ambassador-payouts', label: 'Ambassador Payouts', icon: DollarSign },
         { path: '/influencers', label: 'Influencers', icon: Star },
-        { path: '/influencer-campaigns', label: 'Influencer Campaigns', icon: Target },
+        { path: '/influencers/campaigns', label: 'Influencer Campaigns', icon: Target },
       ],
     },
     {
