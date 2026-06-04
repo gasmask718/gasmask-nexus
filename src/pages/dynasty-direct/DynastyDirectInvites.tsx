@@ -180,48 +180,77 @@ export default function DynastyDirectInvites() {
       )}
 
       {!isLoading && invites.length > 0 && (
-        <div className="border rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr className="text-left">
-                <th className="p-2">Role</th>
-                <th className="p-2">Sent To</th>
-                <th className="p-2">Channel</th>
-                <th className="p-2">Status</th>
-                <th className="p-2">Created</th>
-                <th className="p-2">Expires</th>
-                <th className="p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invites.map((i: any) => (
-                <tr key={i.id} className="border-t">
-                  <td className="p-2"><Badge variant="outline">{i.role}</Badge></td>
-                  <td className="p-2">
-                    <div className="font-medium">{i.sent_name || "—"}</div>
-                    <div className="text-xs text-muted-foreground">{i.sent_to_phone || i.sent_to_email}</div>
-                  </td>
-                  <td className="p-2">{i.channel}</td>
-                  <td className="p-2">{statusBadge(i.status)}</td>
-                  <td className="p-2 text-xs text-muted-foreground">{formatDistanceToNow(new Date(i.created_at))} ago</td>
-                  <td className="p-2 text-xs text-muted-foreground">{new Date(i.expires_at).toLocaleDateString()}</td>
-                  <td className="p-2 space-x-1">
-                    {i.status !== "accepted" && i.status !== "revoked" && (
-                      <>
-                        <Button size="sm" variant="ghost" onClick={() => resend(i)}>Resend</Button>
-                        <Button size="sm" variant="ghost" onClick={() => revoke(i.id)}>Revoke</Button>
-                      </>
-                    )}
-                    <Button size="sm" variant="ghost" onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/invite/${i.token}`);
-                      toast.success("Link copied");
-                    }}>Copy link</Button>
-                  </td>
+        <>
+          <DDBulkBar
+            count={selectedIds.size}
+            total={actionable.length}
+            onClear={() => setSelectedIds(new Set())}
+            busy={bulkBusy}
+            className="mb-3"
+            actions={[
+              { key: 'resend', label: 'Resend',  icon: RotateCw, variant: 'default', onRun: bulkResend },
+              { key: 'revoke', label: 'Revoke',  icon: Ban,      variant: 'destructive', onRun: bulkRevoke },
+            ]}
+          />
+          <div className="border rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr className="text-left">
+                  <th className="p-2 w-8">
+                    <button onClick={toggleAll} className="text-muted-foreground hover:text-foreground" aria-label="Select all actionable">
+                      {allSel ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                    </button>
+                  </th>
+                  <th className="p-2">Role</th>
+                  <th className="p-2">Sent To</th>
+                  <th className="p-2">Channel</th>
+                  <th className="p-2">Status</th>
+                  <th className="p-2">Created</th>
+                  <th className="p-2">Expires</th>
+                  <th className="p-2">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {invites.map((i: any) => {
+                  const canSelect = i.status !== 'accepted' && i.status !== 'revoked';
+                  const isSel = selectedIds.has(i.id);
+                  return (
+                  <tr key={i.id} className={`border-t ${isSel ? 'bg-primary/5' : ''}`}>
+                    <td className="p-2">
+                      {canSelect && (
+                        <button onClick={() => toggleOne(i.id)} className="text-muted-foreground hover:text-foreground" aria-label="Select">
+                          {isSel ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                        </button>
+                      )}
+                    </td>
+                    <td className="p-2"><Badge variant="outline">{i.role}</Badge></td>
+                    <td className="p-2">
+                      <div className="font-medium">{i.sent_name || "—"}</div>
+                      <div className="text-xs text-muted-foreground">{i.sent_to_phone || i.sent_to_email}</div>
+                    </td>
+                    <td className="p-2">{i.channel}</td>
+                    <td className="p-2">{statusBadge(i.status)}</td>
+                    <td className="p-2 text-xs text-muted-foreground">{formatDistanceToNow(new Date(i.created_at))} ago</td>
+                    <td className="p-2 text-xs text-muted-foreground">{new Date(i.expires_at).toLocaleDateString()}</td>
+                    <td className="p-2 space-x-1">
+                      {canSelect && (
+                        <>
+                          <Button size="sm" variant="ghost" onClick={() => resend(i)}>Resend</Button>
+                          <Button size="sm" variant="ghost" onClick={() => revoke(i.id)}>Revoke</Button>
+                        </>
+                      )}
+                      <Button size="sm" variant="ghost" onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/invite/${i.token}`);
+                        toast.success("Link copied");
+                      }}>Copy link</Button>
+                    </td>
+                  </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </DDShell>
   );
