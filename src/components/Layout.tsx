@@ -380,9 +380,10 @@ const DYNASTY_NAVIGATION = {
     id: 'grabba-brands',
     name: '🔴 Grabba Product Brands',
     items: [
-      { path: '/gasmask/driver', label: '🔴 GasMask OS', icon: Flame },
+      { path: '/gasmask/driver', label: '🚗 Driver App', icon: Truck },
+      { path: '/brand/gasmask', label: '🔴 GasMask OS', icon: Flame },
       { path: '/brand/hotmama', label: '🟠 HotMama OS', icon: Heart },
-      { path: '/brand/scalati', label: '🟡 Hotscolatti OS', icon: Sparkles },
+      { path: '/brand/hotscolati', label: '🟡 Hotscolatti OS', icon: Sparkles },
       { path: '/brand/grabba-r-us', label: '🟢 Grabba R Us OS', icon: ShoppingBag },
       { path: '/brand-dashboard', label: 'Brand Dashboard', icon: LayoutDashboard },
     ],
