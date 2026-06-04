@@ -136,20 +136,36 @@ export default function GrabbaAmbassadors() {
     },
   });
 
-  // Fetch commissions (finders fees)
-  const { data: commissions } = useQuery({
+  // Fetch commissions from canonical ledger (commission_ledger)
+  // Aliased fields keep downstream display logic compatible:
+  //   amount        ← commission_amount
+  //   entity_type   ← derived from source_channel (wholesale → 'wholesaler', else 'store')
+  //   notes         ← source_name
+  const { data: commissionsRaw } = useQuery({
     queryKey: ["grabba-ambassador-commissions"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("ambassador_commissions")
+      const { data, error } = await supabase
+        .from("commission_ledger")
         .select(`
-          *,
-          ambassador:ambassadors(id, user_id, user:profiles(name))
+          id, ambassador_id, commission_amount, gross_amount, status,
+          source_channel, source_name, earned_at, paid_at, created_at,
+          ambassador:ambassadors!commission_ledger_ambassador_id_fkey(id, user_id, name, user:profiles(name))
         `)
         .order("created_at", { ascending: false });
+      if (error) console.error("commission_ledger query failed", error);
       return data || [];
     },
   });
+  const commissions = (commissionsRaw || []).map((c: any) => ({
+    ...c,
+    amount: Number(c.commission_amount || 0),
+    entity_type: (c.source_channel || "").toLowerCase().includes("wholesale") ? "wholesaler" : "store",
+    notes: c.source_name,
+    // Display-side falls back to ambassador.name when user.name is absent
+    ambassador: c.ambassador
+      ? { ...c.ambassador, user: c.ambassador.user || { name: c.ambassador.name } }
+      : null,
+  }));
 
   // Fetch regions
   const { data: regions } = useQuery({

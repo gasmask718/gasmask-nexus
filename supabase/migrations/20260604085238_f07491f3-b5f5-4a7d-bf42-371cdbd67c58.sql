@@ -1,0 +1,2 @@
+COMMENT ON TABLE public.ambassador_commissions IS 'DEPRECATED 2026-06-04. Canonical source is public.commission_ledger. No new writers. Scheduled for removal in P12 cleanup once residual read-only callers (useAmbassadorIntelligence, useAmbassadorPortfolio, etc.) are migrated.';
+COMMENT ON TABLE public.commission_events IS 'DEPRECATED 2026-06-04. Canonical source is public.commission_ledger. No new writers. Scheduled for removal in P12 cleanup once residual read-only callers (useAdminAmbassadorCommand, useAmbassadorCommissions, etc.) are migrated.';
