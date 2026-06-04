@@ -55,9 +55,8 @@ export const FLOOR_EXPORT_CONFIGS: FloorExportConfig[] = [
       { table: 'companies', label: 'Companies', analyticsColumns: [
         { key: 'id', label: 'Total Companies', type: 'count' },
       ]},
-      { table: 'stores', label: 'Legacy Stores', analyticsColumns: [
-        { key: 'id', label: 'Legacy Records', type: 'count' },
-      ]},
+      // Legacy 'stores' table dropped 2026-06-04 — store_master is canonical.
+      // Restoring stale shape would diverge field crews from CRM. Do not re-add.
     ],
   },
   {

@@ -495,18 +495,33 @@ serve(async (req) => {
       );
     }
 
-    if (action === "backup-all") {
+    if (action === "backup-all" || action === "nightly-backup" || action === "monthly-backup") {
+      const mode: "nightly" | "monthly" =
+        action === "nightly-backup" ? "nightly" :
+        action === "monthly-backup" ? "monthly" :
+        "monthly"; // legacy backup-all = monthly behavior
+
       const now = new Date();
-      const monthFolder = now.toLocaleDateString("en-US", { year: "numeric", month: "long", timeZone: "America/New_York" });
       const rootId = await findOrCreateFolder(ROOT_FOLDER_NAME);
-      const monthId = await findOrCreateFolder(monthFolder, rootId);
+
+      // Folder hierarchy:
+      //   Dynasty OS Backups / Nightly / YYYY-MM-DD / <Floor>
+      //   Dynasty OS Backups / Monthly / <Month YYYY> / <Floor>
+      const tierFolderName = mode === "nightly" ? "Nightly" : "Monthly";
+      const tierId = await findOrCreateFolder(tierFolderName, rootId);
+
+      const periodFolderName =
+        mode === "nightly"
+          ? now.toLocaleDateString("en-CA", { timeZone: "America/New_York" })   // 2026-06-04
+          : now.toLocaleDateString("en-US", { year: "numeric", month: "long", timeZone: "America/New_York" });
+
+      const periodId = await findOrCreateFolder(periodFolderName, tierId);
 
       const results: Array<{ floor: string; success: boolean; files: number; fileName?: string; error?: string }> = [];
 
       for (const config of FLOOR_CONFIGS) {
         try {
-          const floorFolderId = await findOrCreateFolder(config.name, monthId);
-
+          const floorFolderId = await findOrCreateFolder(config.name, periodId);
           const tableData: Record<string, { rowCount: number; data: Record<string, unknown>[]; error?: string }> = {};
 
           for (const tableName of config.tables) {
@@ -514,7 +529,6 @@ serve(async (req) => {
               .from(tableName)
               .select("*", { count: "exact" })
               .limit(5000);
-
             if (error) {
               tableData[tableName] = { rowCount: 0, data: [], error: error.message };
             } else {
@@ -524,18 +538,62 @@ serve(async (req) => {
 
           const pdfBytes = generateFloorPDF(config, tableData, now);
           const dateStamp = now.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-          const pdfFileName = `${config.name.replace(/[^a-zA-Z0-9]/g, "_")}_Report_${dateStamp}.pdf`;
+          const pdfFileName = `${config.name.replace(/[^a-zA-Z0-9]/g, "_")}_${mode}_${dateStamp}.pdf`;
 
           await gdriveUploadBinary(pdfFileName, pdfBytes, floorFolderId);
-
           results.push({ floor: config.name, success: true, files: 1, fileName: pdfFileName });
         } catch (err) {
           results.push({ floor: config.name, success: false, files: 0, error: String(err) });
         }
       }
 
+      // Retention: keep last 30 nightly period folders, last 12 monthly period folders.
+      const keep = mode === "nightly" ? 30 : 12;
+      const prunedFolders: string[] = [];
+      try {
+        const listed = await gdriveRequest(
+          `/files?q=${encodeURIComponent(`'${tierId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`)}&fields=files(id,name,createdTime)&orderBy=createdTime%20desc&pageSize=200`
+        );
+        const folders = (listed.files || []) as Array<{ id: string; name: string; createdTime: string }>;
+        const stale = folders.slice(keep);
+        for (const f of stale) {
+          try {
+            await gdriveRequest(`/files/${f.id}`, { method: "DELETE" });
+            prunedFolders.push(f.name);
+          } catch (e) {
+            console.error(`Prune failed for ${f.name}:`, e);
+          }
+        }
+      } catch (e) {
+        console.error("Retention listing failed:", e);
+      }
+
+      // Update health_checks row for this tier
+      try {
+        const checkKey = mode === "nightly" ? "cron.nightly-gdrive-backup" : "cron.monthly-gdrive-backup";
+        const okCount = results.filter(r => r.success).length;
+        const status = okCount === results.length ? "pass" : (okCount === 0 ? "fail" : "warn");
+        await supabase.from("health_checks").update({
+          last_run_at: now.toISOString(),
+          last_ok_at: status === "pass" ? now.toISOString() : undefined,
+          last_status: status,
+          last_message: `${okCount}/${results.length} floors uploaded; pruned ${prunedFolders.length}`,
+          details: { results, prunedFolders, periodFolder: periodFolderName },
+        }).eq("check_key", checkKey);
+      } catch (e) {
+        console.error("health_checks update failed:", e);
+      }
+
       return new Response(
-        JSON.stringify({ success: true, monthFolder, format: "A4 PDF", results }),
+        JSON.stringify({
+          success: true,
+          mode,
+          tierFolder: tierFolderName,
+          periodFolder: periodFolderName,
+          format: "A4 PDF",
+          results,
+          retention: { kept: keep, prunedFolders },
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
