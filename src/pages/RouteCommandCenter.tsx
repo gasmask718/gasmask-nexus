@@ -11,8 +11,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Loader2, MapPin, AlertTriangle, Package, DollarSign, Phone, Sparkles, X, Route as RouteIcon,
-  Gift, RotateCcw, TrendingDown,
+  Gift, RotateCcw, TrendingDown, Zap,
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const TYPE_META: Record<CandidateType, { label: string; icon: any; color: string }> = {
   reorder: { label: 'Reorder', icon: Package, color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
