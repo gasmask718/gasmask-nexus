@@ -594,6 +594,7 @@ const RoleRouter = lazy(() => import('@/components/portal/RoleRouter'));
 const PortalDashboard = lazy(() => import('@/pages/portal/PortalDashboard'));
 const PortalInvoices = lazy(() => import('@/pages/portal/PortalInvoices'));
 const PortalHome = lazy(() => import('@/pages/portal/PortalHome'));
+const TrainingAdminPage = lazy(() => import('@/pages/admin/TrainingAdminPage'));
 const PortalOnboarding = lazy(() => import('@/pages/portal/PortalOnboarding'));
 const DriverPortal = lazy(() => import('@/pages/portal/DriverPortal'));
 const BikerPortal = lazy(() => import('@/pages/portal/BikerPortal'));
