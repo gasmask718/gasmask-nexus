@@ -168,6 +168,7 @@ export default function DynastyDirectInvites() {
                     label="Invite & Link"
                   />
                 </div>
+              </div>
             ))}
           </div>
         </div>
