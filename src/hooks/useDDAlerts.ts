@@ -4,8 +4,25 @@
  * applies per-alert snooze (localStorage), and returns ranked alerts.
  */
 import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { DD_ALERT_THRESHOLDS, type Severity } from '@/lib/dynastyDirect/thresholds';
 import { useDDHubKpis } from './useDDHubKpis';
+
+function useSystemHealthFails() {
+  return useQuery({
+    queryKey: ['health_checks_fails'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('health_checks' as any)
+        .select('check_key,label,business,floor,last_status,last_message')
+        .eq('enabled', true)
+        .eq('last_status', 'fail');
+      return (data ?? []) as any[];
+    },
+    refetchInterval: 60_000,
+  });
+}
 
 export interface DDAlert {
   id: string;                  // stable key for snooze
@@ -34,6 +51,7 @@ function saveSnoozes(s: Record<string, SnoozeEntry>) {
 
 export function useDDAlerts() {
   const kpis = useDDHubKpis();
+  const sysFails = useSystemHealthFails();
   const [snoozes, setSnoozes] = useState<Record<string, SnoozeEntry>>(() => loadSnoozes());
 
   // Re-evaluate snooze expirations every minute
@@ -227,8 +245,20 @@ export function useDDAlerts() {
       });
     }
 
+    // OS-wide system-health failures (RED items from /system-health)
+    for (const f of (sysFails.data ?? [])) {
+      out.push({
+        id: `sys-health:${f.check_key}`,
+        severity: 'critical',
+        title: `[${f.business}/${f.floor ?? ''}] ${f.label}`,
+        detail: f.last_message ?? 'System health check failed',
+        href: '/system-health',
+        resolvedKey: `status=${f.last_status}`,
+      });
+    }
+
     return out;
-  }, [kpis.data]);
+  }, [kpis.data, sysFails.data]);
 
   const visible = useMemo(() => {
     const now = Date.now();
