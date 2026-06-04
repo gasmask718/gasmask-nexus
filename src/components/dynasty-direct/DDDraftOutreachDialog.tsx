@@ -25,35 +25,71 @@ type Channel = 'sms' | 'email';
 interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  /**
+   * Accepts either a wholesaler_profiles.id OR a wholesalers.id — the dialog
+   * resolves the matching profile, recipients and channel availability.
+   */
   wholesalerId: string;
   wholesalerName?: string;
-  recipientPhone?: string | null;
-  recipientEmail?: string | null;
   defaultIntent?: Intent;
   defaultChannel?: Channel;
 }
 
 export function DDDraftOutreachDialog({
   open, onOpenChange, wholesalerId, wholesalerName,
-  recipientPhone, recipientEmail,
   defaultIntent = 'check-in', defaultChannel,
 }: Props) {
   const [intent, setIntent] = useState<Intent>(defaultIntent);
-  const [channel, setChannel] = useState<Channel>(
-    defaultChannel ?? (recipientPhone ? 'sms' : 'email'),
-  );
+  const [channel, setChannel] = useState<Channel>(defaultChannel ?? 'sms');
   const [loading, setLoading] = useState(false);
   const [body, setBody] = useState('');
   const [subject, setSubject] = useState('');
   const [model, setModel] = useState<string | null>(null);
   const [staging, setStaging] = useState(false);
 
-  async function draft() {
+  const [resolvedId, setResolvedId] = useState<string | null>(null);
+  const [recipientPhone, setRecipientPhone] = useState<string | null>(null);
+  const [recipientEmail, setRecipientEmail] = useState<string | null>(null);
+  const [recipientName, setRecipientName] = useState<string | null>(wholesalerName ?? null);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+
+  async function resolveProfile(): Promise<string | null> {
+    setResolveError(null);
+    // Try as profile id, then fall back to wholesalers.id via the FK link.
+    const direct = await supabase
+      .from('wholesaler_profiles')
+      .select('id, company_name, contact_name, phone, email')
+      .eq('id', wholesalerId)
+      .maybeSingle();
+    let row = direct.data;
+    if (!row) {
+      const linked = await supabase
+        .from('wholesaler_profiles')
+        .select('id, company_name, contact_name, phone, email')
+        .eq('wholesaler_id', wholesalerId)
+        .maybeSingle();
+      row = linked.data;
+    }
+    if (!row) {
+      setResolveError('No linked marketplace profile for this supplier (cannot draft).');
+      return null;
+    }
+    setResolvedId(row.id);
+    setRecipientPhone(row.phone);
+    setRecipientEmail(row.email);
+    setRecipientName(row.contact_name || row.company_name || wholesalerName || null);
+    if (!defaultChannel) setChannel(row.phone ? 'sms' : 'email');
+    return row.id;
+  }
+
+  async function draft(idOverride?: string) {
+    const id = idOverride ?? resolvedId;
+    if (!id) return;
     setLoading(true);
     setModel(null);
     try {
       const { data, error } = await supabase.functions.invoke('dd-draft-outreach', {
-        body: { wholesaler_id: wholesalerId, intent, channel },
+        body: { wholesaler_id: id, intent, channel },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -68,7 +104,11 @@ export function DDDraftOutreachDialog({
   }
 
   useEffect(() => {
-    if (open && !body) draft();
+    if (!open) return;
+    (async () => {
+      const id = await resolveProfile();
+      if (id) await draft(id);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
