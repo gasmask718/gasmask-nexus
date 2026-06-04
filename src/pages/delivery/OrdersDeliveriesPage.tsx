@@ -263,16 +263,30 @@ function InvoiceProductsCell({ items }: { items: any[] }) {
 
 function OrdersDeliveredTab() {
   const [q, setQ] = useState("");
+  const [onlyUnpaid, setOnlyUnpaid] = useState(false);
   const { data = [], isLoading } = useDeliveredInvoices();
   const rows = useMemo(() => {
     const t = q.trim().toLowerCase();
-    if (!t) return data;
-    return data.filter((r: any) =>
-      [r.store?.store_name, r.store?.city, r.invoice_number]
+    return data.filter((r: any) => {
+      const status = r.payment_status ?? "unpaid";
+      const owed = Math.max(Number(r.total ?? 0) - Number(r.amount_paid ?? 0), 0);
+      if (onlyUnpaid && (status === "paid" || owed <= 0)) return false;
+      if (!t) return true;
+      return [r.store?.store_name, r.store?.city, r.invoice_number]
         .filter(Boolean)
-        .some((v: string) => v.toLowerCase().includes(t)),
-    );
-  }, [data, q]);
+        .some((v: string) => v.toLowerCase().includes(t));
+    });
+  }, [data, q, onlyUnpaid]);
+
+  const unpaidCount = useMemo(
+    () =>
+      data.filter((r: any) => {
+        const status = r.payment_status ?? "unpaid";
+        const owed = Math.max(Number(r.total ?? 0) - Number(r.amount_paid ?? 0), 0);
+        return status !== "paid" && owed > 0;
+      }).length,
+    [data],
+  );
 
   return (
     <Card>
@@ -283,19 +297,34 @@ function OrdersDeliveredTab() {
               <Truck className="h-5 w-5" />
               Orders Delivered
               <Badge variant="secondary">{rows.length}</Badge>
+              {unpaidCount > 0 && (
+                <Badge variant="destructive" className="gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  {unpaidCount} unpaid — go collect
+                </Badge>
+              )}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Finalized invoices — delivery dates include the year.
+              Finalized invoices — unpaid rows are bold-red. Toggle "Unpaid only" for the collection list.
             </p>
           </div>
-          <div className="relative w-72">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              className="pl-8"
-              placeholder="Search store or invoice…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              size="sm"
+              variant={onlyUnpaid ? "destructive" : "outline"}
+              onClick={() => setOnlyUnpaid((v) => !v)}
+            >
+              {onlyUnpaid ? "Showing unpaid only" : "Unpaid only"}
+            </Button>
+            <div className="relative w-72">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-8"
+                placeholder="Search store or invoice…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -311,44 +340,62 @@ function OrdersDeliveredTab() {
                 <TableHead>Delivery Date</TableHead>
                 <TableHead>Delivered By</TableHead>
                 <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-right">Owed</TableHead>
+                <TableHead>Age</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                     Loading…
                   </TableCell>
                 </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                     No delivered orders.
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((r: any) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-mono text-xs">{r.invoice_number}</TableCell>
-                    <TableCell>
-                      <div className="font-medium">{r.store?.store_name ?? "—"}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {[r.store?.city, r.store?.state].filter(Boolean).join(", ")}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <InvoiceProductsCell items={r.line_items ?? []} />
-                    </TableCell>
-                    <TableCell>{r.total_tubes_sold ?? 0}</TableCell>
-                    <TableCell className="whitespace-nowrap text-sm">
-                      {fmtDate(r.finalized_at ?? r.created_at)}
-                    </TableCell>
-                    <TableCell className="text-xs">{r.finalized_by ?? r.created_by ?? "—"}</TableCell>
-                    <TableCell className="text-right font-medium">
-                      {fmtMoney(Number(r.total ?? 0))}
-                    </TableCell>
-                  </TableRow>
-                ))
+                rows.map((r: any) => {
+                  const total = Number(r.total ?? 0);
+                  const paid = Number(r.amount_paid ?? 0);
+                  const owed = Math.max(total - paid, 0);
+                  const status = r.payment_status ?? "unpaid";
+                  const isUnpaid = status !== "paid" && owed > 0;
+                  const days = isUnpaid ? daysSince(r.finalized_at ?? r.created_at) : null;
+                  return (
+                    <TableRow key={r.id} className={unpaidRowClass(status, owed)}>
+                      <TableCell className="font-mono text-xs">{r.invoice_number}</TableCell>
+                      <TableCell>
+                        <div className="font-medium">{r.store?.store_name ?? "—"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {[r.store?.city, r.store?.state].filter(Boolean).join(", ")}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <InvoiceProductsCell items={r.line_items ?? []} />
+                      </TableCell>
+                      <TableCell>{r.total_tubes_sold ?? 0}</TableCell>
+                      <TableCell className="whitespace-nowrap text-sm">
+                        {fmtDate(r.finalized_at ?? r.created_at)}
+                      </TableCell>
+                      <TableCell className="text-xs">{r.finalized_by ?? r.created_by ?? "—"}</TableCell>
+                      <TableCell className="text-right">{fmtMoney(total)}</TableCell>
+                      <TableCell className="text-right">
+                        {owed > 0 ? (
+                          <span className="font-bold">{fmtMoney(owed)}</span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {isUnpaid ? <AgeBadge days={days} /> : <span className="text-muted-foreground text-xs">paid</span>}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
