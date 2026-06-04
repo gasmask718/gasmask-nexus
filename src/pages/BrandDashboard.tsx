@@ -6,35 +6,50 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
-  TrendingUp, DollarSign, Package, Store, 
+import {
+  TrendingUp, DollarSign, Package, Store,
   MapPin, BarChart3, Users, AlertTriangle
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
-const TOBACCO_BRANDS = ["gasmask", "hotmama", "hotscolati", "grabba_r_us"];
+const TOBACCO_BRANDS = ["gasmask", "hotmama", "hotscolati", "grabba_r_us"] as const;
+type BrandKey = typeof TOBACCO_BRANDS[number];
 
-const brandConfigs: Record<string, { name: string; primary: string; secondary: string; gradient: string }> = {
-  gasmask: { 
-    name: "GasMask", 
-    primary: "bg-red-600", 
+// URL slug → canonical brand key (accepts legacy/alt spellings).
+// Unknown slugs are NOT silently coerced — they render an explicit error state.
+const URL_SLUG_TO_BRAND: Record<string, BrandKey> = {
+  gasmask: "gasmask",
+  hotmama: "hotmama",
+  hotscolati: "hotscolati",
+  hotscolatti: "hotscolati",   // legacy spelling
+  scalati: "hotscolati",        // legacy sidebar slug
+  grabba_r_us: "grabba_r_us",
+  "grabba-r-us": "grabba_r_us", // URL-friendly form
+  grabbarus: "grabba_r_us",
+};
+
+const brandConfigs: Record<BrandKey, { name: string; primary: string; secondary: string; gradient: string }> = {
+  gasmask: {
+    name: "GasMask",
+    primary: "bg-red-600",
     secondary: "text-red-600",
     gradient: "from-red-600 to-black"
   },
-  hotmama: { 
-    name: "HotMama", 
-    primary: "bg-rose-400", 
+  hotmama: {
+    name: "HotMama",
+    primary: "bg-rose-400",
     secondary: "text-rose-400",
     gradient: "from-rose-400 to-rose-600"
   },
-  hotscolati: { 
-    name: "Hotscolati", 
-    primary: "bg-red-700", 
+  hotscolati: {
+    name: "Hotscolati",
+    primary: "bg-red-700",
     secondary: "text-red-700",
     gradient: "from-red-700 to-black"
   },
-  grabba_r_us: { 
-    name: "Grabba R Us", 
-    primary: "bg-purple-500", 
+  grabba_r_us: {
+    name: "Grabba R Us",
+    primary: "bg-purple-500",
     secondary: "text-purple-500",
     gradient: "from-purple-500 to-pink-500"
   },
@@ -42,8 +57,43 @@ const brandConfigs: Record<string, { name: string; primary: string; secondary: s
 
 export default function BrandDashboard() {
   const { brand: urlBrand } = useParams<{ brand: string }>();
-  const brand = TOBACCO_BRANDS.includes(urlBrand || "") ? urlBrand : "gasmask";
-  const brandConfig = brandConfigs[brand || "gasmask"];
+  const normalized = urlBrand ? URL_SLUG_TO_BRAND[urlBrand.toLowerCase()] : undefined;
+
+  // LOUD failure — never silently render another brand's data.
+  if (!normalized) {
+    return (
+      <div className="container mx-auto p-6 max-w-2xl">
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Unknown brand: "{urlBrand ?? '(missing)'}"
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p className="text-muted-foreground">
+              This URL does not map to a known tobacco brand. We refused to render
+              another brand's data to prevent reporting on the wrong product.
+            </p>
+            <p className="font-medium">Valid brand routes:</p>
+            <ul className="space-y-1">
+              {TOBACCO_BRANDS.map((b) => (
+                <li key={b}>
+                  <Link to={`/brand/${b === "grabba_r_us" ? "grabba-r-us" : b}`} className="text-primary underline">
+                    /brand/{b === "grabba_r_us" ? "grabba-r-us" : b}
+                  </Link>
+                  <span className="text-muted-foreground"> — {brandConfigs[b].name}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const brand: BrandKey = normalized;
+  const brandConfig = brandConfigs[brand];
 
   const { data: brandStats } = useQuery({
     queryKey: ["brand-stats", brand],
