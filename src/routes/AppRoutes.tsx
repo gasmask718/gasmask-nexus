@@ -364,7 +364,7 @@ const OwnerClusterDashboard = lazy(() => import('@/pages/owner').then(m => ({ de
 const OwnerAutopilotConsole = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerAutopilotConsole })));
 const OwnerAICommandConsole = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerAICommandConsole })));
 const OwnerRiskRadar = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerRiskRadar })));
-const OwnerDailyBriefing = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerDailyBriefing })));
+// T6 cleanup: OwnerDailyBriefing deleted — /os/owner/briefing redirects to /penthouse/accounting
 const OwnerHoldingsOverview = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerHoldingsOverview })));
 const OwnerClusterDetailPage = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerClusterDetailPage })));
 const OwnerAutomationDetailPage = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerAutomationDetailPage })));
@@ -380,7 +380,7 @@ const OwnerVoiceAI = lazy(() => import('@/pages/owner').then(m => ({ default: m.
 const OwnerReports = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerReports })));
 const OwnerVARouting = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerVARouting })));
 const OwnerAlertCenter = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerAlertCenter })));
-const OwnerExecutiveReports = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerExecutiveReports })));
+// T6 cleanup: OwnerExecutiveReports deleted — /os/owner/executive-reports redirects to /os/owner/reports
 const OwnerBroadcastCenter = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerBroadcastCenter })));
 const OwnerAccountingOS = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerAccountingOS })));
 const OwnerMissionControl = lazy(() => import('@/pages/owner/OwnerMissionControl'));
@@ -543,7 +543,7 @@ const ComplianceCenter = lazy(() => import('@/pages/compliance/ComplianceCenter'
 const ColdCallBlastPage = lazy(() => import('@/pages/communication/cold-calls/ColdCallBlastPage'));
 const RouteEnginePage = lazy(() => import('@/pages/gasmask/RouteEnginePage'));
 const GasmaskDriverRoutePage = lazy(() => import('@/pages/gasmask/DriverRoutePage'));
-const AgentCenterPage = lazy(() => import('@/pages/gasmask/AgentCenterPage'));
+// T6 cleanup: AgentCenterPage deleted — both routes redirect to /grabba/floor9
 const NoteCleanerPage = lazy(() => import('@/pages/gasmask/NoteCleanerPage'));
 const StoreIntelligencePage = lazy(() => import('@/pages/gasmask/StoreIntelligencePage'));
 const CommunicationOverview = lazy(() => import('@/pages/communication/CommunicationOverview'));
@@ -646,7 +646,7 @@ const HREmployeeDetail = lazy(() => import('@/pages/HREmployeeDetail'));
 const HRInterviews = lazy(() => import('@/pages/HRInterviews'));
 const HRDocuments = lazy(() => import('@/pages/HRDocuments'));
 const HROnboarding = lazy(() => import('@/pages/HROnboarding'));
-const HRPayroll = lazy(() => import('@/pages/HRPayroll'));
+// T6 cleanup: HRPayroll deleted — /hr/payroll redirects to /grabba/payroll-manager
 const MyHR = lazy(() => import('@/pages/MyHR'));
 
 // Real Estate
@@ -1385,7 +1385,7 @@ export default function AppRoutes() {
         <Route path="/gasmask/driver-route" element={<GasmaskDriverRoutePage />} />
         {/* T3 K2: Agent Center merged into Floor 9 intelligence suite */}
         <Route path="/gasmask/agent-center" element={<Navigate to="/grabba/floor9" replace />} />
-        <Route path="/dynasty/agents" element={<AgentCenterPage />} />
+        <Route path="/dynasty/agents" element={<Navigate to="/grabba/floor9" replace />} />
         <Route path="/gasmask/note-cleaner" element={<NoteCleanerPage />} />
 
         {/* HotMama Routes */}
