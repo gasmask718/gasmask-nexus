@@ -1,23 +1,15 @@
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ThumbsUp, ThumbsDown, HelpCircle } from 'lucide-react';
-import { useStoreTubeKPI } from '@/hooks/useStoreTubeKPI';
+import { useStoreTubeKPI, type StoreTubeKPIRow } from '@/hooks/useStoreTubeKPI';
+import { CANONICAL_TUBE_SKUS } from '@/lib/inventory/skuDisplay';
 
 /**
  * Brand Interest Chips — pinned at top of Store Profile header.
  *
- * Authoritative source: `store_tube_inventory_status.owner_interested`
- * (boolean per brand), surfaced via the existing `useStoreTubeKPI` hook /
- * `v_store_tube_kpi` view. Reuses the cached `['store-tube-kpi', storeId]`
- * query — no new network call.
- *
- * Why this source over alternatives:
- *  - `store_brand_relationships.relationship_health` describes the RELATIONSHIP
- *    state (healthy/at_risk/paused/terminated), not the owner's stated interest.
- *  - `checklist_tube_intelligence.interest` is a per-VISIT signal, not a
- *    per-store rollup — would need a new query and wouldn't represent the
- *    current state of every brand.
- *  - `owner_interested` is the exact semantic ("is the store interested?"),
- *    edited per-brand in `UnifiedTubeIntelligenceCard`, and already cached.
+ * Renders ALL 9 canonical product SKUs (CANONICAL_TUBE_SKUS) with their
+ * operator-facing display names. Looks up per-product owner interest from
+ * v_store_tube_kpi (owner_interested boolean). Missing rows render as
+ * 'Unknown' so the catalog is always complete.
  */
 
 interface Props {
@@ -53,21 +45,35 @@ const LABELS: Record<Interest, string> = {
   unknown: 'Unknown',
 };
 
+// Canonical display name → list of KPI brand_id aliases (lowercased) that
+// represent the same SKU in v_store_tube_kpi.
+const SKU_KPI_ALIASES: Record<string, string[]> = {
+  'GasMask Tubes': ['gasmasktubes', 'gasmask tubes'],
+  'GasMask Bags': ['gasmask', 'gasmaskbags', 'gasmask bags'],
+  'GasMask Redtops': ['gasmaskredtops', 'gasmask redtops'],
+  'Hotscolatti Mix': ['hotscalati', 'hotscolatti', 'hotscolatti mix', 'hotscalatimixpack'],
+  'Hotscolatti Dark': ['hotscolatti-dark', 'hotscolattidark', 'hotscalatidark', 'hot scolatti dark'],
+  'Hotscolatti Light': ['hotscolatti-light', 'hotscolattilight', 'hotscalatilight', 'hot scolatti light'],
+  'Hotscolatti Bros': ['hotscalatibros', 'hotscolattibros', 'hotscolatti bros'],
+  HotMama: ['hotmama', 'hot mama'],
+  'Grabba R Us': ['grabba_r_us', 'grabba', 'grabbarus', 'grabba r us'],
+};
+
+function findKpiRow(displayName: string, kpi: StoreTubeKPIRow[]): StoreTubeKPIRow | undefined {
+  const aliases = SKU_KPI_ALIASES[displayName] ?? [displayName.toLowerCase()];
+  return kpi.find((r) => {
+    const id = (r.brand_id ?? '').toLowerCase().trim();
+    const name = (r.brand_name ?? '').toLowerCase().trim();
+    return aliases.includes(id) || aliases.includes(name);
+  });
+}
+
 export function BrandInterestChips({ storeId }: Props) {
   const { data: kpi = [], isLoading } = useStoreTubeKPI(storeId);
 
   if (isLoading) {
     return <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />;
   }
-  if (!kpi.length) return null;
-
-  // Deduplicate by brand_name (the view returns 7 rows incl. dark/light variants)
-  const seen = new Set<string>();
-  const rows = kpi.filter((r) => {
-    if (seen.has(r.brand_name)) return false;
-    seen.add(r.brand_name);
-    return true;
-  });
 
   const handleScroll = () => {
     const el = document.querySelector('[data-section="brand-relationships"]');
@@ -79,18 +85,19 @@ export function BrandInterestChips({ storeId }: Props) {
       <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 mr-1">
         Interest:
       </span>
-      {rows.map((r) => {
-        const kind = classify(r.owner_interested);
+      {CANONICAL_TUBE_SKUS.map((sku) => {
+        const row = findKpiRow(sku.display, kpi);
+        const kind = classify(row?.owner_interested);
         return (
           <Badge
-            key={`${r.brand_id}-${r.brand_name}`}
+            key={sku.product_id}
             variant="outline"
             className={`text-xs font-medium cursor-pointer transition-colors gap-1 ${STYLES[kind]}`}
             onClick={handleScroll}
-            title={`${r.brand_name}: ${LABELS[kind]}`}
+            title={`${sku.display}: ${LABELS[kind]}`}
           >
             {ICONS[kind]}
-            <span>{r.brand_name}</span>
+            <span>{sku.display}</span>
           </Badge>
         );
       })}
