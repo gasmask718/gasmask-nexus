@@ -8,6 +8,7 @@ import { useOutboundCall } from "@/hooks/useOutboundCall";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Phone } from "lucide-react";
+import { BusinessCompliancePanel } from "@/components/communication/BusinessCompliancePanel";
 
 export default function DialerPage() {
   const [selectedBusinessId] = useState<string>("all");
