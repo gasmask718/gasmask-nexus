@@ -52685,6 +52685,41 @@ export type Database = {
           },
         ]
       }
+      hr_employee_links: {
+        Row: {
+          created_at: string
+          employee_id: string
+          id: string
+          matched_via: string | null
+          source_id: string
+          source_table: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          id?: string
+          matched_via?: string | null
+          source_id: string
+          source_table: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          id?: string
+          matched_via?: string | null
+          source_id?: string
+          source_table?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_employee_links_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hr_employees: {
         Row: {
           avatar_url: string | null
@@ -52696,6 +52731,8 @@ export type Database = {
           id: string
           job_title: string
           phone: string | null
+          source_id: string | null
+          source_table: string | null
           start_date: string | null
           status: string | null
           updated_at: string | null
@@ -52711,6 +52748,8 @@ export type Database = {
           id?: string
           job_title: string
           phone?: string | null
+          source_id?: string | null
+          source_table?: string | null
           start_date?: string | null
           status?: string | null
           updated_at?: string | null
@@ -52726,6 +52765,8 @@ export type Database = {
           id?: string
           job_title?: string
           phone?: string | null
+          source_id?: string | null
+          source_table?: string | null
           start_date?: string | null
           status?: string | null
           updated_at?: string | null
@@ -52740,6 +52781,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      hr_import_runs: {
+        Row: {
+          id: string
+          run_at: string
+          stats: Json
+        }
+        Insert: {
+          id?: string
+          run_at?: string
+          stats?: Json
+        }
+        Update: {
+          id?: string
+          run_at?: string
+          stats?: Json
+        }
+        Relationships: []
       }
       hr_interviews: {
         Row: {
@@ -67597,6 +67656,7 @@ export type Database = {
           employee_type: string
           hourly_rate: number | null
           hours_worked: number | null
+          hr_employee_id: string | null
           id: string
           net_pay: number
           notes: string | null
@@ -67616,6 +67676,7 @@ export type Database = {
           employee_type: string
           hourly_rate?: number | null
           hours_worked?: number | null
+          hr_employee_id?: string | null
           id?: string
           net_pay?: number
           notes?: string | null
@@ -67635,6 +67696,7 @@ export type Database = {
           employee_type?: string
           hourly_rate?: number | null
           hours_worked?: number | null
+          hr_employee_id?: string | null
           id?: string
           net_pay?: number
           notes?: string | null
@@ -67643,7 +67705,15 @@ export type Database = {
           pay_period_start?: string
           status?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "payroll_records_hr_employee_id_fkey"
+            columns: ["hr_employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pending_orders: {
         Row: {

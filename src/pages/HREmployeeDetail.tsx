@@ -23,7 +23,7 @@ export default function HREmployeeDetail() {
   const [employee, setEmployee] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [onboardingTasks, setOnboardingTasks] = useState<any[]>([]);
-  const [payroll, setPayroll] = useState<any>(null);
+  const [payroll, setPayroll] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,17 +54,18 @@ export default function HREmployeeDetail() {
         .eq("employee_id", id)
         .order("due_date", { ascending: true });
 
-      // Fetch payroll
+      // Fetch payroll records (canonical — hr_payroll deprecated K6)
       const { data: payrollData } = await supabase
-        .from("hr_payroll")
+        .from("payroll_records")
         .select("*")
-        .eq("employee_id", id)
-        .single();
+        .eq("hr_employee_id", id)
+        .order("pay_period_end", { ascending: false })
+        .limit(12);
 
       setEmployee(employeeData);
       setDocuments(documentsData || []);
       setOnboardingTasks(tasksData || []);
-      setPayroll(payrollData);
+      setPayroll(payrollData || []);
     } catch (error) {
       console.error("Error fetching employee details:", error);
     } finally {
@@ -181,15 +182,18 @@ export default function HREmployeeDetail() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pay Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">Last Net Pay</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${payroll?.pay_rate || 0}
-              {payroll?.pay_type === "hourly" ? "/hr" : ""}
+              ${Number(payroll?.[0]?.net_pay ?? 0).toFixed(2)}
             </div>
-            <p className="text-xs text-muted-foreground capitalize">{payroll?.pay_type || "N/A"}</p>
+            <p className="text-xs text-muted-foreground">
+              {payroll?.[0]?.pay_period_end
+                ? `Period ending ${new Date(payroll[0].pay_period_end).toLocaleDateString()}`
+                : "No payroll records"}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -275,43 +279,47 @@ export default function HREmployeeDetail() {
         <TabsContent value="payroll">
           <Card>
             <CardHeader>
-              <CardTitle>Payroll Information</CardTitle>
+              <CardTitle>Payroll Records ({payroll.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              {payroll ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Pay Type</p>
-                      <p className="font-medium capitalize">{payroll.pay_type}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Pay Rate</p>
-                      <p className="font-medium">
-                        ${payroll.pay_rate}
-                        {payroll.pay_type === "hourly" ? "/hr" : ""}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Last Pay Date</p>
-                      <p className="font-medium">
-                        {payroll.last_pay_date
-                          ? new Date(payroll.last_pay_date).toLocaleDateString()
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Next Pay Date</p>
-                      <p className="font-medium">
-                        {payroll.next_pay_date
-                          ? new Date(payroll.next_pay_date).toLocaleDateString()
-                          : "N/A"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              {payroll.length === 0 ? (
+                <p className="text-muted-foreground">No payroll records yet.</p>
               ) : (
-                <p className="text-muted-foreground">No payroll information available</p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Period</TableHead>
+                      <TableHead>Hours</TableHead>
+                      <TableHead>Base</TableHead>
+                      <TableHead>Bonuses</TableHead>
+                      <TableHead>Net</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Paid</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {payroll.map((p: any) => (
+                      <TableRow key={p.id}>
+                        <TableCell>
+                          {new Date(p.pay_period_start).toLocaleDateString()} —{" "}
+                          {new Date(p.pay_period_end).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>{p.hours_worked ?? "—"}</TableCell>
+                        <TableCell>${Number(p.base_pay ?? 0).toFixed(2)}</TableCell>
+                        <TableCell>${Number(p.bonuses ?? 0).toFixed(2)}</TableCell>
+                        <TableCell className="font-medium">
+                          ${Number(p.net_pay ?? 0).toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">{p.status}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {p.paid_at ? new Date(p.paid_at).toLocaleDateString() : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </CardContent>
           </Card>
