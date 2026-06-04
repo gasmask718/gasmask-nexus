@@ -352,9 +352,17 @@ export default function DynastyDirectStoreApplications() {
                         </p>
                       </div>
                     </div>
-                    <Badge variant="outline" className={STATUS_STYLES[app.status]}>
-                      {app.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {app.triage_score != null && (
+                        <Badge variant="outline" className={triageBadgeClass(app.triage_score)}>
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          {app.triage_score}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className={STATUS_STYLES[app.status]}>
+                        {app.status}
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -375,8 +383,52 @@ export default function DynastyDirectStoreApplications() {
                         {[app.store_address, app.city, app.state, app.zip].filter(Boolean).join(', ')}
                       </div>
                     )}
-                    {app.ein && <div className="text-muted-foreground">EIN: {app.ein}</div>}
+                  {app.ein && <div className="text-xs text-muted-foreground flex items-center gap-1"><FileBadge className="h-3 w-3" /> EIN: {app.ein}</div>}
                   </div>
+                  {app.website && (
+                    <div className="text-xs flex items-center gap-1.5">
+                      <Globe className="h-3 w-3 text-muted-foreground" />
+                      <a href={app.website.startsWith('http') ? app.website : `https://${app.website}`} target="_blank" rel="noreferrer" className="hover:underline text-primary">{app.website}</a>
+                    </div>
+                  )}
+
+                  {(app.triage_summary || app.status === 'pending') && (
+                    <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-xs space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <Sparkles className="h-3 w-3 text-primary" /> AI triage
+                          {app.triage_model && <span className="text-muted-foreground font-normal">· {app.triage_model.split('/').pop()}</span>}
+                        </span>
+                        {app.status === 'pending' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-[11px]"
+                            disabled={triagingId === app.id}
+                            onClick={() => triageOne(app.id)}
+                          >
+                            {triagingId === app.id ? <Loader2 className="h-3 w-3 animate-spin" /> : app.triage_score == null ? 'Triage now' : 'Re-triage'}
+                          </Button>
+                        )}
+                      </div>
+                      {app.triage_summary && <p className="text-muted-foreground">{app.triage_summary}</p>}
+                      {Array.isArray(app.triage_signals?.ai_flags) && app.triage_signals.ai_flags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {app.triage_signals.ai_flags.map((f: string, i: number) => (
+                            <span key={i} className="px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 text-[10px]">⚠ {f}</span>
+                          ))}
+                        </div>
+                      )}
+                      {Array.isArray(app.triage_signals?.ai_positive) && app.triage_signals.ai_positive.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {app.triage_signals.ai_positive.map((f: string, i: number) => (
+                            <span key={i} className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px]">✓ {f}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {app.notes && (
                     <p className="text-sm bg-muted/40 rounded p-3">{app.notes}</p>
                   )}
