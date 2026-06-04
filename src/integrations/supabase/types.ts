@@ -48444,6 +48444,45 @@ export type Database = {
         }
         Relationships: []
       }
+      floor_directory: {
+        Row: {
+          audit_pass: string | null
+          floor: string
+          gaps_count: number
+          id: string
+          last_audited: string
+          page_name: string
+          page_route: string
+          purpose: string | null
+          section: string | null
+          status: string
+        }
+        Insert: {
+          audit_pass?: string | null
+          floor: string
+          gaps_count?: number
+          id?: string
+          last_audited?: string
+          page_name: string
+          page_route: string
+          purpose?: string | null
+          section?: string | null
+          status: string
+        }
+        Update: {
+          audit_pass?: string | null
+          floor?: string
+          gaps_count?: number
+          id?: string
+          last_audited?: string
+          page_name?: string
+          page_route?: string
+          purpose?: string | null
+          section?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       follow_up_audit_log: {
         Row: {
           action_taken: string
