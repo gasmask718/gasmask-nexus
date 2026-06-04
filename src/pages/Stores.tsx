@@ -28,6 +28,8 @@ import { useStoreTubeIntelSummaryBatch } from '@/hooks/useStoreTubeIntelSummary'
 import { useLastOrderSnapshotBatch } from '@/hooks/useLastOrderSnapshot';
 import { StoreKPIBadge } from '@/components/store/StoreKPIBadge';
 import { LastOrderKPIBadge } from '@/components/store/LastOrderKPIBadge';
+import { StorePaymentBadge, paymentBorderClass } from '@/components/store/StorePaymentBadge';
+import { useStorePaymentStatusMap } from '@/hooks/useStorePaymentStatus';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { PagePurpose } from '@/components/portal/guidance/PagePurpose';
 import { CardHelper } from '@/components/portal/guidance/CardHelper';
