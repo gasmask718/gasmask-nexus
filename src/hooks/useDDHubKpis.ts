@@ -29,6 +29,9 @@ export interface DDHubKpis {
   commsHealthFails: number;
   // Inbox
   newContactMessages: number;
+  // Lifecycle (cart recovery)
+  cartRecoveryQueued: number;
+  cartRecoverySent: number;
 }
 
 async function fetchDDHubKpis(): Promise<DDHubKpis> {
@@ -36,6 +39,7 @@ async function fetchDDHubKpis(): Promise<DDHubKpis> {
     unpaid, awaitingLabel, paidWeek, unrouted, routingFails,
     needGeocode, activeSup, openInvites, pendingApps, affiliates,
     payoutRows, briefs, twilioBalance, commsFails, newMessages,
+    cartQueued, cartSent,
   ] = await Promise.all([
     supabase.from('marketplace_orders').select('id', { count: 'exact', head: true }).eq('payment_status', 'unpaid'),
     supabase.from('marketplace_fulfillments').select('id', { count: 'exact', head: true }).eq('status', 'label_pending'),
@@ -61,6 +65,10 @@ async function fetchDDHubKpis(): Promise<DDHubKpis> {
     supabase.from('comms_health_checks').select('id', { count: 'exact', head: true })
       .eq('status', 'fail').gte('created_at', new Date(Date.now() - 3_600_000).toISOString()),
     supabase.from('contact_messages').select('id', { count: 'exact', head: true }).eq('status', 'new'),
+    supabase.from('notification_queue' as any).select('id', { count: 'exact', head: true })
+      .eq('related_kind', 'cart_recovery').eq('status', 'queued'),
+    supabase.from('notification_queue' as any).select('id', { count: 'exact', head: true })
+      .eq('related_kind', 'cart_recovery').eq('status', 'sent'),
   ]);
 
   const payoutDue = (payoutRows.data || []).reduce(
@@ -85,6 +93,8 @@ async function fetchDDHubKpis(): Promise<DDHubKpis> {
     lastHealthCheck: (twilioBalance.data as any)?.created_at ?? null,
     commsHealthFails: commsFails.count ?? 0,
     newContactMessages: newMessages.count ?? 0,
+    cartRecoveryQueued: cartQueued.count ?? 0,
+    cartRecoverySent: cartSent.count ?? 0,
   };
 }
 

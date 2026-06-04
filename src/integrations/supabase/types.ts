@@ -26794,6 +26794,45 @@ export type Database = {
         }
         Relationships: []
       }
+      cart_events: {
+        Row: {
+          cart_total: number
+          created_at: string
+          email: string | null
+          event_type: string
+          id: string
+          items: Json
+          phone: string | null
+          user_agent: string | null
+          user_id: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          cart_total?: number
+          created_at?: string
+          email?: string | null
+          event_type: string
+          id?: string
+          items: Json
+          phone?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          cart_total?: number
+          created_at?: string
+          email?: string | null
+          event_type?: string
+          id?: string
+          items?: Json
+          phone?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           cart_id: string | null
@@ -26894,6 +26933,33 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      category_descriptions: {
+        Row: {
+          ai_assisted: boolean
+          body: string
+          category: string
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          ai_assisted?: boolean
+          body: string
+          category: string
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          ai_assisted?: boolean
+          body?: string
+          category?: string
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -62977,6 +63043,57 @@ export type Database = {
           },
         ]
       }
+      notification_queue: {
+        Row: {
+          channel: string
+          created_at: string
+          error: string | null
+          id: string
+          payload: Json
+          provider: string
+          queued_at: string
+          recipient: string
+          related_id: string | null
+          related_kind: string | null
+          sent_at: string | null
+          status: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          payload: Json
+          provider: string
+          queued_at?: string
+          recipient: string
+          related_id?: string | null
+          related_kind?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          payload?: Json
+          provider?: string
+          queued_at?: string
+          recipient?: string
+          related_id?: string | null
+          related_kind?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -70617,6 +70734,48 @@ export type Database = {
           },
         ]
       }
+      product_views: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          source: string | null
+          user_id: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          source?: string | null
+          user_id?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          source?: string | null
+          user_id?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_views_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_views_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_access_denials: {
         Row: {
           attempted_action: string
@@ -76143,6 +76302,75 @@ export type Database = {
           source_system?: string
         }
         Relationships: []
+      }
+      review_summaries: {
+        Row: {
+          generated_at: string
+          product_id: string
+          review_count: number
+          source_hash: string
+          summary: string
+        }
+        Insert: {
+          generated_at?: string
+          product_id: string
+          review_count: number
+          source_hash: string
+          summary: string
+        }
+        Update: {
+          generated_at?: string
+          product_id?: string
+          review_count?: number
+          source_hash?: string
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_summaries_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_summaries_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_summary_jobs: {
+        Row: {
+          enqueued_at: string
+          product_id: string
+        }
+        Insert: {
+          enqueued_at?: string
+          product_id: string
+        }
+        Update: {
+          enqueued_at?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_summary_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_summary_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reviews: {
         Row: {
@@ -118184,6 +118412,37 @@ export type Database = {
       dd_link_wholesaler_to_store_master: {
         Args: { p_wholesaler_id: string }
         Returns: string
+      }
+      dd_picked_for_you: {
+        Args: { p_limit?: number; p_user_id?: string; p_visitor_id?: string }
+        Returns: {
+          brand_id: string | null
+          created_at: string | null
+          description: string | null
+          dimensions: Json | null
+          id: string
+          images: Json | null
+          inventory_qty: number | null
+          processing_time: string | null
+          product_name: string
+          retail_price: number | null
+          shipping_from_city: string | null
+          shipping_from_state: string | null
+          status: string | null
+          store_price: number | null
+          street_price: number | null
+          unit_type: string | null
+          updated_at: string | null
+          weight_oz: number | null
+          wholesale_price: number | null
+          wholesaler_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "products_all"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       dd_release_order_reservations: {
         Args: { p_order_id: string }
