@@ -324,6 +324,7 @@ export default function DynastyDirectOrders() {
                 <th className="p-3">Fulfillment</th>
                 <th className="p-3">Tracking</th>
                 <th className="p-3">Date</th>
+                <th className="p-3">Invite</th>
               </tr>
             </thead>
             <tbody>
