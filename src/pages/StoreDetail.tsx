@@ -40,6 +40,7 @@ import { CreateStoreInvoiceModal } from "@/components/store/CreateStoreInvoiceMo
 import { MemberSinceDisplay } from "@/components/store/MemberSinceDisplay";
 import { PagePurpose } from "@/components/portal/guidance/PagePurpose";
 import { StoreDangerZone } from "@/components/store/StoreDangerZone";
+import { StoreCadenceOverrideCard } from "@/components/store/StoreCadenceOverrideCard";
 import { useTranslation } from "@/hooks/useTranslation";
 import { CanonicalStoreProfileProvider } from "@/components/store/CanonicalStoreProfile";
 import { useStoreMasterResolver } from "@/hooks/useStoreMasterResolver";
@@ -1269,6 +1270,14 @@ const StoreDetail = () => {
               <MemberSinceDisplay storeId={id || ""} />
             </CardContent>
           </Card>
+
+          {/* Visit cadence override — Task 29 */}
+          {storeMasterId && (
+            <StoreCadenceOverrideCard
+              storeId={storeMasterId}
+              relationshipStatus={(store as any).relationship_status ?? null}
+            />
+          )}
 
           {/* Danger Zone — Owner Only, GDS v1.0, inside KPI cards section */}
           {storeMasterId && (
