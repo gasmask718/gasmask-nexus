@@ -1077,10 +1077,15 @@ const Stores = () => {
               a.brand.localeCompare(b.brand)
             );
 
+            const payStatus = paymentStatusMap?.get(store.id);
+            const payBorder = payStatus ? paymentBorderClass(payStatus.level) : '';
             return (
               <Card
                 key={store.id}
-                className="glass-card border-border/50 hover-lift hover-glow cursor-pointer"
+                className={cn(
+                  'glass-card border-border/50 hover-lift hover-glow cursor-pointer',
+                  payBorder,
+                )}
                 style={{ animationDelay: `${index * 50}ms` }}
                 onClick={() => navigate(`/stores/${store.id}`)}
               >
@@ -1091,9 +1096,14 @@ const Stores = () => {
                       {store.owner_name && store.name !== store.owner_name && (
                         <p className="text-xs text-muted-foreground">{store.name}</p>
                       )}
-                      <Badge variant="outline" className="text-xs">
-                        {store.type.replace('_', ' ')}
-                      </Badge>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className="text-xs">
+                          {store.type.replace('_', ' ')}
+                        </Badge>
+                        {payStatus && payStatus.level !== 'paid' && (
+                          <StorePaymentBadge status={payStatus} />
+                        )}
+                      </div>
                     </div>
                   <div className="flex items-start gap-2">
                     <Checkbox
