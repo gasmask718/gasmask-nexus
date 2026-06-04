@@ -1661,7 +1661,7 @@ export default function AppRoutes() {
         <Route path="/payroll" element={<Payroll />} />
         <Route path="/unpaid-accounts" element={<UnpaidAccounts />} />
         {/* Communication Center - Redirect to modular hub */}
-        <Route path="/communication-center" element={<CommunicationHubLayout />} />
+        <Route path="/communication-center" element={<Navigate to="/communication" replace />} />
 
         {/* CRM - Global CRM with Blueprint System */}
         {/* Floor 1: Global CRM Hub - shows all businesses */}
