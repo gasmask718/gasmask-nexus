@@ -118932,6 +118932,15 @@ export type Database = {
           status: string
         }[]
       }
+      get_last_cron_run: {
+        Args: { p_jobname: string }
+        Returns: {
+          jobname: string
+          last_start: string
+          last_status: string
+          return_message: string
+        }[]
+      }
       get_managed_office_ids: { Args: { _user_id: string }; Returns: string[] }
       get_payout_statement: { Args: { p_batch_id: string }; Returns: Json }
       get_phase5_mode: { Args: never; Returns: Json }
