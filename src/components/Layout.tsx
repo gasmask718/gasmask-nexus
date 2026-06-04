@@ -324,9 +324,8 @@ const DYNASTY_NAVIGATION = {
       id: 'floor-7',
       name: '🛒 Floor 7 — Wholesale Platform',
       items: [
-        { path: '/grabba/wholesale', label: 'Wholesale Platform', icon: ShoppingCart },
-        { path: '/wholesale', label: 'Wholesale Directory', icon: Store },
-        { path: '/wholesale-marketplace', label: 'Wholesale Marketplace', icon: Globe },
+        { path: '/grabba/wholesale-platform', label: 'Wholesale Platform', icon: ShoppingCart },
+        { path: '/wholesale/marketplace', label: 'Wholesale Marketplace', icon: Globe },
         { path: '/portal/national-wholesale', label: 'National Wholesale', icon: Building },
         { path: '/portal/marketplace-admin', label: 'Marketplace Admin', icon: Settings },
       ],
@@ -673,7 +672,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/analytics', label: 'Analytics', icon: BarChart3 },
       { path: '/executive-reports', label: 'Executive Reports', icon: FileText },
       { path: '/revenue-brain', label: 'Revenue Brain', icon: Brain },
-      { path: '/opportunity-radar', label: 'Opportunity Radar', icon: Target },
+      // T1 K8: Opportunity Radar killed (theatre); /opportunities is canonical
       { path: '/missions-hq', label: 'Missions HQ', icon: Zap },
       { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
       { path: '/team', label: 'Team', icon: Users },
