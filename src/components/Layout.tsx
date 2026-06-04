@@ -718,7 +718,7 @@ const Layout = ({ children }: LayoutProps) => {
   ]);
   
   const currentPath = location.pathname;
-  const isFloor9Route = currentPath.startsWith('/grabba/floor9') || currentPath.startsWith('/gasmask/agent-center') || currentPath.startsWith('/gasmask/note-cleaner');
+  const isFloor9Route = currentPath.startsWith('/grabba/floor9') || currentPath.startsWith('/gasmask/note-cleaner');
 
   const isPathActive = (path: string) => {
     if (path === '/') return currentPath === '/';
