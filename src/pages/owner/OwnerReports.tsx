@@ -33,32 +33,24 @@ export default function OwnerReports() {
     queryKey: ['owner-reports-live-counts'],
     queryFn: async () => {
       const since7d = new Date(Date.now() - 7 * 86400_000).toISOString();
-      const since30d = new Date(Date.now() - 30 * 86400_000).toISOString();
 
-      const [stores, orders7d, invoices30d] = await Promise.all([
+      const [stores, orders7d] = await Promise.all([
         supabase.from('store_master').select('id', { count: 'exact', head: true }),
         supabase.from('ut_orders').select('id, total_amount', { count: 'exact' }).gte('created_at', since7d),
-        supabase.from('ut_invoices').select('id, amount_due, status', { count: 'exact' }).gte('created_at', since30d),
       ]);
 
       // Surface (not swallow) any Supabase error — Zero-Silent-Failures rule.
       if (stores.error) throw stores.error;
       if (orders7d.error) throw orders7d.error;
-      if (invoices30d.error) throw invoices30d.error;
 
       const revenue7d = (orders7d.data ?? []).reduce(
         (s: number, r: any) => s + Number(r.total_amount ?? 0), 0,
       );
-      const unpaid30d = (invoices30d.data ?? [])
-        .filter((i: any) => i.status !== 'paid')
-        .reduce((s: number, r: any) => s + Number(r.amount_due ?? 0), 0);
 
       return {
         stores: stores.count ?? 0,
         orders7d: orders7d.count ?? 0,
         revenue7d,
-        invoices30d: invoices30d.count ?? 0,
-        unpaid30d,
       };
     },
   });
