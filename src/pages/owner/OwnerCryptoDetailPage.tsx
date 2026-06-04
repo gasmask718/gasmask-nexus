@@ -7,31 +7,55 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Coins, Link2, ExternalLink, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
-const LS_KEY = 'owner.crypto.external_url';
+const SETTING_KEY = 'crypto.external_url';
+const LEGACY_LS_KEY = 'owner.crypto.external_url';
 
 /**
  * Crypto Hub — EXTERNAL PLATFORM PENDING.
- * Honest pending state with a settings affordance to paste the trading-site link.
- * Once a URL is supplied, the deep-link vs embed vs read-bridge ruling is made.
+ * URL persists in owner_settings (DB-backed; follows owner across devices).
  */
 export default function OwnerCryptoDetailPage() {
   const navigate = useNavigate();
   const [url, setUrl] = useState('');
   const [savedUrl, setSavedUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const v = localStorage.getItem(LS_KEY);
-    if (v) { setSavedUrl(v); setUrl(v); }
+    (async () => {
+      const { data } = await (supabase as any)
+        .from('owner_settings')
+        .select('value')
+        .eq('key', SETTING_KEY)
+        .maybeSingle();
+      let value = (data?.value as any)?.url as string | undefined;
+      if (!value) {
+        // One-time migration from localStorage
+        const legacy = localStorage.getItem(LEGACY_LS_KEY);
+        if (legacy) {
+          value = legacy;
+          await (supabase as any)
+            .from('owner_settings')
+            .upsert({ key: SETTING_KEY, value: { url: legacy } }, { onConflict: 'key' });
+          localStorage.removeItem(LEGACY_LS_KEY);
+        }
+      }
+      if (value) { setSavedUrl(value); setUrl(value); }
+      setLoading(false);
+    })();
   }, []);
 
-  const save = () => {
+  const save = async () => {
     const trimmed = url.trim();
     if (!trimmed) { toast.error('Paste a URL first'); return; }
     try { new URL(trimmed); } catch { toast.error('Not a valid URL'); return; }
-    localStorage.setItem(LS_KEY, trimmed);
+    const { error } = await (supabase as any)
+      .from('owner_settings')
+      .upsert({ key: SETTING_KEY, value: { url: trimmed } }, { onConflict: 'key' });
+    if (error) { toast.error(error.message); return; }
     setSavedUrl(trimmed);
-    toast.success('Link saved. Awaiting connection ruling.');
+    toast.success('Link saved. Follows you across devices.');
   };
 
   return (
@@ -59,7 +83,7 @@ export default function OwnerCryptoDetailPage() {
             Connect external trading platform
           </CardTitle>
           <CardDescription className="text-xs">
-            Paste the URL (or Supabase project ref) of the separate trading site. Once supplied, the team rules deep-link vs embed vs read-bridge.
+            Paste the URL of the separate trading site. Saved to your owner settings — follows you across devices.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -71,8 +95,9 @@ export default function OwnerCryptoDetailPage() {
                 placeholder="https://your-trading-platform.com"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
+                disabled={loading}
               />
-              <Button onClick={save} className="shrink-0">
+              <Button onClick={save} className="shrink-0" disabled={loading}>
                 <Save className="h-4 w-4 mr-2" /> Save
               </Button>
             </div>
