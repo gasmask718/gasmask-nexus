@@ -1224,6 +1224,7 @@ export default function AppRoutes() {
 
       <Route path="/install" element={<InstallPwa />} />
       <Route path="/system-health" element={<ProtectedRoute><SystemHealthPage /></ProtectedRoute>} />
+      <Route path="/admin/training" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><TrainingAdminPage /></RequireRole></ProtectedRoute>} />
       <Route path="/twl-landing" element={<TWLLanding />} />
       <Route path="/partner/respond/:token" element={<PartnerRespond />} />
       <Route path="/tt/partner/accept/:token" element={<TTPartnerAccept />} />
