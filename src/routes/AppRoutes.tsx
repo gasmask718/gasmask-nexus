@@ -1013,6 +1013,7 @@ const InvoiceForensicsConsole = lazy(() => import('@/pages/diagnostics/InvoiceFo
 const DeliveryDashboard = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DeliveryDashboard })));
 const DeliveriesBoard = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DeliveriesBoard })));
 const OrdersDeliveriesPage = lazy(() => import('@/pages/delivery/OrdersDeliveriesPage'));
+const LiveDeliveryPool = lazy(() => import('@/pages/delivery/LiveDeliveryPool'));
 const DriversManagement = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DriversManagement })));
 const BikersManagement = lazy(() => import('@/pages/delivery').then(m => ({ default: m.BikersManagement })));
 const BikerProfile = lazy(() => import('@/pages/delivery').then(m => ({ default: m.BikerProfile })));
@@ -2133,6 +2134,7 @@ export default function AppRoutes() {
         <Route path="/delivery/dashboard" element={<DeliveryDashboard />} />
         <Route path="/delivery/deliveries" element={<DeliveriesBoard />} />
         <Route path="/delivery/orders" element={<OrdersDeliveriesPage />} />
+        <Route path="/delivery/pool" element={<LiveDeliveryPool />} />
         <Route path="/delivery/multi-brand" element={<MultiBrandDeliveryPage />} />
         <Route path="/delivery/route-manager" element={<RouteManagerPage />} />
         <Route path="/delivery/routes/all" element={<AllRoutesPage />} />
