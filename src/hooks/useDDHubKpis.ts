@@ -43,7 +43,7 @@ async function fetchDDHubKpis(): Promise<DDHubKpis> {
     unpaid, awaitingLabel, paidWeek, unrouted, routingFails,
     needGeocode, activeSup, openInvites, pendingApps, affiliates,
     payoutRows, briefs, twilioBalance, commsFails, newMessages,
-    cartQueued, cartSent,
+    cartQueued, cartSent, slaRows, openAnoms, critAnoms,
   ] = await Promise.all([
     supabase.from('marketplace_orders').select('id', { count: 'exact', head: true }).eq('payment_status', 'unpaid'),
     supabase.from('marketplace_fulfillments').select('id', { count: 'exact', head: true }).eq('status', 'label_pending'),
@@ -73,6 +73,11 @@ async function fetchDDHubKpis(): Promise<DDHubKpis> {
       .eq('related_kind', 'cart_recovery').eq('status', 'queued'),
     supabase.from('notification_queue' as any).select('id', { count: 'exact', head: true })
       .eq('related_kind', 'cart_recovery').eq('status', 'sent'),
+    supabase.from('dd_sla_snapshots' as any).select('p50_hours, late_threshold_hours')
+      .gte('computed_at', new Date(Date.now() - 36 * 3_600_000).toISOString()),
+    supabase.from('dd_anomaly_findings' as any).select('id', { count: 'exact', head: true }).eq('status', 'open'),
+    supabase.from('dd_anomaly_findings' as any).select('id', { count: 'exact', head: true })
+      .eq('status', 'open').eq('severity', 'critical'),
   ]);
 
   const payoutDue = (payoutRows.data || []).reduce(
