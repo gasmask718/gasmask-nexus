@@ -182,6 +182,18 @@ export function useDDAlerts() {
       }
     }
 
+    // New contact messages (info-tone)
+    if (k.newContactMessages > 0) {
+      out.push({
+        id: 'new-contact-messages',
+        severity: 'info',
+        title: `${k.newContactMessages} new contact message${k.newContactMessages === 1 ? '' : 's'}`,
+        detail: 'Inbound from the public /contact form. Reply or mark handled.',
+        href: '/dynasty-direct/messages',
+        resolvedKey: 'msgs=0',
+      });
+    }
+
     return out;
   }, [kpis.data]);
 
