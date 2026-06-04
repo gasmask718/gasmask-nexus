@@ -60,7 +60,7 @@ export default function PODUpload() {
       status: "pending_keys" as const, // client cannot check secrets; safe default
       metadata: { required_secret: CHANNEL_KEYS[ch], source: src },
     }));
-    const { error: listErr } = await supabase.from("pod_listings").insert(listings);
+    const { error: listErr } = await supabase.from("pod_listings" as any).insert(listings);
     if (listErr) throw listErr;
     return design;
   };

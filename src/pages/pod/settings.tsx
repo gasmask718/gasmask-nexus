@@ -31,7 +31,7 @@ export default function PODSettings() {
   useEffect(() => {
     (async () => {
       const { data: listings } = await supabase
-        .from("pod_listings")
+        .from("pod_listings" as any)
         .select("channel, status");
       const acc: Record<string, any> = {};
       (listings || []).forEach((l: any) => {
