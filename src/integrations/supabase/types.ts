@@ -76682,6 +76682,90 @@ export type Database = {
           },
         ]
       }
+      role_sop_modules: {
+        Row: {
+          content_md: string
+          content_md_es: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          is_first_day: boolean
+          role: string
+          screenshots: Json
+          step_order: number
+          title: string
+          title_es: string | null
+          updated_at: string
+          version: number
+          video_url: string | null
+        }
+        Insert: {
+          content_md?: string
+          content_md_es?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_first_day?: boolean
+          role: string
+          screenshots?: Json
+          step_order?: number
+          title: string
+          title_es?: string | null
+          updated_at?: string
+          version?: number
+          video_url?: string | null
+        }
+        Update: {
+          content_md?: string
+          content_md_es?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_first_day?: boolean
+          role?: string
+          screenshots?: Json
+          step_order?: number
+          title?: string
+          title_es?: string | null
+          updated_at?: string
+          version?: number
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      role_sop_user_progress: {
+        Row: {
+          completed_module_ids: string[]
+          created_at: string
+          first_day_dismissed_at: string | null
+          first_day_started_at: string | null
+          last_module_id: string | null
+          role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_module_ids?: string[]
+          created_at?: string
+          first_day_dismissed_at?: string | null
+          first_day_started_at?: string | null
+          last_module_id?: string | null
+          role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_module_ids?: string[]
+          created_at?: string
+          first_day_dismissed_at?: string | null
+          first_day_started_at?: string | null
+          last_module_id?: string | null
+          role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       roles: {
         Row: {
           created_at: string | null
