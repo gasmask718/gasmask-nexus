@@ -14,7 +14,7 @@ import {
   UserCog, Phone, Edit, Archive, Eye, Store, Trash2, Check, X,
   ChevronDown, RefreshCw, RotateCcw
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { FullContactForm } from '@/components/crm/FullContactForm';
@@ -38,7 +38,23 @@ interface Brand {
 const GlobalCRM = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('brands');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'brands';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  // T4c M4 follow-up: customers tab
+  const { data: customers = [], isLoading: customersLoading } = useQuery({
+    queryKey: ['global-crm-customers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_customers')
+        .select('id, name, phone, email, business_type, city, state, relationship_status, total_lifetime_value, last_order_date')
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: activeTab === 'customers',
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [boroughFilter, setBoroughFilter] = useState('all');
   const [neighborhoodFilter, setNeighborhoodFilter] = useState('all');
@@ -373,7 +389,7 @@ const GlobalCRM = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setSearchParams({ tab: v }); }}>
           <TabsList>
             <TabsTrigger value="brands" className="gap-2">
               <Building2 className="h-4 w-4" />
@@ -383,11 +399,61 @@ const GlobalCRM = () => {
               <Users className="h-4 w-4" />
               All Contacts
             </TabsTrigger>
+            <TabsTrigger value="customers" className="gap-2">
+              <Store className="h-4 w-4" />
+              Customers
+            </TabsTrigger>
             <TabsTrigger value="settings" className="gap-2">
               <Settings className="h-4 w-4" />
               Admin Settings
             </TabsTrigger>
           </TabsList>
+
+          {/* Customers Tab — T4c M4 follow-up (reads crm_customers) */}
+          <TabsContent value="customers" className="mt-6 space-y-4">
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-lg font-semibold">Customers</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {customersLoading ? 'Loading…' : `${customers.length} records from crm_customers`}
+                  </p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-left text-muted-foreground border-b">
+                    <tr>
+                      <th className="py-2 pr-4">Name</th>
+                      <th className="py-2 pr-4">Type</th>
+                      <th className="py-2 pr-4">Phone</th>
+                      <th className="py-2 pr-4">City / State</th>
+                      <th className="py-2 pr-4">Status</th>
+                      <th className="py-2 pr-4 text-right">LTV</th>
+                      <th className="py-2 pr-4">Last Order</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customers.map((c: any) => (
+                      <tr key={c.id} className="border-b hover:bg-muted/40">
+                        <td className="py-2 pr-4 font-medium">{c.name}</td>
+                        <td className="py-2 pr-4"><Badge variant="outline">{c.business_type || '—'}</Badge></td>
+                        <td className="py-2 pr-4">{c.phone || '—'}</td>
+                        <td className="py-2 pr-4">{[c.city, c.state].filter(Boolean).join(', ') || '—'}</td>
+                        <td className="py-2 pr-4"><Badge variant="secondary">{c.relationship_status}</Badge></td>
+                        <td className="py-2 pr-4 text-right">${Number(c.total_lifetime_value || 0).toLocaleString()}</td>
+                        <td className="py-2 pr-4">{c.last_order_date || '—'}</td>
+                      </tr>
+                    ))}
+                    {!customersLoading && customers.length === 0 && (
+                      <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">No customers yet.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </TabsContent>
+
 
           {/* Brand Directory Tab - Global CRM Home */}
           <TabsContent value="brands" className="mt-6">

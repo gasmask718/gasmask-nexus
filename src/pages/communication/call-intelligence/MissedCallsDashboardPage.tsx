@@ -58,28 +58,106 @@ export default function MissedCallsDashboardPage() {
   const [outcomeFilter, setOutcomeFilter] = useState<string>("missed");
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
-  // Fetch call outcomes
+  // T4c: read from bland_call_logs + dialer_call_attempts. outreach_calls/call_outcomes dependency dropped.
   const { data: callOutcomes, isLoading, refetch } = useQuery({
-    queryKey: ["call-outcomes", selectedBusiness?.id, outcomeFilter],
+    queryKey: ["missed-calls-unified", selectedBusiness?.id, outcomeFilter],
     queryFn: async () => {
-      let query = supabase
-        .from("call_outcomes")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const missedSet = ["missed", "no_answer", "voicemail", "hung_up", "failed"];
+
+      const [blandRes, dialerRes] = await Promise.all([
+        (supabase as any)
+          .from("bland_call_logs")
+          .select("id, call_id, call_outcome, created_at, raw_payload, source_business")
+          .order("created_at", { ascending: false })
+          .limit(150),
+        (supabase as any)
+          .from("dialer_call_attempts")
+          .select("id, business_id, target_phone_e164, outcome_code, attempt_state, started_at, duration_seconds, target_call_sid")
+          .order("started_at", { ascending: false })
+          .limit(150),
+      ]);
+
+      if (blandRes.error) throw blandRes.error;
+      if (dialerRes.error) throw dialerRes.error;
+
+      const fromBland: CallOutcome[] = (blandRes.data || [])
+        .filter((b: any) => {
+          const o = (b.call_outcome || "").toLowerCase();
+          return !o || missedSet.some((m) => o.includes(m));
+        })
+        .map((b: any) => {
+          const o = (b.call_outcome || "").toLowerCase();
+          const outcome = o.includes("voicemail") ? "voicemail"
+                        : o.includes("no_answer") || o.includes("no-answer") ? "missed"
+                        : o.includes("failed") ? "failed"
+                        : "missed";
+          return {
+            id: `bland_${b.id}`,
+            business_id: null,
+            call_sid: b.call_id,
+            direction: "outbound",
+            caller_number: null,
+            called_number: b.raw_payload?.to || b.raw_payload?.phone || null,
+            outcome,
+            outcome_reason: b.call_outcome || "no_answer",
+            resolution_path: [],
+            users_attempted: [],
+            ring_duration_seconds: null,
+            fallback_used: "bland_ai",
+            route_type: "ai_voice",
+            is_business_hours: null,
+            local_time_at_call: null,
+            timezone: null,
+            suggested_fix: null,
+            created_at: b.created_at,
+          };
+        });
+
+      const fromDialer: CallOutcome[] = (dialerRes.data || [])
+        .filter((d: any) => {
+          const o = (d.outcome_code || d.attempt_state || "").toLowerCase();
+          return missedSet.some((m) => o.includes(m));
+        })
+        .map((d: any) => {
+          const o = (d.outcome_code || d.attempt_state || "").toLowerCase();
+          const outcome = o.includes("voicemail") ? "voicemail"
+                        : o.includes("failed") ? "failed"
+                        : "missed";
+          return {
+            id: `dialer_${d.id}`,
+            business_id: d.business_id,
+            call_sid: d.target_call_sid,
+            direction: "outbound",
+            caller_number: null,
+            called_number: d.target_phone_e164,
+            outcome,
+            outcome_reason: d.outcome_code || d.attempt_state,
+            resolution_path: [],
+            users_attempted: [],
+            ring_duration_seconds: d.duration_seconds,
+            fallback_used: "dialer",
+            route_type: "agent_dialer",
+            is_business_hours: null,
+            local_time_at_call: null,
+            timezone: null,
+            suggested_fix: null,
+            created_at: d.started_at,
+          };
+        });
+
+      let merged = [...fromBland, ...fromDialer].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
 
       if (selectedBusiness?.id) {
-        query = query.eq("business_id", selectedBusiness.id);
+        merged = merged.filter((c) => !c.business_id || c.business_id === selectedBusiness.id);
       }
-
       if (outcomeFilter !== "all") {
-        query = query.eq("outcome", outcomeFilter);
+        merged = merged.filter((c) => c.outcome === outcomeFilter);
       }
 
-      const { data, error } = await query.limit(100);
-      if (error) throw error;
-      return data as CallOutcome[];
+      return merged.slice(0, 200);
     },
-    enabled: !!selectedBusiness?.id,
   });
 
   const filteredOutcomes = callOutcomes?.filter(co => {

@@ -1,15 +1,59 @@
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PortalLayout from '@/components/portal/PortalLayout';
-import { Globe, Package, TrendingUp, Users, Truck, DollarSign, MapPin, ShoppingCart } from 'lucide-react';
+import { Globe, Package, Users, Truck, MapPin } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+// T4c: real queries — wholesalers (41) grouped by state as regions, wholesale_hubs, real partner counts.
 
 export default function NationalWholesale() {
+  const { data: wholesalers = [] } = useQuery({
+    queryKey: ['nw-wholesalers'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('wholesalers')
+        .select('id, name, city, state, status, phone, email, neighborhood, created_at')
+        .is('deleted_at', null);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const { data: hubs = [] } = useQuery({
+    queryKey: ['nw-hubs'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('wholesale_hubs')
+        .select('*');
+      if (error) return [];
+      return data || [];
+    },
+  });
+
+  const { data: skuCount = 0 } = useQuery<number>({
+    queryKey: ['nw-skus'],
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from('products_all')
+        .select('id', { count: 'exact', head: true });
+      return (count as number) || 0;
+    },
+  });
+
+  const byState = (wholesalers as any[]).reduce<Record<string, any[]>>((acc, w: any) => {
+    const k = w.state || 'Unknown';
+    (acc[k] = acc[k] || []).push(w);
+    return acc;
+  }, {});
+  const regions = Object.entries(byState).sort((a, b) => b[1].length - a[1].length);
+  const activePartners = (wholesalers as any[]).filter((w: any) => w.status === 'active').length;
+
   return (
     <PortalLayout title="National Wholesale Portal">
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3">
@@ -17,137 +61,55 @@ export default function NationalWholesale() {
               National Wholesale Portal
             </h1>
             <p className="text-muted-foreground mt-1">
-              Nationwide distribution and wholesale operations
+              Live data: {(wholesalers as any[]).length} wholesalers across {regions.length} states · {(hubs as any[]).length} hubs
             </p>
           </div>
-          <Badge variant="outline" className="text-lg px-4 py-1">
-            Enterprise
-          </Badge>
+          <Badge variant="outline" className="text-lg px-4 py-1">Enterprise</Badge>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            icon={MapPin}
-            label="Active Regions"
-            value="12"
-            change="+2 this quarter"
-          />
-          <StatCard
-            icon={Users}
-            label="Partner Wholesalers"
-            value="156"
-            change="+18 this month"
-          />
-          <StatCard
-            icon={Package}
-            label="SKUs Available"
-            value="2,340"
-            change="Full catalog"
-          />
-          <StatCard
-            icon={DollarSign}
-            label="Monthly Volume"
-            value="$1.2M"
-            change="+15% growth"
-          />
+          <StatCard icon={MapPin} label="Active Regions (states)" value={String(regions.length)} sub={`${regions[0]?.[0] || '—'} leads w/ ${regions[0]?.[1].length || 0}`} />
+          <StatCard icon={Users} label="Partner Wholesalers" value={String((wholesalers as any[]).length)} sub={`${activePartners} active`} />
+          <StatCard icon={Truck} label="Wholesale Hubs" value={String((hubs as any[]).length)} sub="Distribution nodes" />
+          <StatCard icon={Package} label="SKUs Available" value={skuCount.toLocaleString()} sub="From products_all" />
         </div>
 
-        {/* Main Content */}
-        <Tabs defaultValue="overview" className="space-y-4">
+        <Tabs defaultValue="regions" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="regions">Regions</TabsTrigger>
-            <TabsTrigger value="partners">Partners</TabsTrigger>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="pricing">Pricing</TabsTrigger>
+            <TabsTrigger value="partners">Partners ({(wholesalers as any[]).length})</TabsTrigger>
+            <TabsTrigger value="hubs">Hubs ({(hubs as any[]).length})</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="overview" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-green-500" />
-                    Performance Metrics
-                  </CardTitle>
-                  <CardDescription>National wholesale performance overview</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <MetricRow label="Order Fill Rate" value="98.5%" color="text-green-500" />
-                  <MetricRow label="On-Time Delivery" value="96.2%" color="text-green-500" />
-                  <MetricRow label="Partner Satisfaction" value="4.8/5" color="text-green-500" />
-                  <MetricRow label="Average Order Value" value="$3,450" color="text-primary" />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Truck className="h-5 w-5 text-blue-500" />
-                    Recent Activity
-                  </CardTitle>
-                  <CardDescription>Latest wholesale transactions</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <ActivityItem 
-                    title="New Partner: Miami Wholesale Co."
-                    time="2 hours ago"
-                    type="partner"
-                  />
-                  <ActivityItem 
-                    title="Bulk Order: 500 units to TX Region"
-                    time="4 hours ago"
-                    type="order"
-                  />
-                  <ActivityItem 
-                    title="Price Update: Q4 wholesale rates"
-                    time="1 day ago"
-                    type="pricing"
-                  />
-                  <ActivityItem 
-                    title="New Region: Pacific Northwest"
-                    time="2 days ago"
-                    type="region"
-                  />
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-3">
-                <Button>
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  Create Bulk Order
-                </Button>
-                <Button variant="outline">
-                  <Users className="h-4 w-4 mr-2" />
-                  Add Partner
-                </Button>
-                <Button variant="outline">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Manage Regions
-                </Button>
-                <Button variant="outline">
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  Update Pricing
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="regions">
             <Card>
               <CardHeader>
                 <CardTitle>Regional Distribution</CardTitle>
-                <CardDescription>Manage nationwide wholesale regions</CardDescription>
+                <CardDescription>Wholesalers grouped by state</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Regional management coming soon...</p>
+                {regions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No wholesalers found.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>State</TableHead>
+                        <TableHead className="text-right">Wholesalers</TableHead>
+                        <TableHead className="text-right">Active</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {regions.map(([state, ws]) => (
+                        <TableRow key={state}>
+                          <TableCell className="font-medium">{state}</TableCell>
+                          <TableCell className="text-right">{ws.length}</TableCell>
+                          <TableCell className="text-right">{ws.filter((w: any) => w.status === 'active').length}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -156,34 +118,47 @@ export default function NationalWholesale() {
             <Card>
               <CardHeader>
                 <CardTitle>Wholesale Partners</CardTitle>
-                <CardDescription>Manage partner relationships</CardDescription>
+                <CardDescription>Live from `wholesalers` table</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Partner management coming soon...</p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>City</TableHead>
+                      <TableHead>State</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Phone</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(wholesalers as any[]).slice(0, 100).map((w: any) => (
+                      <TableRow key={w.id}>
+                        <TableCell className="font-medium">{w.name}</TableCell>
+                        <TableCell>{w.city || '—'}</TableCell>
+                        <TableCell>{w.state || '—'}</TableCell>
+                        <TableCell><Badge variant={w.status === 'active' ? 'default' : 'secondary'}>{w.status || 'pending'}</Badge></TableCell>
+                        <TableCell>{w.phone || '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="orders">
+          <TabsContent value="hubs">
             <Card>
               <CardHeader>
-                <CardTitle>Order Management</CardTitle>
-                <CardDescription>Track and manage wholesale orders</CardDescription>
+                <CardTitle>Wholesale Hubs</CardTitle>
+                <CardDescription>Live from `wholesale_hubs` table</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Order management coming soon...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="pricing">
-            <Card>
-              <CardHeader>
-                <CardTitle>Pricing Tiers</CardTitle>
-                <CardDescription>Manage wholesale pricing structures</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Pricing management coming soon...</p>
+                {(hubs as any[]).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No hubs configured.</p>
+                ) : (
+                  <pre className="text-xs bg-muted p-3 rounded overflow-auto">{JSON.stringify(hubs, null, 2)}</pre>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -193,13 +168,7 @@ export default function NationalWholesale() {
   );
 }
 
-// Helper Components
-function StatCard({ icon: Icon, label, value, change }: { 
-  icon: React.ElementType; 
-  label: string; 
-  value: string; 
-  change: string;
-}) {
+function StatCard({ icon: Icon, label, value, sub }: { icon: React.ElementType; label: string; value: string; sub: string }) {
   return (
     <Card>
       <CardContent className="pt-6">
@@ -210,38 +179,10 @@ function StatCard({ icon: Icon, label, value, change }: {
           <div>
             <p className="text-sm text-muted-foreground">{label}</p>
             <p className="text-2xl font-bold">{value}</p>
-            <p className="text-xs text-muted-foreground">{change}</p>
+            <p className="text-xs text-muted-foreground">{sub}</p>
           </div>
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-function MetricRow({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={`font-semibold ${color}`}>{value}</span>
-    </div>
-  );
-}
-
-function ActivityItem({ title, time, type }: { title: string; time: string; type: string }) {
-  const colors: Record<string, string> = {
-    partner: 'bg-green-500/20 text-green-500',
-    order: 'bg-blue-500/20 text-blue-500',
-    pricing: 'bg-orange-500/20 text-orange-500',
-    region: 'bg-purple-500/20 text-purple-500',
-  };
-
-  return (
-    <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-      <div className={`w-2 h-2 rounded-full ${colors[type]?.split(' ')[0] || 'bg-primary'}`} />
-      <div className="flex-1">
-        <p className="text-sm font-medium">{title}</p>
-        <p className="text-xs text-muted-foreground">{time}</p>
-      </div>
-    </div>
   );
 }
