@@ -66803,6 +66803,45 @@ export type Database = {
           },
         ]
       }
+      owner_ai_commands: {
+        Row: {
+          confidence: number | null
+          cost_cents: number | null
+          created_at: string
+          id: string
+          metadata: Json
+          mode: string
+          prompt: string
+          response: string | null
+          scope: string
+          user_id: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          cost_cents?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          mode?: string
+          prompt: string
+          response?: string | null
+          scope?: string
+          user_id?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          cost_cents?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          mode?: string
+          prompt?: string
+          response?: string | null
+          scope?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       owner_mission_activity: {
         Row: {
           action: string
