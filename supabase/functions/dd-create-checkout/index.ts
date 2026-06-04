@@ -1,5 +1,5 @@
 // Dynasty Direct — Stripe Checkout creator.
-// Key-ready: requires STRIPE_SECRET_KEY. Mirrors brandaro-create-checkout pattern.
+// Key-ready: requires STRIPE_SECRET_KEY. Stripe Tax automatically enabled.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
@@ -43,9 +43,10 @@ serve(async (req) => {
       });
     }
 
+    // FIX: correct column names (qty, price_each) + join product_name
     const { data: items } = await supabase
       .from("marketplace_order_items")
-      .select("product_name, unit_price, quantity")
+      .select("qty, price_each, product:products_all(product_name)")
       .eq("order_id", order_id);
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
@@ -53,31 +54,32 @@ serve(async (req) => {
     const lineItems = (items ?? []).map((it: any) => ({
       price_data: {
         currency: "usd",
-        product_data: { name: it.product_name ?? "Dynasty Direct item" },
-        unit_amount: Math.round(Number(it.unit_price) * 100),
+        product_data: { name: it.product?.product_name ?? "Dynasty Direct item" },
+        unit_amount: Math.round(Number(it.price_each) * 100),
+        tax_behavior: "exclusive" as const,
       },
-      quantity: it.quantity ?? 1,
+      quantity: it.qty ?? 1,
     }));
 
-    // Add shipping line if present
     if (Number(order.shipping_cost) > 0) {
       lineItems.push({
         price_data: {
           currency: "usd",
           product_data: { name: "Shipping" },
           unit_amount: Math.round(Number(order.shipping_cost) * 100),
+          tax_behavior: "exclusive" as const,
         },
         quantity: 1,
       });
     }
 
     if (lineItems.length === 0) {
-      // Fallback single line on total
       lineItems.push({
         price_data: {
           currency: "usd",
           product_data: { name: `Dynasty Direct Order ${order.id.slice(0, 8)}` },
           unit_amount: Math.round(Number(order.total) * 100),
+          tax_behavior: "exclusive" as const,
         },
         quantity: 1,
       });
@@ -90,6 +92,7 @@ serve(async (req) => {
       mode: "payment",
       line_items: lineItems,
       customer_email: email,
+      automatic_tax: { enabled: true },
       success_url: `${origin}/order/${order.id}?paid=true`,
       cancel_url: `${origin}/order/${order.id}?cancelled=true`,
       metadata: { order_id: order.id, source: "dynasty_direct" },
