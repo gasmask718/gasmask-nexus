@@ -54,17 +54,18 @@ export default function HREmployeeDetail() {
         .eq("employee_id", id)
         .order("due_date", { ascending: true });
 
-      // Fetch payroll
+      // Fetch payroll records (canonical — hr_payroll deprecated K6)
       const { data: payrollData } = await supabase
-        .from("hr_payroll")
+        .from("payroll_records")
         .select("*")
-        .eq("employee_id", id)
-        .single();
+        .eq("hr_employee_id", id)
+        .order("pay_period_end", { ascending: false })
+        .limit(12);
 
       setEmployee(employeeData);
       setDocuments(documentsData || []);
       setOnboardingTasks(tasksData || []);
-      setPayroll(payrollData);
+      setPayroll(payrollData || []);
     } catch (error) {
       console.error("Error fetching employee details:", error);
     } finally {
