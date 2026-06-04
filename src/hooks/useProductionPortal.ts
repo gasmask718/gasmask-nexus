@@ -564,6 +564,7 @@ export function useTodayBatches(officeId: string | undefined) {
         .select('*, office:production_offices(id, name)')
         .eq('office_id', officeId)
         .eq('batch_date', today)
+        .eq('is_test', false)
         .neq('status', 'cancelled')
         .order('created_at', { ascending: false });
       
