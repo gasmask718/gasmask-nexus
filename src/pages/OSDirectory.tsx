@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Map, Search, AlertTriangle } from 'lucide-react';
+import { Map as MapIcon, Search, AlertTriangle } from 'lucide-react';
 
 type Row = {
   id: string;
@@ -71,7 +71,7 @@ export default function OSDirectory() {
   }, [rows, q, statusFilter]);
 
   const grouped = useMemo(() => {
-    const m = new globalThis.Map<string, Row[]>();
+    const m = new Map<string, Row[]>();
     for (const r of filtered) {
       const arr = m.get(r.floor) ?? [];
       arr.push(r);
@@ -92,7 +92,7 @@ export default function OSDirectory() {
     <div className="p-6 space-y-6">
       <header className="space-y-1">
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Map className="h-7 w-7" /> OS Directory
+          <MapIcon className="h-7 w-7" /> OS Directory
         </h1>
         <p className="text-muted-foreground">
           The OS's map of itself — every audited page, its purpose, status, and open gaps.
