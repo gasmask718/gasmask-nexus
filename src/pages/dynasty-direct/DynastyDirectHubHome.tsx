@@ -19,6 +19,7 @@ import {
   Zap,
   BarChart3,
   Settings,
+  Handshake,
 } from 'lucide-react';
 
 const TILES = [
@@ -35,6 +36,7 @@ const TILES = [
   { path: '/dynasty-direct/analytics', label: 'Analytics', icon: BarChart3, desc: 'Control tower KPIs' },
   { path: '/dynasty-direct/invites', label: 'Invites & Access', icon: Send, desc: 'Universal invites — wholesaler, ambassador, store, customer', highlight: true },
   { path: '/dynasty-direct/store-applications', label: 'Apply-as-Store Queue', icon: ClipboardList, desc: 'Approve store applicants → grants role + fires invite', highlight: true },
+  { path: '/dynasty-direct/affiliates', label: '🤝 Affiliates', icon: Handshake, desc: 'Codes, clicks, conversions, commission ledger & payouts', highlight: true },
   { path: '/admin/dynasty-direct-ops', label: 'Ops Console', icon: Settings, desc: 'Geocoding + profile linking' },
 ];
 
