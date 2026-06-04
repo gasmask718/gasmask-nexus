@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Zap, Plus, MessageSquare, Package, User, Truck, DollarSign, Clock } from 'lucide-react';
+import { Zap, Plus, MessageSquare, Package, User, Truck, DollarSign, Clock, Activity, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { AutomationEventType, DEFAULT_AUTOMATION_TEMPLATES } from '@/services/automationService';
