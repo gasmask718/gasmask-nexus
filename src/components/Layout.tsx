@@ -548,9 +548,9 @@ const DYNASTY_NAVIGATION = {
     name: '🧠 AI & Automation',
     items: [
       { path: '/ai/workforce', label: '🤖 AI Workforce Automation OS', icon: Bot },
-      { path: '/ai-ceo', label: 'AI CEO Control Room', icon: Crown },
+      { path: '/system-operations/ai-ceo-control-room', label: 'AI CEO Control Room', icon: Crown },
       { path: '/dynasty-automations', label: 'Dynasty Automations', icon: Zap },
-      { path: '/automation-settings', label: 'Automation Settings', icon: Settings },
+      { path: '/settings/automation', label: 'Automation Settings', icon: Settings },
       { path: '/meta-ai', label: 'Meta AI', icon: Brain },
     ],
   },
