@@ -1448,15 +1448,17 @@ export default function AppRoutes() {
         <Route path="/system-operations/ai-ceo-control-room" element={<AICEOControlRoom />} />
         <Route path="/meta-ai" element={<MetaAI />} />
         <Route path="/executive-reports" element={<ExecutiveReports />} />
-        <Route path="/missions-hq" element={<MissionsHQ />} />
-        <Route path="/communication-automation" element={<CommunicationAutomation />} />
-        <Route path="/communications-ai" element={<CommunicationsAI />} />
-        <Route path="/communication-insights" element={<CommunicationInsights />} />
+        {/* T3 K10: Missions HQ shell → real Penthouse Mission Control */}
+        <Route path="/missions-hq" element={<Navigate to="/penthouse/missions" replace />} />
+        {/* T3 K11: orphan comm pages — redirect to canonical hub */}
+        <Route path="/communication-automation" element={<Navigate to="/settings/automation/communications" replace />} />
+        <Route path="/communications-ai" element={<Navigate to="/communication/agents" replace />} />
+        <Route path="/communication-insights" element={<Navigate to="/communication/analytics" replace />} />
         <Route path="/dynasty-automations" element={<DynastyAutomations />} />
 
-        {/* Communications Center - All redirect to unified V8 Communication Hub */}
-        <Route path="/communications-center" element={<CommunicationHubLayout />} />
-        <Route path="/communications-center/*" element={<CommunicationHubLayout />} />
+        {/* T3 K4: /communications-center ghost — collapse to Floor 2 Comm Hub */}
+        <Route path="/communications-center" element={<Navigate to="/communication" replace />} />
+        <Route path="/communications-center/*" element={<Navigate to="/communication" replace />} />
 
         {/* Call Center */}
         <Route path="/call-center" element={<CallCenterDashboard />} />
