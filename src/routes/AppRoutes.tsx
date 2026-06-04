@@ -1403,7 +1403,8 @@ export default function AppRoutes() {
         <Route path="/gasmask/settings" element={<BrandPlaceholder />} />
         <Route path="/gasmask/route-engine" element={<RouteEnginePage />} />
         <Route path="/gasmask/driver-route" element={<GasmaskDriverRoutePage />} />
-        <Route path="/gasmask/agent-center" element={<AgentCenterPage />} />
+        {/* T3 K2: Agent Center merged into Floor 9 intelligence suite */}
+        <Route path="/gasmask/agent-center" element={<Navigate to="/grabba/floor9" replace />} />
         <Route path="/dynasty/agents" element={<AgentCenterPage />} />
         <Route path="/gasmask/note-cleaner" element={<NoteCleanerPage />} />
 
