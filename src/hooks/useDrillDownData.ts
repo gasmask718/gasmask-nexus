@@ -325,8 +325,9 @@ async function fetchAmbassadors(filters: DrillDownFilters): Promise<DrillDownRes
 async function fetchCommissions(filters: DrillDownFilters): Promise<DrillDownResult[]> {
   const client = supabase as any;
   let query = client
-    .from('ambassador_commissions')
+    .from('commission_ledger')
     .select('*, ambassador:ambassadors(user_id, user:profiles(name))')
+    .neq('status', 'reversed')
     .order('created_at', { ascending: false });
 
   if (filters.status) {
@@ -339,11 +340,11 @@ async function fetchCommissions(filters: DrillDownFilters): Promise<DrillDownRes
   return (data || []).map((comm: any) => ({
     id: comm.id,
     title: comm.ambassador?.user?.name || 'Commission',
-    subtitle: comm.entity_type,
+    subtitle: comm.source_channel,
     type: 'commission',
     status: comm.status,
-    amount: comm.amount,
-    metadata: { paid_at: comm.paid_at, notes: comm.notes },
+    amount: comm.commission_amount,
+    metadata: { paid_at: comm.paid_at, source_name: comm.source_name },
     raw: comm,
   }));
 }

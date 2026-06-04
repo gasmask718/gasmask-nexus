@@ -131,9 +131,10 @@ async function fetchAmbassadorProfileDirect(ambassadorId: string): Promise<Ambas
 
   // Fetch commissions
   const { data: commissions } = await supabase
-    .from('ambassador_commissions')
+    .from('commission_ledger')
     .select('*')
     .eq('ambassador_id', ambassadorId)
+    .neq('status', 'reversed')
     .order('created_at', { ascending: false });
 
   // Fetch online sales
@@ -167,8 +168,8 @@ async function fetchAmbassadorProfileDirect(ambassadorId: string): Promise<Ambas
 
   const kpis: AmbassadorKPIs = {
     totalEarnings: ambassador.total_earnings || 0,
-    pendingEarnings: pendingCommissions.reduce((sum: number, c: any) => sum + Number(c.amount || 0), 0),
-    paidEarnings: paidCommissions.reduce((sum: number, c: any) => sum + Number(c.amount || 0), 0),
+    pendingEarnings: pendingCommissions.reduce((sum: number, c: any) => sum + Number(c.commission_amount || 0), 0),
+    paidEarnings: paidCommissions.reduce((sum: number, c: any) => sum + Number(c.commission_amount || 0), 0),
     storesAcquired: storeAssignments.length,
     storesActive: activeStores.length,
     storesDormant: dormantStores.length,

@@ -159,13 +159,14 @@ export function useGrabbaAmbassadors() {
         .eq('is_active', true);
 
       const { data: commissions } = await supabase
-        .from('ambassador_commissions')
-        .select('ambassador_id, amount, status');
+        .from('commission_ledger')
+        .select('ambassador_id, commission_amount, status')
+        .neq('status', 'reversed');
 
       const ambassadorStats = (ambassadors || []).map(amb => {
         const ambCommissions = (commissions || []).filter(c => c.ambassador_id === amb.id);
-        const totalEarned = ambCommissions.filter(c => c.status === 'paid').reduce((sum, c) => sum + (c.amount || 0), 0);
-        const pending = ambCommissions.filter(c => c.status === 'pending').reduce((sum, c) => sum + (c.amount || 0), 0);
+        const totalEarned = ambCommissions.filter(c => c.status === 'paid').reduce((sum, c) => sum + (Number(c.commission_amount) || 0), 0);
+        const pending = ambCommissions.filter(c => c.status === 'pending').reduce((sum, c) => sum + (Number(c.commission_amount) || 0), 0);
         
         return {
           ...amb,
