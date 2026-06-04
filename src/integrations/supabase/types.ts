@@ -51123,6 +51123,114 @@ export type Database = {
           },
         ]
       }
+      health_check_alerts: {
+        Row: {
+          check_key: string
+          last_alert_at: string
+          last_message: string | null
+          last_status: string | null
+        }
+        Insert: {
+          check_key: string
+          last_alert_at?: string
+          last_message?: string | null
+          last_status?: string | null
+        }
+        Update: {
+          check_key?: string
+          last_alert_at?: string
+          last_message?: string | null
+          last_status?: string | null
+        }
+        Relationships: []
+      }
+      health_check_runs: {
+        Row: {
+          check_key: string
+          created_at: string
+          details: Json
+          duration_ms: number | null
+          id: string
+          message: string | null
+          status: string
+        }
+        Insert: {
+          check_key: string
+          created_at?: string
+          details?: Json
+          duration_ms?: number | null
+          id?: string
+          message?: string | null
+          status: string
+        }
+        Update: {
+          check_key?: string
+          created_at?: string
+          details?: Json
+          duration_ms?: number | null
+          id?: string
+          message?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      health_checks: {
+        Row: {
+          business: string
+          cadence_expected_minutes: number | null
+          check_key: string
+          config: Json
+          created_at: string
+          details: Json
+          enabled: boolean
+          floor: string | null
+          id: string
+          kind: string
+          label: string
+          last_message: string | null
+          last_ok_at: string | null
+          last_run_at: string | null
+          last_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          business?: string
+          cadence_expected_minutes?: number | null
+          check_key: string
+          config?: Json
+          created_at?: string
+          details?: Json
+          enabled?: boolean
+          floor?: string | null
+          id?: string
+          kind: string
+          label: string
+          last_message?: string | null
+          last_ok_at?: string | null
+          last_run_at?: string | null
+          last_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business?: string
+          cadence_expected_minutes?: number | null
+          check_key?: string
+          config?: Json
+          created_at?: string
+          details?: Json
+          enabled?: boolean
+          floor?: string | null
+          id?: string
+          kind?: string
+          label?: string
+          last_message?: string | null
+          last_ok_at?: string | null
+          last_run_at?: string | null
+          last_status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       helicopter_partner_requests: {
         Row: {
           booking_id: string | null
@@ -118822,6 +118930,15 @@ export type Database = {
           inviter_display_name: string
           role: Database["public"]["Enums"]["app_role"]
           status: string
+        }[]
+      }
+      get_last_cron_run: {
+        Args: { p_jobname: string }
+        Returns: {
+          jobname: string
+          last_start: string
+          last_status: string
+          return_message: string
         }[]
       }
       get_managed_office_ids: { Args: { _user_id: string }; Returns: string[] }

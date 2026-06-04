@@ -504,6 +504,7 @@ const VoiceMatrixPage = lazy(() => import('@/pages/communication/voicematrix/Voi
 const CommSettingsPage = lazy(() => import('@/pages/communication/settings/SettingsPage'));
 const PhoneNumbersSettingsPage = lazy(() => import('@/pages/communication/settings/PhoneNumbersPage'));
 const CommsHealthDashboard = lazy(() => import('@/pages/communication/CommsHealthDashboard'));
+const SystemHealthPage = lazy(() => import('@/pages/SystemHealthPage'));
 const BusinessPhoneNumbersPage = lazy(() => import('@/pages/communication/BusinessPhoneNumbers'));
 const PhoneProvisioningPage = lazy(() => import('@/pages/communication/PhoneProvisioningPage'));
 const UserCallSettingsPage = lazy(() => import('@/pages/communication/call-settings').then(m => ({ default: m.UserCallSettingsPage })));
@@ -1222,6 +1223,7 @@ export default function AppRoutes() {
       <Route path="/developer" element={<DeveloperPortal />} />
 
       <Route path="/install" element={<InstallPwa />} />
+      <Route path="/system-health" element={<ProtectedRoute><SystemHealthPage /></ProtectedRoute>} />
       <Route path="/twl-landing" element={<TWLLanding />} />
       <Route path="/partner/respond/:token" element={<PartnerRespond />} />
       <Route path="/tt/partner/accept/:token" element={<TTPartnerAccept />} />
