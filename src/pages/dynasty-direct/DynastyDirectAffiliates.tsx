@@ -127,6 +127,7 @@ export default function DynastyDirectAffiliates() {
 
   return (
     <div className="p-6 space-y-6">
+      <DDAlertBar />
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
