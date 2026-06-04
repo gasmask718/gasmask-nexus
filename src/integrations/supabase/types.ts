@@ -55218,6 +55218,69 @@ export type Database = {
           },
         ]
       }
+      invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_user_id: string | null
+          channel: string
+          created_at: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          message_preview: string | null
+          opened_at: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          send_log: Json | null
+          sent_name: string | null
+          sent_to_email: string | null
+          sent_to_phone: string | null
+          status: string
+          target_link: Json
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          channel?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          message_preview?: string | null
+          opened_at?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          send_log?: Json | null
+          sent_name?: string | null
+          sent_to_email?: string | null
+          sent_to_phone?: string | null
+          status?: string
+          target_link?: Json
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          channel?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          message_preview?: string | null
+          opened_at?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          send_log?: Json | null
+          sent_name?: string | null
+          sent_to_email?: string | null
+          sent_to_phone?: string | null
+          status?: string
+          target_link?: Json
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoice_line_items: {
         Row: {
           brand: string | null
@@ -116638,6 +116701,7 @@ export type Database = {
         Args: { p_token: string; p_user_id: string }
         Returns: Json
       }
+      accept_invite: { Args: { p_token: string }; Returns: Json }
       ack_ops_thread: { Args: { p_thread_id: string }; Returns: undefined }
       acknowledge_drift_alert: {
         Args: { p_alert_id: string; p_user_id?: string }
@@ -117325,6 +117389,42 @@ export type Database = {
         }
         Returns: string
       }
+      create_invite: {
+        Args: {
+          p_channel?: string
+          p_email?: string
+          p_name?: string
+          p_phone?: string
+          p_role: Database["public"]["Enums"]["app_role"]
+          p_target_link?: Json
+        }
+        Returns: {
+          accepted_at: string | null
+          accepted_user_id: string | null
+          channel: string
+          created_at: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          message_preview: string | null
+          opened_at: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          send_log: Json | null
+          sent_name: string | null
+          sent_to_email: string | null
+          sent_to_phone: string | null
+          status: string
+          target_link: Json
+          token: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invites"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_ops_task: {
         Args: {
           p_description?: string
@@ -117876,6 +117976,7 @@ export type Database = {
         Args: { p_action: string; p_details?: Json }
         Returns: string
       }
+      mark_invite_opened: { Args: { p_token: string }; Returns: undefined }
       mark_ops_thread_read: {
         Args: { p_thread_id: string }
         Returns: undefined
@@ -118359,6 +118460,7 @@ export type Database = {
         Args: { p_invite_id: string; p_reason?: string }
         Returns: boolean
       }
+      revoke_invite: { Args: { p_id: string }; Returns: undefined }
       revoke_portal_device: {
         Args: { _device_id: string; _reason?: string }
         Returns: boolean
