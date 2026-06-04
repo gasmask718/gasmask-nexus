@@ -38,7 +38,23 @@ interface Brand {
 const GlobalCRM = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('brands');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'brands';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  // T4c M4 follow-up: customers tab
+  const { data: customers = [], isLoading: customersLoading } = useQuery({
+    queryKey: ['global-crm-customers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_customers')
+        .select('id, name, phone, email, business_type, city, state, relationship_status, total_lifetime_value, last_order_date')
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: activeTab === 'customers',
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [boroughFilter, setBoroughFilter] = useState('all');
   const [neighborhoodFilter, setNeighborhoodFilter] = useState('all');
