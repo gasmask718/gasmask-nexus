@@ -231,7 +231,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/sell-through-analytics', label: 'Sell-Through Analytics', icon: BarChart3 },
         { path: '/crm', label: 'Global CRM', icon: UserCheck },
         { path: '/crm/contacts', label: 'CRM Contacts', icon: User },
-        { path: '/crm/customers', label: 'CRM Customers', icon: Users },
+        // T3 M4: CRM Customers is a tab inside Global CRM; sidebar entry removed.
         { path: '/crm/follow-ups', label: 'Follow-Ups', icon: Clock },
         { path: '/opportunities', label: 'All Opportunities', icon: Target },
       ],
