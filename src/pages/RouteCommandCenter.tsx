@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Loader2, MapPin, AlertTriangle, Package, DollarSign, Phone, Sparkles, X, Route as RouteIcon,
+  Gift, RotateCcw, TrendingDown,
 } from 'lucide-react';
 
 const TYPE_META: Record<CandidateType, { label: string; icon: any; color: string }> = {
@@ -19,9 +20,12 @@ const TYPE_META: Record<CandidateType, { label: string; icon: any; color: string
   collect_payment: { label: 'Collect $', icon: DollarSign, color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
   follow_up: { label: 'Follow-up', icon: Phone, color: 'bg-violet-500/15 text-violet-400 border-violet-500/30' },
   prospect: { label: 'Prospect', icon: MapPin, color: 'bg-muted text-muted-foreground border-border' },
+  bring_samples: { label: 'Bring Samples', icon: Gift, color: 'bg-purple-500/15 text-purple-400 border-purple-500/30' },
+  win_back: { label: 'Win-back', icon: RotateCcw, color: 'bg-orange-500/15 text-orange-400 border-orange-500/30' },
+  at_risk: { label: 'At-risk', icon: TrendingDown, color: 'bg-rose-500/15 text-rose-400 border-rose-500/30' },
 };
 
-const ALL_TYPES: CandidateType[] = ['reorder', 'owner_order', 'collect_payment', 'follow_up', 'prospect'];
+const ALL_TYPES: CandidateType[] = ['reorder', 'owner_order', 'collect_payment', 'follow_up', 'prospect', 'bring_samples', 'win_back', 'at_risk'];
 
 export default function RouteCommandCenter() {
   const { data: candidates = [], isLoading } = useRouteCandidates();
@@ -93,7 +97,10 @@ export default function RouteCommandCenter() {
 
   // Type counts (for filter chips)
   const typeCounts = useMemo(() => {
-    const c: Record<CandidateType, number> = { reorder: 0, owner_order: 0, collect_payment: 0, follow_up: 0, prospect: 0 };
+    const c: Record<CandidateType, number> = {
+      reorder: 0, owner_order: 0, collect_payment: 0, follow_up: 0, prospect: 0,
+      bring_samples: 0, win_back: 0, at_risk: 0,
+    };
     merged.forEach(r => r.types.forEach(t => { c[t]++; }));
     return c;
   }, [merged]);

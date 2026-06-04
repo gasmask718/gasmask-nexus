@@ -1,7 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export type CandidateType = 'reorder' | 'owner_order' | 'collect_payment' | 'follow_up' | 'prospect';
+export type CandidateType =
+  | 'reorder'
+  | 'owner_order'
+  | 'collect_payment'
+  | 'follow_up'
+  | 'prospect'
+  | 'bring_samples'
+  | 'win_back'
+  | 'at_risk';
 
 export interface RouteCandidate {
   store_id: string;
