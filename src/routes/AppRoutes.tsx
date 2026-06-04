@@ -1925,6 +1925,14 @@ export default function AppRoutes() {
         <Route path="/dynasty-direct/suppliers/inventory" element={<WholesalerPortalPage />} />
         <Route path="/dynasty-direct/shipping" element={<MarketplaceControlTowerPage />} />
         <Route path="/dynasty-direct/grabba-bridge" element={<DynastyDirectGrabbaBridge />} />
+        <Route
+          path="/dynasty-direct/affiliates"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
+              <DynastyDirectAffiliates />
+            </RequireRole>
+          }
+        />
         <Route path="/dynasty-direct/analytics" element={<MarketplaceControlTowerPage />} />
 
         {/* Marketplace Connection Pack - Dev Only, Admin/Owner */}
