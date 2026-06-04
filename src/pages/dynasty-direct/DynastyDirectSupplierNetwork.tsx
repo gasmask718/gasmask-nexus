@@ -70,6 +70,47 @@ export default function DynastyDirectSupplierNetwork() {
   const [inventory, setInventory] = useState<Inventory[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedState, setSelectedState] = useState<string | null>(null);
+  const [selectedUngeo, setSelectedUngeo] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState<string | null>(null);
+
+  function toggleUngeo(id: string) {
+    setSelectedUngeo((p) => {
+      const n = new Set(p);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  }
+
+  async function bulkGeocodeRetry() {
+    setBulkBusy('geocode');
+    let ok = 0, failed = 0;
+    for (const id of Array.from(selectedUngeo)) {
+      try {
+        const { error } = await supabase.functions.invoke('geocode-wholesaler', { body: { wholesaler_id: id } });
+        if (error) throw error;
+        ok++;
+      } catch (e) { console.error('[bulkGeocode]', id, e); failed++; }
+    }
+    toast.success(`Geocode retry: ${ok} ok, ${failed} failed`);
+    setSelectedUngeo(new Set());
+    setBulkBusy(null);
+  }
+
+  async function bulkSupplierStatus(status: 'active' | 'paused') {
+    setBulkBusy(status);
+    let ok = 0, failed = 0;
+    for (const id of Array.from(selectedUngeo)) {
+      try {
+        const { error } = await supabase.from('wholesalers').update({ status } as any).eq('id', id);
+        if (error) throw error;
+        ok++;
+      } catch (e) { console.error('[bulkSupplierStatus]', id, e); failed++; }
+    }
+    toast.success(`Bulk ${status}: ${ok} ok, ${failed} failed`);
+    setSelectedUngeo(new Set());
+    setBulkBusy(null);
+  }
+
 
   // Load data
   useEffect(() => {
