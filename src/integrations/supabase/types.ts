@@ -47714,6 +47714,51 @@ export type Database = {
           },
         ]
       }
+      field_collection_pings: {
+        Row: {
+          amount: number | null
+          collected_at: string
+          collected_by: string
+          created_at: string
+          id: string
+          invoice_id: string | null
+          method: string
+          note: string | null
+          reconciled: boolean
+          reconciled_at: string | null
+          reconciled_by: string | null
+          store_id: string
+        }
+        Insert: {
+          amount?: number | null
+          collected_at?: string
+          collected_by?: string
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          method?: string
+          note?: string | null
+          reconciled?: boolean
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          store_id: string
+        }
+        Update: {
+          amount?: number | null
+          collected_at?: string
+          collected_by?: string
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          method?: string
+          note?: string | null
+          reconciled?: boolean
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          store_id?: string
+        }
+        Relationships: []
+      }
       field_day_notes: {
         Row: {
           completed_count: number
