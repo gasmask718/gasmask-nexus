@@ -51158,6 +51158,163 @@ export type Database = {
         }
         Relationships: []
       }
+      gm_discovered_pois: {
+        Row: {
+          address: string | null
+          category: string | null
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          lat: number | null
+          lng: number | null
+          match_reason: string | null
+          matched_store_id: string | null
+          name: string | null
+          neighborhood_id: string
+          phone: string | null
+          place_id: string
+          promoted_prospect_id: string | null
+          scan_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          category?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          lat?: number | null
+          lng?: number | null
+          match_reason?: string | null
+          matched_store_id?: string | null
+          name?: string | null
+          neighborhood_id: string
+          phone?: string | null
+          place_id: string
+          promoted_prospect_id?: string | null
+          scan_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          category?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          lat?: number | null
+          lng?: number | null
+          match_reason?: string | null
+          matched_store_id?: string | null
+          name?: string | null
+          neighborhood_id?: string
+          phone?: string | null
+          place_id?: string
+          promoted_prospect_id?: string | null
+          scan_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gm_discovered_pois_matched_store_id_fkey"
+            columns: ["matched_store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gm_discovered_pois_matched_store_id_fkey"
+            columns: ["matched_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_prior_customer_segments"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "gm_discovered_pois_matched_store_id_fkey"
+            columns: ["matched_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_public_store_locator"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "gm_discovered_pois_matched_store_id_fkey"
+            columns: ["matched_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "gm_discovered_pois_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gm_discovered_pois_promoted_prospect_id_fkey"
+            columns: ["promoted_prospect_id"]
+            isOneToOne: false
+            referencedRelation: "sales_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gm_discovered_pois_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "gm_neighborhood_scans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gm_neighborhood_scans: {
+        Row: {
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          neighborhood_id: string
+          new_prospects: number
+          pois_found: number
+          pois_matched: number
+          query_terms: string[]
+          started_at: string
+          status: string
+          triggered_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          neighborhood_id: string
+          new_prospects?: number
+          pois_found?: number
+          pois_matched?: number
+          query_terms?: string[]
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          neighborhood_id?: string
+          new_prospects?: number
+          pois_found?: number
+          pois_matched?: number
+          query_terms?: string[]
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gm_neighborhood_scans_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       grabba_autopilot_tasks: {
         Row: {
           brand: string | null
@@ -113647,14 +113804,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -117147,6 +117304,45 @@ export type Database = {
         }
         Relationships: []
       }
+      v_store_at_risk: {
+        Row: {
+          baseline_monthly_units: number | null
+          current_30d_units: number | null
+          pct_of_baseline: number | null
+          relationship_status: string | null
+          store_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_intelligence_v"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_reactivation_targets"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       v_store_bags_on_hand: {
         Row: {
           bags_on_hand: number | null
@@ -117360,6 +117556,44 @@ export type Database = {
           store_id: string | null
           store_name: string | null
           total_order_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_intelligence_v"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_reactivation_targets"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
+      v_store_order_baseline: {
+        Row: {
+          avg_monthly_units: number | null
+          order_count_90d: number | null
+          store_id: string | null
+          units_90d: number | null
         }
         Relationships: [
           {
@@ -119444,6 +119678,7 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: undefined
       }
+      default_cadence_days: { Args: { status: string }; Returns: number }
       detect_data_duplicates_in_group: {
         Args: { p_group_id: number }
         Returns: {
