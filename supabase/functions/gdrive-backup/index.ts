@@ -18,7 +18,7 @@ const FLOOR_CONFIGS = [
   { id: "floor-5", name: "Orders & Invoices", emoji: "💰", tables: ["wholesale_orders", "accounting_ledger", "invoices"] },
   { id: "floor-6", name: "Production & Machinery", emoji: "🏭", tables: ["production_logs", "production_machines"] },
   { id: "floor-7", name: "Wholesale Marketplace", emoji: "🏪", tables: ["wholesale_orders", "marketplace_orders", "marketplace_products"] },
-  { id: "floor-8", name: "Ambassadors & Reps", emoji: "🤝", tables: ["ambassadors", "ambassador_commissions", "ambassador_payout_history"] },
+  { id: "floor-8", name: "Ambassadors & Reps", emoji: "🤝", tables: ["ambassadors", "commission_ledger", "ambassador_payout_history"] },
   { id: "floor-9", name: "AI Operations Center", emoji: "🤖", tables: ["ai_work_tasks", "ai_action_queue", "ai_decision_log"] },
 ];
 
