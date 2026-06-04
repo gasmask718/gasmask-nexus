@@ -14,9 +14,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Link } from 'react-router-dom';
-import { MapPin, AlertTriangle } from 'lucide-react';
+import { MapPin, AlertTriangle, CheckSquare, Square, RefreshCw, Send, Pause, Play } from 'lucide-react';
+import { toast } from 'sonner';
 import { InviteButton } from '@/components/invites/InviteButton';
 import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
+import { DDBulkBar } from '@/components/dynasty-direct/DDBulkBar';
+import { DDDrillMenu, ddDrill } from '@/components/dynasty-direct/DDDrillMenu';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN as string | undefined;
 
@@ -67,6 +70,47 @@ export default function DynastyDirectSupplierNetwork() {
   const [inventory, setInventory] = useState<Inventory[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedState, setSelectedState] = useState<string | null>(null);
+  const [selectedUngeo, setSelectedUngeo] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState<string | null>(null);
+
+  function toggleUngeo(id: string) {
+    setSelectedUngeo((p) => {
+      const n = new Set(p);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  }
+
+  async function bulkGeocodeRetry() {
+    setBulkBusy('geocode');
+    let ok = 0, failed = 0;
+    for (const id of Array.from(selectedUngeo)) {
+      try {
+        const { error } = await supabase.functions.invoke('geocode-wholesaler', { body: { wholesaler_id: id } });
+        if (error) throw error;
+        ok++;
+      } catch (e) { console.error('[bulkGeocode]', id, e); failed++; }
+    }
+    toast.success(`Geocode retry: ${ok} ok, ${failed} failed`);
+    setSelectedUngeo(new Set());
+    setBulkBusy(null);
+  }
+
+  async function bulkSupplierStatus(status: 'active' | 'paused') {
+    setBulkBusy(status);
+    let ok = 0, failed = 0;
+    for (const id of Array.from(selectedUngeo)) {
+      try {
+        const { error } = await supabase.from('wholesalers').update({ status } as any).eq('id', id);
+        if (error) throw error;
+        ok++;
+      } catch (e) { console.error('[bulkSupplierStatus]', id, e); failed++; }
+    }
+    toast.success(`Bulk ${status}: ${ok} ok, ${failed} failed`);
+    setSelectedUngeo(new Set());
+    setBulkBusy(null);
+  }
+
 
   // Load data
   useEffect(() => {
@@ -256,19 +300,69 @@ export default function DynastyDirectSupplierNetwork() {
             <AlertTriangle className="h-4 w-4 text-amber-500" />
             <div className="font-semibold text-sm">Needs location</div>
             <Badge variant="outline">{unGeocoded.length}</Badge>
+            {unGeocoded.length > 0 && (
+              <button
+                onClick={() => setSelectedUngeo(
+                  selectedUngeo.size === unGeocoded.length
+                    ? new Set()
+                    : new Set(unGeocoded.map((w) => w.id))
+                )}
+                className="ml-auto text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+              >
+                {selectedUngeo.size === unGeocoded.length ? <CheckSquare className="h-3 w-3" /> : <Square className="h-3 w-3" />}
+                {selectedUngeo.size === unGeocoded.length ? 'Clear' : 'All'}
+              </button>
+            )}
           </div>
           <p className="text-xs text-muted-foreground mb-3">
-            Suppliers missing lat/lng. Geocode them from the Ops Console.
+            Suppliers missing lat/lng. Select rows to bulk geocode-retry, pause / activate, or invite.
           </p>
+          <DDBulkBar
+            count={selectedUngeo.size}
+            total={unGeocoded.length}
+            onClear={() => setSelectedUngeo(new Set())}
+            busy={bulkBusy}
+            className="mb-2"
+            actions={[
+              { key: 'geocode', label: 'Retry geocode', icon: RefreshCw, variant: 'default', onRun: bulkGeocodeRetry },
+              { key: 'paused',  label: 'Pause',         icon: Pause,    variant: 'outline', onRun: () => bulkSupplierStatus('paused') },
+              { key: 'active',  label: 'Activate',      icon: Play,     variant: 'outline', onRun: () => bulkSupplierStatus('active') },
+            ]}
+          />
           <div className="max-h-[500px] overflow-y-auto space-y-1">
-            {unGeocoded.map((w) => (
-              <div key={w.id} className="text-xs border rounded p-2">
-                <div className="font-medium">{w.name}</div>
-                <div className="text-muted-foreground">
-                  {w.address || '—'} {w.city ? `· ${w.city}` : ''} {normState(w.state) || ''}
+            {unGeocoded.map((w) => {
+              const isSel = selectedUngeo.has(w.id);
+              return (
+              <div
+                key={w.id}
+                className={`text-xs border rounded p-2 flex items-start gap-2 ${isSel ? 'ring-1 ring-primary bg-primary/5' : ''}`}
+              >
+                <button
+                  onClick={() => toggleUngeo(w.id)}
+                  className="mt-0.5 text-muted-foreground hover:text-foreground"
+                  aria-label="Select"
+                >
+                  {isSel ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{w.name}</div>
+                  <div className="text-muted-foreground truncate">
+                    {w.address || '—'} {w.city ? `· ${w.city}` : ''} {normState(w.state) || ''}
+                  </div>
                 </div>
+                <DDDrillMenu
+                  label={w.name}
+                  items={[
+                    ddDrill.supplier(w.id, w.name),
+                    ddDrill.supplierOrders(w.id),
+                    ddDrill.supplierProducts(w.id),
+                    ddDrill.inventory(w.id),
+                    ddDrill.supplierInvite(w.id),
+                  ]}
+                />
               </div>
-            ))}
+              );
+            })}
             {unGeocoded.length === 0 && (
               <div className="text-xs text-muted-foreground">All suppliers geocoded.</div>
             )}

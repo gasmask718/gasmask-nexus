@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, X, Mail, Phone, MapPin, Loader2, Store } from 'lucide-react';
+import { ArrowLeft, Check, X, Mail, Phone, MapPin, Loader2, Store, CheckSquare, Square } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
+import { DDBulkBar } from '@/components/dynasty-direct/DDBulkBar';
 
 type Status = 'pending' | 'approved' | 'invited' | 'rejected';
 interface Application {
@@ -47,6 +48,10 @@ export default function DynastyDirectStoreApplications() {
   const [rejecting, setRejecting] = useState<Application | null>(null);
   const [reason, setReason] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState<string | null>(null);
+  const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
+  const [bulkReason, setBulkReason] = useState('');
 
   const { data: apps = [], isLoading } = useQuery({
     queryKey: ['dd-store-applications', tab],
@@ -130,6 +135,81 @@ export default function DynastyDirectStoreApplications() {
     }
   }
 
+  // ── Bulk operations ────────────────────────────────────────────────
+  const pendingApps = useMemo(() => apps.filter((a) => a.status === 'pending'), [apps]);
+  const selectedApps = useMemo(
+    () => pendingApps.filter((a) => selectedIds.has(a.id)),
+    [pendingApps, selectedIds],
+  );
+  const allSelected =
+    pendingApps.length > 0 && pendingApps.every((a) => selectedIds.has(a.id));
+
+  function toggleOne(id: string) {
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  }
+  function toggleAll() {
+    setSelectedIds(allSelected ? new Set() : new Set(pendingApps.map((a) => a.id)));
+  }
+
+  async function bulkApprove() {
+    if (selectedApps.length === 0) return;
+    setBulkBusy('approve');
+    let ok = 0, failed = 0;
+    for (const app of selectedApps) {
+      try {
+        const { data, error } = await supabase.rpc('approve_store_application' as any, {
+          p_application_id: app.id,
+        });
+        if (error) throw error;
+        const row = Array.isArray(data) ? data[0] : data;
+        const token = row?.invite_token;
+        await supabase.functions.invoke('send-invite', {
+          body: {
+            token, role: 'store',
+            channel: app.phone ? 'both' : 'email',
+            to_email: app.email, to_phone: app.phone,
+            name: app.contact_name || app.business_name,
+          },
+        });
+        ok++;
+      } catch (e) { console.error('[bulkApprove]', app.id, e); failed++; }
+    }
+    toast.success(`Bulk approved: ${ok} ok, ${failed} failed`);
+    setSelectedIds(new Set());
+    setBulkBusy(null);
+    qc.invalidateQueries({ queryKey: ['dd-store-applications'] });
+    qc.invalidateQueries({ queryKey: ['dd-store-applications-counts'] });
+  }
+
+  async function bulkReject() {
+    if (selectedApps.length === 0) return;
+    setBulkBusy('reject');
+    let ok = 0, failed = 0;
+    for (const app of selectedApps) {
+      try {
+        const { error } = await supabase.rpc('reject_store_application' as any, {
+          p_application_id: app.id,
+          p_reason: bulkReason || 'Bulk rejection',
+        });
+        if (error) throw error;
+        ok++;
+      } catch (e) { console.error('[bulkReject]', app.id, e); failed++; }
+    }
+    toast.success(`Bulk rejected: ${ok} ok, ${failed} failed`);
+    setSelectedIds(new Set());
+    setBulkReason('');
+    setBulkRejectOpen(false);
+    setBulkBusy(null);
+    qc.invalidateQueries({ queryKey: ['dd-store-applications'] });
+    qc.invalidateQueries({ queryKey: ['dd-store-applications-counts'] });
+  }
+
+
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -163,6 +243,27 @@ export default function DynastyDirectStoreApplications() {
           </TabsList>
 
           <TabsContent value={tab} className="mt-4 space-y-3">
+            {tab === 'pending' && pendingApps.length > 0 && (
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <button
+                  onClick={toggleAll}
+                  className="inline-flex items-center gap-1.5 hover:text-foreground"
+                >
+                  {allSelected ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+                  {allSelected ? 'Clear selection' : `Select all ${pendingApps.length}`}
+                </button>
+                <DDBulkBar
+                  count={selectedIds.size}
+                  total={pendingApps.length}
+                  onClear={() => setSelectedIds(new Set())}
+                  busy={bulkBusy}
+                  actions={[
+                    { key: 'approve', label: 'Approve + invite', icon: Check, variant: 'default', onRun: bulkApprove },
+                    { key: 'reject',  label: 'Reject…',          icon: X,     variant: 'destructive', onRun: () => setBulkRejectOpen(true) },
+                  ]}
+                />
+              </div>
+            )}
             {isLoading && (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -175,15 +276,28 @@ export default function DynastyDirectStoreApplications() {
                 </CardContent>
               </Card>
             )}
-            {apps.map((app) => (
-              <Card key={app.id}>
+            {apps.map((app) => {
+              const isSelected = selectedIds.has(app.id);
+              return (
+              <Card key={app.id} className={isSelected ? 'ring-2 ring-primary' : ''}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <CardTitle className="text-lg">{app.business_name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        {app.contact_name || '—'} · {format(new Date(app.created_at), 'MMM d, yyyy')}
-                      </p>
+                    <div className="flex items-start gap-3">
+                      {app.status === 'pending' && (
+                        <button
+                          onClick={() => toggleOne(app.id)}
+                          className="mt-1 text-muted-foreground hover:text-foreground"
+                          aria-label={isSelected ? 'Deselect' : 'Select'}
+                        >
+                          {isSelected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                        </button>
+                      )}
+                      <div>
+                        <CardTitle className="text-lg">{app.business_name}</CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          {app.contact_name || '—'} · {format(new Date(app.created_at), 'MMM d, yyyy')}
+                        </p>
+                      </div>
                     </div>
                     <Badge variant="outline" className={STATUS_STYLES[app.status]}>
                       {app.status}
@@ -248,9 +362,11 @@ export default function DynastyDirectStoreApplications() {
                   )}
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </TabsContent>
         </Tabs>
+
 
         <Dialog open={!!rejecting} onOpenChange={(o) => !o && setRejecting(null)}>
           <DialogContent>
@@ -273,7 +389,28 @@ export default function DynastyDirectStoreApplications() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={bulkRejectOpen} onOpenChange={setBulkRejectOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reject {selectedApps.length} application{selectedApps.length === 1 ? '' : 's'}</DialogTitle>
+            </DialogHeader>
+            <Textarea
+              placeholder="Shared reason for this batch (applied to every selected application)"
+              value={bulkReason}
+              onChange={(e) => setBulkReason(e.target.value)}
+            />
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setBulkRejectOpen(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={bulkReject} disabled={bulkBusy === 'reject'}>
+                {bulkBusy === 'reject' && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                Reject {selectedApps.length}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
 }
+

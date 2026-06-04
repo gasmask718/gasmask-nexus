@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import { ExternalLink, RefreshCw, Search } from 'lucide-react';
 import { InviteButton } from '@/components/invites/InviteButton';
 import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
+import { DDDrillMenu, ddDrill } from '@/components/dynasty-direct/DDDrillMenu';
 
 type OrderRow = {
   id: string;
@@ -327,14 +328,15 @@ export default function DynastyDirectOrders() {
                 <th className="p-3">Tracking</th>
                 <th className="p-3">Date</th>
                 <th className="p-3">Invite</th>
+                <th className="p-3 w-10"></th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Loading…</td></tr>
+                <tr><td colSpan={11} className="p-6 text-center text-muted-foreground">Loading…</td></tr>
               )}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">No orders match the filters.</td></tr>
+                <tr><td colSpan={11} className="p-6 text-center text-muted-foreground">No orders match the filters.</td></tr>
               )}
               {filtered.map((r) => {
                 const unpaid = (r.payment_status || 'pending') !== 'paid';
@@ -405,6 +407,23 @@ export default function DynastyDirectOrders() {
                           label="Invite"
                         />
                       )}
+                    </td>
+                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      <DDDrillMenu
+                        label={`Order ${r.id.slice(0, 8)}`}
+                        items={[
+                          ddDrill.fulfillment(r.id),
+                          ddDrill.customer(r.id),
+                          ...Array.from(new Set(r.fulfillments.map((f) => f.wholesaler_id).filter(Boolean) as string[])).flatMap((whId) => {
+                            const name = r.fulfillments.find((f) => f.wholesaler_id === whId)?.wholesaler_name;
+                            return [
+                              ddDrill.supplier(whId, name),
+                              ddDrill.supplierOrders(whId),
+                              ddDrill.inventory(whId),
+                            ];
+                          }),
+                        ]}
+                      />
                     </td>
                   </tr>
                 );

@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -5,13 +6,16 @@ import { Button } from "@/components/ui/button";
 import { InviteButton } from "@/components/invites/InviteButton";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
-import { Send } from "lucide-react";
+import { Send, RotateCw, Ban, CheckSquare, Square } from "lucide-react";
 import { DDShell } from "@/components/dynasty-direct/DDShell";
 import { DDPageHeader } from "@/components/dynasty-direct/DDPageHeader";
 import { DDEmpty, DDSkeleton } from "@/components/dynasty-direct/DDStates";
+import { DDBulkBar } from "@/components/dynasty-direct/DDBulkBar";
 
 export default function DynastyDirectInvites() {
   const qc = useQueryClient();
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState<string | null>(null);
   const { data: invites = [], isLoading } = useQuery({
     queryKey: ["dd-invites"],
     queryFn: async () => {
@@ -58,6 +62,64 @@ export default function DynastyDirectInvites() {
     toast.success("Re-sent");
     qc.invalidateQueries({ queryKey: ["dd-invites"] });
   }
+
+  // ── Bulk ───────────────────────────────────────────────────────────
+  const actionable = useMemo(
+    () => invites.filter((i: any) => i.status !== 'accepted' && i.status !== 'revoked'),
+    [invites],
+  );
+  const selectedActionable = actionable.filter((i: any) => selectedIds.has(i.id));
+  const allSel = actionable.length > 0 && actionable.every((i: any) => selectedIds.has(i.id));
+
+  function toggleOne(id: string) {
+    setSelectedIds((p) => {
+      const n = new Set(p);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  }
+  function toggleAll() {
+    setSelectedIds(allSel ? new Set() : new Set(actionable.map((i: any) => i.id)));
+  }
+
+  async function bulkResend() {
+    setBulkBusy('resend');
+    let ok = 0, failed = 0;
+    for (const inv of selectedActionable) {
+      try {
+        const { error } = await supabase.functions.invoke('send-invite', {
+          body: {
+            role: inv.role, target_link: inv.target_link,
+            phone: inv.sent_to_phone, email: inv.sent_to_email,
+            name: inv.sent_name, channel: inv.channel,
+          },
+        });
+        if (error) throw error;
+        ok++;
+      } catch (e) { console.error('[bulkResend]', inv.id, e); failed++; }
+    }
+    toast.success(`Bulk resent: ${ok} ok, ${failed} failed`);
+    setSelectedIds(new Set());
+    setBulkBusy(null);
+    qc.invalidateQueries({ queryKey: ['dd-invites'] });
+  }
+
+  async function bulkRevoke() {
+    setBulkBusy('revoke');
+    let ok = 0, failed = 0;
+    for (const inv of selectedActionable) {
+      try {
+        const { error } = await supabase.rpc('revoke_invite', { p_id: inv.id });
+        if (error) throw error;
+        ok++;
+      } catch (e) { console.error('[bulkRevoke]', inv.id, e); failed++; }
+    }
+    toast.success(`Bulk revoked: ${ok} ok, ${failed} failed`);
+    setSelectedIds(new Set());
+    setBulkBusy(null);
+    qc.invalidateQueries({ queryKey: ['dd-invites'] });
+  }
+
 
   const statusBadge = (s: string) => {
     const map: any = { sent: "secondary", opened: "default", accepted: "default", expired: "outline", revoked: "destructive" };
@@ -118,48 +180,77 @@ export default function DynastyDirectInvites() {
       )}
 
       {!isLoading && invites.length > 0 && (
-        <div className="border rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr className="text-left">
-                <th className="p-2">Role</th>
-                <th className="p-2">Sent To</th>
-                <th className="p-2">Channel</th>
-                <th className="p-2">Status</th>
-                <th className="p-2">Created</th>
-                <th className="p-2">Expires</th>
-                <th className="p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invites.map((i: any) => (
-                <tr key={i.id} className="border-t">
-                  <td className="p-2"><Badge variant="outline">{i.role}</Badge></td>
-                  <td className="p-2">
-                    <div className="font-medium">{i.sent_name || "—"}</div>
-                    <div className="text-xs text-muted-foreground">{i.sent_to_phone || i.sent_to_email}</div>
-                  </td>
-                  <td className="p-2">{i.channel}</td>
-                  <td className="p-2">{statusBadge(i.status)}</td>
-                  <td className="p-2 text-xs text-muted-foreground">{formatDistanceToNow(new Date(i.created_at))} ago</td>
-                  <td className="p-2 text-xs text-muted-foreground">{new Date(i.expires_at).toLocaleDateString()}</td>
-                  <td className="p-2 space-x-1">
-                    {i.status !== "accepted" && i.status !== "revoked" && (
-                      <>
-                        <Button size="sm" variant="ghost" onClick={() => resend(i)}>Resend</Button>
-                        <Button size="sm" variant="ghost" onClick={() => revoke(i.id)}>Revoke</Button>
-                      </>
-                    )}
-                    <Button size="sm" variant="ghost" onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/invite/${i.token}`);
-                      toast.success("Link copied");
-                    }}>Copy link</Button>
-                  </td>
+        <>
+          <DDBulkBar
+            count={selectedIds.size}
+            total={actionable.length}
+            onClear={() => setSelectedIds(new Set())}
+            busy={bulkBusy}
+            className="mb-3"
+            actions={[
+              { key: 'resend', label: 'Resend',  icon: RotateCw, variant: 'default', onRun: bulkResend },
+              { key: 'revoke', label: 'Revoke',  icon: Ban,      variant: 'destructive', onRun: bulkRevoke },
+            ]}
+          />
+          <div className="border rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr className="text-left">
+                  <th className="p-2 w-8">
+                    <button onClick={toggleAll} className="text-muted-foreground hover:text-foreground" aria-label="Select all actionable">
+                      {allSel ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                    </button>
+                  </th>
+                  <th className="p-2">Role</th>
+                  <th className="p-2">Sent To</th>
+                  <th className="p-2">Channel</th>
+                  <th className="p-2">Status</th>
+                  <th className="p-2">Created</th>
+                  <th className="p-2">Expires</th>
+                  <th className="p-2">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {invites.map((i: any) => {
+                  const canSelect = i.status !== 'accepted' && i.status !== 'revoked';
+                  const isSel = selectedIds.has(i.id);
+                  return (
+                  <tr key={i.id} className={`border-t ${isSel ? 'bg-primary/5' : ''}`}>
+                    <td className="p-2">
+                      {canSelect && (
+                        <button onClick={() => toggleOne(i.id)} className="text-muted-foreground hover:text-foreground" aria-label="Select">
+                          {isSel ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                        </button>
+                      )}
+                    </td>
+                    <td className="p-2"><Badge variant="outline">{i.role}</Badge></td>
+                    <td className="p-2">
+                      <div className="font-medium">{i.sent_name || "—"}</div>
+                      <div className="text-xs text-muted-foreground">{i.sent_to_phone || i.sent_to_email}</div>
+                    </td>
+                    <td className="p-2">{i.channel}</td>
+                    <td className="p-2">{statusBadge(i.status)}</td>
+                    <td className="p-2 text-xs text-muted-foreground">{formatDistanceToNow(new Date(i.created_at))} ago</td>
+                    <td className="p-2 text-xs text-muted-foreground">{new Date(i.expires_at).toLocaleDateString()}</td>
+                    <td className="p-2 space-x-1">
+                      {canSelect && (
+                        <>
+                          <Button size="sm" variant="ghost" onClick={() => resend(i)}>Resend</Button>
+                          <Button size="sm" variant="ghost" onClick={() => revoke(i.id)}>Revoke</Button>
+                        </>
+                      )}
+                      <Button size="sm" variant="ghost" onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/invite/${i.token}`);
+                        toast.success("Link copied");
+                      }}>Copy link</Button>
+                    </td>
+                  </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </DDShell>
   );

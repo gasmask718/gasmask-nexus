@@ -638,25 +638,44 @@ async function checkBlandAgents(): Promise<Result[]> {
     }
   } catch { /* fall through to per-agent fetch */ }
 
+  // Heuristic: Bland AGENT ids start with `agent_…`; conversational PATHWAYS
+  // are bare UUIDs. They are different resources with different endpoints.
+  // Try the shape-matched endpoint first, then fall back to the other before
+  // declaring a fail — many DC_* / RE_* / BRANDARO_* secrets are actually
+  // pathway ids and would otherwise 404 forever against /v1/agents.
+  const isAgentId = (v: string) => /^agent_/i.test(v);
+  const tryAgent = (id: string) => bland(`/v1/agents/${id}`);
+  const tryPathway = (id: string) => bland(`/v1/pathway/${id}`);
+
   for (const [name, id] of configured) {
     if (listOk && known.has(id)) {
-      out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "pass", message: `Agent ${id} present in Bland account`, detail: { agent_id: id } });
+      out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "pass", message: `Agent ${id} present in Bland account`, detail: { resource_id: id, kind: "agent" } });
       continue;
     }
-    // Per-agent verification fallback
     try {
-      const r = await bland(`/v1/agents/${id}`);
+      const primaryFetch = isAgentId(id) ? tryAgent : tryPathway;
+      const fallbackFetch = isAgentId(id) ? tryPathway : tryAgent;
+      const primaryKind = isAgentId(id) ? "agent" : "pathway";
+      const fallbackKind = isAgentId(id) ? "pathway" : "agent";
+
+      let r = await primaryFetch(id);
+      let kind = primaryKind;
       if (r.status === 404) {
-        out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "fail", message: `Agent ${id} not found in Bland account (404) — stale secret or deleted agent`, detail: { agent_id: id } });
+        const r2 = await fallbackFetch(id);
+        if (r2.ok || (r2.status !== 404)) { r = r2; kind = fallbackKind; }
+      }
+
+      if (r.status === 404) {
+        out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "fail", message: `${id} not found in Bland account (404 on agent + pathway) — stale secret or deleted resource`, detail: { resource_id: id } });
       } else if (r.status === 401 || r.status === 403) {
-        out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "fail", message: `Agent ${id} fetch unauthorized (HTTP ${r.status})`, detail: { agent_id: id } });
+        out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "fail", message: `${id} fetch unauthorized (HTTP ${r.status})`, detail: { resource_id: id } });
       } else if (r.ok) {
-        out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "pass", message: `Agent ${id} valid`, detail: { agent_id: id } });
+        out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "pass", message: `${kind} ${id} valid`, detail: { resource_id: id, kind } });
       } else {
-        out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "warn", message: `Agent ${id} fetch returned HTTP ${r.status}`, detail: { agent_id: id, http_status: r.status } });
+        out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "warn", message: `${id} fetch returned HTTP ${r.status}`, detail: { resource_id: id, http_status: r.status } });
       }
     } catch (e) {
-      out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "warn", message: `Could not verify agent ${id}: ${(e as Error).message}`, detail: { agent_id: id } });
+      out.push({ provider: "bland", layer: "credentials", target: `agent:${name}`, status: "warn", message: `Could not verify ${id}: ${(e as Error).message}`, detail: { resource_id: id } });
     }
   }
   return out;
