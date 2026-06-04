@@ -276,15 +276,28 @@ export default function DynastyDirectStoreApplications() {
                 </CardContent>
               </Card>
             )}
-            {apps.map((app) => (
-              <Card key={app.id}>
+            {apps.map((app) => {
+              const isSelected = selectedIds.has(app.id);
+              return (
+              <Card key={app.id} className={isSelected ? 'ring-2 ring-primary' : ''}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <CardTitle className="text-lg">{app.business_name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        {app.contact_name || '—'} · {format(new Date(app.created_at), 'MMM d, yyyy')}
-                      </p>
+                    <div className="flex items-start gap-3">
+                      {app.status === 'pending' && (
+                        <button
+                          onClick={() => toggleOne(app.id)}
+                          className="mt-1 text-muted-foreground hover:text-foreground"
+                          aria-label={isSelected ? 'Deselect' : 'Select'}
+                        >
+                          {isSelected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                        </button>
+                      )}
+                      <div>
+                        <CardTitle className="text-lg">{app.business_name}</CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          {app.contact_name || '—'} · {format(new Date(app.created_at), 'MMM d, yyyy')}
+                        </p>
+                      </div>
                     </div>
                     <Badge variant="outline" className={STATUS_STYLES[app.status]}>
                       {app.status}
