@@ -42,6 +42,16 @@ Deno.serve(async (req) => {
   const j = (b: unknown, status = 200) =>
     new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+  // AI permission gate (T4a)
+  const { data: permOk, error: permErr } = await admin.rpc("has_ai_permission", {
+    p_domain: "anomaly",
+    p_action: "order_scan",
+  });
+  if (permErr || permOk === false) {
+    return j({ ok: false, blocked: true, reason: permErr?.message || "ai_permission_denied" });
+  }
+
+
   const now = new Date();
   const todayStart = new Date(now); todayStart.setUTCHours(0, 0, 0, 0);
   const sevenDaysAgo = new Date(now.getTime() - 7 * 86_400_000);

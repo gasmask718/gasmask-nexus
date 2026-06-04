@@ -50,6 +50,19 @@ serve(async (req) => {
 
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+  // AI permission gate (T4a)
+  const { data: permOk, error: permErr } = await sb.rpc("has_ai_permission", {
+    p_domain: "scout",
+    p_action: "neighborhood_scan",
+  });
+  if (permErr || permOk === false) {
+    return new Response(JSON.stringify({ ok: false, blocked: true, reason: permErr?.message || "ai_permission_denied" }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+
+
   let body: any = {};
   try { body = await req.json(); } catch { /* GET path */ }
   const neighborhoodId: string | undefined = body.neighborhood_id;

@@ -5638,6 +5638,39 @@ export type Database = {
           },
         ]
       }
+      ai_worker_performance_daily: {
+        Row: {
+          avg_duration_seconds: number | null
+          computed_at: string
+          id: string
+          metric_date: string
+          tasks_completed: number
+          tasks_failed: number
+          total_seconds: number | null
+          worker_id: string
+        }
+        Insert: {
+          avg_duration_seconds?: number | null
+          computed_at?: string
+          id?: string
+          metric_date?: string
+          tasks_completed?: number
+          tasks_failed?: number
+          total_seconds?: number | null
+          worker_id: string
+        }
+        Update: {
+          avg_duration_seconds?: number | null
+          computed_at?: string
+          id?: string
+          metric_date?: string
+          tasks_completed?: number
+          tasks_failed?: number
+          total_seconds?: number | null
+          worker_id?: string
+        }
+        Relationships: []
+      }
       ai_workers: {
         Row: {
           created_at: string
@@ -119406,6 +119439,7 @@ export type Database = {
         Args: { p_period_end: string; p_period_start: string }
         Returns: number
       }
+      ai_worker_performance_tick: { Args: never; Returns: Json }
       ambassador_has_active_assignment: {
         Args: { _store_id: string; _user_id: string }
         Returns: boolean
@@ -120290,6 +120324,7 @@ export type Database = {
         }
         Returns: Json
       }
+      expansion_scores_tick: { Args: never; Returns: Json }
       expire_old_simulations: { Args: never; Returns: undefined }
       export_payout_batch_csv: {
         Args: { p_batch_id: string }

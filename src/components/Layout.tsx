@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { SendMessageModal } from '@/components/communication/SendMessageModal';
 import SystemCheckpointBar from '@/components/system/SystemCheckpointBar';
+import { FeedbackDialog } from '@/components/feedback/FeedbackDialog';
+
 import { EmpireHealthMonitor } from '@/components/system/EmpireHealthMonitor';
 import { GlobalSimulationToggle } from '@/components/simulation/GlobalSimulationToggle';
 import { SimulationWatermark } from '@/components/simulation/SimulationWatermark';
@@ -688,6 +690,8 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+
 
   // ⚔️ BRANDARO PERMANENT VERIFICATION — Self-heal if missing
   const verifiedNav = ensureBrandaroInNav(DYNASTY_NAVIGATION);
@@ -1322,6 +1326,17 @@ const Layout = ({ children }: LayoutProps) => {
               <MessageSquarePlus className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">New Message</span>
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFeedbackOpen(true)}
+              className="border-amber-500/40 bg-amber-500/10 text-amber-100 hover:bg-amber-500/20 touch-target"
+              aria-label="Report a problem"
+              title="Report a problem"
+            >
+              <MessageSquareWarning className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Report</span>
+            </Button>
             <NotificationCenter />
             <Button
               variant="ghost"
@@ -1361,6 +1376,8 @@ const Layout = ({ children }: LayoutProps) => {
       </div>
 
       <SendMessageModal open={sendMessageOpen} onOpenChange={setSendMessageOpen} />
+      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+
     </div>
   );
 };
