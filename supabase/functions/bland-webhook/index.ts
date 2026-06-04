@@ -115,6 +115,27 @@ serve(async (req) => {
         }).catch((err) => console.error("Claude analysis trigger failed:", err));
     }
 
+    // T4a #6 — Shadow predictor learning loop (fire-and-forget)
+    if (transcript.length > 50) {
+      const shadowPayload = {
+        session_id: call.id,
+        business_id: payload.metadata?.business_id || "00000000-0000-0000-0000-000000000000",
+        transcript,
+        human_operator_id: payload.metadata?.human_operator_id,
+        call_context: {
+          caller_phone: payload.to,
+          store_name: payload.metadata?.company_name,
+          time_of_day: new Date().toISOString(),
+        },
+      };
+      const shadowCall = fetch(`${SUPABASE_URL}/functions/v1/call-shadow-predictor`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+        body: JSON.stringify(shadowPayload),
+      }).catch((err) => console.error("Shadow predictor trigger failed:", err));
+      EdgeRuntime?.waitUntil?.(shadowCall) ?? (await shadowCall);
+    }
+
     // If qualified, auto-create pipeline lead
     if (outcome === "qualified") {
       const { error: pipeErr } = await supabase
