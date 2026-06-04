@@ -1603,10 +1603,11 @@ export default function AppRoutes() {
         <Route path="/communications" element={<Communications />} />
         <Route path="/templates" element={<Templates />} />
         <Route path="/communications/reminders" element={<Reminders />} />
-        <Route path="/communications/ai-insights" element={<CommunicationsAI />} />
-        <Route path="/communications/insights" element={<CommunicationInsights />} />
+        {/* T3 K11: orphan comm pages → canonical hub redirects */}
+        <Route path="/communications/ai-insights" element={<Navigate to="/communication/agents" replace />} />
+        <Route path="/communications/insights" element={<Navigate to="/communication/analytics" replace />} />
         <Route path="/settings/automation" element={<AutomationSettings />} />
-        <Route path="/settings/automation/communications" element={<CommunicationAutomation />} />
+        <Route path="/settings/automation/communications" element={<Navigate to="/settings/automation" replace />} />
         <Route path="/training" element={<Training />} />
         <Route path="/ambassadors" element={<AllAmbassadorsTable />} />
         <Route path="/ambassadors/command" element={<AmbassadorCommandDashboard />} />
