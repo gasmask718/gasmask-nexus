@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const { data: w, error: wErr } = await admin
       .from("wholesaler_profiles")
-      .select("id, company_name, contact_name, warehouse_city, warehouse_state, status, product_categories")
+      .select("id, company_name, contact_name, warehouse_city, warehouse_state, status")
       .eq("id", wholesaler_id)
       .maybeSingle();
     if (wErr || !w) return j({ error: wErr?.message ?? "supplier not found" }, 404);
