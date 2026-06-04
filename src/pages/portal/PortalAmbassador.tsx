@@ -34,9 +34,10 @@ export default function PortalAmbassador() {
         setAmbassadorData(ambassadorResponse.data);
 
         const commissionsResponse: any = await supabase
-          .from('ambassador_commissions')
+          .from('commission_ledger')
           .select('*')
           .eq('ambassador_id', ambassadorResponse.data.id)
+          .neq('status', 'reversed')
           .order('created_at', { ascending: false });
 
         setCommissions(commissionsResponse.data || []);
@@ -184,9 +185,9 @@ export default function PortalAmbassador() {
                   {commissions.slice(0, 5).map((comm) => (
                     <div key={comm.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <p className="font-medium">${comm.amount.toFixed(2)}</p>
+                        <p className="font-medium">${Number(comm.commission_amount || 0).toFixed(2)}</p>
                         <p className="text-sm text-muted-foreground">
-                          {comm.entity_type} • {new Date(comm.created_at).toLocaleDateString()}
+                          {comm.source_channel} • {new Date(comm.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       <Badge variant={comm.status === 'paid' ? 'default' : 'secondary'}>
@@ -229,11 +230,11 @@ export default function PortalAmbassador() {
                   {commissions.map((comm) => (
                     <div key={comm.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <p className="font-medium">${comm.amount.toFixed(2)}</p>
+                        <p className="font-medium">${Number(comm.commission_amount || 0).toFixed(2)}</p>
                         <p className="text-sm text-muted-foreground">
-                          {comm.entity_type} • {new Date(comm.created_at).toLocaleDateString()}
+                          {comm.source_channel} • {new Date(comm.created_at).toLocaleDateString()}
                         </p>
-                        {comm.notes && <p className="text-sm text-muted-foreground mt-1">{comm.notes}</p>}
+                        {comm.source_name && <p className="text-sm text-muted-foreground mt-1">{comm.source_name}</p>}
                       </div>
                       <Badge variant={comm.status === 'paid' ? 'default' : 'secondary'}>
                         {comm.status}

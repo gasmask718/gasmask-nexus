@@ -185,9 +185,9 @@ export const FLOOR_EXPORT_CONFIGS: FloorExportConfig[] = [
       { table: 'ambassadors', label: 'Ambassadors', analyticsColumns: [
         { key: 'id', label: 'Total Ambassadors', type: 'count' },
       ]},
-      { table: 'ambassador_commissions', label: 'Commissions', analyticsColumns: [
+      { table: 'commission_ledger', label: 'Commissions', analyticsColumns: [
         { key: 'id', label: 'Total Commissions', type: 'count' },
-        { key: 'amount', label: 'Total Commission $', type: 'sum' },
+        { key: 'commission_amount', label: 'Total Commission $', type: 'sum' },
       ]},
       { table: 'ambassador_payout_history', label: 'Payout History', analyticsColumns: [
         { key: 'id', label: 'Total Payouts', type: 'count' },

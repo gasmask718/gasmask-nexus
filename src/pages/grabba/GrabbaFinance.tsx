@@ -127,8 +127,9 @@ export default function GrabbaFinance() {
     queryKey: ["grabba-finance-commissions"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("ambassador_commissions")
+        .from("commission_ledger")
         .select(`*, ambassador:ambassadors(user_id)`)
+        .neq("status", "reversed")
         .order("created_at", { ascending: false });
       return data || [];
     },

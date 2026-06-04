@@ -65,9 +65,10 @@ export function AmbassadorActivityTimeline({ ambassadorId, limit = 20 }: Ambassa
     queryKey: ['ambassador-commissions-timeline', ambassadorId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('ambassador_commissions')
-        .select('id, created_at, amount, status, entity_type, notes')
+        .from('commission_ledger')
+        .select('id, created_at, commission_amount, status, source_channel, source_name')
         .eq('ambassador_id', ambassadorId)
+        .neq('status', 'reversed')
         .order('created_at', { ascending: false })
         .limit(limit);
       if (error) throw error;
@@ -128,8 +129,8 @@ export function AmbassadorActivityTimeline({ ambassadorId, limit = 20 }: Ambassa
       items.push({
         id: `commission-${c.id}`,
         type: 'commission_earned',
-        title: `Commission: $${Number(c.amount).toFixed(2)}`,
-        description: c.notes || `${c.entity_type} - ${c.status}`,
+        title: `Commission: $${Number(c.commission_amount || 0).toFixed(2)}`,
+        description: c.source_name || `${c.source_channel} - ${c.status}`,
         timestamp: c.created_at,
         metadata: { status: c.status },
       });

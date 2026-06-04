@@ -23,7 +23,7 @@ export default function Ambassadors() {
           *,
           profiles(name, email),
           ambassador_links(entity_type, entity_id),
-          ambassador_commissions(amount, status, created_at, entity_type)
+          commission_ledger(commission_amount, status, created_at, source_channel)
         `)
         .eq("user_id", user.id)
         .single();
@@ -34,9 +34,9 @@ export default function Ambassadors() {
   });
 
   const totalEarnings = ambassadorData?.total_earnings || 0;
-  const pendingEarnings = ambassadorData?.ambassador_commissions
+  const pendingEarnings = ambassadorData?.commission_ledger
     ?.filter((c: any) => c.status === "pending")
-    .reduce((sum: number, c: any) => sum + parseFloat(c.amount), 0) || 0;
+    .reduce((sum: number, c: any) => sum + parseFloat(c.commission_amount), 0) || 0;
   
   const storesEnrolled = ambassadorData?.ambassador_links
     ?.filter((l: any) => l.entity_type === "store").length || 0;
@@ -180,7 +180,7 @@ export default function Ambassadors() {
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">Recent Commissions</h3>
           <div className="space-y-3">
-            {ambassadorData.ambassador_commissions
+            {ambassadorData.commission_ledger
               ?.slice(0, 10)
               .map((commission: any) => (
                 <div
@@ -189,7 +189,7 @@ export default function Ambassadors() {
                 >
                   <div>
                     <p className="font-medium">
-                      {commission.entity_type.replace("_", " ").toUpperCase()}
+                      {(commission.source_channel || 'order').replace("_", " ").toUpperCase()}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(commission.created_at).toLocaleDateString()}
@@ -197,7 +197,7 @@ export default function Ambassadors() {
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-green-600">
-                      +${parseFloat(commission.amount).toFixed(2)}
+                      +${parseFloat(commission.commission_amount).toFixed(2)}
                     </p>
                     <Badge variant={commission.status === "paid" ? "default" : "secondary"}>
                       {commission.status}
@@ -205,8 +205,8 @@ export default function Ambassadors() {
                   </div>
                 </div>
               ))}
-            {(!ambassadorData.ambassador_commissions || 
-              ambassadorData.ambassador_commissions.length === 0) && (
+            {(!ambassadorData.commission_ledger || 
+              ambassadorData.commission_ledger.length === 0) && (
               <p className="text-center text-muted-foreground py-8">
                 No commissions yet. Start referring to earn!
               </p>

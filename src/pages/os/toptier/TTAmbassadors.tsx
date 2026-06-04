@@ -46,9 +46,9 @@ export default function TTAmbassadors() {
   const { data: commissions } = useQuery({
     queryKey: ['tt-amb-commissions', selectedAmb?.id],
     enabled: !!selectedAmb,
-    queryFn: () => fetchTopTierData('ambassador_commissions', {
+    queryFn: () => fetchTopTierData('commission_ledger', {
       select: '*',
-      filters: { 'ambassador_id': `eq.${selectedAmb.id}` },
+      filters: { 'ambassador_id': `eq.${selectedAmb.id}`, 'status': 'neq.reversed' },
       order: 'created_at.desc',
     }),
   });
@@ -56,7 +56,7 @@ export default function TTAmbassadors() {
   const payoutMutation = useMutation({
     mutationFn: async (commissionIds: string[]) => {
       for (const id of commissionIds) {
-        await patchTopTierData('ambassador_commissions', { 'id': `eq.${id}` }, { status: 'paid', paid_at: new Date().toISOString() });
+        await patchTopTierData('commission_ledger', { 'id': `eq.${id}` }, { status: 'paid', paid_at: new Date().toISOString() });
       }
     },
     onSuccess: () => {
@@ -104,7 +104,7 @@ export default function TTAmbassadors() {
   );
 
   const pendingCommissions = commissions?.filter((c: any) => c.status === 'pending') || [];
-  const pendingTotal = pendingCommissions.reduce((s: number, c: any) => s + Number(c.amount || 0), 0);
+  const pendingTotal = pendingCommissions.reduce((s: number, c: any) => s + Number(c.commission_amount || 0), 0);
 
   const ambTier = selectedAmb?.tier || 'starter';
   const cfg = TIER_CONFIG[ambTier] || TIER_CONFIG.starter;
@@ -261,7 +261,7 @@ export default function TTAmbassadors() {
                   ) : commissions!.slice(0, 10).map((c: any) => (
                     <div key={c.id} className="flex justify-between items-center bg-white/5 rounded-lg p-3 mb-2">
                       <div>
-                        <span className="text-[#C9A84C] font-semibold">${Number(c.amount || 0).toLocaleString()}</span>
+                        <span className="text-[#C9A84C] font-semibold">${Number(c.commission_amount || 0).toLocaleString()}</span>
                         <p className="text-xs text-white/30">{c.created_at ? format(new Date(c.created_at), 'MMM d, yyyy') : ''}</p>
                       </div>
                       <Badge className={c.status === 'paid' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}>{c.status}</Badge>
