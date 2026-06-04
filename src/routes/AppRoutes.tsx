@@ -1213,8 +1213,8 @@ export default function AppRoutes() {
       {/* Public routes wrapped in PublicLayout (marketing nav + footer) */}
       <Route element={<PublicLayout />}>
         <Route path="/public" element={<LandingRedirect />} />
-        <Route path="/shop" element={<Shop />} />
-        <Route path="/store" element={<ShopifyStore />} />
+        {/* T1 M2: /shop → DD storefront (tier-aware pricing canonical there) */}
+        <Route path="/shop" element={<Navigate to="/dynasty-direct/d2c-storefront" replace />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/about" element={<AboutPage />} />
