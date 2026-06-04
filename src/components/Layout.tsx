@@ -686,6 +686,7 @@ const DYNASTY_NAVIGATION = {
     { path: '/portal/ambassador', label: '🎖️ Ambassador Portal', icon: Award },
     { path: '/portal/store', label: '🏪 Store Portal', icon: Store },
     { path: '/portal/wholesaler', label: '📦 Wholesaler Portal', icon: Package },
+    { path: '/portal/wholesaler/order-grabba', label: '🍃 Order Grabba', icon: Zap },
     { path: '/portals/production', label: '🏭 Manufacturing OS', icon: Factory },
     { path: '/portal/production', label: '👷 Worker View (Read-Only)', icon: Factory },
     { path: '/portal/va', label: '💼 VA Portal', icon: Briefcase },
