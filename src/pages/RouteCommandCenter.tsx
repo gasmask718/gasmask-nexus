@@ -37,6 +37,32 @@ export default function RouteCommandCenter() {
   const [activeTypes, setActiveTypes] = useState<Set<CandidateType>>(new Set(ALL_TYPES));
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [assignOpen, setAssignOpen] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
+  const [optimizedPreview, setOptimizedPreview] = useState<null | { proposals: any[]; total_stores: number }>(null);
+
+  // T3 M1: standalone Route Optimizer killed — Optimize action lives here.
+  async function optimizeSelected() {
+    const store_ids = Array.from(selected);
+    if (store_ids.length === 0) {
+      toast.error('Select at least one stop to optimize.');
+      return;
+    }
+    setOptimizing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('optimize-routes', {
+        body: { store_ids },
+      });
+      if (error) throw error;
+      const proposals = data?.proposals ?? data?.routes ?? [];
+      setOptimizedPreview({ proposals, total_stores: store_ids.length });
+      toast.success(`Optimized ${store_ids.length} stops into ${proposals.length} proposal(s).`);
+    } catch (e: any) {
+      toast.error(`Optimize failed: ${e.message ?? e}`);
+      console.error('[RouteCommandCenter] optimize-routes error', e);
+    } finally {
+      setOptimizing(false);
+    }
+  }
 
   // Distinct filter values
   const { neighborhoods, cities } = useMemo(() => {
