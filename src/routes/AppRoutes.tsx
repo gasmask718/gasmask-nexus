@@ -363,6 +363,8 @@ const UnpaidAccounts = lazy(() => import('@/pages/UnpaidAccounts'));
 const DriverDebtCollection = lazy(() => import('@/pages/DriverDebtCollection'));
 const BrandDashboard = lazy(() => import('@/pages/BrandDashboard'));
 
+const OSDirectory = lazy(() => import('@/pages/OSDirectory'));
+
 // Owner pages
 const OwnerDashboard = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerDashboard })));
 const OwnerAIAdvisorPage = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerAIAdvisorPage })));
@@ -2325,6 +2327,13 @@ export default function AppRoutes() {
         <Route path="/penthouse/missions" element={
           <RequireRole allowedRoles={['admin']} showLocked>
             <OwnerMissionControl />
+          </RequireRole>
+        } />
+
+        {/* ═══ PENTHOUSE — OS Directory (Floor Map) ═══ */}
+        <Route path="/directory" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <OSDirectory />
           </RequireRole>
         } />
 

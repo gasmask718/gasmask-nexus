@@ -139,6 +139,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/penthouse/missions', label: 'Mission Control', icon: Target },
       { path: '/penthouse/accounting', label: 'Accounting OS', icon: Calculator },
       { path: '/penthouse/audit-engine', label: '🧾 Audit Engine', icon: ShieldCheck },
+      { path: '/directory', label: '🗺️ OS Directory', icon: Map },
       { path: '/os/owner/ai-advisor', label: 'AI Advisor', icon: Brain },
       { path: '/os/owner/cluster', label: 'Cluster Dashboard', icon: LayoutDashboard },
       { path: '/os/owner/autopilot', label: 'Autopilot Console', icon: Zap },
