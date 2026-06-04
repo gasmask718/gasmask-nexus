@@ -736,7 +736,7 @@ export default function GrabbaFinance() {
                     {commissions?.slice(0, 20).map((comm: any) => (
                       <TableRow key={comm.id}>
                         <TableCell>{comm.ambassador_id?.slice(0, 8)}</TableCell>
-                        <TableCell>${(comm.amount || 0).toLocaleString()}</TableCell>
+                        <TableCell>${Number(comm.commission_amount || 0).toLocaleString()}</TableCell>
                         <TableCell>
                           <Badge variant={comm.status === 'paid' ? 'default' : 'secondary'}>
                             {comm.status}
