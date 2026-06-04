@@ -166,6 +166,27 @@ export default function RouteCommandCenter() {
         </div>
       </div>
 
+      {optimizedPreview && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" />
+              Optimized {optimizedPreview.total_stores} stop(s) → {optimizedPreview.proposals.length} route proposal(s)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 text-xs text-muted-foreground space-y-1">
+            {optimizedPreview.proposals.slice(0, 5).map((p: any, i: number) => (
+              <div key={p.id ?? i} className="flex justify-between">
+                <span>{p.driver ?? p.driver_id ?? `Proposal ${i + 1}`} · {p.stops ?? p.stores?.length ?? 0} stops</span>
+                <span>{Math.round(p.distance ?? 0)} km{p.profit ? ` · $${Math.round(p.profit)}` : ''}</span>
+              </div>
+            ))}
+            {optimizedPreview.proposals.length === 0 && <div>No viable driver assignment found for this selection.</div>}
+          </CardContent>
+        </Card>
+      )}
+
+
       {/* Summary strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card><CardContent className="p-4">
