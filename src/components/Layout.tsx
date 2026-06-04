@@ -385,7 +385,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/brand/hotmama', label: '🟠 HotMama OS', icon: Heart },
       { path: '/brand/hotscolati', label: '🟡 Hotscolatti OS', icon: Sparkles },
       { path: '/brand/grabba-r-us', label: '🟢 Grabba R Us OS', icon: ShoppingBag },
-      { path: '/brand-dashboard', label: 'Brand Dashboard', icon: LayoutDashboard },
+      { path: '/brand/gasmask', label: 'Brand Dashboard', icon: LayoutDashboard },
     ],
   },
   unforgettableHub: {
