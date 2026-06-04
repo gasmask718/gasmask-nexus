@@ -293,3 +293,30 @@ export default function NeighborhoodDetailPage() {
     </div>
   );
 }
+
+/** Resolves the city/state for this neighborhood and renders the coverage panel. */
+function NeighborhoodCoverageSection({ neighborhood }: { neighborhood: string }) {
+  const ctx = useQuery({
+    queryKey: ['neigh-citystate', neighborhood],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('stores')
+        .select('address_city,address_state')
+        .eq('neighborhood', neighborhood)
+        .is('deleted_at', null)
+        .not('address_city', 'is', null)
+        .not('address_state', 'is', null)
+        .limit(1)
+        .maybeSingle();
+      return data as { address_city: string; address_state: string } | null;
+    },
+  });
+  if (!ctx.data?.address_city || !ctx.data?.address_state) return null;
+  return (
+    <CoverageScanPanel
+      city={ctx.data.address_city}
+      state={ctx.data.address_state}
+      neighborhood={neighborhood}
+    />
+  );
+}
