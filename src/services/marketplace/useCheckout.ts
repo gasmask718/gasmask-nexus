@@ -311,6 +311,18 @@ export function useCheckout() {
         }
       }
 
+      // ═══════════════════════════════════════════════════════════
+      // SPRINT 5: NETWORK BRAIN — geographic supplier routing.
+      // Reroutes items to the best supplier per priority rules
+      // (manual pin → weighted → in-state → nearest → default),
+      // re-points fulfillments, and logs the decision.
+      // ═══════════════════════════════════════════════════════════
+      try {
+        await supabase.rpc('route_order_to_supplier', { p_order_id: order.id });
+      } catch (e) {
+        console.warn('route_order_to_supplier failed (non-fatal):', e);
+      }
+
       return {
         orderId: order.id,
         orderNumber,

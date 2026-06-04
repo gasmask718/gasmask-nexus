@@ -8,3 +8,4 @@ export { default as WholesalerMessages } from './WholesalerMessages';
 export { default as WholesalerFulfillmentPage } from './WholesalerFulfillment';
 export { default as WholesalerTransactionHistory } from './WholesalerTransactionHistory';
 export { default as WholesalerInventoryWorkflow } from './WholesalerInventoryWorkflow';
+export { default as WholesalerOrderGrabba } from './WholesalerOrderGrabba';
