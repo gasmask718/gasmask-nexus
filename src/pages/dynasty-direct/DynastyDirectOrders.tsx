@@ -21,6 +21,7 @@ import {
 import { format } from 'date-fns';
 import { ExternalLink, RefreshCw, Search } from 'lucide-react';
 import { InviteButton } from '@/components/invites/InviteButton';
+import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
 
 type OrderRow = {
   id: string;
@@ -226,6 +227,7 @@ export default function DynastyDirectOrders() {
 
   return (
     <div className="p-6 space-y-4">
+      <DDAlertBar />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Dynasty Direct — Orders</h1>

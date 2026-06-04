@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Handshake, DollarSign, Users, MousePointerClick, CheckCircle2, Pause, Play } from 'lucide-react';
+import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
 
 type Affiliate = {
   id: string; user_id: string | null; code: string; display_name: string | null;
