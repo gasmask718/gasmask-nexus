@@ -24,15 +24,15 @@ export function NeighborhoodScanButton({ neighborhoodId, neighborhoodName }: Pro
   const { data: lastScan } = useQuery({
     queryKey: ['gm-last-scan', neighborhoodId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('gm_neighborhood_scans' as any)
+      const { data } = await (supabase as any)
+        .from('gm_neighborhood_scans')
         .select('*')
         .eq('neighborhood_id', neighborhoodId)
         .eq('status', 'completed')
         .order('started_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      return data;
+      return data as any;
     },
     enabled: open,
   });
@@ -41,14 +41,14 @@ export function NeighborhoodScanButton({ neighborhoodId, neighborhoodName }: Pro
   const { data: pois } = useQuery({
     queryKey: ['gm-pois', neighborhoodId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('gm_discovered_pois' as any)
+      const { data } = await (supabase as any)
+        .from('gm_discovered_pois')
         .select('*')
         .eq('neighborhood_id', neighborhoodId)
         .is('matched_store_id', null)
         .order('first_seen_at', { ascending: false })
         .limit(50);
-      return data || [];
+      return (data || []) as any[];
     },
     enabled: open,
   });

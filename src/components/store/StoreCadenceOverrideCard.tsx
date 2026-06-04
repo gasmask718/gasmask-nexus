@@ -34,13 +34,13 @@ export function StoreCadenceOverrideCard({ storeId, relationshipStatus }: Props)
   const { data: policy, isLoading } = useQuery({
     queryKey: ['store-cadence-policy', storeId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('store_cadence_policy')
         .select('*')
         .eq('store_id', storeId)
         .maybeSingle();
       if (error && error.code !== 'PGRST116') throw error;
-      return data;
+      return data as any;
     },
   });
 
@@ -63,10 +63,10 @@ export function StoreCadenceOverrideCard({ storeId, relationshipStatus }: Props)
         updated_at: new Date().toISOString(),
       };
       if (policy?.id) {
-        const { error } = await supabase.from('store_cadence_policy').update(payload).eq('id', policy.id);
+        const { error } = await (supabase as any).from('store_cadence_policy').update(payload).eq('id', policy.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('store_cadence_policy').insert(payload);
+        const { error } = await (supabase as any).from('store_cadence_policy').insert(payload);
         if (error) throw error;
       }
     },
