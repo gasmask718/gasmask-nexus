@@ -1326,6 +1326,17 @@ const Layout = ({ children }: LayoutProps) => {
               <MessageSquarePlus className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">New Message</span>
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFeedbackOpen(true)}
+              className="border-amber-500/40 bg-amber-500/10 text-amber-100 hover:bg-amber-500/20 touch-target"
+              aria-label="Report a problem"
+              title="Report a problem"
+            >
+              <MessageSquareWarning className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Report</span>
+            </Button>
             <NotificationCenter />
             <Button
               variant="ghost"
