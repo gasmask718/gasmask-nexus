@@ -283,8 +283,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/gasmask/route-engine', label: 'Route Engine', icon: Route },
         { path: '/gasmask/driver-route', label: 'Driver View', icon: MapPin },
         { path: '/grabba/routes', label: 'Route Manager', icon: Route },
-        { path: '/routes', label: 'All Routes', icon: Map },
-        { path: '/route-optimizer', label: 'Route Optimizer', icon: Zap },
+        // T3 K1/M1: /routes + /route-optimizer killed; Route Manager + Command Center are canonical.
         { path: '/route-ops-center', label: 'Route Ops Center', icon: Target },
         { path: '/routes/command-center', label: '🚀 Route Command Center', icon: Target },
         { path: '/live-map', label: 'Live Map', icon: MapPin },
