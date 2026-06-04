@@ -333,10 +333,10 @@ export default function DynastyDirectOrders() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Loading…</td></tr>
+                <tr><td colSpan={11} className="p-6 text-center text-muted-foreground">Loading…</td></tr>
               )}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">No orders match the filters.</td></tr>
+                <tr><td colSpan={11} className="p-6 text-center text-muted-foreground">No orders match the filters.</td></tr>
               )}
               {filtered.map((r) => {
                 const unpaid = (r.payment_status || 'pending') !== 'paid';
