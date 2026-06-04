@@ -53,11 +53,12 @@ export default function HR() {
         .select("*", { count: "exact", head: true })
         .neq("status", "completed");
 
-      // Get upcoming payroll
+      // Get upcoming payroll (canonical: payroll_records — hr_payroll is K6 deprecated)
       const { count: payrollCount } = await supabase
-        .from("hr_payroll")
+        .from("payroll_records")
         .select("*", { count: "exact", head: true })
-        .lte("next_pay_date", new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString());
+        .eq("status", "pending")
+        .lte("pay_period_end", new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
 
       // Get recent notifications
       const { data: notificationsData } = await supabase
