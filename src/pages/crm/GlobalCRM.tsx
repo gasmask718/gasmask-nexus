@@ -14,7 +14,7 @@ import {
   UserCog, Phone, Edit, Archive, Eye, Store, Trash2, Check, X,
   ChevronDown, RefreshCw, RotateCcw
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { FullContactForm } from '@/components/crm/FullContactForm';
