@@ -63,9 +63,8 @@ function useDDProducts() {
 
 export default function AmbassadorDDOrder() {
   const navigate = useNavigate();
-  const portfolio = useAmbassadorPortfolio();
-  const ambassadorId: string | undefined = (portfolio as any).ambassadorQuery?.data?.id;
-  const stores: PortfolioStore[] = (portfolio as any).storesQuery?.data ?? [];
+  const { ambassador, stores } = useAmbassadorPortfolio();
+  const ambassadorId: string | undefined = ambassador?.id;
 
   const { data: products = [], isLoading: productsLoading } = useDDProducts();
 
