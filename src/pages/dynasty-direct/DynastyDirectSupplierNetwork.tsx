@@ -72,6 +72,7 @@ export default function DynastyDirectSupplierNetwork() {
   const [loading, setLoading] = useState(true);
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedUngeo, setSelectedUngeo] = useState<Set<string>>(new Set());
+  const [outreachTarget, setOutreachTarget] = useState<{ id: string; name: string } | null>(null);
   const [bulkBusy, setBulkBusy] = useState<string | null>(null);
 
   function toggleUngeo(id: string) {
@@ -359,6 +360,7 @@ export default function DynastyDirectSupplierNetwork() {
                     ddDrill.supplierProducts(w.id),
                     ddDrill.inventory(w.id),
                     ddDrill.supplierInvite(w.id),
+                    { label: 'Draft outreach', icon: Sparkles, onSelect: () => setOutreachTarget({ id: w.id, name: w.name }) },
                   ]}
                 />
               </div>
