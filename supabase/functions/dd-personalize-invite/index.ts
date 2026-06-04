@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
       city: w.warehouse_city,
       state: w.warehouse_state,
       status: w.status,
-      categories: Array.isArray(w.product_categories) ? w.product_categories.slice(0, 5) : null,
+      status: w.status,
     };
 
     if (!LOVABLE_API_KEY) {
