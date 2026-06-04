@@ -135,6 +135,81 @@ export default function DynastyDirectStoreApplications() {
     }
   }
 
+  // ── Bulk operations ────────────────────────────────────────────────
+  const pendingApps = useMemo(() => apps.filter((a) => a.status === 'pending'), [apps]);
+  const selectedApps = useMemo(
+    () => pendingApps.filter((a) => selectedIds.has(a.id)),
+    [pendingApps, selectedIds],
+  );
+  const allSelected =
+    pendingApps.length > 0 && pendingApps.every((a) => selectedIds.has(a.id));
+
+  function toggleOne(id: string) {
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  }
+  function toggleAll() {
+    setSelectedIds(allSelected ? new Set() : new Set(pendingApps.map((a) => a.id)));
+  }
+
+  async function bulkApprove() {
+    if (selectedApps.length === 0) return;
+    setBulkBusy('approve');
+    let ok = 0, failed = 0;
+    for (const app of selectedApps) {
+      try {
+        const { data, error } = await supabase.rpc('approve_store_application' as any, {
+          p_application_id: app.id,
+        });
+        if (error) throw error;
+        const row = Array.isArray(data) ? data[0] : data;
+        const token = row?.invite_token;
+        await supabase.functions.invoke('send-invite', {
+          body: {
+            token, role: 'store',
+            channel: app.phone ? 'both' : 'email',
+            to_email: app.email, to_phone: app.phone,
+            name: app.contact_name || app.business_name,
+          },
+        });
+        ok++;
+      } catch (e) { console.error('[bulkApprove]', app.id, e); failed++; }
+    }
+    toast.success(`Bulk approved: ${ok} ok, ${failed} failed`);
+    setSelectedIds(new Set());
+    setBulkBusy(null);
+    qc.invalidateQueries({ queryKey: ['dd-store-applications'] });
+    qc.invalidateQueries({ queryKey: ['dd-store-applications-counts'] });
+  }
+
+  async function bulkReject() {
+    if (selectedApps.length === 0) return;
+    setBulkBusy('reject');
+    let ok = 0, failed = 0;
+    for (const app of selectedApps) {
+      try {
+        const { error } = await supabase.rpc('reject_store_application' as any, {
+          p_application_id: app.id,
+          p_reason: bulkReason || 'Bulk rejection',
+        });
+        if (error) throw error;
+        ok++;
+      } catch (e) { console.error('[bulkReject]', app.id, e); failed++; }
+    }
+    toast.success(`Bulk rejected: ${ok} ok, ${failed} failed`);
+    setSelectedIds(new Set());
+    setBulkReason('');
+    setBulkRejectOpen(false);
+    setBulkBusy(null);
+    qc.invalidateQueries({ queryKey: ['dd-store-applications'] });
+    qc.invalidateQueries({ queryKey: ['dd-store-applications-counts'] });
+  }
+
+
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-6">
