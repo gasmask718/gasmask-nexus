@@ -33,7 +33,7 @@ export interface StorePerformance {
   store_name: string;
   city: string | null;
   state: string | null;
-  commission_events: number;
+  commission_count: number;
   store_revenue: number;
   commissions_generated: number;
   ambassadors_involved: number;

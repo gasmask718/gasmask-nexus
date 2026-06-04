@@ -347,7 +347,7 @@ export function useGrabbaActions() {
   
   const adjustPayout = useMutation({
     mutationFn: async (data: { ambassador_id: string; amount: number; entity_type: string; notes?: string }) => {
-      // Writes go to canonical commission_ledger (legacy ambassador_commissions is now a read-only compat view).
+      // Writes go to canonical commission_ledger (compat views removed in T6 cleanup).
       const { error } = await supabase
         .from('commission_ledger')
         .insert({
