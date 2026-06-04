@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, X, Mail, Phone, MapPin, Loader2, Store, CheckSquare, Square } from 'lucide-react';
+import { ArrowLeft, Check, X, Mail, Phone, MapPin, Loader2, Store, CheckSquare, Square, Sparkles, Globe, FileBadge } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
 import { DDBulkBar } from '@/components/dynasty-direct/DDBulkBar';
+import { AI_OPS } from '@/lib/dynastyDirect/aiOps';
 
 type Status = 'pending' | 'approved' | 'invited' | 'rejected';
 interface Application {
@@ -26,12 +27,18 @@ interface Application {
   state: string | null;
   zip: string | null;
   ein: string | null;
+  website: string | null;
   notes: string | null;
   status: Status;
   rejection_reason: string | null;
   invite_id: string | null;
   created_at: string;
   reviewed_at: string | null;
+  triage_score: number | null;
+  triage_summary: string | null;
+  triage_signals: any;
+  triage_model: string | null;
+  triaged_at: string | null;
 }
 
 const STATUS_STYLES: Record<Status, string> = {
@@ -40,6 +47,13 @@ const STATUS_STYLES: Record<Status, string> = {
   invited: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   rejected: 'bg-red-500/15 text-red-400 border-red-500/30',
 };
+
+function triageBadgeClass(score: number | null) {
+  if (score == null) return 'bg-muted text-muted-foreground border-border';
+  if (score >= AI_OPS.triage.legitGreen) return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+  if (score >= AI_OPS.triage.legitAmber) return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+  return 'bg-red-500/15 text-red-400 border-red-500/30';
+}
 
 export default function DynastyDirectStoreApplications() {
   const navigate = useNavigate();
