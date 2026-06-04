@@ -345,7 +345,7 @@ const DYNASTY_NAVIGATION = {
       id: 'floor-9',
       name: '🤖 Floor 9 — AI Operations',
       items: [
-        { path: '/gasmask/agent-center', label: 'AI Agent Center', icon: Brain },
+        // T3 K2: Agent Center merged into Floor 9 hub.
         { path: '/grabba/floor9', label: 'AI Operations Hub', icon: Brain },
         { path: '/grabba/floor9/playbooks', label: 'AI Playbooks', icon: FileText },
         { path: '/grabba/floor9/tasks', label: 'AI Tasks', icon: ClipboardList },
