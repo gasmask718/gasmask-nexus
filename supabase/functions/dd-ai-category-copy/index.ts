@@ -31,12 +31,12 @@ Deno.serve(async (req) => {
       if (existing) return new Response(JSON.stringify(existing), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Best-effort: pull up to 12 active products whose name mentions the category
+    // Canonical: products_all.category is the source of truth (wizard publish writes it)
     const { data: products } = await admin
       .from('products_all')
       .select('product_name')
       .eq('status', 'active')
-      .ilike('product_name', `%${category}%`)
+      .eq('category', category)
       .limit(12);
 
     const prompt = `Write a warm 2-sentence intro for a wholesale-direct category page for ${category}. Mention typical use, not specific products. Brand voice: Aesop x Allbirds — confident, plain, no exclamation marks.${products?.length ? `\n\nFor reference, some products in this category:\n- ${products.map((p) => p.product_name).join('\n- ')}` : ''}`;

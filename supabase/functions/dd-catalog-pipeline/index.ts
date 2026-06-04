@@ -235,11 +235,15 @@ async function runPublish(body: any) {
   const images = selected.length ? selected.map((s: any) => s.url || s) : (draft.enhanced as any[])?.map((e: any) => e.url) || [];
   if (!images.length) throw new Error('cannot publish: no selected images');
 
+  const categoryRaw = (copy.category_guess || '').toString().trim().toLowerCase();
+  const category = categoryRaw ? categoryRaw.replace(/\s+/g, '-') : null;
+
   const { data: prod, error: insErr } = await sb.from('products_all').insert({
     wholesaler_id: draft.supplier_id,
     product_name: copy.title || draft.product_name,
     description: copy.long_description || copy.short_description || null,
     images,
+    category,
     retail_price: pricing.suggested_retail || 0,
     store_price: pricing.suggested_store || 0,
     wholesale_price: pricing.suggested_wholesale || 0,

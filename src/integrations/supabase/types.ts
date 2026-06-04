@@ -36275,6 +36275,51 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_anomaly_findings: {
+        Row: {
+          ai_generated: boolean
+          created_at: string
+          id: string
+          kind: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          scan_date: string
+          severity: string
+          signals: Json
+          status: string
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          ai_generated?: boolean
+          created_at?: string
+          id?: string
+          kind: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scan_date?: string
+          severity?: string
+          signals?: Json
+          status?: string
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          ai_generated?: boolean
+          created_at?: string
+          id?: string
+          kind?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scan_date?: string
+          severity?: string
+          signals?: Json
+          status?: string
+          summary?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       dd_catalog_drafts: {
         Row: {
           candidates: Json
@@ -36585,6 +36630,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dd_sla_snapshots: {
+        Row: {
+          computed_at: string
+          id: string
+          late_count: number
+          late_threshold_hours: number
+          p50_hours: number | null
+          p90_hours: number | null
+          shipped_count: number
+          wholesaler_id: string
+          window_days: number
+        }
+        Insert: {
+          computed_at?: string
+          id?: string
+          late_count?: number
+          late_threshold_hours?: number
+          p50_hours?: number | null
+          p90_hours?: number | null
+          shipped_count?: number
+          wholesaler_id: string
+          window_days?: number
+        }
+        Update: {
+          computed_at?: string
+          id?: string
+          late_count?: number
+          late_threshold_hours?: number
+          p50_hours?: number | null
+          p90_hours?: number | null
+          shipped_count?: number
+          wholesaler_id?: string
+          window_days?: number
+        }
+        Relationships: []
       }
       dd_wholesaler_store_link: {
         Row: {
@@ -73501,6 +73582,7 @@ export type Database = {
       products_all: {
         Row: {
           brand_id: string | null
+          category: string | null
           created_at: string | null
           description: string | null
           dimensions: Json | null
@@ -73523,6 +73605,7 @@ export type Database = {
         }
         Insert: {
           brand_id?: string | null
+          category?: string | null
           created_at?: string | null
           description?: string | null
           dimensions?: Json | null
@@ -73545,6 +73628,7 @@ export type Database = {
         }
         Update: {
           brand_id?: string | null
+          category?: string | null
           created_at?: string | null
           description?: string | null
           dimensions?: Json | null
@@ -118417,6 +118501,7 @@ export type Database = {
         Args: { p_limit?: number; p_user_id?: string; p_visitor_id?: string }
         Returns: {
           brand_id: string | null
+          category: string | null
           created_at: string | null
           description: string | null
           dimensions: Json | null

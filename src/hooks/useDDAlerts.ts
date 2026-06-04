@@ -194,6 +194,39 @@ export function useDDAlerts() {
       });
     }
 
+    // Slow suppliers (p50 > 72h, from nightly SLA snapshot)
+    if (k.slowSuppliers > 0) {
+      out.push({
+        id: 'slow-suppliers',
+        severity: 'warn',
+        title: `${k.slowSuppliers} supplier${k.slowSuppliers === 1 ? '' : 's'} shipping slow (p50 > 72h)`,
+        detail: 'Median fulfillment time exceeded the 72h threshold over the last 30 days.',
+        href: '/dynasty-direct/supplier-network',
+        resolvedKey: 'slow=0',
+      });
+    }
+
+    // Anomaly findings (critical takes precedence)
+    if (k.criticalAnomalies > 0) {
+      out.push({
+        id: 'order-anomalies-critical',
+        severity: 'critical',
+        title: `${k.criticalAnomalies} critical order anomal${k.criticalAnomalies === 1 ? 'y' : 'ies'}`,
+        detail: 'Auto-flagged by the nightly order-pattern scan. Review before they affect payouts.',
+        href: '/dynasty-direct/orders',
+        resolvedKey: `crit=${k.criticalAnomalies}`,
+      });
+    } else if (k.openAnomalies > 0) {
+      out.push({
+        id: 'order-anomalies-open',
+        severity: 'info',
+        title: `${k.openAnomalies} open order anomal${k.openAnomalies === 1 ? 'y' : 'ies'}`,
+        detail: 'Spikes or duplicate-cluster patterns flagged by the nightly AI scan.',
+        href: '/dynasty-direct/orders',
+        resolvedKey: `open=${k.openAnomalies}`,
+      });
+    }
+
     return out;
   }, [kpis.data]);
 
