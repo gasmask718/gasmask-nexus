@@ -2,9 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, FileText, Camera, Hash } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Sparkles, FileText, Camera, Hash } from 'lucide-react';
+import { DDShell } from '@/components/dynasty-direct/DDShell';
+import { DDPageHeader } from '@/components/dynasty-direct/DDPageHeader';
+import { DDEmpty, DDSkeleton, DDErrorCard } from '@/components/dynasty-direct/DDStates';
 
 interface Brief {
   id: string;
@@ -18,8 +19,7 @@ interface Brief {
 }
 
 export default function DynastyDirectContentLibrary() {
-  const navigate = useNavigate();
-  const { data: briefs = [], isLoading } = useQuery({
+  const { data: briefs = [], isLoading, error, refetch } = useQuery({
     queryKey: ['dd-content-briefs'],
     queryFn: async () => {
       const { data, error } = await (supabase.from('dd_content_briefs') as any)
@@ -30,27 +30,27 @@ export default function DynastyDirectContentLibrary() {
   });
 
   return (
-    <div className="min-h-screen bg-background p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/dynasty-direct')}>
-          <ArrowLeft className="h-4 w-4 mr-1" /> Dynasty Direct
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" /> Content Factory Library
-          </h1>
-          <p className="text-sm text-muted-foreground">Per-product UGC scripts, photoshoot concepts, and social captions.</p>
-        </div>
-      </div>
+    <DDShell>
+      <DDPageHeader
+        icon={Sparkles}
+        title="Content Factory Library"
+        purpose="Per-product UGC scripts, photoshoot concepts, and social captions."
+        crumbs={[{ label: 'Content Library' }]}
+      />
 
-      {isLoading && <div className="text-sm text-muted-foreground">Loading briefs…</div>}
-      {!isLoading && briefs.length === 0 && (
-        <Card><CardContent className="p-8 text-center text-muted-foreground">
-          No briefs yet. Onboard a product and click <strong>Send to Content Factory</strong> on the Confirm step.
-        </CardContent></Card>
+      {isLoading && <DDSkeleton rows={4} />}
+      {error && <DDErrorCard error={error} onRetry={() => refetch()} />}
+      {!isLoading && !error && briefs.length === 0 && (
+        <DDEmpty
+          icon={Sparkles}
+          title="No content briefs yet"
+          description="Onboard your first product, then tap Send to Content Factory on the Confirm step — you'll see UGC scripts, photoshoot concepts, and platform-ready captions here."
+          actionLabel="Onboard your first product"
+          actionHref="/dynasty-direct/catalog/onboard"
+        />
       )}
 
-      <div className="grid gap-4">
+      <div className="grid gap-4 mt-2">
         {briefs.map((b) => (
           <Card key={b.id}>
             <CardHeader>
@@ -103,6 +103,6 @@ export default function DynastyDirectContentLibrary() {
           </Card>
         ))}
       </div>
-    </div>
+    </DDShell>
   );
 }
