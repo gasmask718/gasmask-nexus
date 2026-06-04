@@ -324,9 +324,8 @@ const DYNASTY_NAVIGATION = {
       id: 'floor-7',
       name: '🛒 Floor 7 — Wholesale Platform',
       items: [
-        { path: '/grabba/wholesale', label: 'Wholesale Platform', icon: ShoppingCart },
-        { path: '/wholesale', label: 'Wholesale Directory', icon: Store },
-        { path: '/wholesale-marketplace', label: 'Wholesale Marketplace', icon: Globe },
+        { path: '/grabba/wholesale-platform', label: 'Wholesale Platform', icon: ShoppingCart },
+        { path: '/wholesale/marketplace', label: 'Wholesale Marketplace', icon: Globe },
         { path: '/portal/national-wholesale', label: 'National Wholesale', icon: Building },
         { path: '/portal/marketplace-admin', label: 'Marketplace Admin', icon: Settings },
       ],
