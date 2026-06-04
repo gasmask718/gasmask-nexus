@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePriorCustomerSegmentMap, FLOW_STATUS_META, type FlowStatus } from '@/hooks/usePriorCustomerSegmentMap';
 import { NeighborhoodStoreBreakdown } from '@/components/territory/NeighborhoodStoreBreakdown';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
+import { CoverageScanPanel } from '@/components/territory/CoverageScanPanel';
 
 const fmt = (n: number) => Number(n || 0).toLocaleString();
 
