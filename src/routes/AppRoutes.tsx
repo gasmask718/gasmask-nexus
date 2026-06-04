@@ -1614,7 +1614,19 @@ export default function AppRoutes() {
         <Route path="/driver" element={<Navigate to="/delivery/driver" replace />} />
         <Route path="/drivers/leaderboard" element={<Leaderboard />} />
         <Route path="/drivers/payroll" element={<Payroll />} />
-        <Route path="/ai/meta" element={<MetaAI />} />
+        {/* T2: de-dup Meta AI; /meta-ai is canonical (line 1448). Legacy /ai/meta redirects. */}
+        <Route path="/ai/meta" element={<Navigate to="/meta-ai" replace />} />
+        {/* T2 legacy sidebar redirects (kept so old bookmarks still resolve) */}
+        <Route path="/revenue-brain" element={<Navigate to="/analytics/revenue-brain" replace />} />
+        <Route path="/leaderboard" element={<Navigate to="/gasmask/leaderboard" replace />} />
+        <Route path="/territories" element={<Navigate to="/gasmask/territories" replace />} />
+        <Route path="/brand-dashboard" element={<Navigate to="/brand/gasmask" replace />} />
+        <Route path="/ai-ceo" element={<Navigate to="/system-operations/ai-ceo-control-room" replace />} />
+        <Route path="/automation-settings" element={<Navigate to="/settings/automation" replace />} />
+        <Route path="/crm/backup" element={<Navigate to="/crm/data/backup" replace />} />
+        <Route path="/pod/generator" element={<Navigate to="/pod/generate" replace />} />
+        <Route path="/communication/follow-up" element={<Navigate to="/communication/follow-ups" replace />} />
+        <Route path="/influencer-campaigns" element={<Navigate to="/influencers/campaigns" replace />} />
         <Route path="/sales" element={<Sales />} />
         <Route path="/sales/prospects" element={<SalesProspects />} />
         <Route path="/sales/prospects/new" element={<SalesProspectNew />} />
