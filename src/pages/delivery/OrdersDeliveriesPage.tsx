@@ -25,12 +25,48 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Package, Truck, DollarSign, Search } from "lucide-react";
+import { Package, Truck, DollarSign, Search, AlertTriangle } from "lucide-react";
 
 const fmtDate = (d: string | null | undefined) =>
   d ? format(new Date(d), "MMM d, yyyy") : "—";
 const fmtMoney = (n: number | null | undefined) =>
   typeof n === "number" ? `$${n.toFixed(2)}` : "—";
+
+// Days since delivery (used to age unpaid invoices)
+const daysSince = (d: string | null | undefined): number | null => {
+  if (!d) return null;
+  const ms = Date.now() - new Date(d).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return 0;
+  return Math.floor(ms / 86_400_000);
+};
+
+// Bold red row styling for UNPAID invoices — must dominate the table.
+// 'partial' gets a softer amber tint so it's still visible but distinct.
+const unpaidRowClass = (status: string, owed: number) => {
+  if (status === "paid" || owed <= 0) return "";
+  if (status === "partial") {
+    return "bg-amber-500/10 hover:bg-amber-500/15 border-l-4 border-l-amber-500 font-semibold";
+  }
+  // unpaid (or anything else with owed > 0)
+  return "bg-red-500/15 hover:bg-red-500/25 border-l-4 border-l-red-600 font-semibold text-red-700 dark:text-red-300";
+};
+
+function AgeBadge({ days }: { days: number | null }) {
+  if (days == null) return <span className="text-muted-foreground">—</span>;
+  const cls =
+    days >= 30
+      ? "bg-red-600 text-white border-red-700"
+      : days >= 14
+      ? "bg-red-500/30 text-red-700 dark:text-red-200 border-red-500/50"
+      : days >= 7
+      ? "bg-amber-500/30 text-amber-800 dark:text-amber-200 border-amber-500/50"
+      : "bg-muted text-muted-foreground border-border";
+  return (
+    <Badge variant="outline" className={`text-xs font-bold ${cls}`}>
+      {days}d unpaid
+    </Badge>
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────
 // Tab 1 — Orders Requested
