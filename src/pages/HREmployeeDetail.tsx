@@ -279,43 +279,47 @@ export default function HREmployeeDetail() {
         <TabsContent value="payroll">
           <Card>
             <CardHeader>
-              <CardTitle>Payroll Information</CardTitle>
+              <CardTitle>Payroll Records ({payroll.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              {payroll ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Pay Type</p>
-                      <p className="font-medium capitalize">{payroll.pay_type}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Pay Rate</p>
-                      <p className="font-medium">
-                        ${payroll.pay_rate}
-                        {payroll.pay_type === "hourly" ? "/hr" : ""}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Last Pay Date</p>
-                      <p className="font-medium">
-                        {payroll.last_pay_date
-                          ? new Date(payroll.last_pay_date).toLocaleDateString()
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Next Pay Date</p>
-                      <p className="font-medium">
-                        {payroll.next_pay_date
-                          ? new Date(payroll.next_pay_date).toLocaleDateString()
-                          : "N/A"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              {payroll.length === 0 ? (
+                <p className="text-muted-foreground">No payroll records yet.</p>
               ) : (
-                <p className="text-muted-foreground">No payroll information available</p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Period</TableHead>
+                      <TableHead>Hours</TableHead>
+                      <TableHead>Base</TableHead>
+                      <TableHead>Bonuses</TableHead>
+                      <TableHead>Net</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Paid</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {payroll.map((p: any) => (
+                      <TableRow key={p.id}>
+                        <TableCell>
+                          {new Date(p.pay_period_start).toLocaleDateString()} —{" "}
+                          {new Date(p.pay_period_end).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>{p.hours_worked ?? "—"}</TableCell>
+                        <TableCell>${Number(p.base_pay ?? 0).toFixed(2)}</TableCell>
+                        <TableCell>${Number(p.bonuses ?? 0).toFixed(2)}</TableCell>
+                        <TableCell className="font-medium">
+                          ${Number(p.net_pay ?? 0).toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">{p.status}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {p.paid_at ? new Date(p.paid_at).toLocaleDateString() : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </CardContent>
           </Card>
