@@ -73501,6 +73501,7 @@ export type Database = {
       products_all: {
         Row: {
           brand_id: string | null
+          category: string | null
           created_at: string | null
           description: string | null
           dimensions: Json | null
@@ -73523,6 +73524,7 @@ export type Database = {
         }
         Insert: {
           brand_id?: string | null
+          category?: string | null
           created_at?: string | null
           description?: string | null
           dimensions?: Json | null
@@ -73545,6 +73547,7 @@ export type Database = {
         }
         Update: {
           brand_id?: string | null
+          category?: string | null
           created_at?: string | null
           description?: string | null
           dimensions?: Json | null
@@ -118417,6 +118420,7 @@ export type Database = {
         Args: { p_limit?: number; p_user_id?: string; p_visitor_id?: string }
         Returns: {
           brand_id: string | null
+          category: string | null
           created_at: string | null
           description: string | null
           dimensions: Json | null
