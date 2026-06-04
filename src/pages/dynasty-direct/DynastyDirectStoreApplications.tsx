@@ -362,9 +362,11 @@ export default function DynastyDirectStoreApplications() {
                   )}
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </TabsContent>
         </Tabs>
+
 
         <Dialog open={!!rejecting} onOpenChange={(o) => !o && setRejecting(null)}>
           <DialogContent>
