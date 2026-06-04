@@ -58960,6 +58960,7 @@ export type Database = {
         Row: {
           affiliate_code: string | null
           affiliate_id: string | null
+          ambassador_id: string | null
           billing_address: Json | null
           created_at: string | null
           customer_email: string | null
@@ -58974,6 +58975,7 @@ export type Database = {
           id: string
           notes: string | null
           order_type: string | null
+          ordering_store_id: string | null
           payment_status: string | null
           shipping_address: Json | null
           shipping_cost: number | null
@@ -58989,6 +58991,7 @@ export type Database = {
         Insert: {
           affiliate_code?: string | null
           affiliate_id?: string | null
+          ambassador_id?: string | null
           billing_address?: Json | null
           created_at?: string | null
           customer_email?: string | null
@@ -59003,6 +59006,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_type?: string | null
+          ordering_store_id?: string | null
           payment_status?: string | null
           shipping_address?: Json | null
           shipping_cost?: number | null
@@ -59018,6 +59022,7 @@ export type Database = {
         Update: {
           affiliate_code?: string | null
           affiliate_id?: string | null
+          ambassador_id?: string | null
           billing_address?: Json | null
           created_at?: string | null
           customer_email?: string | null
@@ -59032,6 +59037,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_type?: string | null
+          ordering_store_id?: string | null
           payment_status?: string | null
           shipping_address?: Json | null
           shipping_cost?: number | null
@@ -59051,6 +59057,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "dd_affiliates"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
           },
           {
             foreignKeyName: "marketplace_orders_wholesaler_id_fkey"
@@ -118075,22 +118109,41 @@ export type Database = {
         }
         Returns: Json
       }
-      dd_create_marketplace_order: {
-        Args: {
-          p_affiliate_code?: string
-          p_customer_id?: string
-          p_discount_code?: string
-          p_guest_email?: string
-          p_guest_phone?: string
-          p_items: Json
-          p_notes?: string
-          p_shipping_address: Json
-          p_shipping_cost?: number
-          p_subtotal?: number
-          p_tax_amount?: number
-        }
-        Returns: Json
-      }
+      dd_create_marketplace_order:
+        | {
+            Args: {
+              p_affiliate_code?: string
+              p_customer_id?: string
+              p_discount_code?: string
+              p_guest_email?: string
+              p_guest_phone?: string
+              p_items: Json
+              p_notes?: string
+              p_shipping_address: Json
+              p_shipping_cost?: number
+              p_subtotal?: number
+              p_tax_amount?: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_affiliate_code?: string
+              p_ambassador_id?: string
+              p_customer_id?: string
+              p_discount_code?: string
+              p_guest_email?: string
+              p_guest_phone?: string
+              p_items: Json
+              p_notes?: string
+              p_ordering_store_id?: string
+              p_shipping_address: Json
+              p_shipping_cost?: number
+              p_subtotal?: number
+              p_tax_amount?: number
+            }
+            Returns: Json
+          }
       dd_link_wholesaler_to_store_master: {
         Args: { p_wholesaler_id: string }
         Returns: string
