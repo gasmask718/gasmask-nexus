@@ -1916,11 +1916,11 @@ export default function AppRoutes() {
         <Route path="/dynasty-direct/catalog" element={<MarketplaceAdminPortalPage />} />
         <Route path="/dynasty-direct/store-storefront" element={<StorePortalPage />} />
         <Route path="/dynasty-direct/d2c-storefront" element={<Shop />} />
-        <Route path="/dynasty-direct/fulfillment" element={<MarketplaceControlTowerPage />} />
+        <Route path="/dynasty-direct/fulfillment" element={<DynastyDirectFulfillmentConsole />} />
         <Route path="/dynasty-direct/suppliers/portal" element={<WholesalerPortalPage />} />
         <Route path="/dynasty-direct/suppliers/inventory" element={<WholesalerPortalPage />} />
         <Route path="/dynasty-direct/shipping" element={<MarketplaceControlTowerPage />} />
-        <Route path="/dynasty-direct/grabba-bridge" element={<MarketplaceControlTowerPage />} />
+        <Route path="/dynasty-direct/grabba-bridge" element={<DynastyDirectGrabbaBridge />} />
         <Route path="/dynasty-direct/analytics" element={<MarketplaceControlTowerPage />} />
 
         {/* Marketplace Connection Pack - Dev Only, Admin/Owner */}
