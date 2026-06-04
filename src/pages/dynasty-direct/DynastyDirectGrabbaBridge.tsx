@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Zap, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { DDAlertBar } from "@/components/dynasty-direct/DDAlertBar";
 
 export default function DynastyDirectGrabbaBridge() {
   const { data: orders = [] } = useQuery({
@@ -41,6 +42,7 @@ export default function DynastyDirectGrabbaBridge() {
 
   return (
     <div className="p-6 space-y-6">
+      <DDAlertBar />
       <div className="flex items-center gap-3">
         <Zap className="w-7 h-7 text-amber-500" />
         <div>

@@ -16,6 +16,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Link } from 'react-router-dom';
 import { MapPin, AlertTriangle } from 'lucide-react';
 import { InviteButton } from '@/components/invites/InviteButton';
+import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN as string | undefined;
 
@@ -212,6 +213,7 @@ export default function DynastyDirectSupplierNetwork() {
 
   return (
     <div className="p-6 space-y-4">
+      <DDAlertBar />
       <div>
         <h1 className="text-2xl font-bold">Dynasty Direct — Supplier Network</h1>
         <p className="text-sm text-muted-foreground">

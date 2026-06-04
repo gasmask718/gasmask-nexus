@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Handshake, DollarSign, Users, MousePointerClick, CheckCircle2, Pause, Play } from 'lucide-react';
+import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
 
 type Affiliate = {
   id: string; user_id: string | null; code: string; display_name: string | null;
@@ -126,6 +127,7 @@ export default function DynastyDirectAffiliates() {
 
   return (
     <div className="p-6 space-y-6">
+      <DDAlertBar />
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">

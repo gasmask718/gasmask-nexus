@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Sparkles, ChevronRight, CheckCircle2, ImageOff, ArrowLeft, Wand2, Camera, Rocket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
 
 interface Candidate { url: string; source: string; confidence: number; attribution?: string; thumb?: string }
 interface Supplier { id: string; company_name: string }
@@ -200,6 +201,7 @@ export default function DynastyDirectCatalogOnboard() {
 
   return (
     <div className="min-h-screen bg-background p-6 max-w-6xl mx-auto space-y-6">
+      <DDAlertBar />
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate('/dynasty-direct')}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Dynasty Direct
