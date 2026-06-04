@@ -463,21 +463,8 @@ const DYNASTY_NAVIGATION = {
   communicationSystems: {
     id: 'communication-systems',
     name: '📡 Communication Systems',
-    items: [
-      // AI Call Center OS
-      { path: '/comm-systems/dialer', label: '📞 Dialer', icon: Phone },
-      { path: '/comm-systems/call-logs', label: 'Call Logs', icon: FileText },
-      { path: '/comm-systems/ai-agents', label: 'AI Agents', icon: Bot },
-      { path: '/comm-systems/call-analytics', label: 'Call Analytics', icon: BarChart3 },
-      // AI Text Center OS
-      { path: '/comm-systems/messages', label: '💬 Messages', icon: MessageSquare },
-      // Email Center OS
-      { path: '/comm-systems/emails', label: '📧 Emails', icon: Mail },
-      // Communication Hub
-      { path: '/comm-systems/comm-ai', label: '📻 Communications AI', icon: Brain },
-      { path: '/comm-systems/automation', label: 'Comm Automation', icon: Zap },
-      { path: '/comm-systems/insights', label: 'Comm Insights', icon: Eye },
-    ],
+    // T3 K3: entire /comm-systems subtree killed — Floor 2 Communication Hub is canonical.
+    items: [],
   },
   dynastyDirect: {
     id: 'dynasty-direct',
