@@ -72,14 +72,53 @@ export default function DynastyDirectStoreApplications() {
     queryFn: async () => {
       let q = supabase
         .from('store_applications' as any)
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
       if (tab !== 'all') q = q.eq('status', tab);
+      // Pending: highest score first, then newest. Other tabs: newest first.
+      if (tab === 'pending') {
+        q = q.order('triage_score', { ascending: false, nullsFirst: false })
+             .order('created_at', { ascending: false });
+      } else {
+        q = q.order('created_at', { ascending: false });
+      }
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as unknown as Application[];
     },
   });
+
+  // Auto-triage any pending application with no score yet.
+  const [triagingId, setTriagingId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!AI_OPS.triage.autoTriageOnLoad) return;
+    const ungraded = apps.filter((a) => a.status === 'pending' && a.triage_score == null);
+    if (ungraded.length === 0) return;
+    (async () => {
+      for (const a of ungraded.slice(0, 5)) {  // cap per render
+        try {
+          setTriagingId(a.id);
+          await supabase.functions.invoke('dd-application-triage', { body: { application_id: a.id } });
+        } catch (e) { console.warn('[auto-triage]', a.id, e); }
+      }
+      setTriagingId(null);
+      qc.invalidateQueries({ queryKey: ['dd-store-applications', tab] });
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apps.map((a) => a.id).join(','), tab]);
+
+  async function triageOne(id: string) {
+    setTriagingId(id);
+    try {
+      const { error } = await supabase.functions.invoke('dd-application-triage', { body: { application_id: id } });
+      if (error) throw error;
+      toast.success('Triaged');
+      qc.invalidateQueries({ queryKey: ['dd-store-applications', tab] });
+    } catch (e: any) {
+      toast.error(e.message || 'Triage failed');
+    } finally {
+      setTriagingId(null);
+    }
+  }
 
   const counts = useQuery({
     queryKey: ['dd-store-applications-counts'],
