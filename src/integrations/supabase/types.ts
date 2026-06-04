@@ -36204,6 +36204,161 @@ export type Database = {
           },
         ]
       }
+      dd_routing_audit: {
+        Row: {
+          actor: string | null
+          created_at: string
+          event_type: string
+          id: string
+          new_value: Json | null
+          order_id: string | null
+          prev_value: Json | null
+          reason: string | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          actor?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          new_value?: Json | null
+          order_id?: string | null
+          prev_value?: Json | null
+          reason?: string | null
+          wholesaler_id?: string | null
+        }
+        Update: {
+          actor?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          new_value?: Json | null
+          order_id?: string | null
+          prev_value?: Json | null
+          reason?: string | null
+          wholesaler_id?: string | null
+        }
+        Relationships: []
+      }
+      dd_routing_pins: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          order_id: string | null
+          pin_type: string
+          pinned_wholesaler_id: string
+          product_id: string | null
+          reason: string | null
+          state_code: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          order_id?: string | null
+          pin_type: string
+          pinned_wholesaler_id: string
+          product_id?: string | null
+          reason?: string | null
+          state_code?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          order_id?: string | null
+          pin_type?: string
+          pinned_wholesaler_id?: string
+          product_id?: string | null
+          reason?: string | null
+          state_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_routing_pins_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_routing_pins_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_marketplace_order_timeline"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "dd_routing_pins_pinned_wholesaler_id_fkey"
+            columns: ["pinned_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_routing_pins_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_routing_pins_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_wholesaler_store_link: {
+        Row: {
+          created_at: string
+          store_master_id: string
+          wholesaler_id: string
+        }
+        Insert: {
+          created_at?: string
+          store_master_id: string
+          wholesaler_id: string
+        }
+        Update: {
+          created_at?: string
+          store_master_id?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_wholesaler_store_link_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_wholesaler_store_link_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "v_prior_customer_segments"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dd_wholesaler_store_link_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dd_wholesaler_store_link_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: true
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_closings: {
         Row: {
           acquisition_id: string | null
@@ -63172,8 +63327,14 @@ export type Database = {
           delivery_type: string | null
           fulfillment_type: string | null
           id: string
+          manual_override: boolean
           order_id: string | null
+          override_at: string | null
+          override_by: string | null
+          override_reason: string | null
           pickup_required: boolean | null
+          routing_details: Json | null
+          routing_reason: string | null
           status: string | null
           warehouse_id: string | null
         }
@@ -63190,8 +63351,14 @@ export type Database = {
           delivery_type?: string | null
           fulfillment_type?: string | null
           id?: string
+          manual_override?: boolean
           order_id?: string | null
+          override_at?: string | null
+          override_by?: string | null
+          override_reason?: string | null
           pickup_required?: boolean | null
+          routing_details?: Json | null
+          routing_reason?: string | null
           status?: string | null
           warehouse_id?: string | null
         }
@@ -63208,8 +63375,14 @@ export type Database = {
           delivery_type?: string | null
           fulfillment_type?: string | null
           id?: string
+          manual_override?: boolean
           order_id?: string | null
+          override_at?: string | null
+          override_by?: string | null
+          override_reason?: string | null
           pickup_required?: boolean | null
+          routing_details?: Json | null
+          routing_reason?: string | null
           status?: string | null
           warehouse_id?: string | null
         }
@@ -109181,8 +109354,11 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          is_default_supplier: boolean
           notes: string | null
           phone: string | null
+          priority_weight: number
+          routing_paused: boolean
           shipping_preferences: Json | null
           status: string
           tax_id: string | null
@@ -109206,8 +109382,11 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          is_default_supplier?: boolean
           notes?: string | null
           phone?: string | null
+          priority_weight?: number
+          routing_paused?: boolean
           shipping_preferences?: Json | null
           status?: string
           tax_id?: string | null
@@ -109231,8 +109410,11 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          is_default_supplier?: boolean
           notes?: string | null
           phone?: string | null
+          priority_weight?: number
+          routing_paused?: boolean
           shipping_preferences?: Json | null
           status?: string
           tax_id?: string | null
@@ -111960,14 +112142,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -111989,6 +112171,44 @@ export type Database = {
           transcript: string | null
         }
         Relationships: []
+      }
+      dd_wholesaler_grabba_orders: {
+        Row: {
+          boxes: number | null
+          brand: string | null
+          created_at: string | null
+          pending_route_stop_id: string | null
+          requested_day: string | null
+          requested_window: string | null
+          route_stop_id: string | null
+          status: string | null
+          store_master_id: string | null
+          store_name: string | null
+          wholesaler_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_wholesaler_store_link_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_wholesaler_store_link_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "v_prior_customer_segments"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dd_wholesaler_store_link_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
       }
       dispute_kpis: {
         Row: {
@@ -117559,6 +117779,21 @@ export type Database = {
         Returns: string
       }
       current_ambassador_id: { Args: never; Returns: string }
+      dd_create_grabba_order: {
+        Args: {
+          p_boxes: number
+          p_brand: string
+          p_notes?: string
+          p_requested_day?: string
+          p_requested_window?: string
+          p_wholesaler_id: string
+        }
+        Returns: Json
+      }
+      dd_link_wholesaler_to_store_master: {
+        Args: { p_wholesaler_id: string }
+        Returns: string
+      }
       detect_data_duplicates_in_group: {
         Args: { p_group_id: number }
         Returns: {
@@ -118303,6 +118538,14 @@ export type Database = {
         Args: { _device_id: string; _reason: string }
         Returns: boolean
       }
+      reassign_order_supplier: {
+        Args: {
+          p_new_wholesaler_id: string
+          p_order_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       recalculate_store_contact_intelligence: {
         Args: { p_store_id: string }
         Returns: undefined
@@ -118564,6 +118807,7 @@ export type Database = {
         Args: { _invite_id: string; _reason?: string }
         Returns: Json
       }
+      route_order_to_supplier: { Args: { p_order_id: string }; Returns: Json }
       schedule_ambassador_visit: {
         Args: { p_notes?: string; p_scheduled_for: string; p_store_id: string }
         Returns: string
