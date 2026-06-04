@@ -237,6 +237,7 @@ serve(async (req) => {
         match_method: matched ? best!.method : null,
         scan_source: scope,
         last_scan_at: new Date().toISOString(),
+        neighborhood_label: neighborhood,
       });
     }
 
