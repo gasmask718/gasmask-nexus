@@ -1577,7 +1577,8 @@ export default function AppRoutes() {
         <Route path="/route-ops-center" element={<RouteOpsCenterEnhanced />} />
         <Route path="/ops-command-center" element={<OpsCommandCenter />} />
         {/* Route Optimizer - Floor 4 Planning Intelligence */}
-        <Route path="/route-optimizer" element={<RouteOptimizerPage />} />
+        {/* T3 M1: standalone Route Optimizer killed — Optimize action lives in /routes/command-center */}
+        <Route path="/route-optimizer" element={<Navigate to="/routes/command-center" replace />} />
         <Route path="/dispatch/pending-stops" element={<PendingRouteStopsPage />} />
         <Route path="/routes/:id" element={<RouteDetail />} />
         <Route path="/map" element={<MapPage />} />
