@@ -117779,6 +117779,10 @@ export type Database = {
         Returns: string
       }
       current_ambassador_id: { Args: never; Returns: string }
+      dd_consume_order_reservations: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
       dd_create_grabba_order: {
         Args: {
           p_boxes: number
@@ -117790,9 +117794,27 @@ export type Database = {
         }
         Returns: Json
       }
+      dd_create_marketplace_order: {
+        Args: {
+          p_customer_id?: string
+          p_guest_email?: string
+          p_guest_phone?: string
+          p_items: Json
+          p_notes?: string
+          p_shipping_address: Json
+          p_shipping_cost?: number
+          p_subtotal?: number
+          p_tax_amount?: number
+        }
+        Returns: Json
+      }
       dd_link_wholesaler_to_store_master: {
         Args: { p_wholesaler_id: string }
         Returns: string
+      }
+      dd_release_order_reservations: {
+        Args: { p_order_id: string }
+        Returns: undefined
       }
       detect_data_duplicates_in_group: {
         Args: { p_group_id: number }
@@ -118074,6 +118096,16 @@ export type Database = {
       }
       get_current_user_role: { Args: never; Returns: string }
       get_intent_queue_health: { Args: never; Returns: Json }
+      get_invite_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          channel: string
+          expires_at: string
+          inviter_display_name: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+        }[]
+      }
       get_managed_office_ids: { Args: { _user_id: string }; Returns: string[] }
       get_payout_statement: { Args: { p_batch_id: string }; Returns: Json }
       get_phase5_mode: { Args: never; Returns: Json }
