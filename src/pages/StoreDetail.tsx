@@ -55,6 +55,7 @@ import { EngagementBanner } from "@/components/store-profile/EngagementBanner";
 import { BrandPaymentQuickView } from "@/components/store/BrandPaymentQuickView";
 import { RelationshipStatusInline } from "@/components/store/RelationshipStatusInline";
 import { BrandInterestChips } from "@/components/store/BrandInterestChips";
+import { StorePaymentBadge } from "@/components/store/StorePaymentBadge";
 import { SkuOrderHistoryPanel } from "@/components/store/SkuOrderHistoryPanel";
 import { QuickStatsBrandPaymentMatrix } from "@/components/store/QuickStatsBrandPaymentMatrix";
 import { CanonicalStoreDataProvider } from "@/components/store/CanonicalStoreDataProvider";
@@ -643,6 +644,7 @@ const StoreDetail = () => {
               {/* Brand Payment Quick View — executive intelligence */}
               {/* 🎯 Brand Interest — top-of-profile glance answer for ambassadors */}
               <BrandInterestChips storeId={id || ''} />
+              <div className="mt-1"><StorePaymentBadge storeId={id || ''} /></div>
               <BrandPaymentQuickView storeId={id || ''} />
               {/* 9-state Relationship Status — direct from profile header */}
               {id && <RelationshipStatusInline storeId={id} />}

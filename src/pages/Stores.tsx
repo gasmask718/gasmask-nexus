@@ -28,6 +28,8 @@ import { useStoreTubeIntelSummaryBatch } from '@/hooks/useStoreTubeIntelSummary'
 import { useLastOrderSnapshotBatch } from '@/hooks/useLastOrderSnapshot';
 import { StoreKPIBadge } from '@/components/store/StoreKPIBadge';
 import { LastOrderKPIBadge } from '@/components/store/LastOrderKPIBadge';
+import { StorePaymentBadge, paymentBorderClass } from '@/components/store/StorePaymentBadge';
+import { useStorePaymentStatusMap } from '@/hooks/useStorePaymentStatus';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { PagePurpose } from '@/components/portal/guidance/PagePurpose';
 import { CardHelper } from '@/components/portal/guidance/CardHelper';
@@ -689,6 +691,7 @@ const Stores = () => {
   const { data: tubeIntelMap } = useStoreTubeIntelSummaryBatch(paginatedStoreIds);
   const { data: losMap } = useLastOrderSnapshotBatch(paginatedStoreIds);
   const { map: tubeSummaryMap } = useStoreTubeSummariesBulk();
+  const { data: paymentStatusMap } = useStorePaymentStatusMap();
 
   const formatBrandName = (brand: string) => {
     const normalized = brand.toLowerCase();
@@ -1074,10 +1077,15 @@ const Stores = () => {
               a.brand.localeCompare(b.brand)
             );
 
+            const payStatus = paymentStatusMap?.get(store.id);
+            const payBorder = payStatus ? paymentBorderClass(payStatus.level) : '';
             return (
               <Card
                 key={store.id}
-                className="glass-card border-border/50 hover-lift hover-glow cursor-pointer"
+                className={cn(
+                  'glass-card border-border/50 hover-lift hover-glow cursor-pointer',
+                  payBorder,
+                )}
                 style={{ animationDelay: `${index * 50}ms` }}
                 onClick={() => navigate(`/stores/${store.id}`)}
               >
@@ -1088,9 +1096,14 @@ const Stores = () => {
                       {store.owner_name && store.name !== store.owner_name && (
                         <p className="text-xs text-muted-foreground">{store.name}</p>
                       )}
-                      <Badge variant="outline" className="text-xs">
-                        {store.type.replace('_', ' ')}
-                      </Badge>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className="text-xs">
+                          {store.type.replace('_', ' ')}
+                        </Badge>
+                        {payStatus && payStatus.level !== 'paid' && (
+                          <StorePaymentBadge status={payStatus} />
+                        )}
+                      </div>
                     </div>
                   <div className="flex items-start gap-2">
                     <Checkbox
