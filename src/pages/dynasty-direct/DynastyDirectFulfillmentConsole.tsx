@@ -514,24 +514,33 @@ function VolumeSteering() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
-          {rows.length === 0 && <div className="text-sm text-muted-foreground">No fulfillments yet.</div>}
-          {rows.map((r) => (
-            <div key={r.id} className="flex items-center gap-3 text-sm border rounded px-3 py-2">
-              <div className="flex-1">
-                <div className="font-medium">{r.name}</div>
-                <div className="text-xs text-muted-foreground">weight {r.weight}</div>
+        {rows.length === 0 ? (
+          <DDEmpty
+            icon={TrendingUp}
+            title="No routed fulfillments in the last 30 days"
+            description="Routing activates once inventory exists and paid orders fan out to suppliers. Seed stock to start the meter."
+            actionLabel="Open inventory"
+            actionHref="/dynasty-direct/suppliers/inventory"
+          />
+        ) : (
+          <div className="space-y-2">
+            {rows.map((r) => (
+              <div key={r.id} className="flex items-center gap-3 text-sm border rounded px-3 py-2">
+                <div className="flex-1">
+                  <div className="font-medium">{r.name}</div>
+                  <div className="text-xs text-muted-foreground">weight {r.weight}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono">{r.month}</div>
+                  <div className="text-xs text-muted-foreground">{r.week} this wk</div>
+                </div>
+                <div className="w-32 h-2 bg-muted rounded overflow-hidden">
+                  <div className="h-full bg-primary" style={{ width: `${Math.min(100, r.month * 5)}%` }} />
+                </div>
               </div>
-              <div className="text-right">
-                <div className="font-mono">{r.month}</div>
-                <div className="text-xs text-muted-foreground">{r.week} this wk</div>
-              </div>
-              <div className="w-32 h-2 bg-muted rounded overflow-hidden">
-                <div className="h-full bg-primary" style={{ width: `${Math.min(100, r.month * 5)}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
