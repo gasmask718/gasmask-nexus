@@ -32,6 +32,10 @@ export interface DDHubKpis {
   // Lifecycle (cart recovery)
   cartRecoveryQueued: number;
   cartRecoverySent: number;
+  // SLA + Anomalies (Phase D PASS 3)
+  slowSuppliers: number;
+  openAnomalies: number;
+  criticalAnomalies: number;
 }
 
 async function fetchDDHubKpis(): Promise<DDHubKpis> {
