@@ -257,6 +257,15 @@ export default function DialerPage() {
         isLoading={storesLoading}
       />
 
+      {/* T3 K3 salvage: BusinessCompliancePanel rehomed from killed /comm-systems subtree */}
+      <BusinessCompliancePanel
+        businessId={selectedBusinessId === "all" ? null : selectedBusinessId}
+        businessName={null}
+        isAllBusinesses={selectedBusinessId === "all"}
+      />
+
+
+
       {/* Quick Dial Modal */}
       <QuickDialModal
         isOpen={isQuickDialModalOpen}
