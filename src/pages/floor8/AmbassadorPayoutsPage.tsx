@@ -27,28 +27,35 @@ export default function AmbassadorPayoutsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
 
-  // Fetch all commission events grouped by ambassador
-  const { data: commissions = [], isLoading } = useQuery({
+  // Fetch all commissions from canonical ledger (commission_ledger)
+  // Aliased: amount←commission_amount, category←source_channel
+  const { data: commissionsRaw = [], isLoading } = useQuery({
     queryKey: ['floor8-payouts-all'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('commission_events')
+        .from('commission_ledger')
         .select(`
-          *,
-          ambassador:ambassador_id (id, name, tier, tracking_code)
+          id, ambassador_id, commission_amount, gross_amount, status,
+          source_channel, source_name, earned_at, paid_at, created_at,
+          ambassador:ambassadors!commission_ledger_ambassador_id_fkey(id, name, tier, tracking_code)
         `)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
     },
   });
+  const commissions = (commissionsRaw as any[]).map((c) => ({
+    ...c,
+    category: c.source_channel,
+  }));
 
-  // Mark commission as paid mutation
+  // Mark commission as paid (writes back to canonical ledger)
   const markPaidMutation = useMutation({
     mutationFn: async (commissionId: string) => {
+      const now = new Date().toISOString();
       const { error } = await supabase
-        .from('commission_events')
-        .update({ status: 'paid', paid_at: new Date().toISOString() })
+        .from('commission_ledger')
+        .update({ status: 'paid', paid_at: now, approved_at: now })
         .eq('id', commissionId);
       if (error) throw error;
     },
@@ -56,7 +63,7 @@ export default function AmbassadorPayoutsPage() {
       queryClient.invalidateQueries({ queryKey: ['floor8-payouts-all'] });
       toast.success('Commission marked as paid');
     },
-    onError: () => toast.error('Failed to update commission'),
+    onError: (e: any) => toast.error(`Failed: ${e?.message ?? 'unknown error'}`),
   });
 
   // Calculate summary metrics
