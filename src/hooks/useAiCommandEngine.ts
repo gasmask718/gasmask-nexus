@@ -364,7 +364,7 @@ async function fetchEntityIds(
     routes: 'route_plans',
     orders: 'wholesale_orders',
     ambassadors: 'ambassadors',
-    commissions: 'ambassador_commissions',
+    commissions: 'commission_ledger',
     companies: 'companies',
   };
 
@@ -531,7 +531,7 @@ async function executeStatusUpdateAction(
       routes: 'route_plans',
       orders: 'wholesale_orders',
       ambassadors: 'ambassadors',
-      commissions: 'ambassador_commissions',
+      commissions: 'commission_ledger',
       companies: 'companies',
     };
 

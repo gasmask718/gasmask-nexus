@@ -31,7 +31,7 @@ export default function StoreReportsPage() {
 
   // Summary stats
   const totalStores = filtered.length;
-  const storesWithActivity = filtered.filter(s => Number(s.commission_events) > 0).length;
+  const storesWithActivity = filtered.filter(s => Number(s.commission_count) > 0).length;
   const totalRevenue = filtered.reduce((sum, s) => sum + Number(s.store_revenue || 0), 0);
   const totalCommissions = filtered.reduce((sum, s) => sum + Number(s.commissions_generated || 0), 0);
 
@@ -160,7 +160,7 @@ export default function StoreReportsPage() {
                       <TableCell className="text-muted-foreground">
                         {[store.city, store.state].filter(Boolean).join(', ') || '-'}
                       </TableCell>
-                      <TableCell className="text-right">{store.commission_events}</TableCell>
+                      <TableCell className="text-right">{store.commission_count}</TableCell>
                       <TableCell className="text-right font-medium">
                         {formatCurrency(Number(store.store_revenue || 0))}
                       </TableCell>

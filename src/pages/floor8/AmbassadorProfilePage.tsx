@@ -80,15 +80,16 @@ export default function AmbassadorProfilePage() {
     enabled: !!ambassadorId,
   });
 
-  // Fetch commission events
+  // Fetch commissions from canonical ledger
   const { data: commissions = [] } = useQuery({
     queryKey: ['floor8-ambassador-commissions', ambassadorId],
     queryFn: async () => {
       if (!ambassadorId) return [];
       const { data, error } = await supabase
-        .from('commission_events')
+        .from('commission_ledger')
         .select('*')
         .eq('ambassador_id', ambassadorId)
+        .neq('status', 'reversed')
         .order('created_at', { ascending: false })
         .limit(100);
       if (error) throw error;

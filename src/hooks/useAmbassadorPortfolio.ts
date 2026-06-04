@@ -160,9 +160,10 @@ export function useAmbassadorPortfolio() {
       if (!ambassadorId) return [];
 
       const { data, error } = await supabase
-        .from('ambassador_commissions')
+        .from('commission_ledger')
         .select('*')
         .eq('ambassador_id', ambassadorId)
+        .neq('status', 'reversed')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -212,9 +213,9 @@ export function useAmbassadorPortfolio() {
       activeStores: stores.filter(s => s.active).length,
       dormantStores: 0, // Would need order data to determine
       atRiskStores: 0, // Would need order data to determine
-      totalCommission: commissions.reduce((sum: number, c: any) => sum + Number(c.amount || 0), 0),
-      pendingCommission: pendingCommissions.reduce((sum: number, c: any) => sum + Number(c.amount || 0), 0),
-      paidCommission: paidCommissions.reduce((sum: number, c: any) => sum + Number(c.amount || 0), 0),
+      totalCommission: commissions.reduce((sum: number, c: any) => sum + Number(c.commission_amount || 0), 0),
+      pendingCommission: pendingCommissions.reduce((sum: number, c: any) => sum + Number(c.commission_amount || 0), 0),
+      paidCommission: paidCommissions.reduce((sum: number, c: any) => sum + Number(c.commission_amount || 0), 0),
       totalOrders: onlineSales.length,
       totalRevenue: completedOnlineSales.reduce((sum: number, s: any) => sum + Number(s.order_amount || 0), 0),
       onlineCommission,

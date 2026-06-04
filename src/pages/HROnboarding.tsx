@@ -36,7 +36,7 @@ export default function HROnboarding() {
         .from("hr_onboarding_tasks")
         .select(`
           *,
-          employee:hr_employees(id, full_name, job_title)
+          employee:hr_employees(id, full_name, job_title, user_id, source_table, source_id)
         `)
         .order("due_date", { ascending: true });
 
@@ -178,12 +178,19 @@ export default function HROnboarding() {
                   }
                 >
                   <TableCell className="font-medium">
-                    <div>
+                    <button
+                      onClick={() => task.employee?.id && navigate(`/hr/employees/${task.employee.id}`)}
+                      className="text-left hover:underline disabled:no-underline"
+                      disabled={!task.employee?.id}
+                    >
                       <div>{task.employee?.full_name || "N/A"}</div>
                       <div className="text-sm text-muted-foreground">
                         {task.employee?.job_title || ""}
+                        {task.employee && !task.employee.user_id && (
+                          <Badge variant="outline" className="ml-2 text-xs">no login yet</Badge>
+                        )}
                       </div>
-                    </div>
+                    </button>
                   </TableCell>
                   <TableCell>{task.task}</TableCell>
                   <TableCell>

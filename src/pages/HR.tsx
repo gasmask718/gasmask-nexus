@@ -41,11 +41,12 @@ export default function HR() {
         .gte("scheduled_for", startOfWeek.toISOString())
         .lte("scheduled_for", endOfWeek.toISOString());
 
-      // Get active employees
+      // Get active employees (exclude test identities)
       const { count: employeesCount } = await supabase
         .from("hr_employees")
         .select("*", { count: "exact", head: true })
-        .eq("status", "active");
+        .eq("status", "active")
+        .or("is_test.is.null,is_test.eq.false");
 
       // Get pending onboarding tasks
       const { count: onboardingCount } = await supabase

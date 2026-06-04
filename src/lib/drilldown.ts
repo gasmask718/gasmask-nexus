@@ -102,7 +102,7 @@ export function getEntityTable(entity: DrillDownEntity): string {
     routes: 'driver_routes',
     orders: 'wholesale_orders',
     ambassadors: 'ambassadors',
-    commissions: 'ambassador_commissions',
+    commissions: 'commission_ledger',
     companies: 'companies',
   };
   return tables[entity] || entity;

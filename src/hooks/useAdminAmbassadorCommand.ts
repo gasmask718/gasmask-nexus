@@ -78,10 +78,11 @@ export function useAdminAmbassadorCommand() {
 
       if (assignError) throw assignError;
 
-      // Get commission events
+      // Get commissions from canonical ledger
       const { data: commissions, error: commError } = await supabase
-        .from('commission_events')
-        .select('ambassador_id, commission_amount, status, created_at, gross_amount');
+        .from('commission_ledger')
+        .select('ambassador_id, commission_amount, status, created_at, gross_amount')
+        .neq('status', 'reversed');
 
       if (commError) throw commError;
 
@@ -220,7 +221,7 @@ export function useAdminAmbassadorCommand() {
 
       // Get pending payouts
       const { data: pendingPayouts } = await supabase
-        .from('commission_events')
+        .from('commission_ledger')
         .select('commission_amount')
         .eq('status', 'pending');
 
@@ -230,8 +231,9 @@ export function useAdminAmbassadorCommand() {
 
       // Get today's revenue from commissions
       const { data: todayCommissions } = await supabase
-        .from('commission_events')
+        .from('commission_ledger')
         .select('gross_amount')
+        .neq('status', 'reversed')
         .gte('created_at', todayStart);
 
       const revenueToday = (todayCommissions || []).reduce(
