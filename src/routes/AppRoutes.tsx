@@ -1221,6 +1221,9 @@ export default function AppRoutes() {
         <Route path="/contact" element={<ContactPage />} />
       </Route>
 
+      {/* T1 M2: /store = UT Shopify — standalone, has its own UT chrome (no GasMask wrap) */}
+      <Route path="/store" element={<ShopifyStore />} />
+
       {/* Standalone public routes (own layouts) */}
       {/* Developer Portal - standalone, self-authenticated */}
       <Route path="/developer" element={<DeveloperPortal />} />
