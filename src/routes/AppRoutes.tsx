@@ -1529,17 +1529,18 @@ export default function AppRoutes() {
         </Route>
 
         {/* 📡 Communication Systems - New Unified Module */}
-        <Route path="/comm-systems" element={<CommSystemsDialerPage />} />
-        <Route path="/comm-systems/dialer" element={<CommSystemsDialerPage />} />
-        <Route path="/comm-systems/call-logs" element={<CommSystemsCallLogsPage />} />
-        <Route path="/comm-systems/ai-agents" element={<CommSystemsAIAgentsPage />} />
-        <Route path="/comm-systems/call-analytics" element={<CommSystemsAnalyticsPage />} />
-        <Route path="/comm-systems/messages" element={<CommSystemsMessagesPage />} />
-        <Route path="/comm-systems/emails" element={<CommSystemsEmailsPage />} />
-        <Route path="/comm-systems/comm-hub" element={<CommunicationHubPage />} />
-        <Route path="/comm-systems/comm-ai" element={<CommSystemsCommAIPage />} />
-        <Route path="/comm-systems/automation" element={<CommSystemsAutomationPage />} />
-        <Route path="/comm-systems/insights" element={<CommSystemsInsightsPage />} />
+        {/* T3 K3: /comm-systems subtree killed; all paths redirect into Floor 2 hub. */}
+        <Route path="/comm-systems" element={<Navigate to="/communication/dialer" replace />} />
+        <Route path="/comm-systems/dialer" element={<Navigate to="/communication/dialer" replace />} />
+        <Route path="/comm-systems/call-logs" element={<Navigate to="/communication/calls" replace />} />
+        <Route path="/comm-systems/ai-agents" element={<Navigate to="/communication/agents" replace />} />
+        <Route path="/comm-systems/call-analytics" element={<Navigate to="/communication/analytics" replace />} />
+        <Route path="/comm-systems/messages" element={<Navigate to="/communication/inbox" replace />} />
+        <Route path="/comm-systems/emails" element={<Navigate to="/communication/email" replace />} />
+        <Route path="/comm-systems/comm-hub" element={<Navigate to="/communication" replace />} />
+        <Route path="/comm-systems/comm-ai" element={<Navigate to="/communication/agents" replace />} />
+        <Route path="/comm-systems/automation" element={<Navigate to="/settings/automation/communications" replace />} />
+        <Route path="/comm-systems/insights" element={<Navigate to="/communication/analytics" replace />} />
 
         <Route path="/va-performance" element={<VAPerformance />} />
         <Route path="/va-ranking" element={<VARanking />} />
