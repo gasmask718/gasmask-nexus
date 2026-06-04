@@ -71,8 +71,9 @@ export default function AmbassadorRegionsPage() {
     queryKey: ['floor8-region-commissions'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('commission_events')
-        .select('ambassador_id, gross_amount, commission_amount');
+        .from('commission_ledger')
+        .select('ambassador_id, gross_amount, commission_amount')
+        .neq('status', 'reversed');
       if (error) throw error;
       return data || [];
     },

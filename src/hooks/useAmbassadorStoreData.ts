@@ -228,18 +228,19 @@ export function useAmbassadorStoreData(ambassadorId: string | undefined) {
     enabled: !!ambassadorId && (sourcedStoresData.length > 0 || assignedStoresData.length > 0),
   });
 
-  // Fetch commission data for sourced stores
-  // Note: commission_events uses source_entity_id for store reference
+  // Fetch commission data for sourced stores from canonical ledger
+  // ledger.source_id = store id when source_channel = 'store_order'
   const { data: commissionData = [] } = useQuery({
     queryKey: ['ambassador-store-commissions', ambassadorId],
     queryFn: async () => {
       if (!ambassadorId) return [];
 
       const { data, error } = await supabase
-        .from('commission_events')
-        .select('source_entity_id, source_entity_type, gross_amount, commission_amount')
+        .from('commission_ledger')
+        .select('source_id, source_channel, gross_amount, commission_amount')
         .eq('ambassador_id', ambassadorId)
-        .eq('source_entity_type', 'store');
+        .eq('source_channel', 'store_order')
+        .neq('status', 'reversed');
 
       if (error) {
         console.error('Error fetching commissions:', error);
@@ -288,8 +289,8 @@ export function useAmbassadorStoreData(ambassadorId: string | undefined) {
   // 1. Sourced Stores
   const sourcedStores: SourcedStore[] = sourcedStoresData.map((store: any) => {
     // Calculate revenue and commission for this store
-    // Note: commission_events uses source_entity_id for store reference
-    const storeCommissions = commissionData.filter((c: any) => c.source_entity_id === store.id);
+    // ledger.source_id = store id for store_order rows
+    const storeCommissions = commissionData.filter((c: any) => c.source_id === store.id);
     const lifetimeRevenue = storeCommissions.reduce((sum, c: any) => sum + Number(c.gross_amount || 0), 0);
     const commissionEarned = storeCommissions.reduce((sum, c: any) => sum + Number(c.commission_amount || 0), 0);
 
