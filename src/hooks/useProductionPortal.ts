@@ -534,6 +534,7 @@ export function useProductionBatches(officeId: string | undefined, date?: Date) 
         .from('production_batches')
         .select('*, office:production_offices(id, name)')
         .eq('office_id', officeId)
+        .eq('is_test', false)
         .neq('status', 'cancelled') // Exclude cancelled batches
         .order('created_at', { ascending: false });
       
