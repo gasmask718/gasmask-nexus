@@ -55,6 +55,7 @@ import { EngagementBanner } from "@/components/store-profile/EngagementBanner";
 import { BrandPaymentQuickView } from "@/components/store/BrandPaymentQuickView";
 import { RelationshipStatusInline } from "@/components/store/RelationshipStatusInline";
 import { BrandInterestChips } from "@/components/store/BrandInterestChips";
+import { StorePaymentBadge } from "@/components/store/StorePaymentBadge";
 import { SkuOrderHistoryPanel } from "@/components/store/SkuOrderHistoryPanel";
 import { QuickStatsBrandPaymentMatrix } from "@/components/store/QuickStatsBrandPaymentMatrix";
 import { CanonicalStoreDataProvider } from "@/components/store/CanonicalStoreDataProvider";
