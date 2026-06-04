@@ -551,31 +551,27 @@ function VolumeSteering() {
 // ─────────────────────────────────────────────────────────────────────
 export default function DynastyDirectFulfillmentConsole() {
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <Truck className="w-7 h-7" />
-        <div>
-          <h1 className="text-2xl font-bold">Fulfillment — Traffic Direction</h1>
-          <p className="text-sm text-muted-foreground">
-            Steer multi-state supplier routing. Weight, pause, pin, override — David always wins.
-          </p>
-        </div>
-      </div>
-
-      <Tabs defaultValue="controls">
+    <DDShell>
+      <DDPageHeader
+        icon={Truck}
+        title="Fulfillment — Traffic Direction"
+        purpose="Steer multi-state supplier routing. Weight, pause, pin, override — David always wins."
+        crumbs={[{ label: 'Fulfillment' }]}
+      />
+      <Tabs defaultValue="feed">
         <TabsList>
+          <TabsTrigger value="feed">Live Feed</TabsTrigger>
           <TabsTrigger value="controls">Supplier Controls</TabsTrigger>
           <TabsTrigger value="pins">Pins</TabsTrigger>
           <TabsTrigger value="orders">Order Overrides</TabsTrigger>
-          <TabsTrigger value="feed">Live Feed</TabsTrigger>
           <TabsTrigger value="volume">Volume Steering</TabsTrigger>
         </TabsList>
+        <TabsContent value="feed"><RoutingFeed /></TabsContent>
         <TabsContent value="controls"><SupplierControls /></TabsContent>
         <TabsContent value="pins"><PinsManager /></TabsContent>
         <TabsContent value="orders"><OrderOverridePanel /></TabsContent>
-        <TabsContent value="feed"><RoutingFeed /></TabsContent>
         <TabsContent value="volume"><VolumeSteering /></TabsContent>
       </Tabs>
-    </div>
+    </DDShell>
   );
 }
