@@ -487,19 +487,20 @@ function PaidUnpaidTab() {
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="text-right">Paid</TableHead>
                 <TableHead className="text-right">Owed</TableHead>
+                <TableHead>Age</TableHead>
                 <TableHead>Paid On</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                     Loading…
                   </TableCell>
                 </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                     No invoices match filter.
                   </TableCell>
                 </TableRow>
@@ -509,8 +510,10 @@ function PaidUnpaidTab() {
                   const paid = Number(r.amount_paid ?? 0);
                   const owed = Math.max(total - paid, 0);
                   const status = r.payment_status ?? "unpaid";
+                  const isUnpaid = status !== "paid" && owed > 0;
+                  const days = isUnpaid ? daysSince(r.finalized_at ?? r.created_at) : null;
                   return (
-                    <TableRow key={r.id}>
+                    <TableRow key={r.id} className={unpaidRowClass(status, owed)}>
                       <TableCell className="font-mono text-xs">{r.invoice_number}</TableCell>
                       <TableCell>
                         <div className="font-medium">{r.store?.store_name ?? "—"}</div>
@@ -537,12 +540,15 @@ function PaidUnpaidTab() {
                       </TableCell>
                       <TableCell className="text-right">{fmtMoney(total)}</TableCell>
                       <TableCell className="text-right">{fmtMoney(paid)}</TableCell>
-                      <TableCell className="text-right font-semibold">
+                      <TableCell className="text-right font-bold">
                         {owed > 0 ? (
-                          <span className="text-destructive">{fmtMoney(owed)}</span>
+                          <span>{fmtMoney(owed)}</span>
                         ) : (
-                          <span className="text-muted-foreground">—</span>
+                          <span className="text-muted-foreground font-normal">—</span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        {isUnpaid ? <AgeBadge days={days} /> : <span className="text-muted-foreground text-xs">—</span>}
                       </TableCell>
                       <TableCell className="text-sm whitespace-nowrap">
                         {fmtDate(r.paid_at)}
