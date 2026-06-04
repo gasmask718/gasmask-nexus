@@ -2570,7 +2570,8 @@ export default function AppRoutes() {
         <Route path="/portals/production/task-timer" element={<WorkerTaskTimerPage />} />
         <Route path="/production/cost-history" element={<CostHistoryPage />} />
         <Route path="/production/supervisor-comparison" element={<SupervisorComparisonPage />} />
-        <Route path="/portals/va" element={<VAPortalPage />} />
+        {/* T3 K7: /portals/va is the duplicate; canonical is /portal/va */}
+        <Route path="/portals/va" element={<Navigate to="/portal/va" replace />} />
         <Route path="/portals/customer" element={<CustomerPortalPage />} />
         <Route path="/portals/national-wholesale" element={<NationalWholesalePortalPage />} />
         <Route path="/portals/admin" element={<MarketplaceAdminPortalPage />} />
