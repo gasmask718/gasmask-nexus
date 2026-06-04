@@ -11,6 +11,7 @@ import { DDShell } from "@/components/dynasty-direct/DDShell";
 import { DDPageHeader } from "@/components/dynasty-direct/DDPageHeader";
 import { DDEmpty, DDSkeleton } from "@/components/dynasty-direct/DDStates";
 import { DDBulkBar } from "@/components/dynasty-direct/DDBulkBar";
+import { DDPersonalizeInviteDialog } from "@/components/dynasty-direct/DDPersonalizeInviteDialog";
 
 export default function DynastyDirectInvites() {
   const qc = useQueryClient();
@@ -156,15 +157,17 @@ export default function DynastyDirectInvites() {
                   <div className="font-medium">{w.company_name}</div>
                   <div className="text-xs text-muted-foreground">{w.email} · {w.phone || "no phone"} · {w.status}</div>
                 </div>
-                <InviteButton
-                  role="wholesaler"
-                  targetLink={{ wholesaler_profile_id: w.id, company_name: w.company_name }}
-                  defaultName={w.contact_name || w.company_name}
-                  defaultEmail={w.email || ""}
-                  defaultPhone={w.phone || ""}
-                  label="Invite & Link"
-                />
-              </div>
+                <div className="flex items-center gap-2">
+                  <DDPersonalizeInviteDialog wholesalerId={w.id} companyName={w.company_name} />
+                  <InviteButton
+                    role="wholesaler"
+                    targetLink={{ wholesaler_profile_id: w.id, company_name: w.company_name }}
+                    defaultName={w.contact_name || w.company_name}
+                    defaultEmail={w.email || ""}
+                    defaultPhone={w.phone || ""}
+                    label="Invite & Link"
+                  />
+                </div>
             ))}
           </div>
         </div>
