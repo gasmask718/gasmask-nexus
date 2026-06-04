@@ -1759,7 +1759,8 @@ export default function AppRoutes() {
         <Route path="/crm/business/:businessSlug" element={<Navigate to="/crm/:businessSlug" replace />} />
         
         {/* Legacy customer/contact routes */}
-        <Route path="/crm/customers" element={<CRMCustomers />} />
+        {/* T3 M4: customers becomes a tab inside Global CRM */}
+        <Route path="/crm/customers" element={<Navigate to="/crm?tab=customers" replace />} />
         <Route path="/crm/customers/new" element={<CRMCustomerNew />} />
         <Route path="/crm/customers/import" element={<CRMCustomerImport />} />
         <Route path="/crm/customers/:id" element={<CRMCustomerDetail />} />
