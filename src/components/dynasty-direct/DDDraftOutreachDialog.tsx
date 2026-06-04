@@ -170,7 +170,7 @@ export function DDDraftOutreachDialog({
                 <ToggleGroupItem value="email" size="sm" disabled={!recipientEmail}>Email</ToggleGroupItem>
               </ToggleGroup>
             </div>
-            <Button variant="outline" size="sm" onClick={draft} disabled={loading} className="ml-auto">
+            <Button variant="outline" size="sm" onClick={() => draft()} disabled={loading || !resolvedId} className="ml-auto">
               {loading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
               Regenerate
             </Button>
