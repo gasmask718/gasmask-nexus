@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
 
 type Status = 'pending' | 'approved' | 'invited' | 'rejected';
 interface Application {
