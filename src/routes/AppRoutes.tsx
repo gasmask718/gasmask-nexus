@@ -612,6 +612,7 @@ const WholesalerMessages = lazy(() => import('@/pages/portal/wholesaler').then(m
 const WholesalerFulfillmentPage = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerFulfillmentPage })));
 const WholesalerTransactionHistory = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerTransactionHistory })));
 const WholesalerInventoryWorkflow = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerInventoryWorkflow })));
+const WholesalerOrderGrabba = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerOrderGrabba })));
 const StoreDashboard = lazy(() => import('@/pages/portal/store').then(m => ({ default: m.StoreDashboard })));
 const StoreProducts = lazy(() => import('@/pages/portal/store').then(m => ({ default: m.StoreProducts })));
 const StoreCart = lazy(() => import('@/pages/portal/store').then(m => ({ default: m.StoreCart })));
@@ -747,6 +748,8 @@ const DynastyDirectCatalogOnboard = lazy(() => import('@/pages/dynasty-direct/Dy
 const DynastyDirectContentLibrary = lazy(() => import('@/pages/dynasty-direct/DynastyDirectContentLibrary'));
 const DynastyDirectInvites = lazy(() => import('@/pages/dynasty-direct/DynastyDirectInvites'));
 const DynastyDirectStoreApplications = lazy(() => import('@/pages/dynasty-direct/DynastyDirectStoreApplications'));
+const DynastyDirectFulfillmentConsole = lazy(() => import('@/pages/dynasty-direct/DynastyDirectFulfillmentConsole'));
+const DynastyDirectGrabbaBridge = lazy(() => import('@/pages/dynasty-direct/DynastyDirectGrabbaBridge'));
 const UniversalInviteAccept = lazy(() => import('@/pages/invite/UniversalInviteAccept'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
 const OSLayout = lazy(() => import('@/pages/os/OSLayout'));
@@ -2487,6 +2490,7 @@ export default function AppRoutes() {
         <Route path="/portal/wholesaler/team" element={<WholesalerTeam />} />
         <Route path="/portal/wholesaler/transactions" element={<WholesalerTransactionHistory />} />
         <Route path="/portal/wholesaler/inventory" element={<WholesalerInventoryWorkflow />} />
+        <Route path="/portal/wholesaler/order-grabba" element={<WholesalerOrderGrabba />} />
         <Route path="/portal/production" element={<ProductionPortal />} />
         <Route path="/portal/va" element={<VAPortal />} />
         <Route path="/portal/customer" element={<CustomerPortal />} />
