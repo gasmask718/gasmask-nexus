@@ -93282,12 +93282,17 @@ export type Database = {
           full_address: string
           id: string
           last_checked_at: string | null
+          last_scan_at: string | null
           latitude: number | null
           longitude: number | null
+          match_method: string | null
+          match_score: number | null
+          matched_store_id: string | null
           neighborhood_id: string | null
           notes: string | null
           phone: string | null
           place_id: string | null
+          scan_source: string | null
           state: string
           store_name: string | null
           updated_at: string
@@ -93304,12 +93309,17 @@ export type Database = {
           full_address: string
           id?: string
           last_checked_at?: string | null
+          last_scan_at?: string | null
           latitude?: number | null
           longitude?: number | null
+          match_method?: string | null
+          match_score?: number | null
+          matched_store_id?: string | null
           neighborhood_id?: string | null
           notes?: string | null
           phone?: string | null
           place_id?: string | null
+          scan_source?: string | null
           state: string
           store_name?: string | null
           updated_at?: string
@@ -93326,12 +93336,17 @@ export type Database = {
           full_address?: string
           id?: string
           last_checked_at?: string | null
+          last_scan_at?: string | null
           latitude?: number | null
           longitude?: number | null
+          match_method?: string | null
+          match_score?: number | null
+          matched_store_id?: string | null
           neighborhood_id?: string | null
           notes?: string | null
           phone?: string | null
           place_id?: string | null
+          scan_source?: string | null
           state?: string
           store_name?: string | null
           updated_at?: string
@@ -93340,6 +93355,41 @@ export type Database = {
           zip?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "territory_addresses_matched_store_id_fkey"
+            columns: ["matched_store_id"]
+            isOneToOne: false
+            referencedRelation: "store_intelligence_v"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "territory_addresses_matched_store_id_fkey"
+            columns: ["matched_store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "territory_addresses_matched_store_id_fkey"
+            columns: ["matched_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_gm_cadence_due"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "territory_addresses_matched_store_id_fkey"
+            columns: ["matched_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_reactivation_targets"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "territory_addresses_matched_store_id_fkey"
+            columns: ["matched_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
           {
             foreignKeyName: "territory_addresses_neighborhood_id_fkey"
             columns: ["neighborhood_id"]
@@ -93573,6 +93623,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      territory_coverage_scans: {
+        Row: {
+          city: string
+          created_by: string | null
+          donthave_count: number
+          have_count: number
+          id: string
+          neighborhood: string | null
+          raw_summary: Json | null
+          scanned_at: string
+          scope: string
+          state: string
+          total_found: number
+        }
+        Insert: {
+          city: string
+          created_by?: string | null
+          donthave_count?: number
+          have_count?: number
+          id?: string
+          neighborhood?: string | null
+          raw_summary?: Json | null
+          scanned_at?: string
+          scope: string
+          state: string
+          total_found?: number
+        }
+        Update: {
+          city?: string
+          created_by?: string | null
+          donthave_count?: number
+          have_count?: number
+          id?: string
+          neighborhood?: string | null
+          raw_summary?: Json | null
+          scanned_at?: string
+          scope?: string
+          state?: string
+          total_found?: number
+        }
+        Relationships: []
       }
       territory_neighborhoods: {
         Row: {
@@ -114209,14 +114301,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -117221,6 +117313,27 @@ export type Database = {
           source_zip_lookup: number | null
           total_stores: number | null
           worked_stores: number | null
+        }
+        Relationships: []
+      }
+      v_neighborhood_coverage_universe: {
+        Row: {
+          address: string | null
+          city: string | null
+          coverage_status: string | null
+          lat: number | null
+          lng: number | null
+          match_method: string | null
+          match_score: number | null
+          name: string | null
+          neighborhood: string | null
+          phone: string | null
+          place_id: string | null
+          relationship_status: string | null
+          row_id: string | null
+          state: string | null
+          store_id: string | null
+          territory_address_id: string | null
         }
         Relationships: []
       }
