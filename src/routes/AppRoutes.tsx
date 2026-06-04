@@ -745,6 +745,8 @@ const DynastyDirectOrders = lazy(() => import('@/pages/dynasty-direct/DynastyDir
 const DynastyDirectSupplierNetwork = lazy(() => import('@/pages/dynasty-direct/DynastyDirectSupplierNetwork'));
 const DynastyDirectCatalogOnboard = lazy(() => import('@/pages/dynasty-direct/DynastyDirectCatalogOnboard'));
 const DynastyDirectContentLibrary = lazy(() => import('@/pages/dynasty-direct/DynastyDirectContentLibrary'));
+const DynastyDirectInvites = lazy(() => import('@/pages/dynasty-direct/DynastyDirectInvites'));
+const UniversalInviteAccept = lazy(() => import('@/pages/invite/UniversalInviteAccept'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
 const OSLayout = lazy(() => import('@/pages/os/OSLayout'));
 const StoreInventoryPage = lazy(() => import('@/pages/os/inventory/StoreInventoryPage'));
@@ -1237,6 +1239,7 @@ export default function AppRoutes() {
       <Route path="/signup" element={<InviteSignup />} />
       <Route path="/invite/accept" element={<InviteSignup />} />
       <Route path="/invite/ambassador/:token" element={<AmbassadorInviteAccept />} />
+      <Route path="/invite/:token" element={<UniversalInviteAccept />} />
       <Route path="/accept-invite" element={<Navigate to="/signup" replace />} />
       {/* Brandaro Public Proposal Viewer */}
       <Route path="/proposal/:token" element={<PublicProposalPage />} />
@@ -1890,6 +1893,14 @@ export default function AppRoutes() {
           element={
             <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
               <DynastyDirectContentLibrary />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/dynasty-direct/invites"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
+              <DynastyDirectInvites />
             </RequireRole>
           }
         />

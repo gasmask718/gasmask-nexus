@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Link } from 'react-router-dom';
 import { MapPin, AlertTriangle } from 'lucide-react';
+import { InviteButton } from '@/components/invites/InviteButton';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN as string | undefined;
 
@@ -292,9 +293,19 @@ export default function DynastyDirectSupplierNetwork() {
               const inv = stateInvByWh(w.id);
               return (
                 <Card key={w.id} className="p-3">
-                  <div className="font-semibold">{w.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {[w.address, w.city, normState(w.state)].filter(Boolean).join(', ')}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-semibold">{w.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {[w.address, w.city, normState(w.state)].filter(Boolean).join(', ')}
+                      </div>
+                    </div>
+                    <InviteButton
+                      role="wholesaler"
+                      targetLink={{ wholesaler_id: w.id, company_name: w.name }}
+                      defaultName={w.name}
+                      label="Invite"
+                    />
                   </div>
                   <div className="mt-2">
                     <div className="text-xs font-medium text-muted-foreground mb-1">

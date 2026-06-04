@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/sheet';
 import { format } from 'date-fns';
 import { ExternalLink, RefreshCw, Search } from 'lucide-react';
+import { InviteButton } from '@/components/invites/InviteButton';
 
 type OrderRow = {
   id: string;
@@ -323,6 +324,7 @@ export default function DynastyDirectOrders() {
                 <th className="p-3">Fulfillment</th>
                 <th className="p-3">Tracking</th>
                 <th className="p-3">Date</th>
+                <th className="p-3">Invite</th>
               </tr>
             </thead>
             <tbody>
@@ -390,6 +392,17 @@ export default function DynastyDirectOrders() {
                     </td>
                     <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">
                       {format(new Date(r.created_at), 'MMM d, yyyy')}
+                    </td>
+                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      {(r.customer_email || r.customer_phone) && (
+                        <InviteButton
+                          role="customer"
+                          targetLink={{ order_id: r.id }}
+                          defaultEmail={r.customer_email || ''}
+                          defaultPhone={r.customer_phone || ''}
+                          label="Invite"
+                        />
+                      )}
                     </td>
                   </tr>
                 );

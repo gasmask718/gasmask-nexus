@@ -33,6 +33,7 @@ const TILES = [
   { path: '/dynasty-direct/shipping', label: 'Shipping', icon: Send, desc: 'Labels, carriers, EasyPost' },
   { path: '/dynasty-direct/grabba-bridge', label: 'Grabba Bridge', icon: Zap, desc: 'Cross-app order injection' },
   { path: '/dynasty-direct/analytics', label: 'Analytics', icon: BarChart3, desc: 'Control tower KPIs' },
+  { path: '/dynasty-direct/invites', label: 'Invites & Access', icon: Send, desc: 'Universal invites — wholesaler, ambassador, store, customer', highlight: true },
   { path: '/admin/dynasty-direct-ops', label: 'Ops Console', icon: Settings, desc: 'Geocoding + profile linking' },
 ];
 
