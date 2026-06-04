@@ -34,7 +34,7 @@ const LandingPage = lazy(() => import('@/pages/public/LandingPage'));
 const AboutPage = lazy(() => import('@/pages/public/AboutPage'));
 const ContactPage = lazy(() => import('@/pages/public/ContactPage'));
 const Auth = lazy(() => import('@/pages/Auth'));
-// Shop deleted — /shop now redirects to /dynasty-direct/d2c-storefront
+const Shop = lazy(() => import('@/pages/Shop'));
 const ShopifyStore = lazy(() => import('@/pages/ShopifyStore'));
 const Cart = lazy(() => import('@/pages/Cart'));
 const Checkout = lazy(() => import('@/pages/Checkout'));
