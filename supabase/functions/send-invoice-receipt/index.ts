@@ -154,6 +154,14 @@ Deno.serve(async (req) => {
       ? new Date(request.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       : 'Net 30';
 
+    // Owner self-serve portal link — placed in every receipt so the next
+    // reorder happens in-app instead of via phone tag.
+    const portalBase = Deno.env.get('PUBLIC_APP_URL') || 'https://gasmask-os-nexus.lovable.app';
+    const portalLink = request.store_id
+      ? `${portalBase}/portal/store?invite=${request.store_id}`
+      : `${portalBase}/portal/store`;
+    const reorderLine = `\n🛒 Reorder anytime: ${portalLink}\n`;
+
     // Build message — use custom_message if provided, otherwise default template
     let messageBody: string;
     if (request.custom_message && request.custom_message.trim()) {
@@ -164,6 +172,7 @@ Deno.serve(async (req) => {
         `📅 Due: ${dueDateFormatted}\n\n` +
         `${request.custom_message.trim()}\n\n` +
         `Payment Methods: Cash, CashApp, Zelle, Check\n` +
+        reorderLine +
         `— Dynasty OS`;
     } else {
       messageBody = `🧾 Invoice Notification\n\n` +
@@ -173,8 +182,9 @@ Deno.serve(async (req) => {
         `💰 Amount: ${formattedTotal}\n` +
         `📅 Date: ${invoiceDate}\n` +
         `📅 Due: ${dueDateFormatted}\n\n` +
-        `Payment Methods: Cash, CashApp, Zelle, Check\n\n` +
-        `Thank you for your business!\n` +
+        `Payment Methods: Cash, CashApp, Zelle, Check\n` +
+        reorderLine +
+        `\nThank you for your business!\n` +
         `— Dynasty OS`;
     }
 
