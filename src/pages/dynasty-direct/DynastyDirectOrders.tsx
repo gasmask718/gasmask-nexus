@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import { ExternalLink, RefreshCw, Search } from 'lucide-react';
 import { InviteButton } from '@/components/invites/InviteButton';
 import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
+import { DDDrillMenu, ddDrill } from '@/components/dynasty-direct/DDDrillMenu';
 
 type OrderRow = {
   id: string;
