@@ -511,7 +511,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/portal/national-wholesale', label: '🌎 National Wholesale OS', icon: Globe },
       { path: '/pod', label: '🎨 POD Design OS', icon: Palette },
       { path: '/pod/designs', label: 'POD Designs', icon: Layers },
-      { path: '/pod/generator', label: 'POD Generator', icon: Sparkles },
+      { path: '/pod/generate', label: 'POD Generator', icon: Sparkles },
       { path: '/pod/mockups', label: 'POD Mockups', icon: Eye },
       { path: '/pod/analytics', label: 'POD Analytics', icon: BarChart3 },
     ],
