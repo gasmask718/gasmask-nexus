@@ -23,7 +23,7 @@ export default function HREmployeeDetail() {
   const [employee, setEmployee] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [onboardingTasks, setOnboardingTasks] = useState<any[]>([]);
-  const [payroll, setPayroll] = useState<any>(null);
+  const [payroll, setPayroll] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
