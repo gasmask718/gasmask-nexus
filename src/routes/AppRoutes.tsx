@@ -750,6 +750,7 @@ const DynastyDirectInvites = lazy(() => import('@/pages/dynasty-direct/DynastyDi
 const DynastyDirectStoreApplications = lazy(() => import('@/pages/dynasty-direct/DynastyDirectStoreApplications'));
 const DynastyDirectFulfillmentConsole = lazy(() => import('@/pages/dynasty-direct/DynastyDirectFulfillmentConsole'));
 const DynastyDirectGrabbaBridge = lazy(() => import('@/pages/dynasty-direct/DynastyDirectGrabbaBridge'));
+const DynastyDirectAffiliates = lazy(() => import('@/pages/dynasty-direct/DynastyDirectAffiliates'));
 const UniversalInviteAccept = lazy(() => import('@/pages/invite/UniversalInviteAccept'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
 const OSLayout = lazy(() => import('@/pages/os/OSLayout'));
