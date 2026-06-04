@@ -389,7 +389,28 @@ export default function DynastyDirectStoreApplications() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={bulkRejectOpen} onOpenChange={setBulkRejectOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reject {selectedApps.length} application{selectedApps.length === 1 ? '' : 's'}</DialogTitle>
+            </DialogHeader>
+            <Textarea
+              placeholder="Shared reason for this batch (applied to every selected application)"
+              value={bulkReason}
+              onChange={(e) => setBulkReason(e.target.value)}
+            />
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setBulkRejectOpen(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={bulkReject} disabled={bulkBusy === 'reject'}>
+                {bulkBusy === 'reject' && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                Reject {selectedApps.length}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
 }
+
