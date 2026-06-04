@@ -30,15 +30,16 @@ export default function UniversalInviteAccept() {
     (async () => {
       if (!token) return;
       const { data, error } = await supabase.rpc("get_invite_by_token", { p_token: token });
-      const row = Array.isArray(data) ? data[0] : data;
+      const row: any = Array.isArray(data) ? data[0] : data;
       if (error || !row) {
         setErr("Invite not found or expired.");
       } else {
         setInvite(row);
         setEmail(row.sent_to_email || "");
         setPhone(row.sent_to_phone || "");
-        setName(row.sent_name || "");
+        setName(row.sent_name || row.inviter_display_name || "");
         supabase.rpc("mark_invite_opened", { p_token: token });
+
         if (row.status === "accepted") setErr("This invite has already been used.");
         if (row.status === "revoked") setErr("This invite was revoked.");
         if (row.status === "expired" || (row.expires_at && new Date(row.expires_at) < new Date())) setErr("This invite has expired.");
