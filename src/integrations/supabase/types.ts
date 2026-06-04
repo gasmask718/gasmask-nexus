@@ -86076,6 +86076,11 @@ export type Database = {
           state: string | null
           status: string
           store_address: string | null
+          triage_model: string | null
+          triage_score: number | null
+          triage_signals: Json | null
+          triage_summary: string | null
+          triaged_at: string | null
           updated_at: string
           website: string | null
           zip: string | null
@@ -86100,6 +86105,11 @@ export type Database = {
           state?: string | null
           status?: string
           store_address?: string | null
+          triage_model?: string | null
+          triage_score?: number | null
+          triage_signals?: Json | null
+          triage_summary?: string | null
+          triaged_at?: string | null
           updated_at?: string
           website?: string | null
           zip?: string | null
@@ -86124,6 +86134,11 @@ export type Database = {
           state?: string | null
           status?: string
           store_address?: string | null
+          triage_model?: string | null
+          triage_score?: number | null
+          triage_signals?: Json | null
+          triage_summary?: string | null
+          triaged_at?: string | null
           updated_at?: string
           website?: string | null
           zip?: string | null

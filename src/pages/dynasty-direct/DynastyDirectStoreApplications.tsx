@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, X, Mail, Phone, MapPin, Loader2, Store, CheckSquare, Square } from 'lucide-react';
+import { ArrowLeft, Check, X, Mail, Phone, MapPin, Loader2, Store, CheckSquare, Square, Sparkles, Globe, FileBadge } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
 import { DDBulkBar } from '@/components/dynasty-direct/DDBulkBar';
+import { AI_OPS } from '@/lib/dynastyDirect/aiOps';
 
 type Status = 'pending' | 'approved' | 'invited' | 'rejected';
 interface Application {
@@ -26,12 +27,18 @@ interface Application {
   state: string | null;
   zip: string | null;
   ein: string | null;
+  website: string | null;
   notes: string | null;
   status: Status;
   rejection_reason: string | null;
   invite_id: string | null;
   created_at: string;
   reviewed_at: string | null;
+  triage_score: number | null;
+  triage_summary: string | null;
+  triage_signals: any;
+  triage_model: string | null;
+  triaged_at: string | null;
 }
 
 const STATUS_STYLES: Record<Status, string> = {
@@ -40,6 +47,13 @@ const STATUS_STYLES: Record<Status, string> = {
   invited: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   rejected: 'bg-red-500/15 text-red-400 border-red-500/30',
 };
+
+function triageBadgeClass(score: number | null) {
+  if (score == null) return 'bg-muted text-muted-foreground border-border';
+  if (score >= AI_OPS.triage.legitGreen) return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+  if (score >= AI_OPS.triage.legitAmber) return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+  return 'bg-red-500/15 text-red-400 border-red-500/30';
+}
 
 export default function DynastyDirectStoreApplications() {
   const navigate = useNavigate();
@@ -58,14 +72,53 @@ export default function DynastyDirectStoreApplications() {
     queryFn: async () => {
       let q = supabase
         .from('store_applications' as any)
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
       if (tab !== 'all') q = q.eq('status', tab);
+      // Pending: highest score first, then newest. Other tabs: newest first.
+      if (tab === 'pending') {
+        q = q.order('triage_score', { ascending: false, nullsFirst: false })
+             .order('created_at', { ascending: false });
+      } else {
+        q = q.order('created_at', { ascending: false });
+      }
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as unknown as Application[];
     },
   });
+
+  // Auto-triage any pending application with no score yet.
+  const [triagingId, setTriagingId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!AI_OPS.triage.autoTriageOnLoad) return;
+    const ungraded = apps.filter((a) => a.status === 'pending' && a.triage_score == null);
+    if (ungraded.length === 0) return;
+    (async () => {
+      for (const a of ungraded.slice(0, 5)) {  // cap per render
+        try {
+          setTriagingId(a.id);
+          await supabase.functions.invoke('dd-application-triage', { body: { application_id: a.id } });
+        } catch (e) { console.warn('[auto-triage]', a.id, e); }
+      }
+      setTriagingId(null);
+      qc.invalidateQueries({ queryKey: ['dd-store-applications', tab] });
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apps.map((a) => a.id).join(','), tab]);
+
+  async function triageOne(id: string) {
+    setTriagingId(id);
+    try {
+      const { error } = await supabase.functions.invoke('dd-application-triage', { body: { application_id: id } });
+      if (error) throw error;
+      toast.success('Triaged');
+      qc.invalidateQueries({ queryKey: ['dd-store-applications', tab] });
+    } catch (e: any) {
+      toast.error(e.message || 'Triage failed');
+    } finally {
+      setTriagingId(null);
+    }
+  }
 
   const counts = useQuery({
     queryKey: ['dd-store-applications-counts'],
@@ -299,9 +352,17 @@ export default function DynastyDirectStoreApplications() {
                         </p>
                       </div>
                     </div>
-                    <Badge variant="outline" className={STATUS_STYLES[app.status]}>
-                      {app.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {app.triage_score != null && (
+                        <Badge variant="outline" className={triageBadgeClass(app.triage_score)}>
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          {app.triage_score}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className={STATUS_STYLES[app.status]}>
+                        {app.status}
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -322,8 +383,52 @@ export default function DynastyDirectStoreApplications() {
                         {[app.store_address, app.city, app.state, app.zip].filter(Boolean).join(', ')}
                       </div>
                     )}
-                    {app.ein && <div className="text-muted-foreground">EIN: {app.ein}</div>}
+                  {app.ein && <div className="text-xs text-muted-foreground flex items-center gap-1"><FileBadge className="h-3 w-3" /> EIN: {app.ein}</div>}
                   </div>
+                  {app.website && (
+                    <div className="text-xs flex items-center gap-1.5">
+                      <Globe className="h-3 w-3 text-muted-foreground" />
+                      <a href={app.website.startsWith('http') ? app.website : `https://${app.website}`} target="_blank" rel="noreferrer" className="hover:underline text-primary">{app.website}</a>
+                    </div>
+                  )}
+
+                  {(app.triage_summary || app.status === 'pending') && (
+                    <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-xs space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <Sparkles className="h-3 w-3 text-primary" /> AI triage
+                          {app.triage_model && <span className="text-muted-foreground font-normal">· {app.triage_model.split('/').pop()}</span>}
+                        </span>
+                        {app.status === 'pending' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-[11px]"
+                            disabled={triagingId === app.id}
+                            onClick={() => triageOne(app.id)}
+                          >
+                            {triagingId === app.id ? <Loader2 className="h-3 w-3 animate-spin" /> : app.triage_score == null ? 'Triage now' : 'Re-triage'}
+                          </Button>
+                        )}
+                      </div>
+                      {app.triage_summary && <p className="text-muted-foreground">{app.triage_summary}</p>}
+                      {Array.isArray(app.triage_signals?.ai_flags) && app.triage_signals.ai_flags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {app.triage_signals.ai_flags.map((f: string, i: number) => (
+                            <span key={i} className="px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 text-[10px]">⚠ {f}</span>
+                          ))}
+                        </div>
+                      )}
+                      {Array.isArray(app.triage_signals?.ai_positive) && app.triage_signals.ai_positive.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {app.triage_signals.ai_positive.map((f: string, i: number) => (
+                            <span key={i} className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px]">✓ {f}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {app.notes && (
                     <p className="text-sm bg-muted/40 rounded p-3">{app.notes}</p>
                   )}

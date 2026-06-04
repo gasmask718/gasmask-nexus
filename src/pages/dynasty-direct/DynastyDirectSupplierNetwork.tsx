@@ -14,12 +14,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Link } from 'react-router-dom';
-import { MapPin, AlertTriangle, CheckSquare, Square, RefreshCw, Send, Pause, Play } from 'lucide-react';
+import { MapPin, AlertTriangle, CheckSquare, Square, RefreshCw, Send, Pause, Play, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { InviteButton } from '@/components/invites/InviteButton';
 import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
 import { DDBulkBar } from '@/components/dynasty-direct/DDBulkBar';
 import { DDDrillMenu, ddDrill } from '@/components/dynasty-direct/DDDrillMenu';
+import { DDDraftOutreachDialog } from '@/components/dynasty-direct/DDDraftOutreachDialog';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN as string | undefined;
 
@@ -71,6 +72,7 @@ export default function DynastyDirectSupplierNetwork() {
   const [loading, setLoading] = useState(true);
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedUngeo, setSelectedUngeo] = useState<Set<string>>(new Set());
+  const [outreachTarget, setOutreachTarget] = useState<{ id: string; name: string } | null>(null);
   const [bulkBusy, setBulkBusy] = useState<string | null>(null);
 
   function toggleUngeo(id: string) {
@@ -358,6 +360,7 @@ export default function DynastyDirectSupplierNetwork() {
                     ddDrill.supplierProducts(w.id),
                     ddDrill.inventory(w.id),
                     ddDrill.supplierInvite(w.id),
+                    { label: 'Draft outreach', icon: Sparkles, onSelect: () => setOutreachTarget({ id: w.id, name: w.name }) },
                   ]}
                 />
               </div>
@@ -396,12 +399,22 @@ export default function DynastyDirectSupplierNetwork() {
                         {[w.address, w.city, normState(w.state)].filter(Boolean).join(', ')}
                       </div>
                     </div>
-                    <InviteButton
-                      role="wholesaler"
-                      targetLink={{ wholesaler_id: w.id, company_name: w.name }}
-                      defaultName={w.name}
-                      label="Invite"
-                    />
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setOutreachTarget({ id: w.id, name: w.name })}
+                        title="AI-draft an outreach message"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 mr-1" /> Draft outreach
+                      </Button>
+                      <InviteButton
+                        role="wholesaler"
+                        targetLink={{ wholesaler_id: w.id, company_name: w.name }}
+                        defaultName={w.name}
+                        label="Invite"
+                      />
+                    </div>
                   </div>
                   <div className="mt-2">
                     <div className="text-xs font-medium text-muted-foreground mb-1">
@@ -428,6 +441,15 @@ export default function DynastyDirectSupplierNetwork() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {outreachTarget && (
+        <DDDraftOutreachDialog
+          open={!!outreachTarget}
+          onOpenChange={(o) => !o && setOutreachTarget(null)}
+          wholesalerId={outreachTarget.id}
+          wholesalerName={outreachTarget.name}
+        />
+      )}
     </div>
   );
 }
