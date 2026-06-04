@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertTriangle, Target, MapPin, Clock, TrendingUp, Eye, ClipboardList } from 'lucide-react';
+import { NeighborhoodScanButton } from '@/components/territory/NeighborhoodScanButton';
 
 export default function TerritoryGapIntelligence() {
   const [planOpen, setPlanOpen] = useState(false);
@@ -138,6 +139,7 @@ export default function TerritoryGapIntelligence() {
                         <th className="text-right py-2 px-3">Target</th>
                         <th className="py-2 px-3 w-36">Coverage</th>
                         <th className="text-center py-2 px-3">Status</th>
+                        <th className="text-center py-2 px-3">Scan</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -166,6 +168,12 @@ export default function TerritoryGapIntelligence() {
                             </td>
                             <td className="py-2 px-3 text-center">
                               <DominationBadge status={n.domination_status} />
+                            </td>
+                            <td className="py-2 px-3 text-center">
+                              <NeighborhoodScanButton
+                                neighborhoodId={n.neighborhood_id}
+                                neighborhoodName={n.name}
+                              />
                             </td>
                           </tr>
                         );
