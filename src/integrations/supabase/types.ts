@@ -117911,36 +117911,21 @@ export type Database = {
         }
         Returns: Json
       }
-      dd_create_marketplace_order:
-        | {
-            Args: {
-              p_customer_id?: string
-              p_guest_email?: string
-              p_guest_phone?: string
-              p_items: Json
-              p_notes?: string
-              p_shipping_address: Json
-              p_shipping_cost?: number
-              p_subtotal?: number
-              p_tax_amount?: number
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_customer_id?: string
-              p_discount_code?: string
-              p_guest_email?: string
-              p_guest_phone?: string
-              p_items: Json
-              p_notes?: string
-              p_shipping_address: Json
-              p_shipping_cost?: number
-              p_subtotal?: number
-              p_tax_amount?: number
-            }
-            Returns: Json
-          }
+      dd_create_marketplace_order: {
+        Args: {
+          p_customer_id?: string
+          p_discount_code?: string
+          p_guest_email?: string
+          p_guest_phone?: string
+          p_items: Json
+          p_notes?: string
+          p_shipping_address: Json
+          p_shipping_cost?: number
+          p_subtotal?: number
+          p_tax_amount?: number
+        }
+        Returns: Json
+      }
       dd_link_wholesaler_to_store_master: {
         Args: { p_wholesaler_id: string }
         Returns: string
