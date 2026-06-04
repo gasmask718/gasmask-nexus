@@ -76,7 +76,7 @@ function usePool() {
       const [{ data: items }, { data: stores }] = await Promise.all([
         supabase
           .from('marketplace_order_items')
-          .select('order_id, product_name, qty')
+          .select('order_id, qty, price_each, product_id')
           .in('order_id', ids),
         supabase
           .from('store_master')
@@ -89,10 +89,25 @@ function usePool() {
           ),
       ]);
 
+      const productIds = Array.from(
+        new Set(((items as any[]) ?? []).map((i) => i.product_id).filter(Boolean)),
+      );
+      const productNameById = new Map<string, string>();
+      if (productIds.length) {
+        const { data: pAll } = await supabase
+          .from('products_all')
+          .select('id, product_name')
+          .in('id', productIds);
+        for (const p of (pAll as any[]) ?? []) productNameById.set(p.id, p.product_name);
+      }
+
       const itemsByOrder = new Map<string, { product_name: string; qty: number }[]>();
       for (const it of (items as any[]) ?? []) {
         const arr = itemsByOrder.get(it.order_id) ?? [];
-        arr.push({ product_name: it.product_name, qty: it.qty });
+        arr.push({
+          product_name: productNameById.get(it.product_id) || 'Item',
+          qty: it.qty,
+        });
         itemsByOrder.set(it.order_id, arr);
       }
       const storeNameById = new Map<string, string>();
