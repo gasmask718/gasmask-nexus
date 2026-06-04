@@ -27,13 +27,15 @@ export interface DDHubKpis {
   twilioBalanceUsd: number | null;
   lastHealthCheck: string | null;
   commsHealthFails: number;
+  // Inbox
+  newContactMessages: number;
 }
 
 async function fetchDDHubKpis(): Promise<DDHubKpis> {
   const [
     unpaid, awaitingLabel, paidWeek, unrouted, routingFails,
     needGeocode, activeSup, openInvites, pendingApps, affiliates,
-    payoutRows, briefs, twilioBalance, commsFails,
+    payoutRows, briefs, twilioBalance, commsFails, newMessages,
   ] = await Promise.all([
     supabase.from('marketplace_orders').select('id', { count: 'exact', head: true }).eq('payment_status', 'unpaid'),
     supabase.from('marketplace_fulfillments').select('id', { count: 'exact', head: true }).eq('status', 'label_pending'),
@@ -58,6 +60,7 @@ async function fetchDDHubKpis(): Promise<DDHubKpis> {
       .eq('target', 'twilio_balance').order('created_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('comms_health_checks').select('id', { count: 'exact', head: true })
       .eq('status', 'fail').gte('created_at', new Date(Date.now() - 3_600_000).toISOString()),
+    supabase.from('contact_messages').select('id', { count: 'exact', head: true }).eq('status', 'new'),
   ]);
 
   const payoutDue = (payoutRows.data || []).reduce(
@@ -81,6 +84,7 @@ async function fetchDDHubKpis(): Promise<DDHubKpis> {
     twilioBalanceUsd: balanceDetail?.balance_usd ?? null,
     lastHealthCheck: (twilioBalance.data as any)?.created_at ?? null,
     commsHealthFails: commsFails.count ?? 0,
+    newContactMessages: newMessages.count ?? 0,
   };
 }
 
