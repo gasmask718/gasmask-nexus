@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export type CommissionStatus = 'pending' | 'approved' | 'paid' | 'reversed';
-export type SourceChannel = 'store_order' | 'wholesale_order' | 'affiliate' | 'team_override';
+export type SourceChannel = 'store_order' | 'wholesale_order' | 'affiliate' | 'team_override' | 'dynasty_direct';
 
 export interface CommissionLedgerEntry {
   id: string;
@@ -214,6 +214,7 @@ export function useChannelBreakdown() {
         wholesale_order: 0,
         affiliate: 0,
         team_override: 0,
+        dynasty_direct: 0,
       };
 
       (data || []).forEach((row: any) => {

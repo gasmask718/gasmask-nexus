@@ -230,6 +230,7 @@ const AmbassadorPayoutsPage = lazy(() => import('@/pages/ambassador/payouts').th
 const AmbassadorPayoutStatementPage = lazy(() => import('@/pages/ambassador/payouts').then(m => ({ default: m.AmbassadorPayoutStatementPage })));
 const AmbassadorPayoutSettingsPage = lazy(() => import('@/pages/ambassador/payouts').then(m => ({ default: m.AmbassadorPayoutSettingsPage })));
 const AmbassadorCatalog = lazy(() => import('@/pages/ambassador/AmbassadorCatalog'));
+const AmbassadorDDOrder = lazy(() => import('@/pages/ambassador/AmbassadorDDOrder'));
 const AmbassadorFeedback = lazy(() => import('@/pages/ambassador/AmbassadorFeedback'));
 const FeedbackInbox = lazy(() => import('@/pages/admin/FeedbackInbox'));
 
@@ -3084,6 +3085,13 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
             <AmbassadorCatalog />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/ambassador/dd-order" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <AmbassadorDDOrder />
           </RequireRole>
         </ProtectedRoute>
       } />

@@ -37,6 +37,7 @@ export default function AmbassadorCommissions() {
       case 'wholesale_order': return <ShoppingCart className="h-4 w-4" />;
       case 'affiliate': return <TrendingUp className="h-4 w-4" />;
       case 'team_override': return <Users className="h-4 w-4" />;
+      case 'dynasty_direct': return <ShoppingCart className="h-4 w-4" />;
       default: return <DollarSign className="h-4 w-4" />;
     }
   };
@@ -47,9 +48,12 @@ export default function AmbassadorCommissions() {
       case 'wholesale_order': return t('amb.commissions.wholesale');
       case 'affiliate': return t('amb.commissions.affiliate');
       case 'team_override': return t('amb.commissions.team_override');
+      case 'dynasty_direct': return 'Dynasty Direct';
       default: return channel;
     }
   };
+
+  // (channel label helper defined above)
 
   const getStatusBadge = (status: string) => {
     switch (status) {
