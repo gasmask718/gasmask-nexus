@@ -11,8 +11,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Loader2, MapPin, AlertTriangle, Package, DollarSign, Phone, Sparkles, X, Route as RouteIcon,
-  Gift, RotateCcw, TrendingDown,
+  Gift, RotateCcw, TrendingDown, Zap,
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const TYPE_META: Record<CandidateType, { label: string; icon: any; color: string }> = {
   reorder: { label: 'Reorder', icon: Package, color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
@@ -35,6 +37,32 @@ export default function RouteCommandCenter() {
   const [activeTypes, setActiveTypes] = useState<Set<CandidateType>>(new Set(ALL_TYPES));
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [assignOpen, setAssignOpen] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
+  const [optimizedPreview, setOptimizedPreview] = useState<null | { proposals: any[]; total_stores: number }>(null);
+
+  // T3 M1: standalone Route Optimizer killed — Optimize action lives here.
+  async function optimizeSelected() {
+    const store_ids = Array.from(selected);
+    if (store_ids.length === 0) {
+      toast.error('Select at least one stop to optimize.');
+      return;
+    }
+    setOptimizing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('optimize-routes', {
+        body: { store_ids },
+      });
+      if (error) throw error;
+      const proposals = data?.proposals ?? data?.routes ?? [];
+      setOptimizedPreview({ proposals, total_stores: store_ids.length });
+      toast.success(`Optimized ${store_ids.length} stops into ${proposals.length} proposal(s).`);
+    } catch (e: any) {
+      toast.error(`Optimize failed: ${e.message ?? e}`);
+      console.error('[RouteCommandCenter] optimize-routes error', e);
+    } finally {
+      setOptimizing(false);
+    }
+  }
 
   // Distinct filter values
   const { neighborhoods, cities } = useMemo(() => {
@@ -120,6 +148,14 @@ export default function RouteCommandCenter() {
             <X className="h-4 w-4 mr-1" /> Clear ({selected.size})
           </Button>
           <Button
+            variant="secondary"
+            disabled={selected.size === 0 || optimizing}
+            onClick={optimizeSelected}
+          >
+            {optimizing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
+            Optimize Selected ({selected.size})
+          </Button>
+          <Button
             size="lg"
             disabled={selected.size === 0}
             onClick={() => setAssignOpen(true)}
@@ -129,6 +165,27 @@ export default function RouteCommandCenter() {
           </Button>
         </div>
       </div>
+
+      {optimizedPreview && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" />
+              Optimized {optimizedPreview.total_stores} stop(s) → {optimizedPreview.proposals.length} route proposal(s)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 text-xs text-muted-foreground space-y-1">
+            {optimizedPreview.proposals.slice(0, 5).map((p: any, i: number) => (
+              <div key={p.id ?? i} className="flex justify-between">
+                <span>{p.driver ?? p.driver_id ?? `Proposal ${i + 1}`} · {p.stops ?? p.stores?.length ?? 0} stops</span>
+                <span>{Math.round(p.distance ?? 0)} km{p.profit ? ` · $${Math.round(p.profit)}` : ''}</span>
+              </div>
+            ))}
+            {optimizedPreview.proposals.length === 0 && <div>No viable driver assignment found for this selection.</div>}
+          </CardContent>
+        </Card>
+      )}
+
 
       {/* Summary strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

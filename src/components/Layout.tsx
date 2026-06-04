@@ -231,7 +231,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/sell-through-analytics', label: 'Sell-Through Analytics', icon: BarChart3 },
         { path: '/crm', label: 'Global CRM', icon: UserCheck },
         { path: '/crm/contacts', label: 'CRM Contacts', icon: User },
-        { path: '/crm/customers', label: 'CRM Customers', icon: Users },
+        // T3 M4: CRM Customers is a tab inside Global CRM; sidebar entry removed.
         { path: '/crm/follow-ups', label: 'Follow-Ups', icon: Clock },
         { path: '/opportunities', label: 'All Opportunities', icon: Target },
       ],
@@ -283,8 +283,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/gasmask/route-engine', label: 'Route Engine', icon: Route },
         { path: '/gasmask/driver-route', label: 'Driver View', icon: MapPin },
         { path: '/grabba/routes', label: 'Route Manager', icon: Route },
-        { path: '/routes', label: 'All Routes', icon: Map },
-        { path: '/route-optimizer', label: 'Route Optimizer', icon: Zap },
+        // T3 K1/M1: /routes + /route-optimizer killed; Route Manager + Command Center are canonical.
         { path: '/route-ops-center', label: 'Route Ops Center', icon: Target },
         { path: '/routes/command-center', label: '🚀 Route Command Center', icon: Target },
         { path: '/live-map', label: 'Live Map', icon: MapPin },
@@ -346,7 +345,7 @@ const DYNASTY_NAVIGATION = {
       id: 'floor-9',
       name: '🤖 Floor 9 — AI Operations',
       items: [
-        { path: '/gasmask/agent-center', label: 'AI Agent Center', icon: Brain },
+        // T3 K2: Agent Center merged into Floor 9 hub.
         { path: '/grabba/floor9', label: 'AI Operations Hub', icon: Brain },
         { path: '/grabba/floor9/playbooks', label: 'AI Playbooks', icon: FileText },
         { path: '/grabba/floor9/tasks', label: 'AI Tasks', icon: ClipboardList },
@@ -464,21 +463,8 @@ const DYNASTY_NAVIGATION = {
   communicationSystems: {
     id: 'communication-systems',
     name: '📡 Communication Systems',
-    items: [
-      // AI Call Center OS
-      { path: '/comm-systems/dialer', label: '📞 Dialer', icon: Phone },
-      { path: '/comm-systems/call-logs', label: 'Call Logs', icon: FileText },
-      { path: '/comm-systems/ai-agents', label: 'AI Agents', icon: Bot },
-      { path: '/comm-systems/call-analytics', label: 'Call Analytics', icon: BarChart3 },
-      // AI Text Center OS
-      { path: '/comm-systems/messages', label: '💬 Messages', icon: MessageSquare },
-      // Email Center OS
-      { path: '/comm-systems/emails', label: '📧 Emails', icon: Mail },
-      // Communication Hub
-      { path: '/comm-systems/comm-ai', label: '📻 Communications AI', icon: Brain },
-      { path: '/comm-systems/automation', label: 'Comm Automation', icon: Zap },
-      { path: '/comm-systems/insights', label: 'Comm Insights', icon: Eye },
-    ],
+    // T3 K3: entire /comm-systems subtree killed — Floor 2 Communication Hub is canonical.
+    items: [],
   },
   dynastyDirect: {
     id: 'dynasty-direct',
@@ -538,9 +524,8 @@ const DYNASTY_NAVIGATION = {
       { path: '/crm/data', label: 'CRM Data', icon: Database },
       { path: '/crm/data/export', label: 'CRM Export', icon: Download },
       { path: '/crm/data/import', label: 'CRM Import', icon: Upload },
-      { path: '/crm/data/backup', label: 'CRM Backup', icon: Shield },
-      { path: '/communications-center', label: '🎧 Customer Service OS', icon: Headphones },
-      { path: '/communications-center/logs', label: 'Service Logs', icon: FileText },
+      // T3 K5: CRM Backup page killed; backups now live with Floor Exports.
+      // T3 K4: /communications-center ghosts removed; Floor 2 hub is canonical.
     ],
   },
   aiSystems: {
@@ -564,7 +549,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/hr/interviews', label: 'HR Interviews', icon: Calendar },
       { path: '/hr/documents', label: 'HR Documents', icon: FileText },
       { path: '/hr/onboarding', label: 'HR Onboarding', icon: Check },
-      { path: '/hr/payroll', label: 'HR Payroll', icon: Wallet },
+      // T3 K6: HR Payroll consolidated into Floor 5 Payroll Manager.
       { path: '/my-hr', label: 'My HR', icon: User },
       { path: '/va-performance', label: '📊 VA OS', icon: Activity },
       { path: '/va-ranking', label: 'VA Ranking', icon: Award },
@@ -720,7 +705,7 @@ const Layout = ({ children }: LayoutProps) => {
   ]);
   
   const currentPath = location.pathname;
-  const isFloor9Route = currentPath.startsWith('/grabba/floor9') || currentPath.startsWith('/gasmask/agent-center') || currentPath.startsWith('/gasmask/note-cleaner');
+  const isFloor9Route = currentPath.startsWith('/grabba/floor9') || currentPath.startsWith('/gasmask/note-cleaner');
 
   const isPathActive = (path: string) => {
     if (path === '/') return currentPath === '/';

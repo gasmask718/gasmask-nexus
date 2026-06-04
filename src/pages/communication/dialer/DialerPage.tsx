@@ -8,6 +8,7 @@ import { useOutboundCall } from "@/hooks/useOutboundCall";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Phone } from "lucide-react";
+import { BusinessCompliancePanel } from "@/components/communication/BusinessCompliancePanel";
 
 export default function DialerPage() {
   const [selectedBusinessId] = useState<string>("all");
@@ -255,6 +256,15 @@ export default function DialerPage() {
         onScheduleFollowUp={handleScheduleFollowUp}
         isLoading={storesLoading}
       />
+
+      {/* T3 K3 salvage: BusinessCompliancePanel rehomed from killed /comm-systems subtree */}
+      <BusinessCompliancePanel
+        businessId={selectedBusinessId === "all" ? null : selectedBusinessId}
+        businessName={null}
+        isAllBusinesses={selectedBusinessId === "all"}
+      />
+
+
 
       {/* Quick Dial Modal */}
       <QuickDialModal

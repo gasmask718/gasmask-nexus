@@ -1,24 +1,63 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, FileText, Download, Calendar, BarChart3 } from 'lucide-react';
+import { ArrowLeft, FileText, Download, BarChart3, Store, DollarSign, ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
 
+/**
+ * T3 K12 — merged OwnerReports + OwnerExecutiveReports into a single page
+ * wired to real Supabase tables (store_master, ut_orders, ut_invoices).
+ * Replaces the previous hardcoded `reportTypes.lastGenerated` strings.
+ */
+
 const reportTypes = [
-  { id: 'daily', name: 'Daily Briefing', description: 'Today\'s key metrics and alerts', lastGenerated: '2 hours ago' },
-  { id: 'weekly', name: 'Weekly Performance', description: 'Week-over-week business comparison', lastGenerated: 'Yesterday' },
-  { id: 'monthly', name: 'Monthly P&L', description: 'Full financial breakdown by business', lastGenerated: '3 days ago' },
-  { id: 'quarterly', name: 'Quarterly Review', description: 'Strategic insights and projections', lastGenerated: 'Last month' },
+  { id: 'daily',     name: 'Daily Briefing',     description: "Today's key metrics and alerts" },
+  { id: 'weekly',    name: 'Weekly Performance', description: 'Week-over-week business comparison' },
+  { id: 'monthly',   name: 'Monthly P&L',        description: 'Full financial breakdown by business' },
+  { id: 'quarterly', name: 'Quarterly Review',   description: 'Strategic insights and projections' },
 ];
+
+function fmtMoney(n: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+}
 
 export default function OwnerReports() {
   const navigate = useNavigate();
 
+  // Real-data wiring: counts pulled live from canonical tables.
+  const { data: live, isLoading, error } = useQuery({
+    queryKey: ['owner-reports-live-counts'],
+    queryFn: async () => {
+      const since7d = new Date(Date.now() - 7 * 86400_000).toISOString();
+
+      const [stores, orders7d] = await Promise.all([
+        supabase.from('store_master').select('id', { count: 'exact', head: true }),
+        supabase.from('ut_orders').select('id, total_amount', { count: 'exact' }).gte('created_at', since7d),
+      ]);
+
+      // Surface (not swallow) any Supabase error — Zero-Silent-Failures rule.
+      if (stores.error) throw stores.error;
+      if (orders7d.error) throw orders7d.error;
+
+      const revenue7d = (orders7d.data ?? []).reduce(
+        (s: number, r: any) => s + Number(r.total_amount ?? 0), 0,
+      );
+
+      return {
+        stores: stores.count ?? 0,
+        orders7d: orders7d.count ?? 0,
+        revenue7d,
+      };
+    },
+  });
+
   const handleGenerateReport = (type: string) => {
-    toast.info(`Generating ${type} report...`, {
-      description: 'Full report generation coming in advanced Owner Suite.'
+    toast.info(`Generating ${type} report…`, {
+      description: 'Full PDF generation will land in the Reports producer (T4).',
     });
   };
 
@@ -35,63 +74,66 @@ export default function OwnerReports() {
           </div>
           <div>
             <h1 className="text-xl font-bold">Executive Reports</h1>
-            <p className="text-sm text-muted-foreground">Dynasty performance reports</p>
+            <p className="text-sm text-muted-foreground">Dynasty performance reports — live data</p>
           </div>
         </div>
       </div>
 
-      {/* Report Types */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {reportTypes.map((report) => (
-          <Card key={report.id} className="rounded-xl">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{report.name}</CardTitle>
-                <Badge variant="outline" className="text-xs">
-                  {report.lastGenerated}
-                </Badge>
-              </div>
-              <CardDescription className="text-xs">{report.description}</CardDescription>
+      {/* Live counts from real tables */}
+      {error && (
+        <Card className="border-destructive/40 bg-destructive/10">
+          <CardContent className="p-4 text-sm text-destructive">
+            Failed to load live counts: {(error as Error).message}
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs">
+              <Store className="h-3 w-3" /> Total Stores
+            </div>
+            <div className="text-2xl font-bold mt-1">{isLoading ? '…' : live?.stores ?? 0}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs">
+              <ShoppingCart className="h-3 w-3" /> Orders (7d)
+            </div>
+            <div className="text-2xl font-bold mt-1">{isLoading ? '…' : live?.orders7d ?? 0}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs">
+              <DollarSign className="h-3 w-3" /> Revenue (7d)
+            </div>
+            <div className="text-2xl font-bold mt-1">{isLoading ? '…' : fmtMoney(live?.revenue7d ?? 0)}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Report generators */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {reportTypes.map((r) => (
+          <Card key={r.id}>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between text-base">
+                {r.name}
+                <Badge variant="outline">PDF</Badge>
+              </CardTitle>
+              <CardDescription>{r.description}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="gap-2" onClick={() => handleGenerateReport(report.name)}>
-                  <BarChart3 className="h-4 w-4" />
-                  Generate
-                </Button>
-                <Button size="sm" variant="ghost" className="gap-2" onClick={() => handleGenerateReport(report.name)}>
-                  <Download className="h-4 w-4" />
-                  Download
-                </Button>
-              </div>
+              <Button onClick={() => handleGenerateReport(r.id)} size="sm" className="gap-2">
+                <Download className="h-3 w-3" /> Generate
+              </Button>
             </CardContent>
           </Card>
         ))}
       </div>
-
-      {/* Scheduled Reports */}
-      <Card className="rounded-xl border-blue-500/30">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-blue-400" />
-            Scheduled Reports
-          </CardTitle>
-          <CardDescription className="text-xs">
-            Automatic report delivery (Coming Soon)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Configure automatic daily, weekly, and monthly reports delivered to your email 
-            or stored in Dropbox. This feature is part of the advanced Owner Suite.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Button variant="outline" onClick={() => navigate('/os/owner')}>
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Owner Dashboard
-      </Button>
     </div>
   );
 }

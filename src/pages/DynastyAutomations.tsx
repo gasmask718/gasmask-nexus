@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Zap, Plus, MessageSquare, Package, User, Truck, DollarSign, Clock } from 'lucide-react';
+import { Zap, Plus, MessageSquare, Package, User, Truck, DollarSign, Clock, Activity, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { AutomationEventType, DEFAULT_AUTOMATION_TEMPLATES } from '@/services/automationService';
@@ -137,13 +137,77 @@ export default function DynastyAutomations() {
   const failedLogs = automationLogs?.filter(log => log.status === 'failed').length || 0;
   const pendingLogs = automationLogs?.filter(log => log.status === 'pending').length || 0;
 
+  // T3 M3: real cron+health overview (46+ scheduled jobs)
+  const { data: cronJobs = [], isLoading: cronLoading, error: cronError } = useQuery({
+    queryKey: ['cron-job-health-overview'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('cron_job_health_overview' as any)
+        .select('*')
+        .order('jobname');
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
   return (
     <Layout>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dynasty Automations</h1>
-          <p className="text-muted-foreground">Event-based automatic messaging</p>
+          <p className="text-muted-foreground">Event-based messaging rules + scheduled cron jobs · live</p>
         </div>
+
+        {/* T3 M3: REAL scheduled jobs (cron.job + health_checks join) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              Scheduled Jobs ({cronJobs.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {cronError && (
+              <div className="text-sm text-destructive p-3 border border-destructive/40 rounded-md bg-destructive/10 mb-3">
+                Failed to load cron overview: {(cronError as Error).message}
+              </div>
+            )}
+            {cronLoading ? (
+              <div className="text-sm text-muted-foreground">Loading scheduled jobs…</div>
+            ) : cronJobs.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No scheduled jobs registered.</div>
+            ) : (
+              <div className="max-h-96 overflow-y-auto border rounded-md divide-y">
+                {cronJobs.map((j) => {
+                  const lastStatus = j.cron_last_status ?? j.health_last_status;
+                  const ok = lastStatus === 'succeeded' || lastStatus === 'ok' || lastStatus === 'pass';
+                  const fail = lastStatus === 'failed' || lastStatus === 'fail' || lastStatus === 'error';
+                  return (
+                    <div key={j.jobid} className="flex items-center justify-between px-3 py-2 text-sm gap-3">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        {ok ? (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                        ) : fail ? (
+                          <XCircle className="h-4 w-4 text-rose-500 shrink-0" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-muted-foreground shrink-0" />
+                        )}
+                        <span className="font-medium truncate">{j.jobname}</span>
+                        <Badge variant="outline" className="font-mono text-xs">{j.schedule}</Badge>
+                        {!j.active && <Badge variant="secondary" className="text-xs">paused</Badge>}
+                      </div>
+                      <div className="text-xs text-muted-foreground shrink-0">
+                        {j.last_start ? new Date(j.last_start).toLocaleString() : 'never run'}
+                        {lastStatus ? ` · ${lastStatus}` : ''}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-4">

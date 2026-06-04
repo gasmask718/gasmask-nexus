@@ -114168,14 +114168,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -114195,6 +114195,25 @@ export type Database = {
           sentiment_score: string | null
           source_lead_id: string | null
           transcript: string | null
+        }
+        Relationships: []
+      }
+      cron_job_health_overview: {
+        Row: {
+          active: boolean | null
+          cadence_expected_minutes: number | null
+          command: string | null
+          cron_last_status: string | null
+          health_check_id: string | null
+          health_last_message: string | null
+          health_last_ok_at: string | null
+          health_last_run_at: string | null
+          health_last_status: string | null
+          jobid: number | null
+          jobname: string | null
+          last_runtime_ms: number | null
+          last_start: string | null
+          schedule: string | null
         }
         Relationships: []
       }

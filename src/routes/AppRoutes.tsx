@@ -95,7 +95,6 @@ const TerritoryPlaybooksPage = lazy(() => import('@/pages/territory/TerritoryPla
 const RevenueBrain = lazy(() => import('@/pages/RevenueBrain'));
 const OpportunityRadar = lazy(() => import('@/pages/OpportunityRadar'));
 const MasterOpportunities = lazy(() => import('@/pages/MasterOpportunities'));
-const MissionsHQ = lazy(() => import('@/pages/MissionsHQ'));
 const Communications = lazy(() => import('@/pages/Communications'));
 const Templates = lazy(() => import('@/pages/Templates'));
 const Reminders = lazy(() => import('@/pages/Reminders'));
@@ -242,8 +241,6 @@ const WalletPage = lazy(() => import('@/pages/Wallet'));
 const Subscriptions = lazy(() => import('@/pages/Subscriptions'));
 const DeliveryCapacity = lazy(() => import('@/pages/DeliveryCapacity'));
 const DeliveryCapacityCommand = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DeliveryCapacityCommand })));
-const CommunicationAutomation = lazy(() => import('@/pages/CommunicationAutomation'));
-const CommunicationsAI = lazy(() => import('@/pages/CommunicationsAI'));
 const SecurityConsole = lazy(() => import('@/components/security/SecurityConsole').then(m => ({ default: m.SecurityConsole })));
 const RolesPermissionsPage = lazy(() => import('@/components/security/RolesPermissionsPage').then(m => ({ default: m.RolesPermissionsPage })));
 const StoreDeduplicationPage = lazy(() => import('@/pages/admin/StoreDeduplicationPage'));
@@ -253,14 +250,12 @@ const RecentlyAddedStores = lazy(() => import('@/pages/admin/RecentlyAddedStores
 const DispatchMap = lazy(() => import('@/pages/admin/DispatchMap'));
 const UserManagementPage = lazy(() => import('@/components/security/UserManagementPage'));
 const MessagesPage = lazy(() => import('@/pages/Messages'));
-const CommunicationInsights = lazy(() => import('@/pages/CommunicationInsights'));
 const RouteOptimizer = lazy(() => import('@/pages/RouteOptimizer'));
 const RouteOpsCenter = lazy(() => import('@/pages/RouteOpsCenter'));
 const RouteOpsCenterEnhanced = lazy(() => import('@/pages/delivery').then(m => ({ default: m.RouteOpsCenterEnhanced })));
 const OpsCommandCenter = lazy(() => import('@/pages/delivery').then(m => ({ default: m.OpsCommandCenter })));
 const RouteOptimizerPage = lazy(() => import('@/pages/delivery').then(m => ({ default: m.RouteOptimizerPage })));
 const PendingRouteStopsPage = lazy(() => import('@/pages/dispatch/PendingRouteStopsPage'));
-const MyRoute = lazy(() => import('@/pages/MyRoute'));
 const RouteCommandCenter = lazy(() => import('@/pages/RouteCommandCenter'));
 const SidebarVisualTest = lazy(() => import('@/pages/SidebarVisualTest'));
 const SidebarDebug = lazy(() => import('@/pages/debug/SidebarDebug'));
@@ -287,7 +282,6 @@ const BikerPayouts = lazy(() => import('@/pages/BikerPayouts'));
 const CRM = lazy(() => import('@/pages/CRM'));
 const CRMContacts = lazy(() => import('@/pages/CRMContacts'));
 const CRMContactDetail = lazy(() => import('@/pages/CRMContactDetail'));
-const CRMCustomers = lazy(() => import('@/pages/CRMCustomers'));
 const ContactProfile = lazy(() => import('@/pages/crm/ContactProfile'));
 const GlobalCRM = lazy(() => import('@/pages/crm/GlobalCRM'));
 const RelationshipHealthRollup = lazy(() => import('@/pages/crm/RelationshipHealthRollup'));
@@ -339,7 +333,6 @@ const AddBusinessPage = lazy(() => import('@/pages/crm/AddBusinessPage'));
 const CRMDataPage = lazy(() => import('@/pages/crm/CRMDataPage'));
 const CRMExportPage = lazy(() => import('@/pages/crm/CRMExportPage'));
 const CRMImportPage = lazy(() => import('@/pages/crm/CRMImportPage'));
-const CRMBackupPage = lazy(() => import('@/pages/crm/CRMBackupPage'));
 const EntityListPage = lazy(() => import('@/pages/crm/EntityListPage'));
 const EntityProfilePage = lazy(() => import('@/pages/crm/EntityProfilePage'));
 const EntityCreatePage = lazy(() => import('@/pages/crm/EntityCreatePage'));
@@ -355,7 +348,6 @@ const CRMData = lazy(() => import('@/pages/CRMData'));
 const CRMDataExport = lazy(() => import('@/pages/CRMDataExport'));
 const CRMDataImport = lazy(() => import('@/pages/CRMDataImport'));
 const CRMBulkUpload = lazy(() => import('@/pages/CRMBulkUpload'));
-const CRMBackupSettings = lazy(() => import('@/pages/CRMBackupSettings'));
 const CRMFollowUps = lazy(() => import('@/pages/CRMFollowUps'));
 const Companies = lazy(() => import('@/pages/Companies'));
 const CompanyProfile = lazy(() => import('@/pages/CompanyProfile'));
@@ -567,23 +559,11 @@ const CommunicationNumbers = lazy(() => import('@/pages/communication/Communicat
 const CommunicationLogs = lazy(() => import('@/pages/communication/CommunicationLogs'));
 const CommunicationAnalytics = lazy(() => import('@/pages/communication/CommunicationAnalytics'));
 const CommunicationSettings = lazy(() => import('@/pages/communication/CommunicationSettings'));
-const CommunicationsCenterOverview = lazy(() => import('@/pages/CommunicationsCenterOverview'));
-const CommunicationsCenterLogs = lazy(() => import('@/pages/CommunicationsCenterLogs'));
 const CallCenter = lazy(() => import('@/pages/CallCenter'));
 const TextCenter = lazy(() => import('@/pages/TextCenter'));
 const EmailCenter = lazy(() => import('@/pages/EmailCenter'));
 
 // Comm Systems
-const CommSystemsDialerPage = lazy(() => import('@/pages/comm-systems/dialer/DialerPage'));
-const CommSystemsCallLogsPage = lazy(() => import('@/pages/comm-systems/call-logs/CallLogsPage'));
-const CommSystemsAIAgentsPage = lazy(() => import('@/pages/comm-systems/ai-agents/AIAgentsPage'));
-const CommSystemsAnalyticsPage = lazy(() => import('@/pages/comm-systems/analytics/CallAnalyticsPage'));
-const CommSystemsMessagesPage = lazy(() => import('@/pages/comm-systems/messages/MessagesPage'));
-const CommSystemsEmailsPage = lazy(() => import('@/pages/comm-systems/emails/EmailsPage'));
-const CommSystemsCommAIPage = lazy(() => import('@/pages/comm-systems/hub/CommAIPage'));
-const CommSystemsAutomationPage = lazy(() => import('@/pages/comm-systems/hub/CommAutomationPage'));
-const CommSystemsInsightsPage = lazy(() => import('@/pages/comm-systems/hub/CommInsightsPage'));
-const CommunicationHubPage = lazy(() => import('@/pages/comm-systems/hub/CommunicationHubPage'));
 
 const BillingCenter = lazy(() => import('@/pages/BillingCenter'));
 const BillingInvoices = lazy(() => import('@/pages/BillingInvoices'));
@@ -1403,7 +1383,8 @@ export default function AppRoutes() {
         <Route path="/gasmask/settings" element={<BrandPlaceholder />} />
         <Route path="/gasmask/route-engine" element={<RouteEnginePage />} />
         <Route path="/gasmask/driver-route" element={<GasmaskDriverRoutePage />} />
-        <Route path="/gasmask/agent-center" element={<AgentCenterPage />} />
+        {/* T3 K2: Agent Center merged into Floor 9 intelligence suite */}
+        <Route path="/gasmask/agent-center" element={<Navigate to="/grabba/floor9" replace />} />
         <Route path="/dynasty/agents" element={<AgentCenterPage />} />
         <Route path="/gasmask/note-cleaner" element={<NoteCleanerPage />} />
 
@@ -1447,15 +1428,17 @@ export default function AppRoutes() {
         <Route path="/system-operations/ai-ceo-control-room" element={<AICEOControlRoom />} />
         <Route path="/meta-ai" element={<MetaAI />} />
         <Route path="/executive-reports" element={<ExecutiveReports />} />
-        <Route path="/missions-hq" element={<MissionsHQ />} />
-        <Route path="/communication-automation" element={<CommunicationAutomation />} />
-        <Route path="/communications-ai" element={<CommunicationsAI />} />
-        <Route path="/communication-insights" element={<CommunicationInsights />} />
+        {/* T3 K10: Missions HQ shell → real Penthouse Mission Control */}
+        <Route path="/missions-hq" element={<Navigate to="/penthouse/missions" replace />} />
+        {/* T3 K11: orphan comm pages — redirect to canonical hub */}
+        <Route path="/communication-automation" element={<Navigate to="/settings/automation/communications" replace />} />
+        <Route path="/communications-ai" element={<Navigate to="/communication/agents" replace />} />
+        <Route path="/communication-insights" element={<Navigate to="/communication/analytics" replace />} />
         <Route path="/dynasty-automations" element={<DynastyAutomations />} />
 
-        {/* Communications Center - All redirect to unified V8 Communication Hub */}
-        <Route path="/communications-center" element={<CommunicationHubLayout />} />
-        <Route path="/communications-center/*" element={<CommunicationHubLayout />} />
+        {/* T3 K4: /communications-center ghost — collapse to Floor 2 Comm Hub */}
+        <Route path="/communications-center" element={<Navigate to="/communication" replace />} />
+        <Route path="/communications-center/*" element={<Navigate to="/communication" replace />} />
 
         {/* Call Center */}
         <Route path="/call-center" element={<CallCenterDashboard />} />
@@ -1529,17 +1512,18 @@ export default function AppRoutes() {
         </Route>
 
         {/* 📡 Communication Systems - New Unified Module */}
-        <Route path="/comm-systems" element={<CommSystemsDialerPage />} />
-        <Route path="/comm-systems/dialer" element={<CommSystemsDialerPage />} />
-        <Route path="/comm-systems/call-logs" element={<CommSystemsCallLogsPage />} />
-        <Route path="/comm-systems/ai-agents" element={<CommSystemsAIAgentsPage />} />
-        <Route path="/comm-systems/call-analytics" element={<CommSystemsAnalyticsPage />} />
-        <Route path="/comm-systems/messages" element={<CommSystemsMessagesPage />} />
-        <Route path="/comm-systems/emails" element={<CommSystemsEmailsPage />} />
-        <Route path="/comm-systems/comm-hub" element={<CommunicationHubPage />} />
-        <Route path="/comm-systems/comm-ai" element={<CommSystemsCommAIPage />} />
-        <Route path="/comm-systems/automation" element={<CommSystemsAutomationPage />} />
-        <Route path="/comm-systems/insights" element={<CommSystemsInsightsPage />} />
+        {/* T3 K3: /comm-systems subtree killed; all paths redirect into Floor 2 hub. */}
+        <Route path="/comm-systems" element={<Navigate to="/communication/dialer" replace />} />
+        <Route path="/comm-systems/dialer" element={<Navigate to="/communication/dialer" replace />} />
+        <Route path="/comm-systems/call-logs" element={<Navigate to="/communication/calls" replace />} />
+        <Route path="/comm-systems/ai-agents" element={<Navigate to="/communication/agents" replace />} />
+        <Route path="/comm-systems/call-analytics" element={<Navigate to="/communication/analytics" replace />} />
+        <Route path="/comm-systems/messages" element={<Navigate to="/communication/inbox" replace />} />
+        <Route path="/comm-systems/emails" element={<Navigate to="/communication/email" replace />} />
+        <Route path="/comm-systems/comm-hub" element={<Navigate to="/communication" replace />} />
+        <Route path="/comm-systems/comm-ai" element={<Navigate to="/communication/agents" replace />} />
+        <Route path="/comm-systems/automation" element={<Navigate to="/settings/automation/communications" replace />} />
+        <Route path="/comm-systems/insights" element={<Navigate to="/communication/analytics" replace />} />
 
         <Route path="/va-performance" element={<VAPerformance />} />
         <Route path="/va-ranking" element={<VARanking />} />
@@ -1553,7 +1537,8 @@ export default function AppRoutes() {
         <Route path="/hr/interviews" element={<HRInterviews />} />
         <Route path="/hr/documents" element={<HRDocuments />} />
         <Route path="/hr/onboarding" element={<HROnboarding />} />
-        <Route path="/hr/payroll" element={<HRPayroll />} />
+        {/* T3 K6: HR Payroll merged into Floor 5 Payroll Manager */}
+        <Route path="/hr/payroll" element={<Navigate to="/grabba/payroll-manager" replace />} />
         <Route path="/my-hr" element={<MyHR />} />
         <Route path="/me/hr" element={<MyHR />} />
 
@@ -1564,7 +1549,8 @@ export default function AppRoutes() {
         <Route path="/brand-crm" element={<BrandCRMPage />} />
         <Route path="/stores/performance" element={<StorePerformance />} />
         <Route path="/stores/order" element={<StoreOrder />} />
-        <Route path="/routes" element={<RoutesPage />} />
+        {/* T3 K1: All Routes redirected to Route Manager (canonical) */}
+        <Route path="/routes" element={<Navigate to="/grabba/routes" replace />} />
         <Route path="/routes/optimizer" element={<RouteOptimizer />} />
         <Route path="/routes/ops-center" element={<RouteOpsCenterEnhanced />} />
         <Route path="/routes/command-center" element={<RouteCommandCenter />} />
@@ -1574,7 +1560,8 @@ export default function AppRoutes() {
         <Route path="/route-ops-center" element={<RouteOpsCenterEnhanced />} />
         <Route path="/ops-command-center" element={<OpsCommandCenter />} />
         {/* Route Optimizer - Floor 4 Planning Intelligence */}
-        <Route path="/route-optimizer" element={<RouteOptimizerPage />} />
+        {/* T3 M1: standalone Route Optimizer killed — Optimize action lives in /routes/command-center */}
+        <Route path="/route-optimizer" element={<Navigate to="/routes/command-center" replace />} />
         <Route path="/dispatch/pending-stops" element={<PendingRouteStopsPage />} />
         <Route path="/routes/:id" element={<RouteDetail />} />
         <Route path="/map" element={<MapPage />} />
@@ -1596,10 +1583,11 @@ export default function AppRoutes() {
         <Route path="/communications" element={<Communications />} />
         <Route path="/templates" element={<Templates />} />
         <Route path="/communications/reminders" element={<Reminders />} />
-        <Route path="/communications/ai-insights" element={<CommunicationsAI />} />
-        <Route path="/communications/insights" element={<CommunicationInsights />} />
+        {/* T3 K11: orphan comm pages → canonical hub redirects */}
+        <Route path="/communications/ai-insights" element={<Navigate to="/communication/agents" replace />} />
+        <Route path="/communications/insights" element={<Navigate to="/communication/analytics" replace />} />
         <Route path="/settings/automation" element={<AutomationSettings />} />
-        <Route path="/settings/automation/communications" element={<CommunicationAutomation />} />
+        <Route path="/settings/automation/communications" element={<Navigate to="/settings/automation" replace />} />
         <Route path="/training" element={<Training />} />
         <Route path="/ambassadors" element={<AllAmbassadorsTable />} />
         <Route path="/ambassadors/command" element={<AmbassadorCommandDashboard />} />
@@ -1654,7 +1642,7 @@ export default function AppRoutes() {
         <Route path="/payroll" element={<Payroll />} />
         <Route path="/unpaid-accounts" element={<UnpaidAccounts />} />
         {/* Communication Center - Redirect to modular hub */}
-        <Route path="/communication-center" element={<CommunicationHubLayout />} />
+        <Route path="/communication-center" element={<Navigate to="/communication" replace />} />
 
         {/* CRM - Global CRM with Blueprint System */}
         {/* Floor 1: Global CRM Hub - shows all businesses */}
@@ -1664,7 +1652,8 @@ export default function AppRoutes() {
         <Route path="/crm/data/export" element={<CRMExportPage />} />
         <Route path="/crm/data/import" element={<CRMImportPage />} />
         <Route path="/crm/data/bulk-upload" element={<CRMBulkUpload />} />
-        <Route path="/crm/data/backup" element={<CRMBackupPage />} />
+        {/* T3 K5: CRM Backup page killed — redirect to CRM Data hub */}
+        <Route path="/crm/data/backup" element={<Navigate to="/crm/data" replace />} />
         <Route path="/crm/settings" element={<CRMSettingsPage />} />
         <Route path="/crm/user-access" element={<CRMUserAccessPage />} />
         <Route path="/crm/accept-invite" element={<AcceptCRMInvite />} />
@@ -1751,7 +1740,8 @@ export default function AppRoutes() {
         <Route path="/crm/business/:businessSlug" element={<Navigate to="/crm/:businessSlug" replace />} />
         
         {/* Legacy customer/contact routes */}
-        <Route path="/crm/customers" element={<CRMCustomers />} />
+        {/* T3 M4: customers becomes a tab inside Global CRM */}
+        <Route path="/crm/customers" element={<Navigate to="/crm?tab=customers" replace />} />
         <Route path="/crm/customers/new" element={<CRMCustomerNew />} />
         <Route path="/crm/customers/import" element={<CRMCustomerImport />} />
         <Route path="/crm/customers/:id" element={<CRMCustomerDetail />} />
@@ -2237,11 +2227,8 @@ export default function AppRoutes() {
             <OwnerRiskRadar />
           </RequireRole>
         } />
-        <Route path="/os/owner/briefing" element={
-          <RequireRole allowedRoles={['admin']} showLocked>
-            <OwnerDailyBriefing />
-          </RequireRole>
-        } />
+        {/* T3 K13: OwnerDailyBriefing merged into Accounting OS */}
+        <Route path="/os/owner/briefing" element={<Navigate to="/penthouse/accounting" replace />} />
         <Route path="/os/owner/holdings" element={
           <RequireRole allowedRoles={['admin']} showLocked>
             <OwnerHoldingsOverview />
@@ -2319,11 +2306,8 @@ export default function AppRoutes() {
             <OwnerAlertCenter />
           </RequireRole>
         } />
-        <Route path="/os/owner/executive-reports" element={
-          <RequireRole allowedRoles={['admin']} showLocked>
-            <OwnerExecutiveReports />
-          </RequireRole>
-        } />
+        {/* T3 K12: OwnerExecutiveReports merged into OwnerReports (canonical) */}
+        <Route path="/os/owner/executive-reports" element={<Navigate to="/os/owner/reports" replace />} />
         <Route path="/os/owner/broadcast" element={
           <RequireRole allowedRoles={['admin']} showLocked>
             <OwnerBroadcastCenter />
@@ -2567,7 +2551,8 @@ export default function AppRoutes() {
         <Route path="/portals/production/task-timer" element={<WorkerTaskTimerPage />} />
         <Route path="/production/cost-history" element={<CostHistoryPage />} />
         <Route path="/production/supervisor-comparison" element={<SupervisorComparisonPage />} />
-        <Route path="/portals/va" element={<VAPortalPage />} />
+        {/* T3 K7: /portals/va is the duplicate; canonical is /portal/va */}
+        <Route path="/portals/va" element={<Navigate to="/portal/va" replace />} />
         <Route path="/portals/customer" element={<CustomerPortalPage />} />
         <Route path="/portals/national-wholesale" element={<NationalWholesalePortalPage />} />
         <Route path="/portals/admin" element={<MarketplaceAdminPortalPage />} />
