@@ -93289,6 +93289,7 @@ export type Database = {
           match_score: number | null
           matched_store_id: string | null
           neighborhood_id: string | null
+          neighborhood_label: string | null
           notes: string | null
           phone: string | null
           place_id: string | null
@@ -93316,6 +93317,7 @@ export type Database = {
           match_score?: number | null
           matched_store_id?: string | null
           neighborhood_id?: string | null
+          neighborhood_label?: string | null
           notes?: string | null
           phone?: string | null
           place_id?: string | null
@@ -93343,6 +93345,7 @@ export type Database = {
           match_score?: number | null
           matched_store_id?: string | null
           neighborhood_id?: string | null
+          neighborhood_label?: string | null
           notes?: string | null
           phone?: string | null
           place_id?: string | null
