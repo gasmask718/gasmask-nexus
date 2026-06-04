@@ -63,6 +63,64 @@ export default function DynastyDirectInvites() {
     qc.invalidateQueries({ queryKey: ["dd-invites"] });
   }
 
+  // ── Bulk ───────────────────────────────────────────────────────────
+  const actionable = useMemo(
+    () => invites.filter((i: any) => i.status !== 'accepted' && i.status !== 'revoked'),
+    [invites],
+  );
+  const selectedActionable = actionable.filter((i: any) => selectedIds.has(i.id));
+  const allSel = actionable.length > 0 && actionable.every((i: any) => selectedIds.has(i.id));
+
+  function toggleOne(id: string) {
+    setSelectedIds((p) => {
+      const n = new Set(p);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  }
+  function toggleAll() {
+    setSelectedIds(allSel ? new Set() : new Set(actionable.map((i: any) => i.id)));
+  }
+
+  async function bulkResend() {
+    setBulkBusy('resend');
+    let ok = 0, failed = 0;
+    for (const inv of selectedActionable) {
+      try {
+        const { error } = await supabase.functions.invoke('send-invite', {
+          body: {
+            role: inv.role, target_link: inv.target_link,
+            phone: inv.sent_to_phone, email: inv.sent_to_email,
+            name: inv.sent_name, channel: inv.channel,
+          },
+        });
+        if (error) throw error;
+        ok++;
+      } catch (e) { console.error('[bulkResend]', inv.id, e); failed++; }
+    }
+    toast.success(`Bulk resent: ${ok} ok, ${failed} failed`);
+    setSelectedIds(new Set());
+    setBulkBusy(null);
+    qc.invalidateQueries({ queryKey: ['dd-invites'] });
+  }
+
+  async function bulkRevoke() {
+    setBulkBusy('revoke');
+    let ok = 0, failed = 0;
+    for (const inv of selectedActionable) {
+      try {
+        const { error } = await supabase.rpc('revoke_invite', { p_id: inv.id });
+        if (error) throw error;
+        ok++;
+      } catch (e) { console.error('[bulkRevoke]', inv.id, e); failed++; }
+    }
+    toast.success(`Bulk revoked: ${ok} ok, ${failed} failed`);
+    setSelectedIds(new Set());
+    setBulkBusy(null);
+    qc.invalidateQueries({ queryKey: ['dd-invites'] });
+  }
+
+
   const statusBadge = (s: string) => {
     const map: any = { sent: "secondary", opened: "default", accepted: "default", expired: "outline", revoked: "destructive" };
     return <Badge variant={map[s] || "secondary"}>{s}</Badge>;
