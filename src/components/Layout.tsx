@@ -690,6 +690,8 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+
 
   // ⚔️ BRANDARO PERMANENT VERIFICATION — Self-heal if missing
   const verifiedNav = ensureBrandaroInNav(DYNASTY_NAVIGATION);
