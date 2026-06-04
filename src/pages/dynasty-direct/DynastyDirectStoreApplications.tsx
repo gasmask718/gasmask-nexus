@@ -65,7 +65,7 @@ export default function DynastyDirectStoreApplications() {
     queryKey: ['dd-store-applications-counts'],
     queryFn: async () => {
       const { data } = await supabase.from('store_applications' as any).select('status');
-      const rows = (data ?? []) as Array<{ status: Status }>;
+      const rows = ((data ?? []) as unknown) as Array<{ status: Status }>;
       return {
         pending: rows.filter((r) => r.status === 'pending').length,
         invited: rows.filter((r) => r.status === 'invited' || r.status === 'approved').length,
