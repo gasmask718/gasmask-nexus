@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { SendMessageModal } from '@/components/communication/SendMessageModal';
 import SystemCheckpointBar from '@/components/system/SystemCheckpointBar';
+import { FeedbackDialog } from '@/components/feedback/FeedbackDialog';
+
 import { EmpireHealthMonitor } from '@/components/system/EmpireHealthMonitor';
 import { GlobalSimulationToggle } from '@/components/simulation/GlobalSimulationToggle';
 import { SimulationWatermark } from '@/components/simulation/SimulationWatermark';
