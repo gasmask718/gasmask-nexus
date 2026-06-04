@@ -113,16 +113,6 @@ export default function OwnerReports() {
             <div className="text-2xl font-bold mt-1">{isLoading ? '…' : fmtMoney(live?.revenue7d ?? 0)}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-xs">
-              <BarChart3 className="h-3 w-3" /> Unpaid (30d)
-            </div>
-            <div className="text-2xl font-bold mt-1 text-amber-400">
-              {isLoading ? '…' : fmtMoney(live?.unpaid30d ?? 0)}
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Report generators */}
