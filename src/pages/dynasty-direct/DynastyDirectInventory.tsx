@@ -48,7 +48,7 @@ export default function DynastyDirectInventory() {
         product_id: r.product_id,
         product_name: r.product?.product_name || "—",
         wholesaler_id: r.wholesaler_id,
-        wholesaler_name: r.wholesaler?.business_name || "—",
+        wholesaler_name: r.wholesaler?.company_name || "—",
         quantity_available: r.quantity_available,
         reserved_quantity: r.reserved_quantity,
         low_stock_threshold: r.low_stock_threshold,
