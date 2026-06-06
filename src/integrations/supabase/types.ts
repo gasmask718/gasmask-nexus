@@ -1846,6 +1846,98 @@ export type Database = {
           },
         ]
       }
+      ai_backfill_items: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          error: string | null
+          id: string
+          job_id: string
+          output: Json | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          error?: string | null
+          id?: string
+          job_id: string
+          output?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          error?: string | null
+          id?: string
+          job_id?: string
+          output?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_backfill_items_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "ai_backfill_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_backfill_jobs: {
+        Row: {
+          config: Json | null
+          created_at: string
+          failed_count: number
+          generated_count: number
+          id: string
+          job_type: string
+          last_run_at: string | null
+          per_run_cap: number
+          reviewed_count: number
+          scanned_count: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          failed_count?: number
+          generated_count?: number
+          id?: string
+          job_type: string
+          last_run_at?: string | null
+          per_run_cap?: number
+          reviewed_count?: number
+          scanned_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          failed_count?: number
+          generated_count?: number
+          id?: string
+          job_type?: string
+          last_run_at?: string | null
+          per_run_cap?: number
+          reviewed_count?: number
+          scanned_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_call_agent_config: {
         Row: {
           ai_disclosure_script: string | null
@@ -48352,6 +48444,110 @@ export type Database = {
           updated_at?: string
           vip_transport?: boolean
           year?: number | null
+        }
+        Relationships: []
+      }
+      floor_agent_runs: {
+        Row: {
+          agent_id: string
+          completed_at: string | null
+          error: string | null
+          findings_count: number | null
+          floor: number
+          id: string
+          raw_output: Json | null
+          started_at: string
+          status: string
+          summary: string | null
+          tokens_used: number | null
+        }
+        Insert: {
+          agent_id: string
+          completed_at?: string | null
+          error?: string | null
+          findings_count?: number | null
+          floor: number
+          id?: string
+          raw_output?: Json | null
+          started_at?: string
+          status?: string
+          summary?: string | null
+          tokens_used?: number | null
+        }
+        Update: {
+          agent_id?: string
+          completed_at?: string | null
+          error?: string | null
+          findings_count?: number | null
+          floor?: number
+          id?: string
+          raw_output?: Json | null
+          started_at?: string
+          status?: string
+          summary?: string | null
+          tokens_used?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "floor_agent_runs_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "floor_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      floor_agents: {
+        Row: {
+          agent_name: string
+          budget_reset_at: string
+          charter: string
+          created_at: string
+          daily_token_budget: number
+          enabled: boolean
+          floor: number
+          id: string
+          last_findings_count: number | null
+          last_run_at: string | null
+          last_run_summary: Json | null
+          purpose: string
+          schedule_cron: string | null
+          tokens_used_today: number
+          updated_at: string
+        }
+        Insert: {
+          agent_name: string
+          budget_reset_at?: string
+          charter: string
+          created_at?: string
+          daily_token_budget?: number
+          enabled?: boolean
+          floor: number
+          id?: string
+          last_findings_count?: number | null
+          last_run_at?: string | null
+          last_run_summary?: Json | null
+          purpose: string
+          schedule_cron?: string | null
+          tokens_used_today?: number
+          updated_at?: string
+        }
+        Update: {
+          agent_name?: string
+          budget_reset_at?: string
+          charter?: string
+          created_at?: string
+          daily_token_budget?: number
+          enabled?: boolean
+          floor?: number
+          id?: string
+          last_findings_count?: number | null
+          last_run_at?: string | null
+          last_run_summary?: Json | null
+          purpose?: string
+          schedule_cron?: string | null
+          tokens_used_today?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -119747,6 +119943,10 @@ export type Database = {
       }
       apply_field_submission: {
         Args: { p_submission_id: string }
+        Returns: Json
+      }
+      approve_ai_draft_invoice: {
+        Args: { p_invoice_id: string; p_reviewer: string }
         Returns: Json
       }
       approve_commission: { Args: { p_ledger_id: string }; Returns: undefined }
