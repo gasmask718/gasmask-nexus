@@ -159,7 +159,7 @@ export default function DynastyDirectCatalogOnboard() {
     setBusy('copy');
     try {
       const hero = selectedImages[0] || enhancedUrls[0] || photos[0];
-      const r = await callPipeline({ mode: 'copy_pricing', draft_id: draftId, product_name: productName, brand_hint: brandHint, cost: Number(cost) || 0, hero_url: hero });
+      const r = await callPipeline({ mode: 'copy_pricing', draft_id: draftId, product_name: productName, brand_hint: brandHint, cost: Number(cost) || 0, hero_url: hero, supplier_id: supplierId || null });
       setCopy({
         title: r.title, short_description: r.short_description, long_description: r.long_description,
         bullets: r.bullets || [], seo: r.seo || {}, category_guess: r.category_guess, tags: r.tags || [],
