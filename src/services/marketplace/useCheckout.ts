@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { CartItem, CartTotals } from "./useCart";
+import { GeocodingService } from "@/services/geocoding";
 
 export interface ShippingAddress {
   fullName: string;
