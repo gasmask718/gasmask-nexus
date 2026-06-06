@@ -36921,6 +36921,27 @@ export type Database = {
           },
         ]
       }
+      dd_email_suppressions: {
+        Row: {
+          created_at: string
+          email_lower: string
+          reason: string
+          source: string | null
+        }
+        Insert: {
+          created_at?: string
+          email_lower: string
+          reason: string
+          source?: string | null
+        }
+        Update: {
+          created_at?: string
+          email_lower?: string
+          reason?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
       dd_evidence_kit: {
         Row: {
           accepted_terms_at: string | null
@@ -44897,6 +44918,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_captures: {
+        Row: {
+          created_at: string
+          discount_code: string | null
+          email: string
+          id: string
+          ip: unknown
+          source: string
+          unsubscribed_at: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          discount_code?: string | null
+          email: string
+          id?: string
+          ip?: unknown
+          source: string
+          unsubscribed_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          discount_code?: string | null
+          email?: string
+          id?: string
+          ip?: unknown
+          source?: string
+          unsubscribed_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      email_jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          order_id: string | null
+          payload: Json
+          recipient_email: string
+          scheduled_for: string
+          sent_at: string | null
+          skipped_at: string | null
+          skipped_reason: string | null
+          template: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          last_error?: string | null
+          order_id?: string | null
+          payload?: Json
+          recipient_email: string
+          scheduled_for?: string
+          sent_at?: string | null
+          skipped_at?: string | null
+          skipped_reason?: string | null
+          template: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          last_error?: string | null
+          order_id?: string | null
+          payload?: Json
+          recipient_email?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          skipped_at?: string | null
+          skipped_reason?: string | null
+          template?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       engagement_scores: {
         Row: {
@@ -115646,6 +115754,7 @@ export type Database = {
           store_price: number | null
           street_price: number | null
           unit_type: string | null
+          updated_at: string | null
           weight_oz: number | null
           wholesale_price: number | null
           wholesaler_id: string | null
@@ -115668,6 +115777,7 @@ export type Database = {
           store_price?: never
           street_price?: number | null
           unit_type?: string | null
+          updated_at?: string | null
           weight_oz?: number | null
           wholesale_price?: never
           wholesaler_id?: string | null
@@ -115690,6 +115800,7 @@ export type Database = {
           store_price?: never
           street_price?: number | null
           unit_type?: string | null
+          updated_at?: string | null
           weight_oz?: number | null
           wholesale_price?: never
           wholesaler_id?: string | null
@@ -121428,6 +121539,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      dd_recipient_blocked: { Args: { p_email: string }; Returns: boolean }
       dd_recompute_product_inventory_qty: {
         Args: { p_product_id: string }
         Returns: undefined
@@ -121435,6 +121547,10 @@ export type Database = {
       dd_release_order_reservations: {
         Args: { p_order_id: string }
         Returns: undefined
+      }
+      dd_resolve_order_recipient: {
+        Args: { p_customer_email: string; p_user_id: string }
+        Returns: string
       }
       dd_set_inventory_threshold: {
         Args: {

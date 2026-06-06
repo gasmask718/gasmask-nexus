@@ -544,3 +544,13 @@ verify_jwt = false
 
 [functions.dd-lookup-guest-order]
 verify_jwt = false
+
+[functions.dd-sitemap]
+verify_jwt = false
+
+[functions.dd-email-unsubscribe]
+verify_jwt = false
+
+[functions.dd-process-email-jobs]
+verify_jwt = false
+
