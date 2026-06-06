@@ -511,12 +511,15 @@ Deno.serve(async (req) => {
     const mode = body.mode as string;
     let result: any;
     switch (mode) {
-      case 'enhance':         result = await runEnhance(body); break;
-      case 'stage':           result = await runStage(body); break;
-      case 'copy_pricing':    result = await runCopyPricing(body); break;
-      case 'publish':         result = await runPublish(body); break;
-      case 'content_factory': result = await runContentFactory(body); break;
+      case 'enhance':                result = await runEnhance(body); break;
+      case 'stage':                  result = await runStage(body); break;
+      case 'copy_pricing':           result = await runCopyPricing(body); break;
+      case 'market_check':           result = await runMarketCheck(body); break;
+      case 'estimate_measurements':  result = await runEstimateMeasurements(body); break;
+      case 'publish':                result = await runPublish(body); break;
+      case 'content_factory':        result = await runContentFactory(body); break;
       default: throw new Error(`unknown mode: ${mode}`);
+
     }
     return new Response(JSON.stringify({ ok: true, ...result }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
