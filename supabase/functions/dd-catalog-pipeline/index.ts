@@ -272,6 +272,92 @@ Generate JSON:
 }
 
 
+async function runMarketCheck(body: any) {
+  const { product_name, brand_hint, draft_id } = body;
+  if (!product_name) throw new Error('product_name required');
+  const serpKey = Deno.env.get('SERPAPI_KEY');
+  if (!serpKey) {
+    return { available: false, reason: 'SerpAPI key not configured', prices: [], range: null };
+  }
+  const q = encodeURIComponent([brand_hint, product_name].filter(Boolean).join(' '));
+  const url = `https://serpapi.com/search.json?engine=google_shopping&q=${q}&api_key=${serpKey}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`serpapi ${r.status}`);
+  const j = await r.json();
+  const items: any[] = (j.shopping_results || []).slice(0, 25);
+  const prices: number[] = [];
+  const samples: any[] = [];
+  for (const it of items) {
+    const raw = it.extracted_price ?? (typeof it.price === 'string' ? Number(it.price.replace(/[^0-9.]/g, '')) : null);
+    const n = Number(raw);
+    if (Number.isFinite(n) && n > 0) {
+      prices.push(n);
+      if (samples.length < 8) samples.push({ title: it.title, price: n, source: it.source, link: it.link });
+    }
+  }
+  prices.sort((a, b) => a - b);
+  const range = prices.length
+    ? {
+        low: prices[0],
+        median: prices[Math.floor(prices.length / 2)],
+        high: prices[prices.length - 1],
+        count: prices.length,
+      }
+    : null;
+  const payload = { available: true, range, samples, checked_at: new Date().toISOString() };
+  if (draft_id) {
+    await sbAdmin().from('dd_catalog_drafts').update({ market_check: payload }).eq('id', draft_id);
+  }
+  return payload;
+}
+
+async function runEstimateMeasurements(body: any) {
+  const { product_name, photo_url, draft_id } = body;
+  if (!product_name || !photo_url) throw new Error('product_name + photo_url required');
+  const dataUrl = await fetchAsDataUrl(photo_url);
+  const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${LOVABLE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-pro',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: `Estimate the SHIPPING weight (oz) and physical dimensions (inches) of "${product_name}" in this photo. Use any visible reference objects (hand, coin, ruler, common packaging) or known product specs. Return STRICT JSON only:
+{
+  "weight_oz": <number>,
+  "dimensions": { "length_in": <number>, "width_in": <number>, "height_in": <number> },
+  "confidence": "low|medium|high",
+  "reasoning": "<one short sentence: what reference / known specs you used>"
+}
+If you cannot estimate any field, set it to null. NEVER guess wildly — shipping bills on actuals.` },
+          { type: 'image_url', image_url: { url: dataUrl } },
+        ],
+      }],
+    }),
+  });
+  if (!r.ok) throw new Error(`gemini estimate ${r.status}`);
+  const j = await r.json();
+  const txt = j.choices?.[0]?.message?.content ?? '';
+  const parsed = parseJson(typeof txt === 'string' ? txt : '');
+  const payload = {
+    weight_oz: parsed.weight_oz ?? null,
+    dimensions: parsed.dimensions ?? null,
+    confidence: parsed.confidence ?? 'low',
+    reasoning: parsed.reasoning ?? '',
+    estimated_at: new Date().toISOString(),
+  };
+  if (draft_id) {
+    // Prefill the editable fields, but DO NOT mark verified — David must tap the checkbox.
+    await sbAdmin().from('dd_catalog_drafts').update({
+      measurements_estimate: payload,
+      weight_oz: payload.weight_oz,
+      dimensions: payload.dimensions,
+    }).eq('id', draft_id);
+  }
+  return payload;
+}
+
 async function runPublish(body: any) {
   const { draft_id, confirmed_by } = body;
   if (!draft_id) throw new Error('draft_id required');
@@ -284,6 +370,12 @@ async function runPublish(body: any) {
 
   // CONTRACT GUARD: wholesaler_id (supplier_id on the draft) is REQUIRED — routing + splits depend on it.
   if (!draft.supplier_id) throw new Error('cannot publish: draft.supplier_id (wholesaler_id) is required');
+
+  // MEASUREMENT GUARD: never publish on an unverified estimate (shipping bills on actuals).
+  if (!draft.measurements_verified_at) {
+    throw new Error('cannot publish: measurements not verified — tap "measurements verified" in Step D');
+  }
+
 
   const copy = (draft.copy || {}) as any;
   const pricing = (draft.pricing || {}) as any;
@@ -419,12 +511,15 @@ Deno.serve(async (req) => {
     const mode = body.mode as string;
     let result: any;
     switch (mode) {
-      case 'enhance':         result = await runEnhance(body); break;
-      case 'stage':           result = await runStage(body); break;
-      case 'copy_pricing':    result = await runCopyPricing(body); break;
-      case 'publish':         result = await runPublish(body); break;
-      case 'content_factory': result = await runContentFactory(body); break;
+      case 'enhance':                result = await runEnhance(body); break;
+      case 'stage':                  result = await runStage(body); break;
+      case 'copy_pricing':           result = await runCopyPricing(body); break;
+      case 'market_check':           result = await runMarketCheck(body); break;
+      case 'estimate_measurements':  result = await runEstimateMeasurements(body); break;
+      case 'publish':                result = await runPublish(body); break;
+      case 'content_factory':        result = await runContentFactory(body); break;
       default: throw new Error(`unknown mode: ${mode}`);
+
     }
     return new Response(JSON.stringify({ ok: true, ...result }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -36573,6 +36573,10 @@ export type Database = {
           id: string
           input_photos: Json
           inventory_qty: number | null
+          market_check: Json | null
+          measurements_estimate: Json | null
+          measurements_verified_at: string | null
+          measurements_verified_by: string | null
           notes: string | null
           pricing: Json
           product_name: string
@@ -36598,6 +36602,10 @@ export type Database = {
           id?: string
           input_photos?: Json
           inventory_qty?: number | null
+          market_check?: Json | null
+          measurements_estimate?: Json | null
+          measurements_verified_at?: string | null
+          measurements_verified_by?: string | null
           notes?: string | null
           pricing?: Json
           product_name: string
@@ -36623,6 +36631,10 @@ export type Database = {
           id?: string
           input_photos?: Json
           inventory_qty?: number | null
+          market_check?: Json | null
+          measurements_estimate?: Json | null
+          measurements_verified_at?: string | null
+          measurements_verified_by?: string | null
           notes?: string | null
           pricing?: Json
           product_name?: string

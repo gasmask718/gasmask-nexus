@@ -53,6 +53,14 @@ export default function DynastyDirectCatalogOnboard() {
   const [published, setPublished] = useState<{ product_id: string } | null>(null);
   const [contentBriefId, setContentBriefId] = useState<string | null>(null);
 
+  // Market check (Step C)
+  const [marketCheck, setMarketCheck] = useState<any>(null);
+
+  // Measurements (Step D)
+  const [measurements, setMeasurements] = useState<{ weight_oz: number | null; length_in: number | null; width_in: number | null; height_in: number | null }>({ weight_oz: null, length_in: null, width_in: null, height_in: null });
+  const [measurementsEstimate, setMeasurementsEstimate] = useState<any>(null);
+  const [measurementsVerified, setMeasurementsVerified] = useState(false);
+
   useEffect(() => {
     supabase.from('wholesaler_profiles').select('id, company_name').order('company_name')
       .then(({ data }) => setSuppliers((data || []) as Supplier[]));
@@ -173,15 +181,55 @@ export default function DynastyDirectCatalogOnboard() {
   async function runPublish() {
     if (!draftId) return;
     if (selectedImages.length === 0) { toast.error('Select at least one image for the live product'); return; }
+    if (!measurementsVerified) { toast.error('Tap "measurements verified" before publishing'); return; }
     setBusy('publish');
     try {
+      const dims = (measurements.length_in || measurements.width_in || measurements.height_in)
+        ? { length_in: measurements.length_in, width_in: measurements.width_in, height_in: measurements.height_in }
+        : null;
+      const { data: userRes } = await supabase.auth.getUser();
       await supabase.from('dd_catalog_drafts').update({
         selected: selectedImages.map((url) => ({ url })),
         copy, pricing,
+        weight_oz: measurements.weight_oz,
+        dimensions: dims,
+        measurements_verified_at: new Date().toISOString(),
+        measurements_verified_by: userRes.user?.id ?? null,
       }).eq('id', draftId);
-      const r = await callPipeline({ mode: 'publish', draft_id: draftId });
+      const r = await callPipeline({ mode: 'publish', draft_id: draftId, confirmed_by: userRes.user?.id ?? null });
       setPublished({ product_id: r.product_id });
       toast.success('Product is LIVE on the catalog');
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(null); }
+  }
+
+  async function runMarketCheckAction() {
+    if (!productName) return;
+    setBusy('market');
+    try {
+      const r = await callPipeline({ mode: 'market_check', draft_id: draftId, product_name: productName, brand_hint: brandHint });
+      setMarketCheck(r);
+      if (r.available === false) toast.message('SerpAPI dormant', { description: 'Available when SerpAPI activates.' });
+      else if (!r.range) toast.message('No market prices found for this query');
+      else toast.success(`Market: $${r.range.low}–$${r.range.high} (median $${r.range.median})`);
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(null); }
+  }
+
+  async function runEstimateMeasurements() {
+    if (!draftId || photos.length === 0) return;
+    setBusy('estimate');
+    try {
+      const r = await callPipeline({ mode: 'estimate_measurements', draft_id: draftId, product_name: productName, photo_url: photos[0] });
+      setMeasurementsEstimate(r);
+      setMeasurements({
+        weight_oz: r.weight_oz ?? null,
+        length_in: r.dimensions?.length_in ?? null,
+        width_in: r.dimensions?.width_in ?? null,
+        height_in: r.dimensions?.height_in ?? null,
+      });
+      setMeasurementsVerified(false);
+      toast.success(`AI estimate ready (confidence: ${r.confidence})`);
     } catch (e: any) { toast.error(e.message); }
     finally { setBusy(null); }
   }
@@ -398,6 +446,34 @@ export default function DynastyDirectCatalogOnboard() {
               ))}
             </div>
             {pricing.rationale && <div className="text-xs text-muted-foreground italic">💡 {pricing.rationale}</div>}
+
+            {/* Market Price Check — key-ready (SerpAPI) */}
+            <div className="rounded-lg border p-3 space-y-2 bg-muted/20">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-sm font-medium">Market price check</div>
+                  <div className="text-xs text-muted-foreground">Compare AI suggestion to live retail listings. Margin floor stays the hard minimum.</div>
+                </div>
+                <Button size="sm" variant="outline" onClick={runMarketCheckAction} disabled={busy === 'market'}>
+                  {busy === 'market' ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Checking…</> : 'Check market'}
+                </Button>
+              </div>
+              {marketCheck?.available === false && (
+                <div className="text-xs text-amber-600">Available when SerpAPI activates.</div>
+              )}
+              {marketCheck?.available && marketCheck.range && (
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <Badge variant="secondary">low ${marketCheck.range.low}</Badge>
+                  <Badge>median ${marketCheck.range.median}</Badge>
+                  <Badge variant="secondary">high ${marketCheck.range.high}</Badge>
+                  <span className="text-muted-foreground">from {marketCheck.range.count} listings</span>
+                </div>
+              )}
+              {marketCheck?.available && !marketCheck.range && (
+                <div className="text-xs text-muted-foreground">No listings matched — keep AI suggestion.</div>
+              )}
+            </div>
+
             <div className="flex justify-end border-t pt-4">
               <Button onClick={() => setStep('D')}>Next: Confirm Gate →</Button>
             </div>
@@ -438,9 +514,60 @@ export default function DynastyDirectCatalogOnboard() {
                 <Badge variant="outline">wholesale ${pricing.suggested_wholesale}</Badge>
               </div>
             </div>
+            {/* Measurements block — AI estimate + verified gate (shipping bills on actuals) */}
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-sm font-medium">Shipping measurements</div>
+                  <div className="text-xs text-muted-foreground">Publish requires verified weight + dimensions.</div>
+                </div>
+                <Button size="sm" variant="outline" onClick={runEstimateMeasurements} disabled={busy === 'estimate' || photos.length === 0}>
+                  {busy === 'estimate' ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Estimating…</> : <><Sparkles className="h-3 w-3 mr-1" /> AI estimate from photo</>}
+                </Button>
+              </div>
+              {measurementsEstimate && (
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <Badge variant="secondary" className="bg-amber-100 text-amber-900 border-amber-300">AI estimate — verify before publish</Badge>
+                  <span className="text-muted-foreground">confidence: {measurementsEstimate.confidence}</span>
+                  {measurementsEstimate.reasoning && <span className="text-muted-foreground italic">· {measurementsEstimate.reasoning}</span>}
+                </div>
+              )}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Weight (oz)</Label>
+                  <Input type="number" step="0.1" value={measurements.weight_oz ?? ''} onChange={(e) => { setMeasurements({ ...measurements, weight_oz: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); }} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Length (in)</Label>
+                  <Input type="number" step="0.1" value={measurements.length_in ?? ''} onChange={(e) => { setMeasurements({ ...measurements, length_in: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); }} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Width (in)</Label>
+                  <Input type="number" step="0.1" value={measurements.width_in ?? ''} onChange={(e) => { setMeasurements({ ...measurements, width_in: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); }} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Height (in)</Label>
+                  <Input type="number" step="0.1" value={measurements.height_in ?? ''} onChange={(e) => { setMeasurements({ ...measurements, height_in: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); }} />
+                </div>
+              </div>
+              <label className="flex items-start gap-2 cursor-pointer pt-1 select-none">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={measurementsVerified}
+                  onChange={(e) => setMeasurementsVerified(e.target.checked)}
+                  disabled={!measurements.weight_oz || !measurements.length_in || !measurements.width_in || !measurements.height_in}
+                />
+                <span className="text-sm">
+                  <span className="font-medium">Measurements verified</span>
+                  <span className="text-muted-foreground"> — I physically confirmed weight and all three dimensions (shipping bills on actuals).</span>
+                </span>
+              </label>
+            </div>
+
             {!published && (
               <div className="flex justify-end border-t pt-4">
-                <Button size="lg" onClick={runPublish} disabled={busy === 'publish' || selectedImages.length === 0}>
+                <Button size="lg" onClick={runPublish} disabled={busy === 'publish' || selectedImages.length === 0 || !measurementsVerified}>
                   {busy === 'publish' ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Publishing…</>
                     : <><Rocket className="h-4 w-4 mr-2" /> Confirm & publish live</>}
                 </Button>
