@@ -369,6 +369,16 @@ export default function GrabbaProduction() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="trends">
+            <ProductionTrendsTab />
+          </TabsContent>
+
+          <TabsContent value="bags">
+            <BagPipelinePanel />
+          </TabsContent>
+
+
+
           {/* Offices Tab */}
           <TabsContent value="offices">
             <Card className="bg-card/50 backdrop-blur border-border/50">
