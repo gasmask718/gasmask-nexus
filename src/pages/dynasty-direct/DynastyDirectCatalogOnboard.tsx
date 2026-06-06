@@ -612,28 +612,33 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
 
             {!published && (
               <div className="flex justify-end border-t pt-4">
-                <Button size="lg" onClick={runPublish} disabled={busy === 'publish' || selectedImages.length === 0 || !measurementsVerified}>
-                  {busy === 'publish' ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Publishing…</>
-                    : <><Rocket className="h-4 w-4 mr-2" /> Confirm & publish live</>}
+                <Button size="lg" onClick={runPublish} disabled={busy === 'publish' || selectedImages.length === 0 || !measurementsVerified || !supplierId}>
+                  {busy === 'publish' ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {submitForReviewMode ? 'Submitting…' : 'Publishing…'}</>
+                    : <><Rocket className="h-4 w-4 mr-2" /> {submitForReviewMode ? 'Submit for admin review' : 'Confirm & publish live'}</>}
                 </Button>
               </div>
             )}
             {published && (
               <div className="border-t pt-4 space-y-3">
                 <div className="flex items-center gap-2 text-emerald-600 font-medium">
-                  <CheckCircle2 className="h-5 w-5" /> Live on the catalog · product <code>{published.product_id.slice(0, 8)}</code>
+                  <CheckCircle2 className="h-5 w-5" />
+                  {submitForReviewMode
+                    ? <span>Submitted to Dynasty Direct review queue · draft <code>{published.product_id.slice(0, 8)}</code></span>
+                    : <span>Live on the catalog · product <code>{published.product_id.slice(0, 8)}</code></span>}
                 </div>
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => navigate('/dynasty-direct/catalog')}>View Catalog</Button>
-                  <Button onClick={sendToContentFactory} disabled={busy === 'content' || !!contentBriefId}>
-                    {busy === 'content' ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating brief…</>
-                      : contentBriefId ? <>✓ Brief sent</>
-                      : <><Sparkles className="h-4 w-4 mr-2" /> Send to Content Factory</>}
-                  </Button>
-                  {contentBriefId && (
-                    <Button variant="outline" onClick={() => navigate('/dynasty-direct/content-library')}>Open Content Library</Button>
-                  )}
-                </div>
+                {!submitForReviewMode && (
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={() => navigate('/dynasty-direct/catalog')}>View Catalog</Button>
+                    <Button onClick={sendToContentFactory} disabled={busy === 'content' || !!contentBriefId}>
+                      {busy === 'content' ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating brief…</>
+                        : contentBriefId ? <>✓ Brief sent</>
+                        : <><Sparkles className="h-4 w-4 mr-2" /> Send to Content Factory</>}
+                    </Button>
+                    {contentBriefId && (
+                      <Button variant="outline" onClick={() => navigate('/dynasty-direct/content-library')}>Open Content Library</Button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
