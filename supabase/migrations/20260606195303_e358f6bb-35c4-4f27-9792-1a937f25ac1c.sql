@@ -1,0 +1,2 @@
+REVOKE SELECT ON public.products_all FROM anon;
+GRANT SELECT (id, wholesaler_id, brand_id, product_name, description, images, unit_type, inventory_qty, weight_oz, dimensions, retail_price, shipping_from_city, shipping_from_state, processing_time, status, created_at, updated_at, street_price, category) ON public.products_all TO anon;

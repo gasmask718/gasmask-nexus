@@ -1,0 +1,1 @@
+REVOKE SELECT (store_price, wholesale_price) ON public.products_all FROM anon;
