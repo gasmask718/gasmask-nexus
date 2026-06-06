@@ -306,13 +306,23 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
               <div className="space-y-2"><Label>Product name *</Label><Input value={productName} onChange={(e) => setProductName(e.target.value)} /></div>
               <div className="space-y-2"><Label>Brand hint</Label><Input value={brandHint} onChange={(e) => setBrandHint(e.target.value)} /></div>
               <div className="space-y-2"><Label>Cost (USD)</Label><Input type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Supplier</Label>
-                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
-                  <option value="">— select supplier —</option>
-                  {suppliers.map((s) => <option key={s.id} value={s.id}>{s.company_name}</option>)}
-                </select>
-              </div>
+              {lockedSupplierId ? (
+                <div className="space-y-2"><Label>Wholesaler (auto-bound to you)</Label>
+                  <div className="flex h-10 items-center rounded-md border border-input bg-muted/40 px-3 text-sm">
+                    <Badge variant="secondary" className="mr-2">locked</Badge>
+                    {selectedSupplierName || lockedSupplierId.slice(0, 8)}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2"><Label>Wholesaler *</Label>
+                  <select className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ${!supplierId ? 'border-destructive/60' : 'border-input'}`}
+                    value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+                    <option value="">— select wholesaler (required) —</option>
+                    {suppliers.map((s) => <option key={s.id} value={s.id}>{s.company_name}</option>)}
+                  </select>
+                  {!supplierId && <p className="text-xs text-destructive">Required — every product attaches to a wholesaler for routing &amp; splits.</p>}
+                </div>
+              )}
             </div>
             <PhotoUploadMultiple photos={photos} onChange={setPhotos} folder="dd-catalog-onboard" maxPhotos={6} />
             <div className="flex justify-end">
