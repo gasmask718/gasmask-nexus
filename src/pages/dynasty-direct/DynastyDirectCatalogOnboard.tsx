@@ -19,14 +19,20 @@ interface Staged { title: string; url: string; prompt?: string }
 
 type Step = 'A' | 'B' | 'B2' | 'B3' | 'C' | 'D';
 
-export default function DynastyDirectCatalogOnboard() {
+interface OnboardProps {
+  lockedSupplierId?: string;
+  lockedSupplierName?: string;
+  submitForReviewMode?: boolean;
+}
+
+export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSupplierName, submitForReviewMode = false }: OnboardProps = {}) {
   const navigate = useNavigate();
 
   // Step A
   const [productName, setProductName] = useState('');
   const [brandHint, setBrandHint] = useState('');
   const [cost, setCost] = useState<string>('');
-  const [supplierId, setSupplierId] = useState<string>('');
+  const [supplierId, setSupplierId] = useState<string>(lockedSupplierId || '');
   const [photos, setPhotos] = useState<string[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
@@ -62,11 +68,18 @@ export default function DynastyDirectCatalogOnboard() {
   const [measurementsVerified, setMeasurementsVerified] = useState(false);
 
   useEffect(() => {
+    if (lockedSupplierId) {
+      setSupplierId(lockedSupplierId);
+      if (lockedSupplierName) setSuppliers([{ id: lockedSupplierId, company_name: lockedSupplierName }]);
+      return;
+    }
     supabase.from('wholesaler_profiles').select('id, company_name').order('company_name')
       .then(({ data }) => setSuppliers((data || []) as Supplier[]));
-  }, []);
+  }, [lockedSupplierId, lockedSupplierName]);
 
-  const canStartB = productName.trim().length > 1 && photos.length > 0;
+  const selectedSupplierName = suppliers.find((s) => s.id === supplierId)?.company_name || lockedSupplierName || '';
+  // Supplier is REQUIRED — attribution drives routing, splits, and the review queue.
+  const canStartB = productName.trim().length > 1 && photos.length > 0 && !!supplierId;
   const allGalleryImages: { url: string; label: string }[] = [
     ...photos.map((url) => ({ url, label: 'original' })),
     ...candidates.map((c) => ({ url: c.url, label: `found · ${c.source}` })),
