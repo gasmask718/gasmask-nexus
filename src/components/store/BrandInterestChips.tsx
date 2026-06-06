@@ -104,7 +104,7 @@ export function BrandInterestChips({ storeId }: Props) {
       brand_id: brandId,
       field: 'owner_interested',
       value: nextValue,
-      update_method: 'manual',
+      update_method: 'in_person',
     });
   };
 
