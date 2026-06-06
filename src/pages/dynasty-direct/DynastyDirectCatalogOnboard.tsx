@@ -53,6 +53,14 @@ export default function DynastyDirectCatalogOnboard() {
   const [published, setPublished] = useState<{ product_id: string } | null>(null);
   const [contentBriefId, setContentBriefId] = useState<string | null>(null);
 
+  // Market check (Step C)
+  const [marketCheck, setMarketCheck] = useState<any>(null);
+
+  // Measurements (Step D)
+  const [measurements, setMeasurements] = useState<{ weight_oz: number | null; length_in: number | null; width_in: number | null; height_in: number | null }>({ weight_oz: null, length_in: null, width_in: null, height_in: null });
+  const [measurementsEstimate, setMeasurementsEstimate] = useState<any>(null);
+  const [measurementsVerified, setMeasurementsVerified] = useState(false);
+
   useEffect(() => {
     supabase.from('wholesaler_profiles').select('id, company_name').order('company_name')
       .then(({ data }) => setSuppliers((data || []) as Supplier[]));
