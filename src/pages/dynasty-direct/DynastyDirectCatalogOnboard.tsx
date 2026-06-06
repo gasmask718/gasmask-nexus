@@ -541,6 +541,15 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
                 );
               })}
             </div>
+            {/* WHOLESALER ATTRIBUTION — David sees who this product attaches to before approving */}
+            <div className="rounded-lg border-2 border-primary/40 p-3 bg-primary/5 flex items-center justify-between gap-3">
+              <div className="text-sm">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Attaches to wholesaler</div>
+                <div className="font-semibold">{selectedSupplierName || <span className="text-destructive">— missing —</span>}</div>
+                {supplierId && <code className="text-[10px] text-muted-foreground">{supplierId}</code>}
+              </div>
+              <Badge variant={supplierId ? 'default' : 'destructive'}>{supplierId ? 'wholesaler_id ✓' : 'no wholesaler'}</Badge>
+            </div>
             <div className="rounded-lg border p-4 bg-muted/30 space-y-2">
               <div className="font-semibold">{copy.title || productName}</div>
               <div className="text-sm text-muted-foreground">{copy.short_description}</div>
