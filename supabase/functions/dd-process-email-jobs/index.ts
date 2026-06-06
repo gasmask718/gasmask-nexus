@@ -195,7 +195,7 @@ async function renderTemplate(
 }
 
 async function unsubscribeUrl(origin: string, email: string): Promise<string> {
-  const secret = Deno.env.get("SHARED_SECRET");
+  const secret = Deno.env.get("DD_UNSUBSCRIBE_SECRET") ?? Deno.env.get("SHARED_SECRET");
   const ts = Math.floor(Date.now() / 1000).toString();
   const emailLower = email.toLowerCase();
   if (!secret) return `${origin}/unsubscribe`;
