@@ -31,7 +31,7 @@ function timingSafeEq(a: string, b: string): boolean {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const secret = Deno.env.get("SHARED_SECRET");
+  const secret = Deno.env.get("DD_UNSUBSCRIBE_SECRET") ?? Deno.env.get("SHARED_SECRET");
   if (!secret) {
     return new Response(JSON.stringify({ ok: false, reason: "server_misconfigured" }), {
       status: 500,
