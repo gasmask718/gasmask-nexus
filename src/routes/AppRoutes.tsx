@@ -1221,6 +1221,7 @@ export default function AppRoutes() {
       <Route path="/partner/portal" element={<ProtectedRoute><PartnerPortal /></ProtectedRoute>} />
       <Route path="/admin/partners/import" element={<PartnersImport />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/store-signup" element={<StoreSignupPage />} />
       <Route path="/auth/intake" element={<PublicIntakePage />} />
       <Route path="/auth/intake/:token" element={<PublicIntakePage />} />
       <Route path="/portal/login" element={<PortalLogin />} />
