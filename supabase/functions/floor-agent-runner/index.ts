@@ -166,18 +166,11 @@ serve(async (req) => {
         for (const f of findings.slice(0, 25)) {
           await supabase.from('ai_action_queue').insert({
             action_type: `floor${agent.floor}_recommendation`,
+            action_summary: f.title,
+            ai_recommendation: f.recommendation,
+            reasoning: `[Floor ${agent.floor} — ${agent.agent_name}] entity=${f.entity_type || 'n/a'}:${f.entity_id || 'n/a'} :: ${f.details || ''}`,
+            risk_level: f.severity === 'high' ? 'high' : f.severity === 'medium' ? 'medium' : 'low',
             status: 'pending',
-            priority: f.severity === 'high' ? 'high' : f.severity === 'medium' ? 'medium' : 'low',
-            payload: {
-              floor: agent.floor,
-              agent: agent.agent_name,
-              title: f.title,
-              recommendation: f.recommendation,
-              entity_type: f.entity_type,
-              entity_id: f.entity_id,
-              details: f.details,
-            },
-            source: 'floor_agent',
           }).then(() => {}, () => {});
         }
 
