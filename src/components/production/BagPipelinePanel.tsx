@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Package, CheckCircle2, AlertTriangle, ShieldAlert, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface SaleRow { store_id: string; product_id: string; bags_delta: number; source: string; created_at: string; }
 interface InvRow { store_id: string; product_id: string; bags_delta: number; }
@@ -19,6 +20,7 @@ interface AlertRow { store_id: string; product_id: string; product_name?: string
 
 export function BagPipelinePanel() {
   const qc = useQueryClient();
+  const { t } = useTranslation();
   const [activating, setActivating] = useState(false);
 
   const sales = useQuery({
@@ -87,22 +89,22 @@ export function BagPipelinePanel() {
     try {
       const { data, error } = await supabase.functions.invoke("bag-pipeline-activate", { body: {} });
       if (error) throw error;
-      toast.success(`Backfill complete — ${data?.inserted ?? 0} rows inserted`);
+      toast.success(t('bag.toast.backfill_done', { n: data?.inserted ?? 0 }));
       qc.invalidateQueries({ queryKey: ["bag-pipeline-sales"] });
       qc.invalidateQueries({ queryKey: ["bag-pipeline-inv"] });
     } catch (e: any) {
-      toast.error(`Activation failed: ${e.message || e}`);
+      toast.error(t('bag.toast.activation_failed', { err: e.message || String(e) }));
     } finally {
       setActivating(false);
     }
   };
 
   const steps = [
-    { label: "1. finalize_invoice splits bag vs tube writes", done: isLive, manual: true },
-    { label: "2. BagsSection on store profile", done: true },
-    { label: "3. Tube Inventory card split by track_by", done: true },
-    { label: "4. Backfill bag_sale_ledger from invoices", done: isBackfilled, action: true },
-    { label: "5. Exclude bags from tube rollups", done: isLive, manual: true },
+    { label: t('bag.step.1'), done: isLive, manual: true },
+    { label: t('bag.step.2'), done: true },
+    { label: t('bag.step.3'), done: true },
+    { label: t('bag.step.4'), done: isBackfilled, action: true },
+    { label: t('bag.step.5'), done: isLive, manual: true },
   ];
 
   return (
@@ -112,16 +114,16 @@ export function BagPipelinePanel() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
-              Bag Pipeline — Activation & Health
+              {t('bag.title')}
             </CardTitle>
             <CardDescription>
-              Per docs/activate-bag-pipeline.md. Pipeline is{" "}
-              <Badge variant={isLive ? "default" : "secondary"}>{isLive ? "ACTIVE" : "DORMANT"}</Badge>
+              {t('bag.desc_prefix')}{" "}
+              <Badge variant={isLive ? "default" : "secondary"}>{isLive ? t('bag.status.active') : t('bag.status.dormant')}</Badge>
             </CardDescription>
           </div>
           <Button onClick={activate} disabled={activating} className="gap-2">
             {activating ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
-            Run Backfill (Step 4)
+            {t('bag.run_backfill')}
           </Button>
         </div>
       </CardHeader>
@@ -130,8 +132,7 @@ export function BagPipelinePanel() {
           <Alert>
             <ShieldAlert className="h-4 w-4" />
             <AlertDescription>
-              finalize_invoice still writes only to tube_sale_ledger. Steps 1 &amp; 5 require a database
-              migration before bags flow live — backfill alone is safe but won't capture new invoices.
+              {t('bag.warn_finalize')}
             </AlertDescription>
           </Alert>
         )}
@@ -145,35 +146,35 @@ export function BagPipelinePanel() {
                 <AlertTriangle className="h-4 w-4 text-amber-500" />
               )}
               <span className={s.done ? "text-foreground" : "text-muted-foreground"}>{s.label}</span>
-              {s.manual && !s.done && <Badge variant="outline" className="text-xs">manual migration</Badge>}
-              {s.action && <Badge variant="outline" className="text-xs">one-click</Badge>}
+              {s.manual && !s.done && <Badge variant="outline" className="text-xs">{t('bag.tag.manual')}</Badge>}
+              {s.action && <Badge variant="outline" className="text-xs">{t('bag.tag.action')}</Badge>}
             </div>
           ))}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label="Live sales" value={liveSaleCount} />
-          <Stat label="Backfilled sales" value={backfillCount} />
-          <Stat label="Inventory rows" value={(inv.data || []).length} />
-          <Stat label="Low-stock alerts" value={(alerts.data || []).length} />
+          <Stat label={t('bag.stat.live')} value={liveSaleCount} />
+          <Stat label={t('bag.stat.backfilled')} value={backfillCount} />
+          <Stat label={t('bag.stat.inv_rows')} value={(inv.data || []).length} />
+          <Stat label={t('bag.stat.low_stock')} value={(alerts.data || []).length} />
         </div>
 
         <div>
-          <div className="text-sm font-medium mb-2">Top Stores — Distributed vs Sold</div>
+          <div className="text-sm font-medium mb-2">{t('bag.rollup_title')}</div>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Store</TableHead>
-                <TableHead className="text-right">Distributed</TableHead>
-                <TableHead className="text-right">Sold</TableHead>
-                <TableHead className="text-right">On Hand</TableHead>
+                <TableHead>{t('bag.col.store')}</TableHead>
+                <TableHead className="text-right">{t('bag.col.distributed')}</TableHead>
+                <TableHead className="text-right">{t('bag.col.sold')}</TableHead>
+                <TableHead className="text-right">{t('bag.col.on_hand')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {storeRollup.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
-                    No bag activity yet.
+                    {t('bag.empty')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -195,10 +196,10 @@ export function BagPipelinePanel() {
         {(alerts.data || []).length > 0 && (
           <div>
             <div className="text-sm font-medium mb-2 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500" /> Low-Stock Alerts
+              <AlertTriangle className="h-4 w-4 text-amber-500" /> {t('bag.low_stock_title')}
             </div>
             <div className="text-xs text-muted-foreground">
-              {(alerts.data || []).length} store/product pairs below reorder threshold.
+              {t('bag.low_stock_summary', { n: (alerts.data || []).length })}
             </div>
           </div>
         )}

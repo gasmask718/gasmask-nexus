@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import { format, startOfWeek, startOfMonth, parseISO } from "date-fns";
 import { TrendingUp } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type Bucket = "week" | "month";
 
@@ -29,6 +30,7 @@ function bucketKey(dateStr: string, bucket: Bucket) {
 
 export function ProductionTrendsTab() {
   const { selectedBrand, getBrandQuery } = useGrabbaBrand();
+  const { t } = useTranslation();
   const [bucket, setBucket] = useState<Bucket>("week");
 
   const { data, isLoading } = useQuery({
@@ -86,7 +88,7 @@ export function ProductionTrendsTab() {
   }, [chartData]);
 
   const brandLabel = selectedBrand === "all"
-    ? "All Brands"
+    ? t('production.trends.all_brands')
     : CANONICAL_BRANDS[selectedBrand as CanonicalBrandId]?.displayName || selectedBrand;
 
   return (
@@ -96,31 +98,31 @@ export function ProductionTrendsTab() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />
-              Production Trends — {brandLabel}
+              {t('production.trends.title', { brand: brandLabel })}
             </CardTitle>
             <CardDescription>
-              Lbs processed vs boxes produced. Conversion line surfaces yield drift.
+              {t('production.trends.desc')}
             </CardDescription>
           </div>
           <Tabs value={bucket} onValueChange={(v) => setBucket(v as Bucket)}>
             <TabsList>
-              <TabsTrigger value="week">Week</TabsTrigger>
-              <TabsTrigger value="month">Month</TabsTrigger>
+              <TabsTrigger value="week">{t('production.trends.week')}</TabsTrigger>
+              <TabsTrigger value="month">{t('production.trends.month')}</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
         <div className="flex gap-2 flex-wrap pt-2">
-          <Badge variant="outline">Lbs: {totals.lbs.toLocaleString()}</Badge>
-          <Badge variant="outline">Boxes: {totals.boxes.toLocaleString()}</Badge>
-          <Badge variant="outline">Boxes/Lb: {totals.ratio}</Badge>
+          <Badge variant="outline">{t('production.trends.lbs', { n: totals.lbs.toLocaleString() })}</Badge>
+          <Badge variant="outline">{t('production.trends.boxes', { n: totals.boxes.toLocaleString() })}</Badge>
+          <Badge variant="outline">{t('production.trends.ratio', { n: totals.ratio })}</Badge>
         </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">Loading…</div>
+          <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">{t('common.loading_ellipsis')}</div>
         ) : chartData.length === 0 ? (
           <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">
-            No production batches for {brandLabel} yet.
+            {t('production.trends.empty', { brand: brandLabel })}
           </div>
         ) : (
           <div className="h-80">
@@ -138,13 +140,13 @@ export function ProductionTrendsTab() {
                   }}
                 />
                 <Legend />
-                <Bar yAxisId="left" dataKey="lbs" name="Lbs Processed" fill="hsl(var(--chart-1, var(--primary)))" />
-                <Bar yAxisId="left" dataKey="boxes" name="Boxes Produced" fill="hsl(var(--chart-2, var(--accent)))" />
+                <Bar yAxisId="left" dataKey="lbs" name={t('production.trends.bar_lbs')} fill="hsl(var(--chart-1, var(--primary)))" />
+                <Bar yAxisId="left" dataKey="boxes" name={t('production.trends.bar_boxes')} fill="hsl(var(--chart-2, var(--accent)))" />
                 <Line
                   yAxisId="right"
                   type="monotone"
                   dataKey="boxesPerLb"
-                  name="Boxes / Lb (efficiency)"
+                  name={t('production.trends.line_efficiency')}
                   stroke="hsl(var(--destructive))"
                   strokeWidth={2}
                   dot={{ r: 3 }}
