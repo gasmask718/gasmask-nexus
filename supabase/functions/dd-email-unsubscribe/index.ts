@@ -1,6 +1,6 @@
 // DD email unsubscribe — HMAC token validation + suppression insert.
 // POST { email, ts, sig }   OR  GET ?email=&ts=&sig=
-// Token format: sig = hex(HMAC-SHA256(SHARED_SECRET, `${lower(email)}.${ts}`))
+// Token format: sig = hex(HMAC-SHA256(DD_UNSUBSCRIBE_SECRET, `${lower(email)}.${ts}`))
 // ts (unix seconds) must be within 90 days; suppression is permanent.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
@@ -31,7 +31,7 @@ function timingSafeEq(a: string, b: string): boolean {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const secret = Deno.env.get("SHARED_SECRET");
+  const secret = Deno.env.get("DD_UNSUBSCRIBE_SECRET") ?? Deno.env.get("SHARED_SECRET");
   if (!secret) {
     return new Response(JSON.stringify({ ok: false, reason: "server_misconfigured" }), {
       status: 500,
