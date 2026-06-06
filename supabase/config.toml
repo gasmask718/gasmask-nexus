@@ -532,3 +532,6 @@ verify_jwt = false
 
 [functions.gasmask-missed-call-handler]
 verify_jwt = false
+
+[functions.gasmask-public-stores]
+verify_jwt = false
