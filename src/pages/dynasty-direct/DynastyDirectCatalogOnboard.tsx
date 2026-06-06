@@ -193,6 +193,7 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
 
   async function runPublish() {
     if (!draftId) return;
+    if (!supplierId) { toast.error('Pick a wholesaler before publishing'); return; }
     if (selectedImages.length === 0) { toast.error('Select at least one image for the live product'); return; }
     if (!measurementsVerified) { toast.error('Tap "measurements verified" before publishing'); return; }
     setBusy('publish');
@@ -204,14 +205,26 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
       await supabase.from('dd_catalog_drafts').update({
         selected: selectedImages.map((url) => ({ url })),
         copy, pricing,
+        supplier_id: supplierId,
         weight_oz: measurements.weight_oz,
         dimensions: dims,
         measurements_verified_at: new Date().toISOString(),
         measurements_verified_by: userRes.user?.id ?? null,
       }).eq('id', draftId);
-      const r = await callPipeline({ mode: 'publish', draft_id: draftId, confirmed_by: userRes.user?.id ?? null });
-      setPublished({ product_id: r.product_id });
-      toast.success('Product is LIVE on the catalog');
+
+      if (submitForReviewMode) {
+        // Wholesaler self-serve path: never call pipeline publish — submit to admin review queue.
+        const { error: subErr } = await supabase.from('dd_catalog_drafts')
+          .update({ status: 'pending_admin_review' })
+          .eq('id', draftId);
+        if (subErr) throw subErr;
+        setPublished({ product_id: draftId });
+        toast.success('Submitted to Dynasty Direct review queue');
+      } else {
+        const r = await callPipeline({ mode: 'publish', draft_id: draftId, confirmed_by: userRes.user?.id ?? null });
+        setPublished({ product_id: r.product_id });
+        toast.success('Product is LIVE on the catalog');
+      }
     } catch (e: any) { toast.error(e.message); }
     finally { setBusy(null); }
   }
