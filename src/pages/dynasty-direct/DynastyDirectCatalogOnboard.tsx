@@ -446,6 +446,34 @@ export default function DynastyDirectCatalogOnboard() {
               ))}
             </div>
             {pricing.rationale && <div className="text-xs text-muted-foreground italic">💡 {pricing.rationale}</div>}
+
+            {/* Market Price Check — key-ready (SerpAPI) */}
+            <div className="rounded-lg border p-3 space-y-2 bg-muted/20">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-sm font-medium">Market price check</div>
+                  <div className="text-xs text-muted-foreground">Compare AI suggestion to live retail listings. Margin floor stays the hard minimum.</div>
+                </div>
+                <Button size="sm" variant="outline" onClick={runMarketCheckAction} disabled={busy === 'market'}>
+                  {busy === 'market' ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Checking…</> : 'Check market'}
+                </Button>
+              </div>
+              {marketCheck?.available === false && (
+                <div className="text-xs text-amber-600">Available when SerpAPI activates.</div>
+              )}
+              {marketCheck?.available && marketCheck.range && (
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <Badge variant="secondary">low ${marketCheck.range.low}</Badge>
+                  <Badge>median ${marketCheck.range.median}</Badge>
+                  <Badge variant="secondary">high ${marketCheck.range.high}</Badge>
+                  <span className="text-muted-foreground">from {marketCheck.range.count} listings</span>
+                </div>
+              )}
+              {marketCheck?.available && !marketCheck.range && (
+                <div className="text-xs text-muted-foreground">No listings matched — keep AI suggestion.</div>
+              )}
+            </div>
+
             <div className="flex justify-end border-t pt-4">
               <Button onClick={() => setStep('D')}>Next: Confirm Gate →</Button>
             </div>
