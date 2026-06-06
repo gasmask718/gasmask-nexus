@@ -56,16 +56,13 @@ Deno.serve(async (req) => {
     // Baseline counts
     const { data: nbStores } = await supabase
       .from("stores")
-      .select("id, name, address, address_city, address_state, phone, relationship_status, last_order_at")
+      .select("id, name, address_street, address_city, address_state, phone, status")
       .eq("neighborhood", neighborhood)
       .is("deleted_at", null);
 
     const all = nbStores ?? [];
-    const have = all.filter((s: any) =>
-      s.relationship_status === "active" ||
-      (s.last_order_at && Date.now() - new Date(s.last_order_at).getTime() < 90 * 86400 * 1000),
-    );
-    const dontHave = all.filter((s: any) => !have.find(h => h.id === s.id));
+    const have = all.filter((s: any) => s.status === "active");
+    const dontHave = all.filter((s: any) => s.status !== "active");
 
     if (action === "start") {
       await supabase.from("neighborhood_lockdowns")

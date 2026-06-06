@@ -80,7 +80,8 @@ Deno.serve(async (req) => {
       .from("communication_logs")
       .select("id")
       .eq("outcome", "order_receipt")
-      .eq("related_order_id", order.id)
+      .eq("source_table", "marketplace_orders")
+      .eq("source_id", order.id)
       .gte("created_at", since)
       .limit(1);
     if (dup && dup.length > 0) {
@@ -128,13 +129,14 @@ Deno.serve(async (req) => {
     await supabase.from("communication_logs").insert({
       direction: "outbound",
       channel: "sms",
-      to_phone: phone,
-      message_body: text,
+      recipient_phone: phone,
+      message_content: text,
+      summary: `Order receipt — $${total}${needsSignup ? " + signup link" : ""}`,
       outcome: "order_receipt",
       store_id: storeId,
-      related_order_id: order.id,
-      success: !!sendJson?.success,
-      provider: "twilio",
+      source_table: "marketplace_orders",
+      source_id: order.id,
+      delivery_status: sendJson?.success ? "sent" : "failed",
     });
 
     return new Response(JSON.stringify({
