@@ -146,6 +146,40 @@ export function WorkerDrawer({
 
           <Separator />
 
+          {/* Ambassador Field Session (only for role='ambassador') */}
+          {worker.role === 'ambassador' && worker.session_started_at && (
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <Users className="h-4 w-4 text-purple-500" /> Field Session
+              </h4>
+              <div className="rounded-lg border border-purple-500/30 bg-purple-500/5 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Trigger</span>
+                  <Badge variant="outline" className="capitalize">{worker.session_trigger || 'manual'}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Active for</span>
+                  <span className="text-sm font-medium">
+                    {(() => {
+                      const sec = Math.max(0, Math.floor((Date.now() - new Date(worker.session_started_at!).getTime()) / 1000));
+                      const h = Math.floor(sec / 3600);
+                      const m = Math.floor((sec % 3600) / 60);
+                      return `${h}h ${m}m`;
+                    })()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Stores visited (session)</span>
+                  <span className="text-sm font-medium">{worker.stores_visited_session ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Last ping</span>
+                  <span className="text-sm">{new Date(worker.updated_at).toLocaleTimeString()}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Active Route Info */}
           {route && (
             <div className="space-y-3">
