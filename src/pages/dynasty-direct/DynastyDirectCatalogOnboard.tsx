@@ -19,14 +19,20 @@ interface Staged { title: string; url: string; prompt?: string }
 
 type Step = 'A' | 'B' | 'B2' | 'B3' | 'C' | 'D';
 
-export default function DynastyDirectCatalogOnboard() {
+interface OnboardProps {
+  lockedSupplierId?: string;
+  lockedSupplierName?: string;
+  submitForReviewMode?: boolean;
+}
+
+export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSupplierName, submitForReviewMode = false }: OnboardProps = {}) {
   const navigate = useNavigate();
 
   // Step A
   const [productName, setProductName] = useState('');
   const [brandHint, setBrandHint] = useState('');
   const [cost, setCost] = useState<string>('');
-  const [supplierId, setSupplierId] = useState<string>('');
+  const [supplierId, setSupplierId] = useState<string>(lockedSupplierId || '');
   const [photos, setPhotos] = useState<string[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
@@ -62,11 +68,18 @@ export default function DynastyDirectCatalogOnboard() {
   const [measurementsVerified, setMeasurementsVerified] = useState(false);
 
   useEffect(() => {
+    if (lockedSupplierId) {
+      setSupplierId(lockedSupplierId);
+      if (lockedSupplierName) setSuppliers([{ id: lockedSupplierId, company_name: lockedSupplierName }]);
+      return;
+    }
     supabase.from('wholesaler_profiles').select('id, company_name').order('company_name')
       .then(({ data }) => setSuppliers((data || []) as Supplier[]));
-  }, []);
+  }, [lockedSupplierId, lockedSupplierName]);
 
-  const canStartB = productName.trim().length > 1 && photos.length > 0;
+  const selectedSupplierName = suppliers.find((s) => s.id === supplierId)?.company_name || lockedSupplierName || '';
+  // Supplier is REQUIRED — attribution drives routing, splits, and the review queue.
+  const canStartB = productName.trim().length > 1 && photos.length > 0 && !!supplierId;
   const allGalleryImages: { url: string; label: string }[] = [
     ...photos.map((url) => ({ url, label: 'original' })),
     ...candidates.map((c) => ({ url: c.url, label: `found · ${c.source}` })),
@@ -180,6 +193,7 @@ export default function DynastyDirectCatalogOnboard() {
 
   async function runPublish() {
     if (!draftId) return;
+    if (!supplierId) { toast.error('Pick a wholesaler before publishing'); return; }
     if (selectedImages.length === 0) { toast.error('Select at least one image for the live product'); return; }
     if (!measurementsVerified) { toast.error('Tap "measurements verified" before publishing'); return; }
     setBusy('publish');
@@ -191,14 +205,26 @@ export default function DynastyDirectCatalogOnboard() {
       await supabase.from('dd_catalog_drafts').update({
         selected: selectedImages.map((url) => ({ url })),
         copy, pricing,
+        supplier_id: supplierId,
         weight_oz: measurements.weight_oz,
         dimensions: dims,
         measurements_verified_at: new Date().toISOString(),
         measurements_verified_by: userRes.user?.id ?? null,
       }).eq('id', draftId);
-      const r = await callPipeline({ mode: 'publish', draft_id: draftId, confirmed_by: userRes.user?.id ?? null });
-      setPublished({ product_id: r.product_id });
-      toast.success('Product is LIVE on the catalog');
+
+      if (submitForReviewMode) {
+        // Wholesaler self-serve path: never call pipeline publish — submit to admin review queue.
+        const { error: subErr } = await supabase.from('dd_catalog_drafts')
+          .update({ status: 'pending_admin_review' })
+          .eq('id', draftId);
+        if (subErr) throw subErr;
+        setPublished({ product_id: draftId });
+        toast.success('Submitted to Dynasty Direct review queue');
+      } else {
+        const r = await callPipeline({ mode: 'publish', draft_id: draftId, confirmed_by: userRes.user?.id ?? null });
+        setPublished({ product_id: r.product_id });
+        toast.success('Product is LIVE on the catalog');
+      }
     } catch (e: any) { toast.error(e.message); }
     finally { setBusy(null); }
   }
@@ -280,13 +306,23 @@ export default function DynastyDirectCatalogOnboard() {
               <div className="space-y-2"><Label>Product name *</Label><Input value={productName} onChange={(e) => setProductName(e.target.value)} /></div>
               <div className="space-y-2"><Label>Brand hint</Label><Input value={brandHint} onChange={(e) => setBrandHint(e.target.value)} /></div>
               <div className="space-y-2"><Label>Cost (USD)</Label><Input type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Supplier</Label>
-                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
-                  <option value="">— select supplier —</option>
-                  {suppliers.map((s) => <option key={s.id} value={s.id}>{s.company_name}</option>)}
-                </select>
-              </div>
+              {lockedSupplierId ? (
+                <div className="space-y-2"><Label>Wholesaler (auto-bound to you)</Label>
+                  <div className="flex h-10 items-center rounded-md border border-input bg-muted/40 px-3 text-sm">
+                    <Badge variant="secondary" className="mr-2">locked</Badge>
+                    {selectedSupplierName || lockedSupplierId.slice(0, 8)}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2"><Label>Wholesaler *</Label>
+                  <select className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ${!supplierId ? 'border-destructive/60' : 'border-input'}`}
+                    value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+                    <option value="">— select wholesaler (required) —</option>
+                    {suppliers.map((s) => <option key={s.id} value={s.id}>{s.company_name}</option>)}
+                  </select>
+                  {!supplierId && <p className="text-xs text-destructive">Required — every product attaches to a wholesaler for routing &amp; splits.</p>}
+                </div>
+              )}
             </div>
             <PhotoUploadMultiple photos={photos} onChange={setPhotos} folder="dd-catalog-onboard" maxPhotos={6} />
             <div className="flex justify-end">
@@ -505,6 +541,15 @@ export default function DynastyDirectCatalogOnboard() {
                 );
               })}
             </div>
+            {/* WHOLESALER ATTRIBUTION — David sees who this product attaches to before approving */}
+            <div className="rounded-lg border-2 border-primary/40 p-3 bg-primary/5 flex items-center justify-between gap-3">
+              <div className="text-sm">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Attaches to wholesaler</div>
+                <div className="font-semibold">{selectedSupplierName || <span className="text-destructive">— missing —</span>}</div>
+                {supplierId && <code className="text-[10px] text-muted-foreground">{supplierId}</code>}
+              </div>
+              <Badge variant={supplierId ? 'default' : 'destructive'}>{supplierId ? 'wholesaler_id ✓' : 'no wholesaler'}</Badge>
+            </div>
             <div className="rounded-lg border p-4 bg-muted/30 space-y-2">
               <div className="font-semibold">{copy.title || productName}</div>
               <div className="text-sm text-muted-foreground">{copy.short_description}</div>
@@ -567,28 +612,33 @@ export default function DynastyDirectCatalogOnboard() {
 
             {!published && (
               <div className="flex justify-end border-t pt-4">
-                <Button size="lg" onClick={runPublish} disabled={busy === 'publish' || selectedImages.length === 0 || !measurementsVerified}>
-                  {busy === 'publish' ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Publishing…</>
-                    : <><Rocket className="h-4 w-4 mr-2" /> Confirm & publish live</>}
+                <Button size="lg" onClick={runPublish} disabled={busy === 'publish' || selectedImages.length === 0 || !measurementsVerified || !supplierId}>
+                  {busy === 'publish' ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {submitForReviewMode ? 'Submitting…' : 'Publishing…'}</>
+                    : <><Rocket className="h-4 w-4 mr-2" /> {submitForReviewMode ? 'Submit for admin review' : 'Confirm & publish live'}</>}
                 </Button>
               </div>
             )}
             {published && (
               <div className="border-t pt-4 space-y-3">
                 <div className="flex items-center gap-2 text-emerald-600 font-medium">
-                  <CheckCircle2 className="h-5 w-5" /> Live on the catalog · product <code>{published.product_id.slice(0, 8)}</code>
+                  <CheckCircle2 className="h-5 w-5" />
+                  {submitForReviewMode
+                    ? <span>Submitted to Dynasty Direct review queue · draft <code>{published.product_id.slice(0, 8)}</code></span>
+                    : <span>Live on the catalog · product <code>{published.product_id.slice(0, 8)}</code></span>}
                 </div>
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => navigate('/dynasty-direct/catalog')}>View Catalog</Button>
-                  <Button onClick={sendToContentFactory} disabled={busy === 'content' || !!contentBriefId}>
-                    {busy === 'content' ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating brief…</>
-                      : contentBriefId ? <>✓ Brief sent</>
-                      : <><Sparkles className="h-4 w-4 mr-2" /> Send to Content Factory</>}
-                  </Button>
-                  {contentBriefId && (
-                    <Button variant="outline" onClick={() => navigate('/dynasty-direct/content-library')}>Open Content Library</Button>
-                  )}
-                </div>
+                {!submitForReviewMode && (
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={() => navigate('/dynasty-direct/catalog')}>View Catalog</Button>
+                    <Button onClick={sendToContentFactory} disabled={busy === 'content' || !!contentBriefId}>
+                      {busy === 'content' ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating brief…</>
+                        : contentBriefId ? <>✓ Brief sent</>
+                        : <><Sparkles className="h-4 w-4 mr-2" /> Send to Content Factory</>}
+                    </Button>
+                    {contentBriefId && (
+                      <Button variant="outline" onClick={() => navigate('/dynasty-direct/content-library')}>Open Content Library</Button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
