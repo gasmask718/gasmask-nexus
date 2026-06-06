@@ -1,6 +1,6 @@
 // DD email unsubscribe — HMAC token validation + suppression insert.
 // POST { email, ts, sig }   OR  GET ?email=&ts=&sig=
-// Token format: sig = hex(HMAC-SHA256(SHARED_SECRET, `${lower(email)}.${ts}`))
+// Token format: sig = hex(HMAC-SHA256(DD_UNSUBSCRIBE_SECRET, `${lower(email)}.${ts}`))
 // ts (unix seconds) must be within 90 days; suppression is permanent.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
