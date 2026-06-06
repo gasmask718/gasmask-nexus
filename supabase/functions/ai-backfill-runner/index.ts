@@ -98,7 +98,7 @@ serve(async (req) => {
           // Append-only: never overwrite existing notes
           const tagged = `\n\n--- AI Generated (${new Date().toISOString().slice(0, 10)}) ---\n${summary}`;
           const newNotes = (s.notes && s.notes.trim()) ? `${s.notes}${tagged}` : tagged.trim();
-          await supabase.from('store_master').update({ notes: newNotes, ai_generated: true }).eq('id', s.id);
+          await supabase.from('store_master').update({ notes: newNotes }).eq('id', s.id);
 
           await supabase.from('ai_backfill_items').insert({
             job_id: job.id, entity_type: 'store_note', entity_id: s.id,
@@ -117,7 +117,7 @@ serve(async (req) => {
 
     if (jobType === 'invoices') {
       const { data: deliveredOrders } = await supabase
-        .from('orders').select('id, store_id, total, total_amount').eq('status', 'delivered').limit(500);
+        .from('orders').select('id, store_id, total_amount').eq('order_status', 'delivered').limit(500);
       const orderIds = (deliveredOrders || []).map((o: any) => o.id);
       const { data: existing } = await supabase.from('invoices').select('order_id').in('order_id', orderIds);
       const covered = new Set((existing || []).map((i: any) => i.order_id));
@@ -126,12 +126,11 @@ serve(async (req) => {
       for (const o of missing) {
         scanned++;
         try {
-          const total = o.total ?? o.total_amount ?? 0;
+          const total = o.total_amount ?? 0;
           const { data: inv, error } = await supabase.from('invoices').insert({
             order_id: o.id, store_id: o.store_id,
             total, total_amount: total, subtotal: total,
             status: 'draft_ai',
-            ai_generated: true,
           }).select('id').single();
           if (error) throw error;
           await supabase.from('ai_backfill_items').insert({
