@@ -12,8 +12,8 @@ async function gatherFloorData(supabase: any, floor: number): Promise<string> {
     case 1: {
       const { data: stores } = await supabase
         .from('store_master')
-        .select('id, store_name, phone, address, updated_at')
-        .eq('is_active', true)
+        .select('id, store_name, phone, address, updated_at, status')
+        .ilike('status', '%active%')
         .or('phone.is.null,address.is.null')
         .limit(50);
       return `Active stores missing phone/address (${stores?.length || 0}):\n${JSON.stringify(stores || [], null, 2)}`;
@@ -22,9 +22,9 @@ async function gatherFloorData(supabase: any, floor: number): Promise<string> {
       const since = new Date(Date.now() - 30 * 86400_000).toISOString();
       const { data: silent } = await supabase
         .from('store_master')
-        .select('id, store_name, last_contact_at')
-        .eq('is_active', true)
-        .or(`last_contact_at.is.null,last_contact_at.lt.${since}`)
+        .select('id, store_name, last_contacted_at')
+        .ilike('status', '%active%')
+        .or(`last_contacted_at.is.null,last_contacted_at.lt.${since}`)
         .limit(40);
       return `Stores silent 30d+ (${silent?.length || 0}):\n${JSON.stringify(silent || [], null, 2)}`;
     }

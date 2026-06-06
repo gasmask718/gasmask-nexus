@@ -25,12 +25,12 @@ serve(async (req) => {
       const { count: notesNeeded } = await supabase
         .from('store_master')
         .select('id', { count: 'exact', head: true })
-        .eq('is_active', true)
+        .ilike('status', '%active%')
         .or('notes.is.null,notes.eq.');
       const { data: deliveredOrders } = await supabase
         .from('orders')
         .select('id')
-        .eq('status', 'delivered')
+        .eq('order_status', 'delivered')
         .limit(1000);
       const orderIds = (deliveredOrders || []).map((o: any) => o.id);
       let invoicesNeeded = 0;
