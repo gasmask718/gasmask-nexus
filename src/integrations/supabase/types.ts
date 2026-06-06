@@ -36633,6 +36633,36 @@ export type Database = {
           },
         ]
       }
+      dd_config: {
+        Row: {
+          default_margin_pct: number
+          default_reserve_pct: number
+          dispute_auto_submit: boolean
+          id: boolean
+          reserve_hold_days: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          default_margin_pct?: number
+          default_reserve_pct?: number
+          dispute_auto_submit?: boolean
+          id?: boolean
+          reserve_hold_days?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          default_margin_pct?: number
+          default_reserve_pct?: number
+          dispute_auto_submit?: boolean
+          id?: boolean
+          reserve_hold_days?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       dd_content_assets: {
         Row: {
           asset_type: string
@@ -36757,6 +36787,253 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_dispute_events: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          evidence_payload: Json | null
+          evidence_submitted_at: string | null
+          id: string
+          order_id: string | null
+          raw_event: Json | null
+          reason: string | null
+          recovery_steps: Json | null
+          reversed_transfer_id: string | null
+          status: string
+          stripe_charge_id: string
+          stripe_dispute_id: string
+          updated_at: string
+          wholesaler_id: string | null
+        }
+        Insert: {
+          amount_cents?: number
+          created_at?: string
+          evidence_payload?: Json | null
+          evidence_submitted_at?: string | null
+          id?: string
+          order_id?: string | null
+          raw_event?: Json | null
+          reason?: string | null
+          recovery_steps?: Json | null
+          reversed_transfer_id?: string | null
+          status: string
+          stripe_charge_id: string
+          stripe_dispute_id: string
+          updated_at?: string
+          wholesaler_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          evidence_payload?: Json | null
+          evidence_submitted_at?: string | null
+          id?: string
+          order_id?: string | null
+          raw_event?: Json | null
+          reason?: string | null
+          recovery_steps?: Json | null
+          reversed_transfer_id?: string | null
+          status?: string
+          stripe_charge_id?: string
+          stripe_dispute_id?: string
+          updated_at?: string
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_dispute_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_dispute_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_marketplace_order_timeline"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "dd_dispute_events_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_evidence_kit: {
+        Row: {
+          accepted_terms_at: string | null
+          checkout_session_id: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          line_items_snapshot: Json | null
+          order_id: string
+          tracking_snapshot: Json | null
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          accepted_terms_at?: string | null
+          checkout_session_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          line_items_snapshot?: Json | null
+          order_id: string
+          tracking_snapshot?: Json | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          accepted_terms_at?: string | null
+          checkout_session_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          line_items_snapshot?: Json | null
+          order_id?: string
+          tracking_snapshot?: Json | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_evidence_kit_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_evidence_kit_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "v_marketplace_order_timeline"
+            referencedColumns: ["order_id"]
+          },
+        ]
+      }
+      dd_product_margin_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          margin_pct: number
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          margin_pct: number
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          margin_pct?: number
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_product_margin_overrides_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_product_margin_overrides_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_reserve_ledger: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          fulfillment_id: string | null
+          id: string
+          notes: string | null
+          order_id: string | null
+          release_at: string
+          released_at: string | null
+          released_transfer_id: string | null
+          status: string
+          wholesaler_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          fulfillment_id?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          release_at: string
+          released_at?: string | null
+          released_transfer_id?: string | null
+          status?: string
+          wholesaler_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          fulfillment_id?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          release_at?: string
+          released_at?: string | null
+          released_transfer_id?: string | null
+          status?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_reserve_ledger_fulfillment_id_fkey"
+            columns: ["fulfillment_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_fulfillments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_reserve_ledger_fulfillment_id_fkey"
+            columns: ["fulfillment_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_fulfillment_view"
+            referencedColumns: ["fulfillment_id"]
+          },
+          {
+            foreignKeyName: "dd_reserve_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_reserve_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_marketplace_order_timeline"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "dd_reserve_ledger_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -36904,6 +37181,105 @@ export type Database = {
           window_days?: number
         }
         Relationships: []
+      }
+      dd_split_ledger: {
+        Row: {
+          created_at: string
+          dd_margin_cents: number
+          fulfillment_id: string | null
+          gross_amount_cents: number
+          id: string
+          margin_pct_applied: number | null
+          notes: string | null
+          order_id: string
+          reserve_held_cents: number
+          reserve_pct_applied: number | null
+          reserve_released_cents: number
+          status: string
+          stripe_charge_id: string | null
+          stripe_fee_cents: number
+          stripe_transfer_id: string | null
+          supplier_transfer_cents: number
+          updated_at: string
+          wholesaler_id: string
+        }
+        Insert: {
+          created_at?: string
+          dd_margin_cents?: number
+          fulfillment_id?: string | null
+          gross_amount_cents?: number
+          id?: string
+          margin_pct_applied?: number | null
+          notes?: string | null
+          order_id: string
+          reserve_held_cents?: number
+          reserve_pct_applied?: number | null
+          reserve_released_cents?: number
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_fee_cents?: number
+          stripe_transfer_id?: string | null
+          supplier_transfer_cents?: number
+          updated_at?: string
+          wholesaler_id: string
+        }
+        Update: {
+          created_at?: string
+          dd_margin_cents?: number
+          fulfillment_id?: string | null
+          gross_amount_cents?: number
+          id?: string
+          margin_pct_applied?: number | null
+          notes?: string | null
+          order_id?: string
+          reserve_held_cents?: number
+          reserve_pct_applied?: number | null
+          reserve_released_cents?: number
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_fee_cents?: number
+          stripe_transfer_id?: string | null
+          supplier_transfer_cents?: number
+          updated_at?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_split_ledger_fulfillment_id_fkey"
+            columns: ["fulfillment_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_fulfillments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_split_ledger_fulfillment_id_fkey"
+            columns: ["fulfillment_id"]
+            isOneToOne: true
+            referencedRelation: "vendor_fulfillment_view"
+            referencedColumns: ["fulfillment_id"]
+          },
+          {
+            foreignKeyName: "dd_split_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_split_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_marketplace_order_timeline"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "dd_split_ledger_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dd_wholesaler_store_link: {
         Row: {
@@ -111818,12 +112194,18 @@ export type Database = {
           email: string | null
           id: string
           is_default_supplier: boolean
+          margin_pct_override: number | null
           notes: string | null
           phone: string | null
           priority_weight: number
+          reserve_pct: number
           routing_paused: boolean
           shipping_preferences: Json | null
           status: string
+          stripe_charges_enabled: boolean
+          stripe_connect_id: string | null
+          stripe_connect_updated_at: string | null
+          stripe_payouts_enabled: boolean
           tax_id: string | null
           user_id: string
           warehouse_address: string | null
@@ -111846,12 +112228,18 @@ export type Database = {
           email?: string | null
           id?: string
           is_default_supplier?: boolean
+          margin_pct_override?: number | null
           notes?: string | null
           phone?: string | null
           priority_weight?: number
+          reserve_pct?: number
           routing_paused?: boolean
           shipping_preferences?: Json | null
           status?: string
+          stripe_charges_enabled?: boolean
+          stripe_connect_id?: string | null
+          stripe_connect_updated_at?: string | null
+          stripe_payouts_enabled?: boolean
           tax_id?: string | null
           user_id: string
           warehouse_address?: string | null
@@ -111874,12 +112262,18 @@ export type Database = {
           email?: string | null
           id?: string
           is_default_supplier?: boolean
+          margin_pct_override?: number | null
           notes?: string | null
           phone?: string | null
           priority_weight?: number
+          reserve_pct?: number
           routing_paused?: boolean
           shipping_preferences?: Json | null
           status?: string
+          stripe_charges_enabled?: boolean
+          stripe_connect_id?: string | null
+          stripe_connect_updated_at?: string | null
+          stripe_payouts_enabled?: boolean
           tax_id?: string | null
           user_id?: string
           warehouse_address?: string | null
@@ -120637,6 +121031,14 @@ export type Database = {
           p_tax_amount?: number
         }
         Returns: Json
+      }
+      dd_get_effective_margin_pct: {
+        Args: { p_product_id: string; p_wholesaler_id: string }
+        Returns: number
+      }
+      dd_get_effective_reserve_pct: {
+        Args: { p_wholesaler_id: string }
+        Returns: number
       }
       dd_link_wholesaler_to_store_master: {
         Args: { p_wholesaler_id: string }
