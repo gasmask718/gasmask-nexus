@@ -20,6 +20,11 @@ export interface WorkerLocation {
   route_id?: string;
   status: 'active' | 'stale' | 'offline';
   autonomy_level?: string;
+  // Ambassador-specific (populated when role='ambassador' and a field_session is active)
+  session_id?: string;
+  session_started_at?: string;
+  session_trigger?: 'manual' | 'route' | 'visit_run';
+  stores_visited_session?: number;
 }
 
 export interface LiveRoute {
