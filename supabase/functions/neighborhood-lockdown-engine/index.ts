@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       .map((s: any) => ({
         store_id: s.id,
         store_name: s.name ?? "Unknown",
-        store_address: s.address,
+        store_address: s.address_street,
         store_city: s.address_city,
         store_state: s.address_state,
         store_phone: s.phone,
