@@ -1,15 +1,18 @@
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ThumbsUp, ThumbsDown, HelpCircle } from 'lucide-react';
 import { useStoreTubeKPI, type StoreTubeKPIRow } from '@/hooks/useStoreTubeKPI';
+import { useTubeIntelligence, type TubeIntelStatus, type TubeIntelRole } from '@/hooks/useTubeIntelligence';
 import { CANONICAL_TUBE_SKUS } from '@/lib/inventory/skuDisplay';
+import { useUserRole } from '@/hooks/useUserRole';
+import { cn } from '@/lib/utils';
 
 /**
- * Brand Interest Chips — pinned at top of Store Profile header.
- *
- * Renders ALL 9 canonical product SKUs (CANONICAL_TUBE_SKUS) with their
- * operator-facing display names. Looks up per-product owner interest from
- * v_store_tube_kpi (owner_interested boolean). Missing rows render as
- * 'Unknown' so the catalog is always complete.
+ * Brand Interest Chips — pinned at top of Store Profile, also serves as the
+ * "Interest tab products at top" header strip (#11). Renders ALL canonical
+ * SKUs with current interest state. Tap to cycle:
+ *   unknown → interested → not_interested → unknown
+ * Uses store_tube_inventory_status via useTubeIntelligence.updateField, so
+ * existing role-based field governance + audit trail apply.
  */
 
 interface Props {
@@ -23,6 +26,12 @@ function classify(owner_interested: boolean | null | undefined): Interest {
   if (owner_interested === false) return 'not_interested';
   return 'unknown';
 }
+
+const NEXT: Record<Interest, boolean | null> = {
+  unknown: true,
+  interested: false,
+  not_interested: null,
+};
 
 const STYLES: Record<Interest, string> = {
   interested:
@@ -45,9 +54,7 @@ const LABELS: Record<Interest, string> = {
   unknown: 'Unknown',
 };
 
-// Canonical display name → list of KPI brand_id aliases (lowercased) that
-// represent the same SKU in v_store_tube_kpi.
-const SKU_KPI_ALIASES: Record<string, string[]> = {
+const SKU_ALIASES: Record<string, string[]> = {
   'GasMask Tubes': ['gasmasktubes', 'gasmask tubes'],
   'GasMask Bags': ['gasmask', 'gasmaskbags', 'gasmask bags'],
   'GasMask Redtops': ['gasmaskredtops', 'gasmask redtops'],
@@ -59,9 +66,14 @@ const SKU_KPI_ALIASES: Record<string, string[]> = {
   'Grabba R Us': ['grabba_r_us', 'grabba', 'grabbarus', 'grabba r us'],
 };
 
-function findKpiRow(displayName: string, kpi: StoreTubeKPIRow[]): StoreTubeKPIRow | undefined {
-  const aliases = SKU_KPI_ALIASES[displayName] ?? [displayName.toLowerCase()];
-  return kpi.find((r) => {
+const TOGGLE_ROLES: TubeIntelRole[] = ['admin', 'va', 'ambassador', 'biker'];
+
+function matchAliases<T extends { brand_id?: string | null; brand_name?: string | null }>(
+  displayName: string,
+  rows: T[]
+): T | undefined {
+  const aliases = SKU_ALIASES[displayName] ?? [displayName.toLowerCase()];
+  return rows.find((r) => {
     const id = (r.brand_id ?? '').toLowerCase().trim();
     const name = (r.brand_name ?? '').toLowerCase().trim();
     return aliases.includes(id) || aliases.includes(name);
@@ -70,31 +82,65 @@ function findKpiRow(displayName: string, kpi: StoreTubeKPIRow[]): StoreTubeKPIRo
 
 export function BrandInterestChips({ storeId }: Props) {
   const { data: kpi = [], isLoading } = useStoreTubeKPI(storeId);
+  const { data: intel = [], updateField } = useTubeIntelligence(storeId);
+  const { role } = useUserRole();
+  const canToggle = TOGGLE_ROLES.includes(role as TubeIntelRole);
 
   if (isLoading) {
     return <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />;
   }
 
-  const handleScroll = () => {
-    const el = document.querySelector('[data-section="brand-relationships"]');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const handleToggle = (sku: { display: string; product_id: string }) => {
+    if (!canToggle) return;
+    const intelRow = matchAliases(sku.display, intel as TubeIntelStatus[]);
+    const current = classify(intelRow?.owner_interested);
+    const nextValue = NEXT[current];
+    // Use a canonical brand_id when no row exists yet (first alias).
+    const brandId =
+      intelRow?.brand_id ?? (SKU_ALIASES[sku.display]?.[0] ?? sku.display.toLowerCase());
+    updateField.mutate({
+      id: intelRow?.id,
+      store_id: storeId,
+      brand_id: brandId,
+      field: 'owner_interested',
+      value: nextValue,
+      update_method: 'manual',
+    });
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+    <div className="flex flex-wrap items-center gap-1.5 mt-1" data-section="interest-strip">
       <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 mr-1">
         Interest:
       </span>
       {CANONICAL_TUBE_SKUS.map((sku) => {
-        const row = findKpiRow(sku.display, kpi);
-        const kind = classify(row?.owner_interested);
+        const intelRow = matchAliases(sku.display, intel as TubeIntelStatus[]);
+        const kpiRow = matchAliases(sku.display, kpi as StoreTubeKPIRow[]);
+        const ownerInterested = intelRow?.owner_interested ?? kpiRow?.owner_interested;
+        const kind = classify(ownerInterested);
+        const title = canToggle
+          ? `${sku.display}: ${LABELS[kind]} — tap to cycle`
+          : `${sku.display}: ${LABELS[kind]}`;
         return (
           <Badge
             key={sku.product_id}
             variant="outline"
-            className={`text-xs font-medium cursor-pointer transition-colors gap-1 ${STYLES[kind]}`}
-            onClick={handleScroll}
-            title={`${sku.display}: ${LABELS[kind]}`}
+            role={canToggle ? 'button' : undefined}
+            tabIndex={canToggle ? 0 : undefined}
+            className={cn(
+              'text-xs font-medium transition-colors gap-1',
+              STYLES[kind],
+              canToggle ? 'cursor-pointer' : 'cursor-default opacity-90'
+            )}
+            onClick={() => handleToggle(sku)}
+            onKeyDown={(e) => {
+              if (!canToggle) return;
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleToggle(sku);
+              }
+            }}
+            title={title}
           >
             {ICONS[kind]}
             <span>{sku.display}</span>
