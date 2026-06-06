@@ -23,6 +23,8 @@ import { TableRowActions } from "@/components/crud/TableRowActions";
 import { DataTablePagination } from "@/components/crud/DataTablePagination";
 import { useCrudOperations } from "@/hooks/useCrudOperations";
 import { productionBatchFields } from "@/config/entityFieldConfigs";
+import { ProductionTrendsTab } from "@/components/production/ProductionTrendsTab";
+import { BagPipelinePanel } from "@/components/production/BagPipelinePanel";
 
 export default function GrabbaProduction() {
   const { selectedBrand, setSelectedBrand, getBrandQuery } = useGrabbaBrand();
@@ -283,6 +285,8 @@ export default function GrabbaProduction() {
           <div className="flex items-center justify-between">
             <TabsList className="bg-muted/50">
               <TabsTrigger value="batches">Production Logs</TabsTrigger>
+              <TabsTrigger value="trends">Trends</TabsTrigger>
+              <TabsTrigger value="bags">Bag Pipeline</TabsTrigger>
               <TabsTrigger value="offices">Office Output</TabsTrigger>
               <TabsTrigger value="tools">Tools Issued</TabsTrigger>
               <TabsTrigger value="service">Service Tickets</TabsTrigger>
@@ -364,6 +368,16 @@ export default function GrabbaProduction() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="trends">
+            <ProductionTrendsTab />
+          </TabsContent>
+
+          <TabsContent value="bags">
+            <BagPipelinePanel />
+          </TabsContent>
+
+
 
           {/* Offices Tab */}
           <TabsContent value="offices">
