@@ -122,14 +122,16 @@ async function markOrderPaid(
   if (!existing) return;
   if (existing.payment_status === "paid") return;
 
-  await supabase
-    .from("marketplace_orders")
-    .update({
-      payment_status: "paid",
-      fulfillment_status: "processing",
-      stripe_payment_intent_id: paymentRef,
-    })
-    .eq("id", orderId);
+  const updatePayload: Record<string, unknown> = {
+    payment_status: "paid",
+    fulfillment_status: "processing",
+    stripe_payment_intent_id: paymentRef,
+  };
+  // Backfill customer_email if missing — required for guest-order public lookup.
+  if (!existing.customer_email && fallbackEmail) {
+    updatePayload.customer_email = fallbackEmail;
+  }
+  await supabase.from("marketplace_orders").update(updatePayload).eq("id", orderId);
 
   const email = existing.customer_email || fallbackEmail;
   if (email) {
