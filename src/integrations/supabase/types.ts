@@ -115260,14 +115260,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -115630,6 +115630,7 @@ export type Database = {
       products_all_public: {
         Row: {
           brand_id: string | null
+          category: string | null
           created_at: string | null
           description: string | null
           dimensions: Json | null
@@ -115651,6 +115652,7 @@ export type Database = {
         }
         Insert: {
           brand_id?: string | null
+          category?: string | null
           created_at?: string | null
           description?: string | null
           dimensions?: Json | null
@@ -115672,6 +115674,7 @@ export type Database = {
         }
         Update: {
           brand_id?: string | null
+          category?: string | null
           created_at?: string | null
           description?: string | null
           dimensions?: Json | null
@@ -122559,6 +122562,24 @@ export type Database = {
           total_count: number
         }[]
       }
+      search_products_public: {
+        Args: { p_limit?: number; p_q: string }
+        Returns: {
+          brand_id: string
+          category: string
+          created_at: string
+          description: string
+          id: string
+          images: Json
+          inventory_qty: number
+          product_name: string
+          retail_price: number
+          shipping_from_city: string
+          shipping_from_state: string
+          similarity: number
+          wholesaler_id: string
+        }[]
+      }
       search_rental_vehicles_by_location: {
         Args: {
           p_lat: number
@@ -122600,6 +122621,8 @@ export type Database = {
         Args: { p_batch_id: string; p_url: string }
         Returns: undefined
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       skip_payout_item: {
         Args: { p_item_id: string; p_reason: string }
         Returns: undefined
