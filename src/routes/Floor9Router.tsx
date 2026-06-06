@@ -24,6 +24,7 @@ import GovernanceCommandCenter from '@/pages/admin/GovernanceCommandCenter';
 
 // Phase 4.5 Observation Mode
 import Floor9Observation from '@/pages/floor9/Floor9Observation';
+import Floor9AIAgents from '@/pages/floor9/Floor9AIAgents';
 
 // Note Cleaner Agent
 const NoteCleanerPage = lazy(() => import('@/pages/gasmask/NoteCleanerPage'));
@@ -64,6 +65,10 @@ export function Floor9Router() {
       {/* Phase 4.5: Observation Mode */}
       <Route path="observation" element={<Floor9Observation />} />
       <Route path="learning" element={<Floor9Observation />} />
+
+      {/* Item #22/#23: Floor Agents + AI Backfill */}
+      <Route path="ai-agents" element={<Floor9AIAgents />} />
+      <Route path="backfill" element={<Floor9AIAgents />} />
       
       {/* HARD FAILSAFE - Any unknown route redirects to hub */}
       <Route path="*" element={<Navigate to="/grabba/floor9" replace />} />
