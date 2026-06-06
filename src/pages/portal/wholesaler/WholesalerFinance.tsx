@@ -41,6 +41,11 @@ export default function WholesalerFinance() {
         </Button>
       </div>
 
+      {/* Stripe Connect (DD Sprint 5) */}
+      <div className="mb-6">
+        <WholesalerStripeConnectCard />
+      </div>
+
       {/* KPI Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <HudCard variant="green" glow>
