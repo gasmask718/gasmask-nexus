@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { HudCard } from "@/components/portal/HudCard";
 import { HudMetric } from "@/components/portal/HudMetric";
-import { 
-  ArrowLeft, DollarSign, TrendingUp, Wallet, Receipt, 
+import { WholesalerStripeConnectCard } from "@/components/portal/wholesaler/WholesalerStripeConnectCard";
+import {
+  ArrowLeft, DollarSign, TrendingUp, Wallet, Receipt,
   Download, CreditCard, Clock, CheckCircle
 } from "lucide-react";
 
@@ -38,6 +39,11 @@ export default function WholesalerFinance() {
           <Wallet className="h-4 w-4 mr-2" />
           Request Payout
         </Button>
+      </div>
+
+      {/* Stripe Connect (DD Sprint 5) */}
+      <div className="mb-6">
+        <WholesalerStripeConnectCard />
       </div>
 
       {/* KPI Grid */}
