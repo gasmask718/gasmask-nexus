@@ -40,7 +40,7 @@ export default function DynastyDirectInventory() {
     queryFn: async (): Promise<Row[]> => {
       const { data, error } = await supabase
         .from("marketplace_inventory")
-        .select("id, product_id, wholesaler_id, quantity_available, reserved_quantity, low_stock_threshold, reorder_point, product:products_all(product_name, inventory_qty), wholesaler:wholesaler_profiles(business_name)")
+        .select("id, product_id, wholesaler_id, quantity_available, reserved_quantity, low_stock_threshold, reorder_point, product:products_all(product_name, inventory_qty), wholesaler:wholesaler_profiles(company_name)")
         .order("quantity_available", { ascending: true });
       if (error) throw error;
       return (data || []).map((r: any) => ({
