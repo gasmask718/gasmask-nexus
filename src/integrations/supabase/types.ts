@@ -52308,6 +52308,36 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_order_lookup_attempts: {
+        Row: {
+          attempted_at: string
+          email_provided: string | null
+          id: string
+          ip_hash: string
+          order_id: string | null
+          rejected_reason: string | null
+          success: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          email_provided?: string | null
+          id?: string
+          ip_hash: string
+          order_id?: string | null
+          rejected_reason?: string | null
+          success?: boolean
+        }
+        Update: {
+          attempted_at?: string
+          email_provided?: string | null
+          id?: string
+          ip_hash?: string
+          order_id?: string | null
+          rejected_reason?: string | null
+          success?: boolean
+        }
+        Relationships: []
+      }
       hall_inquiries: {
         Row: {
           budget: number | null
@@ -121949,6 +121979,10 @@ export type Database = {
       log_security_event: {
         Args: { p_action: string; p_details?: Json }
         Returns: string
+      }
+      lookup_guest_order: {
+        Args: { p_email: string; p_ip?: string; p_order_id: string }
+        Returns: Json
       }
       mark_invite_opened: { Args: { p_token: string }; Returns: undefined }
       mark_ops_thread_read: {
