@@ -1,6 +1,6 @@
 // Bag pipeline activation — executes step 4 from docs/activate-bag-pipeline.md:
-// backfills bag_sale_ledger from historical invoices where products.track_by='bags'.
-// Safe to re-run (dedupes by (invoice line + source='invoice_backfill')).
+// backfills bag_sale_ledger from historical paid/partial invoices where products.track_by='bags'.
+// Safe to re-run (deduped by (invoice_id, line_item_id, source) unique index).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     // Discover bag-tracked products
     const { data: bagProducts, error: pErr } = await supabase
       .from("products")
-      .select("id")
+      .select("id, brand_id")
       .eq("track_by", "bags");
     if (pErr) throw pErr;
     const bagProductIds = (bagProducts || []).map((p: any) => p.id);
@@ -24,11 +24,13 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const brandByProduct: Record<string, string | null> = {};
+    (bagProducts || []).forEach((p: any) => { brandByProduct[p.id] = p.brand_id ?? null; });
 
-    // Pull paid/partial invoice line items for bag products
+    // Pull bag line items from paid/partial invoices
     const { data: lines, error: lErr } = await supabase
       .from("invoice_line_items")
-      .select("id, invoice_id, product_id, product_name, quantity, brand, invoices!inner(store_id, created_at, payment_status)")
+      .select("id, invoice_id, product_id, product_name, quantity, invoices!inner(store_id, created_at, payment_status)")
       .in("product_id", bagProductIds);
     if (lErr) throw lErr;
 
@@ -36,34 +38,37 @@ Deno.serve(async (req) => {
       l.invoices && ["paid", "partial"].includes(l.invoices.payment_status) && l.invoices.store_id
     );
 
-    // Dedupe against existing backfill rows by source_id = line_item_id (when column exists)
+    // Dedupe against existing backfill rows by (invoice_id, line_item_id)
     const { data: existing } = await supabase
       .from("bag_sale_ledger")
-      .select("source_id")
+      .select("invoice_id, line_item_id")
       .eq("source", "invoice_backfill");
-    const seen = new Set((existing || []).map((r: any) => r.source_id).filter(Boolean));
+    const seen = new Set((existing || []).map((r: any) => `${r.invoice_id}:${r.line_item_id}`));
 
     const toInsert = eligible
-      .filter((l: any) => !seen.has(l.id))
+      .filter((l: any) => !seen.has(`${l.invoice_id}:${l.id}`))
       .map((l: any) => ({
+        invoice_id: l.invoice_id,
+        line_item_id: l.id,
         store_id: l.invoices.store_id,
+        brand_id: brandByProduct[l.product_id],
         product_id: l.product_id,
         product_name: l.product_name,
-        brand_id: l.brand ? String(l.brand).toLowerCase() : null,
-        bags_delta: Number(l.quantity) || 0,
+        bags_delta: -Math.abs(Number(l.quantity) || 0),
         source: "invoice_backfill",
-        source_id: l.id,
+        recorded_by: "bag-pipeline-activate",
         created_at: l.invoices.created_at,
       }))
       .filter((r) => r.bags_delta !== 0);
 
     let inserted = 0;
     if (toInsert.length) {
+      // onConflict on the unique index keeps the run idempotent.
       const { error: insErr, count } = await supabase
         .from("bag_sale_ledger")
-        .insert(toInsert, { count: "exact" });
+        .upsert(toInsert, { onConflict: "invoice_id,line_item_id,source", ignoreDuplicates: true, count: "exact" });
       if (insErr) throw insErr;
-      inserted = count || toInsert.length;
+      inserted = count || 0;
     }
 
     return new Response(
@@ -71,7 +76,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
-    return new Response(JSON.stringify({ error: String(e?.message || e) }), {
+    return new Response(JSON.stringify({ error: String((e as any)?.message || e) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
