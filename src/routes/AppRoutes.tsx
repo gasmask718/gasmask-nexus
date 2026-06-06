@@ -1958,6 +1958,14 @@ export default function AppRoutes() {
         <Route path="/dynasty-direct/fulfillment" element={<DynastyDirectFulfillmentConsole />} />
         <Route path="/dynasty-direct/routing-console" element={<DynastyDirectFulfillmentConsole />} />
         <Route path="/dynasty-direct/splits" element={<DynastyDirectSplitConsole />} />
+        <Route
+          path="/dynasty-direct/inventory"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
+              <DynastyDirectInventory />
+            </RequireRole>
+          }
+        />
         <Route path="/dynasty-direct/suppliers/portal" element={<WholesalerPortalPage />} />
         <Route path="/dynasty-direct/suppliers/inventory" element={<WholesalerPortalPage />} />
         <Route path="/dynasty-direct/shipping" element={<MarketplaceControlTowerPage />} />
