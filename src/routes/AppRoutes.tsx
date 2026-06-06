@@ -2546,6 +2546,7 @@ export default function AppRoutes() {
         <Route path="/portal/wholesaler/team" element={<WholesalerTeam />} />
         <Route path="/portal/wholesaler/transactions" element={<WholesalerTransactionHistory />} />
         <Route path="/portal/wholesaler/inventory" element={<WholesalerInventoryWorkflow />} />
+        <Route path="/portal/wholesaler/marketplace-inventory" element={<WholesalerMarketplaceInventory />} />
         <Route path="/portal/wholesaler/order-grabba" element={<WholesalerOrderGrabba />} />
         <Route path="/portal/wholesaler/catalog/onboard" element={<WholesalerCatalogOnboard />} />
         <Route path="/portal/production" element={<ProductionPortal />} />
