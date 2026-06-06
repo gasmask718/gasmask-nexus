@@ -190,9 +190,13 @@ export default function LiveDeliveryPool() {
         .update({ fulfillment_status: 'delivered' })
         .eq('id', id);
       if (error) throw error;
+      // Fire receipt SMS (guarded From, includes signup link for unclaimed stores).
+      // Non-blocking: receipt failure shouldn't undo delivery.
+      supabase.functions.invoke('gasmask-order-receipt', { body: { order_id: id } })
+        .catch((e) => console.warn('[order-receipt] failed', e));
     },
     onSuccess: () => {
-      toast.success('Marked delivered');
+      toast.success('Marked delivered — receipt SMS dispatched');
       qc.invalidateQueries({ queryKey: ['live-delivery-pool'] });
     },
     onError: (e: any) => toast.error(e.message ?? 'Failed'),

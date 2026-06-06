@@ -13,6 +13,7 @@ import { usePriorCustomerSegmentMap, FLOW_STATUS_META, type FlowStatus } from '@
 import { NeighborhoodStoreBreakdown } from '@/components/territory/NeighborhoodStoreBreakdown';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import { CoverageScanPanel } from '@/components/territory/CoverageScanPanel';
+import { NeighborhoodLockdownPanel } from '@/components/territory/NeighborhoodLockdownPanel';
 
 const fmt = (n: number) => Number(n || 0).toLocaleString();
 
@@ -195,6 +196,9 @@ export default function NeighborhoodDetailPage() {
           </Button>
         </CardContent>
       </Card>
+      {/* Neighborhood lockdown — auto-generates sweep triggers for don't-have stores */}
+      {neighborhood && <NeighborhoodLockdownPanel neighborhood={neighborhood} />}
+
 
       {/* Full per-store roster with relationship status */}
       {neighborhood && <NeighborhoodStoreBreakdown neighborhood={neighborhood} />}

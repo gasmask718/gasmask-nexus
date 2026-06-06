@@ -46,6 +46,7 @@ const DriverLogin = lazy(() => import('@/pages/portal/DriverLogin'));
 const BikerLogin = lazy(() => import('@/pages/portal/BikerLogin'));
 const InviteSignup = lazy(() => import('@/pages/auth/InviteSignup'));
 const PublicIntakePage = lazy(() => import('@/pages/auth/PublicIntakePage'));
+const StoreSignupPage = lazy(() => import('@/pages/auth/StoreSignupPage'));
 const UserInvitations = lazy(() => import('@/pages/security/UserInvitations'));
 const InviteLanding = lazy(() => import('@/pages/portal/InviteLanding'));
 const InstallPwa = lazy(() => import('@/pages/InstallPwa'));
@@ -1221,6 +1222,7 @@ export default function AppRoutes() {
       <Route path="/partner/portal" element={<ProtectedRoute><PartnerPortal /></ProtectedRoute>} />
       <Route path="/admin/partners/import" element={<PartnersImport />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/store-signup" element={<StoreSignupPage />} />
       <Route path="/auth/intake" element={<PublicIntakePage />} />
       <Route path="/auth/intake/:token" element={<PublicIntakePage />} />
       <Route path="/portal/login" element={<PortalLogin />} />

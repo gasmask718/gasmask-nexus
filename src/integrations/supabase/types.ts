@@ -63408,6 +63408,45 @@ export type Database = {
           },
         ]
       }
+      neighborhood_lockdowns: {
+        Row: {
+          baseline_have: number | null
+          baseline_total: number | null
+          cleared_at: string | null
+          created_at: string
+          id: string
+          neighborhood_name: string
+          notes: string | null
+          started_at: string
+          started_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          baseline_have?: number | null
+          baseline_total?: number | null
+          cleared_at?: string | null
+          created_at?: string
+          id?: string
+          neighborhood_name: string
+          notes?: string | null
+          started_at?: string
+          started_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          baseline_have?: number | null
+          baseline_total?: number | null
+          cleared_at?: string | null
+          created_at?: string
+          id?: string
+          neighborhood_name?: string
+          notes?: string | null
+          started_at?: string
+          started_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       neighborhood_zip_lookup: {
         Row: {
           boro: string | null
@@ -90486,6 +90525,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      store_signup_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          phone: string | null
+          store_id: string
+          store_name: string | null
+          token: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone?: string | null
+          store_id: string
+          store_name?: string | null
+          token: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone?: string | null
+          store_id?: string
+          store_name?: string | null
+          token?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
       }
       store_status_history: {
         Row: {
