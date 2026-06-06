@@ -36658,6 +36658,13 @@ export type Database = {
             foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
             columns: ["published_product_id"]
             isOneToOne: false
+            referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
             referencedRelation: "v_products_all_with_stock"
             referencedColumns: ["id"]
           },
@@ -36746,6 +36753,13 @@ export type Database = {
             foreignKeyName: "dd_content_assets_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_content_assets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "v_products_all_with_stock"
             referencedColumns: ["id"]
           },
@@ -36813,6 +36827,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_content_briefs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all_public"
             referencedColumns: ["id"]
           },
           {
@@ -37012,6 +37033,13 @@ export type Database = {
             foreignKeyName: "dd_inventory_adjustments_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_inventory_adjustments_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "v_products_all_with_stock"
             referencedColumns: ["id"]
           },
@@ -37052,6 +37080,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: true
             referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_product_margin_overrides_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_all_public"
             referencedColumns: ["id"]
           },
           {
@@ -37238,6 +37273,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_routing_pins_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all_public"
             referencedColumns: ["id"]
           },
           {
@@ -60577,6 +60619,13 @@ export type Database = {
             foreignKeyName: "marketplace_inventory_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_inventory_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "v_products_all_with_stock"
             referencedColumns: ["id"]
           },
@@ -72055,6 +72104,13 @@ export type Database = {
             foreignKeyName: "pricing_tiers_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "v_products_all_with_stock"
             referencedColumns: ["id"]
           },
@@ -72585,6 +72641,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_views_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all_public"
             referencedColumns: ["id"]
           },
           {
@@ -78177,6 +78240,13 @@ export type Database = {
             foreignKeyName: "review_summaries_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: true
+            referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_summaries_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
             referencedRelation: "v_products_all_with_stock"
             referencedColumns: ["id"]
           },
@@ -78201,6 +78271,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: true
             referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_summary_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_all_public"
             referencedColumns: ["id"]
           },
           {
@@ -115153,14 +115230,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -115517,6 +115594,87 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
             referencedColumns: ["ambassador_id"]
+          },
+        ]
+      }
+      products_all_public: {
+        Row: {
+          brand_id: string | null
+          created_at: string | null
+          description: string | null
+          dimensions: Json | null
+          id: string | null
+          images: Json | null
+          inventory_qty: number | null
+          processing_time: string | null
+          product_name: string | null
+          retail_price: number | null
+          shipping_from_city: string | null
+          shipping_from_state: string | null
+          status: string | null
+          store_price: number | null
+          street_price: number | null
+          unit_type: string | null
+          weight_oz: number | null
+          wholesale_price: number | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          brand_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          dimensions?: Json | null
+          id?: string | null
+          images?: Json | null
+          inventory_qty?: number | null
+          processing_time?: string | null
+          product_name?: string | null
+          retail_price?: number | null
+          shipping_from_city?: string | null
+          shipping_from_state?: string | null
+          status?: string | null
+          store_price?: never
+          street_price?: number | null
+          unit_type?: string | null
+          weight_oz?: number | null
+          wholesale_price?: never
+          wholesaler_id?: string | null
+        }
+        Update: {
+          brand_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          dimensions?: Json | null
+          id?: string | null
+          images?: Json | null
+          inventory_qty?: number | null
+          processing_time?: string | null
+          product_name?: string | null
+          retail_price?: number | null
+          shipping_from_city?: string | null
+          shipping_from_state?: string | null
+          status?: string | null
+          store_price?: never
+          street_price?: number | null
+          unit_type?: string | null
+          weight_oz?: number | null
+          wholesale_price?: never
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_all_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_all_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
