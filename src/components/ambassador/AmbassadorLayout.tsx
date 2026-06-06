@@ -12,6 +12,7 @@ import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
 import { AmbassadorPortalNav } from '@/components/ambassador/AmbassadorPortalNav';
 import { AmbassadorMobileBottomNav } from '@/components/ambassador/AmbassadorMobileBottomNav';
 import { FeedbackFloatingButton } from '@/components/feedback/FeedbackFloatingButton';
+import { AmbassadorFieldSession } from '@/components/ambassador/AmbassadorFieldSession';
 
 interface AmbassadorLayoutProps {
   children: ReactNode;
