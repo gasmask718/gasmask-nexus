@@ -71,6 +71,7 @@ import { VoiceNotesCard } from "@/components/grabba/VoiceNotesCard";
 import { NeighborhoodSnapshotCard } from "@/components/store/NeighborhoodSnapshotCard";
 import { MemberSinceDisplay } from "@/components/store/MemberSinceDisplay";
 import { StoreDangerZone } from "@/components/store/StoreDangerZone";
+import { PublicSiteToggleCard } from "@/components/store/PublicSiteToggleCard";
 
 import { getExtractedProfile } from "@/services/profileExtractionService";
 import { getStoreRelationshipScore, RelationshipScore } from "@/services/crmInsightsService";
@@ -516,6 +517,8 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
             neighborhood={store.city}
             borough={undefined}
           />
+          {/* Public "Where to Buy" opt-in */}
+          <PublicSiteToggleCard storeId={id} />
           {/* Danger Zone — Owner Only */}
           <StoreDangerZone storeId={id} storeName={store.store_name} />
         </div>

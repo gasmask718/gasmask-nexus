@@ -88849,6 +88849,7 @@ export type Database = {
           preferred_channel: string | null
           relationship_status: string
           risk_score: string | null
+          show_on_public_site: boolean
           sms_capable: boolean | null
           sourced_at: string | null
           sourced_by_ambassador_id: string | null
@@ -88933,6 +88934,7 @@ export type Database = {
           preferred_channel?: string | null
           relationship_status?: string
           risk_score?: string | null
+          show_on_public_site?: boolean
           sms_capable?: boolean | null
           sourced_at?: string | null
           sourced_by_ambassador_id?: string | null
@@ -89017,6 +89019,7 @@ export type Database = {
           preferred_channel?: string | null
           relationship_status?: string
           risk_score?: string | null
+          show_on_public_site?: boolean
           sms_capable?: boolean | null
           sourced_at?: string | null
           sourced_by_ambassador_id?: string | null
@@ -121389,6 +121392,7 @@ export type Database = {
           preferred_channel: string | null
           relationship_status: string
           risk_score: string | null
+          show_on_public_site: boolean
           sms_capable: boolean | null
           sourced_at: string | null
           sourced_by_ambassador_id: string | null
