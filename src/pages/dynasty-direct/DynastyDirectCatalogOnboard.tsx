@@ -181,15 +181,55 @@ export default function DynastyDirectCatalogOnboard() {
   async function runPublish() {
     if (!draftId) return;
     if (selectedImages.length === 0) { toast.error('Select at least one image for the live product'); return; }
+    if (!measurementsVerified) { toast.error('Tap "measurements verified" before publishing'); return; }
     setBusy('publish');
     try {
+      const dims = (measurements.length_in || measurements.width_in || measurements.height_in)
+        ? { length_in: measurements.length_in, width_in: measurements.width_in, height_in: measurements.height_in }
+        : null;
+      const { data: userRes } = await supabase.auth.getUser();
       await supabase.from('dd_catalog_drafts').update({
         selected: selectedImages.map((url) => ({ url })),
         copy, pricing,
+        weight_oz: measurements.weight_oz,
+        dimensions: dims,
+        measurements_verified_at: new Date().toISOString(),
+        measurements_verified_by: userRes.user?.id ?? null,
       }).eq('id', draftId);
-      const r = await callPipeline({ mode: 'publish', draft_id: draftId });
+      const r = await callPipeline({ mode: 'publish', draft_id: draftId, confirmed_by: userRes.user?.id ?? null });
       setPublished({ product_id: r.product_id });
       toast.success('Product is LIVE on the catalog');
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(null); }
+  }
+
+  async function runMarketCheckAction() {
+    if (!productName) return;
+    setBusy('market');
+    try {
+      const r = await callPipeline({ mode: 'market_check', draft_id: draftId, product_name: productName, brand_hint: brandHint });
+      setMarketCheck(r);
+      if (r.available === false) toast.message('SerpAPI dormant', { description: 'Available when SerpAPI activates.' });
+      else if (!r.range) toast.message('No market prices found for this query');
+      else toast.success(`Market: $${r.range.low}–$${r.range.high} (median $${r.range.median})`);
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(null); }
+  }
+
+  async function runEstimateMeasurements() {
+    if (!draftId || photos.length === 0) return;
+    setBusy('estimate');
+    try {
+      const r = await callPipeline({ mode: 'estimate_measurements', draft_id: draftId, product_name: productName, photo_url: photos[0] });
+      setMeasurementsEstimate(r);
+      setMeasurements({
+        weight_oz: r.weight_oz ?? null,
+        length_in: r.dimensions?.length_in ?? null,
+        width_in: r.dimensions?.width_in ?? null,
+        height_in: r.dimensions?.height_in ?? null,
+      });
+      setMeasurementsVerified(false);
+      toast.success(`AI estimate ready (confidence: ${r.confidence})`);
     } catch (e: any) { toast.error(e.message); }
     finally { setBusy(null); }
   }
