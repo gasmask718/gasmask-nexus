@@ -81,15 +81,15 @@ export function PublicSiteBulkEnableButton() {
     if (!confirm('Enable the public "Where to Buy" listing for ALL active stores?')) return;
     setRunning(true);
     try {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from('store_master')
-        .update({ show_on_public_site: true }, { count: 'exact' })
+        .update({ show_on_public_site: true })
         .eq('status', 'active')
         .is('deleted_at', null)
         .eq('show_on_public_site', false)
-        .select('id', { count: 'exact', head: true });
+        .select('id');
       if (error) throw error;
-      toast.success(`Enabled ${count ?? 0} active store(s) on public locator`);
+      toast.success(`Enabled ${data?.length ?? 0} active store(s) on public locator`);
       qc.invalidateQueries({ queryKey: ['store-public-flag'] });
     } catch (e: any) {
       toast.error(e.message ?? 'Bulk enable failed');
