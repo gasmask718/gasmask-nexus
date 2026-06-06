@@ -36561,13 +36561,18 @@ export type Database = {
       dd_catalog_drafts: {
         Row: {
           candidates: Json
+          category: string | null
+          confirmed_at: string | null
+          confirmed_by: string | null
           copy: Json
           cost: number | null
           created_at: string
           created_by: string | null
+          dimensions: Json | null
           enhanced: Json
           id: string
           input_photos: Json
+          inventory_qty: number | null
           notes: string | null
           pricing: Json
           product_name: string
@@ -36577,16 +36582,22 @@ export type Database = {
           status: string
           supplier_id: string | null
           updated_at: string
+          weight_oz: number | null
         }
         Insert: {
           candidates?: Json
+          category?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           copy?: Json
           cost?: number | null
           created_at?: string
           created_by?: string | null
+          dimensions?: Json | null
           enhanced?: Json
           id?: string
           input_photos?: Json
+          inventory_qty?: number | null
           notes?: string | null
           pricing?: Json
           product_name: string
@@ -36596,16 +36607,22 @@ export type Database = {
           status?: string
           supplier_id?: string | null
           updated_at?: string
+          weight_oz?: number | null
         }
         Update: {
           candidates?: Json
+          category?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           copy?: Json
           cost?: number | null
           created_at?: string
           created_by?: string | null
+          dimensions?: Json | null
           enhanced?: Json
           id?: string
           input_photos?: Json
+          inventory_qty?: number | null
           notes?: string | null
           pricing?: Json
           product_name?: string
@@ -36615,6 +36632,7 @@ export type Database = {
           status?: string
           supplier_id?: string | null
           updated_at?: string
+          weight_oz?: number | null
         }
         Relationships: [
           {
