@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { HudCard } from "@/components/portal/HudCard";
 import { HudMetric } from "@/components/portal/HudMetric";
-import { 
-  ArrowLeft, DollarSign, TrendingUp, Wallet, Receipt, 
+import { WholesalerStripeConnectCard } from "@/components/portal/wholesaler/WholesalerStripeConnectCard";
+import {
+  ArrowLeft, DollarSign, TrendingUp, Wallet, Receipt,
   Download, CreditCard, Clock, CheckCircle
 } from "lucide-react";
 
