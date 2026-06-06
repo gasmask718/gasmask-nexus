@@ -277,6 +277,7 @@ const BrandCRMPage = lazy(() => import('@/pages/floor1/BrandCRMPage'));
 const StoreOrder = lazy(() => import('@/pages/StoreOrder'));
 const WholesaleFulfillment = lazy(() => import('@/pages/WholesaleFulfillment'));
 const Billing = lazy(() => import('@/pages/Billing'));
+const CollectionsPage = lazy(() => import('@/pages/CollectionsPage'));
 const EconomicAnalytics = lazy(() => import('@/pages/EconomicAnalytics'));
 const AmbassadorPayouts = lazy(() => import('@/pages/AmbassadorPayouts'));
 const BikerPayouts = lazy(() => import('@/pages/BikerPayouts'));
@@ -1354,6 +1355,8 @@ export default function AppRoutes() {
         <Route path="/gasmask/sales/prospects/:id" element={<SalesProspectDetail />} />
         <Route path="/gasmask/sales/report" element={<SalesReport />} />
         <Route path="/gasmask/billing" element={<Billing />} />
+        <Route path="/billing" element={<Billing />} />
+        <Route path="/collections" element={<CollectionsPage />} />
         <Route path="/gasmask/billing-center" element={<BillingCenter />} />
         <Route path="/gasmask/billing/invoices" element={<BillingInvoices />} />
         <Route path="/gasmask/billing/invoices/new" element={<BillingInvoiceNew />} />
