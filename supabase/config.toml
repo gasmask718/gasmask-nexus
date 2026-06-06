@@ -541,3 +541,6 @@ verify_jwt = false
 
 [functions.dd-release-reserves]
 verify_jwt = false
+
+[functions.dd-lookup-guest-order]
+verify_jwt = false
