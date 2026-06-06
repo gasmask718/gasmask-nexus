@@ -535,3 +535,9 @@ verify_jwt = false
 
 [functions.gasmask-public-stores]
 verify_jwt = false
+
+[functions.dd-stripe-connect-webhook]
+verify_jwt = false
+
+[functions.dd-release-reserves]
+verify_jwt = false
