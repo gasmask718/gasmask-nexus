@@ -175,25 +175,48 @@ async function runStage(body: any) {
 }
 
 async function runCopyPricing(body: any) {
-  const { draft_id, product_name, brand_hint, cost, hero_url } = body;
+  const { draft_id, product_name, brand_hint, cost, hero_url, supplier_id } = body;
   if (!product_name) throw new Error('product_name required');
   const numericCost = Number(cost) || 0;
+  const sb = sbAdmin();
+
+  // D-verify: read effective margin from dd_get_effective_margin_pct so suggested retail
+  // covers the configured platform margin. Falls back to dd_config.default_margin_pct, then 15%.
+  let effectiveMarginPct = 15;
+  try {
+    if (supplier_id) {
+      const { data: m } = await sb.rpc('dd_get_effective_margin_pct', {
+        p_product_id: null, p_wholesaler_id: supplier_id,
+      });
+      if (typeof m === 'number' && m > 0) effectiveMarginPct = m;
+    } else {
+      const { data: cfg } = await sb.from('dd_config').select('default_margin_pct').eq('id', true).maybeSingle();
+      if (cfg?.default_margin_pct) effectiveMarginPct = Number(cfg.default_margin_pct);
+    }
+  } catch (_) { /* keep default */ }
+
+  // Floor: retail must cover (cost / (1 - margin%)) so DD margin is preserved on retail.
+  const marginFraction = Math.min(0.9, Math.max(0, effectiveMarginPct / 100));
+  const retailFloor = numericCost > 0 && marginFraction > 0
+    ? Number((numericCost / (1 - marginFraction)).toFixed(2))
+    : 0;
 
   const system = `You are a senior ecommerce copywriter + pricing analyst. Output STRICT JSON only.`;
   const user = `Product: "${product_name}"${brand_hint ? `, brand: "${brand_hint}"` : ''}.
 Cost basis (wholesale unit cost USD): ${numericCost}.
+Platform margin requirement: ${effectiveMarginPct}% (suggested_retail MUST be >= ${retailFloor} to honor this).
 Generate JSON:
 {
   "title": "...",                                  // <= 70 chars, SEO-friendly
-  "short_description": "...",                      // 1-2 sentences hook
-  "long_description": "...",                       // 2-3 paragraphs, scannable
-  "bullets": ["...", "...", "..."],                // 3-5 benefit-led bullets
+  "short_description": "...",
+  "long_description": "...",
+  "bullets": ["...", "...", "..."],
   "seo": { "meta_title": "...", "meta_description": "...", "keywords": ["..."] },
   "pricing": {
-    "suggested_wholesale": <num>,                  // ~ cost * 1.35  (B2B)
-    "suggested_store": <num>,                      // ~ cost * 2.2   (retail to stores)
-    "suggested_retail": <num>,                     // ~ cost * 3.0   (D2C MSRP)
-    "suggested_street": <num>,                     // typical street/market price
+    "suggested_wholesale": <num>,
+    "suggested_store": <num>,
+    "suggested_retail": <num>,                     // >= ${retailFloor}
+    "suggested_street": <num>,
     "rationale": "..."
   },
   "category_guess": "...",
@@ -201,8 +224,34 @@ Generate JSON:
 }`;
   const raw = await geminiText(system, user);
   const parsed = parseJson(raw);
+
+  // Enforce the floor server-side regardless of what the model returns.
+  const pricing = parsed.pricing || {};
+  if (retailFloor > 0 && (!pricing.suggested_retail || Number(pricing.suggested_retail) < retailFloor)) {
+    pricing.suggested_retail = retailFloor;
+    pricing.rationale = (pricing.rationale ? pricing.rationale + ' ' : '')
+      + `[adjusted by server: floor ${retailFloor} to honor ${effectiveMarginPct}% margin]`;
+  }
+
+  // Emit Product JSON-LD for the public card to consume.
+  const jsonld = {
+    '@context': 'https://schema.org/',
+    '@type': 'Product',
+    name: parsed.title || product_name,
+    description: parsed.short_description || parsed.long_description || '',
+    image: hero_url ? [hero_url] : undefined,
+    brand: brand_hint ? { '@type': 'Brand', name: brand_hint } : undefined,
+    category: parsed.category_guess || undefined,
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'USD',
+      price: pricing.suggested_retail || 0,
+      availability: 'https://schema.org/InStock',
+    },
+  };
+
   if (draft_id) {
-    await sbAdmin().from('dd_catalog_drafts').update({
+    await sb.from('dd_catalog_drafts').update({
       copy: {
         title: parsed.title,
         short_description: parsed.short_description,
@@ -211,13 +260,17 @@ Generate JSON:
         seo: parsed.seo || {},
         category_guess: parsed.category_guess,
         tags: parsed.tags || [],
+        jsonld,
+        margin_pct_applied: effectiveMarginPct,
+        retail_floor: retailFloor,
       },
-      pricing: parsed.pricing || {},
+      pricing,
       status: 'copy_ready',
     }).eq('id', draft_id);
   }
-  return parsed;
+  return { ...parsed, pricing, jsonld, margin_pct_applied: effectiveMarginPct, retail_floor: retailFloor };
 }
+
 
 async function runPublish(body: any) {
   const { draft_id } = body;
