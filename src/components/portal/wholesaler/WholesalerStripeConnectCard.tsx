@@ -35,9 +35,10 @@ export function WholesalerStripeConnectCard() {
     },
   });
 
-  const status = profile?.stripe_payouts_enabled
+  const p = profile as any;
+  const status = p?.stripe_payouts_enabled
     ? { label: "Payouts enabled", tone: "default" as const }
-    : profile?.stripe_connect_id
+    : p?.stripe_connect_id
       ? { label: "Pending verification", tone: "secondary" as const }
       : { label: "Not started", tone: "outline" as const };
 
