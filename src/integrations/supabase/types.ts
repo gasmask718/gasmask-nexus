@@ -36642,6 +36642,7 @@ export type Database = {
           reserve_hold_days: number
           updated_at: string
           updated_by: string | null
+          wholesaler_self_serve_enabled: boolean
         }
         Insert: {
           default_margin_pct?: number
@@ -36651,6 +36652,7 @@ export type Database = {
           reserve_hold_days?: number
           updated_at?: string
           updated_by?: string | null
+          wholesaler_self_serve_enabled?: boolean
         }
         Update: {
           default_margin_pct?: number
@@ -36660,6 +36662,7 @@ export type Database = {
           reserve_hold_days?: number
           updated_at?: string
           updated_by?: string | null
+          wholesaler_self_serve_enabled?: boolean
         }
         Relationships: []
       }
