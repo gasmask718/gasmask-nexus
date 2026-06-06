@@ -273,7 +273,7 @@ Generate JSON:
 
 
 async function runPublish(body: any) {
-  const { draft_id } = body;
+  const { draft_id, confirmed_by } = body;
   if (!draft_id) throw new Error('draft_id required');
   const sb = sbAdmin();
   const { data: draft, error } = await sb.from('dd_catalog_drafts').select('*').eq('id', draft_id).single();
@@ -282,14 +282,29 @@ async function runPublish(body: any) {
     return { product_id: draft.published_product_id, already_published: true };
   }
 
+  // CONTRACT GUARD: wholesaler_id (supplier_id on the draft) is REQUIRED — routing + splits depend on it.
+  if (!draft.supplier_id) throw new Error('cannot publish: draft.supplier_id (wholesaler_id) is required');
+
   const copy = (draft.copy || {}) as any;
   const pricing = (draft.pricing || {}) as any;
   const selected = (draft.selected || []) as any[];
-  const images = selected.length ? selected.map((s: any) => s.url || s) : (draft.enhanced as any[])?.map((e: any) => e.url) || [];
-  if (!images.length) throw new Error('cannot publish: no selected images');
 
-  const categoryRaw = (copy.category_guess || '').toString().trim().toLowerCase();
+  // images jsonb array — confirmed B2 hero MUST be images[0]; selected[0] is the user-confirmed hero,
+  // remaining selected items form the detail-page gallery. Fall back to enhanced[0] only as a safety net.
+  const selectedUrls = selected.map((s: any) => (typeof s === 'string' ? s : s.url)).filter(Boolean);
+  const enhancedUrls = ((draft.enhanced as any[]) || []).map((e: any) => e.url).filter(Boolean);
+  const images = selectedUrls.length ? selectedUrls : enhancedUrls;
+  if (!images.length) throw new Error('cannot publish: no selected images (need at least 1 for images[0] hero)');
+
+  const categoryRaw = (draft.category || copy.category_guess || '').toString().trim().toLowerCase();
   const category = categoryRaw ? categoryRaw.replace(/\s+/g, '-') : null;
+
+  // EXACTNESS-GATE CONFIRM: mark the draft as confirmed BEFORE the products_all insert so the
+  // BEFORE-INSERT trigger (dd_enforce_catalog_confirm_gate) sees confirmed_at and allows status='active'.
+  await sb.from('dd_catalog_drafts').update({
+    confirmed_at: new Date().toISOString(),
+    confirmed_by: confirmed_by || null,
+  }).eq('id', draft_id);
 
   const { data: prod, error: insErr } = await sb.from('products_all').insert({
     wholesaler_id: draft.supplier_id,
@@ -301,15 +316,23 @@ async function runPublish(body: any) {
     store_price: pricing.suggested_store || 0,
     wholesale_price: pricing.suggested_wholesale || 0,
     street_price: pricing.suggested_street || null,
+    inventory_qty: typeof draft.inventory_qty === 'number' ? draft.inventory_qty : 0,
+    weight_oz: draft.weight_oz ?? null,
+    dimensions: draft.dimensions ?? null,
     status: 'active',
   }).select().single();
   if (insErr) throw new Error(`publish insert: ${insErr.message}`);
 
-  // Seed marketplace_inventory row if missing
+  // Safety check: if the confirm-gate trigger downgraded status (e.g. missing confirmed_at race),
+  // the insert may have landed as 'draft'. Surface this loudly.
+  if ((prod as any).status !== 'active') {
+    throw new Error(`publish failed exactness gate: row landed as status=${(prod as any).status}`);
+  }
+
   await sb.from('marketplace_inventory').insert({
     product_id: prod.id,
     wholesaler_id: draft.supplier_id,
-    quantity_on_hand: 0,
+    quantity_on_hand: typeof draft.inventory_qty === 'number' ? draft.inventory_qty : 0,
     quantity_reserved: 0,
   }).select().maybeSingle().catch(() => null);
 
@@ -318,7 +341,7 @@ async function runPublish(body: any) {
     published_product_id: prod.id,
   }).eq('id', draft_id);
 
-  return { product_id: prod.id };
+  return { product_id: prod.id, images_count: images.length, hero: images[0] };
 }
 
 async function runContentFactory(body: any) {
