@@ -68,6 +68,9 @@ export function PublicSiteToggleCard({ storeId }: { storeId: string }) {
           />
         </div>
         {toggle.isPending && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+        <div className="pt-2 border-t">
+          <PublicSiteBulkEnableButton />
+        </div>
       </CardContent>
     </Card>
   );
