@@ -742,6 +742,8 @@ const DynastyDirectSplitConsole = lazy(() => import('@/pages/dynasty-direct/Dyna
 const DynastyDirectGrabbaBridge = lazy(() => import('@/pages/dynasty-direct/DynastyDirectGrabbaBridge'));
 const DynastyDirectAffiliates = lazy(() => import('@/pages/dynasty-direct/DynastyDirectAffiliates'));
 const DynastyDirectMessages = lazy(() => import('@/pages/dynasty-direct/DynastyDirectMessages'));
+const DynastyDirectInventory = lazy(() => import('@/pages/dynasty-direct/DynastyDirectInventory'));
+const WholesalerMarketplaceInventory = lazy(() => import('@/pages/portal/wholesaler/WholesalerMarketplaceInventory'));
 const UniversalInviteAccept = lazy(() => import('@/pages/invite/UniversalInviteAccept'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
 const OSLayout = lazy(() => import('@/pages/os/OSLayout'));
@@ -1956,6 +1958,14 @@ export default function AppRoutes() {
         <Route path="/dynasty-direct/fulfillment" element={<DynastyDirectFulfillmentConsole />} />
         <Route path="/dynasty-direct/routing-console" element={<DynastyDirectFulfillmentConsole />} />
         <Route path="/dynasty-direct/splits" element={<DynastyDirectSplitConsole />} />
+        <Route
+          path="/dynasty-direct/inventory"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked>
+              <DynastyDirectInventory />
+            </RequireRole>
+          }
+        />
         <Route path="/dynasty-direct/suppliers/portal" element={<WholesalerPortalPage />} />
         <Route path="/dynasty-direct/suppliers/inventory" element={<WholesalerPortalPage />} />
         <Route path="/dynasty-direct/shipping" element={<MarketplaceControlTowerPage />} />
@@ -2536,6 +2546,7 @@ export default function AppRoutes() {
         <Route path="/portal/wholesaler/team" element={<WholesalerTeam />} />
         <Route path="/portal/wholesaler/transactions" element={<WholesalerTransactionHistory />} />
         <Route path="/portal/wholesaler/inventory" element={<WholesalerInventoryWorkflow />} />
+        <Route path="/portal/wholesaler/marketplace-inventory" element={<WholesalerMarketplaceInventory />} />
         <Route path="/portal/wholesaler/order-grabba" element={<WholesalerOrderGrabba />} />
         <Route path="/portal/wholesaler/catalog/onboard" element={<WholesalerCatalogOnboard />} />
         <Route path="/portal/production" element={<ProductionPortal />} />

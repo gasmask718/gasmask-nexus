@@ -36954,6 +36954,76 @@ export type Database = {
           },
         ]
       }
+      dd_inventory_adjustments: {
+        Row: {
+          actor_id: string | null
+          actor_role: string | null
+          created_at: string
+          delta: number
+          id: string
+          kind: string
+          product_id: string
+          quantity_after: number
+          quantity_before: number
+          reason: string | null
+          reference_id: string | null
+          reference_type: string | null
+          wholesaler_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          delta: number
+          id?: string
+          kind: string
+          product_id: string
+          quantity_after: number
+          quantity_before: number
+          reason?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          wholesaler_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          delta?: number
+          id?: string
+          kind?: string
+          product_id?: string
+          quantity_after?: number
+          quantity_before?: number
+          reason?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_inventory_adjustments_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_inventory_adjustments_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_inventory_adjustments_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_product_margin_overrides: {
         Row: {
           created_at: string
@@ -60440,6 +60510,8 @@ export type Database = {
       marketplace_inventory: {
         Row: {
           id: string
+          last_low_stock_alert_at: string | null
+          low_stock_threshold: number | null
           product_id: string
           quantity_available: number
           reorder_point: number | null
@@ -60449,6 +60521,8 @@ export type Database = {
         }
         Insert: {
           id?: string
+          last_low_stock_alert_at?: string | null
+          low_stock_threshold?: number | null
           product_id: string
           quantity_available?: number
           reorder_point?: number | null
@@ -60458,6 +60532,8 @@ export type Database = {
         }
         Update: {
           id?: string
+          last_low_stock_alert_at?: string | null
+          low_stock_threshold?: number | null
           product_id?: string
           quantity_available?: number
           reorder_point?: number | null
@@ -121032,6 +121108,20 @@ export type Database = {
         Args: { p_code: string; p_meta?: Json; p_visitor_hash?: string }
         Returns: Json
       }
+      dd_apply_inventory_adjustment: {
+        Args: {
+          p_kind: string
+          p_new_quantity: number
+          p_product_id: string
+          p_reason?: string
+          p_wholesaler_id: string
+        }
+        Returns: Json
+      }
+      dd_check_low_stock: {
+        Args: { p_product_id: string; p_wholesaler_id: string }
+        Returns: undefined
+      }
       dd_consume_order_reservations: {
         Args: { p_order_id: string }
         Returns: undefined
@@ -121123,8 +121213,20 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      dd_recompute_product_inventory_qty: {
+        Args: { p_product_id: string }
+        Returns: undefined
+      }
       dd_release_order_reservations: {
         Args: { p_order_id: string }
+        Returns: undefined
+      }
+      dd_set_inventory_threshold: {
+        Args: {
+          p_product_id: string
+          p_threshold: number
+          p_wholesaler_id: string
+        }
         Returns: undefined
       }
       default_cadence_days: { Args: { status: string }; Returns: number }
