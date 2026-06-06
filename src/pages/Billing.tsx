@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DollarSign, AlertTriangle, CheckCircle, Download } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import { classifyInvoice, invoiceRowClass, INVOICE_BADGE_CLASS } from "@/lib/invoiceRowStyle";
+import { FlagCollectionButton } from "@/components/payments/FlagCollectionButton";
 
 export default function Billing() {
   const { data: invoices, refetch } = useQuery({
@@ -61,10 +64,15 @@ export default function Billing() {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
           <DollarSign className="h-8 w-8 text-primary" />
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold">Billing & Invoices</h1>
             <p className="text-muted-foreground">Manage store payments and balances</p>
           </div>
+          <Button asChild variant="outline">
+            <Link to="/collections">
+              <AlertTriangle className="h-4 w-4 mr-1" /> Collections
+            </Link>
+          </Button>
         </div>
 
         {/* Summary Cards */}
@@ -127,8 +135,10 @@ export default function Billing() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices?.slice(0, 20).map((invoice) => (
-                  <TableRow key={invoice.id}>
+                {invoices?.slice(0, 20).map((invoice) => {
+                  const level = classifyInvoice(invoice as any);
+                  return (
+                  <TableRow key={invoice.id} className={invoiceRowClass(invoice as any)}>
                     <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
                     <TableCell>
                       <div>
@@ -138,33 +148,36 @@ export default function Billing() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="font-bold">${invoice.total_amount.toFixed(2)}</TableCell>
-                    <TableCell>${invoice.amount_paid.toFixed(2)}</TableCell>
-                    <TableCell>{new Date(invoice.due_date).toLocaleDateString()}</TableCell>
+                    <TableCell className="font-bold">${Number(invoice.total_amount ?? invoice.total ?? 0).toFixed(2)}</TableCell>
+                    <TableCell>${Number(invoice.amount_paid ?? 0).toFixed(2)}</TableCell>
+                    <TableCell>{invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : '—'}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant={
-                          invoice.payment_status === "paid"
-                            ? "default"
-                            : invoice.payment_status === "overdue"
-                            ? "destructive"
-                            : "secondary"
-                        }
-                      >
-                        {invoice.payment_status}
+                      <Badge variant="outline" className={INVOICE_BADGE_CLASS[level]}>
+                        {level}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                        {invoice.payment_status !== "paid" && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {level !== 'paid' && (
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => markPaidMutation.mutate(invoice.id)}
                           >
-                            <CheckCircle className="mr-2 h-4 w-4" />
+                            <CheckCircle className="mr-1 h-4 w-4" />
                             Mark Paid
                           </Button>
+                        )}
+                        {level !== 'paid' && invoice.store_id && (
+                          <FlagCollectionButton
+                            storeId={invoice.store_id}
+                            storeName={invoice.stores?.name ?? 'Store'}
+                            owedAmount={Math.max(
+                              Number(invoice.total_amount ?? invoice.total ?? 0) -
+                                Number(invoice.amount_paid ?? 0),
+                              0,
+                            )}
+                          />
                         )}
                         <Button size="sm" variant="ghost">
                           <Download className="h-4 w-4" />
@@ -172,7 +185,8 @@ export default function Billing() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

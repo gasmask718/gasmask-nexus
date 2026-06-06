@@ -413,20 +413,26 @@ async function checkSignatureVerify(): Promise<Result[]> {
       message: "No TWILIO_WEBHOOK_AUTH_TOKEN or TWILIO_AUTH_TOKEN configured",
     }];
   }
-  const url = CANONICAL.sms;
-  const params: Record<string, string> = {
-    From: "+10000000000",
-    To: VERIFIED_TOLL_FREE,
-    Body: "synthetic-health-check",
-    MessageSid: "SMhealthcheck" + Date.now(),
-    AccountSid: TWILIO_ACCOUNT_SID,
-  };
-  const sortedKeys = Object.keys(params).sort();
-  let data = url;
-  for (const k of sortedKeys) data += k + params[k];
-  const goodSig = createHmac("sha1", token).update(data).digest("base64");
 
-  const send = async (sig: string) => {
+  // Each entry: canonical + brand-split inbound handlers we expect to enforce
+  // both Twilio signature verification AND STOP keyword handling. Same probe
+  // pattern for all targets.
+  const inboundTargets: { target: string; url: string }[] = [
+    { target: "twilio-sms-webhook", url: CANONICAL.sms },
+    {
+      target: "brandaro-handle-inbound",
+      url: `${SUPABASE_URL}/functions/v1/brandaro-handle-inbound`,
+    },
+  ];
+
+  const sign = (url: string, params: Record<string, string>) => {
+    const keys = Object.keys(params).sort();
+    let data = url;
+    for (const k of keys) data += k + params[k];
+    return createHmac("sha1", token).update(data).digest("base64");
+  };
+
+  const post = async (url: string, params: Record<string, string>, sig: string) => {
     const body = new URLSearchParams(params).toString();
     return fetch(url, {
       method: "POST",
@@ -438,43 +444,85 @@ async function checkSignatureVerify(): Promise<Result[]> {
     });
   };
 
-  try {
-    const okResp = await send(goodSig);
-    const badResp = await send("invalid-signature-xxxxxxxxxxxxxxxxxxxxxx==");
-    // pass: good sig → 200, bad sig → 403
-    const goodAccepted = okResp.status === 200;
-    const badRejected = badResp.status === 403;
-    let status: "pass" | "warn" | "fail" = "pass";
-    let msg = `Good sig HTTP ${okResp.status}, bad sig HTTP ${badResp.status} (token: ${tokenSource})`;
-    if (!goodAccepted && !badRejected) {
-      status = "fail";
-      msg = `Signature verify broken both ways: good=${okResp.status} bad=${badResp.status} — token mismatch or URL mismatch (${tokenSource})`;
-    } else if (!goodAccepted) {
-      status = "fail";
-      msg = `Webhook rejects VALID signature (HTTP ${okResp.status}) — ${tokenSource} does not match the account that signs inbound`;
-    } else if (!badRejected) {
-      status = "fail";
-      msg = `Webhook accepts INVALID signature (HTTP ${badResp.status}) — verification bypassed or disabled`;
+  for (const { target, url } of inboundTargets) {
+    const params: Record<string, string> = {
+      From: "+10000000000",
+      To: VERIFIED_TOLL_FREE,
+      Body: "synthetic-health-check",
+      MessageSid: "SMhealthcheck" + Date.now(),
+      AccountSid: TWILIO_ACCOUNT_SID,
+    };
+    const goodSig = sign(url, params);
+
+    try {
+      const okResp = await post(url, params, goodSig);
+      const badResp = await post(url, params, "invalid-signature-xxxxxxxxxxxxxxxxxxxxxx==");
+      const goodAccepted = okResp.status === 200;
+      const badRejected = badResp.status === 403;
+      let status: "pass" | "warn" | "fail" = "pass";
+      let msg = `Good sig HTTP ${okResp.status}, bad sig HTTP ${badResp.status} (token: ${tokenSource})`;
+      if (!goodAccepted && !badRejected) {
+        status = "fail";
+        msg = `Signature verify broken both ways: good=${okResp.status} bad=${badResp.status} — token mismatch or URL mismatch (${tokenSource})`;
+      } else if (!goodAccepted) {
+        status = "fail";
+        msg = `${target} rejects VALID signature (HTTP ${okResp.status}) — ${tokenSource} does not match the account that signs inbound`;
+      } else if (!badRejected) {
+        status = "fail";
+        msg = `${target} accepts INVALID signature (HTTP ${badResp.status}) — verification bypassed or disabled`;
+      }
+
+      // STOP keyword probe — valid signature, body=STOP, expect 200.
+      // We can't observe the opt_out_events insert from here, so we only
+      // verify the handler ACKs (doesn't 4xx/5xx) on a signed STOP body.
+      let stopStatus: "pass" | "warn" | "fail" = "pass";
+      let stopMsg = "";
+      try {
+        const stopParams = { ...params, Body: "STOP", MessageSid: "SMstop" + Date.now() };
+        const stopSig = sign(url, stopParams);
+        const stopResp = await post(url, stopParams, stopSig);
+        if (stopResp.status === 200) {
+          stopMsg = `STOP accepted (HTTP 200) — opt-out path reachable`;
+        } else if (stopResp.status === 403) {
+          stopStatus = "warn";
+          stopMsg = `STOP probe rejected (HTTP 403) — signature path inconsistent with main probe`;
+        } else {
+          stopStatus = "fail";
+          stopMsg = `STOP probe returned HTTP ${stopResp.status} — handler may not acknowledge opt-outs`;
+        }
+      } catch (e) {
+        stopStatus = "warn";
+        stopMsg = `STOP probe threw: ${(e as Error).message}`;
+      }
+
+      const combinedStatus =
+        status === "fail" || stopStatus === "fail"
+          ? "fail"
+          : status === "warn" || stopStatus === "warn"
+          ? "warn"
+          : "pass";
+
+      out.push({
+        layer: "signature_verify",
+        target,
+        status: combinedStatus,
+        message: `${msg} · STOP: ${stopMsg}`,
+        detail: {
+          token_source: tokenSource,
+          good_sig_http: okResp.status,
+          bad_sig_http: badResp.status,
+          stop_status: stopStatus,
+          url,
+        },
+      });
+    } catch (e) {
+      out.push({
+        layer: "signature_verify",
+        target,
+        status: "fail",
+        message: `Signature check threw: ${(e as Error).message}`,
+      });
     }
-    out.push({
-      layer: "signature_verify",
-      target: "twilio-sms-webhook",
-      status,
-      message: msg,
-      detail: {
-        token_source: tokenSource,
-        good_sig_http: okResp.status,
-        bad_sig_http: badResp.status,
-        url,
-      },
-    });
-  } catch (e) {
-    out.push({
-      layer: "signature_verify",
-      target: "twilio-sms-webhook",
-      status: "fail",
-      message: `Signature check threw: ${(e as Error).message}`,
-    });
   }
   return out;
 }
