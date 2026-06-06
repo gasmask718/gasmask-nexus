@@ -601,6 +601,7 @@ const WholesalerFulfillmentPage = lazy(() => import('@/pages/portal/wholesaler')
 const WholesalerTransactionHistory = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerTransactionHistory })));
 const WholesalerInventoryWorkflow = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerInventoryWorkflow })));
 const WholesalerOrderGrabba = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerOrderGrabba })));
+const WholesalerCatalogOnboard = lazy(() => import('@/pages/portal/wholesaler/WholesalerCatalogOnboard'));
 const StoreDashboard = lazy(() => import('@/pages/portal/store').then(m => ({ default: m.StoreDashboard })));
 const StoreProducts = lazy(() => import('@/pages/portal/store').then(m => ({ default: m.StoreProducts })));
 const StoreCart = lazy(() => import('@/pages/portal/store').then(m => ({ default: m.StoreCart })));
@@ -2536,6 +2537,7 @@ export default function AppRoutes() {
         <Route path="/portal/wholesaler/transactions" element={<WholesalerTransactionHistory />} />
         <Route path="/portal/wholesaler/inventory" element={<WholesalerInventoryWorkflow />} />
         <Route path="/portal/wholesaler/order-grabba" element={<WholesalerOrderGrabba />} />
+        <Route path="/portal/wholesaler/catalog/onboard" element={<WholesalerCatalogOnboard />} />
         <Route path="/portal/production" element={<ProductionPortal />} />
         <Route path="/portal/va" element={<VAPortal />} />
         <Route path="/portal/customer" element={<CustomerPortal />} />
