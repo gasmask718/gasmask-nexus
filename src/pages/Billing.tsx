@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DollarSign, AlertTriangle, CheckCircle, Download } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import { classifyInvoice, invoiceRowClass, INVOICE_BADGE_CLASS } from "@/lib/invoiceRowStyle";
+import { FlagCollectionButton } from "@/components/payments/FlagCollectionButton";
 
 export default function Billing() {
   const { data: invoices, refetch } = useQuery({
