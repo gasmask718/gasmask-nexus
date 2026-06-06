@@ -46,6 +46,7 @@ const DriverLogin = lazy(() => import('@/pages/portal/DriverLogin'));
 const BikerLogin = lazy(() => import('@/pages/portal/BikerLogin'));
 const InviteSignup = lazy(() => import('@/pages/auth/InviteSignup'));
 const PublicIntakePage = lazy(() => import('@/pages/auth/PublicIntakePage'));
+const StoreSignupPage = lazy(() => import('@/pages/auth/StoreSignupPage'));
 const UserInvitations = lazy(() => import('@/pages/security/UserInvitations'));
 const InviteLanding = lazy(() => import('@/pages/portal/InviteLanding'));
 const InstallPwa = lazy(() => import('@/pages/InstallPwa'));
