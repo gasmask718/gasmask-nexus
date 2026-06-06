@@ -47893,6 +47893,54 @@ export type Database = {
         }
         Relationships: []
       }
+      field_sessions: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          ended_reason: string | null
+          id: string
+          last_lat: number | null
+          last_lng: number | null
+          last_ping_at: string | null
+          role: string
+          source_id: string | null
+          started_at: string
+          trigger_source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          ended_reason?: string | null
+          id?: string
+          last_lat?: number | null
+          last_lng?: number | null
+          last_ping_at?: string | null
+          role: string
+          source_id?: string | null
+          started_at?: string
+          trigger_source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          ended_reason?: string | null
+          id?: string
+          last_lat?: number | null
+          last_lng?: number | null
+          last_ping_at?: string | null
+          role?: string
+          source_id?: string | null
+          started_at?: string
+          trigger_source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       field_submission_rules: {
         Row: {
           action_type: Database["public"]["Enums"]["field_action_type"]
@@ -120372,6 +120420,7 @@ export type Database = {
         Args: { p_days_old?: number }
         Returns: number
       }
+      close_stale_field_sessions: { Args: never; Returns: number }
       commit_import_batch: {
         Args: { _batch_id: string; _committed_by?: string }
         Returns: {

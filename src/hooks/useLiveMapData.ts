@@ -20,6 +20,11 @@ export interface WorkerLocation {
   route_id?: string;
   status: 'active' | 'stale' | 'offline';
   autonomy_level?: string;
+  // Ambassador-specific (populated when role='ambassador' and a field_session is active)
+  session_id?: string;
+  session_started_at?: string;
+  session_trigger?: 'manual' | 'route' | 'visit_run';
+  stores_visited_session?: number;
 }
 
 export interface LiveRoute {
@@ -280,6 +285,73 @@ export function useLiveWorkers() {
           updated_at: updatedAt,
           status: hasValidGps ? computeStatus(updatedAt) : 'offline',
         });
+      }
+
+      // 3) AMBASSADORS — additive, only those with an ACTIVE field_session
+      //    (manual "Start Field Session" OR route-triggered). No session = no marker.
+      //    Safety-net: opportunistically close any 10h+ stale sessions so the map
+      //    doesn't render zombie ambassadors.
+      try { await supabase.rpc('close_stale_field_sessions' as any); } catch { /* best-effort */ }
+
+      const { data: ambSessions } = await supabase
+        .from('field_sessions')
+        .select('id, user_id, started_at, last_ping_at, last_lat, last_lng, trigger_source')
+        .eq('role', 'ambassador')
+        .is('ended_at', null);
+
+      if (ambSessions && ambSessions.length > 0) {
+        const ambUserIds = ambSessions.map((s) => s.user_id);
+        const [{ data: ambProfiles }, { data: visitedEvents }] = await Promise.all([
+          supabase.from('profiles').select('id, name, avatar_url').in('id', ambUserIds),
+          supabase
+            .from('location_events')
+            .select('user_id, store_id, created_at')
+            .in('user_id', ambUserIds)
+            .eq('event_type', 'arrival')
+            .not('store_id', 'is', null),
+        ]);
+        const profById = Object.fromEntries((ambProfiles || []).map((p) => [p.id, p]));
+        // Stores visited THIS session = distinct store_id arrivals after session.started_at
+        const visitedBySession = new Map<string, Set<string>>();
+        for (const sess of ambSessions) {
+          const startedMs = new Date(sess.started_at).getTime();
+          const set = new Set<string>();
+          for (const ev of visitedEvents || []) {
+            if (ev.user_id !== sess.user_id || !ev.store_id) continue;
+            if (new Date(ev.created_at!).getTime() >= startedMs) set.add(ev.store_id);
+          }
+          visitedBySession.set(sess.id, set);
+        }
+
+        for (const sess of ambSessions) {
+          if (seenUserIds.has(sess.user_id)) continue; // don't double-render
+          const prof = profById[sess.user_id];
+          // Prefer the session's last cached coords (refreshed every 30s by ping); fall back to latest location_events fix
+          let lat = sess.last_lat != null ? Number(sess.last_lat) : 0;
+          let lng = sess.last_lng != null ? Number(sess.last_lng) : 0;
+          let updatedAt = sess.last_ping_at || sess.started_at;
+          if (!lat || !lng) {
+            const fallback = latestByUser.get(sess.user_id);
+            if (fallback) { lat = fallback.lat; lng = fallback.lng; updatedAt = fallback.created_at; }
+          }
+          const hasValidGps = lat !== 0 && lng !== 0;
+          workers.push({
+            id: sess.id,
+            worker_id: sess.user_id,
+            name: prof?.name || 'Ambassador',
+            role: 'ambassador',
+            avatar_url: prof?.avatar_url || undefined,
+            lat: hasValidGps ? lat : 0,
+            lng: hasValidGps ? lng : 0,
+            updated_at: updatedAt,
+            status: hasValidGps ? computeStatus(updatedAt) : 'offline',
+            session_id: sess.id,
+            session_started_at: sess.started_at,
+            session_trigger: (sess.trigger_source as any) || 'manual',
+            stores_visited_session: visitedBySession.get(sess.id)?.size || 0,
+          });
+          seenUserIds.add(sess.user_id);
+        }
       }
 
       return workers;
