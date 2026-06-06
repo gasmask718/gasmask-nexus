@@ -480,6 +480,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/dynasty-direct/d2c-storefront', label: '🛒 D2C Storefront', icon: ShoppingCart },
       { path: '/dynasty-direct/orders', label: '📋 Orders', icon: ClipboardList },
       { path: '/dynasty-direct/fulfillment', label: '🚚 Fulfillment', icon: Truck },
+      { path: '/dynasty-direct/splits', label: '💵 Splits & Reserves', icon: DollarSign },
       { path: '/dynasty-direct/suppliers/network', label: '🗺️ Supplier Network', icon: Map },
       { path: '/dynasty-direct/suppliers/portal', label: '👥 Supplier Portal', icon: Users },
       { path: '/dynasty-direct/suppliers/inventory', label: '📊 Inventory', icon: Boxes },
