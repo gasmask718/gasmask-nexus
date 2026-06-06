@@ -514,9 +514,60 @@ export default function DynastyDirectCatalogOnboard() {
                 <Badge variant="outline">wholesale ${pricing.suggested_wholesale}</Badge>
               </div>
             </div>
+            {/* Measurements block — AI estimate + verified gate (shipping bills on actuals) */}
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-sm font-medium">Shipping measurements</div>
+                  <div className="text-xs text-muted-foreground">Publish requires verified weight + dimensions.</div>
+                </div>
+                <Button size="sm" variant="outline" onClick={runEstimateMeasurements} disabled={busy === 'estimate' || photos.length === 0}>
+                  {busy === 'estimate' ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Estimating…</> : <><Sparkles className="h-3 w-3 mr-1" /> AI estimate from photo</>}
+                </Button>
+              </div>
+              {measurementsEstimate && (
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <Badge variant="secondary" className="bg-amber-100 text-amber-900 border-amber-300">AI estimate — verify before publish</Badge>
+                  <span className="text-muted-foreground">confidence: {measurementsEstimate.confidence}</span>
+                  {measurementsEstimate.reasoning && <span className="text-muted-foreground italic">· {measurementsEstimate.reasoning}</span>}
+                </div>
+              )}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Weight (oz)</Label>
+                  <Input type="number" step="0.1" value={measurements.weight_oz ?? ''} onChange={(e) => { setMeasurements({ ...measurements, weight_oz: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); }} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Length (in)</Label>
+                  <Input type="number" step="0.1" value={measurements.length_in ?? ''} onChange={(e) => { setMeasurements({ ...measurements, length_in: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); }} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Width (in)</Label>
+                  <Input type="number" step="0.1" value={measurements.width_in ?? ''} onChange={(e) => { setMeasurements({ ...measurements, width_in: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); }} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Height (in)</Label>
+                  <Input type="number" step="0.1" value={measurements.height_in ?? ''} onChange={(e) => { setMeasurements({ ...measurements, height_in: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); }} />
+                </div>
+              </div>
+              <label className="flex items-start gap-2 cursor-pointer pt-1 select-none">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={measurementsVerified}
+                  onChange={(e) => setMeasurementsVerified(e.target.checked)}
+                  disabled={!measurements.weight_oz || !measurements.length_in || !measurements.width_in || !measurements.height_in}
+                />
+                <span className="text-sm">
+                  <span className="font-medium">Measurements verified</span>
+                  <span className="text-muted-foreground"> — I physically confirmed weight and all three dimensions (shipping bills on actuals).</span>
+                </span>
+              </label>
+            </div>
+
             {!published && (
               <div className="flex justify-end border-t pt-4">
-                <Button size="lg" onClick={runPublish} disabled={busy === 'publish' || selectedImages.length === 0}>
+                <Button size="lg" onClick={runPublish} disabled={busy === 'publish' || selectedImages.length === 0 || !measurementsVerified}>
                   {busy === 'publish' ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Publishing…</>
                     : <><Rocket className="h-4 w-4 mr-2" /> Confirm & publish live</>}
                 </Button>
