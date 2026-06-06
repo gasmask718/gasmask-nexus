@@ -37384,6 +37384,30 @@ export type Database = {
           },
         ]
       }
+      dd_webhook_events: {
+        Row: {
+          event_id: string
+          payload: Json | null
+          received_at: string
+          source: string
+          type: string | null
+        }
+        Insert: {
+          event_id: string
+          payload?: Json | null
+          received_at?: string
+          source: string
+          type?: string | null
+        }
+        Update: {
+          event_id?: string
+          payload?: Json | null
+          received_at?: string
+          source?: string
+          type?: string | null
+        }
+        Relationships: []
+      }
       dd_wholesaler_store_link: {
         Row: {
           created_at: string

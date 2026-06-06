@@ -1,18 +1,26 @@
-// Dynasty Direct — Stripe webhook.
-// Verifies signature, marks order paid, fires order-confirmation email.
+// Dynasty Direct — primary Stripe webhook (non-Connect events).
+// Verifies signature, marks orders paid, handles express-pay PaymentIntent
+// lifecycle, releases inventory on cancel/failure, and fires the
+// order-confirmation email. Event-id idempotent via dd_webhook_events.
+//
+// Connect/split events live in dd-stripe-connect-webhook; that function keys
+// off pi.metadata.order_id and will fire its split engine for both hosted
+// (checkout.session.completed → PaymentIntent) and express orders identically.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  const stripeKey =
+    Deno.env.get("STRIPE_SECRET_KEY_DD") ?? Deno.env.get("STRIPE_SECRET_KEY");
   const webhookSecret = Deno.env.get("DD_STRIPE_WEBHOOK_SECRET");
 
   if (!stripeKey || !webhookSecret) {
@@ -26,67 +34,146 @@ serve(async (req) => {
   const signature = req.headers.get("stripe-signature");
   if (!signature) return new Response("No signature", { status: 400, headers: corsHeaders });
 
-  const body = await req.text();
+  const rawBody = await req.text();
   let event: Stripe.Event;
   try {
-    event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
+    event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret);
   } catch (err: any) {
     console.error("[dd-webhook] signature verify failed", err.message);
     return new Response("Invalid signature", { status: 400, headers: corsHeaders });
   }
 
   const supabase = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  // Idempotency: insert event id; on conflict bail out.
+  const { error: idemErr } = await supabase.from("dd_webhook_events").insert({
+    event_id: event.id,
+    source: "dd-stripe-webhook",
+    type: event.type,
+  });
+  if (idemErr) {
+    // Unique violation → already processed.
+    console.log(`[dd-webhook] duplicate event ${event.id} (${event.type}) — skipped`);
+    return new Response(JSON.stringify({ received: true, duplicate: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const orderId = session.metadata?.order_id;
-      if (!orderId) return new Response(JSON.stringify({ received: true }), { headers: corsHeaders });
-
-      const { data: existing } = await supabase
-        .from("marketplace_orders")
-        .select("payment_status, customer_email")
-        .eq("id", orderId)
-        .single();
-      if (existing?.payment_status === "paid") {
-        return new Response(JSON.stringify({ received: true, already_paid: true }), { headers: corsHeaders });
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await markOrderPaid(
+          supabase,
+          session.metadata?.order_id,
+          (session.payment_intent as string) || session.id,
+          session.customer_details?.email ?? null,
+          (session.amount_total ?? 0) / 100,
+        );
+        break;
       }
-
-      await supabase
-        .from("marketplace_orders")
-        .update({
-          payment_status: "paid",
-          fulfillment_status: "processing",
-          stripe_payment_intent_id: (session.payment_intent as string) || session.id,
-        })
-        .eq("id", orderId);
-
-      const email = existing?.customer_email || session.customer_details?.email;
-      if (email) {
-        await supabase.functions
-          .invoke("dd-send-email", {
-            body: {
-              template: "order-confirmation",
-              to: email,
-              data: { order_id: orderId, amount_total: (session.amount_total ?? 0) / 100 },
-            },
-          })
-          .catch((e) => console.error("[dd-webhook] email failed", e));
+      case "payment_intent.succeeded": {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        await markOrderPaid(
+          supabase,
+          pi.metadata?.order_id,
+          pi.id,
+          pi.receipt_email ?? null,
+          (pi.amount_received ?? pi.amount ?? 0) / 100,
+        );
+        break;
       }
-      console.log(`[dd-webhook] order ${orderId} marked paid`);
+      case "payment_intent.canceled":
+      case "payment_intent.payment_failed": {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        await releaseOrderReserves(supabase, pi.metadata?.order_id, event.type);
+        break;
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
-    console.error("[dd-webhook] error", err);
+    console.error("[dd-webhook] handler error", err);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
+
+async function markOrderPaid(
+  supabase: any,
+  orderId: string | undefined | null,
+  paymentRef: string,
+  fallbackEmail: string | null,
+  amountTotal: number,
+) {
+  if (!orderId) return;
+  const { data: existing } = await supabase
+    .from("marketplace_orders")
+    .select("payment_status, customer_email")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (!existing) return;
+  if (existing.payment_status === "paid") return;
+
+  await supabase
+    .from("marketplace_orders")
+    .update({
+      payment_status: "paid",
+      fulfillment_status: "processing",
+      stripe_payment_intent_id: paymentRef,
+    })
+    .eq("id", orderId);
+
+  const email = existing.customer_email || fallbackEmail;
+  if (email) {
+    await supabase.functions
+      .invoke("dd-send-email", {
+        body: {
+          template: "order-confirmation",
+          to: email,
+          data: { order_id: orderId, amount_total: amountTotal },
+        },
+      })
+      .catch((e: any) => console.error("[dd-webhook] email failed", e));
+  }
+  console.log(`[dd-webhook] order ${orderId} marked paid`);
+}
+
+async function releaseOrderReserves(
+  supabase: any,
+  orderId: string | undefined | null,
+  reason: string,
+) {
+  if (!orderId) return;
+  const { data: items } = await supabase
+    .from("marketplace_order_items")
+    .select("product_id, wholesaler_id, qty")
+    .eq("order_id", orderId);
+  for (const it of items ?? []) {
+    if (!it.product_id || !it.wholesaler_id || !it.qty) continue;
+    await supabase
+      .rpc("release_marketplace_inventory", {
+        p_product_id: it.product_id,
+        p_wholesaler_id: it.wholesaler_id,
+        p_qty: it.qty,
+      })
+      .catch((e: any) => console.error("[dd-webhook] release failed", e?.message));
+  }
+  await supabase
+    .from("marketplace_orders")
+    .update({
+      payment_status: "failed",
+      fulfillment_status: "cancelled",
+      notes: `auto-cancelled: ${reason}`,
+    })
+    .eq("id", orderId)
+    .neq("payment_status", "paid");
+  console.log(`[dd-webhook] order ${orderId} reserves released (${reason})`);
+}
