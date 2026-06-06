@@ -92,13 +92,13 @@ export function WholesalerStripeConnectCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-2">
-          {!profile.stripe_payouts_enabled && (
+          {!(profile as any)?.stripe_payouts_enabled && (
             <Button onClick={onboard} disabled={busy}>
               <ExternalLink className="w-3 h-3 mr-1" />
-              {profile.stripe_connect_id ? "Continue onboarding" : "Start Stripe onboarding"}
+              {(profile as any)?.stripe_connect_id ? "Continue onboarding" : "Start Stripe onboarding"}
             </Button>
           )}
-          {profile.stripe_connect_id && (
+          {(profile as any)?.stripe_connect_id && (
             <Button variant="outline" onClick={refreshStatus} disabled={busy}>
               <RefreshCw className="w-3 h-3 mr-1" />Refresh status
             </Button>
@@ -113,7 +113,7 @@ export function WholesalerStripeConnectCard() {
           </div>
           <div className="border rounded p-3">
             <div className="text-xs text-muted-foreground">Reserve rate</div>
-            <div className="text-xl font-bold">{Number(profile.reserve_pct ?? 8)}%</div>
+            <div className="text-xl font-bold">{Number((profile as any).reserve_pct ?? 8)}%</div>
           </div>
         </div>
 
