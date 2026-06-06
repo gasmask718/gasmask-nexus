@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { CartItem, CartTotals } from "./useCart";
+import { GeocodingService } from "@/services/geocoding";
 
 export interface ShippingAddress {
   fullName: string;
@@ -108,9 +109,65 @@ export function useCheckout() {
         throw new Error(validation.errors.join(', '));
       }
 
-      // Group items by wholesaler for order routing
-      const wholesalerGroups = groupItemsByWholesaler(data.items);
-      const firstWholesalerId = data.items[0]?.product?.wholesaler_id;
+      // ═══════════════════════════════════════════════════════════
+      // SPRINT 5: GEOGRAPHIC ROUTER
+      // For each line item, ask dd_pick_supplier_for_item which
+      // supplier should fulfill (pins → in_state → nearest → default
+      // → fallback). Group items by the chosen supplier and record
+      // routing_reason on order_routing.
+      // ═══════════════════════════════════════════════════════════
+      let shipLat: number | null = null;
+      let shipLng: number | null = null;
+      try {
+        const geo = await GeocodingService.geocodeAddress(
+          data.shippingAddress.street,
+          data.shippingAddress.city,
+          data.shippingAddress.state,
+          data.shippingAddress.zipCode,
+          data.shippingAddress.country || 'USA',
+        );
+        if (!('error' in geo)) {
+          shipLat = geo.lat;
+          shipLng = geo.lng;
+        }
+      } catch (e) {
+        console.warn('Checkout geocode failed, falling back to state-only routing:', e);
+      }
+
+      type RoutedItem = { item: CartItem; reason: string; details: any };
+      const supplierBuckets = new Map<string, RoutedItem[]>();
+
+      for (const item of data.items) {
+        if (!item.product_id) continue;
+        let chosenWid: string | null = null;
+        let reason = 'fallback_home';
+        let details: any = { rule: 'product_home_supplier' };
+        try {
+          const { data: pick, error: pickErr } = await supabase.rpc('dd_pick_supplier_for_item', {
+            p_product_id: item.product_id,
+            p_qty: item.qty,
+            p_ship_state: data.shippingAddress.state,
+            p_ship_lat: shipLat,
+            p_ship_lng: shipLng,
+          });
+          if (pickErr) throw pickErr;
+          const row = Array.isArray(pick) ? pick[0] : pick;
+          if (row?.wholesaler_id) {
+            chosenWid = row.wholesaler_id as string;
+            reason = (row.routing_reason as string) || reason;
+            details = row.routing_details || details;
+          }
+        } catch (e) {
+          console.warn('dd_pick_supplier_for_item failed, using product home:', e);
+        }
+        if (!chosenWid) chosenWid = item.product?.wholesaler_id || null;
+        if (!chosenWid) continue;
+        const existing = supplierBuckets.get(chosenWid) || [];
+        supplierBuckets.set(chosenWid, [...existing, { item, reason, details }]);
+      }
+
+      const firstWholesalerId = supplierBuckets.keys().next().value
+        || data.items[0]?.product?.wholesaler_id;
 
       // Create main marketplace order
       const { data: order, error: orderError } = await supabase
@@ -137,11 +194,17 @@ export function useCheckout() {
 
       const orderNumber = order.id.slice(0, 8).toUpperCase();
 
-      // Create order items
+      // Create order items — wholesaler_id now reflects the routed supplier
+      const itemSupplierMap = new Map<string, string>();
+      for (const [wid, routed] of supplierBuckets) {
+        for (const r of routed) {
+          if (r.item.product_id) itemSupplierMap.set(r.item.product_id, wid);
+        }
+      }
       const orderItems = data.items.map(item => ({
         order_id: order.id,
         product_id: item.product_id,
-        wholesaler_id: item.product?.wholesaler_id,
+        wholesaler_id: item.product_id ? itemSupplierMap.get(item.product_id) || item.product?.wholesaler_id : item.product?.wholesaler_id,
         qty: item.qty,
         price_each: item.price_locked || 0,
       }));
@@ -153,13 +216,11 @@ export function useCheckout() {
       if (itemsError) throw itemsError;
 
       // ═══════════════════════════════════════════════════════════
-      // SPRINT 1: FAN-OUT FULFILLMENTS + RESERVE INVENTORY
-      // One marketplace_fulfillments row per supplier — what brings
-      // the entire supplier portal to life. Inventory is reserved
-      // atomically per item (RPC throws on insufficient_stock).
+      // SPRINT 1 + 5: FAN-OUT FULFILLMENTS, RESERVE INVENTORY,
+      // WRITE routing_reason FROM THE GEO PICK.
       // ═══════════════════════════════════════════════════════════
-      for (const [wholesalerId, items] of wholesalerGroups) {
-        if (wholesalerId === 'unknown') continue;
+      for (const [wholesalerId, routedItems] of supplierBuckets) {
+        const items = routedItems.map(r => r.item);
 
         for (const item of items) {
           if (!item.product_id) continue;
@@ -192,9 +253,20 @@ export function useCheckout() {
             wholesaler_id: wholesalerId,
             status: 'pending',
             items_snapshot: itemsSnapshot,
-            shipping_mode: 'sandbox', // flips to 'live' the moment EASYPOST_API_KEY is set
+            shipping_mode: 'sandbox',
           });
         if (fulfillmentError) console.error('Fulfillment fan-out error:', fulfillmentError);
+
+        // Pick the dominant routing reason for this supplier bucket
+        const reasonCounts = new Map<string, number>();
+        for (const r of routedItems) reasonCounts.set(r.reason, (reasonCounts.get(r.reason) || 0) + 1);
+        const dominantReason = [...reasonCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'fallback_home';
+        const detailsSummary = {
+          per_item: routedItems.map(r => ({ product_id: r.item.product_id, reason: r.reason, details: r.details })),
+          ship_state: data.shippingAddress.state,
+          ship_lat: shipLat,
+          ship_lng: shipLng,
+        };
 
         const { error: routingError } = await supabase
           .from('order_routing')
@@ -206,8 +278,18 @@ export function useCheckout() {
             cash_amount: data.paymentMethod === 'cash' ? data.totals.total : 0,
             delivery_type: data.deliveryType,
             status: 'pending',
+            routing_reason: dominantReason,
+            routing_details: detailsSummary,
           });
         if (routingError) console.error('Routing error:', routingError);
+
+        // Audit row so the Live Routing Feed lights up
+        await supabase.from('dd_routing_audit').insert({
+          event_type: `auto_route_${dominantReason}`,
+          wholesaler_id: wholesalerId,
+          new_value: { order_id: order.id, reason: dominantReason, details: detailsSummary },
+          reason: 'auto-route on checkout',
+        }).then(({ error }) => { if (error) console.warn('routing audit insert failed:', error); });
 
         if (data.deliveryType === 'ship') {
           await supabase.from('shipping_labels').insert({
