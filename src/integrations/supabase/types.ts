@@ -120642,6 +120642,20 @@ export type Database = {
         Args: { p_wholesaler_id: string }
         Returns: string
       }
+      dd_pick_supplier_for_item: {
+        Args: {
+          p_product_id: string
+          p_qty: number
+          p_ship_lat: number
+          p_ship_lng: number
+          p_ship_state: string
+        }
+        Returns: {
+          routing_details: Json
+          routing_reason: string
+          wholesaler_id: string
+        }[]
+      }
       dd_picked_for_you: {
         Args: { p_limit?: number; p_user_id?: string; p_visitor_id?: string }
         Returns: {
