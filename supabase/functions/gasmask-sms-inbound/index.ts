@@ -55,6 +55,17 @@ serve(async (req) => {
     const messageBody = body.Body || body.message || "";
     const messageSid = body.MessageSid || body.message_sid || `gm-inbound-${Date.now()}`;
 
+    // ── SYNTHETIC PROBE SHORT-CIRCUIT ──
+    // comms-health-monitor signed probe: MessageSid "SMhealth..." +
+    // From=+15005550006. ACK with no side effects.
+    if (messageSid.startsWith("SMhealth") && fromNumber === "+15005550006") {
+      console.log(`[gasmask-sms-inbound] synthetic probe ack sid=${messageSid}`);
+      return new Response(
+        JSON.stringify({ success: true, synthetic: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     if (!fromNumber || !messageBody) {
       return new Response('<?xml version="1.0"?><Response/>', {
         headers: { "Content-Type": "text/xml" },
