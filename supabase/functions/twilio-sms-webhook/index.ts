@@ -47,7 +47,21 @@ Deno.serve(async (req) => {
     return new Response("Forbidden", { status: 403, headers: corsHeaders });
   }
 
+  // ── SYNTHETIC PROBE SHORT-CIRCUIT ──
+  // comms-health-monitor sends signed probes with MessageSid prefixed "SMhealth"
+  // and From=+15005550006 (Twilio magic test number). ACK without any
+  // side effects: no opt_out write, no confirmation SMS. Prevents the
+  // every-20-min "You've been unsubscribed" leak.
+  if (MessageSid.startsWith("SMhealth") && From === "+15005550006") {
+    console.log(`[twilio-sms-webhook] synthetic probe ack sid=${MessageSid}`);
+    return new Response(
+      JSON.stringify({ success: true, synthetic: true }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
   const sb = svc();
+
 
   // STOP keyword
   if (STOP_RE.test(Body)) {

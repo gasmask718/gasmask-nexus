@@ -51,6 +51,20 @@ Deno.serve(async (req) => {
         return new Response("Forbidden", { status: 403, headers: corsHeaders });
       }
 
+      // ── SYNTHETIC PROBE SHORT-CIRCUIT ──
+      // comms-health-monitor sends signed probes with MessageSid prefixed
+      // "SMhealth" and From=+15005550006. ACK without writing opt_out_events
+      // or sending SMS.
+      const probeSid = sigParams.MessageSid || "";
+      const probeFrom = sigParams.From || "";
+      if (probeSid.startsWith("SMhealth") && probeFrom === "+15005550006") {
+        console.log(`[brandaro-handle-inbound] synthetic probe ack sid=${probeSid}`);
+        return new Response(
+          JSON.stringify({ success: true, synthetic: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
       messageText = sigParams.Body || "";
       senderPhone = sigParams.From || "";
       channel = "sms";

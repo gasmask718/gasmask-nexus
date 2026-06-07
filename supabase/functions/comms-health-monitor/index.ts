@@ -444,9 +444,18 @@ async function checkSignatureVerify(): Promise<Result[]> {
     });
   };
 
+  // SYNTHETIC PROBE CONVENTION (handlers must short-circuit on this combo):
+  //   MessageSid prefix: "SMhealth..." (same as twilio-sms-status probe)
+  //   From: SYNTHETIC_PROBE_FROM — Twilio "magic" test number, can never be a
+  //         real customer; routing to it is also a no-op at Twilio's edge.
+  // Handlers that see BOTH return 200 {synthetic:true} with zero side effects
+  // (no opt_out_events write, no outbound SMS). This stops the every-20-min
+  // "You've been unsubscribed" leak we observed in production.
+  const SYNTHETIC_PROBE_FROM = "+15005550006";
+
   for (const { target, url } of inboundTargets) {
     const params: Record<string, string> = {
-      From: "+10000000000",
+      From: SYNTHETIC_PROBE_FROM,
       To: VERIFIED_TOLL_FREE,
       Body: "synthetic-health-check",
       MessageSid: "SMhealthcheck" + Date.now(),
@@ -472,17 +481,21 @@ async function checkSignatureVerify(): Promise<Result[]> {
         msg = `${target} accepts INVALID signature (HTTP ${badResp.status}) — verification bypassed or disabled`;
       }
 
-      // STOP keyword probe — valid signature, body=STOP, expect 200.
-      // We can't observe the opt_out_events insert from here, so we only
-      // verify the handler ACKs (doesn't 4xx/5xx) on a signed STOP body.
+      // STOP keyword probe — synthetic marker (SMhealth* + reserved From).
+      // Handlers must short-circuit and return 200 WITHOUT writing
+      // opt_out_events and WITHOUT sending any SMS. We only verify the ACK.
       let stopStatus: "pass" | "warn" | "fail" = "pass";
       let stopMsg = "";
       try {
-        const stopParams = { ...params, Body: "STOP", MessageSid: "SMstop" + Date.now() };
+        const stopParams = {
+          ...params,
+          Body: "STOP",
+          MessageSid: "SMhealthstop" + Date.now(), // <-- SMhealth* prefix (was "SMstop", caused side effects)
+        };
         const stopSig = sign(url, stopParams);
         const stopResp = await post(url, stopParams, stopSig);
         if (stopResp.status === 200) {
-          stopMsg = `STOP accepted (HTTP 200) — opt-out path reachable`;
+          stopMsg = `STOP accepted (HTTP 200) — opt-out path reachable (synthetic, no side effects)`;
         } else if (stopResp.status === 403) {
           stopStatus = "warn";
           stopMsg = `STOP probe rejected (HTTP 403) — signature path inconsistent with main probe`;
