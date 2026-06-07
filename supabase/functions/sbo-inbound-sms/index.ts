@@ -5,6 +5,18 @@ serve(async (req) => {
   const formData = await req.formData();
   const from = formData.get('From')?.toString() || '';
   const body = formData.get('Body')?.toString() || '';
+  const messageSid = formData.get('MessageSid')?.toString() || '';
+
+  // ── SYNTHETIC PROBE SHORT-CIRCUIT ──
+  // comms-health-monitor signed probe: MessageSid "SMhealth..." +
+  // From=+15005550006. ACK with no side effects (no DB write, no SMS).
+  if (messageSid.startsWith('SMhealth') && from === '+15005550006') {
+    console.log(`[sbo-inbound-sms] synthetic probe ack sid=${messageSid}`);
+    return new Response(
+      JSON.stringify({ success: true, synthetic: true }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
