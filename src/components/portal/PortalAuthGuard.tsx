@@ -35,9 +35,9 @@ export function PortalAuthGuard({ children, allowedRoles, portalType }: PortalAu
 
   // Auto-heal: ensure operational record exists for biker/driver
   useEffect(() => {
-    if (user && profileData?.profile && !healedRef.current) {
+    if (user && !healedRef.current) {
       healedRef.current = true;
-      const role = ((profileData.profile as any).role || profileData.profile.primary_role) as string;
+      const role = ((profileData?.profile as any)?.role || profileData?.profile?.primary_role) as string | undefined;
       if (role === 'biker' || portalType === 'biker') {
         ensureBikerRecord(user.id);
       } else if (role === 'driver' || portalType === 'driver') {
@@ -48,8 +48,8 @@ export function PortalAuthGuard({ children, allowedRoles, portalType }: PortalAu
 
   // Log portal access for audit + fire session-start location signal
   useEffect(() => {
-    if (user && profileData?.profile) {
-      const roleValue = (profileData.profile as any).role || profileData.profile.primary_role;
+    if (user) {
+      const roleValue = (profileData?.profile as any)?.role || profileData?.profile?.primary_role;
       supabase.from('portal_audit_log').insert([{
         user_id: user.id,
         portal_type: portalType,
@@ -57,7 +57,6 @@ export function PortalAuthGuard({ children, allowedRoles, portalType }: PortalAu
         metadata: { role: String(roleValue || 'unknown') }
       }]).then(() => {});
 
-      // Fire a gps_ping with null coords as "session start" signal
       if (portalType === 'biker' || portalType === 'driver') {
         supabase.from('location_events').insert({
           user_id: user.id,
@@ -80,18 +79,19 @@ export function PortalAuthGuard({ children, allowedRoles, portalType }: PortalAu
     );
   }
 
-  if (!user || !profileData?.profile) {
+  if (!user) {
     return null;
   }
 
-  const userRole = ((profileData.profile as any).role || profileData.profile.primary_role) as string;
-  
-  // Check elevated from profile role OR system roles
-  const isElevated = ['owner', 'admin', 'ceo', 'va'].includes(userRole) || 
-                     systemRoles.some(r => ['owner', 'admin'].includes(r));
-  
-  // Check access from profile role OR any system role from user_roles table
-  const hasProfileAccess = allowedRoles.includes(userRole as 'driver' | 'biker');
+  // Source of truth = user_roles (systemRoles). Profile is optional — many
+  // field users (drivers/bikers) are assigned roles via admin UI without ever
+  // having a user_profiles row written. Don't block on a missing profile.
+  const userRole = ((profileData?.profile as any)?.role || profileData?.profile?.primary_role || '') as string;
+
+  const isElevated = ['owner', 'admin', 'ceo', 'va'].includes(userRole) ||
+                     systemRoles.some(r => ['owner', 'admin', 'ceo'].includes(r));
+
+  const hasProfileAccess = !!userRole && allowedRoles.includes(userRole as 'driver' | 'biker');
   const hasSystemRoleAccess = systemRoles.some(r => allowedRoles.includes(r as 'driver' | 'biker'));
   const hasAccess = isElevated || hasProfileAccess || hasSystemRoleAccess;
 
