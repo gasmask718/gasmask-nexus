@@ -27,24 +27,30 @@ export default function AmbassadorLogin() {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
-      // Verify this user is an ambassador
-      const { data: amb, error: ambErr } = await supabase
-        .from('unforgettable_ambassadors' as any)
-        .select('id, status')
-        .eq('auth_user_id', data.user.id)
-        .maybeSingle();
+      // SOURCE OF TRUTH: user_roles. An ambassador row is nice-to-have but
+      // not required — admins assigning the role via the User Mgmt UI write
+      // to user_roles only.
+      const { data: roleRows } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', data.user.id);
 
-      if (ambErr || !amb) {
-        // Check by email as fallback
-        const { data: ambByEmail } = await supabase
+      const userRoles: string[] = (roleRows ?? []).map((r: any) => r.role);
+      const elevatedRoles = ['owner', 'admin', 'ceo', 'employee'];
+      const hasAmbassadorRole = userRoles.includes('ambassador');
+      const isElevated = userRoles.some((r) => elevatedRoles.includes(r));
+
+      if (!hasAmbassadorRole && !isElevated) {
+        // Legacy fallback: check ambassador table by auth id / email
+        const { data: amb } = await supabase
           .from('unforgettable_ambassadors' as any)
-          .select('id, status')
-          .eq('email', email)
+          .select('id')
+          .or(`auth_user_id.eq.${data.user.id},email.eq.${email}`)
           .maybeSingle();
 
-        if (!ambByEmail) {
+        if (!amb) {
           await supabase.auth.signOut();
-          toast.error('No ambassador account found. Contact admin.');
+          toast.error('No ambassador access on this account. Contact admin.');
           return;
         }
       }
