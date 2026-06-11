@@ -113,23 +113,34 @@ export default function DriverLogin() {
       }
 
       // Step 2: Check for portal role or elevated access
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, primary_role')
-        .eq('id', authData.user.id)
-        .single();
+      // SOURCE OF TRUTH: user_roles table (per project RBAC standard).
+      // Fallback to profiles.role for legacy single-role rows.
+      const { data: roleRows } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', authData.user.id);
 
-      const userRole = (profile as any)?.role || (profile as any)?.primary_role;
-      const elevatedRoles = ['owner', 'admin', 'ceo', 'va'];
-      const isElevated = elevatedRoles.includes(userRole);
-      const isDriver = userRole === 'driver';
+      let userRoles: string[] = (roleRows ?? []).map((r: any) => r.role);
+
+      if (userRoles.length === 0) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', authData.user.id)
+          .maybeSingle();
+        if ((profile as any)?.role) userRoles = [(profile as any).role];
+      }
+
+      const elevatedRoles = ['owner', 'admin', 'ceo', 'va', 'employee'];
+      const isElevated = userRoles.some((r) => elevatedRoles.includes(r));
+      const isDriver = userRoles.includes('driver');
 
       if (!isDriver && !isElevated) {
         await supabase.from('portal_audit_log').insert([{
           user_id: authData.user.id,
           portal_type: 'driver',
           action_type: 'login_denied',
-          metadata: { reason: 'role_mismatch', attempted_role: userRole }
+          metadata: { reason: 'role_mismatch', attempted_roles: userRoles }
         }]);
 
         await supabase.auth.signOut();
@@ -137,6 +148,8 @@ export default function DriverLogin() {
         setIsLoading(false);
         return;
       }
+
+      const userRole = isDriver ? 'driver' : userRoles[0];
 
       // Step 3: Register device (Phase 2 security)
       try {
