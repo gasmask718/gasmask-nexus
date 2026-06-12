@@ -85,6 +85,30 @@ export default function VAAuthPage() {
     try { sessionStorage.removeItem('va_invite_token'); } catch {}
   };
 
+  // Verifies the signed-in user has VA-portal access via the canonical user_roles table.
+  // Mirrors the gate used by Driver/Biker/Ambassador logins to prevent silent cross-portal access.
+  const verifyVAAccessOrSignOut = async (userId: string): Promise<boolean> => {
+    const { data: userRoles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId);
+
+    const roles = (userRoles || []).map((r: any) => (r.role as string)?.trim().toLowerCase());
+    const elevatedRoles = ['owner', 'admin', 'ceo', 'super_admin', 'dynasty_owner'];
+    const hasVAAccess =
+      roles.includes('va') ||
+      roles.includes('employee') ||
+      roles.some((r) => elevatedRoles.includes(r));
+
+    // Invite acceptance grants the va role server-side, so users completing an invite are allowed through.
+    if (!hasVAAccess && !hasInvite) {
+      await supabase.auth.signOut();
+      toast.error('Access denied. This portal is for Virtual Assistants only.');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -92,11 +116,14 @@ export default function VAAuthPage() {
     try {
       if (isLogin) {
         markManualSignIn();
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data: authData, error } = await supabase.auth.signInWithPassword({
           email: form.email,
           password: form.password,
         });
         if (error) throw error;
+        if (authData.user && !(await verifyVAAccessOrSignOut(authData.user.id))) {
+          return;
+        }
         await acceptInviteIfNeeded();
         navigate('/va/dashboard');
       } else {
