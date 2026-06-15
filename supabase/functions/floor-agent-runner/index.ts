@@ -207,7 +207,14 @@ serve(async (req) => {
           raw_output: findings,
         }).eq('id', run!.id);
 
-        results.push({ agent: agent.agent_name, floor: agent.floor, findings: findings.length, tokens: tokensUsed });
+        results.push({
+          agent: agent.agent_name,
+          floor: agent.floor,
+          findings: findings.length,
+          queued: queuedCount,
+          queue_errors: queueErrors,
+          tokens: tokensUsed,
+        });
       } catch (err: any) {
         await supabase.from('floor_agent_runs').update({
           completed_at: new Date().toISOString(), status: 'failed', error: String(err?.message || err),
