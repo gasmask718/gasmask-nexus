@@ -162,17 +162,34 @@ serve(async (req) => {
           summary = `${findings.length} findings`;
         }
 
-        // Write findings as recommendations into ai_action_queue (no auto-execute)
+        // Write findings as RECOMMENDATIONS into ai_action_queue (queue-only, never execute).
+        // `reasoning` is jsonb NOT NULL — must be an object, not a string (this is what
+        // was silently failing in A7.2 because the previous .then(() => {}, () => {})
+        // swallowed every insert error).
+        let queuedCount = 0;
+        const queueErrors: string[] = [];
         for (const f of findings.slice(0, 25)) {
-          await supabase.from('ai_action_queue').insert({
+          const { error: qErr } = await supabase.from('ai_action_queue').insert({
             action_type: `floor${agent.floor}_recommendation`,
-            action_summary: f.title,
-            ai_recommendation: f.recommendation,
-            reasoning: `[Floor ${agent.floor} — ${agent.agent_name}] entity=${f.entity_type || 'n/a'}:${f.entity_id || 'n/a'} :: ${f.details || ''}`,
+            action_summary: String(f.title || 'Untitled finding').slice(0, 500),
+            ai_recommendation: String(f.recommendation || f.details || f.title || 'See details'),
+            reasoning: {
+              floor: agent.floor,
+              agent: agent.agent_name,
+              entity_type: f.entity_type ?? null,
+              entity_id: f.entity_id ?? null,
+              details: f.details ?? null,
+              severity: f.severity ?? 'low',
+              source: 'floor-agent-runner',
+            },
             risk_level: f.severity === 'high' ? 'high' : f.severity === 'medium' ? 'medium' : 'low',
             status: 'pending',
-          }).then(() => {}, () => {});
+          });
+          if (qErr) queueErrors.push(qErr.message);
+          else queuedCount++;
         }
+        // HARD BOUNDARY: agent stops here. Execution is forbidden in this function.
+        // Only the human-reviewed A7.3 backfill runner / approve_ai_draft_invoice RPC may act.
 
         await supabase.from('floor_agents').update({
           last_run_at: new Date().toISOString(),
@@ -190,7 +207,14 @@ serve(async (req) => {
           raw_output: findings,
         }).eq('id', run!.id);
 
-        results.push({ agent: agent.agent_name, floor: agent.floor, findings: findings.length, tokens: tokensUsed });
+        results.push({
+          agent: agent.agent_name,
+          floor: agent.floor,
+          findings: findings.length,
+          queued: queuedCount,
+          queue_errors: queueErrors,
+          tokens: tokensUsed,
+        });
       } catch (err: any) {
         await supabase.from('floor_agent_runs').update({
           completed_at: new Date().toISOString(), status: 'failed', error: String(err?.message || err),
