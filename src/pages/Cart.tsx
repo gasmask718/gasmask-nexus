@@ -17,26 +17,7 @@ export default function Cart() {
   
   const tier = detectTierForUser();
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full text-center">
-          <CardHeader>
-            <ShoppingCart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <CardTitle>Sign in to view your cart</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Please sign in to access your shopping cart
-            </p>
-            <Button asChild>
-              <Link to="/auth">Sign In</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Guests can browse their cart — checkout collects email at the next step.
 
   if (isLoading) {
     return (
