@@ -302,7 +302,10 @@ export function useCart() {
   // Clear cart
   const clearCartMutation = useMutation({
     mutationFn: async () => {
-      if (!user) return;
+      if (!user) {
+        writeGuestCart([]);
+        return;
+      }
 
       const { data: cart } = await supabase
         .from('carts')
