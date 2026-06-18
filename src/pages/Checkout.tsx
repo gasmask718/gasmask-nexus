@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/services/marketplace/useCart";
 import { useCheckout, ShippingAddress } from "@/services/marketplace/useCheckout";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -43,8 +45,48 @@ export default function Checkout() {
 
   const isStoreUser = userRole === 'store' || userRole === 'store_owner';
 
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
   const handlePlaceOrder = async () => {
     try {
+      // Card payments MUST go through Stripe Checkout — never fulfill from the client.
+      if (paymentMethod === 'card') {
+        if (!user) {
+          toast.error('Please sign in to pay by card, or use express pay from your cart.');
+          return;
+        }
+
+        // 1) Create the pending marketplace_order (DB rows + routing + fulfillments).
+        const result = await createOrder({
+          items,
+          totals,
+          shippingAddress,
+          deliveryType,
+          paymentMethod,
+          notes,
+        });
+
+        // 2) Hand off to Stripe via dd-create-checkout (hosted session).
+        setIsRedirecting(true);
+        const { data, error } = await supabase.functions.invoke('dd-create-checkout', {
+          body: {
+            order_id: result.orderId,
+            customer_email: user.email,
+          },
+        });
+
+        if (error) throw error;
+        if (data?.mode !== 'live' || !data?.url) {
+          throw new Error(data?.error || 'Stripe checkout unavailable');
+        }
+
+        // Clear cart locally — order persists server-side; webhook finalizes payment.
+        await clearCart();
+        window.location.href = data.url as string;
+        return;
+      }
+
+      // Non-card (cash on delivery / net terms) keeps the direct fulfillment path.
       const result = await createOrder({
         items,
         totals,
@@ -57,8 +99,10 @@ export default function Checkout() {
       await clearCart();
       setOrderId(result.orderId);
       setOrderComplete(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Order failed:', error);
+      toast.error(error?.message || 'Checkout failed');
+      setIsRedirecting(false);
     }
   };
 
@@ -384,15 +428,17 @@ export default function Checkout() {
                   <Button 
                     className="flex-1" 
                     onClick={handlePlaceOrder}
-                    disabled={isCreatingOrder}
+                    disabled={isCreatingOrder || isRedirecting}
                   >
-                    {isCreatingOrder ? (
+                    {isCreatingOrder || isRedirecting ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processing...
+                        {isRedirecting ? 'Redirecting to Stripe…' : 'Processing...'}
                       </>
                     ) : (
-                      `Place Order - $${totals.total.toFixed(2)}`
+                      paymentMethod === 'card'
+                        ? `Pay with Card - $${totals.total.toFixed(2)}`
+                        : `Place Order - $${totals.total.toFixed(2)}`
                     )}
                   </Button>
                 </CardFooter>
