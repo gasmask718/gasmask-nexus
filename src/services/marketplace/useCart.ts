@@ -79,48 +79,58 @@ export function useCart() {
     return newCart.id;
   };
 
-  // Fetch cart items
+  // Fetch cart items (DB-backed for users, localStorage for guests)
   const cartQuery = useQuery({
-    queryKey: ['cart', user?.id],
+    queryKey: ["cart", user?.id ?? "guest"],
     queryFn: async () => {
-      if (!user) return [];
+      let items: GuestRow[] = [];
 
-      const { data: cart } = await supabase
-        .from('carts')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .single();
+      if (user) {
+        const { data: cart } = await supabase
+          .from("carts")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .single();
 
-      if (!cart) return [];
+        if (!cart) return [];
 
-      const { data: items, error } = await supabase
-        .from('cart_items')
-        .select('*')
-        .eq('cart_id', cart.id);
+        const { data: dbItems, error } = await supabase
+          .from("cart_items")
+          .select("*")
+          .eq("cart_id", cart.id);
+        if (error) throw error;
+        items = (dbItems ?? []).map((r: any) => ({
+          id: r.id,
+          product_id: r.product_id,
+          qty: r.qty || 1,
+          price_locked: r.price_locked,
+        }));
+      } else {
+        items = readGuestCart();
+      }
 
-      if (error) throw error;
-      if (!items || items.length === 0) return [];
+      if (items.length === 0) return [];
 
-      const productIds = items.map(i => i.product_id).filter(Boolean) as string[];
+      const productIds = items.map((i) => i.product_id).filter(Boolean);
 
-      // Try products_all first
       const { data: productsAll } = await supabase
-        .from('products_all')
-        .select('id, product_name, images, retail_price, store_price, wholesale_price, wholesaler_id, inventory_qty, weight_oz')
-        .in('id', productIds);
+        .from("products_all")
+        .select(
+          "id, product_name, images, retail_price, store_price, wholesale_price, wholesaler_id, inventory_qty, weight_oz",
+        )
+        .in("id", productIds);
 
-      // Also try products table for store products
       const { data: productsLocal } = await supabase
-        .from('products')
-        .select('id, name, image_url, wholesale_price, suggested_retail_price, store_price, weight_per_unit')
-        .in('id', productIds);
+        .from("products")
+        .select("id, name, image_url, wholesale_price, suggested_retail_price, store_price, weight_per_unit")
+        .in("id", productIds);
 
-      const productMap: Record<string, CartItem['product']> = {};
-      (productsAll || []).forEach(p => {
+      const productMap: Record<string, CartItem["product"]> = {};
+      (productsAll || []).forEach((p) => {
         productMap[p.id] = {
           id: p.id,
-          product_name: p.product_name || '',
+          product_name: p.product_name || "",
           images: Array.isArray(p.images) ? (p.images as string[]) : [],
           retail_price: p.retail_price,
           store_price: p.store_price,
@@ -130,11 +140,11 @@ export function useCart() {
           weight_oz: p.weight_oz,
         };
       });
-      (productsLocal || []).forEach(p => {
+      (productsLocal || []).forEach((p) => {
         if (!productMap[p.id]) {
           productMap[p.id] = {
             id: p.id,
-            product_name: p.name || '',
+            product_name: p.name || "",
             images: p.image_url ? [p.image_url] : [],
             retail_price: p.suggested_retail_price,
             store_price: p.store_price,
@@ -146,13 +156,15 @@ export function useCart() {
         }
       });
 
-      return items.map(item => ({
-        ...item,
-        qty: item.qty || 1,
-        product: item.product_id ? productMap[item.product_id] : undefined,
+      return items.map((item) => ({
+        id: item.id,
+        cart_id: user?.id ?? "guest",
+        product_id: item.product_id,
+        qty: item.qty,
+        price_locked: item.price_locked,
+        product: productMap[item.product_id],
       })) as CartItem[];
     },
-    enabled: !!user,
   });
 
   // Add to cart
