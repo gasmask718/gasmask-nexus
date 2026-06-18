@@ -122935,6 +122935,10 @@ export type Database = {
         Args: { p_code: string; p_guest_email?: string; p_user_id?: string }
         Returns: Json
       }
+      validate_discount_code: {
+        Args: { p_code: string; p_subtotal: number }
+        Returns: Json
+      }
       validate_intent_autonomy: { Args: { p_intent_id: string }; Returns: Json }
       validate_portal_request: {
         Args: {
