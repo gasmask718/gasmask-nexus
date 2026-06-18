@@ -301,7 +301,7 @@ serve(async (req) => {
     const { data: order, error: oErr } = await supabase
       .from("marketplace_orders")
       .select(
-        "id, total, subtotal, shipping_cost, tax_amount, customer_email, payment_status",
+        "id, total, subtotal, shipping_cost, tax_amount, customer_email, payment_status, discount_code, discount_amount",
       )
       .eq("id", orderId)
       .single();
@@ -315,7 +315,7 @@ serve(async (req) => {
       .select("qty, price_each, product:products_all(product_name)")
       .eq("order_id", orderId);
 
-    const lineItems = (items ?? []).map((it: any) => ({
+    const lineItems: any[] = (items ?? []).map((it: any) => ({
       price_data: {
         currency: "usd",
         product_data: { name: it.product?.product_name ?? "Dynasty Direct item" },
@@ -349,6 +349,42 @@ serve(async (req) => {
       });
     }
 
+    // ── Discount: validate against public.discounts (never trust the client
+    // for the amount). Persist code+amount on the order, then mint a one-off
+    // Stripe coupon so the displayed total matches the charged total.
+    let stripeDiscounts: Array<{ coupon: string }> | undefined;
+    const submittedCode: string | undefined =
+      body?.discount_code || order.discount_code || undefined;
+    const subtotalForDiscount = Number(order.subtotal ?? 0);
+    if (submittedCode && subtotalForDiscount > 0) {
+      const { data: v, error: vErr } = await supabase.rpc("validate_discount_code", {
+        p_code: submittedCode,
+        p_subtotal: subtotalForDiscount,
+      });
+      const result: any = v;
+      if (!vErr && result?.valid) {
+        const amt = Number(result.discount_amount ?? 0);
+        if (amt > 0) {
+          await supabase
+            .from("marketplace_orders")
+            .update({ discount_code: result.code, discount_amount: amt })
+            .eq("id", order.id);
+          const coupon = await stripe.coupons.create({
+            amount_off: Math.round(amt * 100),
+            currency: "usd",
+            duration: "once",
+            name: `Code ${result.code}`,
+          });
+          stripeDiscounts = [{ coupon: coupon.id }];
+        }
+      } else if (body?.discount_code) {
+        return json(
+          { mode: "pending", error: result?.message ?? "invalid_discount_code" },
+          400,
+        );
+      }
+    }
+
     const origin = req.headers.get("origin") || PUBLIC_ORIGIN;
     const email = body?.customer_email || order.customer_email || undefined;
 
@@ -363,7 +399,7 @@ serve(async (req) => {
       payment_intent_data: {
         metadata: { order_id: order.id, source: "dynasty_direct", channel: "hosted_checkout" },
       },
-      discounts: body?.discount_code ? [{ coupon: body.discount_code }] : undefined,
+      discounts: stripeDiscounts,
     });
 
     await supabase

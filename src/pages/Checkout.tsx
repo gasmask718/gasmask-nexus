@@ -62,23 +62,8 @@ export default function Checkout() {
     }
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full text-center">
-          <CardHeader>
-            <ShoppingCart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <CardTitle>Sign in to checkout</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <Link to="/auth">Sign In</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Guests are allowed — guest order rows attach to DD_GUEST_USER_ID server-side
+  // and are looked up later via lookup_guest_order(order_id, email).
 
   if (items.length === 0 && !orderComplete) {
     return (

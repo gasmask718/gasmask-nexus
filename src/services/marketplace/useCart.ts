@@ -4,6 +4,26 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { PricingTier, usePricing } from "./usePricing";
 
+// ── Guest cart persistence (B3.1) ─────────────────────────────────────────
+// Unauthenticated visitors get a localStorage-backed cart that survives
+// refresh. The shape mirrors the DB rows so the UI is identical.
+const GUEST_CART_KEY = "dd_guest_cart_v1";
+type GuestRow = { id: string; product_id: string; qty: number; price_locked: number | null };
+function readGuestCart(): GuestRow[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(GUEST_CART_KEY);
+    return raw ? (JSON.parse(raw) as GuestRow[]) : [];
+  } catch {
+    return [];
+  }
+}
+function writeGuestCart(rows: GuestRow[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(GUEST_CART_KEY, JSON.stringify(rows));
+  window.dispatchEvent(new Event("dd_guest_cart_changed"));
+}
+
 export interface CartItem {
   id: string;
   cart_id: string;
@@ -59,48 +79,58 @@ export function useCart() {
     return newCart.id;
   };
 
-  // Fetch cart items
+  // Fetch cart items (DB-backed for users, localStorage for guests)
   const cartQuery = useQuery({
-    queryKey: ['cart', user?.id],
+    queryKey: ["cart", user?.id ?? "guest"],
     queryFn: async () => {
-      if (!user) return [];
+      let items: GuestRow[] = [];
 
-      const { data: cart } = await supabase
-        .from('carts')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .single();
+      if (user) {
+        const { data: cart } = await supabase
+          .from("carts")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .single();
 
-      if (!cart) return [];
+        if (!cart) return [];
 
-      const { data: items, error } = await supabase
-        .from('cart_items')
-        .select('*')
-        .eq('cart_id', cart.id);
+        const { data: dbItems, error } = await supabase
+          .from("cart_items")
+          .select("*")
+          .eq("cart_id", cart.id);
+        if (error) throw error;
+        items = (dbItems ?? []).map((r: any) => ({
+          id: r.id,
+          product_id: r.product_id,
+          qty: r.qty || 1,
+          price_locked: r.price_locked,
+        }));
+      } else {
+        items = readGuestCart();
+      }
 
-      if (error) throw error;
-      if (!items || items.length === 0) return [];
+      if (items.length === 0) return [];
 
-      const productIds = items.map(i => i.product_id).filter(Boolean) as string[];
+      const productIds = items.map((i) => i.product_id).filter(Boolean);
 
-      // Try products_all first
       const { data: productsAll } = await supabase
-        .from('products_all')
-        .select('id, product_name, images, retail_price, store_price, wholesale_price, wholesaler_id, inventory_qty, weight_oz')
-        .in('id', productIds);
+        .from("products_all")
+        .select(
+          "id, product_name, images, retail_price, store_price, wholesale_price, wholesaler_id, inventory_qty, weight_oz",
+        )
+        .in("id", productIds);
 
-      // Also try products table for store products
       const { data: productsLocal } = await supabase
-        .from('products')
-        .select('id, name, image_url, wholesale_price, suggested_retail_price, store_price, weight_per_unit')
-        .in('id', productIds);
+        .from("products")
+        .select("id, name, image_url, wholesale_price, suggested_retail_price, store_price, weight_per_unit")
+        .in("id", productIds);
 
-      const productMap: Record<string, CartItem['product']> = {};
-      (productsAll || []).forEach(p => {
+      const productMap: Record<string, CartItem["product"]> = {};
+      (productsAll || []).forEach((p) => {
         productMap[p.id] = {
           id: p.id,
-          product_name: p.product_name || '',
+          product_name: p.product_name || "",
           images: Array.isArray(p.images) ? (p.images as string[]) : [],
           retail_price: p.retail_price,
           store_price: p.store_price,
@@ -110,11 +140,11 @@ export function useCart() {
           weight_oz: p.weight_oz,
         };
       });
-      (productsLocal || []).forEach(p => {
+      (productsLocal || []).forEach((p) => {
         if (!productMap[p.id]) {
           productMap[p.id] = {
             id: p.id,
-            product_name: p.name || '',
+            product_name: p.name || "",
             images: p.image_url ? [p.image_url] : [],
             retail_price: p.suggested_retail_price,
             store_price: p.store_price,
@@ -126,137 +156,156 @@ export function useCart() {
         }
       });
 
-      return items.map(item => ({
-        ...item,
-        qty: item.qty || 1,
-        product: item.product_id ? productMap[item.product_id] : undefined,
+      return items.map((item) => ({
+        id: item.id,
+        cart_id: user?.id ?? "guest",
+        product_id: item.product_id,
+        qty: item.qty,
+        price_locked: item.price_locked,
+        product: productMap[item.product_id],
       })) as CartItem[];
     },
-    enabled: !!user,
   });
 
   // Add to cart
   const addToCartMutation = useMutation({
-    mutationFn: async ({ 
-      productId, 
-      qty, 
+    mutationFn: async ({
+      productId,
+      qty,
       tier,
       priceLocked,
-    }: { 
-      productId: string; 
-      qty: number; 
+    }: {
+      productId: string;
+      qty: number;
       tier?: PricingTier;
       priceLocked?: number;
     }) => {
-      const cartId = await getOrCreateCart();
       const effectiveTier = tier || detectTierForUser();
 
       let price = priceLocked;
       if (price == null) {
-        // Try products_all first
         const { data: productAll } = await supabase
-          .from('products_all')
-          .select('retail_price, store_price, wholesale_price')
-          .eq('id', productId)
+          .from("products_all")
+          .select("retail_price, store_price, wholesale_price")
+          .eq("id", productId)
           .single();
-
         if (productAll) {
           price = getProductPriceForDisplay(productAll, effectiveTier);
         } else {
-          // Fallback to products table
           const { data: productLocal } = await supabase
-            .from('products')
-            .select('wholesale_price, suggested_retail_price, store_price')
-            .eq('id', productId)
+            .from("products")
+            .select("wholesale_price, suggested_retail_price, store_price")
+            .eq("id", productId)
             .single();
-
-          if (!productLocal) throw new Error('Product not found');
-          price = getProductPriceForDisplay({
-            retail_price: productLocal.suggested_retail_price,
-            store_price: productLocal.store_price,
-            wholesale_price: productLocal.wholesale_price,
-          }, effectiveTier);
+          if (!productLocal) throw new Error("Product not found");
+          price = getProductPriceForDisplay(
+            {
+              retail_price: productLocal.suggested_retail_price,
+              store_price: productLocal.store_price,
+              wholesale_price: productLocal.wholesale_price,
+            },
+            effectiveTier,
+          );
         }
       }
 
-      // Check if item already in cart
+      if (!user) {
+        // Guest path → localStorage
+        const rows = readGuestCart();
+        const existing = rows.find((r) => r.product_id === productId);
+        if (existing) {
+          existing.qty += qty;
+          existing.price_locked = price ?? existing.price_locked;
+        } else {
+          rows.push({
+            id: `g_${productId}_${Date.now()}`,
+            product_id: productId,
+            qty,
+            price_locked: price ?? null,
+          });
+        }
+        writeGuestCart(rows);
+        return;
+      }
+
+      const cartId = await getOrCreateCart();
       const { data: existingItem } = await supabase
-        .from('cart_items')
-        .select('id, qty')
-        .eq('cart_id', cartId)
-        .eq('product_id', productId)
+        .from("cart_items")
+        .select("id, qty")
+        .eq("cart_id", cartId)
+        .eq("product_id", productId)
         .single();
 
       if (existingItem) {
-        // Update quantity
         const { error } = await supabase
-          .from('cart_items')
+          .from("cart_items")
           .update({ qty: existingItem.qty + qty, price_locked: price })
-          .eq('id', existingItem.id);
-
+          .eq("id", existingItem.id);
         if (error) throw error;
       } else {
-        // Insert new item
-        const { error } = await supabase
-          .from('cart_items')
-          .insert({
-            cart_id: cartId,
-            product_id: productId,
-            qty,
-            price_locked: price,
-          });
-
+        const { error } = await supabase.from("cart_items").insert({
+          cart_id: cartId,
+          product_id: productId,
+          qty,
+          price_locked: price,
+        });
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
-      toast.success('Added to cart');
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      toast.success("Added to cart");
     },
     onError: (error) => {
       toast.error(`Failed to add to cart: ${error.message}`);
     },
   });
 
-  // Remove from cart
   const removeFromCartMutation = useMutation({
     mutationFn: async (itemId: string) => {
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('id', itemId);
-
+      if (!user) {
+        writeGuestCart(readGuestCart().filter((r) => r.id !== itemId));
+        return;
+      }
+      const { error } = await supabase.from("cart_items").delete().eq("id", itemId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
-      toast.success('Removed from cart');
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      toast.success("Removed from cart");
     },
   });
 
-  // Update quantity
   const updateQuantityMutation = useMutation({
     mutationFn: async ({ itemId, qty }: { itemId: string; qty: number }) => {
-      if (qty <= 0) {
-        return removeFromCartMutation.mutateAsync(itemId);
+      if (qty <= 0) return removeFromCartMutation.mutateAsync(itemId);
+      if (!user) {
+        const rows = readGuestCart();
+        const row = rows.find((r) => r.id === itemId);
+        if (row) {
+          row.qty = qty;
+          writeGuestCart(rows);
+        }
+        return;
       }
-
       const { error } = await supabase
-        .from('cart_items')
+        .from("cart_items")
         .update({ qty })
-        .eq('id', itemId);
-
+        .eq("id", itemId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
   });
 
   // Clear cart
   const clearCartMutation = useMutation({
     mutationFn: async () => {
-      if (!user) return;
+      if (!user) {
+        writeGuestCart([]);
+        return;
+      }
 
       const { data: cart } = await supabase
         .from('carts')
