@@ -4,6 +4,26 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { PricingTier, usePricing } from "./usePricing";
 
+// ── Guest cart persistence (B3.1) ─────────────────────────────────────────
+// Unauthenticated visitors get a localStorage-backed cart that survives
+// refresh. The shape mirrors the DB rows so the UI is identical.
+const GUEST_CART_KEY = "dd_guest_cart_v1";
+type GuestRow = { id: string; product_id: string; qty: number; price_locked: number | null };
+function readGuestCart(): GuestRow[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(GUEST_CART_KEY);
+    return raw ? (JSON.parse(raw) as GuestRow[]) : [];
+  } catch {
+    return [];
+  }
+}
+function writeGuestCart(rows: GuestRow[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(GUEST_CART_KEY, JSON.stringify(rows));
+  window.dispatchEvent(new Event("dd_guest_cart_changed"));
+}
+
 export interface CartItem {
   id: string;
   cart_id: string;
