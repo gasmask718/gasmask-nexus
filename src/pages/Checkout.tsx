@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/services/marketplace/useCart";
 import { useCheckout, ShippingAddress } from "@/services/marketplace/useCheckout";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
