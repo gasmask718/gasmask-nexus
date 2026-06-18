@@ -169,119 +169,133 @@ export function useCart() {
 
   // Add to cart
   const addToCartMutation = useMutation({
-    mutationFn: async ({ 
-      productId, 
-      qty, 
+    mutationFn: async ({
+      productId,
+      qty,
       tier,
       priceLocked,
-    }: { 
-      productId: string; 
-      qty: number; 
+    }: {
+      productId: string;
+      qty: number;
       tier?: PricingTier;
       priceLocked?: number;
     }) => {
-      const cartId = await getOrCreateCart();
       const effectiveTier = tier || detectTierForUser();
 
       let price = priceLocked;
       if (price == null) {
-        // Try products_all first
         const { data: productAll } = await supabase
-          .from('products_all')
-          .select('retail_price, store_price, wholesale_price')
-          .eq('id', productId)
+          .from("products_all")
+          .select("retail_price, store_price, wholesale_price")
+          .eq("id", productId)
           .single();
-
         if (productAll) {
           price = getProductPriceForDisplay(productAll, effectiveTier);
         } else {
-          // Fallback to products table
           const { data: productLocal } = await supabase
-            .from('products')
-            .select('wholesale_price, suggested_retail_price, store_price')
-            .eq('id', productId)
+            .from("products")
+            .select("wholesale_price, suggested_retail_price, store_price")
+            .eq("id", productId)
             .single();
-
-          if (!productLocal) throw new Error('Product not found');
-          price = getProductPriceForDisplay({
-            retail_price: productLocal.suggested_retail_price,
-            store_price: productLocal.store_price,
-            wholesale_price: productLocal.wholesale_price,
-          }, effectiveTier);
+          if (!productLocal) throw new Error("Product not found");
+          price = getProductPriceForDisplay(
+            {
+              retail_price: productLocal.suggested_retail_price,
+              store_price: productLocal.store_price,
+              wholesale_price: productLocal.wholesale_price,
+            },
+            effectiveTier,
+          );
         }
       }
 
-      // Check if item already in cart
+      if (!user) {
+        // Guest path → localStorage
+        const rows = readGuestCart();
+        const existing = rows.find((r) => r.product_id === productId);
+        if (existing) {
+          existing.qty += qty;
+          existing.price_locked = price ?? existing.price_locked;
+        } else {
+          rows.push({
+            id: `g_${productId}_${Date.now()}`,
+            product_id: productId,
+            qty,
+            price_locked: price ?? null,
+          });
+        }
+        writeGuestCart(rows);
+        return;
+      }
+
+      const cartId = await getOrCreateCart();
       const { data: existingItem } = await supabase
-        .from('cart_items')
-        .select('id, qty')
-        .eq('cart_id', cartId)
-        .eq('product_id', productId)
+        .from("cart_items")
+        .select("id, qty")
+        .eq("cart_id", cartId)
+        .eq("product_id", productId)
         .single();
 
       if (existingItem) {
-        // Update quantity
         const { error } = await supabase
-          .from('cart_items')
+          .from("cart_items")
           .update({ qty: existingItem.qty + qty, price_locked: price })
-          .eq('id', existingItem.id);
-
+          .eq("id", existingItem.id);
         if (error) throw error;
       } else {
-        // Insert new item
-        const { error } = await supabase
-          .from('cart_items')
-          .insert({
-            cart_id: cartId,
-            product_id: productId,
-            qty,
-            price_locked: price,
-          });
-
+        const { error } = await supabase.from("cart_items").insert({
+          cart_id: cartId,
+          product_id: productId,
+          qty,
+          price_locked: price,
+        });
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
-      toast.success('Added to cart');
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      toast.success("Added to cart");
     },
     onError: (error) => {
       toast.error(`Failed to add to cart: ${error.message}`);
     },
   });
 
-  // Remove from cart
   const removeFromCartMutation = useMutation({
     mutationFn: async (itemId: string) => {
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('id', itemId);
-
+      if (!user) {
+        writeGuestCart(readGuestCart().filter((r) => r.id !== itemId));
+        return;
+      }
+      const { error } = await supabase.from("cart_items").delete().eq("id", itemId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
-      toast.success('Removed from cart');
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      toast.success("Removed from cart");
     },
   });
 
-  // Update quantity
   const updateQuantityMutation = useMutation({
     mutationFn: async ({ itemId, qty }: { itemId: string; qty: number }) => {
-      if (qty <= 0) {
-        return removeFromCartMutation.mutateAsync(itemId);
+      if (qty <= 0) return removeFromCartMutation.mutateAsync(itemId);
+      if (!user) {
+        const rows = readGuestCart();
+        const row = rows.find((r) => r.id === itemId);
+        if (row) {
+          row.qty = qty;
+          writeGuestCart(rows);
+        }
+        return;
       }
-
       const { error } = await supabase
-        .from('cart_items')
+        .from("cart_items")
         .update({ qty })
-        .eq('id', itemId);
-
+        .eq("id", itemId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
   });
 
