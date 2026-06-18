@@ -428,15 +428,17 @@ export default function Checkout() {
                   <Button 
                     className="flex-1" 
                     onClick={handlePlaceOrder}
-                    disabled={isCreatingOrder}
+                    disabled={isCreatingOrder || isRedirecting}
                   >
-                    {isCreatingOrder ? (
+                    {isCreatingOrder || isRedirecting ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processing...
+                        {isRedirecting ? 'Redirecting to Stripe…' : 'Processing...'}
                       </>
                     ) : (
-                      `Place Order - $${totals.total.toFixed(2)}`
+                      paymentMethod === 'card'
+                        ? `Pay with Card - $${totals.total.toFixed(2)}`
+                        : `Place Order - $${totals.total.toFixed(2)}`
                     )}
                   </Button>
                 </CardFooter>
