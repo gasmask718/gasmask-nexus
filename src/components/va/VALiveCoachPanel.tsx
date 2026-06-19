@@ -32,12 +32,15 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [history, setHistory] = useState<Analysis[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [status, setStatus] = useState<'idle' | 'connecting' | 'listening' | 'thinking' | 'error'>('idle');
   const recogRef = useRef<SR | null>(null);
   const cumulativeRef = useRef('');
   const lastSentRef = useRef('');
   const tickerRef = useRef<NodeJS.Timeout | null>(null);
+  const activeRef = useRef(active);
+  useEffect(() => { activeRef.current = active; }, [active]);
 
-  // Setup recognizer once
   useEffect(() => {
     const W: any = window;
     const SpeechRecognition = W.SpeechRecognition || W.webkitSpeechRecognition;
