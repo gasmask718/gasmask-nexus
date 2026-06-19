@@ -71,17 +71,31 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
     };
     rec.onerror = (e: any) => {
       console.warn('SpeechRecognition err', e?.error);
-      // auto-restart on transient errors when active
-      if (active && e?.error !== 'not-allowed') {
+      if (e?.error === 'not-allowed' || e?.error === 'service-not-allowed') {
+        setErrorMsg('Microphone permission denied. Enable mic access to use Live Coach.');
+        setStatus('error');
+        return;
+      }
+      if (e?.error === 'network') {
+        setErrorMsg('Network drop detected — reconnecting…');
+        setStatus('connecting');
+      }
+      if (activeRef.current) {
         try { rec.start(); } catch {}
       }
     };
     rec.onend = () => {
-      if (active) {
-        try { rec.start(); } catch {}
+      if (activeRef.current) {
+        try { rec.start(); setStatus('listening'); } catch {}
       } else {
         setListening(false);
+        setStatus('idle');
       }
+    };
+    rec.onstart = () => {
+      setListening(true);
+      setStatus('listening');
+      setErrorMsg(null);
     };
     recogRef.current = rec;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -97,12 +111,16 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
       setPending('');
       setHistory([]);
       setAnalysis(null);
-      try { rec.start(); setListening(true); } catch {}
+      setErrorMsg(null);
+      setStatus('connecting');
+      try { rec.start(); } catch {}
     } else {
       try { rec.stop(); } catch {}
       setListening(false);
+      setStatus('idle');
     }
   }, [active]);
+
 
   // Analyzer ticker — every 6s send the new portion of the transcript
   useEffect(() => {
