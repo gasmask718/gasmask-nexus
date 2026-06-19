@@ -191,8 +191,18 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
           {analyzing && <span className="text-[10px] text-cyan-400 animate-pulse">analyzing…</span>}
         </div>
         {supported ? (
-          <Badge variant="outline" className={`text-[10px] gap-1 ${listening ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-muted-foreground'}`}>
-            <Mic className="h-3 w-3" /> {listening ? 'Listening' : 'Idle'}
+          <Badge variant="outline" className={`text-[10px] gap-1 ${
+            status === 'listening' ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' :
+            status === 'thinking' ? 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10' :
+            status === 'connecting' ? 'text-amber-400 border-amber-500/30 bg-amber-500/10 animate-pulse' :
+            status === 'error' ? 'text-red-400 border-red-500/30 bg-red-500/10' :
+            'text-muted-foreground'
+          }`}>
+            <Mic className="h-3 w-3" />
+            {status === 'connecting' ? 'Connecting…' :
+             status === 'thinking' ? 'Thinking…' :
+             status === 'listening' ? 'Listening' :
+             status === 'error' ? 'Reconnecting' : 'Idle'}
           </Badge>
         ) : (
           <Badge variant="outline" className="text-[10px] gap-1 text-amber-400 border-amber-500/30">
@@ -201,11 +211,19 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
         )}
       </div>
 
+      {errorMsg && (
+        <div className="rounded-lg bg-red-500/10 border border-red-500/30 px-3 py-2 text-xs text-red-200 flex items-start gap-2">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
       {!supported && (
         <p className="text-xs text-muted-foreground">
           Live transcription requires a Chromium-based browser. Recordings are still saved server-side.
         </p>
       )}
+
 
       <AnimatePresence mode="wait">
         {analysis && (
