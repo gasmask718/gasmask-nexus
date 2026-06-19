@@ -32,12 +32,15 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [history, setHistory] = useState<Analysis[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [status, setStatus] = useState<'idle' | 'connecting' | 'listening' | 'thinking' | 'error'>('idle');
   const recogRef = useRef<SR | null>(null);
   const cumulativeRef = useRef('');
   const lastSentRef = useRef('');
   const tickerRef = useRef<NodeJS.Timeout | null>(null);
+  const activeRef = useRef(active);
+  useEffect(() => { activeRef.current = active; }, [active]);
 
-  // Setup recognizer once
   useEffect(() => {
     const W: any = window;
     const SpeechRecognition = W.SpeechRecognition || W.webkitSpeechRecognition;
@@ -68,17 +71,31 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
     };
     rec.onerror = (e: any) => {
       console.warn('SpeechRecognition err', e?.error);
-      // auto-restart on transient errors when active
-      if (active && e?.error !== 'not-allowed') {
+      if (e?.error === 'not-allowed' || e?.error === 'service-not-allowed') {
+        setErrorMsg('Microphone permission denied. Enable mic access to use Live Coach.');
+        setStatus('error');
+        return;
+      }
+      if (e?.error === 'network') {
+        setErrorMsg('Network drop detected — reconnecting…');
+        setStatus('connecting');
+      }
+      if (activeRef.current) {
         try { rec.start(); } catch {}
       }
     };
     rec.onend = () => {
-      if (active) {
-        try { rec.start(); } catch {}
+      if (activeRef.current) {
+        try { rec.start(); setStatus('listening'); } catch {}
       } else {
         setListening(false);
+        setStatus('idle');
       }
+    };
+    rec.onstart = () => {
+      setListening(true);
+      setStatus('listening');
+      setErrorMsg(null);
     };
     recogRef.current = rec;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -94,12 +111,16 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
       setPending('');
       setHistory([]);
       setAnalysis(null);
-      try { rec.start(); setListening(true); } catch {}
+      setErrorMsg(null);
+      setStatus('connecting');
+      try { rec.start(); } catch {}
     } else {
       try { rec.stop(); } catch {}
       setListening(false);
+      setStatus('idle');
     }
   }, [active]);
+
 
   // Analyzer ticker — every 6s send the new portion of the transcript
   useEffect(() => {
@@ -114,6 +135,7 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
       lastSentRef.current = cumulative;
       const duration = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
       setAnalyzing(true);
+      setStatus('thinking');
       try {
         const { data, error } = await supabase.functions.invoke('va-live-coach', {
           body: {
@@ -126,15 +148,23 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
           },
         });
         if (error) throw error;
+        if (data?.error) throw new Error(data.error);
         if (data?.analysis) {
           setAnalysis(data.analysis);
           setHistory(h => [data.analysis, ...h].slice(0, 8));
+          setErrorMsg(null);
         }
-      } catch (e) {
+        setStatus('listening');
+      } catch (e: any) {
         console.warn('live-coach error', e);
+        setErrorMsg(e?.message || 'Coach service temporarily unavailable. Retrying…');
+        setStatus('error');
+        // allow retry on next tick by rolling back lastSent
+        lastSentRef.current = sent;
       } finally {
         setAnalyzing(false);
       }
+
     }, 6000);
     return () => { if (tickerRef.current) clearInterval(tickerRef.current); };
   }, [active, callLogId, leadId, leadName, startedAt]);
@@ -161,8 +191,18 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
           {analyzing && <span className="text-[10px] text-cyan-400 animate-pulse">analyzing…</span>}
         </div>
         {supported ? (
-          <Badge variant="outline" className={`text-[10px] gap-1 ${listening ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-muted-foreground'}`}>
-            <Mic className="h-3 w-3" /> {listening ? 'Listening' : 'Idle'}
+          <Badge variant="outline" className={`text-[10px] gap-1 ${
+            status === 'listening' ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' :
+            status === 'thinking' ? 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10' :
+            status === 'connecting' ? 'text-amber-400 border-amber-500/30 bg-amber-500/10 animate-pulse' :
+            status === 'error' ? 'text-red-400 border-red-500/30 bg-red-500/10' :
+            'text-muted-foreground'
+          }`}>
+            <Mic className="h-3 w-3" />
+            {status === 'connecting' ? 'Connecting…' :
+             status === 'thinking' ? 'Thinking…' :
+             status === 'listening' ? 'Listening' :
+             status === 'error' ? 'Reconnecting' : 'Idle'}
           </Badge>
         ) : (
           <Badge variant="outline" className="text-[10px] gap-1 text-amber-400 border-amber-500/30">
@@ -171,11 +211,19 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
         )}
       </div>
 
+      {errorMsg && (
+        <div className="rounded-lg bg-red-500/10 border border-red-500/30 px-3 py-2 text-xs text-red-200 flex items-start gap-2">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
       {!supported && (
         <p className="text-xs text-muted-foreground">
           Live transcription requires a Chromium-based browser. Recordings are still saved server-side.
         </p>
       )}
+
 
       <AnimatePresence mode="wait">
         {analysis && (
