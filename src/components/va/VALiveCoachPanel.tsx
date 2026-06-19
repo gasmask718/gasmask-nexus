@@ -135,6 +135,7 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
       lastSentRef.current = cumulative;
       const duration = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
       setAnalyzing(true);
+      setStatus('thinking');
       try {
         const { data, error } = await supabase.functions.invoke('va-live-coach', {
           body: {
@@ -147,15 +148,23 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
           },
         });
         if (error) throw error;
+        if (data?.error) throw new Error(data.error);
         if (data?.analysis) {
           setAnalysis(data.analysis);
           setHistory(h => [data.analysis, ...h].slice(0, 8));
+          setErrorMsg(null);
         }
-      } catch (e) {
+        setStatus('listening');
+      } catch (e: any) {
         console.warn('live-coach error', e);
+        setErrorMsg(e?.message || 'Coach service temporarily unavailable. Retrying…');
+        setStatus('error');
+        // allow retry on next tick by rolling back lastSent
+        lastSentRef.current = sent;
       } finally {
         setAnalyzing(false);
       }
+
     }, 6000);
     return () => { if (tickerRef.current) clearInterval(tickerRef.current); };
   }, [active, callLogId, leadId, leadName, startedAt]);
