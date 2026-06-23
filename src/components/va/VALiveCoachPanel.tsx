@@ -100,19 +100,21 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
       if (e?.error === 'not-allowed' || e?.error === 'service-not-allowed') {
         setErrorMsg('Microphone permission denied. Enable mic access to use Live Coach.');
         setStatus('error');
+        resetBackoff();
         return;
       }
-      if (e?.error === 'network') {
-        setErrorMsg('Network drop detected — reconnecting…');
-        setStatus('connecting');
+      if (e?.error === 'network' || e?.error === 'audio-capture' || e?.error === 'aborted') {
+        if (activeRef.current) scheduleRestart(rec);
+        return;
       }
-      if (activeRef.current) {
-        try { rec.start(); } catch {}
-      }
+      // Unknown soft error — back off rather than tight-loop.
+      if (activeRef.current) scheduleRestart(rec);
     };
     rec.onend = () => {
       if (activeRef.current) {
-        try { rec.start(); setStatus('listening'); } catch {}
+        // If a back-off is already pending, let it run; otherwise restart immediately.
+        if (retryTimerRef.current) return;
+        try { rec.start(); setStatus('listening'); } catch { scheduleRestart(rec); }
       } else {
         setListening(false);
         setStatus('idle');
@@ -122,6 +124,7 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
       setListening(true);
       setStatus('listening');
       setErrorMsg(null);
+      resetBackoff();
     };
     recogRef.current = rec;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -139,8 +142,10 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
       setAnalysis(null);
       setErrorMsg(null);
       setStatus('connecting');
+      resetBackoff();
       try { rec.start(); } catch {}
     } else {
+      resetBackoff();
       try { rec.stop(); } catch {}
       setListening(false);
       setStatus('idle');
