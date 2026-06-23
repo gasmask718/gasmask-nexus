@@ -39,7 +39,33 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
   const lastSentRef = useRef('');
   const tickerRef = useRef<NodeJS.Timeout | null>(null);
   const activeRef = useRef(active);
+  const retryAttemptRef = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => { activeRef.current = active; }, [active]);
+
+  // Non-blocking exponential back-off: 2s → 4s → 8s → 16s → 30s cap.
+  // Scheduled via setTimeout so it never stalls the UI thread or thrashes the mic.
+  const scheduleRestart = (rec: SR) => {
+    if (retryTimerRef.current) return; // already pending
+    const attempt = retryAttemptRef.current;
+    const delayMs = Math.min(2000 * Math.pow(2, attempt), 30000);
+    retryAttemptRef.current = attempt + 1;
+    setErrorMsg(`Network drop — reconnecting in ${Math.round(delayMs / 1000)}s…`);
+    setStatus('connecting');
+    retryTimerRef.current = setTimeout(() => {
+      retryTimerRef.current = null;
+      if (!activeRef.current) return;
+      try { rec.start(); } catch {}
+    }, delayMs);
+  };
+
+  const resetBackoff = () => {
+    retryAttemptRef.current = 0;
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+  };
 
   useEffect(() => {
     const W: any = window;
