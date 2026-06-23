@@ -1,0 +1,1 @@
+DELETE FROM public.dd_routing_pins WHERE reason IN ('B4 tier-1 simulation','B4 tier-2 simulation');
