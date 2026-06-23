@@ -39,7 +39,33 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
   const lastSentRef = useRef('');
   const tickerRef = useRef<NodeJS.Timeout | null>(null);
   const activeRef = useRef(active);
+  const retryAttemptRef = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => { activeRef.current = active; }, [active]);
+
+  // Non-blocking exponential back-off: 2s → 4s → 8s → 16s → 30s cap.
+  // Scheduled via setTimeout so it never stalls the UI thread or thrashes the mic.
+  const scheduleRestart = (rec: SR) => {
+    if (retryTimerRef.current) return; // already pending
+    const attempt = retryAttemptRef.current;
+    const delayMs = Math.min(2000 * Math.pow(2, attempt), 30000);
+    retryAttemptRef.current = attempt + 1;
+    setErrorMsg(`Network drop — reconnecting in ${Math.round(delayMs / 1000)}s…`);
+    setStatus('connecting');
+    retryTimerRef.current = setTimeout(() => {
+      retryTimerRef.current = null;
+      if (!activeRef.current) return;
+      try { rec.start(); } catch {}
+    }, delayMs);
+  };
+
+  const resetBackoff = () => {
+    retryAttemptRef.current = 0;
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+  };
 
   useEffect(() => {
     const W: any = window;
@@ -74,19 +100,21 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
       if (e?.error === 'not-allowed' || e?.error === 'service-not-allowed') {
         setErrorMsg('Microphone permission denied. Enable mic access to use Live Coach.');
         setStatus('error');
+        resetBackoff();
         return;
       }
-      if (e?.error === 'network') {
-        setErrorMsg('Network drop detected — reconnecting…');
-        setStatus('connecting');
+      if (e?.error === 'network' || e?.error === 'audio-capture' || e?.error === 'aborted') {
+        if (activeRef.current) scheduleRestart(rec);
+        return;
       }
-      if (activeRef.current) {
-        try { rec.start(); } catch {}
-      }
+      // Unknown soft error — back off rather than tight-loop.
+      if (activeRef.current) scheduleRestart(rec);
     };
     rec.onend = () => {
       if (activeRef.current) {
-        try { rec.start(); setStatus('listening'); } catch {}
+        // If a back-off is already pending, let it run; otherwise restart immediately.
+        if (retryTimerRef.current) return;
+        try { rec.start(); setStatus('listening'); } catch { scheduleRestart(rec); }
       } else {
         setListening(false);
         setStatus('idle');
@@ -96,6 +124,7 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
       setListening(true);
       setStatus('listening');
       setErrorMsg(null);
+      resetBackoff();
     };
     recogRef.current = rec;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -113,8 +142,10 @@ export function VALiveCoachPanel({ active, callLogId, leadId, leadName, startedA
       setAnalysis(null);
       setErrorMsg(null);
       setStatus('connecting');
+      resetBackoff();
       try { rec.start(); } catch {}
     } else {
+      resetBackoff();
       try { rec.stop(); } catch {}
       setListening(false);
       setStatus('idle');
