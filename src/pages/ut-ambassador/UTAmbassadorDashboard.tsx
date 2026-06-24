@@ -62,8 +62,32 @@ export default function UTAmbassadorDashboard() {
         amb = ambByEmail;
       }
 
+      // Self-heal: if user has the ambassador role but no UT row (or row is not active),
+      // call the bridge RPC to provision/activate, then refetch.
+      const needsBridge = !amb || amb.status !== 'active';
+      if (needsBridge) {
+        const { data: roleRow } = await (supabase as any)
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'ambassador')
+          .maybeSingle();
+        if (roleRow) {
+          const { error: bridgeErr } = await (supabase as any).rpc('bridge_ambassador_role_to_ut', { _user_id: user.id });
+          if (!bridgeErr) {
+            const { data: refetched } = await (supabase as any)
+              .from('unforgettable_ambassadors')
+              .select('*')
+              .eq('auth_user_id', user.id)
+              .maybeSingle();
+            if (refetched) amb = refetched;
+          }
+        }
+      }
+
       if (!amb) { setNotApproved(true); setLoading(false); return; }
       if (amb.status !== 'active') { setNotApproved(true); setAmbassador(amb); setLoading(false); return; }
+
 
       setAmbassador(amb);
 

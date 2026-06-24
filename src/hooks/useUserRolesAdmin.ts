@@ -57,15 +57,27 @@ export function useUserRolesAdmin() {
   });
 }
 
+async function bridgeAmbassadorIfNeeded(role: string, user_id: string) {
+  if (role !== "ambassador") return;
+  const { error } = await (supabase as any).rpc("bridge_ambassador_role_to_ut", { _user_id: user_id });
+  if (error) {
+    console.warn("[bridge_ambassador_role_to_ut] failed", error);
+    toast.warning("Role assigned, but UT ambassador activation failed: " + error.message);
+  }
+}
+
 export function useUpdateUserRole() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, role, role_name }: { id: string; role: string; role_name?: string }) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("user_roles")
         .update({ role: role as any, role_name: role_name ?? null })
-        .eq("id", id);
+        .eq("id", id)
+        .select("user_id, role")
+        .single();
       if (error) throw error;
+      await bridgeAmbassadorIfNeeded(role, data.user_id);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-user-roles"] }); toast.success("Role updated"); },
     onError: (e: Error) => toast.error(e.message),
@@ -92,8 +104,10 @@ export function useAddUserRole() {
         .from("user_roles")
         .insert({ user_id, role: role as any, role_name: role_name ?? null });
       if (error) throw error;
+      await bridgeAmbassadorIfNeeded(role, user_id);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-user-roles"] }); qc.invalidateQueries({ queryKey: ["admin-users"] }); toast.success("Role assigned"); },
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
