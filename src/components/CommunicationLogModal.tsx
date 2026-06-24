@@ -235,6 +235,29 @@ export function CommunicationLogModal({
             </Select>
           </div>
 
+          {channel === 'sms' && entityType === 'store' && (
+            <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3">
+              <Checkbox
+                id="send-now"
+                checked={sendNow}
+                disabled={!entityPhone}
+                onCheckedChange={(v) => setSendNow(v === true)}
+                className="mt-0.5"
+              />
+              <div className="space-y-1">
+                <Label htmlFor="send-now" className="flex items-center gap-1.5 cursor-pointer">
+                  <Send className="h-3.5 w-3.5" />
+                  Send SMS via Twilio now
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {entityPhone
+                    ? `Will text ${entityPhone} and post to the timeline.`
+                    : 'No store phone on file — add one to enable live SMS.'}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="notes">Notes *</Label>
