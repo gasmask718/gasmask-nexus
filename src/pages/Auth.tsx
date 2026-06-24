@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { useAuth, useMarkManualSignIn } from '@/contexts/AuthContext';
@@ -77,7 +77,7 @@ const Auth = () => {
       password,
       options: {
         data: { name },
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: `${window.location.origin}/pending-approval`,
       },
     });
 
@@ -180,10 +180,18 @@ const Auth = () => {
                 >
                   {loading ? 'Signing in...' : 'Sign In'}
                 </Button>
+                <div className="text-center">
+                  <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-foreground">
+                    Forgot password?
+                  </Link>
+                </div>
               </form>
             </TabsContent>
 
             <TabsContent value="signup">
+              <p className="text-xs text-muted-foreground mb-4 text-center">
+                New accounts require admin approval before gaining portal access.
+              </p>
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Name</Label>
