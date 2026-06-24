@@ -35,6 +35,8 @@ interface CommunicationLogModalProps {
   entityType: 'store' | 'wholesaler' | 'influencer';
   entityId: string;
   entityName: string;
+  /** When provided and channel=sms, enables the "Send SMS via Twilio now" composer. */
+  entityPhone?: string;
   onSuccess?: () => void;
 }
 
@@ -44,18 +46,22 @@ export function CommunicationLogModal({
   entityType,
   entityId,
   entityName,
+  entityPhone,
   onSuccess,
 }: CommunicationLogModalProps) {
   const [loading, setLoading] = useState(false);
   const [channel, setChannel] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [followUpDate, setFollowUpDate] = useState<Date | undefined>();
+  const [sendNow, setSendNow] = useState(false);
 
   const resetForm = () => {
     setChannel('');
     setNotes('');
     setFollowUpDate(undefined);
+    setSendNow(false);
   };
+
 
   const handleSubmit = async () => {
     if (!channel) {
