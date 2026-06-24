@@ -690,6 +690,7 @@ const StoreDetail = () => {
         entityType="store"
         entityId={id || ""}
         entityName={store.name}
+        entityPhone={store.phone || store.alt_phone || undefined}
         onSuccess={() => setTimelineRefresh((prev) => prev + 1)}
       />
 
