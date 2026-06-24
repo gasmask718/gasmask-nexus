@@ -3407,6 +3407,16 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
 
+      {/* Twilio / Toll-Free Test Console - Admin Only */}
+      <Route path="/admin/twilio-test" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']}>
+            <Layout><TwilioTestConsole /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
+
       {/* Ambassador Payouts */}
       <Route path="/ambassador/payouts" element={
         <ProtectedRoute>
