@@ -88,10 +88,58 @@ export function CommunicationLogModal({
         return;
       }
 
+      // ── Live SMS send path ─────────────────────────────────────────
+      // When the user opts to actually fire the SMS, invoke send-sms and
+      // mirror the outbound into communication_logs so CommunicationTimelineCRM
+      // (which subscribes to that table) updates instantly.
+      const wantsLiveSend =
+        sendNow && channel === 'sms' && entityType === 'store' && !!entityPhone;
+
+      if (wantsLiveSend) {
+        const idempotency_key = `manual-${entityId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const { data: smsResp, error: smsErr } = await supabase.functions.invoke('send-sms', {
+          body: {
+            to_number: entityPhone,
+            message_body: notes.trim(),
+            idempotency_key,
+            store_id: entityId,
+            metadata: { source: 'store_profile_composer', user_id: user.id },
+          },
+        });
+
+        if (smsErr) throw smsErr;
+        const ok = (smsResp as any)?.success !== false && (smsResp as any)?.status !== 'blocked';
+        if (!ok) {
+          const reason = (smsResp as any)?.reason || (smsResp as any)?.error || 'unknown';
+          toast.error(`SMS not delivered: ${reason}`);
+          return;
+        }
+
+        // Mirror into communication_logs so the timeline reflects it now
+        const { error: logErr } = await supabase.from('communication_logs').insert({
+          store_id: entityId,
+          channel: 'sms',
+          direction: 'outbound',
+          message_content: notes.trim(),
+          recipient_phone: entityPhone,
+          summary: 'Manual SMS from store profile',
+          created_by: user.id,
+          twilio_sid: (smsResp as any)?.provider_message_id ?? null,
+        });
+        if (logErr) console.warn('communication_logs mirror failed:', logErr.message);
+
+        toast.success('SMS sent');
+        resetForm();
+        onOpenChange(false);
+        onSuccess?.();
+        return;
+      }
+
       const payload: Record<string, any> = {};
       if (followUpDate) {
         payload.follow_up_date = followUpDate.toISOString();
       }
+
 
       const { error } = await supabase
         .from('communication_events')
