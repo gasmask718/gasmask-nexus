@@ -189,9 +189,6 @@ const Auth = () => {
             </TabsContent>
 
             <TabsContent value="signup">
-              <p className="text-xs text-muted-foreground mb-4 text-center">
-                New accounts require admin approval before gaining portal access.
-              </p>
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Name</Label>
