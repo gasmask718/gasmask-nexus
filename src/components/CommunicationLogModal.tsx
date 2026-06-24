@@ -323,10 +323,10 @@ export function CommunicationLogModal({
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Logging...
+                {sendNow ? 'Sending...' : 'Logging...'}
               </>
             ) : (
-              'Log Communication'
+              sendNow ? 'Send SMS' : 'Log Communication'
             )}
           </Button>
         </div>
