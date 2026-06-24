@@ -23,7 +23,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, Send } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { TemplateSelector } from '@/components/communication/TemplateSelector';
@@ -34,6 +35,8 @@ interface CommunicationLogModalProps {
   entityType: 'store' | 'wholesaler' | 'influencer';
   entityId: string;
   entityName: string;
+  /** When provided and channel=sms, enables the "Send SMS via Twilio now" composer. */
+  entityPhone?: string;
   onSuccess?: () => void;
 }
 
@@ -43,18 +46,22 @@ export function CommunicationLogModal({
   entityType,
   entityId,
   entityName,
+  entityPhone,
   onSuccess,
 }: CommunicationLogModalProps) {
   const [loading, setLoading] = useState(false);
   const [channel, setChannel] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [followUpDate, setFollowUpDate] = useState<Date | undefined>();
+  const [sendNow, setSendNow] = useState(false);
 
   const resetForm = () => {
     setChannel('');
     setNotes('');
     setFollowUpDate(undefined);
+    setSendNow(false);
   };
+
 
   const handleSubmit = async () => {
     if (!channel) {
@@ -81,10 +88,58 @@ export function CommunicationLogModal({
         return;
       }
 
+      // ── Live SMS send path ─────────────────────────────────────────
+      // When the user opts to actually fire the SMS, invoke send-sms and
+      // mirror the outbound into communication_logs so CommunicationTimelineCRM
+      // (which subscribes to that table) updates instantly.
+      const wantsLiveSend =
+        sendNow && channel === 'sms' && entityType === 'store' && !!entityPhone;
+
+      if (wantsLiveSend) {
+        const idempotency_key = `manual-${entityId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const { data: smsResp, error: smsErr } = await supabase.functions.invoke('send-sms', {
+          body: {
+            to_number: entityPhone,
+            message_body: notes.trim(),
+            idempotency_key,
+            store_id: entityId,
+            metadata: { source: 'store_profile_composer', user_id: user.id },
+          },
+        });
+
+        if (smsErr) throw smsErr;
+        const ok = (smsResp as any)?.success !== false && (smsResp as any)?.status !== 'blocked';
+        if (!ok) {
+          const reason = (smsResp as any)?.reason || (smsResp as any)?.error || 'unknown';
+          toast.error(`SMS not delivered: ${reason}`);
+          return;
+        }
+
+        // Mirror into communication_logs so the timeline reflects it now
+        const { error: logErr } = await supabase.from('communication_logs').insert({
+          store_id: entityId,
+          channel: 'sms',
+          direction: 'outbound',
+          message_content: notes.trim(),
+          recipient_phone: entityPhone,
+          summary: 'Manual SMS from store profile',
+          created_by: user.id,
+          twilio_sid: (smsResp as any)?.provider_message_id ?? null,
+        });
+        if (logErr) console.warn('communication_logs mirror failed:', logErr.message);
+
+        toast.success('SMS sent');
+        resetForm();
+        onOpenChange(false);
+        onSuccess?.();
+        return;
+      }
+
       const payload: Record<string, any> = {};
       if (followUpDate) {
         payload.follow_up_date = followUpDate.toISOString();
       }
+
 
       const { error } = await supabase
         .from('communication_events')
@@ -180,6 +235,29 @@ export function CommunicationLogModal({
             </Select>
           </div>
 
+          {channel === 'sms' && entityType === 'store' && (
+            <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3">
+              <Checkbox
+                id="send-now"
+                checked={sendNow}
+                disabled={!entityPhone}
+                onCheckedChange={(v) => setSendNow(v === true)}
+                className="mt-0.5"
+              />
+              <div className="space-y-1">
+                <Label htmlFor="send-now" className="flex items-center gap-1.5 cursor-pointer">
+                  <Send className="h-3.5 w-3.5" />
+                  Send SMS via Twilio now
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {entityPhone
+                    ? `Will text ${entityPhone} and post to the timeline.`
+                    : 'No store phone on file — add one to enable live SMS.'}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="notes">Notes *</Label>
@@ -245,10 +323,10 @@ export function CommunicationLogModal({
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Logging...
+                {sendNow ? 'Sending...' : 'Logging...'}
               </>
             ) : (
-              'Log Communication'
+              sendNow ? 'Send SMS' : 'Log Communication'
             )}
           </Button>
         </div>
