@@ -120898,6 +120898,10 @@ export type Database = {
         Args: { p_business_id: string; p_now_ts?: string }
         Returns: Json
       }
+      bridge_ambassador_role_to_ut: {
+        Args: { _user_id: string }
+        Returns: string
+      }
       bulk_approve_commissions: {
         Args: { p_ambassador_id?: string; p_before_date?: string }
         Returns: number
