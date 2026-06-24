@@ -77,7 +77,7 @@ const Auth = () => {
       password,
       options: {
         data: { name },
-        emailRedirectTo: `${window.location.origin}/pending-approval`,
+        emailRedirectTo: `${window.location.origin}/`,
       },
     });
 
