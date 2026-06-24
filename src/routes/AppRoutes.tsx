@@ -206,6 +206,7 @@ const DeletedRecords = lazy(() => import('@/pages/admin/DeletedRecords'));
 const QACommandCenter = lazy(() => import('@/pages/admin/qa/QACommandCenter'));
 const AmbassadorApplications = lazy(() => import('@/pages/admin/AmbassadorApplications'));
 const SmsSystemTests = lazy(() => import('@/pages/admin/SmsSystemTests'));
+const TwilioTestConsole = lazy(() => import('@/pages/admin/TwilioTestConsole'));
 const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
 
 // VA Portal
