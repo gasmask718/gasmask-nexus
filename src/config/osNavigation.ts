@@ -30,7 +30,8 @@ export type OSRole =
   | 'customer'
   | 'user'
   | 'accountant'
-  | 'csr';
+  | 'csr'
+  | 'pending';
 
 // Brand Configuration
 export const DYNASTY_BRANDS = {
@@ -779,6 +780,7 @@ export function getPortalForRole(role: OSRole): PortalConfig | undefined {
 }
 
 export function getRoleRedirectPath(role: OSRole): string {
+  if (role === 'pending') return '/pending-approval';
   const normalizedRole = role === 'store_owner' ? 'store' : role;
   const portal = getPortalForRole(normalizedRole);
   return portal?.path || '/portal/home';

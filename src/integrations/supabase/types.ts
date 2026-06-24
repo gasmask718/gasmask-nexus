@@ -123026,6 +123026,7 @@ export type Database = {
         | "creator"
         | "va"
         | "production"
+        | "pending"
       bet_result: "pending" | "win" | "loss" | "push" | "void"
       bet_status: "simulated" | "approved" | "rejected" | "executed"
       brand_contact_role:
@@ -123661,6 +123662,7 @@ export const Constants = {
         "creator",
         "va",
         "production",
+        "pending",
       ],
       bet_result: ["pending", "win", "loss", "push", "void"],
       bet_status: ["simulated", "approved", "rejected", "executed"],
