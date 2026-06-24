@@ -34,6 +34,9 @@ const LandingPage = lazy(() => import('@/pages/public/LandingPage'));
 const AboutPage = lazy(() => import('@/pages/public/AboutPage'));
 const ContactPage = lazy(() => import('@/pages/public/ContactPage'));
 const Auth = lazy(() => import('@/pages/Auth'));
+const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
+const PendingApproval = lazy(() => import('@/pages/PendingApproval'));
 const Shop = lazy(() => import('@/pages/Shop'));
 const ShopifyStore = lazy(() => import('@/pages/ShopifyStore'));
 const Cart = lazy(() => import('@/pages/Cart'));
@@ -1228,6 +1231,9 @@ export default function AppRoutes() {
       <Route path="/partner/portal" element={<ProtectedRoute><PartnerPortal /></ProtectedRoute>} />
       <Route path="/admin/partners/import" element={<PartnersImport />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
       <Route path="/store-signup" element={<StoreSignupPage />} />
       <Route path="/auth/intake" element={<PublicIntakePage />} />
       <Route path="/auth/intake/:token" element={<PublicIntakePage />} />
