@@ -386,7 +386,7 @@ export function CommunicationLogModal({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || (channel === 'sms' && optedOut && sendNow)}
             className="bg-primary hover:bg-primary-hover"
           >
             {loading ? (
