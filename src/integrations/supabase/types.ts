@@ -102255,6 +102255,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ut_kit_weights: {
+        Row: {
+          confirmed_by_supplier: boolean
+          created_at: string
+          dimensions: string | null
+          id: string
+          kit_name: string
+          kit_sku: string
+          notes: string | null
+          updated_at: string
+          weight_kg: number
+        }
+        Insert: {
+          confirmed_by_supplier?: boolean
+          created_at?: string
+          dimensions?: string | null
+          id?: string
+          kit_name: string
+          kit_sku: string
+          notes?: string | null
+          updated_at?: string
+          weight_kg?: number
+        }
+        Update: {
+          confirmed_by_supplier?: boolean
+          created_at?: string
+          dimensions?: string | null
+          id?: string
+          kit_name?: string
+          kit_sku?: string
+          notes?: string | null
+          updated_at?: string
+          weight_kg?: number
+        }
+        Relationships: []
+      }
       ut_lead_sources: {
         Row: {
           api_key_configured: boolean | null
@@ -106398,6 +106434,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ut_shipping_rates: {
+        Row: {
+          active: boolean
+          base_fee: number
+          carrier: string
+          created_at: string
+          currency: string
+          id: string
+          notes: string | null
+          per_kg_rate: number
+          service_level: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          base_fee?: number
+          carrier: string
+          created_at?: string
+          currency?: string
+          id?: string
+          notes?: string | null
+          per_kg_rate?: number
+          service_level?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          base_fee?: number
+          carrier?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          notes?: string | null
+          per_kg_rate?: number
+          service_level?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       ut_staff: {
         Row: {
