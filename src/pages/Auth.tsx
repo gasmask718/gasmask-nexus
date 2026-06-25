@@ -191,10 +191,18 @@ const Auth = () => {
                 >
                   {loading ? 'Signing in...' : 'Sign In'}
                 </Button>
-                <div className="text-center">
-                  <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-foreground">
+                <div className="flex items-center justify-between text-sm">
+                  <Link to="/forgot-password" className="text-muted-foreground hover:text-foreground">
                     Forgot password?
                   </Link>
+                  <button
+                    type="button"
+                    onClick={handleResendConfirmation}
+                    disabled={loading}
+                    className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+                  >
+                    Resend confirmation email
+                  </button>
                 </div>
               </form>
             </TabsContent>
