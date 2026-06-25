@@ -23,9 +23,25 @@ const totals = REVENUE_DATA.reduce((acc, r) => ({
   payouts: acc.payouts + r.payouts,
 }), { bookings: 0, gross: 0, fee: 0, payouts: 0 });
 
-
 export default function UFTRevenue() {
-  return (
+  const { data: metrics, isLoading, error } = useQuery({
+    queryKey: ['uft-platform-metrics'],
+    queryFn: getUFTPlatformMetrics,
+  });
+
+  const grossRevenue = metrics?.total_revenue ?? totals.gross;
+  const platformFee = grossRevenue * 0.15;
+  const bookingCount = metrics?.total_bookings ?? totals.bookings;
+  const avgBooking = bookingCount > 0 ? grossRevenue / bookingCount : 0;
+  const payouts = grossRevenue - platformFee;
+
+  const stats = [
+    { label: 'Total Gross Revenue', value: formatCurrency(grossRevenue), icon: DollarSign, color: 'text-green-400' },
+    { label: 'Platform Fees (15%)', value: formatCurrency(platformFee), icon: TrendingUp, color: 'text-purple-400' },
+    { label: 'Avg Booking Value', value: formatCurrency(avgBooking), icon: CreditCard, color: 'text-blue-400' },
+    { label: 'Vendor Payouts', value: formatCurrency(payouts), icon: Wallet, color: 'text-orange-400' },
+  ];
+
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
