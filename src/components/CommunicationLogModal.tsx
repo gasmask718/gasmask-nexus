@@ -283,12 +283,27 @@ export function CommunicationLogModal({
             </Select>
           </div>
 
-          {channel === 'sms' && entityType === 'store' && (
+          {channel === 'sms' && optedOut && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3">
+              <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <Badge variant="destructive" className="text-xs">TCPA Compliance</Badge>
+                <p className="text-sm font-medium text-destructive">
+                  Cannot send SMS: User opted out (TCPA Compliance).
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {entityPhone} replied STOP or is on the do-not-contact list. Texting is disabled until they opt back in.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {channel === 'sms' && entityType === 'store' && !optedOut && (
             <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3">
               <Checkbox
                 id="send-now"
                 checked={sendNow}
-                disabled={!entityPhone}
+                disabled={!entityPhone || optOutChecking}
                 onCheckedChange={(v) => setSendNow(v === true)}
                 className="mt-0.5"
               />
@@ -315,7 +330,12 @@ export function CommunicationLogModal({
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Enter communication details..."
+              placeholder={
+                channel === 'sms' && optedOut
+                  ? 'SMS disabled — recipient opted out.'
+                  : 'Enter communication details...'
+              }
+              disabled={channel === 'sms' && optedOut}
               className="min-h-[120px] resize-none bg-background"
               maxLength={1000}
             />
@@ -323,6 +343,7 @@ export function CommunicationLogModal({
               {notes.length}/1000 characters
             </p>
           </div>
+
 
           <div className="space-y-2">
             <Label>Follow-up Date (Optional)</Label>
