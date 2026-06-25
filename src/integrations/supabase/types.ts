@@ -31193,6 +31193,7 @@ export type Database = {
           follow_up_required: boolean | null
           full_message: string | null
           id: string
+          idempotency_key: string | null
           influencer_id: string | null
           message_content: string | null
           notes: string | null
@@ -31250,6 +31251,7 @@ export type Database = {
           follow_up_required?: boolean | null
           full_message?: string | null
           id?: string
+          idempotency_key?: string | null
           influencer_id?: string | null
           message_content?: string | null
           notes?: string | null
@@ -31307,6 +31309,7 @@ export type Database = {
           follow_up_required?: boolean | null
           full_message?: string | null
           id?: string
+          idempotency_key?: string | null
           influencer_id?: string | null
           message_content?: string | null
           notes?: string | null
