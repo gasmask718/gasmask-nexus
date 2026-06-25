@@ -225,7 +225,7 @@ export function CommunicationLogModal({
       if (entityType === 'store') mirrorRow.store_id = entityId;
       else if (entityType === 'wholesaler') mirrorRow.wholesaler_id = entityId;
       else if (entityType === 'influencer') mirrorRow.influencer_id = entityId;
-      const { error: mirrorErr } = await supabase.from('communication_logs').insert(mirrorRow);
+      const { error: mirrorErr } = await supabase.from('communication_logs').insert(mirrorRow as any);
       if (mirrorErr) console.warn('communication_logs mirror (manual) failed:', mirrorErr.message);
 
 
