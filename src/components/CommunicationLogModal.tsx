@@ -290,6 +290,21 @@ export function CommunicationLogModal({
         <DialogHeader>
           <DialogTitle>Log Communication - {entityName}</DialogTitle>
         </DialogHeader>
+          {channel === 'sms' && !entityPhone && (
+            <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
+              <ShieldAlert className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <Badge variant="outline" className="text-xs border-amber-500/60 text-amber-700">No phone on file</Badge>
+                <p className="text-sm font-medium text-amber-700">
+                  SMS is unavailable for this {entityType}.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Add a phone number to the {entityType} profile before sending text messages. You can still log this conversation as a manual note.
+                </p>
+              </div>
+            </div>
+          )}
+
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
