@@ -27,24 +27,16 @@ const Auth = () => {
 
   useEffect(() => {
     if (!user) return;
-
-    // Developer-only accounts go straight to /developer
-    const DEV_ONLY_EMAILS = ['dev@gmail.com'];
-    if (user.email && DEV_ONLY_EMAILS.includes(user.email)) {
-      navigate('/developer', { replace: true });
-      return;
-    }
-
     if (profileLoading) return;
 
-    // If user has a profile with a role, redirect to their portal
+    // Role-based routing — no hardcoded email lists.
     if (profileData?.profile?.primary_role) {
       const role = profileData.profile.primary_role as OSRole;
       const redirectPath = getRoleRedirectPath(role);
       navigate(redirectPath, { replace: true });
     } else {
-      // No profile/role — go to main dashboard or onboarding
-      navigate('/', { replace: true });
+      // No profile/role yet — show pending-approval screen
+      navigate('/pending-approval', { replace: true });
     }
   }, [user, profileData, profileLoading, navigate]);
 
@@ -84,7 +76,26 @@ const Auth = () => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Account created! You can now sign in.');
+      toast.success('Check your email to confirm, then wait for admin approval.');
+    }
+    setLoading(false);
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      toast.error('Enter your email above first.');
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/` },
+    });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Confirmation email resent. Check your inbox.');
     }
     setLoading(false);
   };
