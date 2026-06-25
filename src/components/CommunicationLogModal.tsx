@@ -55,12 +55,54 @@ export function CommunicationLogModal({
   const [notes, setNotes] = useState('');
   const [followUpDate, setFollowUpDate] = useState<Date | undefined>();
   const [sendNow, setSendNow] = useState(false);
+  const [optedOut, setOptedOut] = useState<boolean>(false);
+  const [optOutChecking, setOptOutChecking] = useState<boolean>(false);
+
+  // TCPA: check opt-out status whenever the SMS channel is selected for a phone.
+  useEffect(() => {
+    let cancelled = false;
+    const normalize = (raw: string) => {
+      const digits = raw.replace(/\D/g, '');
+      if (!digits) return null;
+      if (raw.trim().startsWith('+')) return `+${digits}`;
+      if (digits.length === 10) return `+1${digits}`;
+      if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+      return `+${digits}`;
+    };
+
+    const check = async () => {
+      if (channel !== 'sms' || !entityPhone) {
+        setOptedOut(false);
+        return;
+      }
+      setOptOutChecking(true);
+      const norm = normalize(entityPhone);
+      const candidates = Array.from(new Set([entityPhone, norm].filter(Boolean))) as string[];
+
+      const [dnc, optOut] = await Promise.all([
+        supabase.from('dnc_list').select('id').in('phone_number', candidates).limit(1),
+        supabase.from('opt_out_events').select('id').in('phone_number', candidates).limit(1),
+      ]);
+
+      if (cancelled) return;
+      const blocked = (dnc.data?.length ?? 0) > 0 || (optOut.data?.length ?? 0) > 0;
+      setOptedOut(blocked);
+      if (blocked) setSendNow(false);
+      setOptOutChecking(false);
+    };
+
+    check();
+    return () => {
+      cancelled = true;
+    };
+  }, [channel, entityPhone]);
 
   const resetForm = () => {
     setChannel('');
     setNotes('');
     setFollowUpDate(undefined);
     setSendNow(false);
+    setOptedOut(false);
   };
 
 
