@@ -44,6 +44,10 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function UFTVendors() {
   const [search, setSearch] = useState('');
+  const { data: metrics, isLoading, error } = useQuery({
+    queryKey: ['uft-platform-metrics'],
+    queryFn: getUFTPlatformMetrics,
+  });
 
   const filtered = DEMO_VENDORS.filter(
     (v) => v.name.toLowerCase().includes(search.toLowerCase()) || v.city.toLowerCase().includes(search.toLowerCase())
@@ -58,6 +62,32 @@ export default function UFTVendors() {
           <p className="text-sm text-muted-foreground">Unforgettable Times vendor directory</p>
         </div>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-300">
+          <AlertCircle className="h-4 w-4" /> Live UFT vendor metrics unavailable — showing demo directory.
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card><CardContent className="p-4">
+          <p className="text-xs text-muted-foreground">Total Vendors</p>
+          {isLoading ? <Skeleton className="h-7 w-20 mt-1" /> : <p className="text-2xl font-bold">{metrics?.total_vendors ?? DEMO_VENDORS.length}</p>}
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-xs text-muted-foreground">Total Bookings</p>
+          {isLoading ? <Skeleton className="h-7 w-20 mt-1" /> : <p className="text-2xl font-bold">{metrics?.total_bookings ?? 0}</p>}
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-xs text-muted-foreground">Total Revenue</p>
+          {isLoading ? <Skeleton className="h-7 w-24 mt-1" /> : <p className="text-2xl font-bold">{formatCurrency(metrics?.total_revenue ?? 0)}</p>}
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-xs text-muted-foreground">Conversion Rate</p>
+          {isLoading ? <Skeleton className="h-7 w-16 mt-1" /> : <p className="text-2xl font-bold">{(metrics?.conversion_rate ?? 0).toFixed(1)}%</p>}
+        </CardContent></Card>
+      </div>
+
 
       <div className="flex gap-3">
         <div className="relative flex-1 max-w-sm">
