@@ -160,6 +160,11 @@ interface SendRequest {
   skip_cooldown?: boolean;
   metadata?: Record<string, any>;
   from_number?: string;
+  /** Purpose tag used for analytics, dashboards, and downstream routing */
+  /** Examples: "manual", "bland_outreach", "relay_toptier", "bulk_blast", "ambassador", "approval" */
+  purpose?: string;
+  /** Optional template identifier — purely metadata, the caller pre-renders message_body */
+  template_id?: string;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -194,8 +199,14 @@ serve(async (req: Request) => {
   try {
     // ── 1. Parse & Validate ──────────────────────────────────────────
     const body: SendRequest = await req.json();
-    const { to_number, message_body, idempotency_key, store_id, campaign_id, explicit_provider, skip_cooldown, metadata, from_number } = body;
+    const { to_number, message_body, idempotency_key, store_id, campaign_id, explicit_provider, skip_cooldown, metadata, from_number, purpose, template_id } = body;
     const fromOverride = from_number ? normalizePhone(from_number) : undefined;
+    // Merge purpose/template_id into metadata so downstream analytics see them
+    const enrichedMetadata: Record<string, any> = {
+      ...(metadata || {}),
+      ...(purpose ? { purpose } : {}),
+      ...(template_id ? { template_id } : {}),
+    };
 
     if (!to_number || !message_body || !idempotency_key) {
       return respond(400, { error: "Missing required fields: to_number, message_body, idempotency_key" });
