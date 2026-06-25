@@ -87,7 +87,18 @@ async function sendViaTwilio(to: string, body: string, fromOverride?: string): P
       });
       const data = await res.json();
       if (res.ok) {
-        return { success: true, provider_message_id: data.sid, raw_response: { ...data, auth_mode: auth.label } };
+        // Twilio accepted the request, but the Message resource may already
+        // carry an error_code (e.g. queued+30007, undelivered+30034). Surface
+        // it so the caller can show the partial-success status to operators.
+        const partialError = data?.error_code ? String(data.error_code) : null;
+        const partialMsg = data?.error_message || null;
+        return {
+          success: true,
+          provider_message_id: data.sid,
+          error_code: partialError ?? undefined,
+          error_message: partialMsg ?? undefined,
+          raw_response: { ...data, auth_mode: auth.label },
+        };
       }
 
       lastFailure = {
