@@ -156,10 +156,12 @@ export function CommunicationLogModal({
         });
 
         if (smsErr) throw smsErr;
-        const ok = (smsResp as any)?.success !== false && (smsResp as any)?.status !== 'blocked';
+        const resp = (smsResp as any) || {};
+        const ok = resp.success !== false && resp.status !== 'blocked';
         if (!ok) {
-          const reason = (smsResp as any)?.reason || (smsResp as any)?.error || 'unknown';
-          toast.error(`SMS not delivered: ${reason}`);
+          const reason = resp.reason || resp.error_message || resp.error || 'unknown';
+          const code = resp.error_code ? ` [code ${resp.error_code}]` : '';
+          toast.error(`SMS not delivered${code}: ${reason}`);
           return;
         }
 
@@ -172,11 +174,17 @@ export function CommunicationLogModal({
           recipient_phone: entityPhone,
           summary: 'Manual SMS from store profile',
           created_by: user.id,
-          twilio_sid: (smsResp as any)?.provider_message_id ?? null,
+          twilio_sid: resp.provider_message_id ?? null,
+          delivery_status: resp.status ?? 'sent',
         });
         if (logErr) console.warn('communication_logs mirror failed:', logErr.message);
 
-        toast.success('SMS sent');
+        // Partial success (Twilio accepted but flagged an error_code, e.g. 30007/30034)
+        if (resp.error_code) {
+          toast.warning(`SMS ${resp.status ?? 'queued'} — Twilio code ${resp.error_code}: ${resp.error_message ?? 'see logs'}`);
+        } else {
+          toast.success('SMS sent');
+        }
         resetForm();
         onOpenChange(false);
         onSuccess?.();
