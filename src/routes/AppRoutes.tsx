@@ -836,6 +836,8 @@ const UFTRevenue = lazy(() => import('@/pages/uft/UFTRevenue'));
 const UFTVendors = lazy(() => import('@/pages/uft/UFTVendors'));
 const UFTAmbassadors = lazy(() => import('@/pages/uft/UFTAmbassadors'));
 const UFTLaunchChecklist = lazy(() => import('@/pages/uft/UFTLaunchChecklist'));
+const UFTVerification = lazy(() => import('@/pages/uft/UFTVerification'));
+const UFTPayouts = lazy(() => import('@/pages/uft/UFTPayouts'));
 
 // Unforgettable
 const UnforgettableDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDashboard })));
@@ -3727,6 +3729,8 @@ export default function AppRoutes() {
         <Route path="/uft/vendors" element={<UFTVendors />} />
         <Route path="/uft/ambassadors" element={<UFTAmbassadors />} />
         <Route path="/uft/launch" element={<UFTLaunchChecklist />} />
+        <Route path="/uft/verification" element={<UFTVerification />} />
+        <Route path="/uft/payouts" element={<UFTPayouts />} />
       </Route>
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
