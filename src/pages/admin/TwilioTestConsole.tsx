@@ -92,6 +92,18 @@ export default function TwilioTestConsole() {
     setBusy(null);
   };
 
+  const runVoiceDiscovery = async () => {
+    setBusy("voice");
+    const { data, error } = await supabase.functions.invoke("discover-twiml-apps", { body: {} });
+    const ok = !error && !data?.error && !data?.twilio_api_error;
+    const r: Result = { ok, data: error ? { error: error.message } : data };
+    setVoiceResult(r);
+    ok
+      ? toast.success(`Voice webhook scan: ${data?.verdict}`)
+      : toast.error(data?.twilio_api_error || data?.error || error?.message || "Discovery failed");
+    setBusy(null);
+  };
+
   return (
     <div className="space-y-6 p-6 max-w-4xl mx-auto">
       <div>
