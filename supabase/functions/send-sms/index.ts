@@ -78,9 +78,13 @@ async function sendViaTwilio(to: string, body: string, fromOverride?: string): P
   else form.append("From", from);
   form.append("Body", body);
 
+  // C5 STANDARD: TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN is the canonical pair.
+  // The TWILIO_API_SID/TWILIO_API_SECRET ("connector" key) path is DEPRECATED
+  // and kept only as a legacy fallback for accounts still rotating off the
+  // restricted-key UI. New deployments should set only ACCOUNT_SID + AUTH_TOKEN.
   const authCandidates: Array<{ label: string; value: string }> = [];
-  if (apiSid && apiSecret) authCandidates.push({ label: "api_key", value: btoa(`${apiSid}:${apiSecret}`) });
   if (token) authCandidates.push({ label: "account_token", value: btoa(`${sid}:${token}`) });
+  if (apiSid && apiSecret) authCandidates.push({ label: "api_key_legacy", value: btoa(`${apiSid}:${apiSecret}`) });
 
   try {
     let lastFailure: ProviderResult | null = null;
