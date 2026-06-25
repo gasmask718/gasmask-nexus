@@ -1,8 +1,11 @@
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/format';
-import { DollarSign, TrendingUp, CreditCard, Wallet, ExternalLink } from 'lucide-react';
+import { DollarSign, TrendingUp, CreditCard, Wallet, ExternalLink, AlertCircle } from 'lucide-react';
+import { getUFTPlatformMetrics } from '@/services/uftApi';
 
 const REVENUE_DATA = [
   { month: 'Nov 2025', bookings: 18, gross: 12400, fee: 1860, payouts: 10540, net: 1860 },
@@ -20,12 +23,6 @@ const totals = REVENUE_DATA.reduce((acc, r) => ({
   payouts: acc.payouts + r.payouts,
 }), { bookings: 0, gross: 0, fee: 0, payouts: 0 });
 
-const stats = [
-  { label: 'Total Gross Revenue', value: formatCurrency(totals.gross), icon: DollarSign, color: 'text-green-400' },
-  { label: 'Platform Fees (15%)', value: formatCurrency(totals.fee), icon: TrendingUp, color: 'text-purple-400' },
-  { label: 'Avg Booking Value', value: formatCurrency(totals.gross / totals.bookings), icon: CreditCard, color: 'text-blue-400' },
-  { label: 'Vendor Payouts', value: formatCurrency(totals.payouts), icon: Wallet, color: 'text-orange-400' },
-];
 
 export default function UFTRevenue() {
   return (
