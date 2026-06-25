@@ -237,7 +237,7 @@ serve(async (req: Request) => {
         error_message: "Recipient opted out",
         store_id: store_id || null,
         campaign_id: campaign_id || null,
-        metadata: metadata || {},
+        metadata: enrichedMetadata,
       });
       return respond(200, { success: false, status: "blocked", reason: "opted_out" });
     }
@@ -355,7 +355,7 @@ serve(async (req: Request) => {
         message_hash: msgHash,
         created_by: createdBy,
         metadata: {
-          ...(metadata || {}),
+          ...enrichedMetadata,
           cost_estimate: costEstimate,
           provider_rate: chosenProvider === "twilio" ? "twilio_standard" : "biztext_standard",
         },
