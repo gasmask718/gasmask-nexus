@@ -156,10 +156,12 @@ export function CommunicationLogModal({
         });
 
         if (smsErr) throw smsErr;
-        const ok = (smsResp as any)?.success !== false && (smsResp as any)?.status !== 'blocked';
+        const resp = (smsResp as any) || {};
+        const ok = resp.success !== false && resp.status !== 'blocked';
         if (!ok) {
-          const reason = (smsResp as any)?.reason || (smsResp as any)?.error || 'unknown';
-          toast.error(`SMS not delivered: ${reason}`);
+          const reason = resp.reason || resp.error_message || resp.error || 'unknown';
+          const code = resp.error_code ? ` [code ${resp.error_code}]` : '';
+          toast.error(`SMS not delivered${code}: ${reason}`);
           return;
         }
 
@@ -172,11 +174,17 @@ export function CommunicationLogModal({
           recipient_phone: entityPhone,
           summary: 'Manual SMS from store profile',
           created_by: user.id,
-          twilio_sid: (smsResp as any)?.provider_message_id ?? null,
+          twilio_sid: resp.provider_message_id ?? null,
+          delivery_status: resp.status ?? 'sent',
         });
         if (logErr) console.warn('communication_logs mirror failed:', logErr.message);
 
-        toast.success('SMS sent');
+        // Partial success (Twilio accepted but flagged an error_code, e.g. 30007/30034)
+        if (resp.error_code) {
+          toast.warning(`SMS ${resp.status ?? 'queued'} — Twilio code ${resp.error_code}: ${resp.error_message ?? 'see logs'}`);
+        } else {
+          toast.success('SMS sent');
+        }
         resetForm();
         onOpenChange(false);
         onSuccess?.();
@@ -204,6 +212,22 @@ export function CommunicationLogModal({
         });
 
       if (error) throw error;
+
+      // Mirror manual log into communication_logs so CommunicationTimelineCRM
+      // (which subscribes to that table) renders it immediately without a reload.
+      const mirrorRow: Record<string, any> = {
+        channel,
+        direction: 'outbound',
+        summary: notes.trim(),
+        full_message: notes.trim(),
+        created_by: user.id,
+      };
+      if (entityType === 'store') mirrorRow.store_id = entityId;
+      else if (entityType === 'wholesaler') mirrorRow.wholesaler_id = entityId;
+      else if (entityType === 'influencer') mirrorRow.influencer_id = entityId;
+      const { error: mirrorErr } = await supabase.from('communication_logs').insert(mirrorRow as any);
+      if (mirrorErr) console.warn('communication_logs mirror (manual) failed:', mirrorErr.message);
+
 
       // Create reminder if follow-up date is provided
       if (followUpDate) {
@@ -268,6 +292,21 @@ export function CommunicationLogModal({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {channel === 'sms' && !entityPhone && (
+            <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
+              <ShieldAlert className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <Badge variant="outline" className="text-xs border-amber-500/60 text-amber-700">No phone on file</Badge>
+                <p className="text-sm font-medium text-amber-700">
+                  SMS is unavailable for this {entityType}.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Add a phone number to the {entityType} profile before sending text messages. You can still log this conversation as a manual note.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="channel">Communication Method *</Label>
             <Select value={channel} onValueChange={setChannel}>
