@@ -1,8 +1,11 @@
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/format';
-import { DollarSign, TrendingUp, CreditCard, Wallet, ExternalLink } from 'lucide-react';
+import { DollarSign, TrendingUp, CreditCard, Wallet, ExternalLink, AlertCircle } from 'lucide-react';
+import { getUFTPlatformMetrics } from '@/services/uftApi';
 
 const REVENUE_DATA = [
   { month: 'Nov 2025', bookings: 18, gross: 12400, fee: 1860, payouts: 10540, net: 1860 },
@@ -20,16 +23,34 @@ const totals = REVENUE_DATA.reduce((acc, r) => ({
   payouts: acc.payouts + r.payouts,
 }), { bookings: 0, gross: 0, fee: 0, payouts: 0 });
 
-const stats = [
-  { label: 'Total Gross Revenue', value: formatCurrency(totals.gross), icon: DollarSign, color: 'text-green-400' },
-  { label: 'Platform Fees (15%)', value: formatCurrency(totals.fee), icon: TrendingUp, color: 'text-purple-400' },
-  { label: 'Avg Booking Value', value: formatCurrency(totals.gross / totals.bookings), icon: CreditCard, color: 'text-blue-400' },
-  { label: 'Vendor Payouts', value: formatCurrency(totals.payouts), icon: Wallet, color: 'text-orange-400' },
-];
-
 export default function UFTRevenue() {
+  const { data: metrics, isLoading, error } = useQuery({
+    queryKey: ['uft-platform-metrics'],
+    queryFn: getUFTPlatformMetrics,
+  });
+
+  const grossRevenue = metrics?.total_revenue ?? totals.gross;
+  const platformFee = grossRevenue * 0.15;
+  const bookingCount = metrics?.total_bookings ?? totals.bookings;
+  const avgBooking = bookingCount > 0 ? grossRevenue / bookingCount : 0;
+  const payouts = grossRevenue - platformFee;
+
+  const stats = [
+    { label: 'Total Gross Revenue', value: formatCurrency(grossRevenue), icon: DollarSign, color: 'text-green-400' },
+    { label: 'Platform Fees (15%)', value: formatCurrency(platformFee), icon: TrendingUp, color: 'text-purple-400' },
+    { label: 'Avg Booking Value', value: formatCurrency(avgBooking), icon: CreditCard, color: 'text-blue-400' },
+    { label: 'Vendor Payouts', value: formatCurrency(payouts), icon: Wallet, color: 'text-orange-400' },
+  ];
+
   return (
     <div className="space-y-6 p-6">
+      {error && (
+        <div className="flex items-center gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-300">
+          <AlertCircle className="h-4 w-4" /> Live UFT metrics unavailable — showing historical data.
+        </div>
+      )}
+      {isLoading && <Skeleton className="h-4 w-48" />}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Revenue & Financial Overview</h1>
