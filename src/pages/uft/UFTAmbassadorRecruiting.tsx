@@ -161,7 +161,7 @@ export default function UFTAmbassadorRecruiting() {
     leads.forEach(l => { counts[l.status] = (counts[l.status] || 0) + 1; });
     const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
     const signedThisMonth = leads.filter(l => l.signed_up_at && new Date(l.signed_up_at) >= monthStart).length;
-    return { ...counts, signedThisMonth };
+    return { counts, signedThisMonth };
   }, [leads]);
 
   // Conversion metrics
