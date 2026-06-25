@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
@@ -23,8 +23,9 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Loader2, Send } from 'lucide-react';
+import { CalendarIcon, Loader2, Send, ShieldAlert } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { TemplateSelector } from '@/components/communication/TemplateSelector';
@@ -54,12 +55,54 @@ export function CommunicationLogModal({
   const [notes, setNotes] = useState('');
   const [followUpDate, setFollowUpDate] = useState<Date | undefined>();
   const [sendNow, setSendNow] = useState(false);
+  const [optedOut, setOptedOut] = useState<boolean>(false);
+  const [optOutChecking, setOptOutChecking] = useState<boolean>(false);
+
+  // TCPA: check opt-out status whenever the SMS channel is selected for a phone.
+  useEffect(() => {
+    let cancelled = false;
+    const normalize = (raw: string) => {
+      const digits = raw.replace(/\D/g, '');
+      if (!digits) return null;
+      if (raw.trim().startsWith('+')) return `+${digits}`;
+      if (digits.length === 10) return `+1${digits}`;
+      if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+      return `+${digits}`;
+    };
+
+    const check = async () => {
+      if (channel !== 'sms' || !entityPhone) {
+        setOptedOut(false);
+        return;
+      }
+      setOptOutChecking(true);
+      const norm = normalize(entityPhone);
+      const candidates = Array.from(new Set([entityPhone, norm].filter(Boolean))) as string[];
+
+      const [dnc, optOut] = await Promise.all([
+        supabase.from('dnc_list').select('id').in('phone_number', candidates).limit(1),
+        supabase.from('opt_out_events').select('id').in('phone_number', candidates).limit(1),
+      ]);
+
+      if (cancelled) return;
+      const blocked = (dnc.data?.length ?? 0) > 0 || (optOut.data?.length ?? 0) > 0;
+      setOptedOut(blocked);
+      if (blocked) setSendNow(false);
+      setOptOutChecking(false);
+    };
+
+    check();
+    return () => {
+      cancelled = true;
+    };
+  }, [channel, entityPhone]);
 
   const resetForm = () => {
     setChannel('');
     setNotes('');
     setFollowUpDate(undefined);
     setSendNow(false);
+    setOptedOut(false);
   };
 
 
@@ -76,6 +119,11 @@ export function CommunicationLogModal({
 
     if (notes.length > 1000) {
       toast.error('Notes must be less than 1000 characters');
+      return;
+    }
+
+    if (channel === 'sms' && optedOut) {
+      toast.error('Cannot send SMS: recipient is opted out (TCPA compliance).');
       return;
     }
 
@@ -235,12 +283,27 @@ export function CommunicationLogModal({
             </Select>
           </div>
 
-          {channel === 'sms' && entityType === 'store' && (
+          {channel === 'sms' && optedOut && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3">
+              <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <Badge variant="destructive" className="text-xs">TCPA Compliance</Badge>
+                <p className="text-sm font-medium text-destructive">
+                  Cannot send SMS: User opted out (TCPA Compliance).
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {entityPhone} replied STOP or is on the do-not-contact list. Texting is disabled until they opt back in.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {channel === 'sms' && entityType === 'store' && !optedOut && (
             <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3">
               <Checkbox
                 id="send-now"
                 checked={sendNow}
-                disabled={!entityPhone}
+                disabled={!entityPhone || optOutChecking}
                 onCheckedChange={(v) => setSendNow(v === true)}
                 className="mt-0.5"
               />
@@ -267,7 +330,12 @@ export function CommunicationLogModal({
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Enter communication details..."
+              placeholder={
+                channel === 'sms' && optedOut
+                  ? 'SMS disabled — recipient opted out.'
+                  : 'Enter communication details...'
+              }
+              disabled={channel === 'sms' && optedOut}
               className="min-h-[120px] resize-none bg-background"
               maxLength={1000}
             />
@@ -275,6 +343,7 @@ export function CommunicationLogModal({
               {notes.length}/1000 characters
             </p>
           </div>
+
 
           <div className="space-y-2">
             <Label>Follow-up Date (Optional)</Label>
@@ -317,7 +386,7 @@ export function CommunicationLogModal({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || (channel === 'sms' && optedOut && sendNow)}
             className="bg-primary hover:bg-primary-hover"
           >
             {loading ? (
