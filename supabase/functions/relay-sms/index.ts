@@ -57,11 +57,13 @@ serve(async (req) => {
         idempotency_key: payload.idempotency_key,
         explicit_provider: payload.explicit_provider || "twilio",
         skip_cooldown: payload.skip_cooldown ?? false,
+        purpose: `relay_${payload.source_project || "toptier"}`,
         metadata: {
           ...(payload.metadata || {}),
           source: payload.source_project || "toptier",
           source_booking_id: payload.source_booking_id || null,
           relayed_at: new Date().toISOString(),
+          forwarded_from: "relay-sms",
         },
       },
     });

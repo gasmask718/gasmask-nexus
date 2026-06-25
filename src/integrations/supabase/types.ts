@@ -89184,6 +89184,90 @@ export type Database = {
           },
         ]
       }
+      store_communication_preferences: {
+        Row: {
+          call_opt_in: boolean
+          created_at: string
+          email_opt_in: boolean
+          id: string
+          notes: string | null
+          preferred_channel: string | null
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          sms_opt_in: boolean
+          store_id: string
+          timezone: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          call_opt_in?: boolean
+          created_at?: string
+          email_opt_in?: boolean
+          id?: string
+          notes?: string | null
+          preferred_channel?: string | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          sms_opt_in?: boolean
+          store_id: string
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          call_opt_in?: boolean
+          created_at?: string
+          email_opt_in?: boolean
+          id?: string
+          notes?: string | null
+          preferred_channel?: string | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          sms_opt_in?: boolean
+          store_id?: string
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_communication_preferences_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "store_intelligence_v"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_communication_preferences_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_communication_preferences_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_gm_cadence_due"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_communication_preferences_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_reactivation_targets"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_communication_preferences_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       store_contacts: {
         Row: {
           cadence_status: string | null

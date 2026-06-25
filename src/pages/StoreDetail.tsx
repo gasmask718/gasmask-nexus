@@ -27,6 +27,7 @@ import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
 import { StoreReconCard } from "@/components/store/StoreReconCard";
+import { StoreCommunicationPreferences } from "@/components/store/StoreCommunicationPreferences";
 import { useUserRole } from "@/hooks/useUserRole";
 import { QuickStatsStickersSummary } from "@/components/store/QuickStatsStickersSummary";
 import { StoreHealthBadge } from "@/components/delivery/StoreHealthBadge";
@@ -931,6 +932,9 @@ const StoreDetail = () => {
 
           {/* Dynasty Direct Product Intelligence — captured via field questionnaire */}
           {id && <StoreReconCard storeId={id} />}
+
+          {/* Per-store communication preferences (TCPA / cadence) */}
+          {id && <StoreCommunicationPreferences storeId={id} />}
 
           {/* Tabs for Inventory & History */}
           <Tabs defaultValue="inventory" className="w-full">
