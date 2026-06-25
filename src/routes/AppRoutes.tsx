@@ -209,6 +209,7 @@ const DeletedRecords = lazy(() => import('@/pages/admin/DeletedRecords'));
 const QACommandCenter = lazy(() => import('@/pages/admin/qa/QACommandCenter'));
 const AmbassadorApplications = lazy(() => import('@/pages/admin/AmbassadorApplications'));
 const SmsSystemTests = lazy(() => import('@/pages/admin/SmsSystemTests'));
+const PendingUsers = lazy(() => import('@/pages/admin/PendingUsers'));
 const TwilioTestConsole = lazy(() => import('@/pages/admin/TwilioTestConsole'));
 const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
 
@@ -1318,6 +1319,8 @@ export default function AppRoutes() {
         <Route path="/security/roles" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><RolesPermissionsPage /></RequireRole>} />
         <Route path="/security/audit" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
         <Route path="/security/ambassador-requests" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><AmbassadorRequests /></RequireRole>} />
+        <Route path="/admin/pending-users" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><PendingUsers /></RequireRole>} />
+        <Route path="/security/pending-users" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><PendingUsers /></RequireRole>} />
 
         {/* Territory Control Center (Floor 0-2 visibility — read-only) */}
         <Route path="/territory" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryOverview /></RequireRole>} />
