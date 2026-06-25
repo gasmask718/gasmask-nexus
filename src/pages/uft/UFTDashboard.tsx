@@ -6,7 +6,7 @@ import { getUFTPlatformMetrics, type UFTPlatformMetrics } from '@/services/uftAp
 import { formatCurrency, formatNumber, formatPercent } from '@/lib/format';
 import {
   Store, Calendar, DollarSign, TrendingUp, Users, Target,
-  ExternalLink, CheckCircle, AlertTriangle, PartyPopper,
+  ExternalLink, CheckCircle, AlertTriangle, XCircle, PartyPopper,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
@@ -25,19 +25,38 @@ const REVENUE_MOCK = [
 
 const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
 
-const HEALTH_ITEMS = [
-  { label: 'Supabase schema (15 tables)', status: 'ok' },
-  { label: 'RLS security policies', status: 'ok' },
-  { label: 'Edge functions (15 deployed)', status: 'ok' },
-  { label: 'Stripe webhook active', status: 'ok' },
-  { label: 'Stripe Connect configured', status: 'ok' },
-  { label: 'Resend emails wired', status: 'ok' },
-  { label: 'Twilio SMS active', status: 'ok' },
-  { label: 'Ambassador portal live', status: 'ok' },
-  { label: 'pg_cron jobs scheduled', status: 'ok' },
-  { label: 'Resend API key — add to Vault', status: 'warn' },
-  { label: 'Stripe live mode — pending launch', status: 'warn' },
-  { label: 'Domain verification — pending', status: 'warn' },
+type HealthStatus = 'ok' | 'warn' | 'err';
+
+const HEALTH_ITEMS: { label: string; status: HealthStatus }[] = [
+  // Completed
+  { label: '26 database tables with RLS', status: 'ok' },
+  { label: '15 edge functions deployed', status: 'ok' },
+  { label: '6 new admin API endpoints deployed', status: 'ok' },
+  { label: 'Stripe webhook registered', status: 'ok' },
+  { label: 'Stripe Connect configured + identity verified', status: 'ok' },
+  { label: 'pg_cron jobs (2 active)', status: 'ok' },
+  { label: '130+ staff categories (15 groups)', status: 'ok' },
+  { label: 'Staff "Other" custom talent field', status: 'ok' },
+  { label: 'Staff business entity type (Individual/Company)', status: 'ok' },
+  { label: 'Demo vendors seeded (5 halls, 5 staff, 2 rentals)', status: 'ok' },
+  { label: 'Ambassador portal with tier system', status: 'ok' },
+  { label: 'Ambassador SMS via Twilio', status: 'ok' },
+  { label: 'Real-time messaging system', status: 'ok' },
+  { label: 'My Bookings customer dashboard', status: 'ok' },
+  { label: 'All legal pages (Terms / Privacy / Help)', status: 'ok' },
+  { label: 'Zero TypeScript errors', status: 'ok' },
+  // Needs attention
+  { label: 'STRIPE_SECRET_KEY — not in UFT Vault yet', status: 'warn' },
+  { label: 'RESEND_API_KEY — not in UFT Vault yet', status: 'warn' },
+  { label: 'Shop products — only 1 imported', status: 'warn' },
+  { label: 'Shopify Payments — not connected to bank', status: 'warn' },
+  { label: 'Make.com scenario — built but not activated', status: 'warn' },
+  { label: 'Custom domain — unforgettabletimes.com DNS', status: 'warn' },
+  // Not started
+  { label: 'Real vendor onboarding — 0 real vendors yet', status: 'err' },
+  { label: 'Live payments — blocked by Stripe keys', status: 'err' },
+  { label: 'Transactional emails — blocked by Resend key', status: 'err' },
+  { label: 'Ambassador payouts — manual until automated', status: 'err' },
 ];
 
 export default function UFTDashboard() {
@@ -86,11 +105,6 @@ export default function UFTDashboard() {
           </span>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <a href="https://id-preview--e9aba3c3-110f-4e7c-87db-ffe37388dcf6.lovable.app" target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4 mr-1" /> Open Live Site
-            </a>
-          </Button>
           <Button variant="outline" size="sm" asChild>
             <a href="https://unforgettabletimes.com" target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4 mr-1" /> Public Site
@@ -155,33 +169,34 @@ export default function UFTDashboard() {
         <Card>
           <CardHeader><CardTitle className="text-base">Quick Actions</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-2 gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/uft/vendors">View Vendors</Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/uft/ambassadors">View Ambassadors</Link>
-            </Button>
+            <Button variant="outline" size="sm" asChild><Link to="/uft/verification">Verification Queue</Link></Button>
+            <Button variant="outline" size="sm" asChild><Link to="/uft/payouts">Payout Requests</Link></Button>
             <Button variant="outline" size="sm" asChild>
               <a href="https://dashboard.stripe.com" target="_blank" rel="noopener noreferrer">Stripe Dashboard</a>
             </Button>
             <Button variant="outline" size="sm" asChild>
-              <Link to="/uft/launch">Launch Checklist</Link>
+              <a href="https://unforgettable-times-usa.myshopify.com/admin" target="_blank" rel="noopener noreferrer">Shopify Admin</a>
             </Button>
+            <Button variant="outline" size="sm" asChild>
+              <a href="https://supabase.com/dashboard/project/pxylmrmwqmxotqffejbe" target="_blank" rel="noopener noreferrer">Supabase DB</a>
+            </Button>
+            <Button variant="outline" size="sm" asChild><Link to="/uft/launch">Launch Checklist</Link></Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader><CardTitle className="text-base">Platform Health</CardTitle></CardHeader>
           <CardContent>
-            <div className="space-y-1.5 max-h-64 overflow-y-auto">
+            <div className="space-y-1.5 max-h-96 overflow-y-auto">
               {HEALTH_ITEMS.map((item) => (
                 <div key={item.label} className="flex items-center gap-2 text-sm">
-                  {item.status === 'ok' ? (
-                    <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
-                  ) : (
-                    <AlertTriangle className="h-4 w-4 text-yellow-500 shrink-0" />
-                  )}
-                  <span className={item.status === 'warn' ? 'text-yellow-400' : ''}>{item.label}</span>
+                  {item.status === 'ok' && <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />}
+                  {item.status === 'warn' && <AlertTriangle className="h-4 w-4 text-yellow-500 shrink-0" />}
+                  {item.status === 'err' && <XCircle className="h-4 w-4 text-red-500 shrink-0" />}
+                  <span className={
+                    item.status === 'warn' ? 'text-yellow-400' :
+                    item.status === 'err' ? 'text-red-400' : ''
+                  }>{item.label}</span>
                 </div>
               ))}
             </div>

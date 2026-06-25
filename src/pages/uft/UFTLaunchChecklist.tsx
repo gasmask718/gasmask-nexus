@@ -1,42 +1,57 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Circle, PartyPopper } from 'lucide-react';
+import { CheckCircle, Circle, PartyPopper, Lock } from 'lucide-react';
 
 interface CheckItem {
   id: string;
   label: string;
   category: string;
+  locked?: boolean; // pre-checked, cannot uncheck
   howToFix?: string;
 }
 
 const CHECKLIST: CheckItem[] = [
-  { id: 'schema', label: 'Supabase schema complete (15 tables)', category: 'Technical' },
-  { id: 'rls', label: 'RLS on all tables', category: 'Technical' },
-  { id: 'edge', label: '15 edge functions deployed', category: 'Technical' },
-  { id: 'webhook', label: 'Stripe webhook registered', category: 'Technical' },
-  { id: 'connect', label: 'Stripe Connect configured', category: 'Technical' },
-  { id: 'cron', label: 'pg_cron jobs active', category: 'Technical' },
-  { id: 'resend', label: 'RESEND_API_KEY added to Vault', category: 'Configuration', howToFix: 'Go to Lovable Cloud → Secrets → Add RESEND_API_KEY from resend.com dashboard.' },
-  { id: 'resend-domain', label: 'Resend domain verified (no-reply@unforgettabletimes.com)', category: 'Configuration', howToFix: 'In Resend dashboard → Domains → Add unforgettabletimes.com → Add DNS records.' },
-  { id: 'twilio-ac', label: 'Twilio AC-prefix SID confirmed', category: 'Configuration', howToFix: 'Verify TWILIO_ACCOUNT_SID starts with "AC". Update in Lovable Cloud → Secrets if needed.' },
-  { id: 'stripe-key', label: 'STRIPE_SECRET_KEY in Vault (test mode)', category: 'Configuration' },
-  { id: 'dynasty-key', label: 'Dynasty OS API key in both Vaults', category: 'Configuration' },
-  { id: 'test-payment', label: 'Test payment end-to-end (test card)', category: 'Pre-Launch', howToFix: 'Use Stripe test card 4242424242424242 to complete a full booking flow.' },
-  { id: 'test-email', label: 'Test booking confirmation email fires', category: 'Pre-Launch', howToFix: 'Complete a test booking and verify email arrives via Resend logs.' },
-  { id: 'test-sms', label: 'Test ambassador SMS fires on sale', category: 'Pre-Launch', howToFix: 'Use a test ref_code to trigger the track-ambassador-sale edge function.' },
-  { id: 'test-ai', label: 'Test AI event planner generates plan', category: 'Pre-Launch', howToFix: 'Call generate-event-plan edge function with sample prompt and verify vendor matches.' },
-  { id: 'clean-data', label: 'Remove all test/seed data', category: 'Pre-Launch' },
-  { id: 'domain', label: 'Verify unforgettabletimes.com domain', category: 'Pre-Launch', howToFix: 'Point DNS A record to hosting provider. Verify in Lovable publish settings.' },
-  { id: 'stripe-live', label: 'Swap sk_test_ → sk_live_ in Vault', category: 'Go-Live', howToFix: 'In Lovable Cloud → Secrets → Update STRIPE_SECRET_KEY with live key from Stripe dashboard.' },
-  { id: 'webhook-live', label: 'Swap whsec_test → live webhook secret', category: 'Go-Live', howToFix: 'Register live webhook endpoint in Stripe → Developers → Webhooks.' },
-  { id: 'resend-verify', label: 'Verify domain with Resend', category: 'Go-Live' },
-  { id: 'announce', label: 'Announce to first 10 ambassadors', category: 'Go-Live' },
-  { id: 'sitemap', label: 'Submit sitemap to Google Search Console', category: 'Go-Live', howToFix: 'Go to search.google.com/search-console → Add property → Submit sitemap.xml.' },
-  { id: 'analytics', label: 'Enable Google Analytics or Plausible', category: 'Go-Live', howToFix: 'Add tracking script to index.html or use a Plausible integration.' },
+  // TECHNICAL (locked / done)
+  { id: 't-db', label: 'Database: 26 tables with RLS', category: 'Technical', locked: true },
+  { id: 't-edge', label: 'Edge functions: 15 + 6 admin = 21 total', category: 'Technical', locked: true },
+  { id: 't-webhook', label: 'Stripe webhook registered', category: 'Technical', locked: true },
+  { id: 't-connect', label: 'Stripe Connect configured', category: 'Technical', locked: true },
+  { id: 't-staff', label: 'Staff categories: 130+ roles', category: 'Technical', locked: true },
+  { id: 't-amb', label: 'Ambassador system built', category: 'Technical', locked: true },
+  { id: 't-tour', label: 'Virtual tour support built', category: 'Technical', locked: true },
+  { id: 't-cron', label: 'pg_cron review + reminder jobs', category: 'Technical', locked: true },
+  { id: 't-ts', label: 'Zero TypeScript errors', category: 'Technical', locked: true },
+
+  // CONFIGURATION
+  { id: 'c-stripe-sk', label: 'STRIPE_SECRET_KEY added to UFT secrets', category: 'Config', howToFix: 'UFT Lovable → Settings → Secrets' },
+  { id: 'c-stripe-pk', label: 'STRIPE_PUBLISHABLE_KEY added to UFT secrets', category: 'Config', howToFix: 'Same location as STRIPE_SECRET_KEY' },
+  { id: 'c-stripe-whs', label: 'STRIPE_WEBHOOK_SECRET added to UFT secrets', category: 'Config', howToFix: 'Same location (whsec_oETlX11…)' },
+  { id: 'c-resend', label: 'RESEND_API_KEY added to UFT secrets', category: 'Config', howToFix: 'resend.com → create API key → add to secrets' },
+  { id: 'c-resend-domain', label: 'Resend domain verified', category: 'Config', howToFix: 'resend.com → Domains → verify unforgettabletimes.com' },
+  { id: 'c-make-auth', label: 'Make.com Authorization header added', category: 'Config', howToFix: 'Make.com → scenario → HTTP module → Headers → add Bearer token' },
+  { id: 'c-make-on', label: 'Make.com scenario activated', category: 'Config', howToFix: 'Toggle ON in Make.com' },
+
+  // PRE-LAUNCH
+  { id: 'p-test-payment', label: 'Test payment completed', category: 'Pre-Launch', howToFix: 'Use card 4242 4242 4242 4242 on build-event checkout' },
+  { id: 'p-test-email', label: 'Booking confirmation email received', category: 'Pre-Launch', howToFix: 'Needs Resend key first' },
+  { id: 'p-test-sms', label: 'Ambassador SMS fires on test sale', category: 'Pre-Launch', howToFix: 'Complete a test booking with ?ref= param' },
+  { id: 'p-products', label: '20+ products in Shopify shop', category: 'Pre-Launch', howToFix: 'AutoDS → Marketplace → search party/event → import' },
+  { id: 'p-shopify-bank', label: 'Shopify Payments connected to bank', category: 'Pre-Launch', howToFix: 'Shopify Admin → Settings → Payments' },
+  { id: 'p-clean', label: 'Test vendor data removed from DB', category: 'Pre-Launch', howToFix: 'Supabase → delete test records' },
+  { id: 'p-real-vendors', label: '5+ real vendor profiles added', category: 'Pre-Launch', howToFix: 'Share vendor signup link' },
+
+  // GO-LIVE
+  { id: 'g-stripe-live', label: 'Stripe live keys swapped in', category: 'Go-Live', howToFix: 'Get sk_live_ from Stripe dashboard' },
+  { id: 'g-whs-live', label: 'Live webhook secret registered', category: 'Go-Live', howToFix: 'Register new webhook in Stripe live mode' },
+  { id: 'g-domain', label: 'unforgettabletimes.com domain live', category: 'Go-Live', howToFix: 'Connect domain in Lovable settings' },
+  { id: 'g-gsc', label: 'Google Search Console — sitemap submitted', category: 'Go-Live', howToFix: 'search.google.com/search-console' },
+  { id: 'g-amb-10', label: 'First 10 ambassadors onboarded', category: 'Go-Live', howToFix: 'Share /ambassador-portal link' },
+  { id: 'g-david', label: 'David completed personal test booking', category: 'Go-Live', howToFix: 'Go through full customer flow yourself' },
 ];
 
 const STORAGE_KEY = 'uft-launch-checklist';
+const CATEGORIES = ['Technical', 'Config', 'Pre-Launch', 'Go-Live'];
 
 export default function UFTLaunchChecklist() {
   const [checked, setChecked] = useState<Record<string, boolean>>({});
@@ -46,20 +61,24 @@ export default function UFTLaunchChecklist() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) setChecked(JSON.parse(saved));
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   }, []);
 
-  const toggle = (id: string) => {
-    const next = { ...checked, [id]: !checked[id] };
+  const toggle = (item: CheckItem) => {
+    if (item.locked) return;
+    const next = { ...checked, [item.id]: !checked[item.id] };
     setChecked(next);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   };
 
+  const isDone = (item: CheckItem) => item.locked || !!checked[item.id];
+
   const total = CHECKLIST.length;
-  const done = CHECKLIST.filter((c) => checked[c.id]).length;
+  const done = CHECKLIST.filter(isDone).length;
   const pct = Math.round((done / total) * 100);
   const allDone = done === total;
-  const categories = [...new Set(CHECKLIST.map((c) => c.category))];
 
   return (
     <div className="space-y-6 p-6">
@@ -86,40 +105,45 @@ export default function UFTLaunchChecklist() {
         </CardContent>
       </Card>
 
-      {categories.map((cat) => (
+      {CATEGORIES.map((cat) => (
         <Card key={cat}>
           <CardHeader><CardTitle className="text-base">{cat}</CardTitle></CardHeader>
           <CardContent className="space-y-2">
-            {CHECKLIST.filter((c) => c.category === cat).map((item) => (
-              <div key={item.id}>
-                <button
-                  className="flex items-center gap-3 w-full text-left py-1.5 hover:bg-muted/30 rounded px-2 -mx-2 transition-colors"
-                  onClick={() => toggle(item.id)}
-                >
-                  {checked[item.id] ? (
-                    <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
-                  ) : (
-                    <Circle className="h-5 w-5 text-muted-foreground shrink-0" />
+            {CHECKLIST.filter((c) => c.category === cat).map((item) => {
+              const done = isDone(item);
+              return (
+                <div key={item.id}>
+                  <button
+                    className={`flex items-center gap-3 w-full text-left py-1.5 rounded px-2 -mx-2 transition-colors ${item.locked ? 'cursor-default' : 'hover:bg-muted/30'}`}
+                    onClick={() => toggle(item)}
+                  >
+                    {done ? (
+                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
+                    ) : (
+                      <Circle className="h-5 w-5 text-muted-foreground shrink-0" />
+                    )}
+                    <span className={`text-sm ${done ? 'line-through text-muted-foreground' : ''}`}>
+                      {item.label}
+                    </span>
+                    {item.locked && <Lock className="h-3 w-3 text-muted-foreground" />}
+                    {!done && item.howToFix && (
+                      <span
+                        role="button"
+                        className="ml-auto text-xs text-blue-400 hover:underline"
+                        onClick={(e) => { e.stopPropagation(); setExpandedFix(expandedFix === item.id ? null : item.id); }}
+                      >
+                        How to fix
+                      </span>
+                    )}
+                  </button>
+                  {expandedFix === item.id && item.howToFix && (
+                    <div className="ml-8 mt-1 mb-2 p-2 rounded bg-muted/50 text-xs text-muted-foreground">
+                      Fix: {item.howToFix}
+                    </div>
                   )}
-                  <span className={`text-sm ${checked[item.id] ? 'line-through text-muted-foreground' : ''}`}>
-                    {item.label}
-                  </span>
-                  {!checked[item.id] && item.howToFix && (
-                    <button
-                      className="ml-auto text-xs text-blue-400 hover:underline"
-                      onClick={(e) => { e.stopPropagation(); setExpandedFix(expandedFix === item.id ? null : item.id); }}
-                    >
-                      How to fix
-                    </button>
-                  )}
-                </button>
-                {expandedFix === item.id && item.howToFix && (
-                  <div className="ml-8 mt-1 mb-2 p-2 rounded bg-muted/50 text-xs text-muted-foreground">
-                    {item.howToFix}
-                  </div>
-                )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       ))}

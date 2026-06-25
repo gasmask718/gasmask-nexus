@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getUFTAmbassadorLeaderboard, type UFTAmbassador } from '@/services/uftApi';
 import { formatCurrency } from '@/lib/format';
 import { Users, Award, DollarSign, Download, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import PayoutRequestsPanel from '@/components/uft/PayoutRequestsPanel';
 
 const TIER_CONFIG: Record<string, { color: string; sales: string; rate: string }> = {
   bronze: { color: 'bg-orange-500/20 text-orange-400', sales: '0–5', rate: '8%' },
@@ -64,94 +66,111 @@ export default function UFTAmbassadors() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card><CardContent className="p-4"><Users className="h-5 w-5 text-purple-400 mb-1" /><p className="text-2xl font-bold">{ambassadors.length}</p><p className="text-xs text-muted-foreground">Total Ambassadors</p></CardContent></Card>
-        <Card><CardContent className="p-4"><Users className="h-5 w-5 text-green-400 mb-1" /><p className="text-2xl font-bold">{ambassadors.filter(a => a.status === 'active').length}</p><p className="text-xs text-muted-foreground">Active This Month</p></CardContent></Card>
-        <Card><CardContent className="p-4"><DollarSign className="h-5 w-5 text-yellow-400 mb-1" /><p className="text-2xl font-bold">{formatCurrency(totalEarned)}</p><p className="text-xs text-muted-foreground">Total Commissions Paid</p></CardContent></Card>
-        <Card><CardContent className="p-4"><DollarSign className="h-5 w-5 text-blue-400 mb-1" /><p className="text-2xl font-bold">{formatCurrency(ambassadors.length ? totalEarned / ambassadors.length : 0)}</p><p className="text-xs text-muted-foreground">Avg Commission</p></CardContent></Card>
-      </div>
+      <Tabs defaultValue="dashboard">
+        <TabsList>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+          <TabsTrigger value="payouts">Payout Requests</TabsTrigger>
+          <TabsTrigger value="sms">SMS Broadcast</TabsTrigger>
+        </TabsList>
 
-      {/* Tier Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {Object.entries(TIER_CONFIG).map(([tier, cfg]) => (
-          <Card key={tier}>
-            <CardContent className="p-4 text-center">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${cfg.color} capitalize`}>{tier}</span>
-              <p className="text-2xl font-bold mt-2">{tierCounts[tier] || 0}</p>
-              <p className="text-xs text-muted-foreground">{cfg.sales} sales • {cfg.rate}</p>
+        <TabsContent value="dashboard" className="space-y-6 mt-4">
+          {/* Stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card><CardContent className="p-4"><Users className="h-5 w-5 text-purple-400 mb-1" /><p className="text-2xl font-bold">{ambassadors.length}</p><p className="text-xs text-muted-foreground">Total Ambassadors</p></CardContent></Card>
+            <Card><CardContent className="p-4"><Users className="h-5 w-5 text-green-400 mb-1" /><p className="text-2xl font-bold">{ambassadors.filter(a => a.status === 'active').length}</p><p className="text-xs text-muted-foreground">Active This Month</p></CardContent></Card>
+            <Card><CardContent className="p-4"><DollarSign className="h-5 w-5 text-yellow-400 mb-1" /><p className="text-2xl font-bold">{formatCurrency(totalEarned)}</p><p className="text-xs text-muted-foreground">Total Commissions Paid</p></CardContent></Card>
+            <Card><CardContent className="p-4"><DollarSign className="h-5 w-5 text-blue-400 mb-1" /><p className="text-2xl font-bold">{formatCurrency(ambassadors.length ? totalEarned / ambassadors.length : 0)}</p><p className="text-xs text-muted-foreground">Avg Commission</p></CardContent></Card>
+          </div>
+
+          {/* Tier Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {Object.entries(TIER_CONFIG).map(([tier, cfg]) => (
+              <Card key={tier}>
+                <CardContent className="p-4 text-center">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${cfg.color} capitalize`}>{tier}</span>
+                  <p className="text-2xl font-bold mt-2">{tierCounts[tier] || 0}</p>
+                  <p className="text-xs text-muted-foreground">{cfg.sales} sales • {cfg.rate}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="leaderboard" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center justify-between">
+                <span>Leaderboard</span>
+                <Button variant="outline" size="sm" onClick={handleExport}><Download className="h-4 w-4 mr-1" /> Export CSV</Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-2">{[1, 2, 3].map(i => <Skeleton key={i} className="h-10 w-full" />)}</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-16">Rank</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Tier</TableHead>
+                      <TableHead className="text-right">Sales</TableHead>
+                      <TableHead className="text-right">Earned</TableHead>
+                      <TableHead className="text-right">Rate</TableHead>
+                      <TableHead>Code</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {ambassadors.map((a, i) => (
+                      <TableRow key={a.ref_code}>
+                        <TableCell className="font-bold">{a.rank || i + 1}</TableCell>
+                        <TableCell className="font-medium">{a.name}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-0.5 rounded-full text-xs capitalize ${TIER_CONFIG[a.tier]?.color || ''}`}>{a.tier}</span>
+                        </TableCell>
+                        <TableCell className="text-right">{a.total_sales}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(a.total_earned)}</TableCell>
+                        <TableCell className="text-right">{a.commission_rate}%</TableCell>
+                        <TableCell className="font-mono text-xs">{a.ref_code}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
-        ))}
-      </div>
+        </TabsContent>
 
-      {/* Leaderboard */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center justify-between">
-            <span>Leaderboard</span>
-            <Button variant="outline" size="sm" onClick={handleExport}><Download className="h-4 w-4 mr-1" /> Export CSV</Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-10 w-full" />)}</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">Rank</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Tier</TableHead>
-                  <TableHead className="text-right">Sales</TableHead>
-                  <TableHead className="text-right">Earned</TableHead>
-                  <TableHead className="text-right">Rate</TableHead>
-                  <TableHead>Code</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ambassadors.map((a, i) => (
-                  <TableRow key={a.ref_code}>
-                    <TableCell className="font-bold">{a.rank || i + 1}</TableCell>
-                    <TableCell className="font-medium">{a.name}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-0.5 rounded-full text-xs capitalize ${TIER_CONFIG[a.tier]?.color || ''}`}>{a.tier}</span>
-                    </TableCell>
-                    <TableCell className="text-right">{a.total_sales}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(a.total_earned)}</TableCell>
-                    <TableCell className="text-right">{a.commission_rate}%</TableCell>
-                    <TableCell className="font-mono text-xs">{a.ref_code}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+        <TabsContent value="payouts" className="mt-4">
+          <PayoutRequestsPanel />
+        </TabsContent>
 
-      {/* SMS Broadcast */}
-      <Card>
-        <CardHeader><CardTitle className="text-base">Send SMS to All Ambassadors</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <Textarea placeholder="Type your broadcast message..." value={smsMessage} onChange={(e) => setSmsMessage(e.target.value)} rows={3} />
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">{smsMessage.length} / 160 characters</span>
-            <Button
-              size="sm"
-              disabled={!smsMessage.trim()}
-              onClick={() => {
-                if (confirm(`Send this SMS to ${ambassadors.length} ambassadors?`)) {
-                  toast.success('SMS broadcast queued via Twilio edge function');
-                  setSmsMessage('');
-                }
-              }}
-            >
-              <Send className="h-4 w-4 mr-1" /> Send Broadcast
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">Calls Twilio via edge function. Messages are queued and sent in batches.</p>
-        </CardContent>
-      </Card>
+        <TabsContent value="sms" className="mt-4">
+          <Card>
+            <CardHeader><CardTitle className="text-base">Send SMS to All Ambassadors</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <Textarea placeholder="Type your broadcast message..." value={smsMessage} onChange={(e) => setSmsMessage(e.target.value)} rows={3} />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">{smsMessage.length} / 160 characters</span>
+                <Button
+                  size="sm"
+                  disabled={!smsMessage.trim()}
+                  onClick={() => {
+                    if (confirm(`Send this SMS to ${ambassadors.length} ambassadors?`)) {
+                      toast.success('SMS broadcast queued via Twilio edge function');
+                      setSmsMessage('');
+                    }
+                  }}
+                >
+                  <Send className="h-4 w-4 mr-1" /> Send Broadcast
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Calls Twilio via edge function. Messages are queued and sent in batches.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
