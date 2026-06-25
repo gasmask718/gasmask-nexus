@@ -42,8 +42,6 @@ export default function TwilioTestConsole() {
   const [signupResult, setSignupResult] = useState<Result>(null);
   const [receiptResult, setReceiptResult] = useState<Result>(null);
   const [voiceResult, setVoiceResult] = useState<Result>(null);
-  const [signupResult, setSignupResult] = useState<Result>(null);
-  const [receiptResult, setReceiptResult] = useState<Result>(null);
 
   async function call(action: string, body: Record<string, any>) {
     const { data, error } = await supabase.functions.invoke("admin-twilio-test", {
