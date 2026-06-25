@@ -932,6 +932,9 @@ const StoreDetail = () => {
           {/* Dynasty Direct Product Intelligence — captured via field questionnaire */}
           {id && <StoreReconCard storeId={id} />}
 
+          {/* Per-store communication preferences (TCPA / cadence) */}
+          {id && <StoreCommunicationPreferences storeId={id} />}
+
           {/* Tabs for Inventory & History */}
           <Tabs defaultValue="inventory" className="w-full">
             <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-1">
