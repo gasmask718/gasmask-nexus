@@ -29,7 +29,16 @@ async function sendViaTwilio(to: string, body: string, fromOverride?: string): P
   // (error 30034) and we refuse to silently queue dead messages.
   const envFrom = Deno.env.get("TWILIO_PHONE_NUMBER");
   const VERIFIED_TOLL_FREE = "+18776818621";
-  const envFromSafe = envFrom && (isUsTollFree(envFrom) || !envFrom.startsWith("+1")) ? envFrom : VERIFIED_TOLL_FREE;
+  const envFromValid = envFrom && (isUsTollFree(envFrom) || !envFrom.startsWith("+1"));
+  const envFromSafe = envFromValid ? envFrom! : VERIFIED_TOLL_FREE;
+  if (envFrom && !envFromValid && !fromOverride) {
+    // C8: surface silent fallback so admins know the configured number was bypassed
+    console.warn(
+      `⚠️ TWILIO_FALLBACK_USED: configured TWILIO_PHONE_NUMBER=${envFrom} is an unregistered US long code — ` +
+      `overriding to verified toll-free ${VERIFIED_TOLL_FREE} to avoid carrier error 30034. ` +
+      `Register the number for A2P 10DLC or set TWILIO_MESSAGING_SERVICE_SID to silence this warning.`
+    );
+  }
   const from = fromOverride || envFromSafe;
   const messagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID") || undefined;
 
