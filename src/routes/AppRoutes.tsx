@@ -3732,6 +3732,7 @@ export default function AppRoutes() {
         <Route path="/uft/launch" element={<UFTLaunchChecklist />} />
         <Route path="/uft/verification" element={<UFTVerification />} />
         <Route path="/uft/payouts" element={<UFTPayouts />} />
+        <Route path="/uft/suppliers" element={<UFTSuppliers />} />
       </Route>
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
