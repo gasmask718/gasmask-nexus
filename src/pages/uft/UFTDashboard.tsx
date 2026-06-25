@@ -63,21 +63,28 @@ export default function UFTDashboard() {
   const [metrics, setMetrics] = useState<UFTPlatformMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [transport, setTransport] = useState<UFTTransportReferral[]>([]);
 
   useEffect(() => {
     getUFTPlatformMetrics()
       .then(setMetrics)
       .catch(() => setError(true))
       .finally(() => setLoading(false));
+    getUFTTransportReferrals('completed')
+      .then((r) => setTransport(r.referrals || []))
+      .catch(() => setTransport([]));
   }, []);
 
-  const kpis = [
+  const transportRevenue = transport.reduce((s, r) => s + Number(r.uft_fee_10pct || 0), 0);
+
+  const kpis: { label: string; value: number | undefined; icon: typeof Store; color: string; format: (v: number) => string; sub?: string }[] = [
     { label: 'Total Vendors', value: metrics?.total_vendors, icon: Store, color: 'text-blue-400', format: formatNumber },
     { label: 'Total Bookings', value: metrics?.total_bookings, icon: Calendar, color: 'text-green-400', format: formatNumber },
     { label: 'Total Revenue', value: metrics?.total_revenue, icon: DollarSign, color: 'text-yellow-400', format: formatCurrency },
     { label: 'This Month', value: metrics?.this_month_revenue, icon: TrendingUp, color: 'text-purple-400', format: formatCurrency },
     { label: 'Ambassadors', value: metrics?.total_ambassadors, icon: Users, color: 'text-orange-400', format: formatNumber },
     { label: 'Conversion', value: metrics?.conversion_rate, icon: Target, color: 'text-teal-400', format: (v: number) => formatPercent(v) },
+    { label: 'Transport Revenue', value: transportRevenue, icon: Car, color: 'text-slate-400', format: formatCurrency, sub: `${transport.length} bookings via TopTier` },
   ];
 
   const pieData = metrics?.top_vendor_categories?.map(c => ({
