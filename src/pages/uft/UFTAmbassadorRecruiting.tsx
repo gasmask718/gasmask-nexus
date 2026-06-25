@@ -215,9 +215,9 @@ export default function UFTAmbassadorRecruiting() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card><CardContent className="p-4"><div className="text-xs uppercase text-muted-foreground">Identified</div><div className="text-2xl font-bold">{stats.identified}</div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="text-xs uppercase text-muted-foreground">Contacted</div><div className="text-2xl font-bold">{stats.contacted}</div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="text-xs uppercase text-muted-foreground">Interested</div><div className="text-2xl font-bold">{stats.interested}</div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="text-xs uppercase text-muted-foreground">Identified</div><div className="text-2xl font-bold">{stats.counts.identified || 0}</div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="text-xs uppercase text-muted-foreground">Contacted</div><div className="text-2xl font-bold">{stats.counts.contacted || 0}</div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="text-xs uppercase text-muted-foreground">Interested</div><div className="text-2xl font-bold">{stats.counts.interested || 0}</div></CardContent></Card>
         <Card><CardContent className="p-4"><div className="text-xs uppercase text-muted-foreground">Signed up this month</div><div className="text-2xl font-bold text-emerald-600">{stats.signedThisMonth}</div></CardContent></Card>
       </div>
 
