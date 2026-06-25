@@ -290,6 +290,8 @@ export function CommunicationLogModal({
         <DialogHeader>
           <DialogTitle>Log Communication - {entityName}</DialogTitle>
         </DialogHeader>
+
+        <div className="space-y-4 py-4">
           {channel === 'sms' && !entityPhone && (
             <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
               <ShieldAlert className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
@@ -305,8 +307,6 @@ export function CommunicationLogModal({
             </div>
           )}
 
-
-        <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="channel">Communication Method *</Label>
             <Select value={channel} onValueChange={setChannel}>
