@@ -413,6 +413,17 @@ export default function TerritoryIngestion() {
   const selectedCount = selectedNeighborhoodIds.length + legacyNeighborhoods.length;
   const queryEstimate = (selectedCount || 1) * scopeTypes.length;
 
+  // Last enrichment run = max(last_ingested_at) across all neighborhoods
+  const lastEnrichmentRun = useMemo(() => {
+    const stamps = dbNeighborhoods
+      .map((n) => n.last_ingested_at)
+      .filter(Boolean) as string[];
+    if (stamps.length === 0) return null;
+    return stamps.sort().reverse()[0];
+  }, [dbNeighborhoods]);
+
+  const activelyIngesting = apiIngestMutation.isPending || csvIngestMutation.isPending || step === "ingesting";
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -421,6 +432,32 @@ export default function TerritoryIngestion() {
           <p className="text-muted-foreground">Discover and import addresses into the territory intelligence layer.</p>
         </div>
       </div>
+
+      {/* Enrichment status banner — Audit T10 */}
+      <Card className="border-border/60">
+        <CardContent className="py-4 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className={`h-2.5 w-2.5 rounded-full ${activelyIngesting ? "bg-primary animate-pulse" : lastEnrichmentRun ? "bg-emerald-500" : "bg-muted-foreground/40"}`} />
+            <div className="text-sm">
+              <p className="font-medium text-foreground">
+                {activelyIngesting ? "Enrichment running…" : "Enrichment idle"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Last run:{" "}
+                {lastEnrichmentRun
+                  ? `${new Date(lastEnrichmentRun).toLocaleString()} (${dbNeighborhoods.filter((n) => n.last_ingested_at).length} of ${dbNeighborhoods.length} neighborhoods)`
+                  : "no enrichment runs recorded yet"}
+              </p>
+            </div>
+          </div>
+          {activelyIngesting && (
+            <div className="flex-1 min-w-[200px] max-w-sm">
+              <Progress value={apiProgress || 10} className="h-2" />
+              <p className="text-xs text-muted-foreground mt-1">{progressLabel || "Processing…"}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Step indicator */}
       <div className="flex items-center gap-2 text-sm">
@@ -433,6 +470,7 @@ export default function TerritoryIngestion() {
           </div>
         ))}
       </div>
+
 
       {/* STEP: Source Selection */}
       {step === "source" && (
