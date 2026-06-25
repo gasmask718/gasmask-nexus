@@ -132,6 +132,7 @@ export default function UFTDashboard() {
                 <p className="text-2xl font-bold">{kpi.format(kpi.value ?? 0)}</p>
               )}
               <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>
+              {kpi.sub && <p className="text-[10px] text-muted-foreground/80 mt-0.5">{kpi.sub}</p>}
             </CardContent>
             <div className={`h-1 ${kpi.color.replace('text-', 'bg-')} opacity-40`} />
           </Card>
