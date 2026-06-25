@@ -412,12 +412,15 @@ serve(async (req: Request) => {
 
     // ── 12. Update Row ───────────────────────────────────────────────
     if (result.success) {
+      const partialStatus = result.error_code ? "queued" : "sent";
       await supabase
         .from("outbound_messages")
         .update({
-          status: "sent",
+          status: partialStatus,
           provider_message_id: result.provider_message_id || null,
           sent_at: new Date().toISOString(),
+          error_code: result.error_code || null,
+          error_message: result.error_message || null,
           metadata: {
             ...pendingRow.metadata,
             raw_response: result.raw_response,
@@ -425,13 +428,15 @@ serve(async (req: Request) => {
         })
         .eq("id", pendingRow.id);
 
-      console.log(`✅ SMS sent: ${pendingRow.id}`);
+      console.log(`✅ SMS accepted: ${pendingRow.id} status=${partialStatus} error_code=${result.error_code ?? "none"}`);
       return respond(200, {
         success: true,
-        status: "sent",
+        status: partialStatus,
         message_id: pendingRow.id,
         provider: actualProviderUsed,
         provider_message_id: result.provider_message_id,
+        error_code: result.error_code || null,
+        error_message: result.error_message || null,
       });
     } else {
       await supabase
