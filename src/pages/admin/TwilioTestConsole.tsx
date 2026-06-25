@@ -239,6 +239,80 @@ export default function TwilioTestConsole() {
           <ResultBlock result={receiptResult} />
         </CardContent>
       </Card>
+
+      {/* 5. Voice Webhook Discovery (C11) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <PhoneCall className="h-5 w-5" /> 5. Voice Webhook Discovery
+          </CardTitle>
+          <CardDescription>
+            Read-only scan of Twilio TwiML Apps. Shows which voice webhooks
+            (call-ai-*, twilio-bridge, twilio-voice-twiml, etc.) are currently
+            wired into Twilio versus orphaned/unused.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button onClick={runVoiceDiscovery} disabled={busy === "voice"}>
+            {busy === "voice" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            Scan Voice Webhooks
+          </Button>
+
+          {voiceResult?.ok && voiceResult.data && (
+            <div className="space-y-3 mt-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className="bg-blue-600 text-white">{voiceResult.data.verdict}</Badge>
+                <span className="text-xs text-muted-foreground">
+                  {voiceResult.data.total_apps_found} apps · {voiceResult.data.matched_apps_count} matched
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">{voiceResult.data.verdict_detail}</p>
+
+              <div className="border rounded-md divide-y">
+                {(voiceResult.data.twilio_apps || []).map((app: any) => {
+                  const calls = voiceResult.data.call_usage?.app_usage_map?.[app.sid] || 0;
+                  const orphaned = !app.routing_match && calls === 0;
+                  return (
+                    <div key={app.sid} className="p-3 flex items-start gap-3 text-sm">
+                      {app.routing_match ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                      ) : (
+                        <AlertTriangle className={`h-4 w-4 mt-0.5 shrink-0 ${orphaned ? "text-destructive" : "text-amber-500"}`} />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium truncate">{app.friendly_name}</span>
+                          <code className="text-xs text-muted-foreground">{app.sid}</code>
+                          {app.matched_endpoint && (
+                            <Badge variant="outline" className="text-xs">→ {app.matched_endpoint}</Badge>
+                          )}
+                          {app.provider && (
+                            <Badge variant="secondary" className="text-xs">{app.provider}</Badge>
+                          )}
+                          {orphaned && (
+                            <Badge variant="destructive" className="text-xs">orphaned</Badge>
+                          )}
+                          {!orphaned && calls > 0 && (
+                            <Badge className="text-xs bg-green-600 text-white">{calls} recent calls</Badge>
+                          )}
+                        </div>
+                        {app.voice_url && (
+                          <div className="text-xs text-muted-foreground truncate mt-1">{app.voice_url}</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                {(!voiceResult.data.twilio_apps || voiceResult.data.twilio_apps.length === 0) && (
+                  <div className="p-3 text-sm text-muted-foreground">No TwiML Apps configured on this Twilio account.</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <ResultBlock result={voiceResult} />
+        </CardContent>
+      </Card>
     </div>
   );
 }
