@@ -105920,39 +105920,51 @@ export type Database = {
           contact: string | null
           created_at: string | null
           follow_up_date: string | null
+          follower_count: number | null
+          handle: string | null
           id: string
           lead_type: string | null
           location: string | null
           name: string | null
           notes: string | null
+          outreach_message: string | null
           platform: string | null
           profile_url: string | null
+          signed_up_at: string | null
           status: string | null
         }
         Insert: {
           contact?: string | null
           created_at?: string | null
           follow_up_date?: string | null
+          follower_count?: number | null
+          handle?: string | null
           id?: string
           lead_type?: string | null
           location?: string | null
           name?: string | null
           notes?: string | null
+          outreach_message?: string | null
           platform?: string | null
           profile_url?: string | null
+          signed_up_at?: string | null
           status?: string | null
         }
         Update: {
           contact?: string | null
           created_at?: string | null
           follow_up_date?: string | null
+          follower_count?: number | null
+          handle?: string | null
           id?: string
           lead_type?: string | null
           location?: string | null
           name?: string | null
           notes?: string | null
+          outreach_message?: string | null
           platform?: string | null
           profile_url?: string | null
+          signed_up_at?: string | null
           status?: string | null
         }
         Relationships: []
