@@ -417,6 +417,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/uft/verification', label: '🛡️ Verification Queue', icon: ShieldCheck },
       { path: '/uft/payouts', label: '💵 Payout Requests', icon: Banknote },
       { path: '/uft/suppliers', label: '📦 Suppliers', icon: Truck },
+      { path: '/uft/recruiting', label: '📣 Recruiting', icon: Megaphone },
       { path: '/uft/launch', label: '🚀 Launch Checklist', icon: Target },
     ],
   },
