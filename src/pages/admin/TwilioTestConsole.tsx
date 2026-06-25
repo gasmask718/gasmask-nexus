@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, MessageSquare, Link2, ReceiptText, Activity } from "lucide-react";
+import { Loader2, MessageSquare, Link2, ReceiptText, Activity, PhoneCall, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 type Result = { ok: boolean; data: any } | null;
