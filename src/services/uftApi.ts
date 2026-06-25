@@ -3,10 +3,11 @@
 // NEVER writes directly to UFT's database
 // ═══════════════════════════════════════════════════════════════════════
 
-const UFT_API_BASE = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID || 'qalaaroashbggynpvqct'}.supabase.co/functions/v1`;
+const UFT_API_BASE = `https://pxylmrmwqmxotqffejbe.supabase.co/functions/v1`;
 
 const uftHeaders = {
   'Content-Type': 'application/json',
+  'Authorization': 'Bearer DYNASTY_OS_2026_UFT_xK9mP3qR7vL2nW8',
 };
 
 export interface UFTPlatformMetrics {
