@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
@@ -23,8 +23,9 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Loader2, Send } from 'lucide-react';
+import { CalendarIcon, Loader2, Send, ShieldAlert } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { TemplateSelector } from '@/components/communication/TemplateSelector';
