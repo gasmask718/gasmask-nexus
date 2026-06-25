@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getUFTPlatformMetrics, type UFTPlatformMetrics } from '@/services/uftApi';
+import { getUFTPlatformMetrics, getUFTTransportReferrals, type UFTPlatformMetrics, type UFTTransportReferral } from '@/services/uftApi';
 import { formatCurrency, formatNumber, formatPercent } from '@/lib/format';
 import {
-  Store, Calendar, DollarSign, TrendingUp, Users, Target,
+  Store, Calendar, DollarSign, TrendingUp, Users, Target, Car,
   ExternalLink, CheckCircle, AlertTriangle, XCircle, PartyPopper,
 } from 'lucide-react';
 import {
