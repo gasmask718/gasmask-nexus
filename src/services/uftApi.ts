@@ -208,3 +208,33 @@ export async function updateUFTVendorStatus(vendorId: string, vendorType: string
   if (!res.ok) throw new Error('Failed to update vendor');
   return res.json();
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// Transportation referrals (TopTier integration)
+// ─────────────────────────────────────────────────────────────────────
+export interface UFTTransportReferral {
+  id: string;
+  created_at: string;
+  vehicle_type: string;
+  city: string;
+  booking_amount: number;
+  uft_fee_10pct: number;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | string;
+}
+
+export interface UFTTransportReferralsResponse {
+  success: boolean;
+  referrals: UFTTransportReferral[];
+}
+
+export async function getUFTTransportReferrals(
+  status?: string,
+): Promise<UFTTransportReferralsResponse> {
+  const params = status ? `?status=${status}` : '';
+  const res = await fetch(
+    `${UFT_API_BASE}/ut-get-transport-referrals${params}`,
+    { headers: uftHeaders },
+  );
+  if (!res.ok) throw new Error('Failed to fetch transport referrals');
+  return res.json();
+}
