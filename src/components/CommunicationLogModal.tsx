@@ -213,6 +213,22 @@ export function CommunicationLogModal({
 
       if (error) throw error;
 
+      // Mirror manual log into communication_logs so CommunicationTimelineCRM
+      // (which subscribes to that table) renders it immediately without a reload.
+      const mirrorRow: Record<string, any> = {
+        channel,
+        direction: 'outbound',
+        summary: notes.trim(),
+        full_message: notes.trim(),
+        created_by: user.id,
+      };
+      if (entityType === 'store') mirrorRow.store_id = entityId;
+      else if (entityType === 'wholesaler') mirrorRow.wholesaler_id = entityId;
+      else if (entityType === 'influencer') mirrorRow.influencer_id = entityId;
+      const { error: mirrorErr } = await supabase.from('communication_logs').insert(mirrorRow);
+      if (mirrorErr) console.warn('communication_logs mirror (manual) failed:', mirrorErr.message);
+
+
       // Create reminder if follow-up date is provided
       if (followUpDate) {
         const reminderData: any = {
