@@ -42,7 +42,15 @@ export default function UFTRevenue() {
     { label: 'Vendor Payouts', value: formatCurrency(payouts), icon: Wallet, color: 'text-orange-400' },
   ];
 
+  return (
     <div className="space-y-6 p-6">
+      {error && (
+        <div className="flex items-center gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-300">
+          <AlertCircle className="h-4 w-4" /> Live UFT metrics unavailable — showing historical data.
+        </div>
+      )}
+      {isLoading && <Skeleton className="h-4 w-48" />}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Revenue & Financial Overview</h1>
