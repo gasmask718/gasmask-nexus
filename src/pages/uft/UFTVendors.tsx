@@ -1,10 +1,14 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/format';
-import { Search, Store } from 'lucide-react';
+import { Search, Store, AlertCircle } from 'lucide-react';
+import { getUFTPlatformMetrics } from '@/services/uftApi';
+
 
 interface DemoVendor {
   id: string;
