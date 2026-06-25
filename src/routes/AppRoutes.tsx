@@ -3736,6 +3736,7 @@ export default function AppRoutes() {
         <Route path="/uft/payouts" element={<UFTPayouts />} />
         <Route path="/uft/suppliers" element={<UFTSuppliers />} />
         <Route path="/uft/recruiting" element={<UFTRecruiting />} />
+        <Route path="/uft/ambassador-recruiting" element={<UFTAmbassadorRecruiting />} />
       </Route>
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
