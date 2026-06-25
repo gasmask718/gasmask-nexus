@@ -62,12 +62,17 @@ export default function ResetPassword() {
           <>
             <CardHeader className="text-center">
               <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-2" />
-              <CardTitle>Invalid or expired link</CardTitle>
-              <CardDescription>Request a new password reset email.</CardDescription>
+              <CardTitle>Link expired or invalid</CardTitle>
+              <CardDescription>
+                This password reset link has expired or is invalid. Request a new one to continue.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="text-center">
-              <Button variant="outline" onClick={() => navigate('/forgot-password')}>
-                Request new link
+            <CardContent className="text-center space-y-2">
+              <Button className="w-full" onClick={() => navigate('/forgot-password')}>
+                Request a new reset link
+              </Button>
+              <Button variant="ghost" className="w-full" onClick={() => navigate('/auth')}>
+                Back to sign in
               </Button>
             </CardContent>
           </>
