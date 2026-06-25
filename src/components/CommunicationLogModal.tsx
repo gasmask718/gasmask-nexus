@@ -122,6 +122,11 @@ export function CommunicationLogModal({
       return;
     }
 
+    if (channel === 'sms' && optedOut) {
+      toast.error('Cannot send SMS: recipient is opted out (TCPA compliance).');
+      return;
+    }
+
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
