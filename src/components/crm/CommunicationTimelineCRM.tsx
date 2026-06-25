@@ -2,7 +2,35 @@ import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Mail, MessageSquare, User } from 'lucide-react';
+import { Phone, Mail, MessageSquare, User, CheckCheck, Check, Clock, AlertTriangle, XCircle } from 'lucide-react';
+
+type DeliveryStatus =
+  | 'queued' | 'sending' | 'sent' | 'delivered' | 'undelivered'
+  | 'failed' | 'received' | 'read' | string;
+
+const formatStatus = (s: string) => s.replace(/_/g, ' ');
+
+const deliveryBadge = (status?: string | null) => {
+  if (!status) return null;
+  const s = status.toLowerCase() as DeliveryStatus;
+  const map: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: JSX.Element; className?: string }> = {
+    queued:       { label: 'Queued',       variant: 'secondary', icon: <Clock className="h-3 w-3" /> },
+    sending:      { label: 'Sending',      variant: 'secondary', icon: <Clock className="h-3 w-3" /> },
+    sent:         { label: 'Sent',         variant: 'outline',   icon: <Check className="h-3 w-3" /> },
+    delivered:    { label: 'Delivered',    variant: 'default',   icon: <CheckCheck className="h-3 w-3" />, className: 'bg-emerald-600 hover:bg-emerald-600 text-white' },
+    read:         { label: 'Read',         variant: 'default',   icon: <CheckCheck className="h-3 w-3" />, className: 'bg-emerald-600 hover:bg-emerald-600 text-white' },
+    received:     { label: 'Received',     variant: 'outline',   icon: <CheckCheck className="h-3 w-3" /> },
+    undelivered:  { label: 'Undelivered',  variant: 'destructive', icon: <AlertTriangle className="h-3 w-3" /> },
+    failed:       { label: 'Failed',       variant: 'destructive', icon: <XCircle className="h-3 w-3" /> },
+  };
+  const cfg = map[s] ?? { label: formatStatus(status), variant: 'outline' as const, icon: <Clock className="h-3 w-3" /> };
+  return (
+    <Badge variant={cfg.variant} className={`text-xs flex items-center gap-1 capitalize ${cfg.className ?? ''}`}>
+      {cfg.icon}
+      {cfg.label}
+    </Badge>
+  );
+};
 
 interface CommunicationTimelineCRMProps {
   storeId?: string;
@@ -119,13 +147,14 @@ export const CommunicationTimelineCRM = ({
                 {log.direction}
               </Badge>
             </div>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center flex-wrap gap-2 text-xs text-muted-foreground">
               <span>
                 {new Date(log.created_at).toLocaleString()}
               </span>
               {log.created_by_profile?.name && (
                 <span>by {log.created_by_profile.name}</span>
               )}
+              {log.channel === 'sms' && deliveryBadge(log.delivery_status ?? log.status)}
               {log.outcome && (
                 <Badge variant="secondary" className="text-xs">
                   {log.outcome}
