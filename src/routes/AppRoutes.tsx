@@ -840,6 +840,7 @@ const UFTVerification = lazy(() => import('@/pages/uft/UFTVerification'));
 const UFTPayouts = lazy(() => import('@/pages/uft/UFTPayouts'));
 const UFTSuppliers = lazy(() => import('@/pages/uft/UFTSuppliers'));
 const UFTRecruiting = lazy(() => import('@/pages/uft/UFTRecruiting'));
+const UFTAmbassadorRecruiting = lazy(() => import('@/pages/uft/UFTAmbassadorRecruiting'));
 
 // Unforgettable
 const UnforgettableDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDashboard })));
