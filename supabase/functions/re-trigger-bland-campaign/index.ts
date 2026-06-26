@@ -162,7 +162,7 @@ serve(async (req) => {
     await supabase
       .from('re_leads')
       .update({
-        status: 'in_campaign',
+        status: 'queued',
         dc_campaign_id: campaign?.id,
       })
       .in('id', leads.map((l: any) => l.id));

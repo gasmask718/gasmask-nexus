@@ -144,7 +144,7 @@ serve(async (req) => {
     await supabase
       .from('surplus_funds_leads')
       .update({
-        status: 'in_campaign',
+        status: 'queued',
         dc_campaign_id: campaign?.id,
         bland_call_triggered: true,
         bland_call_triggered_at: new Date().toISOString(),
