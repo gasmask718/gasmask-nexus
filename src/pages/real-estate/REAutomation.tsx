@@ -151,6 +151,38 @@ export default function REAutomation() {
         })}
       </div>
 
+      {/* Metrics: Skip-trace success rate + Weekly imports */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Skip-Trace Success Rate</CardTitle></CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold" style={{ color: GREEN }}>
+              {traceRate.total > 0 ? Math.round((traceRate.found / traceRate.total) * 100) : 0}%
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">{traceRate.found} phones / {traceRate.total} traced</p>
+          </CardContent>
+        </Card>
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Leads Imported (Last 7 Days)</CardTitle></CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-2 h-24">
+              {weekly.map(w => {
+                const max = Math.max(1, ...weekly.map(x => x.count));
+                return (
+                  <div key={w.day} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="text-xs font-medium">{w.count}</div>
+                    <div className="w-full rounded-t" style={{ backgroundColor: GREEN, height: `${(w.count / max) * 70}px`, minHeight: '2px' }} />
+                    <div className="text-[10px] text-muted-foreground">{w.day}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+
+
       {/* Sales Mastery Engine AI Updates */}
       <Card>
         <CardHeader>
