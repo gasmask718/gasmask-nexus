@@ -732,6 +732,81 @@ export type Database = {
           },
         ]
       }
+      admin_notification_preferences: {
+        Row: {
+          admin_user_id: string
+          channel: string
+          created_at: string
+          event_type: string
+          id: string
+          is_enabled: boolean
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          channel: string
+          created_at?: string
+          event_type: string
+          id?: string
+          is_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          channel?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          is_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_notifications_log: {
+        Row: {
+          body: string | null
+          channel: string
+          event_type: string
+          id: string
+          metadata: Json
+          recipient: string
+          related_id: string | null
+          related_table: string | null
+          sent_at: string
+          status: string
+        }
+        Insert: {
+          body?: string | null
+          channel: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          recipient: string
+          related_id?: string | null
+          related_table?: string | null
+          sent_at?: string
+          status: string
+        }
+        Update: {
+          body?: string | null
+          channel?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          recipient?: string
+          related_id?: string | null
+          related_table?: string | null
+          sent_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       advisor_action_log: {
         Row: {
           action_label: string
