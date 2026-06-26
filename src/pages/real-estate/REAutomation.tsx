@@ -21,10 +21,13 @@ export default function REAutomation() {
   const [logs, setLogs] = useState<any[]>([]);
   const [runningJob, setRunningJob] = useState<string | null>(null);
   const [sourceStats, setSourceStats] = useState<{ source: string; total: number; traced: number; interested: number; contracts: number }[]>([]);
+  const [weekly, setWeekly] = useState<{ day: string; count: number }[]>([]);
+  const [traceRate, setTraceRate] = useState<{ found: number; total: number }>({ found: 0, total: 0 });
 
   useEffect(() => {
     fetchLogs();
     fetchSourceStats();
+    fetchWeekly();
   }, []);
 
   const fetchLogs = async () => {
@@ -36,21 +39,39 @@ export default function REAutomation() {
     setLogs((data || []) as any[]);
   };
 
+  const fetchWeekly = async () => {
+    const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+    const { data } = await supabase.from('re_leads').select('created_at').gte('created_at', since);
+    const buckets: Record<string, number> = {};
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+      buckets[d] = 0;
+    }
+    (data || []).forEach((r: any) => {
+      const d = (r.created_at || '').slice(0, 10);
+      if (d in buckets) buckets[d]++;
+    });
+    setWeekly(Object.entries(buckets).map(([day, count]) => ({ day: day.slice(5), count })));
+  };
+
   const fetchSourceStats = async () => {
-    const { data: leads } = await supabase.from('re_leads').select('lead_source, status, skip_traced');
+    const { data: leads } = await supabase.from('re_leads').select('lead_source, status, skip_traced, phone');
     if (!leads) return;
     const map = new Map<string, { total: number; traced: number; interested: number; contracts: number }>();
+    let traced = 0, withPhone = 0;
     leads.forEach(l => {
       const src = l.lead_source || 'unknown';
       if (!map.has(src)) map.set(src, { total: 0, traced: 0, interested: 0, contracts: 0 });
       const s = map.get(src)!;
       s.total++;
-      if (l.skip_traced) s.traced++;
+      if (l.skip_traced) { s.traced++; traced++; if (l.phone) withPhone++; }
       if (['interested', 'appointment_set', 'offer_made', 'under_contract', 'buyer_found', 'assigned', 'closed'].includes(l.status)) s.interested++;
       if (['under_contract', 'buyer_found', 'assigned', 'closed'].includes(l.status)) s.contracts++;
     });
     setSourceStats(Array.from(map.entries()).map(([source, s]) => ({ source, ...s })));
+    setTraceRate({ found: withPhone, total: traced });
   };
+
 
   const runJob = async (fnName: string, key: string) => {
     setRunningJob(key);
@@ -129,6 +150,38 @@ export default function REAutomation() {
           );
         })}
       </div>
+
+      {/* Metrics: Skip-trace success rate + Weekly imports */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Skip-Trace Success Rate</CardTitle></CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold" style={{ color: GREEN }}>
+              {traceRate.total > 0 ? Math.round((traceRate.found / traceRate.total) * 100) : 0}%
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">{traceRate.found} phones / {traceRate.total} traced</p>
+          </CardContent>
+        </Card>
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Leads Imported (Last 7 Days)</CardTitle></CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-2 h-24">
+              {weekly.map(w => {
+                const max = Math.max(1, ...weekly.map(x => x.count));
+                return (
+                  <div key={w.day} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="text-xs font-medium">{w.count}</div>
+                    <div className="w-full rounded-t" style={{ backgroundColor: GREEN, height: `${(w.count / max) * 70}px`, minHeight: '2px' }} />
+                    <div className="text-[10px] text-muted-foreground">{w.day}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+
 
       {/* Sales Mastery Engine AI Updates */}
       <Card>
