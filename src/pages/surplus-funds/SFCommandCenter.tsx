@@ -27,6 +27,18 @@ export default function SFCommandCenter() {
     },
   });
 
+  const { data: callbackCount = 0 } = useQuery({
+    queryKey: ['sf-callback-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('surplus_funds_leads')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'callback_requested');
+      return count ?? 0;
+    },
+    refetchInterval: 30000,
+  });
+
   const { data: cases = [] } = useQuery({
     queryKey: ['sf-cases-all'],
     queryFn: async () => {
