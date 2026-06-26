@@ -91,33 +91,57 @@ serve(async (req) => {
       };
     });
 
-    let blandBatchId: string | null = null;
+    let blandSuccessCount = 0;
     let blandError: string | null = null;
-    try {
-      const blandRes = await fetch('https://api.bland.ai/v1/batches', {
-        method: 'POST',
-        headers: {
-          'Authorization': BLAND_API_KEY,
-          'Content-Type': 'application/json',
+    const blandCallIds: string[] = [];
+
+    for (const l of leads as any[]) {
+      const taskPrompt = SF_OUTREACH_PROMPT
+        .replaceAll('{{first_name}}', l.first_name || 'there')
+        .replaceAll('{{county}}', l.county || 'your county')
+        .replaceAll('{{state}}', l.state || state)
+        .replaceAll('{{amount}}', l.surplus_amount ? `$${Number(l.surplus_amount).toLocaleString()}` : 'a significant amount');
+
+      const payload = {
+        phone_number: l.phone,
+        task: taskPrompt,
+        voice: 'June',
+        language: 'en-US',
+        max_duration: 5,
+        answered_by_enabled: true,
+        wait_for_greeting: true,
+        record: true,
+        amd: true,
+        request_data: {
+          lead_id: l.id,
+          hub: 'surplus_funds',
+          county: l.county,
+          state: l.state,
         },
-        body: JSON.stringify({
-          label,
-          base_prompt: SF_OUTREACH_PROMPT,
-          voice: 'June',
-          language: 'en-US',
-          max_duration: 5,
-          answered_by_enabled: true,
-          wait_for_greeting: true,
-          record: true,
-          amd: true,
-          calls,
-        }),
-      });
-      const blandJson = await blandRes.json();
-      blandBatchId = blandJson.batch_id || blandJson.id || null;
-      if (!blandRes.ok) blandError = JSON.stringify(blandJson);
-    } catch (e: any) {
-      blandError = e.message;
+        webhook: `${SUPABASE_URL}/functions/v1/dc-bland-webhook`,
+      };
+
+      try {
+        const blandRes = await fetch('https://api.bland.ai/v1/calls', {
+          method: 'POST',
+          headers: { 'Authorization': BLAND_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const blandJson = await blandRes.json();
+        if (blandRes.ok && blandJson.call_id) {
+          blandSuccessCount++;
+          blandCallIds.push(blandJson.call_id);
+          await supabase.from('surplus_funds_leads')
+            .update({ bland_call_id: blandJson.call_id })
+            .eq('id', l.id);
+        } else {
+          blandError = blandError || JSON.stringify(blandJson);
+          console.error('[bland call failed]', l.id, blandJson);
+        }
+      } catch (e: any) {
+        blandError = blandError || e.message;
+        console.error('[bland call exception]', l.id, e);
+      }
     }
 
     // Insert campaign record
