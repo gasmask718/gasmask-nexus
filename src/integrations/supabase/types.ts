@@ -35702,6 +35702,36 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_ops_reports: {
+        Row: {
+          email_body: string | null
+          generated_at: string
+          id: string
+          metrics: Json
+          report_date: string
+          sent_to: string[] | null
+          sms_body: string | null
+        }
+        Insert: {
+          email_body?: string | null
+          generated_at?: string
+          id?: string
+          metrics: Json
+          report_date: string
+          sent_to?: string[] | null
+          sms_body?: string | null
+        }
+        Update: {
+          email_body?: string | null
+          generated_at?: string
+          id?: string
+          metrics?: Json
+          report_date?: string
+          sent_to?: string[] | null
+          sms_body?: string | null
+        }
+        Relationships: []
+      }
       daily_prediction_snapshots: {
         Row: {
           actual_winner: string | null
