@@ -389,7 +389,7 @@ ${transcript}`
         if (sourceHub === 'surplus_funds') {
           await supabase.rpc('increment_call_count', { row_id: leadId, target_table: 'surplus_funds_leads' });
           await supabase.from('surplus_funds_leads').update({
-            status: newStatus,
+            status: newStatusSf,
             last_called_at: new Date().toISOString(),
             call_outcome: disposition || null,
             call_recording_url: recordingUrl,
@@ -406,7 +406,7 @@ ${transcript}`
         } else if (sourceHub === 're') {
           await supabase.rpc('increment_call_count', { row_id: leadId, target_table: 're_leads' });
           await supabase.from('re_leads').update({
-            status: newStatus,
+            status: newStatusRe,
             last_called_at: new Date().toISOString(),
             call_outcome: disposition || null,
             call_recording_url: recordingUrl,
