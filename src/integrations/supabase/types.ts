@@ -77135,6 +77135,65 @@ export type Database = {
           },
         ]
       }
+      re_buyer_criteria: {
+        Row: {
+          active: boolean | null
+          buyer_id: string | null
+          cities: string[] | null
+          condition_acceptable: string[] | null
+          created_at: string | null
+          id: string
+          max_arv: number | null
+          max_price: number | null
+          max_repair_cost: number | null
+          min_arv: number | null
+          min_beds: number | null
+          notes: string | null
+          property_types: string[] | null
+          states: string[] | null
+        }
+        Insert: {
+          active?: boolean | null
+          buyer_id?: string | null
+          cities?: string[] | null
+          condition_acceptable?: string[] | null
+          created_at?: string | null
+          id?: string
+          max_arv?: number | null
+          max_price?: number | null
+          max_repair_cost?: number | null
+          min_arv?: number | null
+          min_beds?: number | null
+          notes?: string | null
+          property_types?: string[] | null
+          states?: string[] | null
+        }
+        Update: {
+          active?: boolean | null
+          buyer_id?: string | null
+          cities?: string[] | null
+          condition_acceptable?: string[] | null
+          created_at?: string | null
+          id?: string
+          max_arv?: number | null
+          max_price?: number | null
+          max_repair_cost?: number | null
+          min_arv?: number | null
+          min_beds?: number | null
+          notes?: string | null
+          property_types?: string[] | null
+          states?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "re_buyer_criteria_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "re_buyers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       re_buyers: {
         Row: {
           arv_percentage: number | null
@@ -77197,6 +77256,75 @@ export type Database = {
           status?: string | null
         }
         Relationships: []
+      }
+      re_contracts: {
+        Row: {
+          assignment_fee: number | null
+          buyer_name: string | null
+          closing_date: string | null
+          contract_type: string | null
+          contract_url: string | null
+          created_at: string | null
+          deal_id: string | null
+          docusign_envelope_id: string | null
+          id: string
+          notes: string | null
+          property_id: string | null
+          purchase_price: number | null
+          seller_name: string | null
+          signed_at: string | null
+          status: string | null
+        }
+        Insert: {
+          assignment_fee?: number | null
+          buyer_name?: string | null
+          closing_date?: string | null
+          contract_type?: string | null
+          contract_url?: string | null
+          created_at?: string | null
+          deal_id?: string | null
+          docusign_envelope_id?: string | null
+          id?: string
+          notes?: string | null
+          property_id?: string | null
+          purchase_price?: number | null
+          seller_name?: string | null
+          signed_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          assignment_fee?: number | null
+          buyer_name?: string | null
+          closing_date?: string | null
+          contract_type?: string | null
+          contract_url?: string | null
+          created_at?: string | null
+          deal_id?: string | null
+          docusign_envelope_id?: string | null
+          id?: string
+          notes?: string | null
+          property_id?: string | null
+          purchase_price?: number | null
+          seller_name?: string | null
+          signed_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "re_contracts_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "re_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "re_contracts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "re_properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       re_deals: {
         Row: {
@@ -77443,6 +77571,155 @@ export type Database = {
         }
         Relationships: []
       }
+      re_offers: {
+        Row: {
+          assignment_fee: number | null
+          buyer_id: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          offer_amount: number
+          property_id: string | null
+          responded_at: string | null
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          assignment_fee?: number | null
+          buyer_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          offer_amount: number
+          property_id?: string | null
+          responded_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          assignment_fee?: number | null
+          buyer_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          offer_amount?: number
+          property_id?: string | null
+          responded_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "re_offers_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "re_buyers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "re_offers_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "re_properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      re_properties: {
+        Row: {
+          address: string
+          arv_estimate: number | null
+          asking_price: number | null
+          assignment_fee: number | null
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string | null
+          condition: string | null
+          county: string | null
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          lot_size_sqft: number | null
+          mao: number | null
+          notes: string | null
+          our_offer: number | null
+          photos: string[] | null
+          property_type: string | null
+          redfin_url: string | null
+          repair_estimate: number | null
+          sqft: number | null
+          state: string | null
+          status: string | null
+          year_built: number | null
+          zillow_url: string | null
+          zip: string | null
+        }
+        Insert: {
+          address: string
+          arv_estimate?: number | null
+          asking_price?: number | null
+          assignment_fee?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          condition?: string | null
+          county?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          lot_size_sqft?: number | null
+          mao?: number | null
+          notes?: string | null
+          our_offer?: number | null
+          photos?: string[] | null
+          property_type?: string | null
+          redfin_url?: string | null
+          repair_estimate?: number | null
+          sqft?: number | null
+          state?: string | null
+          status?: string | null
+          year_built?: number | null
+          zillow_url?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string
+          arv_estimate?: number | null
+          asking_price?: number | null
+          assignment_fee?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          condition?: string | null
+          county?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          lot_size_sqft?: number | null
+          mao?: number | null
+          notes?: string | null
+          our_offer?: number | null
+          photos?: string[] | null
+          property_type?: string | null
+          redfin_url?: string | null
+          repair_estimate?: number | null
+          sqft?: number | null
+          state?: string | null
+          status?: string | null
+          year_built?: number | null
+          zillow_url?: string | null
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "re_properties_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "re_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       re_va_profiles: {
         Row: {
           assigned_markets: string[] | null
@@ -77484,6 +77761,76 @@ export type Database = {
           role?: string | null
         }
         Relationships: []
+      }
+      re_va_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          due_at: string | null
+          escalated_to: string | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          priority: string | null
+          property_id: string | null
+          script: string | null
+          status: string | null
+          task_type: string | null
+          va_profile_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          due_at?: string | null
+          escalated_to?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          priority?: string | null
+          property_id?: string | null
+          script?: string | null
+          status?: string | null
+          task_type?: string | null
+          va_profile_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          due_at?: string | null
+          escalated_to?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          priority?: string | null
+          property_id?: string | null
+          script?: string | null
+          status?: string | null
+          task_type?: string | null
+          va_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "re_va_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "re_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "re_va_tasks_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "re_properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "re_va_tasks_va_profile_id_fkey"
+            columns: ["va_profile_id"]
+            isOneToOne: false
+            referencedRelation: "re_va_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       real_estate_notifications: {
         Row: {
@@ -93865,6 +94212,57 @@ export type Database = {
           },
         ]
       }
+      surplus_funds_attorney_assignments: {
+        Row: {
+          accepted_at: string | null
+          assigned_at: string | null
+          attorney_fee_percentage: number | null
+          attorney_id: string | null
+          case_id: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          status: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          assigned_at?: string | null
+          attorney_fee_percentage?: number | null
+          attorney_id?: string | null
+          case_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          assigned_at?: string | null
+          attorney_fee_percentage?: number | null
+          attorney_id?: string | null
+          case_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surplus_funds_attorney_assignments_attorney_id_fkey"
+            columns: ["attorney_id"]
+            isOneToOne: false
+            referencedRelation: "surplus_funds_attorneys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surplus_funds_attorney_assignments_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "surplus_funds_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       surplus_funds_attorneys: {
         Row: {
           application_source: string | null
@@ -94031,6 +94429,84 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "surplus_funds_cases_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "surplus_funds_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      surplus_funds_contracts: {
+        Row: {
+          case_id: string | null
+          claimant_email: string | null
+          claimant_name: string
+          claimant_phone: string | null
+          contract_type: string | null
+          contract_url: string | null
+          created_at: string | null
+          docusign_envelope_id: string | null
+          hellosign_signature_id: string | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          our_percentage: number | null
+          signed_at: string | null
+          state: string
+          status: string | null
+          storage_path: string | null
+          surplus_amount: number | null
+        }
+        Insert: {
+          case_id?: string | null
+          claimant_email?: string | null
+          claimant_name: string
+          claimant_phone?: string | null
+          contract_type?: string | null
+          contract_url?: string | null
+          created_at?: string | null
+          docusign_envelope_id?: string | null
+          hellosign_signature_id?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          our_percentage?: number | null
+          signed_at?: string | null
+          state: string
+          status?: string | null
+          storage_path?: string | null
+          surplus_amount?: number | null
+        }
+        Update: {
+          case_id?: string | null
+          claimant_email?: string | null
+          claimant_name?: string
+          claimant_phone?: string | null
+          contract_type?: string | null
+          contract_url?: string | null
+          created_at?: string | null
+          docusign_envelope_id?: string | null
+          hellosign_signature_id?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          our_percentage?: number | null
+          signed_at?: string | null
+          state?: string
+          status?: string | null
+          storage_path?: string | null
+          surplus_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surplus_funds_contracts_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "surplus_funds_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surplus_funds_contracts_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "surplus_funds_leads"
@@ -94256,6 +94732,78 @@ export type Database = {
           zip?: string | null
         }
         Relationships: []
+      }
+      surplus_funds_payments: {
+        Row: {
+          attorney_fee_amount: number | null
+          case_id: string | null
+          claimant_name: string | null
+          claimant_net_amount: number | null
+          contract_id: string | null
+          court_order_date: string | null
+          created_at: string | null
+          disbursement_date: string | null
+          id: string
+          notes: string | null
+          our_fee_amount: number | null
+          our_fee_received_date: string | null
+          our_percentage: number | null
+          payment_method: string | null
+          status: string | null
+          total_surplus_amount: number | null
+        }
+        Insert: {
+          attorney_fee_amount?: number | null
+          case_id?: string | null
+          claimant_name?: string | null
+          claimant_net_amount?: number | null
+          contract_id?: string | null
+          court_order_date?: string | null
+          created_at?: string | null
+          disbursement_date?: string | null
+          id?: string
+          notes?: string | null
+          our_fee_amount?: number | null
+          our_fee_received_date?: string | null
+          our_percentage?: number | null
+          payment_method?: string | null
+          status?: string | null
+          total_surplus_amount?: number | null
+        }
+        Update: {
+          attorney_fee_amount?: number | null
+          case_id?: string | null
+          claimant_name?: string | null
+          claimant_net_amount?: number | null
+          contract_id?: string | null
+          court_order_date?: string | null
+          created_at?: string | null
+          disbursement_date?: string | null
+          id?: string
+          notes?: string | null
+          our_fee_amount?: number | null
+          our_fee_received_date?: string | null
+          our_percentage?: number | null
+          payment_method?: string | null
+          status?: string | null
+          total_surplus_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surplus_funds_payments_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "surplus_funds_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surplus_funds_payments_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "surplus_funds_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_alert_config: {
         Row: {
@@ -122714,6 +123262,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_call_count: {
+        Args: { row_id: string; target_table?: string }
+        Returns: number
       }
       increment_discount_usage: { Args: { p_code: string }; Returns: undefined }
       increment_received: { Args: { num: string }; Returns: number }
