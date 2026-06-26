@@ -33,10 +33,8 @@ export default function GasMaskStoreLocator() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
-        .from('v_public_store_locator')
-        .select('store_id, store_name, neighborhood, city, street, lat, lng');
-      if (!error && data) setStores(data as LocatorStore[]);
+      const { data, error } = await (supabase as any).rpc('get_public_store_locator');
+      if (!error && Array.isArray(data)) setStores(data as LocatorStore[]);
     })();
   }, []);
 
