@@ -15,6 +15,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Layouts — kept static (used as wrappers, always needed)
 import PublicLayout from '@/layouts/PublicLayout';
+const GasMaskStoreLocator = lazy(() => import('@/pages/public/GasMaskStoreLocator'));
 import OpsLayout from '@/layouts/OpsLayout';
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
 
