@@ -372,17 +372,17 @@ ${transcript}`
 
       if (sourceHub && leadId) {
         const disposition = (payload.disposition || payload.status || '').toLowerCase();
-        const outcomeMap: Record<string, string> = {
+        // Constrained allowed status values per hub
+        const sfStatusMap: Record<string, string> = {
           'interested': 'interested',
-          'not_interested': 'not_interested',
-          'callback': 'callback_requested',
-          'wrong_number': 'wrong_number',
-          'voicemail': 'voicemail',
-          'no_answer': 'no_answer',
-          'do_not_call': 'do_not_call',
-          'completed': 'called',
+          'do_not_call': 'do_not_contact',
         };
-        const newStatus = outcomeMap[disposition] || 'called';
+        const reStatusMap: Record<string, string> = {
+          'interested': 'interested',
+          'do_not_call': 'dnc',
+        };
+        const newStatusSf = sfStatusMap[disposition] || 'called';
+        const newStatusRe = reStatusMap[disposition] || 'called';
         const recordingUrl = payload.recording_url || payload.recording || null;
         const callTranscript = payload.concatenated_transcript || payload.transcript || null;
 
