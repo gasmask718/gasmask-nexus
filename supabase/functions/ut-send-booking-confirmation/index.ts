@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
         await fetch(`${GATEWAY_URL}/Messages.json`, {
           method: "POST",
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "X-Connection-Api-Key": TWILIO_API_KEY, "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({ To: customer.phone, From: TWILIO_PHONE, Body: `🎉 Your booking with ${booking.ut_vendors?.business_name} on ${booking.event_date} is confirmed! Total: $${booking.total_amount}. View details at unforgettabletimes.com` })
+          body: new URLSearchParams({ To: customer.phone, From: TWILIO_PHONE, Body: (await import("../_shared/smsTemplates.ts")).buildSmsTemplate("booking_confirmed_generic", { service_name: "booking", vendor_name: booking.ut_vendors?.business_name || "vendor", date: booking.event_date, total: booking.total_amount }) })
         });
       }
     }

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,7 +53,11 @@ async function sendEmail(to: string, subject: string, html: string) {
 
 // ── REQUEST_CONFIRM templates ───────────────────────────────────────────
 function buildRequestConfirmSMS(booking: any) {
-  return `🔔 New booking request:\n${booking.service_name}\n${booking.notes || "N/A"}\nDate: ${booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD"}\n\nReply:\n1 = Available\n2 = Not Available`;
+  return buildSmsTemplate("partner_request_confirm", {
+    service_name: booking.service_name,
+    date: booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD",
+    notes: booking.notes || undefined,
+  });
 }
 
 function buildRequestConfirmEmailHTML(booking: any, confirmUrl: string, declineUrl: string) {
@@ -81,12 +86,14 @@ function buildRequestConfirmEmailHTML(booking: any, confirmUrl: string, declineU
 
 // ── COACH BUS QUOTE BROADCAST templates ─────────────────────────────────
 function buildCoachBusSMS(booking: any) {
-  const pickup = booking.pickup_city || "TBD";
-  const dropoff = booking.dropoff_city || "TBD";
-  const date = booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD";
-  const pax = booking.passenger_count || "TBD";
   const baseUrl = Deno.env.get("FRONTEND_BASE_URL") || "https://gasmask-os-nexus.lovable.app";
-  return `🚌 New Coach Bus Request:\n${pickup} → ${dropoff}\n${date}\nPassengers: ${pax}\n\nSubmit quote: ${baseUrl}/partner/quote/${booking.id}`;
+  return buildSmsTemplate("partner_quote_coach_bus", {
+    pickup_city: booking.pickup_city || "TBD",
+    dropoff_city: booking.dropoff_city || "TBD",
+    date: booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD",
+    passengers: booking.passenger_count || "TBD",
+    quote_url: `${baseUrl}/partner/quote/${booking.id}`,
+  });
 }
 
 function buildCoachBusEmailHTML(booking: any, quoteUrl: string) {
@@ -137,7 +144,11 @@ function buildCoachBusEmailHTML(booking: any, quoteUrl: string) {
 
 // ── Generic quote broadcast templates (jets, etc.) ──────────────────────
 function buildGenericQuoteSMS(booking: any) {
-  return `🔔 TopTier quote request:\n${booking.service_name}\nDate: ${booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD"}\nClient: ${booking.client_name}\n\nSubmit your quote at toptierlifestyle.com`;
+  return buildSmsTemplate("partner_quote_request", {
+    service_name: booking.service_name,
+    date: booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD",
+    quote_url: "https://toptierlifestyle.com/partner",
+  });
 }
 
 function buildGenericQuoteEmailHTML(booking: any) {
