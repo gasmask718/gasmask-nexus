@@ -26,6 +26,9 @@ export default function PublicLayout() {
             <Link to="/shop" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Shop
             </Link>
+            <Link to="/locations" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Locations
+            </Link>
             <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               About
             </Link>

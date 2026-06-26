@@ -15,6 +15,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Layouts — kept static (used as wrappers, always needed)
 import PublicLayout from '@/layouts/PublicLayout';
+const GasMaskStoreLocator = lazy(() => import('@/pages/public/GasMaskStoreLocator'));
 import OpsLayout from '@/layouts/OpsLayout';
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
 
@@ -1219,7 +1220,10 @@ export default function AppRoutes() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/gasmask/locations" element={<GasMaskStoreLocator />} />
+        <Route path="/locations" element={<GasMaskStoreLocator />} />
       </Route>
 
       {/* T1 M2: /store = UT Shopify — standalone, has its own UT chrome (no GasMask wrap) */}
