@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Search, Upload, Plus, Database } from 'lucide-react';
+import { Search, Upload, Plus, Database, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
@@ -63,12 +63,38 @@ export default function SFDiscovery() {
     addLeads.mutate(mapped);
   };
 
+  const triggerImport = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('sf-lead-import', {
+        body: { source: 'manual_discovery_trigger', leads: [] },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      toast.success(`Import done — inserted ${data?.leads_inserted ?? 0}, skipped ${data?.leads_skipped_duplicate ?? 0}`);
+      queryClient.invalidateQueries({ queryKey: ['sf-leads'] });
+    },
+    onError: (e: any) => toast.error(e?.message || 'Import failed'),
+  });
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-amber-500">🔍 Lead Discovery</h1>
-        <p className="text-sm text-muted-foreground">Find new surplus funds opportunities from public records</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-amber-500">🔍 Lead Discovery</h1>
+          <p className="text-sm text-muted-foreground">Find new surplus funds opportunities from public records</p>
+        </div>
+        <Button
+          onClick={() => triggerImport.mutate()}
+          disabled={triggerImport.isPending}
+          className="bg-amber-600 hover:bg-amber-700"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          {triggerImport.isPending ? 'Importing…' : 'Import Leads'}
+        </Button>
       </div>
+
 
       {/* Search Panel */}
       <Card className="border-amber-500/20">
