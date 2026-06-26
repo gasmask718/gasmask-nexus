@@ -219,6 +219,8 @@ export default function TTBookings() {
                   <InfoRow label="Partner" value={selectedBooking.partner_name || 'Unassigned'} />
                   <InfoRow label="Scheduled" value={selectedBooking.scheduled_at ? format(new Date(selectedBooking.scheduled_at), 'PPp') : '—'} />
                   <InfoRow label="Created" value={formatDistanceToNow(new Date(selectedBooking.created_at), { addSuffix: true })} />
+                  <InfoRow label="24h Reminder" value={selectedBooking.reminder_24h_sent_at ? `Sent ${format(new Date(selectedBooking.reminder_24h_sent_at), 'PPp')}` : 'Not sent yet'} />
+                  <InfoRow label="2h Reminder" value={selectedBooking.reminder_2h_sent_at ? `Sent ${format(new Date(selectedBooking.reminder_2h_sent_at), 'PPp')}` : 'Not sent yet'} />
                 </div>
                 {selectedBooking.notes && (
                   <div>

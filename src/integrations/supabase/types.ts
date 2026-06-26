@@ -96973,6 +96973,8 @@ export type Database = {
           pickup_lng: number | null
           pickup_location: string | null
           pickup_state: string | null
+          reminder_24h_sent_at: string | null
+          reminder_2h_sent_at: string | null
           requested_red_carpet: boolean | null
           requested_star_ceiling: boolean | null
           requested_style: string | null
@@ -97019,6 +97021,8 @@ export type Database = {
           pickup_lng?: number | null
           pickup_location?: string | null
           pickup_state?: string | null
+          reminder_24h_sent_at?: string | null
+          reminder_2h_sent_at?: string | null
           requested_red_carpet?: boolean | null
           requested_star_ceiling?: boolean | null
           requested_style?: string | null
@@ -97065,6 +97069,8 @@ export type Database = {
           pickup_lng?: number | null
           pickup_location?: string | null
           pickup_state?: string | null
+          reminder_24h_sent_at?: string | null
+          reminder_2h_sent_at?: string | null
           requested_red_carpet?: boolean | null
           requested_star_ceiling?: boolean | null
           requested_style?: string | null
