@@ -129,9 +129,22 @@ Deno.serve(async (req) => {
       metadata: { phones_found: phonesFound, dnc: dncCount, no_phone: noPhone },
     }).eq('id', logEntry?.id);
 
+    // Auto-trigger Bland campaign for leads that now have phones
+    if (phonesFound > 0) {
+      const { data: readyLeads } = await supabase.from('re_leads')
+        .select('id').eq('status', 'new').eq('skip_traced', true).not('phone', 'is', null).limit(phonesFound);
+      const leadIds = (readyLeads || []).map(l => l.id);
+      if (leadIds.length > 0) {
+        await supabase.functions.invoke('re-trigger-bland-campaign', {
+          body: { lead_ids: leadIds, auto_run: true },
+        }).catch((e) => console.error('campaign trigger failed:', e));
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true, processed: leads.length, phones_found: phonesFound, dnc: dncCount, no_phone: noPhone,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
 
   } catch (error) {
     await supabase.from('re_automation_log').update({
