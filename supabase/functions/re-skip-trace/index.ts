@@ -103,15 +103,16 @@ Deno.serve(async (req) => {
               dncCount++;
             } else if (phone) {
               await supabase.from('re_leads').update({
-                phone, email, skip_traced: true, status: 'queued',
+                phone, email, skip_traced: true, status: 'new',
               }).eq('id', lead.id);
               phonesFound++;
             } else {
               await supabase.from('re_leads').update({
-                email, skip_traced: true,
+                email, skip_traced: true, status: 'skip_trace_failed',
               }).eq('id', lead.id);
               noPhone++;
             }
+
           }
         }
       } catch (e) {
