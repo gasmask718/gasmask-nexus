@@ -350,6 +350,92 @@ ${transcript}`
       }
     }
 
+    // === DUAL-WRITE BACK TO SOURCE HUB (Surplus Funds / Real Estate) ===
+    try {
+      const requestData = payload.request_data || payload.variables || {};
+      let sourceHub: string | null = requestData.hub || null;
+      let leadId: string | null = requestData.lead_id || null;
+
+      if (!sourceHub || !leadId) {
+        const { data: dcLead } = await supabase
+          .from('dc_leads')
+          .select('external_ref_id, lead_type, business_id')
+          .eq('phone', payload.to)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (dcLead) {
+          leadId = leadId || dcLead.external_ref_id;
+          sourceHub = sourceHub || dcLead.business_id || (dcLead.lead_type?.startsWith('surplus_funds') ? 'surplus_funds' : dcLead.lead_type?.startsWith('re_') ? 're' : null);
+        }
+      }
+
+      if (sourceHub && leadId) {
+        const disposition = (payload.disposition || payload.status || '').toLowerCase();
+        // Constrained allowed status values per hub
+        const sfStatusMap: Record<string, string> = {
+          'interested': 'interested',
+          'do_not_call': 'do_not_contact',
+        };
+        const reStatusMap: Record<string, string> = {
+          'interested': 'interested',
+          'do_not_call': 'dnc',
+        };
+        const newStatusSf = sfStatusMap[disposition] || 'called';
+        const newStatusRe = reStatusMap[disposition] || 'called';
+        const recordingUrl = payload.recording_url || payload.recording || null;
+        const callTranscript = payload.concatenated_transcript || payload.transcript || null;
+
+        if (sourceHub === 'surplus_funds') {
+          await supabase.rpc('increment_call_count', { row_id: leadId, target_table: 'surplus_funds_leads' });
+          await supabase.from('surplus_funds_leads').update({
+            status: newStatusSf,
+            last_called_at: new Date().toISOString(),
+            call_outcome: disposition || null,
+            call_recording_url: recordingUrl,
+            call_transcript: callTranscript,
+            bland_call_id: callId,
+            interest_level: disposition === 'interested' ? 'high' : disposition === 'not_interested' ? 'low' : null,
+          }).eq('id', leadId);
+
+          if (disposition === 'interested' && callTranscript) {
+            supabase.functions.invoke('sf-post-call-analysis', {
+              body: { lead_id: leadId, transcript: callTranscript, call_id: callId },
+            }).catch((e) => console.error('[sf-post-call-analysis invoke failed]', e));
+          }
+        } else if (sourceHub === 're') {
+          await supabase.rpc('increment_call_count', { row_id: leadId, target_table: 're_leads' });
+          await supabase.from('re_leads').update({
+            status: newStatusRe,
+            last_called_at: new Date().toISOString(),
+            call_outcome: disposition || null,
+            call_recording_url: recordingUrl,
+            call_transcript: callTranscript,
+            bland_call_id: callId,
+          }).eq('id', leadId);
+
+          if (disposition === 'interested') {
+            await supabase.from('re_va_tasks').insert({
+              lead_id: leadId,
+              task_type: 'seller_callback',
+              priority: 'urgent',
+              status: 'queued',
+              notes: `Seller expressed interest on Bland AI call ${callId}. Transcript available.`,
+              script: 'Follow up call to qualify property and set appointment.',
+              due_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            });
+            if (callTranscript) {
+              supabase.functions.invoke('re-post-call-analysis', {
+                body: { lead_id: leadId, transcript: callTranscript, call_id: callId },
+              }).catch((e) => console.error('[re-post-call-analysis invoke failed]', e));
+            }
+          }
+        }
+      }
+    } catch (dualWriteErr) {
+      console.error('[dual-write failed]', dualWriteErr);
+    }
+
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

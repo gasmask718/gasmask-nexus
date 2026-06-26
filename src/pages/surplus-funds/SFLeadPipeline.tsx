@@ -154,9 +154,30 @@ export default function SFLeadPipeline() {
       foreclosure_date: r.foreclosure_date || r['Foreclosure Date'] || null,
       lead_source: 'csv_upload',
     }));
-    const { error } = await supabase.from('surplus_funds_leads').insert(mapped);
-    if (error) toast.error('Upload failed: ' + error.message);
-    else { toast.success(`${mapped.length} leads imported`); qc.invalidateQueries({ queryKey: ['sf-leads'] }); }
+    const { data: inserted, error } = await supabase.from('surplus_funds_leads').insert(mapped).select('id, state');
+    if (error) { toast.error('Upload failed: ' + error.message); e.target.value = ''; return; }
+    toast.success(`${mapped.length} leads imported`);
+    qc.invalidateQueries({ queryKey: ['sf-leads'] });
+
+    const insertedIds = (inserted || []).map((l: any) => l.id);
+    if (insertedIds.length > 0) {
+      try {
+        const detectedState = (inserted || []).find((l: any) => l.state)?.state || 'FL';
+        const { data: campaignResult, error: campErr } = await supabase.functions.invoke('sf-trigger-bland-campaign', {
+          body: {
+            lead_ids: insertedIds,
+            campaign_name: `SF_Upload_${new Date().toISOString().slice(0, 10)}`,
+            state: detectedState,
+          },
+        });
+        if (campErr) throw campErr;
+        toast.success(`Bland AI campaign started — calls beginning now! (${insertedIds.length} leads)`, { duration: 6000 });
+        console.log('[SF campaign started]', campaignResult);
+      } catch (err: any) {
+        console.error('Campaign trigger failed:', err);
+        toast.warning('Leads uploaded but campaign failed to start. Trigger manually from Automation tab.', { duration: 8000 });
+      }
+    }
     e.target.value = '';
   };
 
