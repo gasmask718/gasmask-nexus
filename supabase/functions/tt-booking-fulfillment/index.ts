@@ -53,7 +53,11 @@ async function sendEmail(to: string, subject: string, html: string) {
 
 // ── REQUEST_CONFIRM templates ───────────────────────────────────────────
 function buildRequestConfirmSMS(booking: any) {
-  return `🔔 New booking request:\n${booking.service_name}\n${booking.notes || "N/A"}\nDate: ${booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD"}\n\nReply:\n1 = Available\n2 = Not Available`;
+  return buildSmsTemplate("partner_request_confirm", {
+    service_name: booking.service_name,
+    date: booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD",
+    notes: booking.notes || undefined,
+  });
 }
 
 function buildRequestConfirmEmailHTML(booking: any, confirmUrl: string, declineUrl: string) {
