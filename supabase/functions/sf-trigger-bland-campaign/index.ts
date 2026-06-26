@@ -152,12 +152,15 @@ serve(async (req) => {
       .in('id', leads.map((l: any) => l.id));
 
     return new Response(JSON.stringify({
-      success: !blandError,
+      success: blandSuccessCount > 0,
       campaign_id: campaign?.id,
-      bland_batch_id: blandBatchId,
+      bland_calls_started: blandSuccessCount,
+      bland_call_ids: blandCallIds,
       leads_queued: leads.length,
       bland_error: blandError,
-      message: blandError ? 'Leads queued but Bland API failed' : 'Campaign started. Calls beginning now.',
+      message: blandSuccessCount > 0
+        ? `Campaign started. ${blandSuccessCount}/${leads.length} calls initiated.`
+        : 'Leads queued but no Bland calls succeeded.',
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('[sf-trigger-bland-campaign] error', error);
