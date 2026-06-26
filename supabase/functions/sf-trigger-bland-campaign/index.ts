@@ -72,24 +72,6 @@ serve(async (req) => {
     const label = body.campaign_name || `SF_${state}_${new Date().toISOString().slice(0,10)}_${Date.now()}`;
 
     // Build Bland batch calls
-    const calls = leads.map((l: any) => {
-      const taskPrompt = SF_OUTREACH_PROMPT
-        .replaceAll('{{first_name}}', l.first_name || 'there')
-        .replaceAll('{{county}}', l.county || 'your county')
-        .replaceAll('{{state}}', l.state || state)
-        .replaceAll('{{amount}}', l.surplus_amount ? `$${Number(l.surplus_amount).toLocaleString()}` : 'a significant amount');
-      return {
-        phone_number: l.phone,
-        task: taskPrompt,
-        request_data: {
-          lead_id: l.id,
-          hub: 'surplus_funds',
-          county: l.county,
-          state: l.state,
-        },
-        webhook: `${SUPABASE_URL}/functions/v1/dc-bland-webhook`,
-      };
-    });
 
     let blandSuccessCount = 0;
     let blandError: string | null = null;
