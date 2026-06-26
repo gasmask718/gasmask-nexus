@@ -94,14 +94,26 @@ serve(async (req) => {
 
     const label = body.campaign_name || `RE_${agentType}_${new Date().toISOString().slice(0,10)}_${Date.now()}`;
 
-    const calls = leads.map((l: any) => {
+    let blandSuccessCount = 0;
+    let blandError: string | null = null;
+    const blandCallIds: string[] = [];
+
+    for (const l of leads as any[]) {
       const taskPrompt = basePrompt
         .replaceAll('{{first_name}}', l.first_name || 'there')
         .replaceAll('{{address}}', l.property_address || 'your property')
         .replaceAll('{{city}}', l.city || 'the area');
-      return {
+
+      const payload = {
         phone_number: l.phone,
         task: taskPrompt,
+        voice: 'June',
+        language: 'en-US',
+        max_duration: 5,
+        answered_by_enabled: true,
+        wait_for_greeting: true,
+        record: true,
+        amd: true,
         request_data: {
           lead_id: l.id,
           hub: 're',
@@ -110,35 +122,28 @@ serve(async (req) => {
         },
         webhook: `${SUPABASE_URL}/functions/v1/dc-bland-webhook`,
       };
-    });
 
-    let blandBatchId: string | null = null;
-    let blandError: string | null = null;
-    try {
-      const blandRes = await fetch('https://api.bland.ai/v1/batches', {
-        method: 'POST',
-        headers: {
-          'Authorization': BLAND_API_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          label,
-          base_prompt: basePrompt,
-          voice: 'June',
-          language: 'en-US',
-          max_duration: 5,
-          answered_by_enabled: true,
-          wait_for_greeting: true,
-          record: true,
-          amd: true,
-          calls,
-        }),
-      });
-      const blandJson = await blandRes.json();
-      blandBatchId = blandJson.batch_id || blandJson.id || null;
-      if (!blandRes.ok) blandError = JSON.stringify(blandJson);
-    } catch (e: any) {
-      blandError = e.message;
+      try {
+        const blandRes = await fetch('https://api.bland.ai/v1/calls', {
+          method: 'POST',
+          headers: { 'Authorization': BLAND_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const blandJson = await blandRes.json();
+        if (blandRes.ok && blandJson.call_id) {
+          blandSuccessCount++;
+          blandCallIds.push(blandJson.call_id);
+          await supabase.from('re_leads')
+            .update({ bland_call_id: blandJson.call_id })
+            .eq('id', l.id);
+        } else {
+          blandError = blandError || JSON.stringify(blandJson);
+          console.error('[bland call failed]', l.id, blandJson);
+        }
+      } catch (e: any) {
+        blandError = blandError || e.message;
+        console.error('[bland call exception]', l.id, e);
+      }
     }
 
     const { data: campaign } = await supabase
@@ -147,7 +152,7 @@ serve(async (req) => {
         name: label,
         business: 're',
         agent_type: agentType,
-        status: blandError ? 'failed' : 'active',
+        status: blandSuccessCount > 0 ? 'active' : 'failed',
         total_leads: leads.length,
         agent_name: `RE ${agentType}`,
       })
@@ -163,12 +168,15 @@ serve(async (req) => {
       .in('id', leads.map((l: any) => l.id));
 
     return new Response(JSON.stringify({
-      success: !blandError,
+      success: blandSuccessCount > 0,
       campaign_id: campaign?.id,
-      bland_batch_id: blandBatchId,
+      bland_calls_started: blandSuccessCount,
+      bland_call_ids: blandCallIds,
       leads_queued: leads.length,
       bland_error: blandError,
-      message: blandError ? 'Leads queued but Bland API failed' : 'Campaign started. Calls beginning now.',
+      message: blandSuccessCount > 0
+        ? `Campaign started. ${blandSuccessCount}/${leads.length} calls initiated.`
+        : 'Leads queued but no Bland calls succeeded.',
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('[re-trigger-bland-campaign] error', error);
