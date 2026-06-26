@@ -17,8 +17,34 @@ Deno.serve(async (req) => {
   );
 
   const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+
+  // ===== BatchData real-time webhook push (single property) =====
+  if (body.source === 'batchdata_webhook' && body.property) {
+    const p = body.property;
+    const nameParts = (p.owner_name || '').trim().split(/\s+/);
+    const lead = {
+      first_name: nameParts[0] || null,
+      last_name: nameParts.slice(1).join(' ') || null,
+      phone: p.owner_phone || null,
+      email: p.owner_email || null,
+      property_address: p.address,
+      city: p.city, state: p.state, zip: p.zip,
+      equity_percentage: p.equity_percent,
+      estimated_value: p.estimated_value,
+      lead_type: p.lead_type || 'unknown',
+      lead_source: 'batchdata',
+      status: p.owner_phone ? 'new' : 'queued',
+      skip_traced: !!p.owner_phone,
+    };
+    const result = await dedupeAndInsert(supabase, [lead]);
+    return new Response(JSON.stringify({ success: true, ...result }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   const targetStates = body.states || TIER_1_STATES;
   const sources = body.sources || ['propstream', 'zillow', 'batchleads'];
+
 
   // Create automation log
   const { data: logEntry } = await supabase.from('re_automation_log').insert({
