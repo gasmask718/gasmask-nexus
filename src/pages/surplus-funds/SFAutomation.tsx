@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Rocket, Phone, FileText, AlertCircle } from 'lucide-react';
+import { SFHumanQueue } from './SFHumanQueue';
 
 const SF_ACCENT = '#BA7517';
 const STATES = ['FL', 'TX', 'GA', 'NJ', 'NY'];
