@@ -123311,6 +123311,18 @@ export type Database = {
           submitted_at: string
         }[]
       }
+      get_public_store_locator: {
+        Args: never
+        Returns: {
+          city: string
+          lat: number
+          lng: number
+          neighborhood: string
+          store_id: string
+          store_name: string
+          street: string
+        }[]
+      }
       get_rolling_connect_rate: {
         Args: { p_business_id: string; p_window?: number }
         Returns: number
