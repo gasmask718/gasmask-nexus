@@ -187,6 +187,43 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Fire-and-forget admin alerts — never block booking creation
+    try {
+      supabase.functions.invoke('admin-notify', {
+        body: {
+          event_type: 'new_booking',
+          related_id: booking.id,
+          related_table: 'tt_bookings',
+          data: {
+            service_name: routing.display_name || booking.service_type,
+            customer_name: customer_name,
+            amount: total_price || 0,
+            booking_id_short: String(booking.id).slice(0, 8),
+          },
+        },
+      }).catch((err: any) => console.error('admin-notify new_booking failed', err));
+
+      if ((total_price || 0) > 2000) {
+        supabase.functions.invoke('admin-notify', {
+          body: {
+            event_type: 'high_value_booking',
+            related_id: booking.id,
+            related_table: 'tt_bookings',
+            data: {
+              service_name: routing.display_name || booking.service_type,
+              customer_name: customer_name,
+              amount: total_price,
+              booking_id_short: String(booking.id).slice(0, 8),
+            },
+          },
+        }).catch((err: any) => console.error('admin-notify high_value_booking failed', err));
+      }
+    } catch (e) {
+      console.error('[create-tt-booking] admin-notify dispatch error', e);
+    }
+
+
+
     return new Response(JSON.stringify({
       booking_id: booking.id,
       booking_reference,
