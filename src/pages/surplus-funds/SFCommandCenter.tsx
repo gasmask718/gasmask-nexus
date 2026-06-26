@@ -27,6 +27,18 @@ export default function SFCommandCenter() {
     },
   });
 
+  const { data: callbackCount = 0 } = useQuery({
+    queryKey: ['sf-callback-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('surplus_funds_leads')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'callback_requested');
+      return count ?? 0;
+    },
+    refetchInterval: 30000,
+  });
+
   const { data: cases = [] } = useQuery({
     queryKey: ['sf-cases-all'],
     queryFn: async () => {
@@ -80,6 +92,15 @@ export default function SFCommandCenter() {
       <div>
         <h1 className="text-3xl font-bold text-amber-500">💰 Penthouse — Command Center</h1>
         <p className="text-muted-foreground">Recovery pipeline — find money, claim it, get paid</p>
+        {callbackCount > 0 && (
+          <button
+            onClick={() => navigate('/surplus-funds/automation')}
+            className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-yellow-500/15 border border-yellow-500/40 text-yellow-300 text-sm hover:bg-yellow-500/25 transition"
+          >
+            <Phone className="h-3.5 w-3.5" />
+            {callbackCount} callback{callbackCount === 1 ? '' : 's'} pending — open Human Queue →
+          </button>
+        )}
       </div>
 
       {/* Metric Cards */}

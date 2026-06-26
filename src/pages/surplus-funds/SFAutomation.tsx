@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Rocket, Phone, FileText, AlertCircle } from 'lucide-react';
+import { SFHumanQueue } from './SFHumanQueue';
 
 const SF_ACCENT = '#BA7517';
 const STATES = ['FL', 'TX', 'GA', 'NJ', 'NY'];
@@ -250,35 +251,9 @@ export default function SFAutomation() {
         </CardContent>
       </Card>
 
-      {/* SECTION D: Callbacks */}
-      <Card>
-        <CardHeader><CardTitle>📅 Callbacks Due</CardTitle></CardHeader>
-        <CardContent>
-          {callbacks.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">✅ No callbacks pending</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-xs text-muted-foreground border-b">
-                  <tr><th className="text-left p-2">Name</th><th className="text-left p-2">County</th><th className="text-left p-2">State</th><th className="text-left p-2">Last Called</th><th className="text-left p-2">Notes</th><th className="text-left p-2">Action</th></tr>
-                </thead>
-                <tbody>
-                  {callbacks.map(l => (
-                    <tr key={l.id} className="border-b border-border/50">
-                      <td className="p-2">{l.first_name} {l.last_name}</td>
-                      <td className="p-2">{l.county}</td>
-                      <td className="p-2">{l.state}</td>
-                      <td className="p-2 text-xs text-muted-foreground">{l.last_called_at ? new Date(l.last_called_at).toLocaleString() : '—'}</td>
-                      <td className="p-2 text-xs max-w-[260px] truncate">{l.notes ?? ''}</td>
-                      <td className="p-2"><Button size="sm" onClick={() => callOne(l)}><Phone className="h-3 w-3 mr-1" />Call Now</Button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* SECTION D: Human Callback Queue */}
+      <SFHumanQueue />
+
 
       {/* SECTION E: Hot Leads */}
       <Card>
