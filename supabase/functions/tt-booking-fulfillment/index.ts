@@ -144,7 +144,11 @@ function buildCoachBusEmailHTML(booking: any, quoteUrl: string) {
 
 // ── Generic quote broadcast templates (jets, etc.) ──────────────────────
 function buildGenericQuoteSMS(booking: any) {
-  return `🔔 TopTier quote request:\n${booking.service_name}\nDate: ${booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD"}\nClient: ${booking.client_name}\n\nSubmit your quote at toptierlifestyle.com`;
+  return buildSmsTemplate("partner_quote_request", {
+    service_name: booking.service_name,
+    date: booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD",
+    quote_url: "https://toptierlifestyle.com/partner",
+  });
 }
 
 function buildGenericQuoteEmailHTML(booking: any) {
