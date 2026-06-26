@@ -126,10 +126,10 @@ export default function GasMaskStoreLocator() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <Card className="lg:col-span-2 p-0 overflow-hidden border-red-500/20">
-            <div ref={mapContainer} className="h-[600px] w-full bg-black" />
+            <div ref={mapContainer} className="h-[55vh] min-h-[320px] lg:h-[600px] w-full bg-black" />
           </Card>
 
-          <Card className="p-4 max-h-[600px] overflow-y-auto border-border">
+          <Card className="p-4 max-h-[60vh] lg:max-h-[600px] overflow-y-auto border-border">
             <h3 className="font-bold text-sm uppercase tracking-wider mb-3 text-muted-foreground">
               {filtered.length} {filtered.length === 1 ? 'Store' : 'Stores'}
             </h3>
