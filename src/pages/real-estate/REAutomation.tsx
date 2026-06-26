@@ -21,10 +21,13 @@ export default function REAutomation() {
   const [logs, setLogs] = useState<any[]>([]);
   const [runningJob, setRunningJob] = useState<string | null>(null);
   const [sourceStats, setSourceStats] = useState<{ source: string; total: number; traced: number; interested: number; contracts: number }[]>([]);
+  const [weekly, setWeekly] = useState<{ day: string; count: number }[]>([]);
+  const [traceRate, setTraceRate] = useState<{ found: number; total: number }>({ found: 0, total: 0 });
 
   useEffect(() => {
     fetchLogs();
     fetchSourceStats();
+    fetchWeekly();
   }, []);
 
   const fetchLogs = async () => {
@@ -36,21 +39,39 @@ export default function REAutomation() {
     setLogs((data || []) as any[]);
   };
 
+  const fetchWeekly = async () => {
+    const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+    const { data } = await supabase.from('re_leads').select('created_at').gte('created_at', since);
+    const buckets: Record<string, number> = {};
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+      buckets[d] = 0;
+    }
+    (data || []).forEach((r: any) => {
+      const d = (r.created_at || '').slice(0, 10);
+      if (d in buckets) buckets[d]++;
+    });
+    setWeekly(Object.entries(buckets).map(([day, count]) => ({ day: day.slice(5), count })));
+  };
+
   const fetchSourceStats = async () => {
-    const { data: leads } = await supabase.from('re_leads').select('lead_source, status, skip_traced');
+    const { data: leads } = await supabase.from('re_leads').select('lead_source, status, skip_traced, phone');
     if (!leads) return;
     const map = new Map<string, { total: number; traced: number; interested: number; contracts: number }>();
+    let traced = 0, withPhone = 0;
     leads.forEach(l => {
       const src = l.lead_source || 'unknown';
       if (!map.has(src)) map.set(src, { total: 0, traced: 0, interested: 0, contracts: 0 });
       const s = map.get(src)!;
       s.total++;
-      if (l.skip_traced) s.traced++;
+      if (l.skip_traced) { s.traced++; traced++; if (l.phone) withPhone++; }
       if (['interested', 'appointment_set', 'offer_made', 'under_contract', 'buyer_found', 'assigned', 'closed'].includes(l.status)) s.interested++;
       if (['under_contract', 'buyer_found', 'assigned', 'closed'].includes(l.status)) s.contracts++;
     });
     setSourceStats(Array.from(map.entries()).map(([source, s]) => ({ source, ...s })));
+    setTraceRate({ found: withPhone, total: traced });
   };
+
 
   const runJob = async (fnName: string, key: string) => {
     setRunningJob(key);
