@@ -114,6 +114,42 @@ serve(async (req) => {
       }
     }
 
+    // Fire-and-forget admin alerts — never block booking creation
+    try {
+      supabase.functions.invoke('admin-notify', {
+        body: {
+          event_type: 'new_booking',
+          related_id: osBooking.id,
+          related_table: 'tt_bookings',
+          data: {
+            service_name: service_name || routing.display_name,
+            customer_name: customer_name || 'Website Inquiry',
+            amount: total_price || 0,
+            booking_id_short: String(osBooking.id).slice(0, 8),
+          },
+        },
+      }).catch((err: any) => console.error('admin-notify new_booking failed', err));
+
+      if ((total_price || 0) > 2000) {
+        supabase.functions.invoke('admin-notify', {
+          body: {
+            event_type: 'high_value_booking',
+            related_id: osBooking.id,
+            related_table: 'tt_bookings',
+            data: {
+              service_name: service_name || routing.display_name,
+              customer_name: customer_name || 'Website Inquiry',
+              amount: total_price,
+              booking_id_short: String(osBooking.id).slice(0, 8),
+            },
+          },
+        }).catch((err: any) => console.error('admin-notify high_value_booking failed', err));
+      }
+    } catch (e) {
+      console.error('[receive-public-booking] admin-notify dispatch error', e);
+    }
+
+
     return new Response(
       JSON.stringify({
         success: true,

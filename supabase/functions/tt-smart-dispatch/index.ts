@@ -220,6 +220,18 @@ async function insertDispatchAndBroadcast(
         status: 'sent',
       })
       console.warn('[tt-smart-dispatch] no_partners_matched_alert emitted', payload)
+      supabase.functions.invoke('admin-notify', {
+        body: {
+          event_type: 'dispatch_failure',
+          related_id: booking.id,
+          related_table: 'tt_bookings',
+          data: {
+            service_name: routing?.display_name || booking.service_type,
+            booking_id_short: String(booking.id).slice(0, 8),
+            reason: 'no_eligible_partners',
+          },
+        },
+      }).catch((err: any) => console.error('admin-notify dispatch_failure failed', err));
     } else {
       console.log('[tt-smart-dispatch] no_partners_matched_alert already exists for booking', booking.id, '— skipping (idempotent)')
     }
@@ -707,6 +719,18 @@ async function selectLegacyScored(ctx: any) {
         message: `No partners matched for ${routing?.display_name || booking.service_type} booking ${booking.booking_reference || booking.id} — legacy_scored path — criteria=${JSON.stringify(criteria)}`,
       })
       console.warn('[tt-smart-dispatch] no_partners_matched_alert emitted (legacy_scored)', { booking_id: booking.id, criteria })
+      supabase.functions.invoke('admin-notify', {
+        body: {
+          event_type: 'dispatch_failure',
+          related_id: booking.id,
+          related_table: 'tt_bookings',
+          data: {
+            service_name: routing?.display_name || booking.service_type,
+            booking_id_short: String(booking.id).slice(0, 8),
+            reason: 'no_eligible_partners_legacy',
+          },
+        },
+      }).catch((err: any) => console.error('admin-notify dispatch_failure failed', err));
     } else {
       console.log('[tt-smart-dispatch] no_partners_matched_alert already exists for booking', booking.id, '— skipping (idempotent, legacy_scored)')
     }

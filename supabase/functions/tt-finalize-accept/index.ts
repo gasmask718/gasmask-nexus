@@ -151,6 +151,20 @@ serve(async (req) => {
               message: `Capture FAILED for ${bk.booking_reference} (PI ${bk.stripe_payment_intent_id}): ${errMsg}. Partner ${partner?.partner_name || partner?.name} already won — ops must contact customer for new card or release partner.`,
             })
             errors.push(`capture: ${errMsg}`)
+            // Real-time admin alert via consolidated admin-notify
+            supabase.functions.invoke('admin-notify', {
+              body: {
+                event_type: 'payment_failed',
+                related_id: bk.id,
+                related_table: 'tt_bookings',
+                data: {
+                  customer_name: (bk as any).client_name || 'TopTier customer',
+                  amount: bk.total_price || 0,
+                  booking_id_short: String(bk.id).slice(0, 8),
+                  reason: errMsg,
+                },
+              },
+            }).catch((err: any) => console.error('admin-notify payment_failed failed', err));
             // Also alert ops via SMS
             const sid = Deno.env.get('TWILIO_ACCOUNT_SID')
             const tok = Deno.env.get('TWILIO_AUTH_TOKEN')
