@@ -77441,19 +77441,25 @@ export type Database = {
       }
       re_leads: {
         Row: {
+          ai_summary: string | null
+          appointment_time: string | null
           arv: number | null
           asking_price: number | null
           assigned_va_id: string | null
           bathrooms: number | null
           bedrooms: number | null
+          bland_call_id: string | null
           call_count: number | null
           call_outcome: string | null
+          call_recording_url: string | null
+          call_transcript: string | null
           city: string | null
           condition: string | null
           contract_sent_at: string | null
           contract_signed_at: string | null
           county: string | null
           created_at: string | null
+          dc_campaign_id: string | null
           deal_score: string | null
           docusign_envelope_id: string | null
           email: string | null
@@ -77462,6 +77468,8 @@ export type Database = {
           estimated_value: number | null
           first_name: string | null
           id: string
+          interest_level: string | null
+          interest_score: number | null
           last_called_at: string | null
           last_name: string | null
           lead_source: string | null
@@ -77474,6 +77482,8 @@ export type Database = {
           phone: string | null
           property_address: string
           property_type: string | null
+          recommended_action: string | null
+          seller_motivation_score: number | null
           skip_traced: boolean | null
           sqft: number | null
           state: string | null
@@ -77484,19 +77494,25 @@ export type Database = {
           zip: string | null
         }
         Insert: {
+          ai_summary?: string | null
+          appointment_time?: string | null
           arv?: number | null
           asking_price?: number | null
           assigned_va_id?: string | null
           bathrooms?: number | null
           bedrooms?: number | null
+          bland_call_id?: string | null
           call_count?: number | null
           call_outcome?: string | null
+          call_recording_url?: string | null
+          call_transcript?: string | null
           city?: string | null
           condition?: string | null
           contract_sent_at?: string | null
           contract_signed_at?: string | null
           county?: string | null
           created_at?: string | null
+          dc_campaign_id?: string | null
           deal_score?: string | null
           docusign_envelope_id?: string | null
           email?: string | null
@@ -77505,6 +77521,8 @@ export type Database = {
           estimated_value?: number | null
           first_name?: string | null
           id?: string
+          interest_level?: string | null
+          interest_score?: number | null
           last_called_at?: string | null
           last_name?: string | null
           lead_source?: string | null
@@ -77517,6 +77535,8 @@ export type Database = {
           phone?: string | null
           property_address: string
           property_type?: string | null
+          recommended_action?: string | null
+          seller_motivation_score?: number | null
           skip_traced?: boolean | null
           sqft?: number | null
           state?: string | null
@@ -77527,19 +77547,25 @@ export type Database = {
           zip?: string | null
         }
         Update: {
+          ai_summary?: string | null
+          appointment_time?: string | null
           arv?: number | null
           asking_price?: number | null
           assigned_va_id?: string | null
           bathrooms?: number | null
           bedrooms?: number | null
+          bland_call_id?: string | null
           call_count?: number | null
           call_outcome?: string | null
+          call_recording_url?: string | null
+          call_transcript?: string | null
           city?: string | null
           condition?: string | null
           contract_sent_at?: string | null
           contract_signed_at?: string | null
           county?: string | null
           created_at?: string | null
+          dc_campaign_id?: string | null
           deal_score?: string | null
           docusign_envelope_id?: string | null
           email?: string | null
@@ -77548,6 +77574,8 @@ export type Database = {
           estimated_value?: number | null
           first_name?: string | null
           id?: string
+          interest_level?: string | null
+          interest_score?: number | null
           last_called_at?: string | null
           last_name?: string | null
           lead_source?: string | null
@@ -77560,6 +77588,8 @@ export type Database = {
           phone?: string | null
           property_address?: string
           property_type?: string | null
+          recommended_action?: string | null
+          seller_motivation_score?: number | null
           skip_traced?: boolean | null
           sqft?: number | null
           state?: string | null
@@ -94583,6 +94613,7 @@ export type Database = {
       surplus_funds_leads: {
         Row: {
           address: string | null
+          ai_summary: string | null
           amount_owed: number | null
           assigned_attorney_id: string | null
           bland_call_id: string | null
@@ -94590,16 +94621,22 @@ export type Database = {
           bland_call_triggered_at: string | null
           call_count: number | null
           call_outcome: string | null
+          call_recording_url: string | null
+          call_transcript: string | null
+          callback_time: string | null
           city: string | null
           county: string
           court_case_number: string | null
           created_at: string | null
+          dc_campaign_id: string | null
           email: string | null
           email_notification_sent: boolean | null
           email_notification_sent_at: string | null
           first_name: string | null
           foreclosure_date: string | null
           id: string
+          interest_level: string | null
+          interest_score: number | null
           ip_address: string | null
           last_called_at: string | null
           last_name: string | null
@@ -94607,6 +94644,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           property_address: string | null
+          recommended_action: string | null
           referrer: string | null
           sale_price: number | null
           skip_traced: boolean | null
@@ -94633,6 +94671,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          ai_summary?: string | null
           amount_owed?: number | null
           assigned_attorney_id?: string | null
           bland_call_id?: string | null
@@ -94640,16 +94679,22 @@ export type Database = {
           bland_call_triggered_at?: string | null
           call_count?: number | null
           call_outcome?: string | null
+          call_recording_url?: string | null
+          call_transcript?: string | null
+          callback_time?: string | null
           city?: string | null
           county: string
           court_case_number?: string | null
           created_at?: string | null
+          dc_campaign_id?: string | null
           email?: string | null
           email_notification_sent?: boolean | null
           email_notification_sent_at?: string | null
           first_name?: string | null
           foreclosure_date?: string | null
           id?: string
+          interest_level?: string | null
+          interest_score?: number | null
           ip_address?: string | null
           last_called_at?: string | null
           last_name?: string | null
@@ -94657,6 +94702,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           property_address?: string | null
+          recommended_action?: string | null
           referrer?: string | null
           sale_price?: number | null
           skip_traced?: boolean | null
@@ -94683,6 +94729,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          ai_summary?: string | null
           amount_owed?: number | null
           assigned_attorney_id?: string | null
           bland_call_id?: string | null
@@ -94690,16 +94737,22 @@ export type Database = {
           bland_call_triggered_at?: string | null
           call_count?: number | null
           call_outcome?: string | null
+          call_recording_url?: string | null
+          call_transcript?: string | null
+          callback_time?: string | null
           city?: string | null
           county?: string
           court_case_number?: string | null
           created_at?: string | null
+          dc_campaign_id?: string | null
           email?: string | null
           email_notification_sent?: boolean | null
           email_notification_sent_at?: string | null
           first_name?: string | null
           foreclosure_date?: string | null
           id?: string
+          interest_level?: string | null
+          interest_score?: number | null
           ip_address?: string | null
           last_called_at?: string | null
           last_name?: string | null
@@ -94707,6 +94760,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           property_address?: string | null
+          recommended_action?: string | null
           referrer?: string | null
           sale_price?: number | null
           skip_traced?: boolean | null
