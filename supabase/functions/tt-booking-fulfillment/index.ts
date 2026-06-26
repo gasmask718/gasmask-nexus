@@ -86,12 +86,14 @@ function buildRequestConfirmEmailHTML(booking: any, confirmUrl: string, declineU
 
 // ── COACH BUS QUOTE BROADCAST templates ─────────────────────────────────
 function buildCoachBusSMS(booking: any) {
-  const pickup = booking.pickup_city || "TBD";
-  const dropoff = booking.dropoff_city || "TBD";
-  const date = booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD";
-  const pax = booking.passenger_count || "TBD";
   const baseUrl = Deno.env.get("FRONTEND_BASE_URL") || "https://gasmask-os-nexus.lovable.app";
-  return `🚌 New Coach Bus Request:\n${pickup} → ${dropoff}\n${date}\nPassengers: ${pax}\n\nSubmit quote: ${baseUrl}/partner/quote/${booking.id}`;
+  return buildSmsTemplate("partner_quote_coach_bus", {
+    pickup_city: booking.pickup_city || "TBD",
+    dropoff_city: booking.dropoff_city || "TBD",
+    date: booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString() : "TBD",
+    passengers: booking.passenger_count || "TBD",
+    quote_url: `${baseUrl}/partner/quote/${booking.id}`,
+  });
 }
 
 function buildCoachBusEmailHTML(booking: any, quoteUrl: string) {
