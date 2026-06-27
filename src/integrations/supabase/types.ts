@@ -68419,6 +68419,93 @@ export type Database = {
           },
         ]
       }
+      partner_performance_snapshots: {
+        Row: {
+          acceptance_rate_30d: number | null
+          avg_response_time_minutes_30d: number | null
+          bookings_accepted_30d: number | null
+          bookings_cancelled_30d: number | null
+          bookings_completed_30d: number | null
+          completion_rate_30d: number | null
+          created_at: string
+          customer_ratings_avg_30d: number | null
+          customer_ratings_count_30d: number | null
+          dispatches_accepted_30d: number | null
+          dispatches_declined_30d: number | null
+          dispatches_no_response_30d: number | null
+          dispatches_received_30d: number | null
+          flags_received_30d: number | null
+          id: string
+          metadata: Json
+          partner_id: string
+          partner_name: string | null
+          partner_ratings_avg_30d: number | null
+          partner_ratings_count_30d: number | null
+          partner_type: string
+          payout_earned_30d: number | null
+          performance_tier: string | null
+          revenue_generated_30d: number | null
+          snapshot_date: string
+          tips_received_30d: number | null
+        }
+        Insert: {
+          acceptance_rate_30d?: number | null
+          avg_response_time_minutes_30d?: number | null
+          bookings_accepted_30d?: number | null
+          bookings_cancelled_30d?: number | null
+          bookings_completed_30d?: number | null
+          completion_rate_30d?: number | null
+          created_at?: string
+          customer_ratings_avg_30d?: number | null
+          customer_ratings_count_30d?: number | null
+          dispatches_accepted_30d?: number | null
+          dispatches_declined_30d?: number | null
+          dispatches_no_response_30d?: number | null
+          dispatches_received_30d?: number | null
+          flags_received_30d?: number | null
+          id?: string
+          metadata?: Json
+          partner_id: string
+          partner_name?: string | null
+          partner_ratings_avg_30d?: number | null
+          partner_ratings_count_30d?: number | null
+          partner_type: string
+          payout_earned_30d?: number | null
+          performance_tier?: string | null
+          revenue_generated_30d?: number | null
+          snapshot_date: string
+          tips_received_30d?: number | null
+        }
+        Update: {
+          acceptance_rate_30d?: number | null
+          avg_response_time_minutes_30d?: number | null
+          bookings_accepted_30d?: number | null
+          bookings_cancelled_30d?: number | null
+          bookings_completed_30d?: number | null
+          completion_rate_30d?: number | null
+          created_at?: string
+          customer_ratings_avg_30d?: number | null
+          customer_ratings_count_30d?: number | null
+          dispatches_accepted_30d?: number | null
+          dispatches_declined_30d?: number | null
+          dispatches_no_response_30d?: number | null
+          dispatches_received_30d?: number | null
+          flags_received_30d?: number | null
+          id?: string
+          metadata?: Json
+          partner_id?: string
+          partner_name?: string | null
+          partner_ratings_avg_30d?: number | null
+          partner_ratings_count_30d?: number | null
+          partner_type?: string
+          payout_earned_30d?: number | null
+          performance_tier?: string | null
+          revenue_generated_30d?: number | null
+          snapshot_date?: string
+          tips_received_30d?: number | null
+        }
+        Relationships: []
+      }
       payment_promises: {
         Row: {
           broken_at: string | null
