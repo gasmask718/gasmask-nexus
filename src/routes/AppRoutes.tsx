@@ -215,6 +215,7 @@ const TwilioTestConsole = lazy(() => import('@/pages/admin/TwilioTestConsole'));
 const AdminNotificationSettings = lazy(() => import('@/pages/admin/AdminNotificationSettings'));
 const AdminNotificationLog = lazy(() => import('@/pages/admin/AdminNotificationLog'));
 const AdminDailyReports = lazy(() => import('@/pages/admin/AdminDailyReports'));
+const AdminPartnerPerformance = lazy(() => import('@/pages/admin/AdminPartnerPerformance'));
 const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
 
 // VA Portal
