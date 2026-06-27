@@ -14,6 +14,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
 import { ExportButton } from '@/components/crud/ExportButton';
+import { BookingHistoryTimeline } from '@/components/toptier/BookingHistoryTimeline';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const STATUS_COLORS: Record<string, string> = {
   confirmed: 'bg-emerald-500/20 text-emerald-400',
