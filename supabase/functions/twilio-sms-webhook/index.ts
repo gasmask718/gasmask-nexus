@@ -15,6 +15,7 @@ import {
   sendOperatorSms,
   TWILIO_SHARED_NUMBER,
 } from "../_shared/twilio-operator.ts";
+import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
 
 const STOP_RE = /^\s*(STOP|UNSUBSCRIBE|QUIT|CANCEL|END)\s*$/i;
 const START_RE = /^\s*(START|UNSTOP|SUBSCRIBE)\s*$/i;
