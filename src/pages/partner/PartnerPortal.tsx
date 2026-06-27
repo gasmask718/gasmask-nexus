@@ -16,6 +16,7 @@ import {
   DECOR_CATEGORIES,
   type DecoratorPackage,
 } from '@/hooks/toptier/useDecoratorPackages';
+import { PartnerAvailability } from '@/components/partner/PartnerAvailability';
 
 type Partner = {
   id: string;
