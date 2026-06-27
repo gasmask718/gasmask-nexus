@@ -324,7 +324,24 @@ async function insertDispatchAndBroadcast(
     Deno.env.get('TT_ACCEPT_BASE_URL') || 'https://gasmask-os-nexus.lovable.app'
 
   // SMS via Twilio (only if status === 'sent')
-  let smsResults: any = { attempted: 0, sent: 0, failed: 0, errors: [] as string[] }
+  // Routing-driven template selection: tt_service_routing.sms_template_key is the
+  // canonical lookup. Today we log + record the configured key for every dispatch
+  // and use it to switch to the dedicated hourly template when applicable. All
+  // other keys fall through to the rich default dispatch body (which contains more
+  // operational detail than the generic partner_dispatch template).
+  const configuredTemplateKey = (routing.sms_template_key || 'partner_dispatch').trim()
+  console.log('[tt-smart-dispatch] sms_template_key resolved', {
+    booking_id: booking.id,
+    slug: routing.slug,
+    sms_template_key: configuredTemplateKey,
+  })
+  let smsResults: any = {
+    attempted: 0,
+    sent: 0,
+    failed: 0,
+    errors: [] as string[],
+    sms_template_key: configuredTemplateKey,
+  }
   if (meta.status === 'sent') {
     const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
     const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
@@ -343,6 +360,8 @@ async function insertDispatchAndBroadcast(
       console.error('[tt-smart-dispatch] ' + errMsg)
       smsResults.errors.push(errMsg)
     } else {
+      const hoursBooked = Number((booking as any).hours_booked || (booking as any).hours || 0)
+      const useHourly = configuredTemplateKey === 'partner_dispatch_hourly' && hoursBooked > 0
       for (const r of normalized) {
         if (!r.partner_phone) continue
         smsResults.attempted++
@@ -351,12 +370,21 @@ async function insertDispatchAndBroadcast(
         const acceptLine = tok
           ? `Accept: ${acceptBaseUrl}/tt/partner/accept/${tok}\n(or reply YES to accept / NO to decline)`
           : `Reply YES to accept or NO to decline.`
-        const msg = `TopTier Dispatch: ${serviceCategory.replace(/_/g, ' ')} booking\n` +
-          `Client: ${booking.client_name || 'N/A'}\n` +
-          `Pickup: ${booking.pickup_location || 'TBD'}\n` +
-          `Date: ${scheduledDate}\n` +
-          `Value: $${booking.total_price || 0}\n` +
-          `Ref: ${booking.booking_reference || 'N/A'}\n\n` +
+        const baseMsg = useHourly
+          ? `🚨 New TopTier hourly booking\n` +
+            `⏱ ${hoursBooked}h · ${serviceCategory.replace(/_/g, ' ')}\n` +
+            `Pickup: ${booking.pickup_location || 'TBD'}\n` +
+            `Date: ${scheduledDate}\n` +
+            `Client: ${booking.client_name || 'N/A'}\n` +
+            `Value: $${booking.total_price || 0}\n` +
+            `Ref: ${booking.booking_reference || 'N/A'}\n\n`
+          : `TopTier Dispatch: ${serviceCategory.replace(/_/g, ' ')} booking\n` +
+            `Client: ${booking.client_name || 'N/A'}\n` +
+            `Pickup: ${booking.pickup_location || 'TBD'}\n` +
+            `Date: ${scheduledDate}\n` +
+            `Value: $${booking.total_price || 0}\n` +
+            `Ref: ${booking.booking_reference || 'N/A'}\n\n`
+        const msg = baseMsg +
           `${acceptLine}\n` +
           `Expires in 30 minutes.${flagSuffix}`
         try {
