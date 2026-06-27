@@ -268,8 +268,11 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const msg =
-        `Receipt — ${storeName}: Invoice ${invoiceNumber} paid. Total $${amount}. Thank you! Reply STOP to opt out.`;
+      const msg = buildSmsTemplate("gasmask_receipt_test", {
+        store_name: storeName,
+        invoice_number: invoiceNumber,
+        amount,
+      });
       const result = await sendTwilioSms(to, msg);
       return new Response(
         JSON.stringify({
