@@ -48,7 +48,7 @@ serve(async (req) => {
           customer_name: customer_name ?? "Unknown",
           rating: numericRating,
           flags: flagList,
-          reason: reason ?? flagList.join(", ") || `rating ${numericRating}`,
+          reason: reason ?? (flagList.join(", ") || `rating ${numericRating}`),
           booking_id_short: shortId,
           partner_id,
         },
