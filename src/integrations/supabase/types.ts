@@ -98665,6 +98665,7 @@ export type Database = {
       tt_partners: {
         Row: {
           address: string | null
+          application_id_external: string | null
           avatar_url: string | null
           bio: string | null
           business_name: string | null
@@ -98682,6 +98683,7 @@ export type Database = {
           invited_at: string | null
           is_active: boolean
           last_active_at: string | null
+          metadata: Json
           name: string
           notes: string | null
           offers_red_carpet: boolean
@@ -98706,6 +98708,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          application_id_external?: string | null
           avatar_url?: string | null
           bio?: string | null
           business_name?: string | null
@@ -98723,6 +98726,7 @@ export type Database = {
           invited_at?: string | null
           is_active?: boolean
           last_active_at?: string | null
+          metadata?: Json
           name: string
           notes?: string | null
           offers_red_carpet?: boolean
@@ -98747,6 +98751,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          application_id_external?: string | null
           avatar_url?: string | null
           bio?: string | null
           business_name?: string | null
@@ -98764,6 +98769,7 @@ export type Database = {
           invited_at?: string | null
           is_active?: boolean
           last_active_at?: string | null
+          metadata?: Json
           name?: string
           notes?: string | null
           offers_red_carpet?: boolean
@@ -124492,6 +124498,7 @@ export type Database = {
         Args: { _partner_id: string }
         Returns: {
           address: string | null
+          application_id_external: string | null
           avatar_url: string | null
           bio: string | null
           business_name: string | null
@@ -124509,6 +124516,7 @@ export type Database = {
           invited_at: string | null
           is_active: boolean
           last_active_at: string | null
+          metadata: Json
           name: string
           notes: string | null
           offers_red_carpet: boolean
