@@ -2,16 +2,81 @@
 // posts here whenever rating <= 2 OR flags is non-empty. We forward to
 // admin-notify with event_type=customer_flagged.
 //
-// Path: Public Site DB trigger -> receive-customer-rating-event -> admin-notify
+// Path: Public Site DB trigger -> forward-customer-flag-to-os (signs) ->
+//       receive-customer-rating-event (verifies) -> admin-notify
+//
+// HMAC: Public Site signs the raw body with PUBLIC_SITE_WEBHOOK_SECRET
+// (HMAC-SHA256, hex) and sends it in the `x-webhook-signature` header.
+// During rollout, if the secret is unset on this side we accept unsigned
+// requests with a warning. Once both sides confirmed, set the secret and
+// unsigned requests will be rejected.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+
+async function verifyHmac(
+  payload: string,
+  signature: string | null,
+  secret: string,
+): Promise<boolean> {
+  if (!signature) return false;
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const expectedBytes = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(payload),
+  );
+  const expectedHex = Array.from(new Uint8Array(expectedBytes))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  // Constant-time compare
+  if (expectedHex.length !== signature.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expectedHex.length; i++) {
+    diff |= expectedHex.charCodeAt(i) ^ signature.charCodeAt(i);
+  }
+  return diff === 0;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const body = await req.json();
+    const bodyText = await req.text();
+    const signature = req.headers.get("x-webhook-signature");
+    const secret = Deno.env.get("PUBLIC_SITE_WEBHOOK_SECRET");
+
+    if (!secret) {
+      // Rollout mode: secret not yet configured on this side. Log and accept.
+      // Flip to a hard 500 once both sides are confirmed deployed.
+      console.warn(
+        "[receive-customer-rating-event] PUBLIC_SITE_WEBHOOK_SECRET not configured — accepting unsigned webhook (rollout mode)",
+      );
+    } else {
+      const valid = await verifyHmac(bodyText, signature, secret);
+      if (!valid) {
+        console.warn(
+          "[receive-customer-rating-event] Invalid or missing webhook signature; rejecting",
+        );
+        return new Response(
+          JSON.stringify({ ok: false, error: "invalid signature" }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+    }
+
+    const body = JSON.parse(bodyText);
     const {
       booking_id,
       customer_name,
