@@ -116885,6 +116885,33 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_status: {
+        Row: {
+          active: boolean | null
+          command: string | null
+          jobid: number | null
+          jobname: string | null
+          last_run: Json | null
+          schedule: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          command?: string | null
+          jobid?: number | null
+          jobname?: string | null
+          last_run?: never
+          schedule?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          command?: string | null
+          jobid?: number | null
+          jobname?: string | null
+          last_run?: never
+          schedule?: string | null
+        }
+        Relationships: []
+      }
       dd_wholesaler_grabba_orders: {
         Row: {
           boxes: number | null
