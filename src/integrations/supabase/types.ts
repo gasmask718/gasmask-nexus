@@ -11207,6 +11207,48 @@ export type Database = {
           },
         ]
       }
+      booking_events: {
+        Row: {
+          actor_id: string | null
+          actor_label: string | null
+          actor_type: string | null
+          booking_id: string
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          new_state: Json | null
+          previous_state: Json | null
+          reason: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_label?: string | null
+          actor_type?: string | null
+          booking_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          new_state?: Json | null
+          previous_state?: Json | null
+          reason?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_label?: string | null
+          actor_type?: string | null
+          booking_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          new_state?: Json | null
+          previous_state?: Json | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       booking_service_selections: {
         Row: {
           booking_id: string
