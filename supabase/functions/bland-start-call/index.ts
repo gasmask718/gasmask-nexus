@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             phone_numbers: [to],
-            message: `${name ? `Hi ${name}! ` : "Hi! "}Aria from Brandaro Digital here — as promised, here's our portfolio of sample websites: ${BRANDARO_SITE}\n\nReply STOP to opt out.`,
+            message: buildSmsTemplate("bland_brandaro_followup", { name }),
             source: "post_call_followup",
             lead_id,
           }),
