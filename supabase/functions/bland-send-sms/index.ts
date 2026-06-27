@@ -6,6 +6,7 @@
 // New code should call `send-sms` directly with `purpose: "bland_outreach"`.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,9 +20,7 @@ const json = (b: unknown, s = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const BRANDARO_SITE = "https://www.brandarodigital.com";
-const DEFAULT_MESSAGE =
-  `Hi! This is Brandaro Digital — we build high-converting websites and dominate Google for local businesses. Browse our portfolio: ${BRANDARO_SITE}\n\nReply STOP to opt out.`;
+const DEFAULT_MESSAGE = buildSmsTemplate("brandaro_outreach_default", {});
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
