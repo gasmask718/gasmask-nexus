@@ -2,6 +2,7 @@
 // includes tokenized portal signup link for stores without an owner user.
 // Respects opt_out_events, 12h dedupe on (store_id, order_id).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
