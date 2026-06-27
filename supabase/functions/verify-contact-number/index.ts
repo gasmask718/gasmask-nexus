@@ -56,11 +56,11 @@ serve(async (req) => {
 
     const label = (business_label || "GasMask").trim();
     const firstName = (contact.name || "").split(" ")[0] || "there";
-    const message =
-      `Hi ${firstName}, this is ${label}. ` +
-      `Please save this number (${VERIFIED_FROM}) as "${label}" — ` +
-      `this is the number we'll contact you from. ` +
-      `Reply YES to confirm you got this. Reply STOP to opt out.`;
+    const message = buildSmsTemplate("verification_save_number", {
+      first_name: firstName,
+      label,
+      from_number: VERIFIED_FROM,
+    });
 
     const idem = `verify-contact-${contact_id}-${Date.now()}`;
 
