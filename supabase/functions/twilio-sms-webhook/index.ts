@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
     try {
       await sendOperatorSms({
         to: From,
-        body: "You're resubscribed. Reply STOP to opt out.",
+        body: buildSmsTemplate("start_acknowledgment", {}),
       });
     } catch (e) {
       console.error("[twilio-sms-webhook] START confirmation failed", (e as Error).message);
