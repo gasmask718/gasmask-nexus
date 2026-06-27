@@ -1,6 +1,14 @@
 // Real-time admin notification dispatcher.
 // Routes platform events to SMS + email recipients, honors admin
 // preferences + quiet hours, and logs every attempt.
+//
+// Event sources:
+//   - new_booking / high_value_booking: create-tt-booking, receive-public-booking
+//   - payment_failed: tt-finalize-accept (Stripe webhook path)
+//   - sla_breach: detect-sla-breaches cron
+//   - dispatch_failure: tt-smart-dispatch
+//   - customer_flagged: Public Site customer_ratings INSERT (rating <= 2 OR
+//     flags non-empty) -> receive-customer-rating-event -> admin-notify
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
