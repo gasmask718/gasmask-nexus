@@ -209,33 +209,42 @@ export default function TTBookings() {
           {selectedBooking && (
             <>
               <SheetHeader><SheetTitle className="text-[#C9A84C]">Booking Details</SheetTitle></SheetHeader>
-              <div className="mt-6 space-y-5">
-                <div className="space-y-3">
-                  <InfoRow label="Booking ID" value={selectedBooking.id} mono />
-                  <InfoRow label="Client" value={selectedBooking.client_name} />
-                  <InfoRow label="Email" value={selectedBooking.client_email || '—'} />
-                  <InfoRow label="Phone" value={selectedBooking.client_phone || '—'} />
-                  <InfoRow label="Service" value={`${selectedBooking.service_type} — ${selectedBooking.service_name}`} />
-                  <InfoRow label="Amount" value={`$${Number(selectedBooking.total_price).toLocaleString()}`} gold />
-                  <InfoRow label="Status" value={selectedBooking.status} />
-                  <InfoRow label="Partner" value={selectedBooking.partner_name || 'Unassigned'} />
-                  <InfoRow label="Scheduled" value={selectedBooking.scheduled_at ? format(new Date(selectedBooking.scheduled_at), 'PPp') : '—'} />
-                  <InfoRow label="Created" value={formatDistanceToNow(new Date(selectedBooking.created_at), { addSuffix: true })} />
-                  <InfoRow label="24h Reminder" value={selectedBooking.reminder_24h_sent_at ? `Sent ${format(new Date(selectedBooking.reminder_24h_sent_at), 'PPp')}` : 'Not sent yet'} />
-                  <InfoRow label="2h Reminder" value={selectedBooking.reminder_2h_sent_at ? `Sent ${format(new Date(selectedBooking.reminder_2h_sent_at), 'PPp')}` : 'Not sent yet'} />
-                </div>
-                {selectedBooking.notes && (
-                  <div>
-                    <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Notes</p>
-                    <p className="text-sm text-white/70">{selectedBooking.notes}</p>
+              <Tabs defaultValue="details" className="mt-6">
+                <TabsList className="bg-white/5 border border-white/10">
+                  <TabsTrigger value="details" className="data-[state=active]:bg-[#C9A84C] data-[state=active]:text-black">Details</TabsTrigger>
+                  <TabsTrigger value="history" className="data-[state=active]:bg-[#C9A84C] data-[state=active]:text-black">History</TabsTrigger>
+                </TabsList>
+                <TabsContent value="details" className="space-y-5 mt-4">
+                  <div className="space-y-3">
+                    <InfoRow label="Booking ID" value={selectedBooking.id} mono />
+                    <InfoRow label="Client" value={selectedBooking.client_name} />
+                    <InfoRow label="Email" value={selectedBooking.client_email || '—'} />
+                    <InfoRow label="Phone" value={selectedBooking.client_phone || '—'} />
+                    <InfoRow label="Service" value={`${selectedBooking.service_type} — ${selectedBooking.service_name}`} />
+                    <InfoRow label="Amount" value={`$${Number(selectedBooking.total_price).toLocaleString()}`} gold />
+                    <InfoRow label="Status" value={selectedBooking.status} />
+                    <InfoRow label="Partner" value={selectedBooking.partner_name || 'Unassigned'} />
+                    <InfoRow label="Scheduled" value={selectedBooking.scheduled_at ? format(new Date(selectedBooking.scheduled_at), 'PPp') : '—'} />
+                    <InfoRow label="Created" value={formatDistanceToNow(new Date(selectedBooking.created_at), { addSuffix: true })} />
+                    <InfoRow label="24h Reminder" value={selectedBooking.reminder_24h_sent_at ? `Sent ${format(new Date(selectedBooking.reminder_24h_sent_at), 'PPp')}` : 'Not sent yet'} />
+                    <InfoRow label="2h Reminder" value={selectedBooking.reminder_2h_sent_at ? `Sent ${format(new Date(selectedBooking.reminder_2h_sent_at), 'PPp')}` : 'Not sent yet'} />
                   </div>
-                )}
-                <div className="flex gap-2 pt-4 border-t border-white/5">
-                  <Button size="sm" className="bg-[#C9A84C] text-black hover:bg-[#B8973B]">Reassign Partner</Button>
-                  <Button size="sm" variant="outline" className="border-white/10 text-white/60">Mark Complete</Button>
-                  <Button size="sm" variant="outline" className="border-red-500/30 text-red-400 hover:bg-red-500/10">Cancel</Button>
-                </div>
-              </div>
+                  {selectedBooking.notes && (
+                    <div>
+                      <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Notes</p>
+                      <p className="text-sm text-white/70">{selectedBooking.notes}</p>
+                    </div>
+                  )}
+                  <div className="flex gap-2 pt-4 border-t border-white/5">
+                    <Button size="sm" className="bg-[#C9A84C] text-black hover:bg-[#B8973B]">Reassign Partner</Button>
+                    <Button size="sm" variant="outline" className="border-white/10 text-white/60">Mark Complete</Button>
+                    <Button size="sm" variant="outline" className="border-red-500/30 text-red-400 hover:bg-red-500/10">Cancel</Button>
+                  </div>
+                </TabsContent>
+                <TabsContent value="history" className="mt-4">
+                  <BookingHistoryTimeline bookingId={selectedBooking.id} />
+                </TabsContent>
+              </Tabs>
             </>
           )}
         </SheetContent>
