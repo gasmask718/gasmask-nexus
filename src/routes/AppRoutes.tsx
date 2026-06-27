@@ -216,6 +216,7 @@ const AdminNotificationSettings = lazy(() => import('@/pages/admin/AdminNotifica
 const AdminNotificationLog = lazy(() => import('@/pages/admin/AdminNotificationLog'));
 const AdminDailyReports = lazy(() => import('@/pages/admin/AdminDailyReports'));
 const AdminPartnerPerformance = lazy(() => import('@/pages/admin/AdminPartnerPerformance'));
+const AdminOpsDashboard = lazy(() => import('@/pages/admin/AdminOpsDashboard'));
 const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
 
 // VA Portal
