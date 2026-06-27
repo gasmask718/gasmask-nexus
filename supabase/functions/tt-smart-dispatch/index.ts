@@ -165,6 +165,36 @@ async function insertDispatchAndBroadcast(
 ) {
   const { supabase, booking, serviceCategory, routing } = ctx
 
+  // === BLACKOUT FILTER ===
+  // Exclude partners who have marked themselves unavailable for booking.scheduled_at.
+  // Safety: if the query fails, log a warning and proceed with the unfiltered pool —
+  // never block a dispatch on infrastructure failure.
+  try {
+    const bookingDate = (booking.scheduled_at ? String(booking.scheduled_at) : new Date().toISOString()).slice(0, 10)
+    const ids = (recipients || []).map((r: any) => r?.id).filter(Boolean)
+    if (ids.length > 0) {
+      const { data: blackouts, error: bErr } = await supabase
+        .from('partner_blackout_dates')
+        .select('partner_id')
+        .in('partner_id', ids)
+        .lte('start_date', bookingDate)
+        .gte('end_date', bookingDate)
+      if (bErr) {
+        console.warn('[tt-smart-dispatch] blackout query failed, proceeding without filter:', bErr.message)
+      } else {
+        const blackedOut = new Set((blackouts || []).map((b: any) => b.partner_id))
+        if (blackedOut.size > 0) {
+          const before = recipients.length
+          recipients = recipients.filter((r: any) => !blackedOut.has(r?.id))
+          console.log(`[tt-smart-dispatch] blackout filter: ${before - recipients.length} of ${before} partners excluded for booking ${booking.id} on ${bookingDate}`)
+        }
+      }
+    }
+  } catch (e: any) {
+    console.warn('[tt-smart-dispatch] blackout filter error, proceeding without filter:', e?.message || e)
+  }
+
+
   // Normalize recipients to a common shape with phone
   const normalized = recipients.map((r: any) => ({
     id: r.id,

@@ -16,6 +16,7 @@ import {
   DECOR_CATEGORIES,
   type DecoratorPackage,
 } from '@/hooks/toptier/useDecoratorPackages';
+import { PartnerAvailability } from '@/components/partner/PartnerAvailability';
 
 type Partner = {
   id: string;
@@ -139,6 +140,7 @@ export default function PartnerPortal() {
             {showProfile && <TabsTrigger value="profile">Profile</TabsTrigger>}
             {showPackages && <TabsTrigger value="packages">Marketplace Packages</TabsTrigger>}
             {showDispatch && <TabsTrigger value="dispatches">Dispatch Requests ({dispatches.length})</TabsTrigger>}
+            {(isTransport || isDecorator) && <TabsTrigger value="availability">Availability</TabsTrigger>}
             <TabsTrigger value="bookings">Booking History ({bookings.length})</TabsTrigger>
           </TabsList>
 
@@ -180,6 +182,12 @@ export default function PartnerPortal() {
                   )}
                 </Card>
               ))}
+            </TabsContent>
+          )}
+
+          {(isTransport || isDecorator) && (
+            <TabsContent value="availability">
+              <PartnerAvailability partnerId={partner.id} />
             </TabsContent>
           )}
 
