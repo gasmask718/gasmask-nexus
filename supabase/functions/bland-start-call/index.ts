@@ -4,6 +4,7 @@
 // recording_url, and summary on completion.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
