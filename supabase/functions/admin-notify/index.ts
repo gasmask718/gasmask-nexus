@@ -151,10 +151,18 @@ serve(async (req) => {
     for (const r of unique) {
       try {
         if (r.channel === "sms") {
+          const idem = `admin-notify:${event_type}:${related_id ?? crypto.randomUUID()}:${r.address}`;
           const resp = await supabase.functions.invoke("send-sms", {
-            body: { to: r.address, body: sms },
+            body: {
+              to_number: r.address,
+              message_body: sms,
+              idempotency_key: idem,
+              purpose: "admin_alert",
+              metadata: { event_type, related_id, related_table },
+            },
           });
           if (resp.error) throw new Error(resp.error.message);
+          if ((resp.data as any)?.error) throw new Error((resp.data as any).error);
         } else {
           const er = await sendEmail({ to: r.address, subject, text: emailBody });
           if (!er.success) throw new Error(er.error || "email failed");
