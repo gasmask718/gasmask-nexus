@@ -140,6 +140,7 @@ export default function PartnerPortal() {
             {showProfile && <TabsTrigger value="profile">Profile</TabsTrigger>}
             {showPackages && <TabsTrigger value="packages">Marketplace Packages</TabsTrigger>}
             {showDispatch && <TabsTrigger value="dispatches">Dispatch Requests ({dispatches.length})</TabsTrigger>}
+            {(isTransport || isDecorator) && <TabsTrigger value="availability">Availability</TabsTrigger>}
             <TabsTrigger value="bookings">Booking History ({bookings.length})</TabsTrigger>
           </TabsList>
 
