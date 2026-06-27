@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
       const to = normalizePhone(String(body?.to || ""));
       const msg = String(
         body?.message ||
-          `GasMask OS test SMS — ${new Date().toISOString()}. Reply STOP to opt out.`,
+          buildSmsTemplate("twilio_admin_test", { timestamp: new Date().toISOString() }),
       );
       if (!/^\+\d{8,15}$/.test(to)) {
         return new Response(
