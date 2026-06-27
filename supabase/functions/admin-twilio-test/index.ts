@@ -7,6 +7,7 @@
 //
 // Auth: requires caller to be admin or owner (checked via user_roles).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -193,7 +194,7 @@ Deno.serve(async (req) => {
       const to = normalizePhone(String(body?.to || ""));
       const msg = String(
         body?.message ||
-          `GasMask OS test SMS — ${new Date().toISOString()}. Reply STOP to opt out.`,
+          buildSmsTemplate("twilio_admin_test", { timestamp: new Date().toISOString() }),
       );
       if (!/^\+\d{8,15}$/.test(to)) {
         return new Response(
@@ -244,8 +245,10 @@ Deno.serve(async (req) => {
       const origin = Deno.env.get("PUBLIC_APP_ORIGIN") ||
         "https://gasmask-os-nexus.lovable.app";
       const url = `${origin}/store-signup?token=${token}`;
-      const msg =
-        `Welcome to GasMask OS — ${storeName}. Create your portal account: ${url} Reply STOP to opt out.`;
+      const msg = buildSmsTemplate("gasmask_signup_invite", {
+        store_name: storeName,
+        signup_url: url,
+      });
       const result = await sendTwilioSms(to, msg);
       return new Response(
         JSON.stringify({ ...result, to, signup_url: url, token }),
@@ -265,8 +268,11 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const msg =
-        `Receipt — ${storeName}: Invoice ${invoiceNumber} paid. Total $${amount}. Thank you! Reply STOP to opt out.`;
+      const msg = buildSmsTemplate("gasmask_receipt_test", {
+        store_name: storeName,
+        invoice_number: invoiceNumber,
+        amount,
+      });
       const result = await sendTwilioSms(to, msg);
       return new Response(
         JSON.stringify({

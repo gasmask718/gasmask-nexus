@@ -14,11 +14,11 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, readForm, verifyTwilio, xmlHeaders } from "../_shared/dialer.ts";
+import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
 
 const EMPTY = `<?xml version="1.0" encoding="UTF-8"?>\n<Response></Response>`;
 
-const RECOVERY_MESSAGE =
-  "Hey, this is GasMask — sorry we just missed your call. Reply here and we'll get right back to you. Reply STOP to opt out.";
+const RECOVERY_MESSAGE = buildSmsTemplate("gasmask_missed_call_callback", {});
 
 const MISSED_STATUSES = new Set(["no-answer", "busy", "failed", "canceled"]);
 

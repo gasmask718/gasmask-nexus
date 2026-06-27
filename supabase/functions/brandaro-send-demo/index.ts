@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,8 +35,11 @@ Deno.serve(async (req) => {
     if (!demo) throw new Error("Demo not found");
 
     const demoLink = demo.demo_url || `https://demo.brandaro.com/${demo.slug || demo_id}`;
-    const message = message_override || 
-      `Hi! We built a free website preview for ${demo.business_name}. Check it out: ${demoLink} — Reply STOP to opt out.`;
+    const message = message_override ||
+      buildSmsTemplate("brandaro_demo_invite", {
+        business_name: demo.business_name,
+        demo_url: demoLink,
+      });
 
     let sendResult: any = { success: false, error: "No send provider configured" };
 

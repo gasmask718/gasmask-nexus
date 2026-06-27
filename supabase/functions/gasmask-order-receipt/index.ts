@@ -2,6 +2,7 @@
 // includes tokenized portal signup link for stores without an owner user.
 // Respects opt_out_events, 12h dedupe on (store_id, order_id).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -97,19 +98,22 @@ Deno.serve(async (req) => {
       .select("id").eq("store_id", storeId).not("used_at", "is", null).limit(1);
     const needsSignup = !priorClaim || priorClaim.length === 0;
 
-    let signupLine = "";
+    let signupUrl: string | undefined;
     if (needsSignup) {
       const token = randomToken();
       await supabase.from("store_signup_tokens").insert({
         token, store_id: storeId, store_name: store?.store_name, phone,
       });
       const origin = Deno.env.get("PUBLIC_APP_ORIGIN") || "https://gasmask-os-nexus.lovable.app";
-      signupLine = ` Create your portal account: ${origin}/store-signup?token=${token}`;
+      signupUrl = `${origin}/store-signup?token=${token}`;
     }
 
     const total = Number(order.total ?? 0).toFixed(2);
-    const text =
-      `Receipt — ${store?.store_name ?? "your store"}: order delivered. Total $${total}.${signupLine} Reply STOP to opt out.`;
+    const text = buildSmsTemplate("gasmask_order_receipt", {
+      store_name: store?.store_name ?? "your store",
+      total,
+      signup_url: signupUrl,
+    });
 
     // Send via send-sms (uses guarded From)
     const sendResp = await fetch(

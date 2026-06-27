@@ -15,6 +15,7 @@ import {
   sendOperatorSms,
   TWILIO_SHARED_NUMBER,
 } from "../_shared/twilio-operator.ts";
+import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
 
 const STOP_RE = /^\s*(STOP|UNSUBSCRIBE|QUIT|CANCEL|END)\s*$/i;
 const START_RE = /^\s*(START|UNSTOP|SUBSCRIBE)\s*$/i;
@@ -91,7 +92,7 @@ Deno.serve(async (req) => {
     try {
       await sendOperatorSms({
         to: From,
-        body: "You've been unsubscribed from GasMask. Reply START to opt in again.",
+        body: buildSmsTemplate("stop_acknowledgment", { brand: "GasMask" }),
       });
     } catch (e) {
       console.error("[twilio-sms-webhook] STOP confirmation failed", (e as Error).message);
@@ -124,7 +125,7 @@ Deno.serve(async (req) => {
     try {
       await sendOperatorSms({
         to: From,
-        body: "You're resubscribed. Reply STOP to opt out.",
+        body: buildSmsTemplate("start_acknowledgment", {}),
       });
     } catch (e) {
       console.error("[twilio-sms-webhook] START confirmation failed", (e as Error).message);

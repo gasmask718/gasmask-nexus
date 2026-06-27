@@ -168,6 +168,67 @@ export const SMS_TEMPLATES = {
     oldest_pending_minutes: number;
   }) =>
     `⏰ ${data.booking_count} TopTier booking(s) pending >1hr\nOldest: ${data.oldest_pending_minutes} min\nReview /admin/bookings`,
+  // === GASMASK (brand: GasMask) ===
+
+  gasmask_missed_call_callback: (_: Record<string, never>) =>
+    `Hey, this is GasMask — sorry we just missed your call. Reply here and we'll get right back to you. Reply STOP to opt out.`,
+
+  gasmask_order_receipt: (data: {
+    store_name: string;
+    total: string | number;
+    signup_url?: string;
+  }) => {
+    const signup = data.signup_url
+      ? ` Create your portal account: ${data.signup_url}`
+      : "";
+    return `Receipt — ${data.store_name}: order delivered. Total $${data.total}.${signup} Reply STOP to opt out.`;
+  },
+
+  gasmask_signup_invite: (data: { store_name: string; signup_url: string }) =>
+    `Welcome to GasMask OS — ${data.store_name}. Create your portal account: ${data.signup_url} Reply STOP to opt out.`,
+
+  gasmask_receipt_test: (data: {
+    store_name: string;
+    invoice_number: string;
+    amount: string | number;
+  }) =>
+    `Receipt — ${data.store_name}: Invoice ${data.invoice_number} paid. Total $${data.amount}. Thank you! Reply STOP to opt out.`,
+
+  // === BRANDARO (brand: Brandaro Digital) ===
+
+  brandaro_demo_invite: (data: { business_name: string; demo_url: string }) =>
+    `Hi! We built a free website preview for ${data.business_name}. Check it out: ${data.demo_url} — Reply STOP to opt out.`,
+
+  brandaro_outreach_default: (_: Record<string, never>) =>
+    `Hi! This is Brandaro Digital — we build high-converting websites and dominate Google for local businesses. Browse our portfolio: https://www.brandarodigital.com\n\nReply STOP to opt out.`,
+
+  bland_brandaro_followup: (data: { name?: string }) => {
+    const hello = data.name ? `Hi ${data.name}! ` : "Hi! ";
+    return `${hello}Aria from Brandaro Digital here — as promised, here's our portfolio of sample websites: https://www.brandarodigital.com\n\nReply STOP to opt out.`;
+  },
+
+  // === ADMIN / DIAGNOSTIC ===
+
+  twilio_admin_test: (data: { timestamp: string }) =>
+    `TopTier admin SMS test — sent at ${data.timestamp}. Reply STOP to opt out.`,
+
+  // === CONTACT-NUMBER VERIFICATION ===
+
+  verification_save_number: (data: {
+    first_name: string;
+    label: string;
+    from_number: string;
+  }) =>
+    `Hi ${data.first_name}, this is ${data.label}. Please save this number (${data.from_number}) as "${data.label}" — this is the number we'll contact you from. Reply YES to confirm you got this. Reply STOP to opt out.`,
+
+  // === CTIA KEYWORD RESPONSES (transactional, no STOP footer per CTIA) ===
+  // STOP ack must not invite further messaging; START ack restores delivery.
+
+  stop_acknowledgment: (data: { brand: string }) =>
+    `You've been unsubscribed from ${data.brand}. Reply START to opt in again.`,
+
+  start_acknowledgment: (_: Record<string, never>) =>
+    `You're resubscribed. Reply STOP to opt out.`,
 } as const;
 
 export type SmsTemplateKey = keyof typeof SMS_TEMPLATES;
