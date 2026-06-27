@@ -245,8 +245,10 @@ Deno.serve(async (req) => {
       const origin = Deno.env.get("PUBLIC_APP_ORIGIN") ||
         "https://gasmask-os-nexus.lovable.app";
       const url = `${origin}/store-signup?token=${token}`;
-      const msg =
-        `Welcome to GasMask OS — ${storeName}. Create your portal account: ${url} Reply STOP to opt out.`;
+      const msg = buildSmsTemplate("gasmask_signup_invite", {
+        store_name: storeName,
+        signup_url: url,
+      });
       const result = await sendTwilioSms(to, msg);
       return new Response(
         JSON.stringify({ ...result, to, signup_url: url, token }),
