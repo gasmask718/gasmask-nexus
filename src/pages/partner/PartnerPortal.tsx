@@ -185,6 +185,12 @@ export default function PartnerPortal() {
             </TabsContent>
           )}
 
+          {(isTransport || isDecorator) && (
+            <TabsContent value="availability">
+              <PartnerAvailability partnerId={partner.id} />
+            </TabsContent>
+          )}
+
           <TabsContent value="bookings" className="space-y-3">
             {bookings.length === 0 && (
               <Card className="p-6 text-sm text-muted-foreground">No bookings yet.</Card>
