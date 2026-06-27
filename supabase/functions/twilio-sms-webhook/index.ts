@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
     try {
       await sendOperatorSms({
         to: From,
-        body: "You've been unsubscribed from GasMask. Reply START to opt in again.",
+        body: buildSmsTemplate("stop_acknowledgment", { brand: "GasMask" }),
       });
     } catch (e) {
       console.error("[twilio-sms-webhook] STOP confirmation failed", (e as Error).message);
