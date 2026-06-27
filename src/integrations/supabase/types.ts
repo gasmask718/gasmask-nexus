@@ -123451,6 +123451,7 @@ export type Database = {
         }[]
       }
       get_managed_office_ids: { Args: { _user_id: string }; Returns: string[] }
+      get_ops_dashboard_metrics: { Args: never; Returns: Json }
       get_payout_statement: { Args: { p_batch_id: string }; Returns: Json }
       get_phase5_mode: { Args: never; Returns: Json }
       get_portal_queue_health: { Args: never; Returns: Json }
