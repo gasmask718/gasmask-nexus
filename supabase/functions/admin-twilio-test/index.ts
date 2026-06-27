@@ -7,6 +7,7 @@
 //
 // Auth: requires caller to be admin or owner (checked via user_roles).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
