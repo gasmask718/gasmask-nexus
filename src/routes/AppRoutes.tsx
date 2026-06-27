@@ -1243,6 +1243,7 @@ export default function AppRoutes() {
       <Route path="/admin/notification-log" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><AdminNotificationLog /></RequireRole></ProtectedRoute>} />
       <Route path="/admin/daily-reports" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><AdminDailyReports /></RequireRole></ProtectedRoute>} />
       <Route path="/admin/partner-performance" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><AdminPartnerPerformance /></RequireRole></ProtectedRoute>} />
+      <Route path="/admin/ops-dashboard" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><AdminOpsDashboard /></RequireRole></ProtectedRoute>} />
       <Route path="/twl-landing" element={<TWLLanding />} />
       <Route path="/partner/respond/:token" element={<PartnerRespond />} />
       <Route path="/tt/partner/accept/:token" element={<TTPartnerAccept />} />
