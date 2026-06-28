@@ -14055,47 +14055,76 @@ export type Database = {
       brandaro_closer_playbooks: {
         Row: {
           created_at: string | null
+          created_by: string | null
           cta: string | null
           emotional_frame: string | null
           handoff_condition: string | null
           id: string
           is_active: boolean | null
+          is_current: boolean
           label: string
           opening_line: string | null
+          parent_version_id: string | null
           playbook_key: string
           stop_condition: string | null
+          superseded_at: string | null
+          superseded_by: string | null
+          updated_at: string
           urgency_line: string | null
           value_positioning: string | null
+          version: number
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           cta?: string | null
           emotional_frame?: string | null
           handoff_condition?: string | null
           id?: string
           is_active?: boolean | null
+          is_current?: boolean
           label: string
           opening_line?: string | null
+          parent_version_id?: string | null
           playbook_key: string
           stop_condition?: string | null
+          superseded_at?: string | null
+          superseded_by?: string | null
+          updated_at?: string
           urgency_line?: string | null
           value_positioning?: string | null
+          version?: number
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           cta?: string | null
           emotional_frame?: string | null
           handoff_condition?: string | null
           id?: string
           is_active?: boolean | null
+          is_current?: boolean
           label?: string
           opening_line?: string | null
+          parent_version_id?: string | null
           playbook_key?: string
           stop_condition?: string | null
+          superseded_at?: string | null
+          superseded_by?: string | null
+          updated_at?: string
           urgency_line?: string | null
           value_positioning?: string | null
+          version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_closer_playbooks_parent_version_id_fkey"
+            columns: ["parent_version_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_closer_playbooks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_closer_rebuttals: {
         Row: {
@@ -14103,53 +14132,79 @@ export type Database = {
           ai_response: string | null
           close_success_rate: number | null
           created_at: string | null
+          created_by: string | null
           downgrade_path: string | null
           human_response: string | null
           id: string
+          is_current: boolean
           label: string
           objection_key: string
+          parent_version_id: string | null
           premium_rebuttal: string | null
           soft_rebuttal: string | null
+          superseded_at: string | null
+          superseded_by: string | null
           times_used: number | null
           times_won: number | null
           updated_at: string | null
           upsell_path: string | null
+          version: number
         }
         Insert: {
           aggressive_rebuttal?: string | null
           ai_response?: string | null
           close_success_rate?: number | null
           created_at?: string | null
+          created_by?: string | null
           downgrade_path?: string | null
           human_response?: string | null
           id?: string
+          is_current?: boolean
           label: string
           objection_key: string
+          parent_version_id?: string | null
           premium_rebuttal?: string | null
           soft_rebuttal?: string | null
+          superseded_at?: string | null
+          superseded_by?: string | null
           times_used?: number | null
           times_won?: number | null
           updated_at?: string | null
           upsell_path?: string | null
+          version?: number
         }
         Update: {
           aggressive_rebuttal?: string | null
           ai_response?: string | null
           close_success_rate?: number | null
           created_at?: string | null
+          created_by?: string | null
           downgrade_path?: string | null
           human_response?: string | null
           id?: string
+          is_current?: boolean
           label?: string
           objection_key?: string
+          parent_version_id?: string | null
           premium_rebuttal?: string | null
           soft_rebuttal?: string | null
+          superseded_at?: string | null
+          superseded_by?: string | null
           times_used?: number | null
           times_won?: number | null
           updated_at?: string | null
           upsell_path?: string | null
+          version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_closer_rebuttals_parent_version_id_fkey"
+            columns: ["parent_version_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_closer_rebuttals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_closer_sessions: {
         Row: {
@@ -19637,46 +19692,75 @@ export type Database = {
         Row: {
           coaching_tip: string | null
           created_at: string | null
+          created_by: string | null
           display_label: string
           id: string
           industry_type: string | null
           is_active: boolean | null
+          is_current: boolean
+          parent_version_id: string | null
           step_key: string
           step_name: string
           step_number: number
+          superseded_at: string | null
+          superseded_by: string | null
           tag_lead_as: string | null
+          updated_at: string
           va_says: string
+          version: number
           wait_for_response: boolean | null
         }
         Insert: {
           coaching_tip?: string | null
           created_at?: string | null
+          created_by?: string | null
           display_label: string
           id?: string
           industry_type?: string | null
           is_active?: boolean | null
+          is_current?: boolean
+          parent_version_id?: string | null
           step_key: string
           step_name: string
           step_number: number
+          superseded_at?: string | null
+          superseded_by?: string | null
           tag_lead_as?: string | null
+          updated_at?: string
           va_says: string
+          version?: number
           wait_for_response?: boolean | null
         }
         Update: {
           coaching_tip?: string | null
           created_at?: string | null
+          created_by?: string | null
           display_label?: string
           id?: string
           industry_type?: string | null
           is_active?: boolean | null
+          is_current?: boolean
+          parent_version_id?: string | null
           step_key?: string
           step_name?: string
           step_number?: number
+          superseded_at?: string | null
+          superseded_by?: string | null
           tag_lead_as?: string | null
+          updated_at?: string
           va_says?: string
+          version?: number
           wait_for_response?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_sales_script_steps_parent_version_id_fkey"
+            columns: ["parent_version_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_sales_script_steps"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_scaling_actions: {
         Row: {
@@ -21950,16 +22034,20 @@ export type Database = {
           behavior_rules: Json | null
           call_structure: Json
           created_at: string
+          created_by: string | null
           demo_offer: string | null
           failsafe: string | null
           hard_close: string | null
           id: string
           is_active: boolean
           opening_lines: Json
+          parent_version_id: string | null
           qualification_questions: Json
           script_name: string
           script_version: number
           soft_close: string | null
+          superseded_at: string | null
+          superseded_by: string | null
           updated_at: string
           value_positioning: string | null
           voice_style: Json | null
@@ -21968,16 +22056,20 @@ export type Database = {
           behavior_rules?: Json | null
           call_structure?: Json
           created_at?: string
+          created_by?: string | null
           demo_offer?: string | null
           failsafe?: string | null
           hard_close?: string | null
           id?: string
           is_active?: boolean
           opening_lines?: Json
+          parent_version_id?: string | null
           qualification_questions?: Json
           script_name: string
           script_version?: number
           soft_close?: string | null
+          superseded_at?: string | null
+          superseded_by?: string | null
           updated_at?: string
           value_positioning?: string | null
           voice_style?: Json | null
@@ -21986,21 +22078,33 @@ export type Database = {
           behavior_rules?: Json | null
           call_structure?: Json
           created_at?: string
+          created_by?: string | null
           demo_offer?: string | null
           failsafe?: string | null
           hard_close?: string | null
           id?: string
           is_active?: boolean
           opening_lines?: Json
+          parent_version_id?: string | null
           qualification_questions?: Json
           script_name?: string
           script_version?: number
           soft_close?: string | null
+          superseded_at?: string | null
+          superseded_by?: string | null
           updated_at?: string
           value_positioning?: string | null
           voice_style?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_voice_agent_scripts_parent_version_id_fkey"
+            columns: ["parent_version_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_voice_agent_scripts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_voice_objections: {
         Row: {
@@ -25606,62 +25710,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "call_routing_rules_business_id_fkey"
-            columns: ["business_id"]
-            isOneToOne: false
-            referencedRelation: "businesses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      call_scripts: {
-        Row: {
-          branching_logic: Json | null
-          business_id: string | null
-          closing: string | null
-          created_at: string | null
-          greeting: string | null
-          id: string
-          is_active: boolean | null
-          language: string | null
-          purpose: string | null
-          questions: Json | null
-          title: string
-          updated_at: string | null
-          voice_type: string | null
-        }
-        Insert: {
-          branching_logic?: Json | null
-          business_id?: string | null
-          closing?: string | null
-          created_at?: string | null
-          greeting?: string | null
-          id?: string
-          is_active?: boolean | null
-          language?: string | null
-          purpose?: string | null
-          questions?: Json | null
-          title: string
-          updated_at?: string | null
-          voice_type?: string | null
-        }
-        Update: {
-          branching_logic?: Json | null
-          business_id?: string | null
-          closing?: string | null
-          created_at?: string | null
-          greeting?: string | null
-          id?: string
-          is_active?: boolean | null
-          language?: string | null
-          purpose?: string | null
-          questions?: Json | null
-          title?: string
-          updated_at?: string | null
-          voice_type?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "call_scripts_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
@@ -40254,39 +40302,60 @@ export type Database = {
           category: string
           code: string
           created_at: string | null
+          created_by: string | null
           creates_invoice_draft: boolean | null
           followup_delay_minutes: number | null
           id: string
+          is_current: boolean
           label: string
           marks_do_not_call: boolean | null
+          parent_version_id: string | null
           requires_followup: boolean | null
+          superseded_at: string | null
+          superseded_by: string | null
+          updated_at: string
           updates_store_stage: string | null
+          version: number
         }
         Insert: {
           business_id?: string | null
           category?: string
           code: string
           created_at?: string | null
+          created_by?: string | null
           creates_invoice_draft?: boolean | null
           followup_delay_minutes?: number | null
           id?: string
+          is_current?: boolean
           label: string
           marks_do_not_call?: boolean | null
+          parent_version_id?: string | null
           requires_followup?: boolean | null
+          superseded_at?: string | null
+          superseded_by?: string | null
+          updated_at?: string
           updates_store_stage?: string | null
+          version?: number
         }
         Update: {
           business_id?: string | null
           category?: string
           code?: string
           created_at?: string | null
+          created_by?: string | null
           creates_invoice_draft?: boolean | null
           followup_delay_minutes?: number | null
           id?: string
+          is_current?: boolean
           label?: string
           marks_do_not_call?: boolean | null
+          parent_version_id?: string | null
           requires_followup?: boolean | null
+          superseded_at?: string | null
+          superseded_by?: string | null
+          updated_at?: string
           updates_store_stage?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -40294,6 +40363,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dialer_disposition_codes_parent_version_id_fkey"
+            columns: ["parent_version_id"]
+            isOneToOne: false
+            referencedRelation: "dialer_disposition_codes"
             referencedColumns: ["id"]
           },
         ]
@@ -85957,6 +86033,62 @@ export type Database = {
           version_number?: number
         }
         Relationships: []
+      }
+      script_faqs: {
+        Row: {
+          answer: string
+          category: string | null
+          created_at: string
+          created_by: string | null
+          display_order: number
+          id: string
+          is_current: boolean
+          parent_version_id: string | null
+          question: string
+          superseded_at: string | null
+          superseded_by: string | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          answer: string
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          is_current?: boolean
+          parent_version_id?: string | null
+          question: string
+          superseded_at?: string | null
+          superseded_by?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          answer?: string
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          is_current?: boolean
+          parent_version_id?: string | null
+          question?: string
+          superseded_at?: string | null
+          superseded_by?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "script_faqs_parent_version_id_fkey"
+            columns: ["parent_version_id"]
+            isOneToOne: false
+            referencedRelation: "script_faqs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       security_agents: {
         Row: {
