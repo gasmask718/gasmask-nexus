@@ -12,8 +12,11 @@ import { Badge } from '@/components/ui/badge';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, Mail, Copy, RefreshCw, UserPlus, Building2, Search, Trash2 } from 'lucide-react';
+import { Loader2, Mail, Copy, RefreshCw, UserPlus, Building2, Search, Trash2, History, MessageSquare } from 'lucide-react';
 
 interface Company { id: string; slug: string; name: string; brand_color: string | null; }
 interface DirRow {
@@ -36,6 +39,19 @@ interface Invite {
   id: string; email: string; role: string; status: string;
   expires_at: string; created_at: string; company_id: string;
   token: string;
+  channel?: string | null;
+  phone?: string | null;
+  sent_to_email?: string | null;
+  sent_to_phone?: string | null;
+}
+interface InviteEvent {
+  id: string;
+  invite_id: string;
+  event_type: string;
+  channel: string | null;
+  actor_user_id: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
 }
 
 export default function VAManagementPage() {
@@ -103,7 +119,7 @@ export default function VAManagementPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('va_invites')
-        .select('id, email, role, status, expires_at, created_at, company_id, token')
+        .select('id, email, role, status, expires_at, created_at, company_id, token, channel, phone, sent_to_email, sent_to_phone')
         .order('created_at', { ascending: false }).limit(100);
       if (error) throw error;
       return (data ?? []) as Invite[];
@@ -111,7 +127,10 @@ export default function VAManagementPage() {
   });
 
   // ---- Form ----
-  const [form, setForm] = useState({ email: '', company_id: '', role: 'va' });
+  type Channel = 'email' | 'sms' | 'both';
+  const [form, setForm] = useState<{
+    email: string; company_id: string; role: string; channel: Channel; phone: string;
+  }>({ email: '', company_id: '', role: 'va', channel: 'email', phone: '' });
 
   useEffect(() => {
     if (!form.company_id && companies.length) {
@@ -122,23 +141,41 @@ export default function VAManagementPage() {
   const inviteMut = useMutation({
     mutationFn: async () => {
       if (!form.email.trim() || !form.company_id) throw new Error('Email and company required');
+      if ((form.channel === 'sms' || form.channel === 'both') && !form.phone.trim()) {
+        throw new Error('Phone number required for SMS channel');
+      }
       const { data, error } = await supabase.functions.invoke('invite-va', {
-        body: { email: form.email.trim(), company_id: form.company_id, role: form.role },
+        body: {
+          email: form.email.trim(),
+          company_id: form.company_id,
+          role: form.role,
+          channel: form.channel,
+          phone: form.phone.trim() || undefined,
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      return data as { accept_url: string; email_sent: boolean; email_error: string | null };
+      return data as {
+        accept_url: string;
+        channel: Channel;
+        email_sent: boolean; email_error: string | null;
+        sms_sent: boolean; sms_error: string | null;
+      };
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['va-invites'] });
-      setForm(f => ({ ...f, email: '' }));
-      if (data.email_sent) {
-        toast.success('Invite sent', { description: form.email });
-      } else {
-        toast.message('Invite created (email not sent)', {
-          description: 'Email infra not configured. Copy the link manually.',
-        });
+      setForm(f => ({ ...f, email: '', phone: '' }));
+      const parts: string[] = [];
+      if (data.channel === 'email' || data.channel === 'both') {
+        parts.push(data.email_sent ? 'email ✓' : `email ✗ (${data.email_error ?? 'failed'})`);
       }
+      if (data.channel === 'sms' || data.channel === 'both') {
+        parts.push(data.sms_sent ? 'sms ✓' : `sms ✗ (${data.sms_error ?? 'failed'})`);
+      }
+      const anySent = data.email_sent || data.sms_sent;
+      const msg = parts.join(' · ');
+      if (anySent) toast.success('Invite created', { description: msg });
+      else toast.message('Invite created (no delivery)', { description: msg });
       navigator.clipboard?.writeText(data.accept_url).catch(() => {});
     },
     onError: (e: any) => toast.error(e.message ?? 'Failed to invite'),
@@ -146,9 +183,11 @@ export default function VAManagementPage() {
 
   const revokeMut = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('va_invites')
-        .update({ status: 'revoked' }).eq('id', id);
+      // Uses revoke_va_invite RPC so status flip + audit event are atomic.
+      const { data, error } = await supabase.rpc('revoke_va_invite', { p_invite_id: id });
       if (error) throw error;
+      const r = data as { success?: boolean; error?: string } | null;
+      if (!r?.success) throw new Error(r?.error ?? 'revoke_failed');
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['va-invites'] });
@@ -167,6 +206,22 @@ export default function VAManagementPage() {
       toast.success('Invite deleted');
     },
     onError: (e: any) => toast.error(e.message ?? 'Failed to delete invite'),
+  });
+
+  // ---- Audit history modal ----
+  const [historyInviteId, setHistoryInviteId] = useState<string | null>(null);
+  const { data: historyEvents = [], isLoading: historyLoading } = useQuery({
+    queryKey: ['va-invite-events', historyInviteId],
+    enabled: !!historyInviteId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('va_invite_events' as any)
+        .select('id, invite_id, event_type, channel, actor_user_id, metadata, created_at')
+        .eq('invite_id', historyInviteId!)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return ((data ?? []) as unknown) as InviteEvent[];
+    },
   });
 
   const assignCompanyMut = useMutation({
