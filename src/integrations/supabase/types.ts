@@ -109429,43 +109429,93 @@ export type Database = {
         }
         Relationships: []
       }
+      va_invite_events: {
+        Row: {
+          actor_user_id: string | null
+          channel: string | null
+          created_at: string
+          event_type: string
+          id: string
+          invite_id: string
+          metadata: Json
+        }
+        Insert: {
+          actor_user_id?: string | null
+          channel?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          invite_id: string
+          metadata?: Json
+        }
+        Update: {
+          actor_user_id?: string | null
+          channel?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          invite_id?: string
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_invite_events_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "va_invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       va_invites: {
         Row: {
           accepted_at: string | null
           accepted_by: string | null
+          channel: string
           company_id: string
           created_at: string
           email: string
           expires_at: string
           id: string
           invited_by: string | null
+          phone: string | null
           role: string
+          sent_to_email: string | null
+          sent_to_phone: string | null
           status: string
           token: string
         }
         Insert: {
           accepted_at?: string | null
           accepted_by?: string | null
+          channel?: string
           company_id: string
           created_at?: string
           email: string
           expires_at?: string
           id?: string
           invited_by?: string | null
+          phone?: string | null
           role?: string
+          sent_to_email?: string | null
+          sent_to_phone?: string | null
           status?: string
           token: string
         }
         Update: {
           accepted_at?: string | null
           accepted_by?: string | null
+          channel?: string
           company_id?: string
           created_at?: string
           email?: string
           expires_at?: string
           id?: string
           invited_by?: string | null
+          phone?: string | null
           role?: string
+          sent_to_email?: string | null
+          sent_to_phone?: string | null
           status?: string
           token?: string
         }
@@ -122292,6 +122342,14 @@ export type Database = {
         Returns: Json
       }
       accept_invite: { Args: { p_token: string }; Returns: Json }
+      accept_va_invite_atomic: {
+        Args: {
+          p_accepting_email: string
+          p_accepting_user_id: string
+          p_token: string
+        }
+        Returns: Json
+      }
       ack_ops_thread: { Args: { p_thread_id: string }; Returns: undefined }
       acknowledge_drift_alert: {
         Args: { p_alert_id: string; p_user_id?: string }
@@ -123321,6 +123379,7 @@ export type Database = {
       }
       expansion_scores_tick: { Args: never; Returns: Json }
       expire_old_simulations: { Args: never; Returns: undefined }
+      expire_old_va_invites: { Args: never; Returns: number }
       export_payout_batch_csv: {
         Args: { p_batch_id: string }
         Returns: {
@@ -123777,6 +123836,16 @@ export type Database = {
       log_security_event: {
         Args: { p_action: string; p_details?: Json }
         Returns: string
+      }
+      log_va_invite_event: {
+        Args: {
+          p_actor_user_id?: string
+          p_channel?: string
+          p_event_type: string
+          p_invite_id: string
+          p_metadata?: Json
+        }
+        Returns: undefined
       }
       lookup_guest_order: {
         Args: { p_email: string; p_ip?: string; p_order_id: string }
@@ -124304,6 +124373,7 @@ export type Database = {
         Args: { _invite_id: string; _reason?: string }
         Returns: Json
       }
+      revoke_va_invite: { Args: { p_invite_id: string }; Returns: Json }
       route_order_to_supplier: { Args: { p_order_id: string }; Returns: Json }
       schedule_ambassador_visit: {
         Args: { p_notes?: string; p_scheduled_for: string; p_store_id: string }
