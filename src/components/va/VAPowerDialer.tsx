@@ -184,6 +184,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
           (supabase as any)
             .from('dialer_disposition_codes')
             .select('id, code, label, category, marks_do_not_call')
+            .eq('is_current', true)
             .order('label'),
         ]);
         if (cancelled) return;

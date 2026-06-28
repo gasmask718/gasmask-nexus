@@ -84,10 +84,12 @@ export function BrandaroCallScript(props: Props) {
           .from('brandaro_sales_script_steps')
           .select('id, step_number, step_name, step_key, display_label, va_says, coaching_tip, tag_lead_as')
           .eq('is_active', true)
+          .eq('is_current', true)
           .order('step_number'),
         (supabase as any)
           .from('brandaro_closer_rebuttals')
-          .select('id, objection_key, label, human_response, soft_rebuttal, aggressive_rebuttal'),
+          .select('id, objection_key, label, human_response, soft_rebuttal, aggressive_rebuttal')
+          .eq('is_current', true),
         (supabase as any)
           .from('brandaro_sales_packages')
           .select('id, name, price_label, payment_terms, highlights, best_for, is_target')

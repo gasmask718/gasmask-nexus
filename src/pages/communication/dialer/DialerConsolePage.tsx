@@ -115,6 +115,7 @@ export default function DialerConsolePage() {
       const { data } = await supabase
         .from('dialer_disposition_codes')
         .select('*')
+        .eq('is_current', true)
         .order('category');
       return (data || []) as DispositionCode[];
     },

@@ -67,6 +67,7 @@ export default function LiveCallPanel() {
       const { data, error } = await supabase
         .from('dialer_disposition_codes')
         .select('*')
+        .eq('is_current', true)
         .order('category', { ascending: true });
       if (error) throw error;
       return (data || []) as DispositionCode[];

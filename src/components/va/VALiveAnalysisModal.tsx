@@ -188,7 +188,7 @@ export function VALiveAnalysisModal({ active, callLogId, leadId, leadName, start
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('brandaro_sales_script_steps')
-        .select('*').eq('is_active', true).order('step_number');
+        .select('*').eq('is_active', true).eq('is_current', true).order('step_number');
       return data || [];
     },
     enabled: active,

@@ -62,6 +62,7 @@ export default function VAWorkspacePage() {
         .from("brandaro_sales_script_steps")
         .select("*")
         .eq("is_active", true)
+        .eq("is_current", true)
         .is("industry_type", null)
         .order("step_number", { ascending: true });
       if (error) throw error;
