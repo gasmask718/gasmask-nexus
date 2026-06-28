@@ -158,6 +158,31 @@ function resolvePickupState(b: any): string | null {
   return matches ? matches[matches.length - 1] : null
 }
 
+// Compute the inclusive date range a booking occupies (YYYY-MM-DD).
+// Falls back to single-day when no duration/end fields are present.
+function getBookingDateRange(booking: any): { start: string; end: string } {
+  const rawStart = booking?.scheduled_at ? String(booking.scheduled_at) : new Date().toISOString()
+  const start = rawStart.slice(0, 10)
+  let end = start
+  try {
+    if (booking?.scheduled_end_at) {
+      end = String(booking.scheduled_end_at).slice(0, 10)
+    } else if (typeof booking?.duration_hours === 'number' && booking.duration_hours > 24) {
+      const s = new Date(rawStart)
+      end = new Date(s.getTime() + booking.duration_hours * 3600_000).toISOString().slice(0, 10)
+    } else if (typeof booking?.duration_days === 'number' && booking.duration_days > 1) {
+      const s = new Date(rawStart)
+      end = new Date(s.getTime() + booking.duration_days * 86400_000).toISOString().slice(0, 10)
+    } else if (typeof booking?.total_trip_duration_minutes === 'number' && booking.total_trip_duration_minutes > 1440) {
+      const s = new Date(rawStart)
+      end = new Date(s.getTime() + booking.total_trip_duration_minutes * 60_000).toISOString().slice(0, 10)
+    }
+  } catch {
+    end = start
+  }
+  return end >= start ? { start, end } : { start, end: start }
+}
+
 async function insertDispatchAndBroadcast(
   ctx: any,
   recipients: any[],
