@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { History, Pencil, Plus, BookOpen, MessageSquare, HelpCircle, Phone } from "lucide-react";
+import { History, Pencil, Plus, BookOpen, MessageSquare, HelpCircle, Phone, Megaphone } from "lucide-react";
 import { toast } from "sonner";
 import { VersionHistoryModal } from "@/components/admin/scripts/VersionHistoryModal";
 
@@ -325,6 +325,31 @@ const VOICE_AGENT_CONFIG: EditorConfig = {
   emptyRow: { script_name: "", is_active: true, call_structure: [], opening_lines: [], qualification_questions: [], behavior_rules: [] },
 };
 
+const PLAYBOOKS_CONFIG: EditorConfig = {
+  table: "brandaro_closer_playbooks",
+  queryKey: "admin-closer-playbooks",
+  naturalKeyColumn: "playbook_key",
+  orderBy: { column: "playbook_key", ascending: true },
+  listColumns: [
+    { key: "label", label: "Label", primary: true },
+    { key: "playbook_key", label: "Key", mono: true },
+  ],
+  formFields: [
+    { key: "playbook_key", label: "Playbook key", type: "text", required: true },
+    { key: "label", label: "Display label", type: "text", required: true },
+    { key: "opening_line", label: "Opening line", type: "textarea" },
+    { key: "emotional_frame", label: "Emotional frame", type: "textarea" },
+    { key: "value_positioning", label: "Value positioning", type: "textarea" },
+    { key: "urgency_line", label: "Urgency line", type: "textarea" },
+    { key: "cta", label: "Call to action", type: "textarea" },
+    { key: "handoff_condition", label: "Handoff condition", type: "textarea" },
+    { key: "stop_condition", label: "Stop condition", type: "textarea" },
+    { key: "is_active", label: "Active", type: "boolean" },
+  ],
+  historyDisplayColumns: ["label", "opening_line", "value_positioning", "cta"],
+  emptyRow: { playbook_key: "", label: "", is_active: true },
+};
+
 /* ─────────────────────────────────────────────────────────────
  * Page shell
  * ──────────────────────────────────────────────────────────── */
@@ -342,18 +367,20 @@ export default function BrandaroScriptsAdminPage() {
       <Card>
         <CardContent className="p-4">
           <Tabs defaultValue="scripts">
-            <TabsList className="grid grid-cols-5 w-full">
+            <TabsList className="grid grid-cols-6 w-full">
               <TabsTrigger value="scripts"><BookOpen className="h-4 w-4 mr-1" />Script steps</TabsTrigger>
               <TabsTrigger value="rebuttals"><MessageSquare className="h-4 w-4 mr-1" />Rebuttals</TabsTrigger>
               <TabsTrigger value="faqs"><HelpCircle className="h-4 w-4 mr-1" />FAQs</TabsTrigger>
               <TabsTrigger value="dispositions"><Phone className="h-4 w-4 mr-1" />Dispositions</TabsTrigger>
               <TabsTrigger value="voice-agent">Voice agent</TabsTrigger>
+              <TabsTrigger value="playbooks"><Megaphone className="h-4 w-4 mr-1" />Playbooks</TabsTrigger>
             </TabsList>
             <TabsContent value="scripts" className="mt-4"><GenericVersionedEditor config={SCRIPT_STEPS_CONFIG} /></TabsContent>
             <TabsContent value="rebuttals" className="mt-4"><GenericVersionedEditor config={REBUTTALS_CONFIG} /></TabsContent>
             <TabsContent value="faqs" className="mt-4"><GenericVersionedEditor config={FAQ_CONFIG} /></TabsContent>
             <TabsContent value="dispositions" className="mt-4"><GenericVersionedEditor config={DISPOSITION_CONFIG} /></TabsContent>
             <TabsContent value="voice-agent" className="mt-4"><GenericVersionedEditor config={VOICE_AGENT_CONFIG} /></TabsContent>
+            <TabsContent value="playbooks" className="mt-4"><GenericVersionedEditor config={PLAYBOOKS_CONFIG} /></TabsContent>
           </Tabs>
         </CardContent>
       </Card>
