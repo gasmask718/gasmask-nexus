@@ -158,6 +158,31 @@ function resolvePickupState(b: any): string | null {
   return matches ? matches[matches.length - 1] : null
 }
 
+// Compute the inclusive date range a booking occupies (YYYY-MM-DD).
+// Falls back to single-day when no duration/end fields are present.
+function getBookingDateRange(booking: any): { start: string; end: string } {
+  const rawStart = booking?.scheduled_at ? String(booking.scheduled_at) : new Date().toISOString()
+  const start = rawStart.slice(0, 10)
+  let end = start
+  try {
+    if (booking?.scheduled_end_at) {
+      end = String(booking.scheduled_end_at).slice(0, 10)
+    } else if (typeof booking?.duration_hours === 'number' && booking.duration_hours > 24) {
+      const s = new Date(rawStart)
+      end = new Date(s.getTime() + booking.duration_hours * 3600_000).toISOString().slice(0, 10)
+    } else if (typeof booking?.duration_days === 'number' && booking.duration_days > 1) {
+      const s = new Date(rawStart)
+      end = new Date(s.getTime() + booking.duration_days * 86400_000).toISOString().slice(0, 10)
+    } else if (typeof booking?.total_trip_duration_minutes === 'number' && booking.total_trip_duration_minutes > 1440) {
+      const s = new Date(rawStart)
+      end = new Date(s.getTime() + booking.total_trip_duration_minutes * 60_000).toISOString().slice(0, 10)
+    }
+  } catch {
+    end = start
+  }
+  return end >= start ? { start, end } : { start, end: start }
+}
+
 async function insertDispatchAndBroadcast(
   ctx: any,
   recipients: any[],
@@ -165,20 +190,20 @@ async function insertDispatchAndBroadcast(
 ) {
   const { supabase, booking, serviceCategory, routing } = ctx
 
-  // === BLACKOUT FILTER ===
-  // Exclude partners who have marked themselves unavailable for booking.scheduled_at.
+  // === BLACKOUT FILTER (multi-day overlap) ===
+  // Exclude partners whose blackout range overlaps ANY portion of the booking range.
   // Safety: if the query fails, log a warning and proceed with the unfiltered pool —
   // never block a dispatch on infrastructure failure.
   try {
-    const bookingDate = (booking.scheduled_at ? String(booking.scheduled_at) : new Date().toISOString()).slice(0, 10)
+    const { start: bookingStart, end: bookingEnd } = getBookingDateRange(booking)
     const ids = (recipients || []).map((r: any) => r?.id).filter(Boolean)
     if (ids.length > 0) {
       const { data: blackouts, error: bErr } = await supabase
         .from('partner_blackout_dates')
         .select('partner_id')
         .in('partner_id', ids)
-        .lte('start_date', bookingDate)
-        .gte('end_date', bookingDate)
+        .lte('start_date', bookingEnd)   // blackout starts on/before booking ends
+        .gte('end_date', bookingStart)   // blackout ends on/after booking starts
       if (bErr) {
         console.warn('[tt-smart-dispatch] blackout query failed, proceeding without filter:', bErr.message)
       } else {
@@ -186,7 +211,7 @@ async function insertDispatchAndBroadcast(
         if (blackedOut.size > 0) {
           const before = recipients.length
           recipients = recipients.filter((r: any) => !blackedOut.has(r?.id))
-          console.log(`[tt-smart-dispatch] blackout filter: ${before - recipients.length} of ${before} partners excluded for booking ${booking.id} on ${bookingDate}`)
+          console.log(`[tt-smart-dispatch] blackout filter: ${before - recipients.length} of ${before} partners excluded for booking ${booking.id} (range ${bookingStart} → ${bookingEnd})`)
         }
       }
     }
