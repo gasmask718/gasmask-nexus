@@ -12,8 +12,11 @@ import { Badge } from '@/components/ui/badge';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, Mail, Copy, RefreshCw, UserPlus, Building2, Search, Trash2 } from 'lucide-react';
+import { Loader2, Mail, Copy, RefreshCw, UserPlus, Building2, Search, Trash2, History, MessageSquare } from 'lucide-react';
 
 interface Company { id: string; slug: string; name: string; brand_color: string | null; }
 interface DirRow {
@@ -36,6 +39,19 @@ interface Invite {
   id: string; email: string; role: string; status: string;
   expires_at: string; created_at: string; company_id: string;
   token: string;
+  channel?: string | null;
+  phone?: string | null;
+  sent_to_email?: string | null;
+  sent_to_phone?: string | null;
+}
+interface InviteEvent {
+  id: string;
+  invite_id: string;
+  event_type: string;
+  channel: string | null;
+  actor_user_id: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
 }
 
 export default function VAManagementPage() {
@@ -103,7 +119,7 @@ export default function VAManagementPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('va_invites')
-        .select('id, email, role, status, expires_at, created_at, company_id, token')
+        .select('id, email, role, status, expires_at, created_at, company_id, token, channel, phone, sent_to_email, sent_to_phone')
         .order('created_at', { ascending: false }).limit(100);
       if (error) throw error;
       return (data ?? []) as Invite[];
@@ -111,7 +127,10 @@ export default function VAManagementPage() {
   });
 
   // ---- Form ----
-  const [form, setForm] = useState({ email: '', company_id: '', role: 'va' });
+  type Channel = 'email' | 'sms' | 'both';
+  const [form, setForm] = useState<{
+    email: string; company_id: string; role: string; channel: Channel; phone: string;
+  }>({ email: '', company_id: '', role: 'va', channel: 'email', phone: '' });
 
   useEffect(() => {
     if (!form.company_id && companies.length) {
@@ -122,23 +141,41 @@ export default function VAManagementPage() {
   const inviteMut = useMutation({
     mutationFn: async () => {
       if (!form.email.trim() || !form.company_id) throw new Error('Email and company required');
+      if ((form.channel === 'sms' || form.channel === 'both') && !form.phone.trim()) {
+        throw new Error('Phone number required for SMS channel');
+      }
       const { data, error } = await supabase.functions.invoke('invite-va', {
-        body: { email: form.email.trim(), company_id: form.company_id, role: form.role },
+        body: {
+          email: form.email.trim(),
+          company_id: form.company_id,
+          role: form.role,
+          channel: form.channel,
+          phone: form.phone.trim() || undefined,
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      return data as { accept_url: string; email_sent: boolean; email_error: string | null };
+      return data as {
+        accept_url: string;
+        channel: Channel;
+        email_sent: boolean; email_error: string | null;
+        sms_sent: boolean; sms_error: string | null;
+      };
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['va-invites'] });
-      setForm(f => ({ ...f, email: '' }));
-      if (data.email_sent) {
-        toast.success('Invite sent', { description: form.email });
-      } else {
-        toast.message('Invite created (email not sent)', {
-          description: 'Email infra not configured. Copy the link manually.',
-        });
+      setForm(f => ({ ...f, email: '', phone: '' }));
+      const parts: string[] = [];
+      if (data.channel === 'email' || data.channel === 'both') {
+        parts.push(data.email_sent ? 'email ✓' : `email ✗ (${data.email_error ?? 'failed'})`);
       }
+      if (data.channel === 'sms' || data.channel === 'both') {
+        parts.push(data.sms_sent ? 'sms ✓' : `sms ✗ (${data.sms_error ?? 'failed'})`);
+      }
+      const anySent = data.email_sent || data.sms_sent;
+      const msg = parts.join(' · ');
+      if (anySent) toast.success('Invite created', { description: msg });
+      else toast.message('Invite created (no delivery)', { description: msg });
       navigator.clipboard?.writeText(data.accept_url).catch(() => {});
     },
     onError: (e: any) => toast.error(e.message ?? 'Failed to invite'),
@@ -146,9 +183,11 @@ export default function VAManagementPage() {
 
   const revokeMut = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('va_invites')
-        .update({ status: 'revoked' }).eq('id', id);
+      // Uses revoke_va_invite RPC so status flip + audit event are atomic.
+      const { data, error } = await supabase.rpc('revoke_va_invite', { p_invite_id: id });
       if (error) throw error;
+      const r = data as { success?: boolean; error?: string } | null;
+      if (!r?.success) throw new Error(r?.error ?? 'revoke_failed');
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['va-invites'] });
@@ -167,6 +206,22 @@ export default function VAManagementPage() {
       toast.success('Invite deleted');
     },
     onError: (e: any) => toast.error(e.message ?? 'Failed to delete invite'),
+  });
+
+  // ---- Audit history modal ----
+  const [historyInviteId, setHistoryInviteId] = useState<string | null>(null);
+  const { data: historyEvents = [], isLoading: historyLoading } = useQuery({
+    queryKey: ['va-invite-events', historyInviteId],
+    enabled: !!historyInviteId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('va_invite_events' as any)
+        .select('id, invite_id, event_type, channel, actor_user_id, metadata, created_at')
+        .eq('invite_id', historyInviteId!)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return ((data ?? []) as unknown) as InviteEvent[];
+    },
   });
 
   const assignCompanyMut = useMutation({
@@ -254,7 +309,7 @@ export default function VAManagementPage() {
             <UserPlus className="h-5 w-5" /> Invite a VA
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-4">
+        <CardContent className="grid gap-4 md:grid-cols-6">
           <div className="md:col-span-2">
             <Label className="text-slate-300">VA email</Label>
             <Input
@@ -291,15 +346,45 @@ export default function VAManagementPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="md:col-span-4">
+          <div>
+            <Label className="text-slate-300">Channel</Label>
+            <Select value={form.channel} onValueChange={(v) => setForm(f => ({ ...f, channel: v as Channel }))}>
+              <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="sms">SMS</SelectItem>
+                <SelectItem value="both">Both</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-slate-300">
+              Phone {(form.channel === 'sms' || form.channel === 'both') && <span className="text-amber-400">*</span>}
+            </Label>
+            <Input
+              type="tel" placeholder="+15558675310"
+              value={form.phone}
+              onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+              disabled={form.channel === 'email'}
+              className="bg-slate-800 border-slate-700 text-white"
+            />
+          </div>
+          <div className="md:col-span-6">
             <Button
               onClick={() => inviteMut.mutate()}
-              disabled={inviteMut.isPending || !form.email || !form.company_id}
+              disabled={
+                inviteMut.isPending || !form.email || !form.company_id ||
+                ((form.channel === 'sms' || form.channel === 'both') && !form.phone.trim())
+              }
               className="bg-cyan-600 hover:bg-cyan-700"
             >
               {inviteMut.isPending
                 ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending…</>
-                : <><Mail className="h-4 w-4 mr-2" /> Send invite</>}
+                : form.channel === 'sms'
+                  ? <><MessageSquare className="h-4 w-4 mr-2" /> Send invite</>
+                  : <><Mail className="h-4 w-4 mr-2" /> Send invite</>}
             </Button>
           </div>
         </CardContent>
@@ -317,6 +402,7 @@ export default function VAManagementPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Company</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Channel</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Expires</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -324,15 +410,21 @@ export default function VAManagementPage() {
             </TableHeader>
             <TableBody>
               {invites.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-slate-500 py-8">
+                <TableRow><TableCell colSpan={7} className="text-center text-slate-500 py-8">
                   No invites yet
                 </TableCell></TableRow>
               )}
               {invites.map(i => (
                 <TableRow key={i.id}>
-                  <TableCell className="text-white">{i.email}</TableCell>
+                  <TableCell className="text-white">
+                    <div>{i.email}</div>
+                    {i.phone && <div className="text-xs text-slate-500">{i.phone}</div>}
+                  </TableCell>
                   <TableCell>{companyById[i.company_id]?.name ?? '—'}</TableCell>
                   <TableCell>{i.role}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">{i.channel ?? 'email'}</Badge>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={i.status === 'pending' ? 'default'
                       : i.status === 'accepted' ? 'secondary' : 'destructive'}>
@@ -343,13 +435,18 @@ export default function VAManagementPage() {
                     {new Date(i.expires_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right space-x-2">
+                    <Button size="sm" variant="ghost" onClick={() => setHistoryInviteId(i.id)}>
+                      <History className="h-3 w-3 mr-1" /> History
+                    </Button>
                     {i.status === 'pending' && (
                       <>
                         <Button size="sm" variant="ghost" onClick={() => copyLink(i.token)}>
                           <Copy className="h-3 w-3 mr-1" /> Link
                         </Button>
                         <Button size="sm" variant="ghost"
-                          className="text-amber-400" onClick={() => revokeMut.mutate(i.id)}>
+                          className="text-amber-400"
+                          disabled={revokeMut.isPending}
+                          onClick={() => revokeMut.mutate(i.id)}>
                           Revoke
                         </Button>
                       </>
@@ -374,6 +471,43 @@ export default function VAManagementPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* History modal */}
+      <Dialog open={!!historyInviteId} onOpenChange={(open) => !open && setHistoryInviteId(null)}>
+        <DialogContent className="max-w-lg bg-slate-900 border-slate-800 text-white">
+          <DialogHeader>
+            <DialogTitle>Invite history</DialogTitle>
+          </DialogHeader>
+          {historyLoading && (
+            <div className="py-8 text-center text-slate-400">
+              <Loader2 className="h-5 w-5 animate-spin inline" />
+            </div>
+          )}
+          {!historyLoading && historyEvents.length === 0 && (
+            <div className="py-8 text-center text-slate-500">No events recorded.</div>
+          )}
+          {!historyLoading && historyEvents.length > 0 && (
+            <ol className="space-y-3 max-h-96 overflow-y-auto">
+              {historyEvents.map(ev => (
+                <li key={ev.id} className="border-l-2 border-cyan-700 pl-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">{ev.event_type}</Badge>
+                    {ev.channel && <Badge variant="secondary" className="text-xs">{ev.channel}</Badge>}
+                    <span className="text-xs text-slate-400 ml-auto">
+                      {new Date(ev.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  {ev.metadata && Object.keys(ev.metadata).length > 0 && (
+                    <pre className="mt-1 text-xs text-slate-400 whitespace-pre-wrap break-all">
+                      {JSON.stringify(ev.metadata, null, 2)}
+                    </pre>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Directory */}
       <Card className="bg-slate-900/60 border-slate-800">
