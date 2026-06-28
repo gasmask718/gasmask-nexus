@@ -122660,6 +122660,14 @@ export type Database = {
         Args: { p_business_id?: string; p_phone: string }
         Returns: Json
       }
+      check_partner_blackout_overlap: {
+        Args: {
+          p_booking_end: string
+          p_booking_start: string
+          p_partner_id: string
+        }
+        Returns: boolean
+      }
       check_portal_rate_limit: {
         Args: { _device_id: string; _endpoint_name: string }
         Returns: boolean
