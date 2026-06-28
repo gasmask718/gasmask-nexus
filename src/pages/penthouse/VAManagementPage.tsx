@@ -309,7 +309,7 @@ export default function VAManagementPage() {
             <UserPlus className="h-5 w-5" /> Invite a VA
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-4">
+        <CardContent className="grid gap-4 md:grid-cols-6">
           <div className="md:col-span-2">
             <Label className="text-slate-300">VA email</Label>
             <Input
@@ -346,15 +346,45 @@ export default function VAManagementPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="md:col-span-4">
+          <div>
+            <Label className="text-slate-300">Channel</Label>
+            <Select value={form.channel} onValueChange={(v) => setForm(f => ({ ...f, channel: v as Channel }))}>
+              <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="sms">SMS</SelectItem>
+                <SelectItem value="both">Both</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-slate-300">
+              Phone {(form.channel === 'sms' || form.channel === 'both') && <span className="text-amber-400">*</span>}
+            </Label>
+            <Input
+              type="tel" placeholder="+15558675310"
+              value={form.phone}
+              onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+              disabled={form.channel === 'email'}
+              className="bg-slate-800 border-slate-700 text-white"
+            />
+          </div>
+          <div className="md:col-span-6">
             <Button
               onClick={() => inviteMut.mutate()}
-              disabled={inviteMut.isPending || !form.email || !form.company_id}
+              disabled={
+                inviteMut.isPending || !form.email || !form.company_id ||
+                ((form.channel === 'sms' || form.channel === 'both') && !form.phone.trim())
+              }
               className="bg-cyan-600 hover:bg-cyan-700"
             >
               {inviteMut.isPending
                 ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending…</>
-                : <><Mail className="h-4 w-4 mr-2" /> Send invite</>}
+                : form.channel === 'sms'
+                  ? <><MessageSquare className="h-4 w-4 mr-2" /> Send invite</>
+                  : <><Mail className="h-4 w-4 mr-2" /> Send invite</>}
             </Button>
           </div>
         </CardContent>
