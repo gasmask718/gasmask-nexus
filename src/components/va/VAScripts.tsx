@@ -17,6 +17,7 @@ export function VAScripts() {
         .from('brandaro_sales_script_steps')
         .select('*')
         .eq('is_active', true)
+        .eq('is_current', true)
         .order('step_number');
       return data || [];
     },

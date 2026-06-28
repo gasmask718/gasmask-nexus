@@ -85,6 +85,7 @@ export function useRebuttals() {
       const { data, error } = await (supabase as any)
         .from("brandaro_closer_rebuttals")
         .select("*")
+        .eq("is_current", true)
         .order("times_used", { ascending: false });
       if (error) throw error;
       return data || [];
@@ -101,6 +102,7 @@ export function usePlaybooks() {
         .from("brandaro_closer_playbooks")
         .select("*")
         .eq("is_active", true)
+        .eq("is_current", true)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data || [];

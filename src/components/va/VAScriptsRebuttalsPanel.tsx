@@ -33,6 +33,7 @@ function ScriptTab() {
         .from('brandaro_sales_script_steps')
         .select('*')
         .eq('is_active', true)
+        .eq('is_current', true)
         .order('step_number');
       return data || [];
     },
@@ -129,6 +130,7 @@ function ObjectionsTab() {
       const { data } = await (supabase as any)
         .from('brandaro_closer_rebuttals')
         .select('*')
+        .eq('is_current', true)
         .order('label');
       return data || [];
     },

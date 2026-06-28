@@ -16,6 +16,7 @@ export function VARebuttals() {
       const { data } = await (supabase as any)
         .from('brandaro_closer_rebuttals')
         .select('*')
+        .eq('is_current', true)
         .order('label');
       return data || [];
     },
