@@ -234,6 +234,7 @@ const AdminLeaderboardPage = lazy(() => import('@/pages/admin/AdminLeaderboard')
 const AdminCallReviewPage = lazy(() => import('@/pages/admin/AdminCallReview'));
 const AdminVAMonitorPage = lazy(() => import('@/pages/admin/AdminVAMonitor'));
 const AdminDNCManagerPage = lazy(() => import('@/pages/admin/AdminDNCManager'));
+const BrandaroScriptsAdminPage = lazy(() => import('@/pages/admin/BrandaroScriptsAdminPage'));
 const AmbassadorLogin = lazy(() => import('@/pages/ambassador/AmbassadorLogin'));
 const AmbassadorSetPassword = lazy(() => import('@/pages/ambassador/AmbassadorSetPassword'));
 const UTAmbassadorDashboard = lazy(() => import('@/pages/ut-ambassador/UTAmbassadorDashboard'));
@@ -3733,6 +3734,7 @@ export default function AppRoutes() {
           <Route path="admin-call-review" element={<AdminCallReviewPage />} />
           <Route path="admin-monitor" element={<AdminVAMonitorPage />} />
           <Route path="admin-dnc" element={<AdminDNCManagerPage />} />
+          <Route path="admin-scripts" element={<BrandaroScriptsAdminPage />} />
         </Route>
       </Route>
 
