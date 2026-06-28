@@ -415,9 +415,15 @@ export default function VAManagementPage() {
               )}
               {invites.map(i => (
                 <TableRow key={i.id}>
-                  <TableCell className="text-white">{i.email}</TableCell>
+                  <TableCell className="text-white">
+                    <div>{i.email}</div>
+                    {i.phone && <div className="text-xs text-slate-500">{i.phone}</div>}
+                  </TableCell>
                   <TableCell>{companyById[i.company_id]?.name ?? '—'}</TableCell>
                   <TableCell>{i.role}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">{i.channel ?? 'email'}</Badge>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={i.status === 'pending' ? 'default'
                       : i.status === 'accepted' ? 'secondary' : 'destructive'}>
@@ -428,13 +434,18 @@ export default function VAManagementPage() {
                     {new Date(i.expires_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right space-x-2">
+                    <Button size="sm" variant="ghost" onClick={() => setHistoryInviteId(i.id)}>
+                      <History className="h-3 w-3 mr-1" /> History
+                    </Button>
                     {i.status === 'pending' && (
                       <>
                         <Button size="sm" variant="ghost" onClick={() => copyLink(i.token)}>
                           <Copy className="h-3 w-3 mr-1" /> Link
                         </Button>
                         <Button size="sm" variant="ghost"
-                          className="text-amber-400" onClick={() => revokeMut.mutate(i.id)}>
+                          className="text-amber-400"
+                          disabled={revokeMut.isPending}
+                          onClick={() => revokeMut.mutate(i.id)}>
                           Revoke
                         </Button>
                       </>
@@ -459,6 +470,43 @@ export default function VAManagementPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* History modal */}
+      <Dialog open={!!historyInviteId} onOpenChange={(open) => !open && setHistoryInviteId(null)}>
+        <DialogContent className="max-w-lg bg-slate-900 border-slate-800 text-white">
+          <DialogHeader>
+            <DialogTitle>Invite history</DialogTitle>
+          </DialogHeader>
+          {historyLoading && (
+            <div className="py-8 text-center text-slate-400">
+              <Loader2 className="h-5 w-5 animate-spin inline" />
+            </div>
+          )}
+          {!historyLoading && historyEvents.length === 0 && (
+            <div className="py-8 text-center text-slate-500">No events recorded.</div>
+          )}
+          {!historyLoading && historyEvents.length > 0 && (
+            <ol className="space-y-3 max-h-96 overflow-y-auto">
+              {historyEvents.map(ev => (
+                <li key={ev.id} className="border-l-2 border-cyan-700 pl-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">{ev.event_type}</Badge>
+                    {ev.channel && <Badge variant="secondary" className="text-xs">{ev.channel}</Badge>}
+                    <span className="text-xs text-slate-400 ml-auto">
+                      {new Date(ev.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  {ev.metadata && Object.keys(ev.metadata).length > 0 && (
+                    <pre className="mt-1 text-xs text-slate-400 whitespace-pre-wrap break-all">
+                      {JSON.stringify(ev.metadata, null, 2)}
+                    </pre>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Directory */}
       <Card className="bg-slate-900/60 border-slate-800">
