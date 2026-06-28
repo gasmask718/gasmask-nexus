@@ -194,6 +194,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/admin/store-deduplication', label: 'Data Quality — Store Dedup', icon: Database, adminOnly: true },
       { path: '/admin/store-merge-preview', label: 'Data Quality — Store Merge Preview', icon: Database, adminOnly: true },
       { path: '/admin/merge-dry-run', label: 'Data Quality — Merge Dry-Run', icon: Database, adminOnly: true },
+      { path: '/brandaro/admin-scripts', label: 'Brandaro Scripts & Playbooks', icon: FileText, adminOnly: true },
     ],
   },
   dynastyPartners: {
