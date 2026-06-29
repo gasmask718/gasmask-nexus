@@ -2014,6 +2014,7 @@ export default function AppRoutes() {
             </RequireRole>
           }
         />
+        <Route path="/dynasty-direct/inventory/forecast" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDInventoryForecast /></RequireRole>} />
         <Route path="/dynasty-direct/suppliers/portal" element={<WholesalerPortalPage />} />
         <Route path="/dynasty-direct/suppliers/inventory" element={<WholesalerPortalPage />} />
         <Route path="/dynasty-direct/suppliers/performance" element={<DDSupplierPerformance />} />
