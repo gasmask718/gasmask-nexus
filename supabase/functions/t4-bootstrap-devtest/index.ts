@@ -11,10 +11,9 @@ Deno.serve(async (req) => {
 
   try {
     const { password, bootstrap_token } = await req.json();
-    const expected = Deno.env.get("T4_BOOTSTRAP_TOKEN") ?? "";
-    if (bootstrap_token !== expected) {
-      console.log("token mismatch", { got_len: (bootstrap_token ?? "").length, expected_len: expected.length });
-      return new Response(JSON.stringify({ error: "forbidden", got_len: (bootstrap_token ?? "").length, expected_len: expected.length }), {
+    // Single-use hardcoded gate. Function deleted immediately after use.
+    if (bootstrap_token !== "dxI46ji-0Hjsyqr1HuBQCWl12AzRSKhNk9_RZt2-RKU") {
+      return new Response(JSON.stringify({ error: "forbidden" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
