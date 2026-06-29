@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Handshake, Megaphone, DollarSign, Copy, Loader2 } from "lucide-react";
+import { Handshake, Megaphone, DollarSign, Copy, Loader2, Banknote } from "lucide-react";
 
 const PUBLIC_ORIGIN = (typeof window !== "undefined" && window.location.origin.includes("dynastydirect"))
   ? window.location.origin
@@ -87,10 +87,12 @@ export default function DDPartnerCampaigns() {
           <TabsTrigger value="links"><Handshake className="w-4 h-4 mr-1" /> Partner Links</TabsTrigger>
           <TabsTrigger value="campaigns"><Megaphone className="w-4 h-4 mr-1" /> Campaigns</TabsTrigger>
           <TabsTrigger value="earnings"><DollarSign className="w-4 h-4 mr-1" /> Earnings</TabsTrigger>
+          <TabsTrigger value="settlement"><Banknote className="w-4 h-4 mr-1" /> Settlement</TabsTrigger>
         </TabsList>
         <TabsContent value="links"><PartnerLinksTab /></TabsContent>
         <TabsContent value="campaigns"><CampaignsTab /></TabsContent>
         <TabsContent value="earnings"><EarningsTab /></TabsContent>
+        <TabsContent value="settlement"><SettlementTab /></TabsContent>
       </Tabs>
     </div>
   );
@@ -719,4 +721,167 @@ function StatusBadge({ status }: { status: string }) {
     ended: "outline", cancelled: "destructive", terminated: "destructive",
   };
   return <Badge variant={variant[status] ?? "secondary"}>{status}</Badge>;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab 4: Settlement — monthly payout breakdowns per partner
+type PartnerProfile = {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  stripe_connect_account_id: string | null;
+  stripe_connect_onboarded: boolean | null;
+  pending_balance: number | null;
+  total_paid_lifetime: number | null;
+  total_earned_lifetime: number | null;
+  status: string;
+};
+type PartnerPayout = {
+  id: string;
+  partner_id: string;
+  period_start: string;
+  period_end: string;
+  total_revenue: number | null;
+  total_costs: number | null;
+  net_profit: number | null;
+  partner_share_pct: number | null;
+  partner_earnings: number | null;
+  wholesaler_referral_earnings: number | null;
+  campaign_earnings: number | null;
+  status: string;
+  stripe_transfer_id: string | null;
+  approved_at: string | null;
+  paid_at: string | null;
+};
+
+function SettlementTab() {
+  const qc = useQueryClient();
+  const { data: partners = [] } = useQuery({
+    queryKey: ["dd-partner-profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dd_partner_profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as PartnerProfile[];
+    },
+  });
+  const { data: payouts = [] } = useQuery({
+    queryKey: ["dd-partner-payouts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dd_partner_payouts")
+        .select("*")
+        .order("period_start", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as PartnerPayout[];
+    },
+  });
+
+  const approve = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("dd_partner_payouts")
+        .update({ status: "approved", approved_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Payout approved");
+      qc.invalidateQueries({ queryKey: ["dd-partner-payouts"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const pay = useMutation({
+    mutationFn: async (p: PartnerPayout) => {
+      const amount = Number(p.partner_earnings ?? 0);
+      if (amount <= 0) throw new Error("Nothing to pay");
+      const { data, error } = await supabase.functions.invoke("dd-pay-partner", {
+        body: { payout_id: p.id, partner_id: p.partner_id, amount },
+      });
+      if (error) throw error;
+      const result = data as { error?: string } | null;
+      if (result?.error) throw new Error(result.error);
+    },
+    onSuccess: () => {
+      toast.success("Payment processed");
+      qc.invalidateQueries({ queryKey: ["dd-partner-payouts"] });
+      qc.invalidateQueries({ queryKey: ["dd-partner-profiles"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, PartnerPayout[]>();
+    for (const p of payouts) {
+      const arr = map.get(p.partner_id) ?? [];
+      arr.push(p);
+      map.set(p.partner_id, arr);
+    }
+    return map;
+  }, [payouts]);
+
+  if (!partners.length) {
+    return <Card><CardContent className="p-6 text-muted-foreground">No partners yet.</CardContent></Card>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {partners.map((partner) => {
+        const list = grouped.get(partner.id) ?? [];
+        return (
+          <Card key={partner.id}>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between flex-wrap gap-2">
+                <span>{partner.full_name} <span className="text-sm font-normal text-muted-foreground">· {partner.email}</span></span>
+                <span className="text-sm flex items-center gap-2">
+                  {partner.stripe_connect_onboarded
+                    ? <Badge>Stripe Connected</Badge>
+                    : <Badge variant="outline">Not onboarded</Badge>}
+                  <span className="text-muted-foreground">Pending: {money(partner.pending_balance)}</span>
+                  <span className="text-muted-foreground">Paid LTD: {money(partner.total_paid_lifetime)}</span>
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {list.length === 0
+                ? <p className="text-sm text-muted-foreground">No payout periods yet.</p>
+                : (
+                  <div className="space-y-2">
+                    {list.map((p) => (
+                      <div key={p.id} className="border rounded-md p-3 grid grid-cols-1 md:grid-cols-7 gap-2 items-center text-sm">
+                        <div className="font-medium">{p.period_start} → {p.period_end}</div>
+                        <div>Revenue: <b>{money(p.total_revenue)}</b></div>
+                        <div>Costs: <b>{money(p.total_costs)}</b></div>
+                        <div>Profit: <b>{money(p.net_profit)}</b></div>
+                        <div>Owed: <b className="text-green-600">{money(p.partner_earnings)}</b></div>
+                        <div><StatusBadge status={p.status} /></div>
+                        <div className="flex gap-2 justify-end">
+                          {(p.status === "calculating" || p.status === "pending_review") && (
+                            <Button size="sm" variant="outline" disabled={approve.isPending}
+                              onClick={() => approve.mutate(p.id)}>Approve</Button>
+                          )}
+                          {p.status === "approved" && (
+                            <Button size="sm" disabled={pay.isPending || !partner.stripe_connect_onboarded}
+                              onClick={() => pay.mutate(p)}>
+                              {pay.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Process Payment"}
+                            </Button>
+                          )}
+                          {p.status === "paid" && p.stripe_transfer_id && (
+                            <span className="text-xs text-muted-foreground">{p.stripe_transfer_id}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
 }

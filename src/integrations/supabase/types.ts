@@ -38247,40 +38247,52 @@ export type Database = {
       dd_partner_earnings: {
         Row: {
           ambassador_id: string | null
+          calculation_type: string | null
           campaign_id: string | null
           commission_amount: number
           commission_pct: number
           created_at: string | null
           id: string
+          order_cost: number | null
           order_id: string | null
+          order_profit: number | null
           order_revenue: number
           paid_at: string | null
+          partner_id: string | null
           status: string | null
           wholesaler_id: string | null
         }
         Insert: {
           ambassador_id?: string | null
+          calculation_type?: string | null
           campaign_id?: string | null
           commission_amount: number
           commission_pct: number
           created_at?: string | null
           id?: string
+          order_cost?: number | null
           order_id?: string | null
+          order_profit?: number | null
           order_revenue: number
           paid_at?: string | null
+          partner_id?: string | null
           status?: string | null
           wholesaler_id?: string | null
         }
         Update: {
           ambassador_id?: string | null
+          calculation_type?: string | null
           campaign_id?: string | null
           commission_amount?: number
           commission_pct?: number
           created_at?: string | null
           id?: string
+          order_cost?: number | null
           order_id?: string | null
+          order_profit?: number | null
           order_revenue?: number
           paid_at?: string | null
+          partner_id?: string | null
           status?: string | null
           wholesaler_id?: string | null
         }
@@ -38335,6 +38347,13 @@ export type Database = {
             referencedColumns: ["order_id"]
           },
           {
+            foreignKeyName: "dd_partner_earnings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "dd_partner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "dd_partner_earnings_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
@@ -38377,6 +38396,149 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dd_partner_payouts: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          campaign_earnings: number | null
+          created_at: string | null
+          dispute_reason: string | null
+          id: string
+          net_profit: number | null
+          notes: string | null
+          paid_at: string | null
+          partner_approved_at: string | null
+          partner_earnings: number | null
+          partner_id: string
+          partner_share_pct: number | null
+          partner_viewed_at: string | null
+          period_end: string
+          period_start: string
+          status: string | null
+          stripe_transfer_id: string | null
+          total_costs: number | null
+          total_revenue: number | null
+          wholesaler_referral_earnings: number | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          campaign_earnings?: number | null
+          created_at?: string | null
+          dispute_reason?: string | null
+          id?: string
+          net_profit?: number | null
+          notes?: string | null
+          paid_at?: string | null
+          partner_approved_at?: string | null
+          partner_earnings?: number | null
+          partner_id: string
+          partner_share_pct?: number | null
+          partner_viewed_at?: string | null
+          period_end: string
+          period_start: string
+          status?: string | null
+          stripe_transfer_id?: string | null
+          total_costs?: number | null
+          total_revenue?: number | null
+          wholesaler_referral_earnings?: number | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          campaign_earnings?: number | null
+          created_at?: string | null
+          dispute_reason?: string | null
+          id?: string
+          net_profit?: number | null
+          notes?: string | null
+          paid_at?: string | null
+          partner_approved_at?: string | null
+          partner_earnings?: number | null
+          partner_id?: string
+          partner_share_pct?: number | null
+          partner_viewed_at?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string | null
+          stripe_transfer_id?: string | null
+          total_costs?: number | null
+          total_revenue?: number | null
+          wholesaler_referral_earnings?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_partner_payouts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "dd_partner_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_partner_profiles: {
+        Row: {
+          business_name: string | null
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          notes: string | null
+          partner_type: string | null
+          payout_bank_name: string | null
+          payout_last4: string | null
+          payout_method: string | null
+          pending_balance: number | null
+          phone: string | null
+          status: string | null
+          stripe_connect_account_id: string | null
+          stripe_connect_onboarded: boolean | null
+          total_earned_lifetime: number | null
+          total_paid_lifetime: number | null
+          user_id: string | null
+        }
+        Insert: {
+          business_name?: string | null
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          notes?: string | null
+          partner_type?: string | null
+          payout_bank_name?: string | null
+          payout_last4?: string | null
+          payout_method?: string | null
+          pending_balance?: number | null
+          phone?: string | null
+          status?: string | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_onboarded?: boolean | null
+          total_earned_lifetime?: number | null
+          total_paid_lifetime?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          business_name?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          notes?: string | null
+          partner_type?: string | null
+          payout_bank_name?: string | null
+          payout_last4?: string | null
+          payout_method?: string | null
+          pending_balance?: number | null
+          phone?: string | null
+          status?: string | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_onboarded?: boolean | null
+          total_earned_lifetime?: number | null
+          total_paid_lifetime?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       dd_partner_wholesaler_links: {
         Row: {
@@ -126261,6 +126423,18 @@ export type Database = {
       }
       dd_apply_store_referral_signup: {
         Args: { p_referral_code: string; p_store_account_id: string }
+        Returns: Json
+      }
+      dd_calculate_order_profit: {
+        Args: { p_order_id: string }
+        Returns: number
+      }
+      dd_calculate_partner_monthly_earnings: {
+        Args: {
+          p_partner_id: string
+          p_period_end: string
+          p_period_start: string
+        }
         Returns: Json
       }
       dd_calculate_supplier_metrics: {
