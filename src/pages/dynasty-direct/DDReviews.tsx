@@ -1,4 +1,5 @@
 // Dynasty Direct — Product Reviews moderation
+import { Fragment } from "react";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -217,8 +218,8 @@ export default function DDReviews() {
                 {filtered.map((r) => {
                   const isExp = expanded === r.id;
                   return (
-                    <>
-                      <TableRow key={r.id} className="cursor-pointer" onClick={() => setExpanded(isExp ? null : r.id)}>
+                    <Fragment key={r.id}>
+                      <TableRow className="cursor-pointer" onClick={() => setExpanded(isExp ? null : r.id)}>
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <Checkbox
                             checked={selected.has(r.id)}
@@ -306,7 +307,7 @@ export default function DDReviews() {
                         </TableCell>
                       </TableRow>
                       {isExp && (
-                        <TableRow key={`${r.id}-exp`}>
+                        <TableRow>
                           <TableCell colSpan={10} className="bg-muted/30">
                             <div className="p-4 space-y-3">
                               {r.title && <div className="font-semibold">{r.title}</div>}
@@ -319,7 +320,7 @@ export default function DDReviews() {
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </TableBody>
