@@ -595,3 +595,97 @@ function Field({ label, children, className = "" }: { label: string; children: R
     </div>
   );
 }
+
+function VerificationPanel({ storeAccountId }: { storeAccountId: string }) {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["dd-store-verification", storeAccountId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("store_accounts")
+        .select("identity_verified, identity_verified_at, business_ein, business_verified")
+        .eq("id", storeAccountId)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
+  const [ein, setEin] = useState("");
+  useEffect(() => { setEin(data?.business_ein ?? ""); }, [data?.business_ein]);
+
+  const saveEin = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("store_accounts")
+        .update({ business_ein: ein })
+        .eq("id", storeAccountId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("EIN saved");
+      qc.invalidateQueries({ queryKey: ["dd-store-verification", storeAccountId] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const markVerified = useMutation({
+    mutationFn: async (verified: boolean) => {
+      const { error } = await supabase
+        .from("store_accounts")
+        .update({
+          identity_verified: verified,
+          identity_verified_at: verified ? new Date().toISOString() : null,
+          business_verified: verified,
+        })
+        .eq("id", storeAccountId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Verification status updated");
+      qc.invalidateQueries({ queryKey: ["dd-store-verification", storeAccountId] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  if (isLoading) return <div className="mt-4 text-sm text-muted-foreground">Loading…</div>;
+  const verified = !!data?.identity_verified;
+
+  return (
+    <div className="mt-4 space-y-4 text-sm">
+      <div>
+        <label className="text-xs text-muted-foreground">Business EIN</label>
+        <div className="flex gap-2 mt-1">
+          <Input value={ein} onChange={(e) => setEin(e.target.value)} placeholder="XX-XXXXXXX" />
+          <Button size="sm" onClick={() => saveEin.mutate()} disabled={saveEin.isPending}>Save</Button>
+        </div>
+      </div>
+      <DetailRow k="Identity Verified" v={verified ? `✅ ${data?.identity_verified_at ? new Date(data.identity_verified_at).toLocaleDateString() : "yes"}` : "❌ Not verified"} />
+      <DetailRow k="Business Verified" v={data?.business_verified ? "✅" : "❌"} />
+
+      <div className="border rounded p-3 bg-muted/30 text-xs space-y-1">
+        <div className="font-semibold">Order Limits</div>
+        {verified ? (
+          <div>✅ Verified — no order limit, eligible for net 30 credit terms.</div>
+        ) : (
+          <>
+            <div>⚠️ Unverified — max single order: <b>$500</b></div>
+            <div>No net 30 credit until verified.</div>
+          </>
+        )}
+      </div>
+
+      <div className="flex gap-2">
+        {!verified ? (
+          <Button size="sm" onClick={() => markVerified.mutate(true)} disabled={markVerified.isPending}>
+            ✅ Mark Verified
+          </Button>
+        ) : (
+          <Button size="sm" variant="outline" onClick={() => markVerified.mutate(false)} disabled={markVerified.isPending}>
+            Revoke Verification
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
