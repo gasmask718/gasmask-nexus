@@ -291,6 +291,7 @@ export default function DDStoreAccounts() {
                   <TabsTrigger value="credit">💳 Credit Account</TabsTrigger>
                   <TabsTrigger value="loyalty">🏆 Loyalty</TabsTrigger>
                   <TabsTrigger value="delivery">🚗 Delivery</TabsTrigger>
+                  <TabsTrigger value="pro">📊 Pro</TabsTrigger>
                 </TabsList>
                 <TabsContent value="details">
                   <div className="space-y-4 mt-4 text-sm">
