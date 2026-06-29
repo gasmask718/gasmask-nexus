@@ -1,61 +1,92 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+/**
+ * T5 PM/CEO Dashboard hook.
+ *
+ * Source map (Phase 0 verified):
+ *  - Total / assigned leads  -> brandaro_qualified_leads
+ *  - AI dials today          -> brandaro_ai_calls (created_at)
+ *  - Human dials today       -> va_call_logs       (created_at)
+ *  - Leads worked today      -> DISTINCT lead_id of the two above
+ *  - Texts today             -> brandaro_pending_messages where sent_at >= today
+ *  - Closes today            -> brandaro_qualified_leads.converted=true AND conversion_date::date = today
+ *  - Revenue                 -> sum(revenue_amount) on converted=true leads (today / month / total)
+ *
+ * Server-side WHERE clauses with count: 'exact', head: true wherever possible.
+ */
 export function useCEODashboard() {
   return useQuery({
-    queryKey: ['brandaro-ceo-dashboard'],
+    queryKey: ['brandaro-pm-dashboard'],
     queryFn: async () => {
-      const [leads, calls, payments, queue, performance, services, industries] = await Promise.all([
-        (supabase as any).from('brandaro_leads_master').select('id, status, industry, created_at'),
-        (supabase as any).from('brandaro_calls').select('id, outcome, ai_handled, duration_seconds, created_at'),
-        (supabase as any).from('brandaro_payment_plans').select('total_amount, status, created_at'),
-        (supabase as any).from('brandaro_call_queue').select('id, status'),
-        (supabase as any).from('brandaro_performance_ai').select('*').order('created_at', { ascending: false }).limit(10),
-        (supabase as any).from('brandaro_client_services').select('*').eq('active', true),
-        (supabase as any).from('brandaro_industry_performance').select('*').order('total_revenue', { ascending: false }),
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const startOfDayISO = startOfDay.toISOString();
+
+      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+      const todayDate = new Date().toISOString().split('T')[0];
+
+      const sb: any = supabase as any;
+
+      const [
+        totalLeadsRes,
+        assignedLeadsRes,
+        aiDialsRes,
+        humanDialsRes,
+        aiCallLeadIdsRes,
+        humanCallLeadIdsRes,
+        textsTodayRes,
+        closesTodayRes,
+        totalClosesRes,
+        leadsTodayRes,
+        revenueMonthRes,
+        revenueTotalRes,
+        industryRowsRes,
+      ] = await Promise.all([
+        sb.from('brandaro_qualified_leads').select('*', { count: 'exact', head: true }),
+        sb.from('brandaro_qualified_leads').select('*', { count: 'exact', head: true }).not('assigned_va', 'is', null),
+        sb.from('brandaro_ai_calls').select('*', { count: 'exact', head: true }).gte('created_at', startOfDayISO),
+        sb.from('va_call_logs').select('*', { count: 'exact', head: true }).gte('created_at', startOfDayISO),
+        sb.from('brandaro_ai_calls').select('lead_id').gte('created_at', startOfDayISO),
+        sb.from('va_call_logs').select('lead_id').gte('created_at', startOfDayISO),
+        sb.from('brandaro_pending_messages').select('*', { count: 'exact', head: true }).gte('sent_at', startOfDayISO),
+        sb.from('brandaro_qualified_leads').select('*', { count: 'exact', head: true })
+          .eq('converted', true).gte('conversion_date', startOfDayISO),
+        sb.from('brandaro_qualified_leads').select('*', { count: 'exact', head: true }).eq('converted', true),
+        sb.from('brandaro_qualified_leads').select('*', { count: 'exact', head: true }).gte('created_at', startOfDayISO),
+        sb.from('brandaro_qualified_leads').select('revenue_amount').eq('converted', true).gte('conversion_date', monthStart),
+        sb.from('brandaro_qualified_leads').select('revenue_amount').eq('converted', true),
+        sb.from('brandaro_qualified_leads').select('industry').not('industry', 'is', null).limit(5000),
       ]);
 
-      const today = new Date().toISOString().split('T')[0];
-      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+      const totalLeads = totalLeadsRes.count || 0;
+      const leadsAssigned = assignedLeadsRes.count || 0;
+      const leadsUnassigned = Math.max(0, totalLeads - leadsAssigned);
 
-      const allLeads = (leads.data || []) as any[];
-      const allCalls = (calls.data || []) as any[];
-      const allPayments = (payments.data || []) as any[];
-      const queueItems = (queue.data || []) as any[];
-      const activeServices = (services.data || []) as any[];
-      const industryData = (industries.data || []) as any[];
+      const aiDialsToday = aiDialsRes.count || 0;
+      const humanDialsToday = humanDialsRes.count || 0;
+      const callsToday = aiDialsToday + humanDialsToday;
 
-      const leadsToday = allLeads.filter((l: any) => l.created_at?.startsWith(today)).length;
-      const callsToday = allCalls.filter((c: any) => c.created_at?.startsWith(today)).length;
-      const closedDeals = allCalls.filter((c: any) => c.outcome === 'closed').length;
-      const paidPayments = allPayments.filter((p: any) => p.status === 'paid');
-      const revenueThisMonth = paidPayments
-        .filter((p: any) => p.created_at && p.created_at >= monthStart)
-        .reduce((sum: number, p: any) => sum + (p.total_amount || 0), 0);
-      const totalRevenue = paidPayments.reduce((sum: number, p: any) => sum + (p.total_amount || 0), 0);
-      const avgDealSize = paidPayments.length > 0 ? totalRevenue / paidPayments.length : 0;
-      const closeRate = allCalls.length > 0 ? (closedDeals / allCalls.length) * 100 : 0;
-      const pendingQueue = queueItems.filter((q: any) => q.status === 'pending').length;
+      const workedLeadSet = new Set<string>();
+      ((aiCallLeadIdsRes.data || []) as any[]).forEach((r) => { if (r.lead_id) workedLeadSet.add(r.lead_id); });
+      ((humanCallLeadIdsRes.data || []) as any[]).forEach((r) => { if (r.lead_id) workedLeadSet.add(r.lead_id); });
+      const leadsWorkedToday = workedLeadSet.size;
 
-      // Recurring revenue from active client services
-      const monthlyRecurring = activeServices.reduce((sum: number, s: any) => sum + (s.monthly_value || 0), 0);
-      const totalActiveClients = new Set(activeServices.map((s: any) => s.client_id)).size;
+      const textsToday = textsTodayRes.count || 0;
+      const closesToday = closesTodayRes.count || 0;
+      const closedDeals = totalClosesRes.count || 0;
+      const leadsToday = leadsTodayRes.count || 0;
 
-      // Service breakdown
-      const serviceBreakdown: Record<string, { count: number; revenue: number }> = {};
-      activeServices.forEach((s: any) => {
-        if (!serviceBreakdown[s.service_type]) serviceBreakdown[s.service_type] = { count: 0, revenue: 0 };
-        serviceBreakdown[s.service_type].count++;
-        serviceBreakdown[s.service_type].revenue += s.monthly_value || 0;
-      });
+      const revMonthRows = (revenueMonthRes.data || []) as { revenue_amount: number | null }[];
+      const revTotalRows = (revenueTotalRes.data || []) as { revenue_amount: number | null }[];
+      const revenueThisMonth = revMonthRows.reduce((s, r) => s + (Number(r.revenue_amount) || 0), 0);
+      const totalRevenue = revTotalRows.reduce((s, r) => s + (Number(r.revenue_amount) || 0), 0);
+      const avgDealSize = closedDeals > 0 ? totalRevenue / closedDeals : 0;
+      const closeRate = leadsWorkedToday > 0 ? (closesToday / leadsWorkedToday) * 100 : 0;
 
-      // LTV estimate
-      const avgLTV = totalActiveClients > 0
-        ? avgDealSize + (monthlyRecurring / totalActiveClients) * 12
-        : avgDealSize;
-
+      // Industry distribution (lightweight client-side rollup on lead industry only — no client-services data)
       const industryMap: Record<string, number> = {};
-      allLeads.forEach((l: any) => {
+      ((industryRowsRes.data || []) as any[]).forEach((l: any) => {
         if (l.industry) industryMap[l.industry] = (industryMap[l.industry] || 0) + 1;
       });
       const topIndustries = Object.entries(industryMap)
@@ -66,28 +97,39 @@ export function useCEODashboard() {
       const monthlyTarget = 1000000;
 
       return {
+        // ── New operational KPIs (T5) ──
+        aiDialsToday,
+        humanDialsToday,
+        leadsWorkedToday,
+        textsToday,
+        closesToday,
+        leadsAssigned,
+        leadsUnassigned,
+        todayDate,
+
+        // ── Existing fields the UI already renders ──
         leadsToday,
-        totalLeads: allLeads.length,
+        totalLeads,
         callsToday,
         closedDeals,
         revenueThisMonth,
         totalRevenue,
         avgDealSize,
         closeRate,
-        pendingQueue,
+        pendingQueue: leadsUnassigned,
         topIndustries,
-        performanceData: (performance.data || []) as any[],
+        performanceData: [] as any[],
         monthlyTarget,
         monthlyProgress: (revenueThisMonth / monthlyTarget) * 100,
         dailyTarget: monthlyTarget / 30,
-        monthlyRecurring,
-        totalActiveClients,
-        serviceBreakdown,
-        avgLTV,
-        industryPerformance: industryData,
+        monthlyRecurring: 0,
+        totalActiveClients: 0,
+        serviceBreakdown: {} as Record<string, { count: number; revenue: number }>,
+        avgLTV: avgDealSize,
+        industryPerformance: [] as any[],
       };
     },
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
 }
 
