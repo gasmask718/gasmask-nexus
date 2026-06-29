@@ -371,9 +371,20 @@ export default function DynastyDirectOrders() {
                       {suppliers.length ? suppliers.join(', ') : <span className="text-muted-foreground">unrouted</span>}
                     </td>
                     <td className="p-3">
-                      <Badge variant={unpaid ? 'destructive' : 'default'}>
-                        {r.payment_status || 'pending'}
-                      </Badge>
+                      <div className="flex flex-wrap gap-1">
+                        <Badge variant={unpaid ? 'destructive' : 'default'}>
+                          {r.payment_status || 'pending'}
+                        </Badge>
+                        {r.stripe_risk_level === 'highest' && (
+                          <Badge className="bg-red-500/15 text-red-700 border-red-500/30" variant="outline">🚫</Badge>
+                        )}
+                        {r.stripe_risk_level === 'elevated' && (
+                          <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30" variant="outline">⚠️</Badge>
+                        )}
+                        {r.three_ds_authenticated && (
+                          <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30" variant="outline">🛡️</Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="p-3">
                       <Badge variant="outline">{r.fulfillment_status || 'pending'}</Badge>
