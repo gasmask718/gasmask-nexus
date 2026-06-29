@@ -19,8 +19,10 @@ import brandaroLogo from "@/assets/brandaro-logo.png";
 const hubNav = [
   { section: "Command", items: [
     { title: "War Room", path: "/brandaro", icon: Swords, end: true },
+    { title: "PM Dashboard", path: "/brandaro/pm", icon: Crown },
     { title: "CEO Dashboard", path: "/brandaro/ceo", icon: Crown },
   ]},
+
   { section: "Sales Floor", items: [
     { title: "Live Calls", path: "/brandaro/calling", icon: Phone },
     { title: "VA Dashboard", path: "/brandaro/va-dashboard", icon: Users },

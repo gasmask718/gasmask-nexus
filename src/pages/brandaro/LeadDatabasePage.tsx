@@ -22,6 +22,8 @@ import { toast } from "sonner";
 import { CsvLeadImporter } from "@/components/brandaro/CsvLeadImporter";
 import { BuildDemoModal } from "@/components/brandaro/BuildDemoModal";
 import { BrandaroLeadAssignmentButtons } from "@/components/brandaro/BrandaroLeadAssignmentButtons";
+import { VAReassignControl } from "@/components/brandaro/VAReassignControl";
+
 import { BrandaroUnifiedCallHistory } from "@/components/brandaro/BrandaroUnifiedCallHistory";
 import { exportData } from "@/utils/exportUtils";
 import { useNavigate } from "react-router-dom";
@@ -1157,6 +1159,14 @@ export default function LeadDatabasePage() {
                     {detailLead.industry && <p><span className="text-muted-foreground">Industry:</span> {detailLead.industry}</p>}
                   </div>
 
+                  {/* VA Reassignment (T5) */}
+                  <VAReassignControl
+                    leadId={detailLead.id}
+                    leadName={detailLead.business_name}
+                    currentAssignedVa={(detailLead as any).assigned_va ?? null}
+                    onChanged={() => queryClient.invalidateQueries({ queryKey: ["brandaro-leads-table"] })}
+                  />
+
                   {/* Assignment Buttons */}
                   <BrandaroLeadAssignmentButtons
                     leadId={detailLead.id}
@@ -1165,6 +1175,7 @@ export default function LeadDatabasePage() {
                     fromNumber={fromNumber}
                     onAssigned={() => queryClient.invalidateQueries({ queryKey: ["brandaro-leads-table"] })}
                   />
+
 
                   {/* Unified Call History */}
                   <div>
