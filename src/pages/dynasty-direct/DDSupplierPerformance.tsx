@@ -479,6 +479,61 @@ function DetailSheet({
     onError: (e: any) => toast.error(e.message),
   });
 
+  // Contact preferences (whatsapp + preferred_contact) — fetched separately so SupplierRow stays slim.
+  const { data: contactInfo, refetch: refetchContact } = useQuery({
+    queryKey: ["dd-supplier-contact", supplier?.id],
+    enabled: open && !!supplier,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("wholesalers")
+        .select("whatsapp, preferred_contact")
+        .eq("id", supplier!.id)
+        .maybeSingle();
+      return (data ?? {}) as { whatsapp?: string | null; preferred_contact?: string | null };
+    },
+  });
+
+  const [waNumber, setWaNumber] = useState("");
+  const [waPref, setWaPref] = useState<"email" | "whatsapp" | "both">("email");
+  const [waOpen, setWaOpen] = useState(false);
+  const [waMessage, setWaMessage] = useState("");
+  const contactLoaded = useRef<string | null>(null);
+  if (supplier && contactInfo && contactLoaded.current !== supplier.id) {
+    contactLoaded.current = supplier.id;
+    setWaNumber(contactInfo.whatsapp ?? "");
+    const p = (contactInfo.preferred_contact ?? "email") as "email" | "whatsapp" | "both";
+    setWaPref(["email", "whatsapp", "both"].includes(p) ? p : "email");
+  }
+
+  const saveContact = useMutation({
+    mutationFn: async () => {
+      if (!supplier) return;
+      const { error } = await supabase
+        .from("wholesalers")
+        .update({ whatsapp: waNumber.trim() || null, preferred_contact: waPref } as never)
+        .eq("id", supplier.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Contact updated"); refetchContact(); },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Update failed"),
+  });
+
+  const sendWhatsApp = useMutation({
+    mutationFn: async () => {
+      if (!supplier || !waNumber.trim() || !waMessage.trim()) return;
+      const { data, error } = await supabase.functions.invoke("dd-whatsapp-notify", {
+        body: { to_whatsapp: waNumber.trim(), message: waMessage, wholesaler_id: supplier.id },
+      });
+      if (error) throw error;
+      if ((data as { success?: boolean } | null)?.success === false) {
+        throw new Error((data as { error?: string; warning?: string }).error ?? (data as { warning?: string }).warning ?? "Send failed");
+      }
+    },
+    onSuccess: () => { toast.success("WhatsApp sent"); setWaOpen(false); setWaMessage(""); },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Send failed"),
+  });
+
+
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
