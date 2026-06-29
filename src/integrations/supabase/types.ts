@@ -37586,6 +37586,57 @@ export type Database = {
           },
         ]
       }
+      dd_flash_sales: {
+        Row: {
+          banner_text: string | null
+          category_filter: string | null
+          created_at: string
+          discount_pct: number
+          ends_at: string
+          id: string
+          max_uses: number | null
+          name: string
+          product_ids: string[] | null
+          show_countdown: boolean | null
+          starts_at: string
+          status: string
+          updated_at: string
+          uses_count: number | null
+        }
+        Insert: {
+          banner_text?: string | null
+          category_filter?: string | null
+          created_at?: string
+          discount_pct: number
+          ends_at: string
+          id?: string
+          max_uses?: number | null
+          name: string
+          product_ids?: string[] | null
+          show_countdown?: boolean | null
+          starts_at: string
+          status?: string
+          updated_at?: string
+          uses_count?: number | null
+        }
+        Update: {
+          banner_text?: string | null
+          category_filter?: string | null
+          created_at?: string
+          discount_pct?: number
+          ends_at?: string
+          id?: string
+          max_uses?: number | null
+          name?: string
+          product_ids?: string[] | null
+          show_countdown?: boolean | null
+          starts_at?: string
+          status?: string
+          updated_at?: string
+          uses_count?: number | null
+        }
+        Relationships: []
+      }
       dd_grabba_sync: {
         Row: {
           attempt_count: number | null
@@ -125104,6 +125155,15 @@ export type Database = {
         Returns: string
       }
       current_ambassador_id: { Args: never; Returns: string }
+      dd_active_flash_sale_for_product: {
+        Args: { p_product_id: string }
+        Returns: {
+          discount_pct: number
+          ends_at: string
+          id: string
+          name: string
+        }[]
+      }
       dd_affiliate_mark_paid: {
         Args: { p_event_ids: string[]; p_payout_batch_id?: string }
         Returns: Json

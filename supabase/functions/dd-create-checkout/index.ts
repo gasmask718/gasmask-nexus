@@ -105,8 +105,18 @@ serve(async (req) => {
         for (const it of items) {
           const p: any = byId.get(it.product_id);
           if (!p || p.status !== "active") throw new Error(`unavailable:${it.product_id}`);
-          const unitCents = Math.round(Number(p.retail_price ?? 0) * 100);
+          let unitCents = Math.round(Number(p.retail_price ?? 0) * 100);
           if (unitCents <= 0) throw new Error(`bad_price:${it.product_id}`);
+
+          // Flash sale: server-side discount enforcement (never trust client price).
+          const { data: fs } = await supabase.rpc("dd_active_flash_sale_for_product", {
+            p_product_id: it.product_id,
+          });
+          const fsRow: any = Array.isArray(fs) ? fs[0] : fs;
+          if (fsRow?.discount_pct) {
+            const pct = Math.max(0, Math.min(100, Number(fsRow.discount_pct) || 0));
+            unitCents = Math.max(0, Math.round(unitCents * (1 - pct / 100)));
+          }
 
           // Geo-aware supplier pick (same RPC the hosted path / split engine uses)
           const { data: supplierId, error: pickErr } = await supabase.rpc(
