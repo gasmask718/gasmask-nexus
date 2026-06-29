@@ -18,6 +18,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { MaintenanceGuard } from "./components/MaintenanceGuard";
 import { VACallWidget } from "./components/va/VACallWidget";
 import { GlobalTrainingHelp } from "./components/training/GlobalTrainingHelp";
+import { RefCapture } from "./components/dynasty-direct/RefCapture";
 
 import './modules';
 import AppRoutes from './routes/AppRoutes';
@@ -50,6 +51,7 @@ const App = () => (
                         <MessageProvider>
                           <BackendFingerprint />
                           <SchemaSanityChecker />
+                          <RefCapture />
                           <ViewAsBanner />
                           <SimulationModeBanner />
                           <VACallWidget />
