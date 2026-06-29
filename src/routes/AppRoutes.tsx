@@ -760,6 +760,7 @@ const DDStoreAccounts = lazy(() => import('@/pages/dynasty-direct/DDStoreAccount
 const DDOrderDetail = lazy(() => import('@/pages/dynasty-direct/DDOrderDetail'));
 const DDAnalytics = lazy(() => import('@/pages/dynasty-direct/DDAnalytics'));
 const DDSettings = lazy(() => import('@/pages/dynasty-direct/DDSettings'));
+const DDSupplierPerformance = lazy(() => import('@/pages/dynasty-direct/DDSupplierPerformance'));
 const WholesalerMarketplaceInventory = lazy(() => import('@/pages/portal/wholesaler/WholesalerMarketplaceInventory'));
 const UniversalInviteAccept = lazy(() => import('@/pages/invite/UniversalInviteAccept'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
