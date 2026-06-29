@@ -71,6 +71,28 @@ export default function DDStoreAccounts() {
     },
   });
 
+  const { data: proSubs = [] } = useQuery({
+    queryKey: ["dd-pro-sub-stats"],
+    queryFn: async (): Promise<Array<{ store_account_id: string | null; status: string; monthly_price: number; cancelled_at: string | null }>> => {
+      const { data, error } = await (supabase as any)
+        .from("dd_pro_subscriptions")
+        .select("store_account_id,status,monthly_price,cancelled_at");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const proStats = useMemo(() => {
+    const active = proSubs.filter((s) => s.status === "active");
+    const trial = proSubs.filter((s) => s.status === "trial");
+    const mrr = active.reduce((sum, s) => sum + Number(s.monthly_price || 0), 0);
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const churned = proSubs.filter((s) => s.status === "cancelled" && s.cancelled_at && new Date(s.cancelled_at) >= monthStart).length;
+    const activeStoreIds = new Set(active.map((s) => s.store_account_id).filter(Boolean) as string[]);
+    return { activeCount: active.length, trialCount: trial.length, mrr, churned, activeStoreIds };
+  }, [proSubs]);
+
   const stats = useMemo(() => {
     const active = stores.filter((s) => s.status === "active").length;
     const revenue = stores.reduce((sum, s) => sum + Number(s.total_spent || 0), 0);
