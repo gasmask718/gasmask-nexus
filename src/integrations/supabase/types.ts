@@ -37574,6 +37574,42 @@ export type Database = {
           },
         ]
       }
+      dd_delivery_routes: {
+        Row: {
+          created_at: string | null
+          driver_name: string | null
+          id: string
+          notes: string | null
+          order_ids: string[] | null
+          route_date: string
+          status: string | null
+          total_stops: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          driver_name?: string | null
+          id?: string
+          notes?: string | null
+          order_ids?: string[] | null
+          route_date: string
+          status?: string | null
+          total_stops?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          driver_name?: string | null
+          id?: string
+          notes?: string | null
+          order_ids?: string[] | null
+          route_date?: string
+          status?: string | null
+          total_stops?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       dd_dispute_events: {
         Row: {
           amount_cents: number
@@ -62499,12 +62535,16 @@ export type Database = {
           customer_email: string | null
           customer_notified_at: string | null
           customer_phone: string | null
+          delivery_completed_at: string | null
+          delivery_driver_notes: string | null
+          delivery_scheduled_date: string | null
           discount_amount: number | null
           discount_code: string | null
           dispute_opened_at: string | null
           dispute_reason: string | null
           dispute_resolved_at: string | null
           dispute_status: string
+          fulfillment_method: string | null
           fulfillment_status: string | null
           id: string
           last_notification_type: string | null
@@ -62533,12 +62573,16 @@ export type Database = {
           customer_email?: string | null
           customer_notified_at?: string | null
           customer_phone?: string | null
+          delivery_completed_at?: string | null
+          delivery_driver_notes?: string | null
+          delivery_scheduled_date?: string | null
           discount_amount?: number | null
           discount_code?: string | null
           dispute_opened_at?: string | null
           dispute_reason?: string | null
           dispute_resolved_at?: string | null
           dispute_status?: string
+          fulfillment_method?: string | null
           fulfillment_status?: string | null
           id?: string
           last_notification_type?: string | null
@@ -62567,12 +62611,16 @@ export type Database = {
           customer_email?: string | null
           customer_notified_at?: string | null
           customer_phone?: string | null
+          delivery_completed_at?: string | null
+          delivery_driver_notes?: string | null
+          delivery_scheduled_date?: string | null
           discount_amount?: number | null
           discount_code?: string | null
           dispute_opened_at?: string | null
           dispute_reason?: string | null
           dispute_resolved_at?: string | null
           dispute_status?: string
+          fulfillment_method?: string | null
           fulfillment_status?: string | null
           id?: string
           last_notification_type?: string | null
@@ -90837,12 +90885,19 @@ export type Database = {
           contact_name: string | null
           created_at: string | null
           credit_limit: number | null
+          delivery_address: string | null
+          delivery_city: string | null
+          delivery_notes: string | null
+          delivery_state: string | null
+          delivery_window: string | null
+          delivery_zip: string | null
           email: string | null
           id: string
           last_order_at: string | null
           notes: string | null
           payment_terms: string | null
           phone: string | null
+          preferred_delivery: string | null
           pricing_tier: string | null
           state: string | null
           status: string | null
@@ -90862,12 +90917,19 @@ export type Database = {
           contact_name?: string | null
           created_at?: string | null
           credit_limit?: number | null
+          delivery_address?: string | null
+          delivery_city?: string | null
+          delivery_notes?: string | null
+          delivery_state?: string | null
+          delivery_window?: string | null
+          delivery_zip?: string | null
           email?: string | null
           id?: string
           last_order_at?: string | null
           notes?: string | null
           payment_terms?: string | null
           phone?: string | null
+          preferred_delivery?: string | null
           pricing_tier?: string | null
           state?: string | null
           status?: string | null
@@ -90887,12 +90949,19 @@ export type Database = {
           contact_name?: string | null
           created_at?: string | null
           credit_limit?: number | null
+          delivery_address?: string | null
+          delivery_city?: string | null
+          delivery_notes?: string | null
+          delivery_state?: string | null
+          delivery_window?: string | null
+          delivery_zip?: string | null
           email?: string | null
           id?: string
           last_order_at?: string | null
           notes?: string | null
           payment_terms?: string | null
           phone?: string | null
+          preferred_delivery?: string | null
           pricing_tier?: string | null
           state?: string | null
           status?: string | null
