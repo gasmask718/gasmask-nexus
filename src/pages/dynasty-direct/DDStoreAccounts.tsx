@@ -122,6 +122,8 @@ export default function DDStoreAccounts() {
         </Button>
       </div>
 
+      <OverdueCreditAlert />
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard label="Total Stores" value={stats.total} />
         <StatCard label="Active" value={stats.active} />
