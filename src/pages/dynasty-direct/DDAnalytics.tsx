@@ -20,6 +20,7 @@ type RangeKey = keyof typeof RANGES;
 
 export default function DDAnalytics() {
   const [range, setRange] = useState<RangeKey>("30d");
+  const qc = useQueryClient();
 
   const since = useMemo(() => {
     const d = new Date();
