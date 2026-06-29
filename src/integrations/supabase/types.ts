@@ -38601,6 +38601,74 @@ export type Database = {
           },
         ]
       }
+      dd_subscriptions: {
+        Row: {
+          created_at: string
+          failure_reason: string | null
+          frequency: string
+          id: string
+          items: Json
+          last_order_date: string | null
+          last_order_id: string | null
+          name: string | null
+          next_order_date: string
+          orders_placed: number
+          payment_method: string | null
+          shipping_address: Json | null
+          status: string
+          store_account_id: string | null
+          total_estimate: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          failure_reason?: string | null
+          frequency: string
+          id?: string
+          items?: Json
+          last_order_date?: string | null
+          last_order_id?: string | null
+          name?: string | null
+          next_order_date: string
+          orders_placed?: number
+          payment_method?: string | null
+          shipping_address?: Json | null
+          status?: string
+          store_account_id?: string | null
+          total_estimate?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          failure_reason?: string | null
+          frequency?: string
+          id?: string
+          items?: Json
+          last_order_date?: string | null
+          last_order_id?: string | null
+          name?: string | null
+          next_order_date?: string
+          orders_placed?: number
+          payment_method?: string | null
+          shipping_address?: Json | null
+          status?: string
+          store_account_id?: string | null
+          total_estimate?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_subscriptions_store_account_id_fkey"
+            columns: ["store_account_id"]
+            isOneToOne: false
+            referencedRelation: "store_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_supplier_metrics: {
         Row: {
           avg_fulfillment_hours: number | null

@@ -6,6 +6,7 @@ import { useStoreOrders } from "@/services/store/useStoreOrders";
 import { useStoreProfile } from "@/services/store/useStoreProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import StoreReferralCard from "@/components/dynasty-direct/StoreReferralCard";
+import StoreSubscriptionsTab from "@/components/dynasty-direct/StoreSubscriptionsTab";
 import {
   ShoppingCart,
   Package,
@@ -233,6 +234,9 @@ export default function StoreDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Auto-Reorder Subscriptions */}
+        {user?.id && <StoreSubscriptionsTab userId={user.id} />}
 
         {/* Referral Program */}
         {user?.id && (

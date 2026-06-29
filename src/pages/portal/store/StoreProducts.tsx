@@ -12,6 +12,7 @@ import { useCart } from "@/services/marketplace/useCart";
 import { useDynastyDirectProducts, DynastyDirectProduct } from "@/services/marketplace/useDynastyDirectProducts";
 import { Search, ShoppingCart, Package, Filter, Eye, Box, Tag, Weight, Layers, Store, X, Truck, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
+import SubscribeAndSave from "@/components/dynasty-direct/SubscribeAndSave";
 
 interface StoreProduct {
   id: string;
@@ -473,6 +474,13 @@ function DirectProductCard({ product, onPreview, onAddToCart, qty, onQtyChange, 
             <ShoppingCart className="h-4 w-4" />
             Add
           </Button>
+        </div>
+        <div onClick={(e) => e.stopPropagation()}>
+          <SubscribeAndSave
+            productId={product.id}
+            productName={product.product_name}
+            productPrice={Number(storePrice) || 0}
+          />
         </div>
       </CardContent>
     </Card>

@@ -322,18 +322,33 @@ serve(async (req) => {
 
     const { data: items } = await supabase
       .from("marketplace_order_items")
-      .select("qty, price_each, product:products_all(product_name)")
+      .select("product_id, qty, price_each, product:products_all(product_name)")
       .eq("order_id", orderId);
 
-    const lineItems: any[] = (items ?? []).map((it: any) => ({
-      price_data: {
-        currency: "usd",
-        product_data: { name: it.product?.product_name ?? "Dynasty Direct item" },
-        unit_amount: Math.round(Number(it.price_each) * 100),
-        tax_behavior: "exclusive" as const,
-      },
-      quantity: it.qty ?? 1,
-    }));
+    const lineItems: any[] = [];
+    for (const it of (items ?? []) as any[]) {
+      let unitCents = Math.round(Number(it.price_each) * 100);
+      // Flash sale: server-side enforcement on hosted path too.
+      if (it.product_id) {
+        const { data: fs } = await supabase.rpc("dd_active_flash_sale_for_product", {
+          p_product_id: it.product_id,
+        });
+        const fsRow: any = Array.isArray(fs) ? fs[0] : fs;
+        if (fsRow?.discount_pct) {
+          const pct = Math.max(0, Math.min(100, Number(fsRow.discount_pct) || 0));
+          unitCents = Math.max(0, Math.round(unitCents * (1 - pct / 100)));
+        }
+      }
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: { name: it.product?.product_name ?? "Dynasty Direct item" },
+          unit_amount: unitCents,
+          tax_behavior: "exclusive" as const,
+        },
+        quantity: it.qty ?? 1,
+      });
+    }
 
     if (Number(order.shipping_cost) > 0) {
       lineItems.push({
