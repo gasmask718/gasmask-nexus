@@ -80,19 +80,19 @@ export const NextStopNavigator: React.FC<Props> = ({ role, height = 380 }) => {
 
       const { data: coords, error: cErr } = await supabase
         .from('stores')
-        .select('id, store_name, lat, lng')
+        .select('id, name, lat, lng')
         .in('id', ids)
         .not('lat', 'is', null)
         .not('lng', 'is', null)
         .limit(1);
       if (cErr) throw cErr;
 
-      const s = coords?.[0] as { store_name: string | null; lat: number | string; lng: number | string } | undefined;
+      const s = coords?.[0] as { name: string | null; lat: number | string; lng: number | string } | undefined;
       if (!s) return null;
       return {
         lat: Number(s.lat),
         lng: Number(s.lng),
-        label: s.store_name || 'Next Store Visit',
+        label: s.name || 'Next Store Visit',
       } as NavDestination;
     },
   });
