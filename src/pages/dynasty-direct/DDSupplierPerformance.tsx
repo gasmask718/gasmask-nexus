@@ -678,6 +678,8 @@ function DetailSheet({
                   </Button>
                 </CardContent>
               </Card>
+
+              {supplier && <ScorecardHistory wholesalerId={supplier.id} supplierName={supplier.name} />}
             </div>
           </>
         )}
