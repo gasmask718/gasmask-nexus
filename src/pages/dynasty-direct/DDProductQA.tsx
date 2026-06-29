@@ -68,10 +68,23 @@ export default function DDProductQA() {
       if (ids.length) {
         const { data: prods } = await supabase
           .from("products_all")
-          .select("id, name, image_url")
+          .select("id, product_name, images")
           .in("id", ids);
         const map = new Map(
-          (prods ?? []).map((p: { id: string; name: string | null; image_url: string | null }) => [p.id, p]),
+          (prods ?? []).map((p) => {
+            const imgs = Array.isArray(p.images) ? p.images : [];
+            const first = imgs[0];
+            const image_url =
+              typeof first === "string"
+                ? first
+                : (first && typeof first === "object" && "url" in first
+                  ? String((first as { url: unknown }).url)
+                  : null);
+            return [
+              p.id,
+              { id: p.id, name: p.product_name ?? null, image_url },
+            ] as const;
+          }),
         );
         list.forEach((r) => {
           r.product = map.get(r.product_id) ?? null;
