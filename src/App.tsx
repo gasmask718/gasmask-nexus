@@ -53,6 +53,7 @@ const App = () => (
                           <BackendFingerprint />
                           <SchemaSanityChecker />
                           <RefCapture />
+                          <FlashSaleBanner />
                           <ViewAsBanner />
                           <SimulationModeBanner />
                           <VACallWidget />
