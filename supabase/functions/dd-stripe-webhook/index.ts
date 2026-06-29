@@ -200,6 +200,51 @@ async function markOrderPaid(
   } catch (e: any) {
     console.error("[dd-webhook] loyalty gate failed", e?.message);
   }
+
+  // Referral qualification (store-to-store program). Non-blocking.
+  try {
+    const { data: ordRow } = await supabase
+      .from("marketplace_orders")
+      .select("ordering_store_id")
+      .eq("id", orderId)
+      .maybeSingle();
+    const storeAcct = (ordRow as { ordering_store_id?: string | null } | null)?.ordering_store_id ?? null;
+    if (storeAcct) {
+      const { data: qres } = await supabase.rpc("dd_qualify_store_referral", {
+        p_store_account_id: storeAcct,
+        p_order_id: orderId,
+      });
+      const result = qres as { qualified?: boolean; referrer_user_id?: string | null } | null;
+      if (result?.qualified && result.referrer_user_id) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("phone")
+          .eq("id", result.referrer_user_id)
+          .maybeSingle();
+        const phone = (prof as { phone?: string | null } | null)?.phone ?? null;
+        const TWILIO_SID = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
+        const TWILIO_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
+        const TWILIO_FROM = Deno.env.get("TWILIO_FROM_NUMBER") ?? "";
+        if (phone && TWILIO_SID && TWILIO_TOKEN && TWILIO_FROM) {
+          const { data: refStore } = await supabase
+            .from("store_accounts")
+            .select("business_name")
+            .eq("id", storeAcct)
+            .maybeSingle();
+          const name = (refStore as { business_name?: string } | null)?.business_name ?? "Your referred store";
+          const msg = `🎉 Your referral earned you $50 in store credit!\n${name} just placed their first order.\nCredit added to your account.`;
+          const auth = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`);
+          await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
+            method: "POST",
+            headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ To: phone, From: TWILIO_FROM, Body: msg }),
+          }).catch((e) => console.error("[dd-webhook] referral sms failed", e?.message));
+        }
+      }
+    }
+  } catch (e: any) {
+    console.error("[dd-webhook] referral qualify failed", e?.message);
+  }
   console.log(`[dd-webhook] order ${orderId} marked paid`);
 }
 

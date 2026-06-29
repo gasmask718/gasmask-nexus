@@ -3,11 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useStoreStats } from "@/services/store/useStoreStats";
 import { useStoreOrders } from "@/services/store/useStoreOrders";
-import { 
-  ShoppingCart, 
-  Package, 
-  Truck, 
-  DollarSign, 
+import { useStoreProfile } from "@/services/store/useStoreProfile";
+import { useAuth } from "@/contexts/AuthContext";
+import StoreReferralCard from "@/components/dynasty-direct/StoreReferralCard";
+import {
+  ShoppingCart,
+  Package,
+  Truck,
+  DollarSign,
   FileText,
   TrendingUp,
   Clock,
@@ -17,6 +20,8 @@ import { Link } from "react-router-dom";
 import { format } from "date-fns";
 
 export default function StoreDashboard() {
+  const { user } = useAuth();
+  const { profile } = useStoreProfile();
   const { data: stats, isLoading: statsLoading } = useStoreStats();
   const { data: orders, isLoading: ordersLoading } = useStoreOrders();
 
@@ -228,6 +233,15 @@ export default function StoreDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Referral Program */}
+        {user?.id && (
+          <StoreReferralCard
+            userId={user.id}
+            storeId={null}
+            referrerName={profile?.store_name ?? null}
+          />
+        )}
       </div>
     </div>
   );
