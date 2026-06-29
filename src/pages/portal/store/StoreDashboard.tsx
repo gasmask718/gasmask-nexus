@@ -29,6 +29,20 @@ export default function StoreDashboard() {
   const { data: stats, isLoading: statsLoading } = useStoreStats();
   const { data: orders, isLoading: ordersLoading } = useStoreOrders();
 
+  const { data: storeAccount } = useQuery({
+    queryKey: ["store-account-for-user", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("store_accounts")
+        .select("id")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) return null;
+      return data as { id: string } | null;
+    },
+  });
+
   const recentOrders = orders?.slice(0, 5) || [];
 
   const formatCurrency = (amount: number) => {
