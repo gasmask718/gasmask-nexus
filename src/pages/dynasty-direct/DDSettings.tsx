@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Settings as SettingsIcon, Zap, ArrowRight } from "lucide-react";
+import { Settings as SettingsIcon, Zap, ArrowRight, Package } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import SocialProofAdmin from "@/components/dynasty-direct/SocialProofAdmin";
 
 type Cfg = {
   id: boolean;
@@ -186,6 +187,22 @@ export default function DDSettings() {
         </CardContent>
       </Card>
       <FlashSalesSection />
+      <SocialProofAdmin />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Package className="h-5 w-5" /> 📦 Featured Bundles</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-3">
+            Curate bundles shown to all store customers on the public storefront.
+          </p>
+          <Button asChild>
+            <Link to="/dynasty-direct/catalog/bundles">
+              Manage Curated Bundles <ArrowRight className="h-4 w-4 ml-1" />
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

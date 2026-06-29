@@ -36888,6 +36888,83 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_bundle_items: {
+        Row: {
+          bundle_id: string
+          created_at: string
+          id: string
+          product_id: string
+          qty: number
+          unit_price: number | null
+        }
+        Insert: {
+          bundle_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+          qty?: number
+          unit_price?: number | null
+        }
+        Update: {
+          bundle_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          qty?: number
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_bundle_items_bundle_id_fkey"
+            columns: ["bundle_id"]
+            isOneToOne: false
+            referencedRelation: "dd_bundles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_bundles: {
+        Row: {
+          bundle_type: string
+          cover_image_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          discount_pct: number
+          id: string
+          is_public: boolean
+          name: string
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          bundle_type?: string
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_pct?: number
+          id?: string
+          is_public?: boolean
+          name: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          bundle_type?: string
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_pct?: number
+          id?: string
+          is_public?: boolean
+          name?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       dd_catalog_drafts: {
         Row: {
           candidates: Json
@@ -38432,6 +38509,48 @@ export type Database = {
           shipped_count?: number
           wholesaler_id?: string
           window_days?: number
+        }
+        Relationships: []
+      }
+      dd_social_proof: {
+        Row: {
+          content: string | null
+          created_at: string
+          created_by: string | null
+          display_order: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          source_url: string | null
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          source_url?: string | null
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          source_url?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
         }
         Relationships: []
       }
