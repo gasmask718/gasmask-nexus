@@ -133,6 +133,28 @@ async function markOrderPaid(
   }
   await supabase.from("marketplace_orders").update(updatePayload).eq("id", orderId);
 
+  // Decrement inventory for each line item via RPC. Best-effort: log failures
+  // but do not block payment processing.
+  const { data: items } = await supabase
+    .from("marketplace_order_items")
+    .select("product_id, qty")
+    .eq("order_id", orderId);
+  for (const it of items ?? []) {
+    if (!it.product_id || !it.qty) continue;
+    const { error: decErr } = await supabase.rpc("dd_decrement_inventory", {
+      p_product_id: it.product_id,
+      p_quantity: it.qty,
+      p_order_id: orderId,
+      p_reason: "sale",
+    });
+    if (decErr) console.error(`[dd-webhook] inventory decrement failed ${it.product_id}:`, decErr.message);
+  }
+
+  // Fire-and-forget grabba bridge sync.
+  supabase.functions
+    .invoke("dd-grabba-bridge", { body: { order_id: orderId } })
+    .catch((e: any) => console.error("[dd-webhook] grabba bridge failed", e?.message));
+
   const email = existing.customer_email || fallbackEmail;
   if (email) {
     await supabase.functions
