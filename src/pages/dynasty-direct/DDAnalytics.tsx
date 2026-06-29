@@ -84,6 +84,40 @@ export default function DDAnalytics() {
   });
   const whMap = useMemo(() => Object.fromEntries(wholesalers.map((w) => [w.id, w.name])), [wholesalers]);
 
+  // Abandoned carts (rolling 30d window)
+  const abandonedSince = useMemo(() => new Date(Date.now() - 30 * 86400000).toISOString(), []);
+  const { data: abandoned = [] } = useQuery({
+    queryKey: ["dd-abandoned-carts", abandonedSince],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("dd_abandoned_carts" as any)
+        .select("*")
+        .gte("created_at", abandonedSince)
+        .order("created_at", { ascending: false });
+      return (data || []) as any[];
+    },
+  });
+
+  const abStats = useMemo(() => {
+    const weekAgo = Date.now() - 7 * 86400000;
+    const thisWeek = abandoned.filter((c) => new Date(c.created_at).getTime() >= weekAgo);
+    const recovered = abandoned.filter((c) => c.recovered_at);
+    const revenue = recovered.reduce((s, c) => s + Number(c.cart_total ?? 0), 0);
+    const rate = abandoned.length ? (recovered.length / abandoned.length) * 100 : 0;
+    return { thisWeek: thisWeek.length, recovered: recovered.length, rate, revenue };
+  }, [abandoned]);
+
+  async function sendManualRecovery(cartId: string) {
+    try {
+      const { error } = await supabase.functions.invoke("dd-cart-recovery-cron", { body: { cart_id: cartId } });
+      if (error) throw error;
+      toast.success("Recovery job triggered");
+      qc.invalidateQueries({ queryKey: ["dd-abandoned-carts"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
+
   const paidOrders = orders.filter((o) => o.payment_status === "paid");
 
   const stats = useMemo(() => {
