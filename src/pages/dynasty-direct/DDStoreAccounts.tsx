@@ -160,6 +160,26 @@ export default function DDStoreAccounts() {
         <StatCard label="Avg Order" value={`$${stats.aov.toFixed(2)}`} />
       </div>
 
+      <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 border-amber-500/30">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-amber-500" />
+              <div>
+                <div className="text-sm font-semibold">Dynasty Direct Pro Revenue</div>
+                <div className="text-xs text-muted-foreground">$97/mo subscription program</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-6 text-sm">
+              <div><div className="text-xs uppercase text-muted-foreground">Active subs</div><div className="text-xl font-bold">{proStats.activeCount}</div></div>
+              <div><div className="text-xs uppercase text-muted-foreground">MRR</div><div className="text-xl font-bold">${proStats.mrr.toFixed(0)}</div></div>
+              <div><div className="text-xs uppercase text-muted-foreground">Trials</div><div className="text-xl font-bold">{proStats.trialCount}</div></div>
+              <div><div className="text-xs uppercase text-muted-foreground">Churned</div><div className="text-xl font-bold">{proStats.churned}</div></div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
@@ -169,6 +189,7 @@ export default function DDStoreAccounts() {
                 <TabsTrigger value="active">Active</TabsTrigger>
                 <TabsTrigger value="pending">Pending</TabsTrigger>
                 <TabsTrigger value="suspended">Suspended</TabsTrigger>
+                <TabsTrigger value="pro">⭐ Pro Subscribers ({proStats.activeCount})</TabsTrigger>
               </TabsList>
             </Tabs>
             <Input
