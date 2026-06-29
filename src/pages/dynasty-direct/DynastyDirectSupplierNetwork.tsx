@@ -125,7 +125,7 @@ export default function DynastyDirectSupplierNetwork() {
       const [w, p, inv] = await Promise.all([
         supabase
           .from('wholesalers')
-          .select('id, name, state, city, address, latitude, longitude, geocode_status')
+          .select('id, name, state, city, address, latitude, longitude, geocode_status, reliability_grade, preferred, overall_rating')
           .is('deleted_at', null),
         supabase.from('products_all').select('id, name, wholesaler_id'),
         supabase.from('marketplace_inventory').select('product_id, wholesaler_id, quantity_available'),
