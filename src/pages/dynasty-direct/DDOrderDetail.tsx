@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, RefreshCw, Mail, DollarSign, Zap, TrendingUp, Bell, CheckCircle2, Clock } from "lucide-react";
+import { ArrowLeft, RefreshCw, Mail, DollarSign, Zap, TrendingUp, Bell, CheckCircle2, Clock, Shield, ShieldAlert, ShieldCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 
@@ -176,6 +176,15 @@ export default function DDOrderDetail() {
           </h1>
           <Badge variant="outline">{order.payment_status}</Badge>
           <Badge variant="outline">{order.fulfillment_status}</Badge>
+          {(order as any).stripe_risk_level === "highest" && (
+            <Badge className="bg-red-500/15 text-red-700 border-red-500/30" variant="outline">🚫 High Risk</Badge>
+          )}
+          {(order as any).stripe_risk_level === "elevated" && (
+            <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30" variant="outline">⚠️ Review</Badge>
+          )}
+          {(order as any).three_ds_authenticated && (
+            <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30" variant="outline">🛡️ 3DS Verified</Badge>
+          )}
         </div>
       </div>
 
@@ -230,6 +239,8 @@ export default function DDOrderDetail() {
               <Row k="Total" v={`$${Number(order.total).toFixed(2)}`} />
             </CardContent>
           </Card>
+
+          <FraudProtectionCard order={order} orderId={orderId} />
         </div>
 
         {/* RIGHT */}
@@ -453,6 +464,101 @@ function SupplierPerformanceMini({ wholesalerId }: { wholesalerId: string | null
         <Button asChild size="sm" variant="outline" className="w-full mt-2">
           <Link to={`/dynasty-direct/suppliers/performance?supplier=${wholesalerId}`}>View Full Performance →</Link>
         </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function FraudProtectionCard({ order, orderId }: { order: any; orderId: string }) {
+  const qc = useQueryClient();
+  const flagged = !!order.fraud_review_flag;
+  const riskLevel = order.stripe_risk_level ?? "normal";
+  const riskScore = order.stripe_risk_score;
+  const verified = !!order.three_ds_authenticated;
+
+  const approve = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("marketplace_orders")
+        .update({ fraud_review_flag: false })
+        .eq("id", orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Order approved for fulfillment");
+      qc.invalidateQueries({ queryKey: ["dd-order-detail", orderId] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const cancelRefund = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.functions.invoke("dd-refund-order", {
+        body: { order_id: orderId, reason: "fraud_review_cancelled" },
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Refund initiated and order cancelled");
+      qc.invalidateQueries({ queryKey: ["dd-order-detail", orderId] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Refund failed"),
+  });
+
+  const riskColor =
+    riskLevel === "highest"
+      ? "bg-red-500/15 text-red-700 border-red-500/30"
+      : riskLevel === "elevated"
+      ? "bg-amber-500/15 text-amber-700 border-amber-500/30"
+      : "bg-emerald-500/15 text-emerald-700 border-emerald-500/30";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Shield className="w-4 h-4" /> Fraud Protection
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="text-sm space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">Risk Level</span>
+          <Badge className={riskColor} variant="outline">{riskLevel}</Badge>
+        </div>
+        <Row k="Risk Score" v={riskScore != null ? `${riskScore} / 100` : "—"} />
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">3DS Authenticated</span>
+          <span className="flex items-center gap-1">
+            {verified ? <ShieldCheck className="w-4 h-4 text-emerald-500" /> : <ShieldAlert className="w-4 h-4 text-amber-500" />}
+            {verified ? "✅ Yes" : "❌ No"}
+          </span>
+        </div>
+        <Row k="Flagged for Review" v={flagged ? "Yes" : "No"} />
+
+        {flagged && (
+          <div className="border-2 border-red-500 bg-red-500/10 rounded p-3 mt-3">
+            <div className="font-semibold text-red-600 text-sm">
+              ⚠️ This order was flagged as elevated risk by Stripe Radar.
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Review the order details before fulfilling.
+            </div>
+            <div className="flex gap-2 mt-3">
+              <Button size="sm" onClick={() => approve.mutate()} disabled={approve.isPending}>
+                <CheckCircle2 className="w-3 h-3 mr-1" /> Approve and Fulfill
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => {
+                  if (confirm("Refund and cancel this order?")) cancelRefund.mutate();
+                }}
+                disabled={cancelRefund.isPending}
+              >
+                <XCircle className="w-3 h-3 mr-1" /> Cancel and Refund
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

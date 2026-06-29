@@ -31,6 +31,9 @@ type OrderRow = {
   payment_status: string | null;
   fulfillment_status: string | null;
   customer_email: string | null;
+  stripe_risk_level: string | null;
+  three_ds_authenticated: boolean | null;
+  fraud_review_flag: boolean | null;
   customer_phone: string | null;
   order_type: string | null;
   shipping_address: any;
@@ -96,7 +99,7 @@ export default function DynastyDirectOrders() {
     // 1. base orders
     const { data: orders } = await supabase
       .from('marketplace_orders')
-      .select('id, created_at, total, payment_status, fulfillment_status, customer_email, customer_phone, order_type, shipping_address, notes')
+      .select('id, created_at, total, payment_status, fulfillment_status, customer_email, customer_phone, order_type, shipping_address, notes, stripe_risk_level, three_ds_authenticated, fraud_review_flag')
       .order('created_at', { ascending: false })
       .limit(500);
 
@@ -368,9 +371,20 @@ export default function DynastyDirectOrders() {
                       {suppliers.length ? suppliers.join(', ') : <span className="text-muted-foreground">unrouted</span>}
                     </td>
                     <td className="p-3">
-                      <Badge variant={unpaid ? 'destructive' : 'default'}>
-                        {r.payment_status || 'pending'}
-                      </Badge>
+                      <div className="flex flex-wrap gap-1">
+                        <Badge variant={unpaid ? 'destructive' : 'default'}>
+                          {r.payment_status || 'pending'}
+                        </Badge>
+                        {r.stripe_risk_level === 'highest' && (
+                          <Badge className="bg-red-500/15 text-red-700 border-red-500/30" variant="outline">🚫</Badge>
+                        )}
+                        {r.stripe_risk_level === 'elevated' && (
+                          <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30" variant="outline">⚠️</Badge>
+                        )}
+                        {r.three_ds_authenticated && (
+                          <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30" variant="outline">🛡️</Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="p-3">
                       <Badge variant="outline">{r.fulfillment_status || 'pending'}</Badge>
