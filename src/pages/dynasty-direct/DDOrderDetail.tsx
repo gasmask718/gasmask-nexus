@@ -5,9 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, RefreshCw, Mail, DollarSign, Zap, TrendingUp } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, RefreshCw, Mail, DollarSign, Zap, TrendingUp, Bell, CheckCircle2, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
 
+type NotifyEvent = "confirmed" | "processing" | "shipped" | "delivered";
 const stages = ["paid", "routed", "fulfillment", "shipped", "delivered"];
 
 export default function DDOrderDetail() {
@@ -125,6 +128,23 @@ export default function DDOrderDetail() {
       if (res?.sent) toast.success(`Notification sent to ${res.notified ?? "supplier"}`);
       else toast.warning(res?.error ?? "Notification not sent");
       qc.invalidateQueries({ queryKey: ["dd-order-grabba", orderId] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const [notifyEvent, setNotifyEvent] = useState<NotifyEvent>("confirmed");
+  const notifyCustomer = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("dd-notify-customer-order-update", {
+        body: { order_id: orderId, event_type: notifyEvent },
+      });
+      if (error) throw error;
+      return data as { success: boolean; sms_sent: boolean; email_sent: boolean };
+    },
+    onSuccess: (res) => {
+      const channels = [res?.sms_sent && "SMS", res?.email_sent && "email"].filter(Boolean).join(" and ");
+      toast.success(channels ? `Customer notified via ${channels}` : "Notification logged (no channels reachable)");
+      qc.invalidateQueries({ queryKey: ["dd-order-detail", orderId] });
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -320,6 +340,47 @@ export default function DDOrderDetail() {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bell className="w-4 h-4" />Customer Notifications</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-xs text-muted-foreground">
+                Phone: <span className="font-mono">{order.customer_phone ?? "—"}</span> · Email: <span className="font-mono">{order.customer_email ?? "—"}</span>
+              </div>
+              <div className="space-y-1 text-sm">
+                {(["confirmed", "processing", "shipped", "delivered"] as NotifyEvent[]).map((evt) => {
+                  const log = (Array.isArray((order as any).notification_log) ? (order as any).notification_log : []) as any[];
+                  const entry = log.filter((l) => l?.type === evt).pop();
+                  return (
+                    <div key={evt} className="flex items-center justify-between border-b py-1">
+                      <span className="flex items-center gap-2 capitalize">
+                        {entry ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Clock className="w-3.5 h-3.5 text-muted-foreground" />}
+                        {evt}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {entry ? `${new Date(entry.sent_at).toLocaleString()} · ${(entry.channels ?? []).join(", ") || "logged"}` : "pending"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex gap-2 items-center pt-2">
+                <Select value={notifyEvent} onValueChange={(v) => setNotifyEvent(v as NotifyEvent)}>
+                  <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="shipped">Shipped</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button size="sm" onClick={() => notifyCustomer.mutate()} disabled={notifyCustomer.isPending}>
+                  <Bell className="w-3 h-3 mr-1" />
+                  {notifyCustomer.isPending ? "Sending…" : "Send Notification"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
 

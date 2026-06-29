@@ -504,6 +504,17 @@ function CreateManualPODialog({ open, onClose }: { open: boolean; onClose: () =>
   );
 }
 
+const buildTrackingUrl = (carrier: string, tracking: string): string => {
+  const urls: Record<string, string> = {
+    UPS: `https://www.ups.com/track?tracknum=${tracking}`,
+    FedEx: `https://www.fedex.com/tracking?trackingnum=${tracking}`,
+    USPS: `https://tools.usps.com/go/TrackConfirmAction?tLabels=${tracking}`,
+    DHL: `https://www.dhl.com/us-en/home/tracking.html?tracking-id=${tracking}`,
+    Amazon: `https://track.amazon.com/tracking/${tracking}`,
+  };
+  return urls[carrier] || "#";
+};
+
 function TrackingDialog({ po, onClose }: { po: PO | null; onClose: () => void }) {
   const qc = useQueryClient();
   const [tracking, setTracking] = useState("");
@@ -524,10 +535,25 @@ function TrackingDialog({ po, onClose }: { po: PO | null; onClose: () => void })
         })
         .eq("id", po.id);
       if (error) throw error;
+
+      // Notify customer that their order shipped (SMS + Email)
+      if (po.marketplace_order_id) {
+        await supabase.functions
+          .invoke("dd-notify-customer-order-update", {
+            body: {
+              order_id: po.marketplace_order_id,
+              event_type: "shipped",
+              tracking_number: tracking,
+              carrier,
+              tracking_url: buildTrackingUrl(carrier, tracking),
+            },
+          })
+          .catch((e) => console.error("Customer shipped notification failed:", e));
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["dd-purchase-orders"] });
-      toast.success("Tracking saved · PO marked shipped");
+      toast.success("Tracking saved · customer notified");
       onClose();
       setTracking("");
     },

@@ -159,6 +159,13 @@ serve(async (req) => {
         .catch((err) => console.error("Supplier notification failed:", err));
     }
 
+    // 8) Notify customer that their order is processing (non-blocking)
+    supabase.functions
+      .invoke("dd-notify-customer-order-update", {
+        body: { order_id, event_type: "processing" },
+      })
+      .catch((err) => console.error("Customer 'processing' notification failed:", err));
+
     return json({
       success: true,
       synced_order_id: order_id,

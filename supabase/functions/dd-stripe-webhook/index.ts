@@ -162,6 +162,13 @@ async function markOrderPaid(
     .invoke("dd-grabba-bridge", { body: { order_id: orderId } })
     .catch((e: any) => console.error("[dd-webhook] grabba bridge failed", e?.message));
 
+  // Fire-and-forget customer 'confirmed' notification (SMS + email)
+  supabase.functions
+    .invoke("dd-notify-customer-order-update", {
+      body: { order_id: orderId, event_type: "confirmed" },
+    })
+    .catch((e: any) => console.error("[dd-webhook] customer notify failed", e?.message));
+
   const email = existing.customer_email || fallbackEmail;
   if (email) {
     await supabase.functions

@@ -61747,6 +61747,7 @@ export type Database = {
           billing_address: Json | null
           created_at: string | null
           customer_email: string | null
+          customer_notified_at: string | null
           customer_phone: string | null
           discount_amount: number | null
           discount_code: string | null
@@ -61756,7 +61757,9 @@ export type Database = {
           dispute_status: string
           fulfillment_status: string | null
           id: string
+          last_notification_type: string | null
           notes: string | null
+          notification_log: Json
           order_type: string | null
           ordering_store_id: string | null
           payment_status: string | null
@@ -61778,6 +61781,7 @@ export type Database = {
           billing_address?: Json | null
           created_at?: string | null
           customer_email?: string | null
+          customer_notified_at?: string | null
           customer_phone?: string | null
           discount_amount?: number | null
           discount_code?: string | null
@@ -61787,7 +61791,9 @@ export type Database = {
           dispute_status?: string
           fulfillment_status?: string | null
           id?: string
+          last_notification_type?: string | null
           notes?: string | null
+          notification_log?: Json
           order_type?: string | null
           ordering_store_id?: string | null
           payment_status?: string | null
@@ -61809,6 +61815,7 @@ export type Database = {
           billing_address?: Json | null
           created_at?: string | null
           customer_email?: string | null
+          customer_notified_at?: string | null
           customer_phone?: string | null
           discount_amount?: number | null
           discount_code?: string | null
@@ -61818,7 +61825,9 @@ export type Database = {
           dispute_status?: string
           fulfillment_status?: string | null
           id?: string
+          last_notification_type?: string | null
           notes?: string | null
+          notification_log?: Json
           order_type?: string | null
           ordering_store_id?: string | null
           payment_status?: string | null
