@@ -2023,6 +2023,7 @@ export default function AppRoutes() {
         <Route path="/dynasty-direct/qa" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDProductQA /></RequireRole>} />
         <Route path="/dynasty-direct/reviews" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDReviews /></RequireRole>} />
         <Route path="/dynasty-direct/flash-sales" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDFlashSales /></RequireRole>} />
+        <Route path="/dynasty-direct/catalog/bundles" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDBundles /></RequireRole>} />
         <Route path="/dynasty-direct/grabba-bridge" element={<DynastyDirectGrabbaBridge />} />
         <Route
           path="/dynasty-direct/affiliates"
