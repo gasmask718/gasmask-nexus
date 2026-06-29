@@ -233,7 +233,6 @@ export default function StoreDashboard() {
             </CardContent>
           </Card>
         </div>
-        </div>
 
         {/* Referral Program */}
         {user?.id && (
