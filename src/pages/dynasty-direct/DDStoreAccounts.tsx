@@ -42,6 +42,7 @@ type StoreAccount = {
   notes: string | null;
   credit_limit: number;
   created_at: string;
+  user_id?: string | null;
 };
 
 const statusColor: Record<string, string> = {
