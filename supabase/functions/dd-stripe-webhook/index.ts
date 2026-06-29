@@ -321,11 +321,21 @@ async function markOrderPaid(
           if (ambId) {
             const { data: amb } = await supabase
               .from("ambassadors")
-              .select("phone, user_id")
+              .select("user_id, name")
               .eq("id", ambId)
               .maybeSingle();
-            const phone = (amb as any)?.phone ?? null;
+            const ambUid = (amb as any)?.user_id ?? null;
+            let phone: string | null = null;
+            if (ambUid) {
+              const { data: prof } = await supabase
+                .from("profiles")
+                .select("phone")
+                .eq("id", ambUid)
+                .maybeSingle();
+              phone = (prof as any)?.phone ?? null;
+            }
             const TWILIO_SID = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
+
             const TWILIO_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
             const TWILIO_FROM = Deno.env.get("TWILIO_FROM_NUMBER") ?? "";
             if (phone && TWILIO_SID && TWILIO_TOKEN && TWILIO_FROM) {
