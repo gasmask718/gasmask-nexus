@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { ArrowLeft, Package, AlertTriangle, History } from "lucide-react";
+import { ArrowLeft, Package, AlertTriangle, History, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 
 type Row = {
