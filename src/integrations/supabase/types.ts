@@ -37637,6 +37637,48 @@ export type Database = {
           },
         ]
       }
+      dd_product_qa: {
+        Row: {
+          answer: string | null
+          answered_at: string | null
+          answered_by: string | null
+          asker_email: string | null
+          created_at: string
+          id: string
+          product_id: string
+          question: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          answer?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          asker_email?: string | null
+          created_at?: string
+          id?: string
+          product_id: string
+          question: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          answer?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          asker_email?: string | null
+          created_at?: string
+          id?: string
+          product_id?: string
+          question?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       dd_purchase_orders: {
         Row: {
           acknowledged_at: string | null

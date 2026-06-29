@@ -762,6 +762,7 @@ const DDAnalytics = lazy(() => import('@/pages/dynasty-direct/DDAnalytics'));
 const DDSettings = lazy(() => import('@/pages/dynasty-direct/DDSettings'));
 const DDSupplierPerformance = lazy(() => import('@/pages/dynasty-direct/DDSupplierPerformance'));
 const DDPurchaseOrders = lazy(() => import('@/pages/dynasty-direct/DDPurchaseOrders'));
+const DDProductQA = lazy(() => import('@/pages/dynasty-direct/DDProductQA'));
 const WholesalerMarketplaceInventory = lazy(() => import('@/pages/portal/wholesaler/WholesalerMarketplaceInventory'));
 const UniversalInviteAccept = lazy(() => import('@/pages/invite/UniversalInviteAccept'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
@@ -2014,6 +2015,7 @@ export default function AppRoutes() {
         <Route path="/dynasty-direct/suppliers/inventory" element={<WholesalerPortalPage />} />
         <Route path="/dynasty-direct/suppliers/performance" element={<DDSupplierPerformance />} />
         <Route path="/dynasty-direct/purchase-orders" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDPurchaseOrders /></RequireRole>} />
+        <Route path="/dynasty-direct/qa" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDProductQA /></RequireRole>} />
         <Route path="/dynasty-direct/grabba-bridge" element={<DynastyDirectGrabbaBridge />} />
         <Route
           path="/dynasty-direct/affiliates"
