@@ -21,6 +21,7 @@ import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
 import { DDBulkBar } from '@/components/dynasty-direct/DDBulkBar';
 import { DDDrillMenu, ddDrill } from '@/components/dynasty-direct/DDDrillMenu';
 import { DDDraftOutreachDialog } from '@/components/dynasty-direct/DDDraftOutreachDialog';
+import { WholesalerPortalReadiness } from '@/components/dynasty-direct/WholesalerPortalReadiness';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN as string | undefined;
 
@@ -450,6 +451,8 @@ export default function DynastyDirectSupplierNetwork() {
           wholesalerName={outreachTarget.name}
         />
       )}
+
+      <WholesalerPortalReadiness />
     </div>
   );
 }
