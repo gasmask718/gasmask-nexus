@@ -2008,6 +2008,8 @@ export default function AppRoutes() {
         <Route path="/dynasty-direct/store-storefront" element={<StorePortalPage />} />
         <Route path="/dynasty-direct/d2c-storefront" element={<Shop />} />
         <Route path="/dynasty-direct/fulfillment" element={<DynastyDirectFulfillmentConsole />} />
+        <Route path="/dynasty-direct/delivery" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDLocalDelivery /></RequireRole>} />
+        <Route path="/dynasty-direct/suppliers/instructions" element={<DDSupplierInstructions />} />
         <Route path="/dynasty-direct/splits" element={<DynastyDirectSplitConsole />} />
         <Route
           path="/dynasty-direct/inventory"
