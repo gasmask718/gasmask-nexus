@@ -112,6 +112,7 @@ export default function ClientPortalPage() {
                       <TableHead>Package</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Maintenance</TableHead>
+                      <TableHead>Assigned Builder</TableHead>
                       <TableHead>MRR</TableHead>
                       <TableHead>Since</TableHead>
                     </TableRow>
@@ -135,12 +136,22 @@ export default function ClientPortalPage() {
                               {client.maintenance_status || 'none'}
                             </Badge>
                           </TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <BuilderAssignControl
+                              rowId={client.id}
+                              rowLabel={client.business_name}
+                              table="brandaro_clients"
+                              currentAssignedBuilder={client.assigned_builder}
+                              onChanged={fetchData}
+                            />
+                          </TableCell>
                           <TableCell className="font-semibold">${mrr}/mo</TableCell>
                           <TableCell className="text-muted-foreground">{new Date(client.created_at).toLocaleDateString()}</TableCell>
                         </TableRow>
                       );
                     })}
                   </TableBody>
+
                 </Table>
               )}
             </CardContent>
