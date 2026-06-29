@@ -100,6 +100,9 @@ export default function DynastyDirectInventory() {
           <h1 className="text-2xl font-bold flex items-center gap-2"><Package className="h-6 w-6"/>Master Inventory</h1>
           <p className="text-muted-foreground">All products × all suppliers</p>
         </div>
+        <Button asChild variant="outline">
+          <Link to="/dynasty-direct/inventory/forecast"><TrendingDown className="h-4 w-4 mr-1" />📈 View Forecast</Link>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
