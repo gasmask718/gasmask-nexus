@@ -104,11 +104,11 @@ Deno.serve(async (req) => {
 
     const { data: product } = await supabase
       .from("products_all")
-      .select("name")
+      .select("product_name")
       .eq("id", body.product_id)
       .maybeSingle();
 
-    const productName = product?.name ?? "Unknown product";
+    const productName = product?.product_name ?? "Unknown product";
     const asker = body.email || "Guest";
     const link = "https://dynastyos.com/dynasty-direct/qa";
 
