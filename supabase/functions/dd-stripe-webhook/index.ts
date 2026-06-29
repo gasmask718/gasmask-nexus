@@ -246,6 +246,15 @@ async function markOrderPaid(
     console.error("[dd-webhook] referral qualify failed", e?.message);
   }
   console.log(`[dd-webhook] order ${orderId} marked paid`);
+
+  // Fire customer "confirmed" notification (non-blocking).
+  try {
+    await supabase.functions.invoke("dd-notify-customer-order-update", {
+      body: { order_id: orderId, event_type: "confirmed" },
+    });
+  } catch (err: any) {
+    console.error("[dd-webhook] confirmed notification failed:", err?.message);
+  }
 }
 
 async function releaseOrderReserves(
