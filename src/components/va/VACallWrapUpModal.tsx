@@ -11,7 +11,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Sparkles, Save, Play, Phone, RotateCcw } from 'lucide-react';
+import { Sparkles, Save, Play, Phone, RotateCcw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
@@ -34,6 +34,15 @@ const STATUS_OPTIONS: { value: FollowUpStatus; label: string; color: string }[] 
   { value: 'not_interested',   label: '❌ Not interested',          color: 'bg-red-500/15 text-red-300' },
 ];
 
+interface DispositionCode {
+  id: string;
+  code: string;
+  label: string;
+  display_number: number;
+  category: string | null;
+  marks_do_not_call: boolean;
+}
+
 interface VACallWrapUpModalProps {
   open: boolean;
   onClose: () => void;
@@ -41,7 +50,7 @@ interface VACallWrapUpModalProps {
   leadName?: string;
   leadId?: string | null;
   durationSeconds?: number;
-  /** Fires after a successful save with the resolved disposition code. */
+  /** Fires after a successful save with the resolved disposition code (UPPER_SNAKE). */
   onSaved?: (resolvedDisposition: string | null) => void;
 }
 
@@ -50,6 +59,9 @@ export function VACallWrapUpModal({
 }: VACallWrapUpModalProps) {
   const [summary, setSummary] = useState('');
   const [status, setStatus] = useState<FollowUpStatus | ''>('');
+  const [disposition, setDisposition] = useState<string>(''); // UPPER_SNAKE code
+  const [dispositions, setDispositions] = useState<DispositionCode[]>([]);
+  const [dispositionsLoading, setDispositionsLoading] = useState(false);
   const [nextContext, setNextContext] = useState('');
   const [followUpAt, setFollowUpAt] = useState('');
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
@@ -58,6 +70,31 @@ export function VACallWrapUpModal({
   const [loadingCall, setLoadingCall] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showDispositionError, setShowDispositionError] = useState(false);
+  const [showStatusError, setShowStatusError] = useState(false);
+
+  // Load canonical dispositions when opened
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setDispositionsLoading(true);
+    (async () => {
+      const { data, error } = await (supabase as any)
+        .from('dialer_disposition_codes')
+        .select('id, code, label, display_number, category, marks_do_not_call')
+        .eq('is_current', true)
+        .order('display_number', { ascending: true });
+      if (cancelled) return;
+      if (error) {
+        console.warn('[WrapUp] dispositions load failed:', error);
+        setDispositions([]);
+      } else {
+        setDispositions((data || []) as DispositionCode[]);
+      }
+      setDispositionsLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
 
   // Load existing call data when opened
   useEffect(() => {
@@ -67,7 +104,7 @@ export function VACallWrapUpModal({
     (async () => {
       const { data } = await (supabase as any)
         .from('va_call_logs')
-        .select('recording_url, transcript, ai_analysis, call_summary, follow_up_status, next_call_context, follow_up_at')
+        .select('recording_url, transcript, ai_analysis, call_summary, follow_up_status, next_call_context, follow_up_at, disposition')
         .eq('id', callLogId)
         .maybeSingle();
       if (cancelled) return;
@@ -77,6 +114,7 @@ export function VACallWrapUpModal({
         setAiAnalysis(data.ai_analysis ?? null);
         setSummary(data.call_summary ?? data.ai_analysis?.summary ?? '');
         setStatus((data.follow_up_status as FollowUpStatus) ?? '');
+        setDisposition(data.disposition ?? '');
         setNextContext(data.next_call_context ?? '');
         setFollowUpAt(data.follow_up_at ? new Date(data.follow_up_at).toISOString().slice(0, 16) : '');
       }
@@ -94,7 +132,6 @@ export function VACallWrapUpModal({
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      // Refetch the analysis
       const { data: fresh } = await (supabase as any)
         .from('va_call_logs')
         .select('ai_analysis, transcript, recording_url')
@@ -120,19 +157,16 @@ export function VACallWrapUpModal({
     }
   };
 
+  const canSave = !!disposition && !!status;
+
   const handleSave = async () => {
+    if (!disposition) { setShowDispositionError(true); }
+    if (!status) { setShowStatusError(true); }
+    if (!disposition || !status) return;
+
     if (!callLogId) {
-      // No call log yet — still surface the chosen status to the caller.
-      const resolved =
-        status === 'callback_needed' || status === 'follow_up_later' ? 'callback'
-        : status === 'closed_deal' || status === 'won_back' ? 'closed'
-        : status === 'not_interested' ? 'not_interested'
-        : status === 'no_answer' ? 'no_answer'
-        : null;
-      // Single completion signal — parent advances the loop. Do NOT also
-      // call onClose() here: that would fire finishWrapUp twice and skip
-      // the next lead in the campaign.
-      if (onSaved) onSaved(resolved);
+      // No call log yet — surface the chosen disposition to the caller.
+      if (onSaved) onSaved(disposition);
       else onClose();
       return;
     }
@@ -140,18 +174,12 @@ export function VACallWrapUpModal({
     try {
       const update: any = {
         call_summary: summary.trim() || null,
-        follow_up_status: status || null,
+        follow_up_status: status,
+        disposition,
         next_call_context: nextContext.trim() || null,
         follow_up_at: followUpAt ? new Date(followUpAt).toISOString() : null,
         wrap_up_completed_at: new Date().toISOString(),
       };
-      // Mirror to disposition for back-compat
-      let resolvedDisp: string | null = null;
-      if (status === 'callback_needed' || status === 'follow_up_later') resolvedDisp = 'callback';
-      if (status === 'closed_deal' || status === 'won_back') resolvedDisp = 'closed';
-      if (status === 'not_interested') resolvedDisp = 'not_interested';
-      if (status === 'no_answer') resolvedDisp = 'no_answer';
-      if (resolvedDisp) update.disposition = resolvedDisp;
 
       const { error } = await (supabase as any)
         .from('va_call_logs')
@@ -159,8 +187,7 @@ export function VACallWrapUpModal({
         .eq('id', callLogId);
       if (error) throw error;
       toast.success('Wrap-up saved — dialing next lead');
-      // Single completion signal — see note above.
-      if (onSaved) onSaved(resolvedDisp);
+      if (onSaved) onSaved(disposition);
       else onClose();
     } catch (err: any) {
       toast.error('Save failed: ' + (err.message || 'unknown'));
@@ -249,12 +276,73 @@ export function VACallWrapUpModal({
             )}
           </div>
 
-          {/* Status */}
+          {/* 1. Disposition (Call Outcome) — REQUIRED */}
+          <div className="rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm text-slate-100 font-medium">
+                Call Outcome <span className="text-red-400">*</span>
+              </Label>
+              {showDispositionError && !disposition && (
+                <span className="text-xs text-red-400">Required</span>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-500 mb-2">
+              The single canonical outcome of this call. Drives DNC, scorecard, and follow-up automations.
+            </p>
+            <Select
+              value={disposition}
+              onValueChange={(v) => { setDisposition(v); setShowDispositionError(false); }}
+              disabled={dispositionsLoading}
+            >
+              <SelectTrigger className={`bg-slate-800 mt-1 ${showDispositionError && !disposition ? 'border-red-500/60' : 'border-slate-700'}`}>
+                <SelectValue placeholder={
+                  dispositionsLoading
+                    ? 'Loading dispositions…'
+                    : dispositions.length === 0
+                      ? 'Dispositions not configured — contact admin'
+                      : 'Select call outcome…'
+                } />
+              </SelectTrigger>
+              <SelectContent>
+                {dispositionsLoading ? (
+                  <div className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
+                  </div>
+                ) : dispositions.length === 0 ? (
+                  <div className="px-3 py-2 text-xs text-slate-400">
+                    No dispositions configured. Ask an admin to seed the disposition codes.
+                  </div>
+                ) : (
+                  dispositions.map((d) => (
+                    <SelectItem key={d.id} value={d.code}>
+                      <span className="font-mono text-slate-400 mr-2">#{d.display_number}</span>
+                      {d.label}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Visual divider between the two distinct questions */}
+          <div className="border-t border-slate-700/50" />
+
+          {/* 2. Follow-up status (Next Action) — REQUIRED */}
           <div>
-            <Label className="text-sm text-slate-200">Outcome / Status</Label>
-            <Select value={status} onValueChange={(v) => setStatus(v as FollowUpStatus)}>
-              <SelectTrigger className="bg-slate-800 border-slate-700 mt-1">
-                <SelectValue placeholder="Select an outcome…" />
+            <div className="flex items-center justify-between">
+              <Label className="text-sm text-slate-200">
+                Next Action <span className="text-red-400">*</span>
+              </Label>
+              {showStatusError && !status && (
+                <span className="text-xs text-red-400">Required</span>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-500 mb-1">
+              Human-readable hint shown to the next caller as pre-call context.
+            </p>
+            <Select value={status} onValueChange={(v) => { setStatus(v as FollowUpStatus); setShowStatusError(false); }}>
+              <SelectTrigger className={`bg-slate-800 mt-1 ${showStatusError && !status ? 'border-red-500/60' : 'border-slate-700'}`}>
+                <SelectValue placeholder="Select next action…" />
               </SelectTrigger>
               <SelectContent>
                 {STATUS_OPTIONS.map((o) => (
@@ -264,7 +352,20 @@ export function VACallWrapUpModal({
             </Select>
           </div>
 
-          {/* Summary */}
+          {/* 3. Follow up datetime (conditional) */}
+          {(status === 'callback_needed' || status === 'follow_up_later' || status === 'won_back') && (
+            <div>
+              <Label className="text-sm text-slate-200">Schedule follow-up</Label>
+              <Input
+                type="datetime-local"
+                value={followUpAt}
+                onChange={(e) => setFollowUpAt(e.target.value)}
+                className="bg-slate-800 border-slate-700 mt-1"
+              />
+            </div>
+          )}
+
+          {/* 4. Summary */}
           <div>
             <Label className="text-sm text-slate-200">What was the call about?</Label>
             <Textarea
@@ -275,7 +376,7 @@ export function VACallWrapUpModal({
             />
           </div>
 
-          {/* Next call context */}
+          {/* 4b. Next call context */}
           <div>
             <Label className="text-sm text-slate-200 flex items-center gap-1">
               <RotateCcw className="h-3 w-3 text-cyan-400" />
@@ -291,24 +392,15 @@ export function VACallWrapUpModal({
               className="bg-slate-800 border-slate-700 min-h-[90px]"
             />
           </div>
-
-          {/* Follow up datetime */}
-          {(status === 'callback_needed' || status === 'follow_up_later' || status === 'won_back') && (
-            <div>
-              <Label className="text-sm text-slate-200">Schedule follow-up</Label>
-              <Input
-                type="datetime-local"
-                value={followUpAt}
-                onChange={(e) => setFollowUpAt(e.target.value)}
-                className="bg-slate-800 border-slate-700 mt-1"
-              />
-            </div>
-          )}
         </motion.div>
 
         <DialogFooter className="gap-2">
-          <Button variant="ghost" onClick={onClose} className="text-slate-400">Skip</Button>
-          <Button onClick={handleSave} disabled={saving} className="bg-cyan-600 hover:bg-cyan-500 gap-1.5">
+          <Button variant="ghost" onClick={onClose} className="text-slate-400">Cancel</Button>
+          <Button
+            onClick={handleSave}
+            disabled={saving || !canSave}
+            className="bg-cyan-600 hover:bg-cyan-500 gap-1.5 disabled:opacity-50"
+          >
             <Save className="h-4 w-4" />
             {saving ? 'Saving…' : 'Save Wrap-Up'}
           </Button>
