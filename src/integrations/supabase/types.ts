@@ -123878,7 +123878,6 @@ export type Database = {
         Returns: boolean
       }
       is_developer: { Args: { _user_id: string }; Returns: boolean }
-      is_developer_or_admin: { Args: never; Returns: boolean }
       is_dispatch_eligible_store: {
         Args: { _store_id: string }
         Returns: boolean
