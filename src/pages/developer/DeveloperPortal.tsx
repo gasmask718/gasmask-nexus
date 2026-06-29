@@ -1,9 +1,10 @@
 /**
  * Developer Portal - DAW-Inspired QA Dashboard
- * Restricted to admin123@gmail.com and dev@gmail.com
+ * Admin-only (role check via user_roles).
  */
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Navigate } from 'react-router-dom';
 import { DevKillSwitch } from './components/DevKillSwitch';
 import { DevLeadTable } from './components/DevLeadTable';
@@ -20,7 +21,7 @@ import {
 } from '@/components/ui/resizable';
 import { Activity, Terminal, Command, Rows3, AlignJustify, X, Database, LayoutDashboard, LogOut } from 'lucide-react';
 
-const ALLOWED_EMAILS = ['admin123@gmail.com', 'dev@gmail.com'];
+
 
 const FUNNEL_GROUPS: FunnelGroup[] = [
   {
@@ -179,8 +180,11 @@ const DeveloperPortal = () => {
     );
   }
 
-  if (!user || !ALLOWED_EMAILS.includes(user.email || '')) {
+  if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+  if (!loading && !roleLoading && !roles.includes('admin')) {
+    return <Navigate to="/" replace />;
   }
 
   const activeFunnelConfigs = ALL_FUNNELS.filter(f => activeFunnels.includes(f.key));
