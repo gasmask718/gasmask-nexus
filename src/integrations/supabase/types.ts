@@ -37172,6 +37172,118 @@ export type Database = {
           },
         ]
       }
+      dd_credit_accounts: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          available_credit: number | null
+          created_at: string
+          credit_limit: number
+          current_balance: number
+          days_past_due: number
+          id: string
+          next_payment_due: string | null
+          payment_terms: string
+          status: string
+          store_account_id: string
+          total_paid_lifetime: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          available_credit?: number | null
+          created_at?: string
+          credit_limit?: number
+          current_balance?: number
+          days_past_due?: number
+          id?: string
+          next_payment_due?: string | null
+          payment_terms?: string
+          status?: string
+          store_account_id: string
+          total_paid_lifetime?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          available_credit?: number | null
+          created_at?: string
+          credit_limit?: number
+          current_balance?: number
+          days_past_due?: number
+          id?: string
+          next_payment_due?: string | null
+          payment_terms?: string
+          status?: string
+          store_account_id?: string
+          total_paid_lifetime?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_credit_accounts_store_account_id_fkey"
+            columns: ["store_account_id"]
+            isOneToOne: false
+            referencedRelation: "store_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_credit_transactions: {
+        Row: {
+          amount: number
+          balance_after: number | null
+          created_at: string
+          created_by: string | null
+          credit_account_id: string
+          due_date: string | null
+          id: string
+          notes: string | null
+          order_id: string | null
+          paid_at: string | null
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          balance_after?: number | null
+          created_at?: string
+          created_by?: string | null
+          credit_account_id: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number | null
+          created_at?: string
+          created_by?: string | null
+          credit_account_id?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_credit_transactions_credit_account_id_fkey"
+            columns: ["credit_account_id"]
+            isOneToOne: false
+            referencedRelation: "dd_credit_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_dispute_events: {
         Row: {
           amount_cents: number
@@ -124087,6 +124199,10 @@ export type Database = {
         Args: { p_days?: number; p_wholesaler_id: string }
         Returns: Json
       }
+      dd_charge_credit: {
+        Args: { p_amount: number; p_order_id: string; p_user_id: string }
+        Returns: Json
+      }
       dd_check_low_stock: {
         Args: { p_product_id: string; p_wholesaler_id: string }
         Returns: undefined
@@ -124200,6 +124316,14 @@ export type Database = {
       dd_recompute_product_inventory_qty: {
         Args: { p_product_id: string }
         Returns: undefined
+      }
+      dd_record_credit_payment: {
+        Args: {
+          p_amount: number
+          p_credit_account_id: string
+          p_notes?: string
+        }
+        Returns: Json
       }
       dd_release_order_reservations: {
         Args: { p_order_id: string }
