@@ -241,6 +241,7 @@ export default function DDStoreAccounts() {
                   <TabsTrigger value="details">Details</TabsTrigger>
                   <TabsTrigger value="credit">💳 Credit Account</TabsTrigger>
                   <TabsTrigger value="loyalty">🏆 Loyalty</TabsTrigger>
+                  <TabsTrigger value="delivery">🚗 Delivery</TabsTrigger>
                 </TabsList>
                 <TabsContent value="details">
                   <div className="space-y-4 mt-4 text-sm">
@@ -268,6 +269,9 @@ export default function DDStoreAccounts() {
                 </TabsContent>
                 <TabsContent value="loyalty">
                   <LoyaltyPanel storeAccountId={viewing.id} userId={null} />
+                </TabsContent>
+                <TabsContent value="delivery">
+                  <DeliveryPreferencesPanel storeAccountId={viewing.id} />
                 </TabsContent>
               </Tabs>
             </>
