@@ -676,6 +676,9 @@ Deno.serve(async (req) => {
       case 'copy_pricing':           result = await runCopyPricing(body); break;
       case 'market_check':           result = await runMarketCheck(body); break;
       case 'estimate_measurements':  result = await runEstimateMeasurements(body); break;
+      case 'price_research':         result = await runPriceResearch(body); break;
+      case 'recognize_product':      result = await runRecognizeProduct(body); break;
+      case 'standardize_image':      result = await runStandardizeImage(body); break;
       case 'publish':                result = await runPublish(body); break;
       case 'content_factory':        result = await runContentFactory(body); break;
       default: throw new Error(`unknown mode: ${mode}`);
