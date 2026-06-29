@@ -309,6 +309,9 @@ function DashboardContent() {
         </div>
       </div>
 
+      {/* Live navigation to next store (Waze-style, live traffic) */}
+      <NextStopNavigator role="ambassador" />
+
       {/* Portfolio map — RLS-scoped to this ambassador's stores */}
       <AmbassadorStoreMap />
 
