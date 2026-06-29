@@ -12,6 +12,7 @@ import { useCart } from "@/services/marketplace/useCart";
 import { useDynastyDirectProducts, DynastyDirectProduct } from "@/services/marketplace/useDynastyDirectProducts";
 import { Search, ShoppingCart, Package, Filter, Eye, Box, Tag, Weight, Layers, Store, X, Truck, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
+import SubscribeAndSave from "@/components/dynasty-direct/SubscribeAndSave";
 
 interface StoreProduct {
   id: string;
