@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, RefreshCw, Mail, DollarSign, Zap, TrendingUp, Bell, CheckCircle2, Clock } from "lucide-react";
+import { ArrowLeft, RefreshCw, Mail, DollarSign, Zap, TrendingUp, Bell, CheckCircle2, Clock, Shield, ShieldAlert, ShieldCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 
