@@ -333,7 +333,7 @@ serve(async (req) => {
     const { data: order, error: oErr } = await supabase
       .from("marketplace_orders")
       .select(
-        "id, total, subtotal, shipping_cost, tax_amount, customer_email, payment_status, discount_code, discount_amount",
+        "id, total, subtotal, shipping_cost, tax_amount, customer_email, payment_status, discount_code, discount_amount, ordering_store_id, order_type",
       )
       .eq("id", orderId)
       .single();
@@ -341,6 +341,32 @@ serve(async (req) => {
     if (order.payment_status === "paid") {
       return json({ error: "Order already paid" }, 400);
     }
+
+    // ── Store account verification gate: unverified stores capped at $500.
+    const orderTotal = Number(order.total ?? 0);
+    const isStoreUser = !!(order as any).ordering_store_id || order.order_type === "store";
+    let storeVerified = false;
+    if ((order as any).ordering_store_id) {
+      const { data: storeRow } = await supabase
+        .from("store_accounts")
+        .select("identity_verified")
+        .eq("id", (order as any).ordering_store_id)
+        .maybeSingle();
+      storeVerified = !!(storeRow as any)?.identity_verified;
+      if (!storeVerified && orderTotal > 500) {
+        return json(
+          {
+            mode: "pending",
+            error: "verification_required",
+            message:
+              "Orders over $500 require store verification. Contact orders@dynastydirect.com to verify your account.",
+          },
+          400,
+        );
+      }
+    }
+    const isLargeStoreOrder = isStoreUser && orderTotal > 500;
+    const threeDSMode: "automatic" | "any" = isLargeStoreOrder ? "any" : "automatic";
 
     // Stamp campaign on the existing order if a campaign_code was passed.
     const hostedCampaignCode: string | null = body?.campaign_code ?? null;
