@@ -2011,6 +2011,7 @@ export default function AppRoutes() {
         />
         <Route path="/dynasty-direct/suppliers/portal" element={<WholesalerPortalPage />} />
         <Route path="/dynasty-direct/suppliers/inventory" element={<WholesalerPortalPage />} />
+        <Route path="/dynasty-direct/suppliers/performance" element={<DDSupplierPerformance />} />
         <Route path="/dynasty-direct/grabba-bridge" element={<DynastyDirectGrabbaBridge />} />
         <Route
           path="/dynasty-direct/affiliates"
