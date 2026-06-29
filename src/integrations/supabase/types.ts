@@ -38490,6 +38490,66 @@ export type Database = {
           },
         ]
       }
+      dd_store_referrals: {
+        Row: {
+          created_at: string | null
+          first_order_id: string | null
+          id: string
+          referral_code: string
+          referred_discount_pct: number | null
+          referred_email: string
+          referred_store_id: string | null
+          referrer_credit_amount: number | null
+          referrer_store_id: string | null
+          referrer_user_id: string | null
+          rewarded_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          first_order_id?: string | null
+          id?: string
+          referral_code: string
+          referred_discount_pct?: number | null
+          referred_email: string
+          referred_store_id?: string | null
+          referrer_credit_amount?: number | null
+          referrer_store_id?: string | null
+          referrer_user_id?: string | null
+          rewarded_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string | null
+          first_order_id?: string | null
+          id?: string
+          referral_code?: string
+          referred_discount_pct?: number | null
+          referred_email?: string
+          referred_store_id?: string | null
+          referrer_credit_amount?: number | null
+          referrer_store_id?: string | null
+          referrer_user_id?: string | null
+          rewarded_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_store_referrals_referred_store_id_fkey"
+            columns: ["referred_store_id"]
+            isOneToOne: false
+            referencedRelation: "store_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_store_referrals_referrer_store_id_fkey"
+            columns: ["referrer_store_id"]
+            isOneToOne: false
+            referencedRelation: "store_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_supplier_metrics: {
         Row: {
           avg_fulfillment_hours: number | null
@@ -125066,6 +125126,10 @@ export type Database = {
         }
         Returns: Json
       }
+      dd_apply_store_referral_signup: {
+        Args: { p_referral_code: string; p_store_account_id: string }
+        Returns: Json
+      }
       dd_calculate_supplier_metrics: {
         Args: { p_days?: number; p_wholesaler_id: string }
         Returns: Json
@@ -125203,6 +125267,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      dd_qualify_store_referral: {
+        Args: { p_order_id: string; p_store_account_id: string }
+        Returns: Json
       }
       dd_recipient_blocked: { Args: { p_email: string }; Returns: boolean }
       dd_recompute_product_inventory_qty: {
