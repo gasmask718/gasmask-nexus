@@ -524,10 +524,25 @@ function TrackingDialog({ po, onClose }: { po: PO | null; onClose: () => void })
         })
         .eq("id", po.id);
       if (error) throw error;
+
+      // Notify customer that their order shipped (SMS + Email)
+      if (po.marketplace_order_id) {
+        await supabase.functions
+          .invoke("dd-notify-customer-order-update", {
+            body: {
+              order_id: po.marketplace_order_id,
+              event_type: "shipped",
+              tracking_number: tracking,
+              carrier,
+              tracking_url: buildTrackingUrl(carrier, tracking),
+            },
+          })
+          .catch((e) => console.error("Customer shipped notification failed:", e));
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["dd-purchase-orders"] });
-      toast.success("Tracking saved · PO marked shipped");
+      toast.success("Tracking saved · customer notified");
       onClose();
       setTracking("");
     },
