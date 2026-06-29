@@ -3663,10 +3663,12 @@ export default function AppRoutes() {
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
-        <Route path="/brandaro" element={<BrandaroHubLayout />}>
+        <Route path="/brandaro" element={<RequireRole allowedRoles={['admin','owner']} showLocked><BrandaroHubLayout /></RequireRole>}>
           {/* ── Command ── */}
           <Route index element={<BrandaroWarRoom />} />
           <Route path="ceo" element={<CEODashboardPage />} />
+          <Route path="pm" element={<CEODashboardPage />} />
+
 
           {/* ── Sales Floor ── */}
           <Route path="calling" element={<CallingOpsPage />} />
