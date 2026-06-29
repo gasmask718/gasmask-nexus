@@ -21,7 +21,7 @@ import { format } from "date-fns";
 
 export default function StoreDashboard() {
   const { user } = useAuth();
-  const { data: profile } = useStoreProfile();
+  const { profile } = useStoreProfile();
   const { data: stats, isLoading: statsLoading } = useStoreStats();
   const { data: orders, isLoading: ordersLoading } = useStoreOrders();
 
