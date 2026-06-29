@@ -1,0 +1,3 @@
+COMMENT ON TABLE public.suppliers IS 'Procurement suppliers — internal purchasing, POs, vendor relationships. Columns: country, wechat, lead_time_days, reliability_score. Used by OS Warehouse / Procurement pages. DO NOT merge with wholesalers.';
+
+COMMENT ON TABLE public.wholesalers IS 'Dynasty Direct wholesale partners — product sourcing for DD storefront. Columns: pricing, product categories, DD-specific fields. Used by Dynasty Direct hub pages only. DO NOT merge with suppliers.';
