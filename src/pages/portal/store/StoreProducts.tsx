@@ -475,6 +475,13 @@ function DirectProductCard({ product, onPreview, onAddToCart, qty, onQtyChange, 
             Add
           </Button>
         </div>
+        <div onClick={(e) => e.stopPropagation()}>
+          <SubscribeAndSave
+            productId={product.id}
+            productName={product.product_name}
+            productPrice={Number(storePrice) || 0}
+          />
+        </div>
       </CardContent>
     </Card>
   );
