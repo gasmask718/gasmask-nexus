@@ -185,7 +185,62 @@ export default function DDSettings() {
           </ol>
         </CardContent>
       </Card>
+      <FlashSalesSection />
     </div>
+  );
+}
+
+function FlashSalesSection() {
+  const { data: active } = useQuery({
+    queryKey: ["dd-settings-active-flash"],
+    queryFn: async () => {
+      const nowIso = new Date().toISOString();
+      const { data } = await (supabase as any)
+        .from("dd_flash_sales")
+        .select("id, name, discount_pct, ends_at")
+        .eq("status", "active")
+        .lte("starts_at", nowIso)
+        .gt("ends_at", nowIso)
+        .order("ends_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      return data as any;
+    },
+    refetchInterval: 30000,
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Zap className="h-5 w-5 text-amber-500" /> ⚡ Flash Sales</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Create time-limited discounts across your catalog. Server-enforced pricing — no client manipulation possible.
+        </p>
+        {active ? (
+          <div className="p-3 rounded border border-green-500/30 bg-green-500/5">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-semibold flex items-center gap-2">
+                  <Badge className="bg-green-600">LIVE</Badge> {active.name}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {active.discount_pct}% off · ends {new Date(active.ends_at).toLocaleString()}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">No active flash sale right now.</p>
+        )}
+        <Button asChild>
+          <Link to="/dynasty-direct/flash-sales">
+            Manage Flash Sales <ArrowRight className="h-4 w-4 ml-1" />
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 
