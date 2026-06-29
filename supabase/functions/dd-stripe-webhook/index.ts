@@ -80,6 +80,10 @@ serve(async (req) => {
           session.customer_details?.email ?? null,
           (session.amount_total ?? 0) / 100,
         );
+        // Pull risk + 3DS from the underlying charge.
+        if (session.payment_intent) {
+          await captureRiskFromPaymentIntent(stripe, supabase, session.payment_intent as string, session.metadata?.order_id);
+        }
         break;
       }
       case "payment_intent.succeeded": {
@@ -91,12 +95,26 @@ serve(async (req) => {
           pi.receipt_email ?? null,
           (pi.amount_received ?? pi.amount ?? 0) / 100,
         );
+        await captureRiskFromPaymentIntent(stripe, supabase, pi.id, pi.metadata?.order_id);
         break;
       }
       case "payment_intent.canceled":
       case "payment_intent.payment_failed": {
         const pi = event.data.object as Stripe.PaymentIntent;
         await releaseOrderReserves(supabase, pi.metadata?.order_id, event.type);
+        break;
+      }
+      case "charge.dispute.created": {
+        const dispute = event.data.object as Stripe.Dispute;
+        await handleDisputeCreated(stripe, supabase, dispute);
+        break;
+      }
+      case "charge.dispute.updated":
+      case "charge.dispute.closed":
+      case "charge.dispute.funds_withdrawn":
+      case "charge.dispute.funds_reinstated": {
+        const dispute = event.data.object as Stripe.Dispute;
+        await handleDisputeUpdated(supabase, dispute);
         break;
       }
     }
