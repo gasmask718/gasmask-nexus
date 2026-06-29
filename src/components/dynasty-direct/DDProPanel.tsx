@@ -20,6 +20,7 @@ type Sub = {
   monthly_price: number;
   next_billing_date: string | null;
   created_at: string;
+  store_account_id: string | null;
 };
 
 type InvRow = {
