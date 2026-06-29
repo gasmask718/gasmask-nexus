@@ -66,6 +66,13 @@ serve(async (req) => {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
+        // CHECK 3: only promote to paid when Stripe confirms payment.
+        if (session.payment_status !== "paid") {
+          console.log(
+            `[dd-webhook] checkout.session.completed ignored — payment_status=${session.payment_status}`,
+          );
+          break;
+        }
         await markOrderPaid(
           supabase,
           session.metadata?.order_id,
