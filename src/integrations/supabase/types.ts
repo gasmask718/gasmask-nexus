@@ -36965,6 +36965,141 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_campaigns: {
+        Row: {
+          ambassador_id: string | null
+          campaign_code: string
+          commission_override_pct: number | null
+          created_at: string | null
+          ends_at: string | null
+          id: string
+          name: string
+          partner_wholesaler_link_id: string | null
+          preferred_wholesaler_id: string | null
+          product_ids: string[] | null
+          starts_at: string | null
+          status: string | null
+          total_clicks: number | null
+          total_commission: number | null
+          total_orders: number | null
+          total_revenue: number | null
+        }
+        Insert: {
+          ambassador_id?: string | null
+          campaign_code: string
+          commission_override_pct?: number | null
+          created_at?: string | null
+          ends_at?: string | null
+          id?: string
+          name: string
+          partner_wholesaler_link_id?: string | null
+          preferred_wholesaler_id?: string | null
+          product_ids?: string[] | null
+          starts_at?: string | null
+          status?: string | null
+          total_clicks?: number | null
+          total_commission?: number | null
+          total_orders?: number | null
+          total_revenue?: number | null
+        }
+        Update: {
+          ambassador_id?: string | null
+          campaign_code?: string
+          commission_override_pct?: number | null
+          created_at?: string | null
+          ends_at?: string | null
+          id?: string
+          name?: string
+          partner_wholesaler_link_id?: string | null
+          preferred_wholesaler_id?: string | null
+          product_ids?: string[] | null
+          starts_at?: string | null
+          status?: string | null
+          total_clicks?: number | null
+          total_commission?: number | null
+          total_orders?: number | null
+          total_revenue?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_campaigns_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_campaigns_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_campaigns_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_campaigns_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_campaigns_partner_wholesaler_link_id_fkey"
+            columns: ["partner_wholesaler_link_id"]
+            isOneToOne: false
+            referencedRelation: "dd_partner_wholesaler_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_campaigns_preferred_wholesaler_id_fkey"
+            columns: ["preferred_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_supplier_map_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_campaigns_preferred_wholesaler_id_fkey"
+            columns: ["preferred_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_campaigns_preferred_wholesaler_id_fkey"
+            columns: ["preferred_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_performance_summary"
+            referencedColumns: ["vendor_id"]
+          },
+          {
+            foreignKeyName: "dd_campaigns_preferred_wholesaler_id_fkey"
+            columns: ["preferred_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "dd_campaigns_preferred_wholesaler_id_fkey"
+            columns: ["preferred_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "dd_campaigns_preferred_wholesaler_id_fkey"
+            columns: ["preferred_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_catalog_drafts: {
         Row: {
           candidates: Json
@@ -38042,6 +38177,259 @@ export type Database = {
             columns: ["loyalty_account_id"]
             isOneToOne: false
             referencedRelation: "dd_loyalty_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_partner_earnings: {
+        Row: {
+          ambassador_id: string | null
+          campaign_id: string | null
+          commission_amount: number
+          commission_pct: number
+          created_at: string | null
+          id: string
+          order_id: string | null
+          order_revenue: number
+          paid_at: string | null
+          status: string | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          ambassador_id?: string | null
+          campaign_id?: string | null
+          commission_amount: number
+          commission_pct: number
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          order_revenue: number
+          paid_at?: string | null
+          status?: string | null
+          wholesaler_id?: string | null
+        }
+        Update: {
+          ambassador_id?: string | null
+          campaign_id?: string | null
+          commission_amount?: number
+          commission_pct?: number
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          order_revenue?: number
+          paid_at?: string | null
+          status?: string | null
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_partner_earnings_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "dd_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_marketplace_order_timeline"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_supplier_map_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_performance_summary"
+            referencedColumns: ["vendor_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_partner_wholesaler_links: {
+        Row: {
+          agreement_signed_at: string | null
+          ambassador_id: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          revenue_share_pct: number | null
+          status: string | null
+          total_earned: number | null
+          total_orders: number | null
+          total_revenue_generated: number | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          agreement_signed_at?: string | null
+          ambassador_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          revenue_share_pct?: number | null
+          status?: string | null
+          total_earned?: number | null
+          total_orders?: number | null
+          total_revenue_generated?: number | null
+          wholesaler_id?: string | null
+        }
+        Update: {
+          agreement_signed_at?: string | null
+          ambassador_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          revenue_share_pct?: number | null
+          status?: string | null
+          total_earned?: number | null
+          total_orders?: number | null
+          total_revenue_generated?: number | null
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_partner_wholesaler_links_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_wholesaler_links_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_wholesaler_links_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_partner_wholesaler_links_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_wholesaler_links_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_supplier_map_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_partner_wholesaler_links_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_partner_wholesaler_links_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_performance_summary"
+            referencedColumns: ["vendor_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_wholesaler_links_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_wholesaler_links_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_wholesaler_links_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
             referencedColumns: ["id"]
           },
         ]
@@ -62749,6 +63137,8 @@ export type Database = {
           affiliate_id: string | null
           ambassador_id: string | null
           billing_address: Json | null
+          campaign_id: string | null
+          campaign_wholesaler_id: string | null
           created_at: string | null
           customer_email: string | null
           customer_notified_at: string | null
@@ -62787,6 +63177,8 @@ export type Database = {
           affiliate_id?: string | null
           ambassador_id?: string | null
           billing_address?: Json | null
+          campaign_id?: string | null
+          campaign_wholesaler_id?: string | null
           created_at?: string | null
           customer_email?: string | null
           customer_notified_at?: string | null
@@ -62825,6 +63217,8 @@ export type Database = {
           affiliate_id?: string | null
           ambassador_id?: string | null
           billing_address?: Json | null
+          campaign_id?: string | null
+          campaign_wholesaler_id?: string | null
           created_at?: string | null
           customer_email?: string | null
           customer_notified_at?: string | null
@@ -62893,6 +63287,55 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
             referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "dd_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_campaign_wholesaler_id_fkey"
+            columns: ["campaign_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_supplier_map_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_campaign_wholesaler_id_fkey"
+            columns: ["campaign_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_campaign_wholesaler_id_fkey"
+            columns: ["campaign_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_performance_summary"
+            referencedColumns: ["vendor_id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_campaign_wholesaler_id_fkey"
+            columns: ["campaign_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_campaign_wholesaler_id_fkey"
+            columns: ["campaign_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_campaign_wholesaler_id_fkey"
+            columns: ["campaign_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "marketplace_orders_wholesaler_id_fkey"

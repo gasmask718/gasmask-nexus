@@ -754,6 +754,7 @@ const DynastyDirectFulfillmentConsole = lazy(() => import('@/pages/dynasty-direc
 const DynastyDirectSplitConsole = lazy(() => import('@/pages/dynasty-direct/DynastyDirectSplitConsole'));
 const DynastyDirectGrabbaBridge = lazy(() => import('@/pages/dynasty-direct/DynastyDirectGrabbaBridge'));
 const DynastyDirectAffiliates = lazy(() => import('@/pages/dynasty-direct/DynastyDirectAffiliates'));
+const DDPartnerCampaigns = lazy(() => import('@/pages/dynasty-direct/DDPartnerCampaigns'));
 const DynastyDirectMessages = lazy(() => import('@/pages/dynasty-direct/DynastyDirectMessages'));
 const DynastyDirectInventory = lazy(() => import('@/pages/dynasty-direct/DynastyDirectInventory'));
 const DDStoreAccounts = lazy(() => import('@/pages/dynasty-direct/DDStoreAccounts'));
@@ -2037,6 +2038,15 @@ export default function AppRoutes() {
             </RequireRole>
           }
         />
+        <Route
+          path="/dynasty-direct/partners"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner']} showLocked>
+              <DDPartnerCampaigns />
+            </RequireRole>
+          }
+        />
+
         <Route path="/dynasty-direct/analytics" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDAnalytics /></RequireRole>} />
         <Route path="/dynasty-direct/stores" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDStoreAccounts /></RequireRole>} />
         <Route path="/dynasty-direct/settings" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDSettings /></RequireRole>} />

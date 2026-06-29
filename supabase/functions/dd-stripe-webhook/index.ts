@@ -245,7 +245,121 @@ async function markOrderPaid(
   } catch (e: any) {
     console.error("[dd-webhook] referral qualify failed", e?.message);
   }
+
+  // Partner-campaign earnings (ambassador ↔ wholesaler revenue share).
+  try {
+    const { data: ordCamp } = await supabase
+      .from("marketplace_orders")
+      .select("id, total, campaign_id, campaign_wholesaler_id")
+      .eq("id", orderId)
+      .maybeSingle();
+    const oc = ordCamp as {
+      id: string;
+      total: number | null;
+      campaign_id: string | null;
+      campaign_wholesaler_id: string | null;
+    } | null;
+    if (oc?.campaign_id) {
+      const { data: camp } = await supabase
+        .from("dd_campaigns")
+        .select("id, name, ambassador_id, commission_override_pct, partner_wholesaler_link_id, total_orders, total_revenue, total_commission")
+        .eq("id", oc.campaign_id)
+        .maybeSingle();
+      const c = camp as any;
+      if (c) {
+        let sharePct: number | null = c.commission_override_pct ?? null;
+        let linkRow: any = null;
+        if (c.partner_wholesaler_link_id) {
+          const { data: link } = await supabase
+            .from("dd_partner_wholesaler_links")
+            .select("id, revenue_share_pct, ambassador_id, total_orders, total_revenue_generated, total_earned")
+            .eq("id", c.partner_wholesaler_link_id)
+            .maybeSingle();
+          linkRow = link;
+          if (sharePct == null && link?.revenue_share_pct != null) {
+            sharePct = Number(link.revenue_share_pct);
+          }
+        }
+        const pct = Number(sharePct ?? 10);
+        const revenue = Number(oc.total ?? 0);
+        const commission = Math.round(revenue * pct) / 100;
+
+        await supabase.from("dd_partner_earnings").insert({
+          ambassador_id: c.ambassador_id ?? linkRow?.ambassador_id ?? null,
+          wholesaler_id: oc.campaign_wholesaler_id ?? null,
+          campaign_id: c.id,
+          order_id: orderId,
+          order_revenue: revenue,
+          commission_pct: pct,
+          commission_amount: commission,
+          status: "pending",
+        });
+
+        await supabase
+          .from("dd_campaigns")
+          .update({
+            total_orders: (c.total_orders ?? 0) + 1,
+            total_revenue: Number(c.total_revenue ?? 0) + revenue,
+            total_commission: Number(c.total_commission ?? 0) + commission,
+          })
+          .eq("id", c.id);
+
+        if (linkRow?.id) {
+          await supabase
+            .from("dd_partner_wholesaler_links")
+            .update({
+              total_orders: (linkRow.total_orders ?? 0) + 1,
+              total_revenue_generated: Number(linkRow.total_revenue_generated ?? 0) + revenue,
+              total_earned: Number(linkRow.total_earned ?? 0) + commission,
+            })
+            .eq("id", linkRow.id);
+        }
+
+        // SMS the ambassador (best-effort)
+        try {
+          const ambId = c.ambassador_id ?? linkRow?.ambassador_id ?? null;
+          if (ambId) {
+            const { data: amb } = await supabase
+              .from("ambassadors")
+              .select("user_id, name")
+              .eq("id", ambId)
+              .maybeSingle();
+            const ambUid = (amb as any)?.user_id ?? null;
+            let phone: string | null = null;
+            if (ambUid) {
+              const { data: prof } = await supabase
+                .from("profiles")
+                .select("phone")
+                .eq("id", ambUid)
+                .maybeSingle();
+              phone = (prof as any)?.phone ?? null;
+            }
+            const TWILIO_SID = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
+
+            const TWILIO_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
+            const TWILIO_FROM = Deno.env.get("TWILIO_FROM_NUMBER") ?? "";
+            if (phone && TWILIO_SID && TWILIO_TOKEN && TWILIO_FROM) {
+              const totalEarned = Number(linkRow?.total_earned ?? 0) + commission;
+              const msg = `💰 Campaign sale!\n${c.name} generated $${revenue.toFixed(2)}\nYou earned: $${commission.toFixed(2)}\nTotal earned: $${totalEarned.toFixed(2)}`;
+              const auth = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`);
+              await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
+                method: "POST",
+                headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ To: phone, From: TWILIO_FROM, Body: msg }),
+              }).catch((e) => console.error("[dd-webhook] partner sms failed", e?.message));
+            }
+          }
+        } catch (e: any) {
+          console.error("[dd-webhook] partner sms block failed", e?.message);
+        }
+      }
+    }
+  } catch (e: any) {
+    console.error("[dd-webhook] partner earnings failed", e?.message);
+  }
+
   console.log(`[dd-webhook] order ${orderId} marked paid`);
+
 
   // Fire customer "confirmed" notification (non-blocking).
   try {

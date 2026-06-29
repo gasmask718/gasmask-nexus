@@ -200,6 +200,25 @@ serve(async (req) => {
         throw new Error("guest_user_not_configured");
       }
 
+      // Resolve campaign routing (optional). If campaign_code is present and
+      // the campaign is active, we stamp campaign_id + campaign_wholesaler_id
+      // onto the order so dd-grabba-bridge routes fulfillment to the partner
+      // wholesaler and dd-stripe-webhook can credit partner earnings.
+      let campaignId: string | null = null;
+      let campaignWholesalerId: string | null = null;
+      const campaignCode: string | null = body?.campaign_code ?? null;
+      if (campaignCode) {
+        const { data: camp } = await supabase
+          .from("dd_campaigns")
+          .select("id, preferred_wholesaler_id, status, ends_at")
+          .eq("campaign_code", campaignCode)
+          .maybeSingle();
+        if (camp && camp.status === "active" && (!camp.ends_at || new Date(camp.ends_at) > new Date())) {
+          campaignId = camp.id as string;
+          campaignWholesalerId = (camp.preferred_wholesaler_id as string | null) ?? null;
+        }
+      }
+
       // PRE-CREATE pending order (mirrors hosted path; matches connect-webhook
       // expectation that pi.metadata.order_id resolves to an existing order).
       const wholesalerIds = Array.from(new Set(picks.map((p) => p.wholesaler_id)));
@@ -216,7 +235,10 @@ serve(async (req) => {
         customer_email: body.payer?.email ?? null,
         customer_phone: body.payer?.phone ?? null,
         shipping_address: shipping ?? null,
+        campaign_id: campaignId,
+        campaign_wholesaler_id: campaignWholesalerId,
       };
+
 
       const { data: orderRow, error: orderErr } = await supabase
         .from("marketplace_orders")
@@ -319,6 +341,26 @@ serve(async (req) => {
     if (order.payment_status === "paid") {
       return json({ error: "Order already paid" }, 400);
     }
+
+    // Stamp campaign on the existing order if a campaign_code was passed.
+    const hostedCampaignCode: string | null = body?.campaign_code ?? null;
+    if (hostedCampaignCode) {
+      const { data: camp } = await supabase
+        .from("dd_campaigns")
+        .select("id, preferred_wholesaler_id, status, ends_at")
+        .eq("campaign_code", hostedCampaignCode)
+        .maybeSingle();
+      if (camp && camp.status === "active" && (!camp.ends_at || new Date(camp.ends_at) > new Date())) {
+        await supabase
+          .from("marketplace_orders")
+          .update({
+            campaign_id: camp.id,
+            campaign_wholesaler_id: camp.preferred_wholesaler_id ?? null,
+          })
+          .eq("id", order.id);
+      }
+    }
+
 
     const { data: items } = await supabase
       .from("marketplace_order_items")

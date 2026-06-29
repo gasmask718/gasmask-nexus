@@ -58,10 +58,12 @@ serve(async (req) => {
       return json({ error: "order has no items" }, 400);
     }
 
-    // 4) Group by wholesaler
+    // 4) Group by wholesaler. If the order has a campaign_wholesaler_id, ALL
+    //    items route to that supplier (partner campaign override).
+    const campaignWid = (order as any).campaign_wholesaler_id as string | null | undefined;
     const groups: Record<string, any[]> = {};
     for (const it of items) {
-      const wid = (it as any).wholesaler_id ?? "unassigned";
+      const wid = campaignWid || ((it as any).wholesaler_id ?? "unassigned");
       groups[wid] = groups[wid] ?? [];
       groups[wid].push({
         product_id: (it as any).product_id,
@@ -70,6 +72,7 @@ serve(async (req) => {
         price_each: (it as any).price_each,
       });
     }
+
 
     const customerName =
       (order.shipping_address as any)?.name ?? order.customer_email ?? "Unknown";
