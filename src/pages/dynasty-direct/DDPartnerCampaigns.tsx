@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Handshake, Megaphone, DollarSign, Copy, Loader2 } from "lucide-react";
+import { Handshake, Megaphone, DollarSign, Copy, Loader2, Banknote } from "lucide-react";
 
 const PUBLIC_ORIGIN = (typeof window !== "undefined" && window.location.origin.includes("dynastydirect"))
   ? window.location.origin
@@ -87,10 +87,12 @@ export default function DDPartnerCampaigns() {
           <TabsTrigger value="links"><Handshake className="w-4 h-4 mr-1" /> Partner Links</TabsTrigger>
           <TabsTrigger value="campaigns"><Megaphone className="w-4 h-4 mr-1" /> Campaigns</TabsTrigger>
           <TabsTrigger value="earnings"><DollarSign className="w-4 h-4 mr-1" /> Earnings</TabsTrigger>
+          <TabsTrigger value="settlement"><Banknote className="w-4 h-4 mr-1" /> Settlement</TabsTrigger>
         </TabsList>
         <TabsContent value="links"><PartnerLinksTab /></TabsContent>
         <TabsContent value="campaigns"><CampaignsTab /></TabsContent>
         <TabsContent value="earnings"><EarningsTab /></TabsContent>
+        <TabsContent value="settlement"><SettlementTab /></TabsContent>
       </Tabs>
     </div>
   );
