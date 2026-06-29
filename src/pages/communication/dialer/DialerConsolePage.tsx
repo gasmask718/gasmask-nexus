@@ -117,7 +117,7 @@ export default function DialerConsolePage() {
         .from('dialer_disposition_codes')
         .select('*')
         .eq('is_current', true)
-        .order('category');
+        .order('display_number', { ascending: true });
       return (data || []) as DispositionCode[];
     },
   });
