@@ -15,9 +15,10 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { CreditAccountPanel, OverdueCreditAlert } from "@/components/dynasty-direct/CreditAccountPanel";
 import { LoyaltyPanel } from "@/components/dynasty-direct/LoyaltyPanel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Store, Plus, Eye, Edit, Ban, ClipboardList } from "lucide-react";
+import { Store, Plus, Eye, Edit, Ban, ClipboardList, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import AdminProSubscriptionPanel from "@/components/dynasty-direct/AdminProSubscriptionPanel";
 
 type StoreAccount = {
   id: string;
