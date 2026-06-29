@@ -252,6 +252,9 @@ export default function StoreDashboard() {
           </Card>
         </div>
 
+        {/* Dynasty Direct Pro */}
+        {user?.id && <DDProPanel userId={user.id} storeAccountId={storeAccount?.id ?? null} />}
+
         {/* Auto-Reorder Subscriptions */}
         {user?.id && <StoreSubscriptionsTab userId={user.id} />}
 
