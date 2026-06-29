@@ -27,7 +27,10 @@ export default function CEODashboardPage() {
     monthlyTarget: 1000000, monthlyProgress: 0, dailyTarget: 33333,
     monthlyRecurring: 0, totalActiveClients: 0, serviceBreakdown: {},
     avgLTV: 0, industryPerformance: [],
-  };
+    aiDialsToday: 0, humanDialsToday: 0, leadsWorkedToday: 0,
+    textsToday: 0, closesToday: 0, leadsAssigned: 0, leadsUnassigned: 0,
+  } as any;
+
 
   const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
 
