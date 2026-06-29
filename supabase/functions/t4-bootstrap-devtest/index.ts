@@ -11,8 +11,10 @@ Deno.serve(async (req) => {
 
   try {
     const { password, bootstrap_token } = await req.json();
-    if (bootstrap_token !== Deno.env.get("T4_BOOTSTRAP_TOKEN")) {
-      return new Response(JSON.stringify({ error: "forbidden" }), {
+    const expected = Deno.env.get("T4_BOOTSTRAP_TOKEN") ?? "";
+    if (bootstrap_token !== expected) {
+      console.log("token mismatch", { got_len: (bootstrap_token ?? "").length, expected_len: expected.length });
+      return new Response(JSON.stringify({ error: "forbidden", got_len: (bootstrap_token ?? "").length, expected_len: expected.length }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
