@@ -83,11 +83,21 @@ export default function CEODashboardPage() {
 
       {/* Operational KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <MetricCard icon={Users} label="Leads Today" value={stats.leadsToday} sub={`${stats.totalLeads} total`} color="text-blue-500" />
-        <MetricCard icon={Phone} label="Calls Today" value={stats.callsToday} sub={`${stats.pendingQueue} in queue`} color="text-green-500" />
-        <MetricCard icon={TrendingUp} label="Close Rate" value={`${stats.closeRate.toFixed(1)}%`} sub={`${stats.closedDeals} deals closed`} color="text-purple-500" />
-        <MetricCard icon={Zap} label="Queue Active" value={stats.pendingQueue} sub="Leads waiting" color="text-red-500" />
+        <MetricCard icon={Users} label="Total Leads" value={stats.totalLeads} sub={`${stats.leadsToday} added today`} color="text-blue-500" />
+        <MetricCard icon={UserCheck} label="Assigned" value={stats.leadsAssigned} sub={`${stats.leadsUnassigned} unassigned`} color="text-emerald-500" />
+        <MetricCard icon={TrendingUp} label="Close Rate (Today)" value={`${stats.closeRate.toFixed(1)}%`} sub={`${stats.closedDeals} total closes`} color="text-purple-500" />
+        <MetricCard icon={Zap} label="Queue (Unassigned)" value={stats.leadsUnassigned} sub="Leads waiting" color="text-red-500" />
       </div>
+
+      {/* Today's Activity (T5) */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <MetricCard icon={Bot} label="AI Dials Today" value={stats.aiDialsToday} sub="brandaro_ai_calls" color="text-cyan-500" />
+        <MetricCard icon={Phone} label="Human Dials Today" value={stats.humanDialsToday} sub="va_call_logs" color="text-green-500" />
+        <MetricCard icon={Users} label="Leads Worked Today" value={stats.leadsWorkedToday} sub="Distinct lead_id" color="text-blue-500" />
+        <MetricCard icon={MessageSquare} label="Texts Today" value={stats.textsToday} sub="pending_messages → sent" color="text-amber-500" />
+        <MetricCard icon={CheckCircle2} label="Closes Today" value={stats.closesToday} sub="converted = true" color="text-emerald-500" />
+      </div>
+
 
       {/* Service Breakdown + Industry Domination */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
