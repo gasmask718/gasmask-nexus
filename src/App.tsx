@@ -19,6 +19,7 @@ import { MaintenanceGuard } from "./components/MaintenanceGuard";
 import { VACallWidget } from "./components/va/VACallWidget";
 import { GlobalTrainingHelp } from "./components/training/GlobalTrainingHelp";
 import { RefCapture } from "./components/dynasty-direct/RefCapture";
+import { FlashSaleBanner } from "./components/FlashSaleBanner";
 
 import './modules';
 import AppRoutes from './routes/AppRoutes';
