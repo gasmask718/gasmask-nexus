@@ -238,7 +238,7 @@ export default function StoreDashboard() {
         {user?.id && (
           <StoreReferralCard
             userId={user.id}
-            storeId={profile?.id ?? null}
+            storeId={null}
             referrerName={profile?.store_name ?? null}
           />
         )}
