@@ -55,15 +55,27 @@ export const NextStopNavigator: React.FC<Props> = ({ role, height = 380 }) => {
     queryKey: ['ambassador-next-store', user?.id],
     enabled: role === 'ambassador' && !!user?.id,
     queryFn: async () => {
+      // Resolve the ambassador row for this auth user
+      const { data: amb, error: ambErr } = await supabase
+        .from('ambassadors')
+        .select('id')
+        .eq('user_id', user!.id)
+        .maybeSingle();
+      if (ambErr) throw ambErr;
+      if (!amb?.id) return null;
+
       const { data: assignments, error } = await supabase
-        .from('ambassador_store_assignments')
-        .select('store_id, store:store_master!store_id(store_id, store_name)')
-        .eq('ambassador_id', user!.id)
+        .from('ambassador_assignments')
+        .select('store_id')
+        .eq('ambassador_id', amb.id)
+        .eq('active', true)
         .not('store_id', 'is', null)
-        .limit(25);
+        .limit(50);
       if (error) throw error;
 
-      const ids = (assignments || []).map((a: any) => a.store_id);
+      const ids = (assignments || [])
+        .map((a: { store_id: string | null }) => a.store_id)
+        .filter((v): v is string => !!v);
       if (!ids.length) return null;
 
       const { data: coords, error: cErr } = await supabase
@@ -75,7 +87,7 @@ export const NextStopNavigator: React.FC<Props> = ({ role, height = 380 }) => {
         .limit(1);
       if (cErr) throw cErr;
 
-      const s: any = coords?.[0];
+      const s = coords?.[0] as { store_name: string | null; lat: number | string; lng: number | string } | undefined;
       if (!s) return null;
       return {
         lat: Number(s.lat),
