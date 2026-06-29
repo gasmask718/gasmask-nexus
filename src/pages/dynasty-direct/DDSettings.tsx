@@ -119,6 +119,24 @@ export default function DDSettings() {
             onSave={(v) => save.mutate({ dispute_auto_submit: v })} />
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">💳 Credit Terms (Checkout)</CardTitle></CardHeader>
+        <CardContent className="text-sm space-y-2 text-muted-foreground">
+          <p>
+            Credit terms checkout is controlled on the public site (project <code>fbd8844c</code>).
+          </p>
+          <p>When a store with Net 15 / 30 / 60 terms checks out:</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li><code>CheckoutPage</code> checks the user's payment terms via <code>dd_credit_accounts</code>.</li>
+            <li>If terms are net15/net30/net60 AND status = active, show <strong>Pay on Credit Terms</strong> alongside card payment.</li>
+            <li>On selection: skip Stripe, call <code>dd_charge_credit</code> RPC, create order with <code>payment_method='net30'</code> and <code>status='pending_payment'</code>.</li>
+            <li>Order fulfills immediately.</li>
+            <li>Invoice is sent with the due date returned by the RPC.</li>
+            <li>Public site dev must wire this into <code>CheckoutPage.tsx</code>.</li>
+          </ol>
+        </CardContent>
+      </Card>
     </div>
   );
 }

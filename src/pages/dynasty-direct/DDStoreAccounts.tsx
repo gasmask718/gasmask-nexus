@@ -9,9 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { CreditAccountPanel, OverdueCreditAlert } from "@/components/dynasty-direct/CreditAccountPanel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Store, Plus, Eye, Edit, Ban, ClipboardList } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -120,6 +121,8 @@ export default function DDStoreAccounts() {
           <Plus className="w-4 h-4 mr-2" /> Add Store
         </Button>
       </div>
+
+      <OverdueCreditAlert />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard label="Total Stores" value={stats.total} />
@@ -232,23 +235,36 @@ export default function DDStoreAccounts() {
               <SheetHeader>
                 <SheetTitle>{viewing.business_name}</SheetTitle>
               </SheetHeader>
-              <div className="space-y-4 mt-6 text-sm">
-                <DetailRow k="Contact" v={viewing.contact_name} />
-                <DetailRow k="Email" v={viewing.email} />
-                <DetailRow k="Phone" v={viewing.phone} />
-                <DetailRow k="Address" v={viewing.address} />
-                <DetailRow k="City/State/Zip" v={[viewing.city, viewing.state, viewing.zip].filter(Boolean).join(", ")} />
-                <DetailRow k="Store Type" v={viewing.store_type} />
-                <DetailRow k="Pricing Tier" v={viewing.pricing_tier} />
-                <DetailRow k="Payment Terms" v={viewing.payment_terms} />
-                <DetailRow k="Credit Limit" v={`$${Number(viewing.credit_limit).toFixed(2)}`} />
-                <DetailRow k="Total Orders" v={String(viewing.total_orders)} />
-                <DetailRow k="Total Spent" v={`$${Number(viewing.total_spent).toFixed(2)}`} />
-                <DetailRow k="Avg Order Value" v={`$${Number(viewing.avg_order_value).toFixed(2)}`} />
-                <DetailRow k="Last Order" v={viewing.last_order_at ? new Date(viewing.last_order_at).toLocaleString() : "—"} />
-                <DetailRow k="Status" v={viewing.status} />
-                <DetailRow k="Notes" v={viewing.notes} />
-              </div>
+              <Tabs defaultValue="details" className="mt-6">
+                <TabsList>
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="credit">💳 Credit Account</TabsTrigger>
+                </TabsList>
+                <TabsContent value="details">
+                  <div className="space-y-4 mt-4 text-sm">
+                    <DetailRow k="Contact" v={viewing.contact_name} />
+                    <DetailRow k="Email" v={viewing.email} />
+                    <DetailRow k="Phone" v={viewing.phone} />
+                    <DetailRow k="Address" v={viewing.address} />
+                    <DetailRow k="City/State/Zip" v={[viewing.city, viewing.state, viewing.zip].filter(Boolean).join(", ")} />
+                    <DetailRow k="Store Type" v={viewing.store_type} />
+                    <DetailRow k="Pricing Tier" v={viewing.pricing_tier} />
+                    <DetailRow k="Payment Terms" v={viewing.payment_terms} />
+                    <DetailRow k="Credit Limit" v={`$${Number(viewing.credit_limit).toFixed(2)}`} />
+                    <DetailRow k="Total Orders" v={String(viewing.total_orders)} />
+                    <DetailRow k="Total Spent" v={`$${Number(viewing.total_spent).toFixed(2)}`} />
+                    <DetailRow k="Avg Order Value" v={`$${Number(viewing.avg_order_value).toFixed(2)}`} />
+                    <DetailRow k="Last Order" v={viewing.last_order_at ? new Date(viewing.last_order_at).toLocaleString() : "—"} />
+                    <DetailRow k="Status" v={viewing.status} />
+                    <DetailRow k="Notes" v={viewing.notes} />
+                  </div>
+                </TabsContent>
+                <TabsContent value="credit">
+                  <div className="mt-4">
+                    <CreditAccountPanel storeAccountId={viewing.id} />
+                  </div>
+                </TabsContent>
+              </Tabs>
             </>
           )}
         </SheetContent>
