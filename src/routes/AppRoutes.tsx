@@ -756,6 +756,10 @@ const DynastyDirectGrabbaBridge = lazy(() => import('@/pages/dynasty-direct/Dyna
 const DynastyDirectAffiliates = lazy(() => import('@/pages/dynasty-direct/DynastyDirectAffiliates'));
 const DynastyDirectMessages = lazy(() => import('@/pages/dynasty-direct/DynastyDirectMessages'));
 const DynastyDirectInventory = lazy(() => import('@/pages/dynasty-direct/DynastyDirectInventory'));
+const DDStoreAccounts = lazy(() => import('@/pages/dynasty-direct/DDStoreAccounts'));
+const DDOrderDetail = lazy(() => import('@/pages/dynasty-direct/DDOrderDetail'));
+const DDAnalytics = lazy(() => import('@/pages/dynasty-direct/DDAnalytics'));
+const DDSettings = lazy(() => import('@/pages/dynasty-direct/DDSettings'));
 const WholesalerMarketplaceInventory = lazy(() => import('@/pages/portal/wholesaler/WholesalerMarketplaceInventory'));
 const UniversalInviteAccept = lazy(() => import('@/pages/invite/UniversalInviteAccept'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
@@ -1995,7 +1999,6 @@ export default function AppRoutes() {
         <Route path="/dynasty-direct/store-storefront" element={<StorePortalPage />} />
         <Route path="/dynasty-direct/d2c-storefront" element={<Shop />} />
         <Route path="/dynasty-direct/fulfillment" element={<DynastyDirectFulfillmentConsole />} />
-        <Route path="/dynasty-direct/routing-console" element={<DynastyDirectFulfillmentConsole />} />
         <Route path="/dynasty-direct/splits" element={<DynastyDirectSplitConsole />} />
         <Route
           path="/dynasty-direct/inventory"
@@ -2007,7 +2010,6 @@ export default function AppRoutes() {
         />
         <Route path="/dynasty-direct/suppliers/portal" element={<WholesalerPortalPage />} />
         <Route path="/dynasty-direct/suppliers/inventory" element={<WholesalerPortalPage />} />
-        <Route path="/dynasty-direct/shipping" element={<MarketplaceControlTowerPage />} />
         <Route path="/dynasty-direct/grabba-bridge" element={<DynastyDirectGrabbaBridge />} />
         <Route
           path="/dynasty-direct/affiliates"
@@ -2017,7 +2019,10 @@ export default function AppRoutes() {
             </RequireRole>
           }
         />
-        <Route path="/dynasty-direct/analytics" element={<MarketplaceControlTowerPage />} />
+        <Route path="/dynasty-direct/analytics" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDAnalytics /></RequireRole>} />
+        <Route path="/dynasty-direct/stores" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDStoreAccounts /></RequireRole>} />
+        <Route path="/dynasty-direct/settings" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDSettings /></RequireRole>} />
+        <Route path="/dynasty-direct/orders/:orderId" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDOrderDetail /></RequireRole>} />
 
         {/* Marketplace Connection Pack - Dev Only, Admin/Owner */}
         <Route

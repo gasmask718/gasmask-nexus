@@ -36933,6 +36933,13 @@ export type Database = {
             foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
             columns: ["published_product_id"]
             isOneToOne: false
+            referencedRelation: "dd_low_stock_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
             referencedRelation: "products_all"
             referencedColumns: ["id"]
           },
@@ -36954,31 +36961,55 @@ export type Database = {
       }
       dd_config: {
         Row: {
+          ai_catalog_engine_enabled: boolean | null
+          auto_reorder_enabled: boolean | null
           default_margin_pct: number
           default_reserve_pct: number
           dispute_auto_submit: boolean
+          grabba_bridge_enabled: boolean | null
           id: boolean
+          inventory_sync_enabled: boolean | null
+          low_stock_threshold: number | null
           reserve_hold_days: number
+          rolling_reserve_enabled: boolean | null
+          split_pay_enabled: boolean | null
+          store_portal_enabled: boolean | null
           updated_at: string
           updated_by: string | null
           wholesaler_self_serve_enabled: boolean
         }
         Insert: {
+          ai_catalog_engine_enabled?: boolean | null
+          auto_reorder_enabled?: boolean | null
           default_margin_pct?: number
           default_reserve_pct?: number
           dispute_auto_submit?: boolean
+          grabba_bridge_enabled?: boolean | null
           id?: boolean
+          inventory_sync_enabled?: boolean | null
+          low_stock_threshold?: number | null
           reserve_hold_days?: number
+          rolling_reserve_enabled?: boolean | null
+          split_pay_enabled?: boolean | null
+          store_portal_enabled?: boolean | null
           updated_at?: string
           updated_by?: string | null
           wholesaler_self_serve_enabled?: boolean
         }
         Update: {
+          ai_catalog_engine_enabled?: boolean | null
+          auto_reorder_enabled?: boolean | null
           default_margin_pct?: number
           default_reserve_pct?: number
           dispute_auto_submit?: boolean
+          grabba_bridge_enabled?: boolean | null
           id?: boolean
+          inventory_sync_enabled?: boolean | null
+          low_stock_threshold?: number | null
           reserve_hold_days?: number
+          rolling_reserve_enabled?: boolean | null
+          split_pay_enabled?: boolean | null
+          store_portal_enabled?: boolean | null
           updated_at?: string
           updated_by?: string | null
           wholesaler_self_serve_enabled?: boolean
@@ -37022,6 +37053,13 @@ export type Database = {
             columns: ["brief_id"]
             isOneToOne: false
             referencedRelation: "dd_content_briefs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_content_assets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dd_low_stock_products"
             referencedColumns: ["id"]
           },
           {
@@ -37102,6 +37140,13 @@ export type Database = {
             columns: ["draft_id"]
             isOneToOne: false
             referencedRelation: "dd_catalog_drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_content_briefs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dd_low_stock_products"
             referencedColumns: ["id"]
           },
           {
@@ -37278,6 +37323,51 @@ export type Database = {
           },
         ]
       }
+      dd_grabba_sync: {
+        Row: {
+          attempt_count: number | null
+          created_at: string | null
+          customer_name: string | null
+          delivery_address: Json | null
+          id: string
+          items: Json | null
+          last_error: string | null
+          marketplace_order_id: string
+          status: string | null
+          synced_at: string | null
+          updated_at: string | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          attempt_count?: number | null
+          created_at?: string | null
+          customer_name?: string | null
+          delivery_address?: Json | null
+          id?: string
+          items?: Json | null
+          last_error?: string | null
+          marketplace_order_id: string
+          status?: string | null
+          synced_at?: string | null
+          updated_at?: string | null
+          wholesaler_id?: string | null
+        }
+        Update: {
+          attempt_count?: number | null
+          created_at?: string | null
+          customer_name?: string | null
+          delivery_address?: Json | null
+          id?: string
+          items?: Json | null
+          last_error?: string | null
+          marketplace_order_id?: string
+          status?: string | null
+          synced_at?: string | null
+          updated_at?: string | null
+          wholesaler_id?: string | null
+        }
+        Relationships: []
+      }
       dd_inventory_adjustments: {
         Row: {
           actor_id: string | null
@@ -37325,6 +37415,13 @@ export type Database = {
           wholesaler_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "dd_inventory_adjustments_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dd_low_stock_products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "dd_inventory_adjustments_product_id_fkey"
             columns: ["product_id"]
@@ -37378,6 +37475,13 @@ export type Database = {
           product_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "dd_product_margin_overrides_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "dd_low_stock_products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "dd_product_margin_overrides_product_id_fkey"
             columns: ["product_id"]
@@ -37569,6 +37673,13 @@ export type Database = {
             columns: ["pinned_wholesaler_id"]
             isOneToOne: false
             referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_routing_pins_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dd_low_stock_products"
             referencedColumns: ["id"]
           },
           {
@@ -61140,6 +61251,13 @@ export type Database = {
             foreignKeyName: "marketplace_inventory_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "dd_low_stock_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_inventory_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products_all"
             referencedColumns: ["id"]
           },
@@ -72800,6 +72918,13 @@ export type Database = {
             foreignKeyName: "pricing_tiers_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "dd_low_stock_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products_all"
             referencedColumns: ["id"]
           },
@@ -73339,6 +73464,13 @@ export type Database = {
           visitor_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "product_views_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dd_low_stock_products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "product_views_product_id_fkey"
             columns: ["product_id"]
@@ -76097,6 +76229,7 @@ export type Database = {
           id: string
           images: Json | null
           inventory_qty: number | null
+          low_stock_threshold: number | null
           processing_time: string | null
           product_name: string
           retail_price: number | null
@@ -76105,6 +76238,7 @@ export type Database = {
           status: string | null
           store_price: number | null
           street_price: number | null
+          track_inventory: boolean | null
           unit_type: string | null
           updated_at: string | null
           weight_oz: number | null
@@ -76120,6 +76254,7 @@ export type Database = {
           id?: string
           images?: Json | null
           inventory_qty?: number | null
+          low_stock_threshold?: number | null
           processing_time?: string | null
           product_name: string
           retail_price?: number | null
@@ -76128,6 +76263,7 @@ export type Database = {
           status?: string | null
           store_price?: number | null
           street_price?: number | null
+          track_inventory?: boolean | null
           unit_type?: string | null
           updated_at?: string | null
           weight_oz?: number | null
@@ -76143,6 +76279,7 @@ export type Database = {
           id?: string
           images?: Json | null
           inventory_qty?: number | null
+          low_stock_threshold?: number | null
           processing_time?: string | null
           product_name?: string
           retail_price?: number | null
@@ -76151,6 +76288,7 @@ export type Database = {
           status?: string | null
           store_price?: number | null
           street_price?: number | null
+          track_inventory?: boolean | null
           unit_type?: string | null
           updated_at?: string | null
           weight_oz?: number | null
@@ -79320,6 +79458,13 @@ export type Database = {
             foreignKeyName: "review_summaries_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: true
+            referencedRelation: "dd_low_stock_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_summaries_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
             referencedRelation: "products_all"
             referencedColumns: ["id"]
           },
@@ -79353,6 +79498,13 @@ export type Database = {
           product_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "review_summary_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "dd_low_stock_products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "review_summary_jobs_product_id_fkey"
             columns: ["product_id"]
@@ -89327,6 +89479,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      store_accounts: {
+        Row: {
+          address: string | null
+          ambassador_id: string | null
+          avg_order_value: number | null
+          business_name: string
+          city: string | null
+          contact_name: string | null
+          created_at: string | null
+          credit_limit: number | null
+          email: string | null
+          id: string
+          last_order_at: string | null
+          notes: string | null
+          payment_terms: string | null
+          phone: string | null
+          pricing_tier: string | null
+          state: string | null
+          status: string | null
+          store_type: string | null
+          total_orders: number | null
+          total_spent: number | null
+          updated_at: string | null
+          user_id: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          ambassador_id?: string | null
+          avg_order_value?: number | null
+          business_name: string
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          credit_limit?: number | null
+          email?: string | null
+          id?: string
+          last_order_at?: string | null
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          pricing_tier?: string | null
+          state?: string | null
+          status?: string | null
+          store_type?: string | null
+          total_orders?: number | null
+          total_spent?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          ambassador_id?: string | null
+          avg_order_value?: number | null
+          business_name?: string
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          credit_limit?: number | null
+          email?: string | null
+          id?: string
+          last_order_at?: string | null
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          pricing_tier?: string | null
+          state?: string | null
+          status?: string | null
+          store_type?: string | null
+          total_orders?: number | null
+          total_spent?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          zip?: string | null
+        }
+        Relationships: []
       }
       store_ai_insights: {
         Row: {
@@ -117103,6 +117333,44 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_low_stock_products: {
+        Row: {
+          id: string | null
+          inventory_qty: number | null
+          is_low: boolean | null
+          low_stock_threshold: number | null
+          name: string | null
+          status: string | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          id?: string | null
+          inventory_qty?: number | null
+          is_low?: never
+          low_stock_threshold?: number | null
+          name?: string | null
+          status?: string | null
+          wholesaler_id?: string | null
+        }
+        Update: {
+          id?: string | null
+          inventory_qty?: number | null
+          is_low?: never
+          low_stock_threshold?: number | null
+          name?: string | null
+          status?: string | null
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_all_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_wholesaler_grabba_orders: {
         Row: {
           boxes: number | null
@@ -123336,6 +123604,15 @@ export type Database = {
         }
         Returns: Json
       }
+      dd_decrement_inventory: {
+        Args: {
+          p_order_id: string
+          p_product_id: string
+          p_quantity: number
+          p_reason?: string
+        }
+        Returns: undefined
+      }
       dd_get_effective_margin_pct: {
         Args: { p_product_id: string; p_wholesaler_id: string }
         Returns: number
@@ -123373,6 +123650,7 @@ export type Database = {
           id: string
           images: Json | null
           inventory_qty: number | null
+          low_stock_threshold: number | null
           processing_time: string | null
           product_name: string
           retail_price: number | null
@@ -123381,6 +123659,7 @@ export type Database = {
           status: string | null
           store_price: number | null
           street_price: number | null
+          track_inventory: boolean | null
           unit_type: string | null
           updated_at: string | null
           weight_oz: number | null
@@ -123406,6 +123685,10 @@ export type Database = {
       dd_resolve_order_recipient: {
         Args: { p_customer_email: string; p_user_id: string }
         Returns: string
+      }
+      dd_restock_inventory: {
+        Args: { p_order_id: string; p_product_id: string; p_quantity: number }
+        Returns: undefined
       }
       dd_set_inventory_threshold: {
         Args: {
