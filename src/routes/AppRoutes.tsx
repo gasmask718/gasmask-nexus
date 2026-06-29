@@ -754,6 +754,7 @@ const DynastyDirectFulfillmentConsole = lazy(() => import('@/pages/dynasty-direc
 const DynastyDirectSplitConsole = lazy(() => import('@/pages/dynasty-direct/DynastyDirectSplitConsole'));
 const DynastyDirectGrabbaBridge = lazy(() => import('@/pages/dynasty-direct/DynastyDirectGrabbaBridge'));
 const DynastyDirectAffiliates = lazy(() => import('@/pages/dynasty-direct/DynastyDirectAffiliates'));
+const DDPartnerCampaigns = lazy(() => import('@/pages/dynasty-direct/DDPartnerCampaigns'));
 const DynastyDirectMessages = lazy(() => import('@/pages/dynasty-direct/DynastyDirectMessages'));
 const DynastyDirectInventory = lazy(() => import('@/pages/dynasty-direct/DynastyDirectInventory'));
 const DDStoreAccounts = lazy(() => import('@/pages/dynasty-direct/DDStoreAccounts'));
