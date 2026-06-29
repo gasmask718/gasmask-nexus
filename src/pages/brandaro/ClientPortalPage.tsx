@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Users, Globe, DollarSign, Loader2, CreditCard, Shield, Settings, TrendingUp } from 'lucide-react';
+import { BuilderAssignControl } from '@/components/brandaro/BuilderAssignControl';
 
 interface Client {
   id: string;
@@ -19,7 +20,9 @@ interface Client {
   maintenance_status: string | null;
   monthly_revenue: number | null;
   created_at: string;
+  assigned_builder: string | null;
 }
+
 
 interface Subscription {
   id: string;
