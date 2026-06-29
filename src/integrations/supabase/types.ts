@@ -123456,6 +123456,8 @@ export type Database = {
           store_name: string
         }[]
       }
+      dev_can_see_client: { Args: { _client_id: string }; Returns: boolean }
+      dev_can_see_project: { Args: { _project_id: string }; Returns: boolean }
       dialer_claim_watchdog: { Args: { p_business_id: string }; Returns: Json }
       dialer_stuck_call_sweep: {
         Args: never
