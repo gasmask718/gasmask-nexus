@@ -7,6 +7,9 @@ import { useStoreProfile } from "@/services/store/useStoreProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import StoreReferralCard from "@/components/dynasty-direct/StoreReferralCard";
 import StoreSubscriptionsTab from "@/components/dynasty-direct/StoreSubscriptionsTab";
+import DDProPanel from "@/components/dynasty-direct/DDProPanel";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import {
   ShoppingCart,
   Package,
@@ -25,6 +28,20 @@ export default function StoreDashboard() {
   const { profile } = useStoreProfile();
   const { data: stats, isLoading: statsLoading } = useStoreStats();
   const { data: orders, isLoading: ordersLoading } = useStoreOrders();
+
+  const { data: storeAccount } = useQuery({
+    queryKey: ["store-account-for-user", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("store_accounts")
+        .select("id")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) return null;
+      return data as { id: string } | null;
+    },
+  });
 
   const recentOrders = orders?.slice(0, 5) || [];
 
@@ -234,6 +251,9 @@ export default function StoreDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Dynasty Direct Pro */}
+        {user?.id && <DDProPanel userId={user.id} storeAccountId={storeAccount?.id ?? null} />}
 
         {/* Auto-Reorder Subscriptions */}
         {user?.id && <StoreSubscriptionsTab userId={user.id} />}

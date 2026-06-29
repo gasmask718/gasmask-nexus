@@ -15,9 +15,10 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { CreditAccountPanel, OverdueCreditAlert } from "@/components/dynasty-direct/CreditAccountPanel";
 import { LoyaltyPanel } from "@/components/dynasty-direct/LoyaltyPanel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Store, Plus, Eye, Edit, Ban, ClipboardList } from "lucide-react";
+import { Store, Plus, Eye, Edit, Ban, ClipboardList, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import AdminProSubscriptionPanel from "@/components/dynasty-direct/AdminProSubscriptionPanel";
 
 type StoreAccount = {
   id: string;
@@ -41,6 +42,7 @@ type StoreAccount = {
   notes: string | null;
   credit_limit: number;
   created_at: string;
+  user_id?: string | null;
 };
 
 const statusColor: Record<string, string> = {
@@ -69,6 +71,28 @@ export default function DDStoreAccounts() {
     },
   });
 
+  const { data: proSubs = [] } = useQuery({
+    queryKey: ["dd-pro-sub-stats"],
+    queryFn: async (): Promise<Array<{ store_account_id: string | null; status: string; monthly_price: number; cancelled_at: string | null }>> => {
+      const { data, error } = await (supabase as any)
+        .from("dd_pro_subscriptions")
+        .select("store_account_id,status,monthly_price,cancelled_at");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const proStats = useMemo(() => {
+    const active = proSubs.filter((s) => s.status === "active");
+    const trial = proSubs.filter((s) => s.status === "trial");
+    const mrr = active.reduce((sum, s) => sum + Number(s.monthly_price || 0), 0);
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const churned = proSubs.filter((s) => s.status === "cancelled" && s.cancelled_at && new Date(s.cancelled_at) >= monthStart).length;
+    const activeStoreIds = new Set(active.map((s) => s.store_account_id).filter(Boolean) as string[]);
+    return { activeCount: active.length, trialCount: trial.length, mrr, churned, activeStoreIds };
+  }, [proSubs]);
+
   const stats = useMemo(() => {
     const active = stores.filter((s) => s.status === "active").length;
     const revenue = stores.reduce((sum, s) => sum + Number(s.total_spent || 0), 0);
@@ -79,7 +103,11 @@ export default function DDStoreAccounts() {
 
   const filtered = useMemo(() => {
     return stores.filter((s) => {
-      if (statusTab !== "all" && s.status !== statusTab) return false;
+      if (statusTab === "pro") {
+        if (!proStats.activeStoreIds.has(s.id)) return false;
+      } else if (statusTab !== "all" && s.status !== statusTab) {
+        return false;
+      }
       if (filter) {
         const q = filter.toLowerCase();
         return (
@@ -89,7 +117,7 @@ export default function DDStoreAccounts() {
       }
       return true;
     });
-  }, [stores, filter, statusTab]);
+  }, [stores, filter, statusTab, proStats.activeStoreIds]);
 
   const suspend = useMutation({
     mutationFn: async (id: string) => {
@@ -132,6 +160,26 @@ export default function DDStoreAccounts() {
         <StatCard label="Avg Order" value={`$${stats.aov.toFixed(2)}`} />
       </div>
 
+      <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 border-amber-500/30">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-amber-500" />
+              <div>
+                <div className="text-sm font-semibold">Dynasty Direct Pro Revenue</div>
+                <div className="text-xs text-muted-foreground">$97/mo subscription program</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-6 text-sm">
+              <div><div className="text-xs uppercase text-muted-foreground">Active subs</div><div className="text-xl font-bold">{proStats.activeCount}</div></div>
+              <div><div className="text-xs uppercase text-muted-foreground">MRR</div><div className="text-xl font-bold">${proStats.mrr.toFixed(0)}</div></div>
+              <div><div className="text-xs uppercase text-muted-foreground">Trials</div><div className="text-xl font-bold">{proStats.trialCount}</div></div>
+              <div><div className="text-xs uppercase text-muted-foreground">Churned</div><div className="text-xl font-bold">{proStats.churned}</div></div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
@@ -141,6 +189,7 @@ export default function DDStoreAccounts() {
                 <TabsTrigger value="active">Active</TabsTrigger>
                 <TabsTrigger value="pending">Pending</TabsTrigger>
                 <TabsTrigger value="suspended">Suspended</TabsTrigger>
+                <TabsTrigger value="pro">⭐ Pro Subscribers ({proStats.activeCount})</TabsTrigger>
               </TabsList>
             </Tabs>
             <Input
@@ -242,6 +291,7 @@ export default function DDStoreAccounts() {
                   <TabsTrigger value="credit">💳 Credit Account</TabsTrigger>
                   <TabsTrigger value="loyalty">🏆 Loyalty</TabsTrigger>
                   <TabsTrigger value="delivery">🚗 Delivery</TabsTrigger>
+                  <TabsTrigger value="pro">📊 Pro</TabsTrigger>
                 </TabsList>
                 <TabsContent value="details">
                   <div className="space-y-4 mt-4 text-sm">
@@ -272,6 +322,9 @@ export default function DDStoreAccounts() {
                 </TabsContent>
                 <TabsContent value="delivery">
                   <DeliveryPreferencesPanel storeAccountId={viewing.id} />
+                </TabsContent>
+                <TabsContent value="pro">
+                  <AdminProSubscriptionPanel storeAccountId={viewing.id} storeUserId={viewing.user_id ?? null} />
                 </TabsContent>
               </Tabs>
             </>
