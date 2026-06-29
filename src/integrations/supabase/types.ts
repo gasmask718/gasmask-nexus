@@ -37453,6 +37453,8 @@ export type Database = {
           last_error: string | null
           marketplace_order_id: string
           status: string | null
+          supplier_notified: boolean
+          supplier_notified_at: string | null
           synced_at: string | null
           updated_at: string | null
           wholesaler_id: string | null
@@ -37467,6 +37469,8 @@ export type Database = {
           last_error?: string | null
           marketplace_order_id: string
           status?: string | null
+          supplier_notified?: boolean
+          supplier_notified_at?: string | null
           synced_at?: string | null
           updated_at?: string | null
           wholesaler_id?: string | null
@@ -37481,6 +37485,8 @@ export type Database = {
           last_error?: string | null
           marketplace_order_id?: string
           status?: string | null
+          supplier_notified?: boolean
+          supplier_notified_at?: string | null
           synced_at?: string | null
           updated_at?: string | null
           wholesaler_id?: string | null
