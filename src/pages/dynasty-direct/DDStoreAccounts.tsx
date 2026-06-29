@@ -323,6 +323,9 @@ export default function DDStoreAccounts() {
                 <TabsContent value="delivery">
                   <DeliveryPreferencesPanel storeAccountId={viewing.id} />
                 </TabsContent>
+                <TabsContent value="pro">
+                  <AdminProSubscriptionPanel storeAccountId={viewing.id} storeUserId={viewing.user_id ?? null} />
+                </TabsContent>
               </Tabs>
             </>
           )}
