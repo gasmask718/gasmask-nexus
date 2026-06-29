@@ -21,6 +21,7 @@ interface DispositionCode {
   id: string;
   code: string;
   label: string;
+  display_number: number | null;
   category: string;
   requires_followup: boolean;
   followup_delay_minutes: number | null;
