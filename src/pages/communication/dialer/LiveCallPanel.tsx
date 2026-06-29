@@ -21,6 +21,7 @@ interface DispositionCode {
   id: string;
   code: string;
   label: string;
+  display_number: number | null;
   category: string;
   requires_followup: boolean;
   followup_delay_minutes: number | null;
@@ -68,7 +69,7 @@ export default function LiveCallPanel() {
         .from('dialer_disposition_codes')
         .select('*')
         .eq('is_current', true)
-        .order('category', { ascending: true });
+        .order('display_number', { ascending: true });
       if (error) throw error;
       return (data || []) as DispositionCode[];
     },
@@ -284,17 +285,14 @@ export default function LiveCallPanel() {
               <Select value={dispForm.disposition_code_id} onValueChange={v => setDispForm(f => ({ ...f, disposition_code_id: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select disposition..." /></SelectTrigger>
                 <SelectContent>
-                  {['positive', 'neutral', 'negative', 'admin'].map(cat => {
-                    const items = dispositionCodes.filter(d => d.category === cat);
-                    if (items.length === 0) return null;
-                    return items.map(d => (
-                      <SelectItem key={d.id} value={d.id}>
-                        <span className={`${cat === 'positive' ? 'text-green-600' : cat === 'negative' ? 'text-red-600' : cat === 'admin' ? 'text-orange-600' : ''}`}>
-                          {d.label}
-                        </span>
-                      </SelectItem>
-                    ));
-                  })}
+                  {dispositionCodes.map(d => (
+                    <SelectItem key={d.id} value={d.id}>
+                      <span className={`${d.category === 'positive' ? 'text-green-600' : d.category === 'negative' ? 'text-red-600' : d.category === 'admin' ? 'text-orange-600' : ''}`}>
+                        <span className="font-mono text-muted-foreground mr-2">#{d.display_number ?? '–'}</span>
+                        {d.label}
+                      </span>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

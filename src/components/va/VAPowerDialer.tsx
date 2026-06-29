@@ -62,17 +62,9 @@ interface Disposition {
   marks_do_not_call: boolean;
 }
 
-// Built-in dispositions aligned with the va_call_logs.disposition CHECK constraint.
-// These are ALWAYS available so the VA can set a status even if the
-// dialer_disposition_codes table is empty / RLS-restricted.
-const BUILTIN_DISPOSITIONS: Disposition[] = [
-  { id: 'builtin-closed',         code: 'closed',         label: '✅ Closed / Won',          category: 'positive', marks_do_not_call: false },
-  { id: 'builtin-callback',       code: 'callback',       label: '📅 Callback Scheduled',    category: 'neutral',  marks_do_not_call: false },
-  { id: 'builtin-no_answer',      code: 'no_answer',      label: '📵 No Answer',             category: 'neutral',  marks_do_not_call: false },
-  { id: 'builtin-voicemail',      code: 'voicemail',      label: '📨 Voicemail Left',        category: 'neutral',  marks_do_not_call: false },
-  { id: 'builtin-not_interested', code: 'not_interested', label: '❌ Not Interested',        category: 'negative', marks_do_not_call: false },
-  { id: 'builtin-dnc',            code: 'dnc',            label: '🚫 Do Not Call',           category: 'admin',    marks_do_not_call: true  },
-];
+// Dispositions are sourced from dialer_disposition_codes (canonical UPPER_SNAKE).
+// The wrap-up modal (VACallWrapUpModal) owns the picker; this component only
+// receives the resolved code back via the onSaved callback.
 interface QueueLead {
   queue_id: string;
   store_id: string;
@@ -181,28 +173,22 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
             .eq('number_type', 'local')
             .not('friendly_name', 'ilike', '%AI Agent%')
             .order('phone_number'),
+          // Dispositions are owned by the wrap-up modal now; fetch here only to
+          // pre-warm and expose the resolved list for any consumers that still
+          // read `dispositions` state (e.g. DNC stamping reference).
           (supabase as any)
             .from('dialer_disposition_codes')
-            .select('id, code, label, category, marks_do_not_call')
+            .select('id, code, label, display_number, category, marks_do_not_call')
             .eq('is_current', true)
-            .order('label'),
+            .order('display_number', { ascending: true }),
         ]);
         if (cancelled) return;
         setCampaigns(campRes.data || []);
         setNumbers(numRes.data || []);
-        // Merge DB-configured codes (if any) with the built-in safe list so the
-        // dropdown is never empty and saves always satisfy the DB CHECK constraint.
-        const dbDisp = (dispRes.data || []) as Disposition[];
-        const merged = [...BUILTIN_DISPOSITIONS];
-        for (const d of dbDisp) {
-          if (!merged.find(m => m.code.toLowerCase() === d.code.toLowerCase())) {
-            merged.push(d);
-          }
-        }
-        setDispositions(merged);
+        setDispositions((dispRes.data || []) as Disposition[]);
         if (campRes.error) console.warn('[AutoDialer] campaigns:', campRes.error);
         if (numRes.error) console.warn('[AutoDialer] numbers:', numRes.error);
-        if (dispRes.error) console.warn('[AutoDialer] dispositions (using built-ins):', dispRes.error);
+        if (dispRes.error) console.warn('[AutoDialer] dispositions:', dispRes.error);
       } catch (err: any) {
         toast.error('Failed to load dialer config: ' + err.message);
       } finally {
@@ -496,7 +482,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       }
 
       // Stamp DNC if disposition demands
-      if (resolvedDisposition === 'dnc' && lead?.store_id) {
+      if (resolvedDisposition === 'DO_NOT_CALL' && lead?.store_id) {
         await (supabase as any).from('stores')
           .update({ do_not_call: true })
           .eq('id', lead.store_id);
