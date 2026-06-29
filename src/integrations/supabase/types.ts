@@ -40304,6 +40304,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           creates_invoice_draft: boolean | null
+          display_number: number | null
           followup_delay_minutes: number | null
           id: string
           is_current: boolean
@@ -40324,6 +40325,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           creates_invoice_draft?: boolean | null
+          display_number?: number | null
           followup_delay_minutes?: number | null
           id?: string
           is_current?: boolean
@@ -40344,6 +40346,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           creates_invoice_draft?: boolean | null
+          display_number?: number | null
           followup_delay_minutes?: number | null
           id?: string
           is_current?: boolean
