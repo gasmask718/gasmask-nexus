@@ -69,7 +69,7 @@ export default function LiveCallPanel() {
         .from('dialer_disposition_codes')
         .select('*')
         .eq('is_current', true)
-        .order('category', { ascending: true });
+        .order('display_number', { ascending: true });
       if (error) throw error;
       return (data || []) as DispositionCode[];
     },
