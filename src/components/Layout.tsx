@@ -507,6 +507,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/dynasty-direct/flash-sales', label: '⚡ Flash Sales', icon: Zap },
       { path: '/dynasty-direct/invites', label: '✉️ Invites & Access', icon: Send },
       { path: '/dynasty-direct/store-applications', label: '🏪 Apply-as-Store Queue', icon: Send },
+      { path: '/dynasty-direct/partners', label: '🤝 Partner Campaigns', icon: Handshake },
       { path: '/dynasty-direct/settings', label: '⚙️ Settings', icon: Settings },
       { path: '/admin/dynasty-direct-ops', label: '🛠️ Ops Console', icon: Settings },
     ],
