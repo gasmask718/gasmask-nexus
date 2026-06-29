@@ -38046,6 +38046,62 @@ export type Database = {
           },
         ]
       }
+      dd_pro_subscriptions: {
+        Row: {
+          billing_cycle_day: number | null
+          cancelled_at: string | null
+          created_at: string | null
+          id: string
+          monthly_price: number | null
+          next_billing_date: string | null
+          plan: string | null
+          status: string | null
+          store_account_id: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          trial_ends_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          billing_cycle_day?: number | null
+          cancelled_at?: string | null
+          created_at?: string | null
+          id?: string
+          monthly_price?: number | null
+          next_billing_date?: string | null
+          plan?: string | null
+          status?: string | null
+          store_account_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          billing_cycle_day?: number | null
+          cancelled_at?: string | null
+          created_at?: string | null
+          id?: string
+          monthly_price?: number | null
+          next_billing_date?: string | null
+          plan?: string | null
+          status?: string | null
+          store_account_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_pro_subscriptions_store_account_id_fkey"
+            columns: ["store_account_id"]
+            isOneToOne: false
+            referencedRelation: "store_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_product_margin_overrides: {
         Row: {
           created_at: string
@@ -38765,6 +38821,96 @@ export type Database = {
           },
         ]
       }
+      dd_store_inventory: {
+        Row: {
+          created_at: string | null
+          current_qty: number | null
+          id: string
+          last_updated_at: string | null
+          location_in_store: string | null
+          notes: string | null
+          product_id: string | null
+          product_name: string
+          reorder_point: number | null
+          reorder_qty: number | null
+          selling_price: number | null
+          sku: string | null
+          store_account_id: string
+          unit_cost: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_qty?: number | null
+          id?: string
+          last_updated_at?: string | null
+          location_in_store?: string | null
+          notes?: string | null
+          product_id?: string | null
+          product_name: string
+          reorder_point?: number | null
+          reorder_qty?: number | null
+          selling_price?: number | null
+          sku?: string | null
+          store_account_id: string
+          unit_cost?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_qty?: number | null
+          id?: string
+          last_updated_at?: string | null
+          location_in_store?: string | null
+          notes?: string | null
+          product_id?: string | null
+          product_name?: string
+          reorder_point?: number | null
+          reorder_qty?: number | null
+          selling_price?: number | null
+          sku?: string | null
+          store_account_id?: string
+          unit_cost?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_store_inventory_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dd_low_stock_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_store_inventory_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_store_inventory_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_store_inventory_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_store_inventory_store_account_id_fkey"
+            columns: ["store_account_id"]
+            isOneToOne: false
+            referencedRelation: "store_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_store_referrals: {
         Row: {
           created_at: string | null
@@ -38819,6 +38965,78 @@ export type Database = {
           {
             foreignKeyName: "dd_store_referrals_referrer_store_id_fkey"
             columns: ["referrer_store_id"]
+            isOneToOne: false
+            referencedRelation: "store_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_store_sales_log: {
+        Row: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          product_id: string | null
+          qty_sold: number
+          sale_date: string | null
+          sale_price: number | null
+          store_account_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          qty_sold: number
+          sale_date?: string | null
+          sale_price?: number | null
+          store_account_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          qty_sold?: number
+          sale_date?: string | null
+          sale_price?: number | null
+          store_account_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_store_sales_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dd_low_stock_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_store_sales_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_store_sales_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_store_sales_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_store_sales_log_store_account_id_fkey"
+            columns: ["store_account_id"]
             isOneToOne: false
             referencedRelation: "store_accounts"
             referencedColumns: ["id"]
@@ -125704,6 +125922,10 @@ export type Database = {
           p_wholesaler_id: string
         }
         Returns: undefined
+      }
+      dd_store_inventory_analytics: {
+        Args: { p_store_id: string }
+        Returns: Json
       }
       default_cadence_days: { Args: { status: string }; Returns: number }
       detect_data_duplicates_in_group: {
