@@ -239,7 +239,7 @@ export default function StoreDashboard() {
           <StoreReferralCard
             userId={user.id}
             storeId={profile?.id ?? null}
-            referrerName={profile?.business_name ?? null}
+            referrerName={profile?.store_name ?? null}
           />
         )}
       </div>
