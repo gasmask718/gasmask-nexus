@@ -132,6 +132,23 @@ export default function DDOrderDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const [notifyEvent, setNotifyEvent] = useState<NotifyEvent>("confirmed");
+  const notifyCustomer = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("dd-notify-customer-order-update", {
+        body: { order_id: orderId, event_type: notifyEvent },
+      });
+      if (error) throw error;
+      return data as { success: boolean; sms_sent: boolean; email_sent: boolean };
+    },
+    onSuccess: (res) => {
+      const channels = [res?.sms_sent && "SMS", res?.email_sent && "email"].filter(Boolean).join(" and ");
+      toast.success(channels ? `Customer notified via ${channels}` : "Notification logged (no channels reachable)");
+      qc.invalidateQueries({ queryKey: ["dd-order-detail", orderId] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading order…</div>;
   if (!order) return <div className="p-6 text-sm text-muted-foreground">Order not found.</div>;
 
