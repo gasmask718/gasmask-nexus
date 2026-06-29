@@ -176,6 +176,15 @@ export default function DDOrderDetail() {
           </h1>
           <Badge variant="outline">{order.payment_status}</Badge>
           <Badge variant="outline">{order.fulfillment_status}</Badge>
+          {(order as any).stripe_risk_level === "highest" && (
+            <Badge className="bg-red-500/15 text-red-700 border-red-500/30" variant="outline">🚫 High Risk</Badge>
+          )}
+          {(order as any).stripe_risk_level === "elevated" && (
+            <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30" variant="outline">⚠️ Review</Badge>
+          )}
+          {(order as any).three_ds_authenticated && (
+            <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30" variant="outline">🛡️ 3DS Verified</Badge>
+          )}
         </div>
       </div>
 
