@@ -5,9 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, RefreshCw, Mail, DollarSign, Zap, TrendingUp } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, RefreshCw, Mail, DollarSign, Zap, TrendingUp, Bell, CheckCircle2, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
 
+type NotifyEvent = "confirmed" | "processing" | "shipped" | "delivered";
 const stages = ["paid", "routed", "fulfillment", "shipped", "delivered"];
 
 export default function DDOrderDetail() {
