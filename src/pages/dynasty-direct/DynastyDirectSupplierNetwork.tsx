@@ -34,6 +34,9 @@ type Wholesaler = {
   latitude: number | null;
   longitude: number | null;
   geocode_status: string | null;
+  reliability_grade: string | null;
+  preferred: boolean | null;
+  overall_rating: number | null;
 };
 
 type Product = { id: string; name: string; wholesaler_id: string | null };
