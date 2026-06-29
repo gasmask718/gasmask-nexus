@@ -482,7 +482,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       }
 
       // Stamp DNC if disposition demands
-      if (resolvedDisposition === 'dnc' && lead?.store_id) {
+      if (resolvedDisposition === 'DO_NOT_CALL' && lead?.store_id) {
         await (supabase as any).from('stores')
           .update({ do_not_call: true })
           .eq('id', lead.store_id);
