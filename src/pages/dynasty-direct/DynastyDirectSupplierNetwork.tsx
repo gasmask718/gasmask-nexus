@@ -78,6 +78,49 @@ export default function DynastyDirectSupplierNetwork() {
   const [selectedUngeo, setSelectedUngeo] = useState<Set<string>>(new Set());
   const [outreachTarget, setOutreachTarget] = useState<{ id: string; name: string } | null>(null);
   const [bulkBusy, setBulkBusy] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [addrInputs, setAddrInputs] = useState<Record<string, string>>({});
+  const [geoBusy, setGeoBusy] = useState<string | null>(null);
+
+  async function geocodeAndSave(w: Wholesaler) {
+    if (!MAPBOX_TOKEN) { toast.error('Mapbox token not configured'); return; }
+    const q = (addrInputs[w.id] || [w.address, w.city, normState(w.state)].filter(Boolean).join(', ')).trim();
+    if (!q) { toast.error('Enter an address'); return; }
+    setGeoBusy(w.id);
+    try {
+      const res = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?country=us&limit=1&access_token=${MAPBOX_TOKEN}`,
+      );
+      const j = await res.json();
+      const feat = j?.features?.[0];
+      if (!feat?.center) throw new Error('No match');
+      const [lng, lat] = feat.center as [number, number];
+      const ctx = (feat.context || []) as any[];
+      const stateCtx = ctx.find((c) => String(c.id || '').startsWith('region'));
+      const placeCtx = ctx.find((c) => String(c.id || '').startsWith('place'));
+      const stateCode = stateCtx?.short_code?.replace(/^US-/, '') ?? null;
+      const city = placeCtx?.text ?? null;
+      const { error } = await supabase
+        .from('wholesalers')
+        .update({
+          latitude: lat,
+          longitude: lng,
+          city: w.city ?? city,
+          state_code: stateCode,
+          state: w.state ?? stateCode,
+          geocoded_at: new Date().toISOString(),
+          geocode_status: 'ok',
+        } as any)
+        .eq('id', w.id);
+      if (error) throw error;
+      setWholesalers((prev) => prev.map((x) => (x.id === w.id ? { ...x, latitude: lat, longitude: lng, city: x.city ?? city, state: x.state ?? stateCode } : x)));
+      toast.success(`Saved location for ${w.name}`);
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Geocode failed');
+    } finally {
+      setGeoBusy(null);
+    }
+  }
 
   function toggleUngeo(id: string) {
     setSelectedUngeo((p) => {
