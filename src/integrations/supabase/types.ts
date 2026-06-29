@@ -37243,6 +37243,13 @@ export type Database = {
             foreignKeyName: "dd_dispute_events_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "dd_dispute_events_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
@@ -37447,6 +37454,13 @@ export type Database = {
             foreignKeyName: "dd_inventory_adjustments_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "dd_inventory_adjustments_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
@@ -37578,6 +37592,13 @@ export type Database = {
             foreignKeyName: "dd_reserve_ledger_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "dd_reserve_ledger_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
@@ -37667,6 +37688,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_marketplace_order_timeline"
             referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "dd_routing_pins_pinned_wholesaler_id_fkey"
+            columns: ["pinned_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "dd_routing_pins_pinned_wholesaler_id_fkey"
@@ -37835,6 +37863,13 @@ export type Database = {
             foreignKeyName: "dd_split_ledger_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "dd_split_ledger_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
@@ -37908,6 +37943,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dd_wholesaler_store_link_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: true
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "dd_wholesaler_store_link_wholesaler_id_fkey"
@@ -61092,6 +61134,13 @@ export type Database = {
             foreignKeyName: "marketplace_commissions_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_commissions_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "vendor_performance_summary"
             referencedColumns: ["vendor_id"]
           },
@@ -61207,6 +61256,13 @@ export type Database = {
             foreignKeyName: "marketplace_fulfillments_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "marketplace_fulfillments_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
@@ -61279,6 +61335,13 @@ export type Database = {
             foreignKeyName: "marketplace_inventory_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "marketplace_inventory_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
@@ -61326,6 +61389,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_marketplace_order_timeline"
             referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "marketplace_order_items_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "marketplace_order_items_wholesaler_id_fkey"
@@ -61465,6 +61535,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
             referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "marketplace_orders_wholesaler_id_fkey"
@@ -66116,6 +66193,13 @@ export type Database = {
             foreignKeyName: "order_messages_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "order_messages_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
             referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
@@ -66208,6 +66292,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "driver_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_routing_assigned_wholesaler_id_fkey"
+            columns: ["assigned_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "order_routing_assigned_wholesaler_id_fkey"
@@ -76222,6 +76313,8 @@ export type Database = {
       products_all: {
         Row: {
           brand_id: string | null
+          case_price_store: number | null
+          case_qty: number | null
           category: string | null
           created_at: string | null
           description: string | null
@@ -76230,6 +76323,7 @@ export type Database = {
           images: Json | null
           inventory_qty: number | null
           low_stock_threshold: number | null
+          min_order_qty: number | null
           processing_time: string | null
           product_name: string
           retail_price: number | null
@@ -76247,6 +76341,8 @@ export type Database = {
         }
         Insert: {
           brand_id?: string | null
+          case_price_store?: number | null
+          case_qty?: number | null
           category?: string | null
           created_at?: string | null
           description?: string | null
@@ -76255,6 +76351,7 @@ export type Database = {
           images?: Json | null
           inventory_qty?: number | null
           low_stock_threshold?: number | null
+          min_order_qty?: number | null
           processing_time?: string | null
           product_name: string
           retail_price?: number | null
@@ -76272,6 +76369,8 @@ export type Database = {
         }
         Update: {
           brand_id?: string | null
+          case_price_store?: number | null
+          case_qty?: number | null
           category?: string | null
           created_at?: string | null
           description?: string | null
@@ -76280,6 +76379,7 @@ export type Database = {
           images?: Json | null
           inventory_qty?: number | null
           low_stock_threshold?: number | null
+          min_order_qty?: number | null
           processing_time?: string | null
           product_name?: string
           retail_price?: number | null
@@ -76302,6 +76402,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "brands"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_all_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "products_all_wholesaler_id_fkey"
@@ -93920,6 +94027,13 @@ export type Database = {
             foreignKeyName: "store_wholesaler_associations_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_wholesaler_associations_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "vendor_performance_summary"
             referencedColumns: ["vendor_id"]
           },
@@ -110849,6 +110963,13 @@ export type Database = {
             foreignKeyName: "vendor_liabilities_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "vendor_liabilities_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
             referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
@@ -113271,6 +113392,13 @@ export type Database = {
             foreignKeyName: "wholesale_orders_platform_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesale_orders_platform_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "vendor_performance_summary"
             referencedColumns: ["vendor_id"]
           },
@@ -113480,6 +113608,13 @@ export type Database = {
             foreignKeyName: "wholesaler_ai_signals_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_ai_signals_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "vendor_performance_summary"
             referencedColumns: ["vendor_id"]
           },
@@ -113616,6 +113751,13 @@ export type Database = {
             foreignKeyName: "wholesaler_assignments_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_assignments_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "vendor_performance_summary"
             referencedColumns: ["vendor_id"]
           },
@@ -113694,6 +113836,13 @@ export type Database = {
             columns: ["communicated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_communications_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
             referencedColumns: ["id"]
           },
           {
@@ -113790,6 +113939,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_contracts_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
             referencedColumns: ["id"]
           },
           {
@@ -113894,6 +114050,13 @@ export type Database = {
             foreignKeyName: "wholesaler_disputes_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_disputes_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "vendor_performance_summary"
             referencedColumns: ["vendor_id"]
           },
@@ -113971,6 +114134,13 @@ export type Database = {
             foreignKeyName: "wholesaler_health_snapshots_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_health_snapshots_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "vendor_performance_summary"
             referencedColumns: ["vendor_id"]
           },
@@ -113990,6 +114160,75 @@ export type Database = {
           },
           {
             foreignKeyName: "wholesaler_health_snapshots_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesaler_invites: {
+        Row: {
+          accepted_at: string | null
+          email: string
+          id: string
+          invited_at: string
+          invited_by: string | null
+          magic_link_url: string | null
+          status: string
+          wholesaler_id: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          email: string
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          magic_link_url?: string | null
+          status?: string
+          wholesaler_id?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          email?: string
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          magic_link_url?: string | null
+          status?: string
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_invites_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_invites_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_performance_summary"
+            referencedColumns: ["vendor_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_invites_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_invites_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_invites_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
             referencedRelation: "wholesalers"
@@ -114031,6 +114270,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_notes_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
             referencedColumns: ["id"]
           },
           {
@@ -114120,6 +114366,13 @@ export type Database = {
             foreignKeyName: "wholesaler_orders_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_orders_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "vendor_performance_summary"
             referencedColumns: ["vendor_id"]
           },
@@ -114189,6 +114442,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "wholesaler_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_payments_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
             referencedColumns: ["id"]
           },
           {
@@ -114324,6 +114584,13 @@ export type Database = {
             foreignKeyName: "wholesaler_payouts_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_payouts_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
@@ -114385,6 +114652,13 @@ export type Database = {
           wholesaler_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "wholesaler_product_performance_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wholesaler_product_performance_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
@@ -114519,6 +114793,13 @@ export type Database = {
           wholesaler_type?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "wholesaler_profiles_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wholesaler_profiles_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
@@ -114700,6 +114981,13 @@ export type Database = {
             foreignKeyName: "wholesaler_supply_invoices_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_supply_invoices_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "vendor_performance_summary"
             referencedColumns: ["vendor_id"]
           },
@@ -114813,6 +115101,13 @@ export type Database = {
             foreignKeyName: "wholesaler_supply_returns_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_supply_returns_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "vendor_performance_summary"
             referencedColumns: ["vendor_id"]
           },
@@ -114880,6 +115175,13 @@ export type Database = {
           wholesaler_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "wholesaler_territory_coverage_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wholesaler_territory_coverage_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
@@ -114968,6 +115270,13 @@ export type Database = {
             columns: ["visited_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_visits_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
             referencedColumns: ["id"]
           },
           {
@@ -117366,6 +117675,13 @@ export type Database = {
             foreignKeyName: "products_all_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "products_all_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
@@ -117415,6 +117731,17 @@ export type Database = {
             referencedColumns: ["store_id"]
           },
         ]
+      }
+      dd_wholesaler_migration_status: {
+        Row: {
+          contact_email: string | null
+          id: string | null
+          migration_status: string | null
+          name: string | null
+          profile_id: string | null
+          user_id: string | null
+        }
+        Relationships: []
       }
       dispute_kpis: {
         Row: {
@@ -117766,6 +118093,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "brands"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_all_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "products_all_wholesaler_id_fkey"
@@ -120866,6 +121200,13 @@ export type Database = {
             foreignKeyName: "products_all_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "products_all_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
@@ -122625,6 +122966,13 @@ export type Database = {
             foreignKeyName: "marketplace_fulfillments_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "marketplace_fulfillments_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
@@ -122655,6 +123003,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_marketplace_order_timeline"
             referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "marketplace_order_items_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "marketplace_order_items_wholesaler_id_fkey"
@@ -123643,6 +123998,8 @@ export type Database = {
         Args: { p_limit?: number; p_user_id?: string; p_visitor_id?: string }
         Returns: {
           brand_id: string | null
+          case_price_store: number | null
+          case_qty: number | null
           category: string | null
           created_at: string | null
           description: string | null
@@ -123651,6 +124008,7 @@ export type Database = {
           images: Json | null
           inventory_qty: number | null
           low_stock_threshold: number | null
+          min_order_qty: number | null
           processing_time: string | null
           product_name: string
           retail_price: number | null
