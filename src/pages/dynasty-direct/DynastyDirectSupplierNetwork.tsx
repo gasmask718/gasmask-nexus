@@ -235,18 +235,44 @@ export default function DynastyDirectSupplierNetwork() {
         m.setPaintProperty('state-fills', 'fill-color', colorExpr);
       }
 
-      // Markers for geocoded suppliers
+      // Markers for geocoded suppliers — grade-colored + preferred star
+      const gradeColor = (g: string | null | undefined): string => {
+        const k = (g || '').toUpperCase();
+        if (k === 'A') return '#16a34a';
+        if (k === 'B') return '#2563eb';
+        if (k === 'C') return '#eab308';
+        if (k === 'D' || k === 'F') return '#dc2626';
+        return '#9ca3af';
+      };
       wholesalers
         .filter((w) => w.latitude != null && w.longitude != null)
         .forEach((w) => {
           const el = document.createElement('div');
+          const initial = (w.name || '?').trim().charAt(0).toUpperCase();
+          const bg = gradeColor(w.reliability_grade);
           el.style.cssText =
-            'width:12px;height:12px;border-radius:50%;background:#dc2626;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4);cursor:pointer';
+            `position:relative;width:24px;height:24px;border-radius:50%;background:${bg};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4);cursor:pointer;color:white;font:600 12px/20px system-ui;text-align:center;`;
+          el.textContent = initial;
+          if (w.preferred) {
+            const star = document.createElement('div');
+            star.textContent = '★';
+            star.style.cssText =
+              'position:absolute;top:-8px;right:-8px;width:14px;height:14px;font:700 12px/14px system-ui;color:#f59e0b;text-shadow:0 0 2px #000;pointer-events:none;';
+            el.appendChild(star);
+          }
+          const stars = '★★★★★'.slice(0, Math.max(0, Math.min(5, Math.round(Number(w.overall_rating) || 0))))
+            + '☆☆☆☆☆'.slice(0, 5 - Math.max(0, Math.min(5, Math.round(Number(w.overall_rating) || 0))));
           new mapboxgl.Marker({ element: el })
             .setLngLat([Number(w.longitude), Number(w.latitude)])
             .setPopup(
               new mapboxgl.Popup({ offset: 14 }).setHTML(
-                `<div style="font-size:12px"><strong>${w.name}</strong><br/>${w.city || ''} ${normState(w.state) || ''}</div>`
+                `<div style="font-size:12px;min-width:180px">
+                   <strong>${w.name}</strong>${w.preferred ? ' <span style="color:#f59e0b">★ Preferred</span>' : ''}<br/>
+                   ${w.city || ''} ${normState(w.state) || ''}<br/>
+                   Grade: <strong>${w.reliability_grade || '—'}</strong><br/>
+                   Rating: ${stars}<br/>
+                   <a href="/dynasty-direct/suppliers/${w.id}" style="color:#2563eb;text-decoration:underline">View Details →</a>
+                 </div>`
               )
             )
             .addTo(m);
