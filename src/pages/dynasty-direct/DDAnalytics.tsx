@@ -393,7 +393,88 @@ export default function DDAnalytics() {
       </Card>
 
       <ReferralsAdminSection />
+      <DisputesAdminSection />
     </div>
+  );
+}
+
+function DisputesAdminSection() {
+  const { data: disputes = [] } = useQuery({
+    queryKey: ["dd-disputes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dd_disputes")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+
+  const open = disputes.filter((d) => !["won", "lost", "charge_refunded"].includes(d.status ?? "")).length;
+  const won = disputes.filter((d) => d.status === "won").length;
+  const lost = disputes.filter((d) => d.status === "lost").length;
+  const totalDisputed = disputes.reduce((acc, d) => acc + Number(d.amount ?? 0), 0);
+  const winRate = won + lost > 0 ? (won / (won + lost)) * 100 : 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">🚨 Chargebacks &amp; Disputes</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <Stat label="Open" value={open} />
+          <Stat label="Won" value={won} />
+          <Stat label="Lost" value={lost} />
+          <Stat label="Total Disputed" value={`$${totalDisputed.toFixed(2)}`} />
+          <Stat label="Win Rate" value={`${winRate.toFixed(0)}%`} />
+        </div>
+        {disputes.length === 0 ? (
+          <Empty msg="No disputes — clean record" />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Reason</TableHead>
+                <TableHead>3DS</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Due By</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {disputes.map((d) => (
+                <TableRow key={d.id}>
+                  <TableCell className="font-mono text-xs">
+                    {d.order_id ? (
+                      <a className="underline" href={`/dynasty-direct/orders/${d.order_id}`}>{String(d.order_id).slice(0, 8)}</a>
+                    ) : "—"}
+                  </TableCell>
+                  <TableCell className="text-right">${Number(d.amount ?? 0).toFixed(2)}</TableCell>
+                  <TableCell className="text-xs">{d.reason ?? "—"}</TableCell>
+                  <TableCell>{d.three_ds_authenticated ? <Badge>🛡️</Badge> : <Badge variant="outline">—</Badge>}</TableCell>
+                  <TableCell><Badge variant={d.status === "won" ? "default" : d.status === "lost" ? "destructive" : "secondary"}>{d.status ?? "—"}</Badge></TableCell>
+                  <TableCell className="text-xs">{d.evidence_due_by ? new Date(d.evidence_due_by).toLocaleDateString() : "—"}</TableCell>
+                  <TableCell>
+                    {d.stripe_dispute_id && (
+                      <a
+                        className="text-xs underline"
+                        href={`https://dashboard.stripe.com/disputes/${d.stripe_dispute_id}`}
+                        target="_blank" rel="noreferrer"
+                      >View in Stripe</a>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
