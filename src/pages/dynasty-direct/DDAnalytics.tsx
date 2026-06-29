@@ -1,23 +1,26 @@
 // Dynasty Direct — Analytics
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, BarChart, Bar,
 } from "recharts";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, ShoppingCart } from "lucide-react";
 
 const RANGES = { "7d": 7, "30d": 30, "90d": 90, all: 3650 } as const;
 type RangeKey = keyof typeof RANGES;
 
 export default function DDAnalytics() {
   const [range, setRange] = useState<RangeKey>("30d");
+  const qc = useQueryClient();
 
   const since = useMemo(() => {
     const d = new Date();
@@ -80,6 +83,40 @@ export default function DDAnalytics() {
     },
   });
   const whMap = useMemo(() => Object.fromEntries(wholesalers.map((w) => [w.id, w.name])), [wholesalers]);
+
+  // Abandoned carts (rolling 30d window)
+  const abandonedSince = useMemo(() => new Date(Date.now() - 30 * 86400000).toISOString(), []);
+  const { data: abandoned = [] } = useQuery({
+    queryKey: ["dd-abandoned-carts", abandonedSince],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("dd_abandoned_carts" as any)
+        .select("*")
+        .gte("created_at", abandonedSince)
+        .order("created_at", { ascending: false });
+      return (data || []) as any[];
+    },
+  });
+
+  const abStats = useMemo(() => {
+    const weekAgo = Date.now() - 7 * 86400000;
+    const thisWeek = abandoned.filter((c) => new Date(c.created_at).getTime() >= weekAgo);
+    const recovered = abandoned.filter((c) => c.recovered_at);
+    const revenue = recovered.reduce((s, c) => s + Number(c.cart_total ?? 0), 0);
+    const rate = abandoned.length ? (recovered.length / abandoned.length) * 100 : 0;
+    return { thisWeek: thisWeek.length, recovered: recovered.length, rate, revenue };
+  }, [abandoned]);
+
+  async function sendManualRecovery(cartId: string) {
+    try {
+      const { error } = await supabase.functions.invoke("dd-cart-recovery-cron", { body: { cart_id: cartId } });
+      if (error) throw error;
+      toast.success("Recovery job triggered");
+      qc.invalidateQueries({ queryKey: ["dd-abandoned-carts"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
 
   const paidOrders = orders.filter((o) => o.payment_status === "paid");
 
@@ -303,6 +340,57 @@ export default function DDAnalytics() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2">
+          <ShoppingCart className="w-4 h-4 text-primary" />
+          <CardTitle className="text-base">Abandoned Carts (last 30 days)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Stat label="Abandoned This Week" value={abStats.thisWeek} />
+            <Stat label="Recovered" value={abStats.recovered} />
+            <Stat label="Recovery Rate" value={`${abStats.rate.toFixed(1)}%`} />
+            <Stat label="Revenue Recovered" value={`$${abStats.revenue.toFixed(0)}`} />
+          </div>
+          {abandoned.length === 0 ? (
+            <Empty msg="No abandoned carts yet" />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead className="text-right">Items</TableHead>
+                  <TableHead className="text-right">Value</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>SMS</TableHead>
+                  <TableHead>Recovered</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {abandoned.slice(0, 25).map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell className="text-xs">{new Date(c.created_at).toLocaleString()}</TableCell>
+                    <TableCell className="text-xs">{c.email ?? "—"}</TableCell>
+                    <TableCell className="text-right">{c.item_count ?? 0}</TableCell>
+                    <TableCell className="text-right">${Number(c.cart_total ?? 0).toFixed(2)}</TableCell>
+                    <TableCell>{c.recovery_email_sent_at ? <Badge variant="secondary">Sent</Badge> : <Badge variant="outline">—</Badge>}</TableCell>
+                    <TableCell>{c.recovery_sms_sent_at ? <Badge variant="secondary">Sent</Badge> : <Badge variant="outline">—</Badge>}</TableCell>
+                    <TableCell>{c.recovered_at ? <Badge>Yes</Badge> : <Badge variant="outline">No</Badge>}</TableCell>
+                    <TableCell>
+                      <Button size="sm" variant="outline" onClick={() => sendManualRecovery(c.id)}>
+                        Send Recovery
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
