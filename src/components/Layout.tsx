@@ -494,6 +494,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/dynasty-direct/suppliers/portal', label: '👥 Supplier Onboarding', icon: Users },
       { path: '/dynasty-direct/inventory', label: '📦 Master Inventory', icon: Boxes },
       { path: '/dynasty-direct/suppliers/inventory', label: '📊 Supplier Products', icon: Boxes },
+      { path: '/dynasty-direct/suppliers/performance', label: '📈 Supplier Performance', icon: TrendingUp },
       { path: '/dynasty-direct/grabba-bridge', label: '⚡ Grabba Bridge', icon: Zap },
       { path: '/dynasty-direct/analytics', label: '📈 Analytics', icon: BarChart3 },
       { path: '/dynasty-direct/invites', label: '✉️ Invites & Access', icon: Send },

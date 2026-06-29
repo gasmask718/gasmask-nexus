@@ -37875,6 +37875,93 @@ export type Database = {
           },
         ]
       }
+      dd_supplier_metrics: {
+        Row: {
+          avg_fulfillment_hours: number | null
+          calculated_at: string | null
+          fulfillment_rate: number | null
+          id: string
+          issue_count: number | null
+          on_time_rate: number | null
+          orders_cancelled: number | null
+          orders_fulfilled: number | null
+          orders_late: number | null
+          orders_received: number | null
+          period_end: string
+          period_start: string
+          revenue_generated: number | null
+          wholesaler_id: string
+        }
+        Insert: {
+          avg_fulfillment_hours?: number | null
+          calculated_at?: string | null
+          fulfillment_rate?: number | null
+          id?: string
+          issue_count?: number | null
+          on_time_rate?: number | null
+          orders_cancelled?: number | null
+          orders_fulfilled?: number | null
+          orders_late?: number | null
+          orders_received?: number | null
+          period_end: string
+          period_start: string
+          revenue_generated?: number | null
+          wholesaler_id: string
+        }
+        Update: {
+          avg_fulfillment_hours?: number | null
+          calculated_at?: string | null
+          fulfillment_rate?: number | null
+          id?: string
+          issue_count?: number | null
+          on_time_rate?: number | null
+          orders_cancelled?: number | null
+          orders_fulfilled?: number | null
+          orders_late?: number | null
+          orders_received?: number | null
+          period_end?: string
+          period_start?: string
+          revenue_generated?: number | null
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_supplier_metrics_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_supplier_metrics_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_performance_summary"
+            referencedColumns: ["vendor_id"]
+          },
+          {
+            foreignKeyName: "dd_supplier_metrics_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "dd_supplier_metrics_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "dd_supplier_metrics_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_webhook_events: {
         Row: {
           event_id: string
@@ -115367,6 +115454,7 @@ export type Database = {
           ai_score: number | null
           assigned_rep_id: string | null
           authorized_brands: string[] | null
+          avg_fulfillment_days: number | null
           backup_contact_name: string | null
           backup_contact_phone: string | null
           borough: string | null
@@ -115395,6 +115483,7 @@ export type Database = {
           insurance_policy: string | null
           is_frozen: boolean | null
           is_simulation: boolean | null
+          last_order_at: string | null
           last_visit_date: string | null
           latitude: number | null
           legal_business_name: string | null
@@ -115407,16 +115496,21 @@ export type Database = {
           name: string
           neighborhood: string | null
           neighborhoods: string[] | null
+          on_time_rate_lifetime: number | null
+          overall_rating: number | null
           payment_terms: string | null
           penalties: Json | null
           phone: string | null
           phone_secondary: string | null
           phone_whatsapp: string | null
+          preferred: boolean | null
           pricing_tier: string | null
           relationship_health_score: number | null
+          reliability_grade: string | null
           reorder_threshold: number | null
           resale_cert_expiry: string | null
           resale_cert_number: string | null
+          review_notes: string | null
           risk_flags: Json | null
           risk_level: string | null
           role_type: string | null
@@ -115428,6 +115522,7 @@ export type Database = {
           tax_id: string | null
           territories: string[] | null
           tier: string | null
+          total_orders_fulfilled: number | null
           updated_at: string | null
           visit_frequency_days: number | null
           zip_code: string | null
@@ -115439,6 +115534,7 @@ export type Database = {
           ai_score?: number | null
           assigned_rep_id?: string | null
           authorized_brands?: string[] | null
+          avg_fulfillment_days?: number | null
           backup_contact_name?: string | null
           backup_contact_phone?: string | null
           borough?: string | null
@@ -115467,6 +115563,7 @@ export type Database = {
           insurance_policy?: string | null
           is_frozen?: boolean | null
           is_simulation?: boolean | null
+          last_order_at?: string | null
           last_visit_date?: string | null
           latitude?: number | null
           legal_business_name?: string | null
@@ -115479,16 +115576,21 @@ export type Database = {
           name: string
           neighborhood?: string | null
           neighborhoods?: string[] | null
+          on_time_rate_lifetime?: number | null
+          overall_rating?: number | null
           payment_terms?: string | null
           penalties?: Json | null
           phone?: string | null
           phone_secondary?: string | null
           phone_whatsapp?: string | null
+          preferred?: boolean | null
           pricing_tier?: string | null
           relationship_health_score?: number | null
+          reliability_grade?: string | null
           reorder_threshold?: number | null
           resale_cert_expiry?: string | null
           resale_cert_number?: string | null
+          review_notes?: string | null
           risk_flags?: Json | null
           risk_level?: string | null
           role_type?: string | null
@@ -115500,6 +115602,7 @@ export type Database = {
           tax_id?: string | null
           territories?: string[] | null
           tier?: string | null
+          total_orders_fulfilled?: number | null
           updated_at?: string | null
           visit_frequency_days?: number | null
           zip_code?: string | null
@@ -115511,6 +115614,7 @@ export type Database = {
           ai_score?: number | null
           assigned_rep_id?: string | null
           authorized_brands?: string[] | null
+          avg_fulfillment_days?: number | null
           backup_contact_name?: string | null
           backup_contact_phone?: string | null
           borough?: string | null
@@ -115539,6 +115643,7 @@ export type Database = {
           insurance_policy?: string | null
           is_frozen?: boolean | null
           is_simulation?: boolean | null
+          last_order_at?: string | null
           last_visit_date?: string | null
           latitude?: number | null
           legal_business_name?: string | null
@@ -115551,16 +115656,21 @@ export type Database = {
           name?: string
           neighborhood?: string | null
           neighborhoods?: string[] | null
+          on_time_rate_lifetime?: number | null
+          overall_rating?: number | null
           payment_terms?: string | null
           penalties?: Json | null
           phone?: string | null
           phone_secondary?: string | null
           phone_whatsapp?: string | null
+          preferred?: boolean | null
           pricing_tier?: string | null
           relationship_health_score?: number | null
+          reliability_grade?: string | null
           reorder_threshold?: number | null
           resale_cert_expiry?: string | null
           resale_cert_number?: string | null
+          review_notes?: string | null
           risk_flags?: Json | null
           risk_level?: string | null
           role_type?: string | null
@@ -115572,6 +115682,7 @@ export type Database = {
           tax_id?: string | null
           territories?: string[] | null
           tier?: string | null
+          total_orders_fulfilled?: number | null
           updated_at?: string | null
           visit_frequency_days?: number | null
           zip_code?: string | null
@@ -123970,6 +124081,10 @@ export type Database = {
           p_reason?: string
           p_wholesaler_id: string
         }
+        Returns: Json
+      }
+      dd_calculate_supplier_metrics: {
+        Args: { p_days?: number; p_wholesaler_id: string }
         Returns: Json
       }
       dd_check_low_stock: {
