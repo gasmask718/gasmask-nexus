@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Settings as SettingsIcon, Zap, ArrowRight } from "lucide-react";
+import { Settings as SettingsIcon, Zap, ArrowRight, Package } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import SocialProofAdmin from "@/components/dynasty-direct/SocialProofAdmin";
 
 type Cfg = {
   id: boolean;
