@@ -619,7 +619,48 @@ function DetailSheet({
                     <a href={`mailto:${supplier.email}`}><Mail className="w-3 h-3 mr-1" /> Contact Supplier</a>
                   </Button>
                 )}
+                {waNumber && (
+                  <Button size="sm" variant="outline" onClick={() => setWaOpen(true)}>
+                    <MessageCircle className="w-3 h-3 mr-1" /> Send WhatsApp
+                  </Button>
+                )}
               </div>
+
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2">
+                  <MessageCircle className="w-3 h-3" /> Contact Preferences
+                  <Badge variant="outline" className="ml-1">
+                    {waPref === "both" ? "📧💬 Both" : waPref === "whatsapp" ? "💬 WhatsApp" : "📧 Email"}
+                  </Badge>
+                </CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] uppercase text-muted-foreground">WhatsApp number</label>
+                      <Input
+                        placeholder="+1 555 123 4567"
+                        value={waNumber}
+                        onChange={(e) => setWaNumber(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] uppercase text-muted-foreground">Preferred contact</label>
+                      <Select value={waPref} onValueChange={(v) => setWaPref(v as typeof waPref)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="email">Email</SelectItem>
+                          <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                          <SelectItem value="both">Both</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button size="sm" onClick={() => saveContact.mutate()} disabled={saveContact.isPending}>
+                    Save Contact
+                  </Button>
+                </CardContent>
+              </Card>
+
 
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2">
