@@ -239,6 +239,8 @@ export default function DDOrderDetail() {
             </CardContent>
           </Card>
 
+          <SupplierPerformanceMini wholesalerId={routing[0]?.wholesaler_id ?? grabbaRow?.wholesaler_id ?? (order as any).wholesaler_id ?? null} />
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center justify-between">
