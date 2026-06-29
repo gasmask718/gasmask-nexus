@@ -36978,6 +36978,7 @@ export type Database = {
           dimensions: Json | null
           enhanced: Json
           id: string
+          image_variants: Json | null
           input_photos: Json
           inventory_qty: number | null
           market_check: Json | null
@@ -36985,9 +36986,11 @@ export type Database = {
           measurements_verified_at: string | null
           measurements_verified_by: string | null
           notes: string | null
+          price_research: Json | null
           pricing: Json
           product_name: string
           published_product_id: string | null
+          recognition: Json | null
           selected: Json
           staged: Json
           status: string
@@ -37007,6 +37010,7 @@ export type Database = {
           dimensions?: Json | null
           enhanced?: Json
           id?: string
+          image_variants?: Json | null
           input_photos?: Json
           inventory_qty?: number | null
           market_check?: Json | null
@@ -37014,9 +37018,11 @@ export type Database = {
           measurements_verified_at?: string | null
           measurements_verified_by?: string | null
           notes?: string | null
+          price_research?: Json | null
           pricing?: Json
           product_name: string
           published_product_id?: string | null
+          recognition?: Json | null
           selected?: Json
           staged?: Json
           status?: string
@@ -37036,6 +37042,7 @@ export type Database = {
           dimensions?: Json | null
           enhanced?: Json
           id?: string
+          image_variants?: Json | null
           input_photos?: Json
           inventory_qty?: number | null
           market_check?: Json | null
@@ -37043,9 +37050,11 @@ export type Database = {
           measurements_verified_at?: string | null
           measurements_verified_by?: string | null
           notes?: string | null
+          price_research?: Json | null
           pricing?: Json
           product_name?: string
           published_product_id?: string | null
+          recognition?: Json | null
           selected?: Json
           staged?: Json
           status?: string
