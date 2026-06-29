@@ -18,6 +18,7 @@ import {
   Calendar, MessageSquare, History, FileText, User,
   ChevronRight, Zap, Phone, GraduationCap, Eye
 } from 'lucide-react';
+import NextStopNavigator from '@/components/map/NextStopNavigator';
 
 type DriverStatus = 'available' | 'on_route' | 'offline';
 
@@ -243,6 +244,10 @@ const DriverHome: React.FC = () => {
             </Button>
           </div>
         </div>
+
+
+        {/* Live navigation to next stop (Waze-style, live traffic) */}
+        <NextStopNavigator role="driver" />
 
         {/* Stats Row - FORCED values */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

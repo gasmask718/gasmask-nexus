@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/sheet';
 import { StoreCaptureForm } from '@/components/store/StoreCaptureForm';
 import { AmbassadorStoreMap } from '@/components/ambassador/AmbassadorStoreMap';
+import NextStopNavigator from '@/components/map/NextStopNavigator';
 import { useTranslation } from '@/hooks/useTranslation';
 import { BilingualLabel } from '@/components/portal/BilingualLabel';
 
@@ -308,6 +309,9 @@ function DashboardContent() {
           </p>
         </div>
       </div>
+
+      {/* Live navigation to next store (Waze-style, live traffic) */}
+      <NextStopNavigator role="ambassador" />
 
       {/* Portfolio map — RLS-scoped to this ambassador's stores */}
       <AmbassadorStoreMap />
