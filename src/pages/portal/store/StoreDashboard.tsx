@@ -233,6 +233,16 @@ export default function StoreDashboard() {
             </CardContent>
           </Card>
         </div>
+        </div>
+
+        {/* Referral Program */}
+        {user?.id && (
+          <StoreReferralCard
+            userId={user.id}
+            storeId={profile?.id ?? null}
+            referrerName={profile?.business_name ?? null}
+          />
+        )}
       </div>
     </div>
   );
