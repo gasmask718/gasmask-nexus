@@ -75,6 +75,7 @@ serve(async (req) => {
       (order.shipping_address as any)?.name ?? order.customer_email ?? "Unknown";
 
     const created: string[] = [];
+    const createdSyncRows: { id: string; wholesaler_id: string }[] = [];
 
     for (const [wid, groupedItems] of Object.entries(groups)) {
       // Upsert (replace existing sync row for that order+wholesaler if resync)
@@ -97,13 +98,14 @@ serve(async (req) => {
         synced_at: new Date().toISOString(),
       };
 
+      let syncId: string | undefined;
       if (prior?.id) {
         const { error } = await supabase
           .from("dd_grabba_sync")
           .update(payload)
           .eq("id", prior.id);
         if (error) throw error;
-        created.push(prior.id);
+        syncId = prior.id;
       } else {
         const { data: ins, error } = await supabase
           .from("dd_grabba_sync")
@@ -111,7 +113,13 @@ serve(async (req) => {
           .select("id")
           .single();
         if (error) throw error;
-        created.push(ins.id);
+        syncId = ins.id;
+      }
+      if (syncId) {
+        created.push(syncId);
+        if (wid !== "unassigned") {
+          createdSyncRows.push({ id: syncId, wholesaler_id: wid });
+        }
       }
     }
 
@@ -136,6 +144,19 @@ serve(async (req) => {
       } catch (e) {
         console.error("[dd-grabba-bridge] PO generation failed for", wid, e);
       }
+    }
+
+    // 7) Notify each supplier by email (non-blocking)
+    for (const syncRow of createdSyncRows) {
+      await supabase.functions
+        .invoke("dd-notify-supplier-order", {
+          body: {
+            grabba_sync_id: syncRow.id,
+            wholesaler_id: syncRow.wholesaler_id,
+            order_id,
+          },
+        })
+        .catch((err) => console.error("Supplier notification failed:", err));
     }
 
     return json({

@@ -67,6 +67,26 @@ export default function DynastyDirectGrabbaBridge() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const notify = useMutation({
+    mutationFn: async (row: any) => {
+      const { data, error } = await supabase.functions.invoke("dd-notify-supplier-order", {
+        body: {
+          grabba_sync_id: row.id,
+          wholesaler_id: row.wholesaler_id,
+          order_id: row.marketplace_order_id,
+        },
+      });
+      if (error) throw error;
+      return data as { sent?: boolean; notified?: string; error?: string };
+    },
+    onSuccess: (res) => {
+      if (res?.sent) toast.success(`Notified ${res.notified ?? "supplier"}`);
+      else toast.warning(res?.error ?? "Notification not sent");
+      qc.invalidateQueries({ queryKey: ["dd-grabba-sync-rows"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const syncAll = useMutation({
     mutationFn: async () => {
       for (const o of unsynced) {
@@ -144,6 +164,7 @@ export default function DynastyDirectGrabbaBridge() {
                   <TableHead>Wholesaler</TableHead>
                   <TableHead>Items</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Notified</TableHead>
                   <TableHead>Synced At</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -162,6 +183,23 @@ export default function DynastyDirectGrabbaBridge() {
                       <Badge variant={s.status === "synced" ? "default" : s.status === "failed" ? "destructive" : "secondary"}>
                         {s.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {s.supplier_notified ? (
+                        <span title={s.supplier_notified_at ? new Date(s.supplier_notified_at).toLocaleString() : ""}>✅</span>
+                      ) : s.wholesaler_id ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => notify.mutate(s)}
+                          disabled={notify.isPending}
+                        >
+                          ❌ Notify
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-xs">
                       {s.synced_at ? new Date(s.synced_at).toLocaleString() : "—"}

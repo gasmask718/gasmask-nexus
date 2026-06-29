@@ -109,6 +109,26 @@ export default function DDOrderDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const notifySupplier = useMutation({
+    mutationFn: async (row: any) => {
+      const { data, error } = await supabase.functions.invoke("dd-notify-supplier-order", {
+        body: {
+          grabba_sync_id: row.id,
+          wholesaler_id: row.wholesaler_id,
+          order_id: orderId,
+        },
+      });
+      if (error) throw error;
+      return data as { notified?: string; sent?: boolean; error?: string };
+    },
+    onSuccess: (res) => {
+      if (res?.sent) toast.success(`Notification sent to ${res.notified ?? "supplier"}`);
+      else toast.warning(res?.error ?? "Notification not sent");
+      qc.invalidateQueries({ queryKey: ["dd-order-grabba", orderId] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading order…</div>;
   if (!order) return <div className="p-6 text-sm text-muted-foreground">Order not found.</div>;
 
@@ -255,13 +275,33 @@ export default function DDOrderDetail() {
                 <div className="text-xs space-y-1">
                   <Row k="Attempts" v={String(grabbaRow.attempt_count ?? 0)} />
                   <Row k="Last Synced" v={grabbaRow.synced_at ? new Date(grabbaRow.synced_at).toLocaleString() : "—"} />
+                  <Row
+                    k="Supplier Notified"
+                    v={
+                      grabbaRow.supplier_notified
+                        ? `✅ ${grabbaRow.supplier_notified_at ? new Date(grabbaRow.supplier_notified_at).toLocaleString() : "sent"}`
+                        : "❌ Not sent"
+                    }
+                  />
                   {grabbaRow.last_error && <Row k="Last Error" v={grabbaRow.last_error} />}
                 </div>
               )}
-              <Button size="sm" onClick={() => forceSync.mutate()} disabled={forceSync.isPending}>
-                <RefreshCw className="w-3 h-3 mr-1" />
-                {grabbaStatus === "synced" ? "Force Resync" : "Sync to Grabba"}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={() => forceSync.mutate()} disabled={forceSync.isPending}>
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  {grabbaStatus === "synced" ? "Force Resync" : "Sync to Grabba"}
+                </Button>
+                {grabbaRow && !grabbaRow.supplier_notified && grabbaRow.wholesaler_id && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => notifySupplier.mutate(grabbaRow)}
+                    disabled={notifySupplier.isPending}
+                  >
+                    <Mail className="w-3 h-3 mr-1" /> Resend Notification
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
 
