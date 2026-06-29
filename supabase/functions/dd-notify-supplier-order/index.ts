@@ -212,7 +212,7 @@ serve(async (req) => {
         .eq("wholesaler_id", wholesaler_id);
     }
 
-    return json({ success: true, sent, notified: recipient, error: sendError });
+    return json({ success: true, sent, whatsapp_sent, notified: recipient, error: sendError });
   } catch (err: any) {
     console.error("[dd-notify-supplier-order] error", err);
     return json({ error: err?.message ?? String(err) }, 500);
