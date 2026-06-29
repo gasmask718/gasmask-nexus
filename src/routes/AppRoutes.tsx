@@ -2038,6 +2038,15 @@ export default function AppRoutes() {
             </RequireRole>
           }
         />
+        <Route
+          path="/dynasty-direct/partners"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner']} showLocked>
+              <DDPartnerCampaigns />
+            </RequireRole>
+          }
+        />
+
         <Route path="/dynasty-direct/analytics" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDAnalytics /></RequireRole>} />
         <Route path="/dynasty-direct/stores" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDStoreAccounts /></RequireRole>} />
         <Route path="/dynasty-direct/settings" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDSettings /></RequireRole>} />
