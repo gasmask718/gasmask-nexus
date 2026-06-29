@@ -19,8 +19,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
+import { ScorecardHistory } from "@/components/dynasty-direct/ScorecardHistory";
 
 type RangeDays = 7 | 30 | 90 | 3650;
 type SortKey =
