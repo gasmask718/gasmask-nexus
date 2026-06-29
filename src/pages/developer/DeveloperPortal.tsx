@@ -122,6 +122,7 @@ type Density = 'comfortable' | 'compact';
 
 const DeveloperPortal = () => {
   const { user, loading, signOut } = useAuth();
+  const { roles, loading: roleLoading } = useUserRole();
   const [activeFunnels, setActiveFunnels] = useState<string[]>(['brandaro']);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [density, setDensity] = useState<Density>('comfortable');
