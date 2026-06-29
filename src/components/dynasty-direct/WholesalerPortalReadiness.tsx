@@ -38,11 +38,11 @@ export function WholesalerPortalReadiness() {
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['dd-wholesaler-migration-status'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('dd_wholesaler_migration_status' as any)
+      const { data, error } = await (supabase as any)
+        .from('dd_wholesaler_migration_status')
         .select('*');
       if (error) throw error;
-      return (data as Row[]) || [];
+      return ((data ?? []) as unknown) as Row[];
     },
   });
 
