@@ -187,6 +187,22 @@ export default function DDSettings() {
         </CardContent>
       </Card>
       <FlashSalesSection />
+      <SocialProofAdmin />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Package className="h-5 w-5" /> 📦 Featured Bundles</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-3">
+            Curate bundles shown to all store customers on the public storefront.
+          </p>
+          <Button asChild>
+            <Link to="/dynasty-direct/catalog/bundles">
+              Manage Curated Bundles <ArrowRight className="h-4 w-4 ml-1" />
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
