@@ -99,7 +99,7 @@ export default function DynastyDirectOrders() {
     // 1. base orders
     const { data: orders } = await supabase
       .from('marketplace_orders')
-      .select('id, created_at, total, payment_status, fulfillment_status, customer_email, customer_phone, order_type, shipping_address, notes')
+      .select('id, created_at, total, payment_status, fulfillment_status, customer_email, customer_phone, order_type, shipping_address, notes, stripe_risk_level, three_ds_authenticated, fraud_review_flag')
       .order('created_at', { ascending: false })
       .limit(500);
 
