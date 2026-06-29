@@ -34,6 +34,9 @@ type Wholesaler = {
   latitude: number | null;
   longitude: number | null;
   geocode_status: string | null;
+  reliability_grade: string | null;
+  preferred: boolean | null;
+  overall_rating: number | null;
 };
 
 type Product = { id: string; name: string; wholesaler_id: string | null };
@@ -75,6 +78,49 @@ export default function DynastyDirectSupplierNetwork() {
   const [selectedUngeo, setSelectedUngeo] = useState<Set<string>>(new Set());
   const [outreachTarget, setOutreachTarget] = useState<{ id: string; name: string } | null>(null);
   const [bulkBusy, setBulkBusy] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [addrInputs, setAddrInputs] = useState<Record<string, string>>({});
+  const [geoBusy, setGeoBusy] = useState<string | null>(null);
+
+  async function geocodeAndSave(w: Wholesaler) {
+    if (!MAPBOX_TOKEN) { toast.error('Mapbox token not configured'); return; }
+    const q = (addrInputs[w.id] || [w.address, w.city, normState(w.state)].filter(Boolean).join(', ')).trim();
+    if (!q) { toast.error('Enter an address'); return; }
+    setGeoBusy(w.id);
+    try {
+      const res = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?country=us&limit=1&access_token=${MAPBOX_TOKEN}`,
+      );
+      const j = await res.json();
+      const feat = j?.features?.[0];
+      if (!feat?.center) throw new Error('No match');
+      const [lng, lat] = feat.center as [number, number];
+      const ctx = (feat.context || []) as any[];
+      const stateCtx = ctx.find((c) => String(c.id || '').startsWith('region'));
+      const placeCtx = ctx.find((c) => String(c.id || '').startsWith('place'));
+      const stateCode = stateCtx?.short_code?.replace(/^US-/, '') ?? null;
+      const city = placeCtx?.text ?? null;
+      const { error } = await supabase
+        .from('wholesalers')
+        .update({
+          latitude: lat,
+          longitude: lng,
+          city: w.city ?? city,
+          state_code: stateCode,
+          state: w.state ?? stateCode,
+          geocoded_at: new Date().toISOString(),
+          geocode_status: 'ok',
+        } as any)
+        .eq('id', w.id);
+      if (error) throw error;
+      setWholesalers((prev) => prev.map((x) => (x.id === w.id ? { ...x, latitude: lat, longitude: lng, city: x.city ?? city, state: x.state ?? stateCode } : x)));
+      toast.success(`Saved location for ${w.name}`);
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Geocode failed');
+    } finally {
+      setGeoBusy(null);
+    }
+  }
 
   function toggleUngeo(id: string) {
     setSelectedUngeo((p) => {
@@ -122,7 +168,7 @@ export default function DynastyDirectSupplierNetwork() {
       const [w, p, inv] = await Promise.all([
         supabase
           .from('wholesalers')
-          .select('id, name, state, city, address, latitude, longitude, geocode_status')
+          .select('id, name, state, city, address, latitude, longitude, geocode_status, reliability_grade, preferred, overall_rating')
           .is('deleted_at', null),
         supabase.from('products_all').select('id, name, wholesaler_id'),
         supabase.from('marketplace_inventory').select('product_id, wholesaler_id, quantity_available'),
@@ -232,18 +278,44 @@ export default function DynastyDirectSupplierNetwork() {
         m.setPaintProperty('state-fills', 'fill-color', colorExpr);
       }
 
-      // Markers for geocoded suppliers
+      // Markers for geocoded suppliers — grade-colored + preferred star
+      const gradeColor = (g: string | null | undefined): string => {
+        const k = (g || '').toUpperCase();
+        if (k === 'A') return '#16a34a';
+        if (k === 'B') return '#2563eb';
+        if (k === 'C') return '#eab308';
+        if (k === 'D' || k === 'F') return '#dc2626';
+        return '#9ca3af';
+      };
       wholesalers
         .filter((w) => w.latitude != null && w.longitude != null)
         .forEach((w) => {
           const el = document.createElement('div');
+          const initial = (w.name || '?').trim().charAt(0).toUpperCase();
+          const bg = gradeColor(w.reliability_grade);
           el.style.cssText =
-            'width:12px;height:12px;border-radius:50%;background:#dc2626;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4);cursor:pointer';
+            `position:relative;width:24px;height:24px;border-radius:50%;background:${bg};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4);cursor:pointer;color:white;font:600 12px/20px system-ui;text-align:center;`;
+          el.textContent = initial;
+          if (w.preferred) {
+            const star = document.createElement('div');
+            star.textContent = '★';
+            star.style.cssText =
+              'position:absolute;top:-8px;right:-8px;width:14px;height:14px;font:700 12px/14px system-ui;color:#f59e0b;text-shadow:0 0 2px #000;pointer-events:none;';
+            el.appendChild(star);
+          }
+          const stars = '★★★★★'.slice(0, Math.max(0, Math.min(5, Math.round(Number(w.overall_rating) || 0))))
+            + '☆☆☆☆☆'.slice(0, 5 - Math.max(0, Math.min(5, Math.round(Number(w.overall_rating) || 0))));
           new mapboxgl.Marker({ element: el })
             .setLngLat([Number(w.longitude), Number(w.latitude)])
             .setPopup(
               new mapboxgl.Popup({ offset: 14 }).setHTML(
-                `<div style="font-size:12px"><strong>${w.name}</strong><br/>${w.city || ''} ${normState(w.state) || ''}</div>`
+                `<div style="font-size:12px;min-width:180px">
+                   <strong>${w.name}</strong>${w.preferred ? ' <span style="color:#f59e0b">★ Preferred</span>' : ''}<br/>
+                   ${w.city || ''} ${normState(w.state) || ''}<br/>
+                   Grade: <strong>${w.reliability_grade || '—'}</strong><br/>
+                   Rating: ${stars}<br/>
+                   <a href="/dynasty-direct/suppliers/${w.id}" style="color:#2563eb;text-decoration:underline">View Details →</a>
+                 </div>`
               )
             )
             .addTo(m);
@@ -261,11 +333,29 @@ export default function DynastyDirectSupplierNetwork() {
   return (
     <div className="p-6 space-y-4">
       <DDAlertBar />
-      <div>
-        <h1 className="text-2xl font-bold">Dynasty Direct — Supplier Network</h1>
-        <p className="text-sm text-muted-foreground">
-          State-by-state coverage. Click any state to drill into its suppliers, products and inventory.
-        </p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold">Dynasty Direct — Supplier Network</h1>
+          <p className="text-sm text-muted-foreground">
+            State-by-state coverage. Click any state to drill into its suppliers, products and inventory.
+          </p>
+        </div>
+        <div className="inline-flex rounded-md border bg-background overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setViewMode('list')}
+            className={`px-3 py-1.5 text-xs font-medium ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+          >
+            📋 List View
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('map')}
+            className={`px-3 py-1.5 text-xs font-medium border-l ${viewMode === 'map' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+          >
+            🗺️ Map View
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -287,6 +377,52 @@ export default function DynastyDirectSupplierNetwork() {
         </Card>
       </div>
 
+      {viewMode === 'list' && (
+        <Card className="p-4">
+          <div className="text-sm font-semibold mb-3">All Suppliers ({wholesalers.length})</div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs text-muted-foreground">
+                <tr className="border-b">
+                  <th className="text-left py-2 pr-2">Name</th>
+                  <th className="text-left py-2 pr-2">City / State</th>
+                  <th className="text-left py-2 pr-2">Grade</th>
+                  <th className="text-left py-2 pr-2">Rating</th>
+                  <th className="text-left py-2 pr-2">Geocoded</th>
+                  <th className="text-left py-2 pr-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {wholesalers.map((w) => (
+                  <tr key={w.id} className="border-b hover:bg-muted/30">
+                    <td className="py-2 pr-2">
+                      {w.preferred && <span className="text-amber-500 mr-1" title="Preferred">★</span>}
+                      <Link to={`/dynasty-direct/suppliers/${w.id}`} className="font-medium hover:underline">{w.name}</Link>
+                    </td>
+                    <td className="py-2 pr-2 text-muted-foreground">{[w.city, normState(w.state)].filter(Boolean).join(', ') || '—'}</td>
+                    <td className="py-2 pr-2"><Badge variant="outline">{w.reliability_grade || '—'}</Badge></td>
+                    <td className="py-2 pr-2">{Number(w.overall_rating ?? 0).toFixed(1)}</td>
+                    <td className="py-2 pr-2">{w.latitude != null && w.longitude != null ? '✅' : '❌'}</td>
+                    <td className="py-2 pr-2">
+                      <DDDrillMenu
+                        label={w.name}
+                        items={[
+                          ddDrill.supplier(w.id, w.name),
+                          ddDrill.supplierOrders(w.id),
+                          ddDrill.supplierProducts(w.id),
+                          ddDrill.inventory(w.id),
+                        ]}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {viewMode === 'map' && (
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <Card className="lg:col-span-3 p-0 overflow-hidden">
           {!MAPBOX_TOKEN ? (
@@ -352,6 +488,23 @@ export default function DynastyDirectSupplierNetwork() {
                   <div className="text-muted-foreground truncate">
                     {w.address || '—'} {w.city ? `· ${w.city}` : ''} {normState(w.state) || ''}
                   </div>
+                  <div className="mt-1 flex gap-1">
+                    <input
+                      type="text"
+                      value={addrInputs[w.id] ?? ''}
+                      onChange={(e) => setAddrInputs((p) => ({ ...p, [w.id]: e.target.value }))}
+                      placeholder={w.address ? 'Override address…' : 'Enter address, city, state'}
+                      className="flex-1 min-w-0 h-6 text-[11px] px-1.5 border rounded bg-background"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => geocodeAndSave(w)}
+                      disabled={geoBusy === w.id}
+                      className="text-[11px] px-2 h-6 rounded bg-primary text-primary-foreground disabled:opacity-50"
+                    >
+                      {geoBusy === w.id ? '…' : 'Add Location'}
+                    </button>
+                  </div>
                 </div>
                 <DDDrillMenu
                   label={w.name}
@@ -378,6 +531,9 @@ export default function DynastyDirectSupplierNetwork() {
           </Link>
         </Card>
       </div>
+      )}
+
+
 
       <Sheet open={!!selectedState} onOpenChange={(o) => !o && setSelectedState(null)}>
         <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
