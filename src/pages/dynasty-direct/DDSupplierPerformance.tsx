@@ -681,6 +681,31 @@ function DetailSheet({
           </>
         )}
       </SheetContent>
+      <Dialog open={waOpen} onOpenChange={setWaOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send WhatsApp to {supplier?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <div className="text-xs text-muted-foreground">To: {waNumber}</div>
+            <Textarea
+              placeholder="Type a message…"
+              value={waMessage}
+              onChange={(e) => setWaMessage(e.target.value)}
+              rows={5}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setWaOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => sendWhatsApp.mutate()}
+              disabled={!waMessage.trim() || sendWhatsApp.isPending}
+            >
+              <MessageCircle className="w-3 h-3 mr-1" /> Send
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   );
 }
