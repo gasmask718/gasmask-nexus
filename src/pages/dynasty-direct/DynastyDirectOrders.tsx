@@ -31,6 +31,9 @@ type OrderRow = {
   payment_status: string | null;
   fulfillment_status: string | null;
   customer_email: string | null;
+  stripe_risk_level: string | null;
+  three_ds_authenticated: boolean | null;
+  fraud_review_flag: boolean | null;
   customer_phone: string | null;
   order_type: string | null;
   shipping_address: any;
