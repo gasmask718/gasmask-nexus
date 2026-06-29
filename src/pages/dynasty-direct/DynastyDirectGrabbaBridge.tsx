@@ -164,6 +164,7 @@ export default function DynastyDirectGrabbaBridge() {
                   <TableHead>Wholesaler</TableHead>
                   <TableHead>Items</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Notified</TableHead>
                   <TableHead>Synced At</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -182,6 +183,23 @@ export default function DynastyDirectGrabbaBridge() {
                       <Badge variant={s.status === "synced" ? "default" : s.status === "failed" ? "destructive" : "secondary"}>
                         {s.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {s.supplier_notified ? (
+                        <span title={s.supplier_notified_at ? new Date(s.supplier_notified_at).toLocaleString() : ""}>✅</span>
+                      ) : s.wholesaler_id ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => notify.mutate(s)}
+                          disabled={notify.isPending}
+                        >
+                          ❌ Notify
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-xs">
                       {s.synced_at ? new Date(s.synced_at).toLocaleString() : "—"}
