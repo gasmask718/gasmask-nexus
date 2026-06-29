@@ -442,6 +442,23 @@ export default function DynastyDirectSupplierNetwork() {
                   <div className="text-muted-foreground truncate">
                     {w.address || '—'} {w.city ? `· ${w.city}` : ''} {normState(w.state) || ''}
                   </div>
+                  <div className="mt-1 flex gap-1">
+                    <input
+                      type="text"
+                      value={addrInputs[w.id] ?? ''}
+                      onChange={(e) => setAddrInputs((p) => ({ ...p, [w.id]: e.target.value }))}
+                      placeholder={w.address ? 'Override address…' : 'Enter address, city, state'}
+                      className="flex-1 min-w-0 h-6 text-[11px] px-1.5 border rounded bg-background"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => geocodeAndSave(w)}
+                      disabled={geoBusy === w.id}
+                      className="text-[11px] px-2 h-6 rounded bg-primary text-primary-foreground disabled:opacity-50"
+                    >
+                      {geoBusy === w.id ? '…' : 'Add Location'}
+                    </button>
+                  </div>
                 </div>
                 <DDDrillMenu
                   label={w.name}
