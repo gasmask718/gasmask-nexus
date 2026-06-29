@@ -239,6 +239,8 @@ export default function DDOrderDetail() {
               <Row k="Total" v={`$${Number(order.total).toFixed(2)}`} />
             </CardContent>
           </Card>
+
+          <FraudProtectionCard order={order} orderId={orderId} />
         </div>
 
         {/* RIGHT */}
