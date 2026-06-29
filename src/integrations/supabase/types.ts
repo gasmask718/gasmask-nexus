@@ -36970,6 +36970,11 @@ export type Database = {
           id: boolean
           inventory_sync_enabled: boolean | null
           low_stock_threshold: number | null
+          loyalty_enabled: boolean
+          loyalty_points_per_dollar: number
+          loyalty_tier_gold: number
+          loyalty_tier_platinum: number
+          loyalty_tier_silver: number
           reserve_hold_days: number
           rolling_reserve_enabled: boolean | null
           split_pay_enabled: boolean | null
@@ -36988,6 +36993,11 @@ export type Database = {
           id?: boolean
           inventory_sync_enabled?: boolean | null
           low_stock_threshold?: number | null
+          loyalty_enabled?: boolean
+          loyalty_points_per_dollar?: number
+          loyalty_tier_gold?: number
+          loyalty_tier_platinum?: number
+          loyalty_tier_silver?: number
           reserve_hold_days?: number
           rolling_reserve_enabled?: boolean | null
           split_pay_enabled?: boolean | null
@@ -37006,6 +37016,11 @@ export type Database = {
           id?: boolean
           inventory_sync_enabled?: boolean | null
           low_stock_threshold?: number | null
+          loyalty_enabled?: boolean
+          loyalty_points_per_dollar?: number
+          loyalty_tier_gold?: number
+          loyalty_tier_platinum?: number
+          loyalty_tier_silver?: number
           reserve_hold_days?: number
           rolling_reserve_enabled?: boolean | null
           split_pay_enabled?: boolean | null
@@ -119087,17 +119102,20 @@ export type Database = {
       }
       products_all_public: {
         Row: {
+          avg_rating: number | null
           brand_id: string | null
           category: string | null
           created_at: string | null
           description: string | null
           dimensions: Json | null
+          has_variants: boolean | null
           id: string | null
           images: Json | null
           inventory_qty: number | null
           processing_time: string | null
           product_name: string | null
           retail_price: number | null
+          review_count: number | null
           shipping_from_city: string | null
           shipping_from_state: string | null
           status: string | null
@@ -119105,22 +119123,26 @@ export type Database = {
           street_price: number | null
           unit_type: string | null
           updated_at: string | null
+          variant_types: string[] | null
           weight_oz: number | null
           wholesale_price: number | null
           wholesaler_id: string | null
         }
         Insert: {
+          avg_rating?: number | null
           brand_id?: string | null
           category?: string | null
           created_at?: string | null
           description?: string | null
           dimensions?: Json | null
+          has_variants?: boolean | null
           id?: string | null
           images?: Json | null
           inventory_qty?: number | null
           processing_time?: string | null
           product_name?: string | null
           retail_price?: number | null
+          review_count?: number | null
           shipping_from_city?: string | null
           shipping_from_state?: string | null
           status?: string | null
@@ -119128,22 +119150,26 @@ export type Database = {
           street_price?: number | null
           unit_type?: string | null
           updated_at?: string | null
+          variant_types?: string[] | null
           weight_oz?: number | null
           wholesale_price?: never
           wholesaler_id?: string | null
         }
         Update: {
+          avg_rating?: number | null
           brand_id?: string | null
           category?: string | null
           created_at?: string | null
           description?: string | null
           dimensions?: Json | null
+          has_variants?: boolean | null
           id?: string | null
           images?: Json | null
           inventory_qty?: number | null
           processing_time?: string | null
           product_name?: string | null
           retail_price?: number | null
+          review_count?: number | null
           shipping_from_city?: string | null
           shipping_from_state?: string | null
           status?: string | null
@@ -119151,6 +119177,7 @@ export type Database = {
           street_price?: number | null
           unit_type?: string | null
           updated_at?: string | null
+          variant_types?: string[] | null
           weight_oz?: number | null
           wholesale_price?: never
           wholesaler_id?: string | null
