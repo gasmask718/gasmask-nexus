@@ -1,20 +1,19 @@
 /**
  * MaintenanceGuard - Checks kill switch and shows maintenance screen
- * Exempts /developer route and authorized dev emails
+ * Exempts /developer and /auth routes, and admin role holders.
  */
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { MaintenanceScreen } from '@/pages/developer/components/MaintenanceScreen';
 
-const EXEMPT_EMAILS = ['admin123@gmail.com', 'dev@gmail.com'];
 const EXEMPT_PATHS = ['/developer', '/auth'];
 
 export const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
   const [isLocked, setIsLocked] = useState(false);
   const [checked, setChecked] = useState(false);
-  const { user } = useAuth();
+  const { role, loading: roleLoading } = useUserRole();
   const location = useLocation();
 
   useEffect(() => {
@@ -36,13 +35,12 @@ export const MaintenanceGuard = ({ children }: { children: React.ReactNode }) =>
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  if (!checked) return null;
+  if (!checked || roleLoading) return null;
 
-  // Exempt paths and authorized devs
   const isExemptPath = EXEMPT_PATHS.some(p => location.pathname.startsWith(p));
-  const isExemptUser = EXEMPT_EMAILS.includes(user?.email || '');
+  const isAdmin = role === 'admin' || role === 'owner';
 
-  if (isLocked && !isExemptPath && !isExemptUser) {
+  if (isLocked && !isExemptPath && !isAdmin) {
     return <MaintenanceScreen />;
   }
 
