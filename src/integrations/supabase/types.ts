@@ -36991,6 +36991,9 @@ export type Database = {
           product_name: string
           published_product_id: string | null
           recognition: Json | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           selected: Json
           staged: Json
           status: string
@@ -37026,6 +37029,9 @@ export type Database = {
           product_name: string
           published_product_id?: string | null
           recognition?: Json | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           selected?: Json
           staged?: Json
           status?: string
@@ -37061,6 +37067,9 @@ export type Database = {
           product_name?: string
           published_product_id?: string | null
           recognition?: Json | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           selected?: Json
           staged?: Json
           status?: string
