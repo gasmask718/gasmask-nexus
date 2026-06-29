@@ -109,6 +109,26 @@ export default function DDOrderDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const notifySupplier = useMutation({
+    mutationFn: async (row: any) => {
+      const { data, error } = await supabase.functions.invoke("dd-notify-supplier-order", {
+        body: {
+          grabba_sync_id: row.id,
+          wholesaler_id: row.wholesaler_id,
+          order_id: orderId,
+        },
+      });
+      if (error) throw error;
+      return data as { notified?: string; sent?: boolean; error?: string };
+    },
+    onSuccess: (res) => {
+      if (res?.sent) toast.success(`Notification sent to ${res.notified ?? "supplier"}`);
+      else toast.warning(res?.error ?? "Notification not sent");
+      qc.invalidateQueries({ queryKey: ["dd-order-grabba", orderId] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading order…</div>;
   if (!order) return <div className="p-6 text-sm text-muted-foreground">Order not found.</div>;
 
