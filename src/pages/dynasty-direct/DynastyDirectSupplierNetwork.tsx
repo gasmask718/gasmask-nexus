@@ -333,11 +333,29 @@ export default function DynastyDirectSupplierNetwork() {
   return (
     <div className="p-6 space-y-4">
       <DDAlertBar />
-      <div>
-        <h1 className="text-2xl font-bold">Dynasty Direct — Supplier Network</h1>
-        <p className="text-sm text-muted-foreground">
-          State-by-state coverage. Click any state to drill into its suppliers, products and inventory.
-        </p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold">Dynasty Direct — Supplier Network</h1>
+          <p className="text-sm text-muted-foreground">
+            State-by-state coverage. Click any state to drill into its suppliers, products and inventory.
+          </p>
+        </div>
+        <div className="inline-flex rounded-md border bg-background overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setViewMode('list')}
+            className={`px-3 py-1.5 text-xs font-medium ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+          >
+            📋 List View
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('map')}
+            className={`px-3 py-1.5 text-xs font-medium border-l ${viewMode === 'map' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+          >
+            🗺️ Map View
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
