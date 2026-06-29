@@ -16,14 +16,15 @@ type Freq = "weekly" | "biweekly" | "monthly" | "quarterly";
 const CADENCE_DAYS: Record<Freq, number> = { weekly: 7, biweekly: 14, monthly: 30, quarterly: 90 };
 
 export default function SubscribeAndSave({
-  userId, productId, productName, productPrice, storeAccountId,
+  productId, productName, productPrice, storeAccountId,
 }: {
-  userId: string | null;
   productId: string;
   productName: string;
   productPrice: number;
   storeAccountId?: string | null;
 }) {
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [open, setOpen] = useState(false);
   const [freq, setFreq] = useState<Freq>("monthly");
   const [qty, setQty] = useState(1);
