@@ -391,6 +391,8 @@ export default function DDAnalytics() {
           )}
         </CardContent>
       </Card>
+
+      <ReferralsAdminSection />
     </div>
   );
 }
