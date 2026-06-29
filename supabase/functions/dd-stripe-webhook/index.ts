@@ -420,3 +420,127 @@ async function releaseOrderReserves(
     .neq("payment_status", "paid");
   console.log(`[dd-webhook] order ${orderId} reserves released (${reason})`);
 }
+
+// ────────────────────────────────────────────────────────────────────
+// 3DS / Stripe Radar risk capture + dispute handling
+// ────────────────────────────────────────────────────────────────────
+
+async function sendSmsToAdmin(body: string) {
+  const TWILIO_SID = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
+  const TWILIO_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
+  const TWILIO_FROM = Deno.env.get("TWILIO_FROM_NUMBER") ?? "";
+  const ADMIN_PHONE = Deno.env.get("DD_ADMIN_PHONE") ?? Deno.env.get("DAVID_PHONE") ?? "";
+  if (!TWILIO_SID || !TWILIO_TOKEN || !TWILIO_FROM || !ADMIN_PHONE) return;
+  const auth = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`);
+  await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
+    method: "POST",
+    headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ To: ADMIN_PHONE, From: TWILIO_FROM, Body: body }),
+  }).catch((e) => console.error("[dd-webhook] admin sms failed", e?.message));
+}
+
+async function captureRiskFromPaymentIntent(
+  stripe: Stripe,
+  supabase: any,
+  paymentIntentId: string,
+  orderId: string | undefined | null,
+) {
+  if (!orderId) return;
+  try {
+    const pi = await stripe.paymentIntents.retrieve(paymentIntentId, {
+      expand: ["latest_charge"],
+    });
+    const charge = pi.latest_charge as Stripe.Charge | null;
+    if (!charge) return;
+    const riskLevel = (charge.outcome?.risk_level as string | undefined) ?? null;
+    const riskScore = (charge.outcome?.risk_score as number | undefined) ?? null;
+    const threeDS =
+      (charge.payment_method_details as any)?.card?.three_d_secure?.authenticated ?? false;
+    const flag = riskLevel === "elevated" || riskLevel === "highest";
+
+    await supabase
+      .from("marketplace_orders")
+      .update({
+        stripe_risk_level: riskLevel,
+        stripe_risk_score: riskScore,
+        three_ds_authenticated: !!threeDS,
+        fraud_review_flag: flag,
+      })
+      .eq("id", orderId);
+
+    if (flag) {
+      const { data: ord } = await supabase
+        .from("marketplace_orders")
+        .select("id, total, customer_email")
+        .eq("id", orderId)
+        .maybeSingle();
+      const ref = String(orderId).slice(0, 8);
+      const total = Number((ord as any)?.total ?? 0).toFixed(2);
+      const email = (ord as any)?.customer_email ?? "—";
+      await sendSmsToAdmin(
+        `⚠️ High risk order flagged!\nOrder #${ref}\nAmount: $${total}\nRisk: ${riskLevel} (${riskScore ?? "?"}/100)\nCustomer: ${email}\nReview: /dynasty-direct/orders/${orderId}\n\nStripe may have already blocked this. Check your Stripe dashboard.`,
+      );
+    }
+  } catch (e: any) {
+    console.error("[dd-webhook] capture risk failed", e?.message);
+  }
+}
+
+async function handleDisputeCreated(stripe: Stripe, supabase: any, dispute: Stripe.Dispute) {
+  try {
+    const chargeId = typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id;
+    let orderId: string | null = null;
+    let threeDS = false;
+    if (chargeId) {
+      const charge = await stripe.charges.retrieve(chargeId);
+      orderId =
+        (charge.metadata?.order_id as string | undefined) ??
+        ((typeof charge.payment_intent === "string"
+          ? (await stripe.paymentIntents.retrieve(charge.payment_intent)).metadata?.order_id
+          : null) as string | null) ??
+        null;
+      threeDS =
+        (charge.payment_method_details as any)?.card?.three_d_secure?.authenticated ?? false;
+    }
+
+    await supabase.from("dd_disputes").insert({
+      order_id: orderId,
+      stripe_dispute_id: dispute.id,
+      stripe_charge_id: chargeId ?? null,
+      amount: (dispute.amount ?? 0) / 100,
+      currency: dispute.currency ?? "usd",
+      reason: dispute.reason ?? null,
+      status: dispute.status ?? null,
+      evidence_due_by: dispute.evidence_details?.due_by
+        ? new Date(dispute.evidence_details.due_by * 1000).toISOString()
+        : null,
+      three_ds_authenticated: threeDS,
+    });
+
+    const ref = orderId ? String(orderId).slice(0, 8) : "unknown";
+    const amount = ((dispute.amount ?? 0) / 100).toFixed(2);
+    const due = dispute.evidence_details?.due_by
+      ? new Date(dispute.evidence_details.due_by * 1000).toLocaleDateString()
+      : "n/a";
+    await sendSmsToAdmin(
+      `🚨 CHARGEBACK FILED!\nOrder #${ref}\nAmount: $${amount}\nReason: ${dispute.reason ?? "?"}\nDue by: ${due}\n\n${threeDS ? "3DS verified — bank is liable." : "Not 3DS verified — submit evidence in Stripe."}\n\ndashboard.stripe.com/disputes`,
+    );
+  } catch (e: any) {
+    console.error("[dd-webhook] dispute create failed", e?.message);
+  }
+}
+
+async function handleDisputeUpdated(supabase: any, dispute: Stripe.Dispute) {
+  try {
+    const resolved = ["won", "lost", "charge_refunded"].includes(dispute.status ?? "");
+    await supabase
+      .from("dd_disputes")
+      .update({
+        status: dispute.status ?? null,
+        resolved_at: resolved ? new Date().toISOString() : null,
+      })
+      .eq("stripe_dispute_id", dispute.id);
+  } catch (e: any) {
+    console.error("[dd-webhook] dispute update failed", e?.message);
+  }
+}
