@@ -5,8 +5,9 @@ import { useCEODashboard } from '@/hooks/useBrandaroCEO';
 import {
   DollarSign, TrendingUp, Phone, Users, Target, Zap,
   BarChart3, ArrowUpRight, Clock, Flame, Repeat, Crown,
-  Building2, Layers
+  Building2, Layers, Bot, MessageSquare, CheckCircle2, UserCheck
 } from 'lucide-react';
+
 
 export default function CEODashboardPage() {
   const { data: d, isLoading } = useCEODashboard();
