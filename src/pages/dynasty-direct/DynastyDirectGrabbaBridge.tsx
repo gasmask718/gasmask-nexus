@@ -67,6 +67,26 @@ export default function DynastyDirectGrabbaBridge() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const notify = useMutation({
+    mutationFn: async (row: any) => {
+      const { data, error } = await supabase.functions.invoke("dd-notify-supplier-order", {
+        body: {
+          grabba_sync_id: row.id,
+          wholesaler_id: row.wholesaler_id,
+          order_id: row.marketplace_order_id,
+        },
+      });
+      if (error) throw error;
+      return data as { sent?: boolean; notified?: string; error?: string };
+    },
+    onSuccess: (res) => {
+      if (res?.sent) toast.success(`Notified ${res.notified ?? "supplier"}`);
+      else toast.warning(res?.error ?? "Notification not sent");
+      qc.invalidateQueries({ queryKey: ["dd-grabba-sync-rows"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const syncAll = useMutation({
     mutationFn: async () => {
       for (const o of unsynced) {
