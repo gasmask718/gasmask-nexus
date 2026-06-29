@@ -342,6 +342,26 @@ serve(async (req) => {
       return json({ error: "Order already paid" }, 400);
     }
 
+    // Stamp campaign on the existing order if a campaign_code was passed.
+    const hostedCampaignCode: string | null = body?.campaign_code ?? null;
+    if (hostedCampaignCode) {
+      const { data: camp } = await supabase
+        .from("dd_campaigns")
+        .select("id, preferred_wholesaler_id, status, ends_at")
+        .eq("campaign_code", hostedCampaignCode)
+        .maybeSingle();
+      if (camp && camp.status === "active" && (!camp.ends_at || new Date(camp.ends_at) > new Date())) {
+        await supabase
+          .from("marketplace_orders")
+          .update({
+            campaign_id: camp.id,
+            campaign_wholesaler_id: camp.preferred_wholesaler_id ?? null,
+          })
+          .eq("id", order.id);
+      }
+    }
+
+
     const { data: items } = await supabase
       .from("marketplace_order_items")
       .select("product_id, qty, price_each, product:products_all(product_name)")
