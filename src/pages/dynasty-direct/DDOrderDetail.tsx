@@ -344,6 +344,47 @@ export default function DDOrderDetail() {
           </Card>
 
           <Card>
+            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bell className="w-4 h-4" />Customer Notifications</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-xs text-muted-foreground">
+                Phone: <span className="font-mono">{order.customer_phone ?? "—"}</span> · Email: <span className="font-mono">{order.customer_email ?? "—"}</span>
+              </div>
+              <div className="space-y-1 text-sm">
+                {(["confirmed", "processing", "shipped", "delivered"] as NotifyEvent[]).map((evt) => {
+                  const log = (Array.isArray((order as any).notification_log) ? (order as any).notification_log : []) as any[];
+                  const entry = log.filter((l) => l?.type === evt).pop();
+                  return (
+                    <div key={evt} className="flex items-center justify-between border-b py-1">
+                      <span className="flex items-center gap-2 capitalize">
+                        {entry ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Clock className="w-3.5 h-3.5 text-muted-foreground" />}
+                        {evt}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {entry ? `${new Date(entry.sent_at).toLocaleString()} · ${(entry.channels ?? []).join(", ") || "logged"}` : "pending"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex gap-2 items-center pt-2">
+                <Select value={notifyEvent} onValueChange={(v) => setNotifyEvent(v as NotifyEvent)}>
+                  <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="shipped">Shipped</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button size="sm" onClick={() => notifyCustomer.mutate()} disabled={notifyCustomer.isPending}>
+                  <Bell className="w-3 h-3 mr-1" />
+                  {notifyCustomer.isPending ? "Sending…" : "Send Notification"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
             <CardHeader><CardTitle className="text-base">Actions</CardTitle></CardHeader>
             <CardContent className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" onClick={() => resendEmail.mutate()} disabled={resendEmail.isPending}>
