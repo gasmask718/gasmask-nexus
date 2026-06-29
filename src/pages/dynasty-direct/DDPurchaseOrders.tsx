@@ -504,6 +504,17 @@ function CreateManualPODialog({ open, onClose }: { open: boolean; onClose: () =>
   );
 }
 
+const buildTrackingUrl = (carrier: string, tracking: string): string => {
+  const urls: Record<string, string> = {
+    UPS: `https://www.ups.com/track?tracknum=${tracking}`,
+    FedEx: `https://www.fedex.com/tracking?trackingnum=${tracking}`,
+    USPS: `https://tools.usps.com/go/TrackConfirmAction?tLabels=${tracking}`,
+    DHL: `https://www.dhl.com/us-en/home/tracking.html?tracking-id=${tracking}`,
+    Amazon: `https://track.amazon.com/tracking/${tracking}`,
+  };
+  return urls[carrier] || "#";
+};
+
 function TrackingDialog({ po, onClose }: { po: PO | null; onClose: () => void }) {
   const qc = useQueryClient();
   const [tracking, setTracking] = useState("");
