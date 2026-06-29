@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CreditAccountPanel, OverdueCreditAlert } from "@/components/dynasty-direct/CreditAccountPanel";
+import { LoyaltyPanel } from "@/components/dynasty-direct/LoyaltyPanel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Store, Plus, Eye, Edit, Ban, ClipboardList } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -239,6 +240,7 @@ export default function DDStoreAccounts() {
                 <TabsList>
                   <TabsTrigger value="details">Details</TabsTrigger>
                   <TabsTrigger value="credit">💳 Credit Account</TabsTrigger>
+                  <TabsTrigger value="loyalty">🏆 Loyalty</TabsTrigger>
                 </TabsList>
                 <TabsContent value="details">
                   <div className="space-y-4 mt-4 text-sm">
@@ -263,6 +265,9 @@ export default function DDStoreAccounts() {
                   <div className="mt-4">
                     <CreditAccountPanel storeAccountId={viewing.id} />
                   </div>
+                </TabsContent>
+                <TabsContent value="loyalty">
+                  <LoyaltyPanel storeAccountId={viewing.id} userId={null} />
                 </TabsContent>
               </Tabs>
             </>

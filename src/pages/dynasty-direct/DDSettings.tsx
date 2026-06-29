@@ -23,6 +23,11 @@ type Cfg = {
   auto_reorder_enabled: boolean;
   wholesaler_self_serve_enabled: boolean;
   dispute_auto_submit: boolean;
+  loyalty_enabled: boolean;
+  loyalty_points_per_dollar: number | null;
+  loyalty_tier_silver: number | null;
+  loyalty_tier_gold: number | null;
+  loyalty_tier_platinum: number | null;
 };
 
 export default function DDSettings() {
@@ -117,6 +122,46 @@ export default function DDSettings() {
             onSave={(v) => save.mutate({ wholesaler_self_serve_enabled: v })} />
           <Toggle label="Dispute Auto-Submit" value={cfg.dispute_auto_submit}
             onSave={(v) => save.mutate({ dispute_auto_submit: v })} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">🏆 Loyalty Program</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <Toggle
+            label="Loyalty Program Enabled"
+            value={cfg.loyalty_enabled}
+            onSave={(v) => save.mutate({ loyalty_enabled: v })}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <NumberField
+              label="Points per dollar"
+              value={cfg.loyalty_points_per_dollar ?? 1}
+              onSave={(v) => save.mutate({ loyalty_points_per_dollar: v })}
+            />
+            <div>
+              <Label className="text-xs">Redemption rate</Label>
+              <div className="text-sm py-2 text-muted-foreground">100 pts = $1</div>
+            </div>
+            <NumberField
+              label="Silver threshold (pts)"
+              value={cfg.loyalty_tier_silver ?? 500}
+              onSave={(v) => save.mutate({ loyalty_tier_silver: v })}
+            />
+            <NumberField
+              label="Gold threshold (pts)"
+              value={cfg.loyalty_tier_gold ?? 2000}
+              onSave={(v) => save.mutate({ loyalty_tier_gold: v })}
+            />
+            <NumberField
+              label="Platinum threshold (pts)"
+              value={cfg.loyalty_tier_platinum ?? 5000}
+              onSave={(v) => save.mutate({ loyalty_tier_platinum: v })}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            When disabled, <code>dd_earn_loyalty_points</code> is not called after checkout.
+          </p>
         </CardContent>
       </Card>
 

@@ -123,7 +123,7 @@ async function markOrderPaid(
   if (!orderId) return;
   const { data: existing } = await supabase
     .from("marketplace_orders")
-    .select("payment_status, customer_email")
+    .select("payment_status, customer_email, user_id")
     .eq("id", orderId)
     .maybeSingle();
   if (!existing) return;
@@ -180,6 +180,25 @@ async function markOrderPaid(
         },
       })
       .catch((e: any) => console.error("[dd-webhook] email failed", e));
+  }
+  // Loyalty points (gated by dd_config.loyalty_enabled). Non-blocking.
+  try {
+    const { data: cfg } = await supabase
+      .from("dd_config")
+      .select("loyalty_enabled")
+      .limit(1)
+      .maybeSingle();
+    if (cfg?.loyalty_enabled !== false && existing.user_id && amountTotal > 0) {
+      await supabase
+        .rpc("dd_earn_loyalty_points", {
+          p_user_id: existing.user_id,
+          p_order_id: orderId,
+          p_order_total: amountTotal,
+        })
+        .catch((e: any) => console.error("[dd-webhook] loyalty earn failed", e?.message));
+    }
+  } catch (e: any) {
+    console.error("[dd-webhook] loyalty gate failed", e?.message);
   }
   console.log(`[dd-webhook] order ${orderId} marked paid`);
 }
