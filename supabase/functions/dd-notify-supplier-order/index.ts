@@ -33,7 +33,7 @@ serve(async (req) => {
     // 1) Wholesaler
     const { data: wholesaler, error: wErr } = await supabase
       .from("wholesalers")
-      .select("id, name, contact_email, email, whatsapp")
+      .select("id, name, contact_email, email, whatsapp, preferred_contact")
       .eq("id", wholesaler_id)
       .maybeSingle();
     if (wErr) throw wErr;
