@@ -235,23 +235,36 @@ export default function DDStoreAccounts() {
               <SheetHeader>
                 <SheetTitle>{viewing.business_name}</SheetTitle>
               </SheetHeader>
-              <div className="space-y-4 mt-6 text-sm">
-                <DetailRow k="Contact" v={viewing.contact_name} />
-                <DetailRow k="Email" v={viewing.email} />
-                <DetailRow k="Phone" v={viewing.phone} />
-                <DetailRow k="Address" v={viewing.address} />
-                <DetailRow k="City/State/Zip" v={[viewing.city, viewing.state, viewing.zip].filter(Boolean).join(", ")} />
-                <DetailRow k="Store Type" v={viewing.store_type} />
-                <DetailRow k="Pricing Tier" v={viewing.pricing_tier} />
-                <DetailRow k="Payment Terms" v={viewing.payment_terms} />
-                <DetailRow k="Credit Limit" v={`$${Number(viewing.credit_limit).toFixed(2)}`} />
-                <DetailRow k="Total Orders" v={String(viewing.total_orders)} />
-                <DetailRow k="Total Spent" v={`$${Number(viewing.total_spent).toFixed(2)}`} />
-                <DetailRow k="Avg Order Value" v={`$${Number(viewing.avg_order_value).toFixed(2)}`} />
-                <DetailRow k="Last Order" v={viewing.last_order_at ? new Date(viewing.last_order_at).toLocaleString() : "—"} />
-                <DetailRow k="Status" v={viewing.status} />
-                <DetailRow k="Notes" v={viewing.notes} />
-              </div>
+              <Tabs defaultValue="details" className="mt-6">
+                <TabsList>
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="credit">💳 Credit Account</TabsTrigger>
+                </TabsList>
+                <TabsContent value="details">
+                  <div className="space-y-4 mt-4 text-sm">
+                    <DetailRow k="Contact" v={viewing.contact_name} />
+                    <DetailRow k="Email" v={viewing.email} />
+                    <DetailRow k="Phone" v={viewing.phone} />
+                    <DetailRow k="Address" v={viewing.address} />
+                    <DetailRow k="City/State/Zip" v={[viewing.city, viewing.state, viewing.zip].filter(Boolean).join(", ")} />
+                    <DetailRow k="Store Type" v={viewing.store_type} />
+                    <DetailRow k="Pricing Tier" v={viewing.pricing_tier} />
+                    <DetailRow k="Payment Terms" v={viewing.payment_terms} />
+                    <DetailRow k="Credit Limit" v={`$${Number(viewing.credit_limit).toFixed(2)}`} />
+                    <DetailRow k="Total Orders" v={String(viewing.total_orders)} />
+                    <DetailRow k="Total Spent" v={`$${Number(viewing.total_spent).toFixed(2)}`} />
+                    <DetailRow k="Avg Order Value" v={`$${Number(viewing.avg_order_value).toFixed(2)}`} />
+                    <DetailRow k="Last Order" v={viewing.last_order_at ? new Date(viewing.last_order_at).toLocaleString() : "—"} />
+                    <DetailRow k="Status" v={viewing.status} />
+                    <DetailRow k="Notes" v={viewing.notes} />
+                  </div>
+                </TabsContent>
+                <TabsContent value="credit">
+                  <div className="mt-4">
+                    <CreditAccountPanel storeAccountId={viewing.id} />
+                  </div>
+                </TabsContent>
+              </Tabs>
             </>
           )}
         </SheetContent>
