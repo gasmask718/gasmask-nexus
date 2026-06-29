@@ -488,9 +488,26 @@ serve(async (req) => {
       automatic_tax: { enabled: true },
       success_url: `${origin}/order/${order.id}?paid=true`,
       cancel_url: `${origin}/order/${order.id}?cancelled=true`,
-      metadata: { order_id: order.id, source: "dynasty_direct", channel: "hosted_checkout" },
+      payment_method_options: {
+        card: { request_three_d_secure: threeDSMode },
+      },
+      metadata: {
+        order_id: order.id,
+        source: "dynasty_direct",
+        channel: "hosted_checkout",
+        three_ds_requested: threeDSMode,
+        order_total: orderTotal.toString(),
+        is_store_user: isStoreUser.toString(),
+      },
       payment_intent_data: {
-        metadata: { order_id: order.id, source: "dynasty_direct", channel: "hosted_checkout" },
+        metadata: {
+          order_id: order.id,
+          source: "dynasty_direct",
+          channel: "hosted_checkout",
+          three_ds_requested: threeDSMode,
+          order_total: orderTotal.toString(),
+          is_store_user: isStoreUser.toString(),
+        },
       },
       discounts: stripeDiscounts,
     });
