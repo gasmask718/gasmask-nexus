@@ -377,6 +377,52 @@ export default function DynastyDirectSupplierNetwork() {
         </Card>
       </div>
 
+      {viewMode === 'list' && (
+        <Card className="p-4">
+          <div className="text-sm font-semibold mb-3">All Suppliers ({wholesalers.length})</div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs text-muted-foreground">
+                <tr className="border-b">
+                  <th className="text-left py-2 pr-2">Name</th>
+                  <th className="text-left py-2 pr-2">City / State</th>
+                  <th className="text-left py-2 pr-2">Grade</th>
+                  <th className="text-left py-2 pr-2">Rating</th>
+                  <th className="text-left py-2 pr-2">Geocoded</th>
+                  <th className="text-left py-2 pr-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {wholesalers.map((w) => (
+                  <tr key={w.id} className="border-b hover:bg-muted/30">
+                    <td className="py-2 pr-2">
+                      {w.preferred && <span className="text-amber-500 mr-1" title="Preferred">★</span>}
+                      <Link to={`/dynasty-direct/suppliers/${w.id}`} className="font-medium hover:underline">{w.name}</Link>
+                    </td>
+                    <td className="py-2 pr-2 text-muted-foreground">{[w.city, normState(w.state)].filter(Boolean).join(', ') || '—'}</td>
+                    <td className="py-2 pr-2"><Badge variant="outline">{w.reliability_grade || '—'}</Badge></td>
+                    <td className="py-2 pr-2">{Number(w.overall_rating ?? 0).toFixed(1)}</td>
+                    <td className="py-2 pr-2">{w.latitude != null && w.longitude != null ? '✅' : '❌'}</td>
+                    <td className="py-2 pr-2">
+                      <DDDrillMenu
+                        label={w.name}
+                        items={[
+                          ddDrill.supplier(w.id, w.name),
+                          ddDrill.supplierOrders(w.id),
+                          ddDrill.supplierProducts(w.id),
+                          ddDrill.inventory(w.id),
+                        ]}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {viewMode === 'map' && (
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <Card className="lg:col-span-3 p-0 overflow-hidden">
           {!MAPBOX_TOKEN ? (
