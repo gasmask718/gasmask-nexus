@@ -125269,6 +125269,21 @@ export type Database = {
         Args: { p_product_id: string; p_quantity?: number; p_user_id: string }
         Returns: number
       }
+      dd_inventory_forecast: {
+        Args: { p_days_ahead?: number }
+        Returns: {
+          current_stock: number
+          daily_velocity: number
+          days_until_stockout: number
+          product_id: string
+          product_name: string
+          retail_price: number
+          risk_level: string
+          stockout_date: string
+          units_needed_to_cover: number
+          wholesaler_id: string
+        }[]
+      }
       dd_link_wholesaler_to_store_master: {
         Args: { p_wholesaler_id: string }
         Returns: string
