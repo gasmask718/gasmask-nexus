@@ -37828,6 +37828,69 @@ export type Database = {
           },
         ]
       }
+      dd_disputes: {
+        Row: {
+          amount: number | null
+          created_at: string
+          currency: string | null
+          evidence_due_by: string | null
+          id: string
+          order_id: string | null
+          reason: string | null
+          resolved_at: string | null
+          status: string | null
+          stripe_charge_id: string | null
+          stripe_dispute_id: string | null
+          three_ds_authenticated: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          evidence_due_by?: string | null
+          id?: string
+          order_id?: string | null
+          reason?: string | null
+          resolved_at?: string | null
+          status?: string | null
+          stripe_charge_id?: string | null
+          stripe_dispute_id?: string | null
+          three_ds_authenticated?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          evidence_due_by?: string | null
+          id?: string
+          order_id?: string | null
+          reason?: string | null
+          resolved_at?: string | null
+          status?: string | null
+          stripe_charge_id?: string | null
+          stripe_dispute_id?: string | null
+          three_ds_authenticated?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_disputes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_disputes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_marketplace_order_timeline"
+            referencedColumns: ["order_id"]
+          },
+        ]
+      }
       dd_email_suppressions: {
         Row: {
           created_at: string
@@ -63152,6 +63215,7 @@ export type Database = {
           dispute_reason: string | null
           dispute_resolved_at: string | null
           dispute_status: string
+          fraud_review_flag: boolean | null
           fulfillment_method: string | null
           fulfillment_status: string | null
           id: string
@@ -63165,8 +63229,11 @@ export type Database = {
           shipping_cost: number | null
           shipping_funded_by_customer: boolean | null
           stripe_payment_intent_id: string | null
+          stripe_risk_level: string | null
+          stripe_risk_score: number | null
           subtotal: number | null
           tax_amount: number | null
+          three_ds_authenticated: boolean | null
           total: number | null
           updated_at: string | null
           user_id: string
@@ -63192,6 +63259,7 @@ export type Database = {
           dispute_reason?: string | null
           dispute_resolved_at?: string | null
           dispute_status?: string
+          fraud_review_flag?: boolean | null
           fulfillment_method?: string | null
           fulfillment_status?: string | null
           id?: string
@@ -63205,8 +63273,11 @@ export type Database = {
           shipping_cost?: number | null
           shipping_funded_by_customer?: boolean | null
           stripe_payment_intent_id?: string | null
+          stripe_risk_level?: string | null
+          stripe_risk_score?: number | null
           subtotal?: number | null
           tax_amount?: number | null
+          three_ds_authenticated?: boolean | null
           total?: number | null
           updated_at?: string | null
           user_id: string
@@ -63232,6 +63303,7 @@ export type Database = {
           dispute_reason?: string | null
           dispute_resolved_at?: string | null
           dispute_status?: string
+          fraud_review_flag?: boolean | null
           fulfillment_method?: string | null
           fulfillment_status?: string | null
           id?: string
@@ -63245,8 +63317,11 @@ export type Database = {
           shipping_cost?: number | null
           shipping_funded_by_customer?: boolean | null
           stripe_payment_intent_id?: string | null
+          stripe_risk_level?: string | null
+          stripe_risk_score?: number | null
           subtotal?: number | null
           tax_amount?: number | null
+          three_ds_authenticated?: boolean | null
           total?: number | null
           updated_at?: string | null
           user_id?: string
@@ -91541,7 +91616,9 @@ export type Database = {
           address: string | null
           ambassador_id: string | null
           avg_order_value: number | null
+          business_ein: string | null
           business_name: string
+          business_verified: boolean | null
           city: string | null
           contact_name: string | null
           created_at: string | null
@@ -91554,6 +91631,8 @@ export type Database = {
           delivery_zip: string | null
           email: string | null
           id: string
+          identity_verified: boolean | null
+          identity_verified_at: string | null
           last_order_at: string | null
           notes: string | null
           payment_terms: string | null
@@ -91573,7 +91652,9 @@ export type Database = {
           address?: string | null
           ambassador_id?: string | null
           avg_order_value?: number | null
+          business_ein?: string | null
           business_name: string
+          business_verified?: boolean | null
           city?: string | null
           contact_name?: string | null
           created_at?: string | null
@@ -91586,6 +91667,8 @@ export type Database = {
           delivery_zip?: string | null
           email?: string | null
           id?: string
+          identity_verified?: boolean | null
+          identity_verified_at?: string | null
           last_order_at?: string | null
           notes?: string | null
           payment_terms?: string | null
@@ -91605,7 +91688,9 @@ export type Database = {
           address?: string | null
           ambassador_id?: string | null
           avg_order_value?: number | null
+          business_ein?: string | null
           business_name?: string
+          business_verified?: boolean | null
           city?: string | null
           contact_name?: string | null
           created_at?: string | null
@@ -91618,6 +91703,8 @@ export type Database = {
           delivery_zip?: string | null
           email?: string | null
           id?: string
+          identity_verified?: boolean | null
+          identity_verified_at?: string | null
           last_order_at?: string | null
           notes?: string | null
           payment_terms?: string | null
