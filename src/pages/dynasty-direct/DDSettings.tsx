@@ -11,6 +11,7 @@ import { Settings as SettingsIcon, Zap, ArrowRight, Package } from "lucide-react
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import SocialProofAdmin from "@/components/dynasty-direct/SocialProofAdmin";
+import EmailQueueAdmin from "@/components/dynasty-direct/EmailQueueAdmin";
 
 type Cfg = {
   id: boolean;
@@ -188,6 +189,7 @@ export default function DDSettings() {
       </Card>
       <FlashSalesSection />
       <SocialProofAdmin />
+      <EmailQueueAdmin />
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Package className="h-5 w-5" /> 📦 Featured Bundles</CardTitle>
