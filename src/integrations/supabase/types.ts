@@ -115949,6 +115949,7 @@ export type Database = {
           phone_secondary: string | null
           phone_whatsapp: string | null
           preferred: boolean | null
+          preferred_contact: string | null
           pricing_tier: string | null
           relationship_health_score: number | null
           reliability_grade: string | null
@@ -115971,6 +115972,7 @@ export type Database = {
           total_orders_fulfilled: number | null
           updated_at: string | null
           visit_frequency_days: number | null
+          whatsapp: string | null
           zip_code: string | null
         }
         Insert: {
@@ -116031,6 +116033,7 @@ export type Database = {
           phone_secondary?: string | null
           phone_whatsapp?: string | null
           preferred?: boolean | null
+          preferred_contact?: string | null
           pricing_tier?: string | null
           relationship_health_score?: number | null
           reliability_grade?: string | null
@@ -116053,6 +116056,7 @@ export type Database = {
           total_orders_fulfilled?: number | null
           updated_at?: string | null
           visit_frequency_days?: number | null
+          whatsapp?: string | null
           zip_code?: string | null
         }
         Update: {
@@ -116113,6 +116117,7 @@ export type Database = {
           phone_secondary?: string | null
           phone_whatsapp?: string | null
           preferred?: boolean | null
+          preferred_contact?: string | null
           pricing_tier?: string | null
           relationship_health_score?: number | null
           reliability_grade?: string | null
@@ -116135,6 +116140,7 @@ export type Database = {
           total_orders_fulfilled?: number | null
           updated_at?: string | null
           visit_frequency_days?: number | null
+          whatsapp?: string | null
           zip_code?: string | null
         }
         Relationships: [

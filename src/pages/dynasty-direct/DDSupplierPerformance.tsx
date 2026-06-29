@@ -1,5 +1,5 @@
 // Dynasty Direct — Supplier Performance Dashboard
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,8 +13,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  TrendingUp, RefreshCw, Star, AlertTriangle, Mail, Trophy, ChevronsUpDown,
+  TrendingUp, RefreshCw, Star, AlertTriangle, Mail, Trophy, ChevronsUpDown, MessageCircle,
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -476,6 +479,61 @@ function DetailSheet({
     onError: (e: any) => toast.error(e.message),
   });
 
+  // Contact preferences (whatsapp + preferred_contact) — fetched separately so SupplierRow stays slim.
+  const { data: contactInfo, refetch: refetchContact } = useQuery({
+    queryKey: ["dd-supplier-contact", supplier?.id],
+    enabled: open && !!supplier,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("wholesalers")
+        .select("whatsapp, preferred_contact")
+        .eq("id", supplier!.id)
+        .maybeSingle();
+      return (data ?? {}) as { whatsapp?: string | null; preferred_contact?: string | null };
+    },
+  });
+
+  const [waNumber, setWaNumber] = useState("");
+  const [waPref, setWaPref] = useState<"email" | "whatsapp" | "both">("email");
+  const [waOpen, setWaOpen] = useState(false);
+  const [waMessage, setWaMessage] = useState("");
+  const contactLoaded = useRef<string | null>(null);
+  if (supplier && contactInfo && contactLoaded.current !== supplier.id) {
+    contactLoaded.current = supplier.id;
+    setWaNumber(contactInfo.whatsapp ?? "");
+    const p = (contactInfo.preferred_contact ?? "email") as "email" | "whatsapp" | "both";
+    setWaPref(["email", "whatsapp", "both"].includes(p) ? p : "email");
+  }
+
+  const saveContact = useMutation({
+    mutationFn: async () => {
+      if (!supplier) return;
+      const { error } = await supabase
+        .from("wholesalers")
+        .update({ whatsapp: waNumber.trim() || null, preferred_contact: waPref } as never)
+        .eq("id", supplier.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Contact updated"); refetchContact(); },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Update failed"),
+  });
+
+  const sendWhatsApp = useMutation({
+    mutationFn: async () => {
+      if (!supplier || !waNumber.trim() || !waMessage.trim()) return;
+      const { data, error } = await supabase.functions.invoke("dd-whatsapp-notify", {
+        body: { to_whatsapp: waNumber.trim(), message: waMessage, wholesaler_id: supplier.id },
+      });
+      if (error) throw error;
+      if ((data as { success?: boolean } | null)?.success === false) {
+        throw new Error((data as { error?: string; warning?: string }).error ?? (data as { warning?: string }).warning ?? "Send failed");
+      }
+    },
+    onSuccess: () => { toast.success("WhatsApp sent"); setWaOpen(false); setWaMessage(""); },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Send failed"),
+  });
+
+
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
@@ -561,7 +619,48 @@ function DetailSheet({
                     <a href={`mailto:${supplier.email}`}><Mail className="w-3 h-3 mr-1" /> Contact Supplier</a>
                   </Button>
                 )}
+                {waNumber && (
+                  <Button size="sm" variant="outline" onClick={() => setWaOpen(true)}>
+                    <MessageCircle className="w-3 h-3 mr-1" /> Send WhatsApp
+                  </Button>
+                )}
               </div>
+
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2">
+                  <MessageCircle className="w-3 h-3" /> Contact Preferences
+                  <Badge variant="outline" className="ml-1">
+                    {waPref === "both" ? "📧💬 Both" : waPref === "whatsapp" ? "💬 WhatsApp" : "📧 Email"}
+                  </Badge>
+                </CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] uppercase text-muted-foreground">WhatsApp number</label>
+                      <Input
+                        placeholder="+1 555 123 4567"
+                        value={waNumber}
+                        onChange={(e) => setWaNumber(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] uppercase text-muted-foreground">Preferred contact</label>
+                      <Select value={waPref} onValueChange={(v) => setWaPref(v as typeof waPref)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="email">Email</SelectItem>
+                          <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                          <SelectItem value="both">Both</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button size="sm" onClick={() => saveContact.mutate()} disabled={saveContact.isPending}>
+                    Save Contact
+                  </Button>
+                </CardContent>
+              </Card>
+
 
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2">
@@ -582,6 +681,31 @@ function DetailSheet({
           </>
         )}
       </SheetContent>
+      <Dialog open={waOpen} onOpenChange={setWaOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send WhatsApp to {supplier?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <div className="text-xs text-muted-foreground">To: {waNumber}</div>
+            <Textarea
+              placeholder="Type a message…"
+              value={waMessage}
+              onChange={(e) => setWaMessage(e.target.value)}
+              rows={5}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setWaOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => sendWhatsApp.mutate()}
+              disabled={!waMessage.trim() || sendWhatsApp.isPending}
+            >
+              <MessageCircle className="w-3 h-3 mr-1" /> Send
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   );
 }

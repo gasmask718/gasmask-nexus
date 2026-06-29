@@ -33,7 +33,7 @@ serve(async (req) => {
     // 1) Wholesaler
     const { data: wholesaler, error: wErr } = await supabase
       .from("wholesalers")
-      .select("id, name, contact_email, email, whatsapp")
+      .select("id, name, contact_email, email, whatsapp, preferred_contact")
       .eq("id", wholesaler_id)
       .maybeSingle();
     if (wErr) throw wErr;
@@ -173,6 +173,31 @@ serve(async (req) => {
       }
     }
 
+    // 5) WhatsApp (best-effort) — fires when supplier prefers whatsapp or both
+    const wa = (wholesaler as { whatsapp?: string | null }).whatsapp ?? null;
+    const pref = ((wholesaler as { preferred_contact?: string | null }).preferred_contact ?? "email").toLowerCase();
+    let whatsapp_sent = false;
+    if (wa && (pref === "whatsapp" || pref === "both")) {
+      const customerName = addr.name ?? order.customer_email ?? "Customer";
+      const waMsg =
+        `📦 *New Order — Dynasty Direct*\n\n` +
+        `Order: #${shortId}\n` +
+        `Items: ${lineItems.length} products\n` +
+        `Total: $${orderTotal.toFixed(2)}\n\n` +
+        `Ship to:\n${customerName}\n` +
+        `${addr.city ?? ""}, ${addr.state ?? ""}\n\n` +
+        `Ship within *2 business days*.\n` +
+        `Reply DONE <tracking#> when shipped.`;
+      try {
+        const { data: waRes } = await supabase.functions.invoke("dd-whatsapp-notify", {
+          body: { to_whatsapp: wa, message: waMsg, wholesaler_id },
+        });
+        whatsapp_sent = !!(waRes as { success?: boolean } | null)?.success;
+      } catch (e) {
+        console.error("[dd-notify-supplier-order] WhatsApp failed", e);
+      }
+    }
+
     // 6) Log notification on the grabba sync row (best effort)
     if (grabba_sync_id) {
       await supabase
@@ -187,7 +212,7 @@ serve(async (req) => {
         .eq("wholesaler_id", wholesaler_id);
     }
 
-    return json({ success: true, sent, notified: recipient, error: sendError });
+    return json({ success: true, sent, whatsapp_sent, notified: recipient, error: sendError });
   } catch (err: any) {
     console.error("[dd-notify-supplier-order] error", err);
     return json({ error: err?.message ?? String(err) }, 500);
