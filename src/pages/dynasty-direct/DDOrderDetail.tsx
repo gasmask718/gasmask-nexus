@@ -311,3 +311,48 @@ function Row({ k, v, mono = false }: { k: string; v: any; mono?: boolean }) {
     </div>
   );
 }
+
+function SupplierPerformanceMini({ wholesalerId }: { wholesalerId: string | null }) {
+  const { data } = useQuery({
+    queryKey: ["dd-order-supplier-mini", wholesalerId],
+    enabled: !!wholesalerId,
+    queryFn: async () => {
+      const { data: w } = await supabase
+        .from("wholesalers")
+        .select("name,reliability_grade,on_time_rate_lifetime,avg_fulfillment_days")
+        .eq("id", wholesalerId!)
+        .maybeSingle();
+      return w;
+    },
+  });
+  if (!wholesalerId) return null;
+  const grade = (data as any)?.reliability_grade ?? "unrated";
+  const gradeColor: Record<string, string> = {
+    A: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
+    B: "bg-blue-500/15 text-blue-700 border-blue-500/30",
+    C: "bg-yellow-500/15 text-yellow-700 border-yellow-500/30",
+    D: "bg-orange-500/15 text-orange-700 border-orange-500/30",
+    F: "bg-red-500/15 text-red-700 border-red-500/30",
+    unrated: "bg-muted text-muted-foreground border-border",
+  };
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <TrendingUp className="w-4 h-4" /> Supplier Performance
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="text-sm space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">{(data as any)?.name ?? "Supplier"}</span>
+          <Badge className={gradeColor[grade] ?? gradeColor.unrated} variant="outline">Grade {grade}</Badge>
+        </div>
+        <Row k="Fulfillment rate" v={`${Number((data as any)?.on_time_rate_lifetime ?? 0).toFixed(1)}%`} />
+        <Row k="Avg fulfillment" v={`${Number((data as any)?.avg_fulfillment_days ?? 0).toFixed(1)} days`} />
+        <Button asChild size="sm" variant="outline" className="w-full mt-2">
+          <Link to={`/dynasty-direct/suppliers/performance?supplier=${wholesalerId}`}>View Full Performance →</Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
