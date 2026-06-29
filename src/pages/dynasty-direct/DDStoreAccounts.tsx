@@ -241,6 +241,7 @@ export default function DDStoreAccounts() {
                   <TabsTrigger value="details">Details</TabsTrigger>
                   <TabsTrigger value="credit">💳 Credit Account</TabsTrigger>
                   <TabsTrigger value="loyalty">🏆 Loyalty</TabsTrigger>
+                  <TabsTrigger value="delivery">🚗 Delivery</TabsTrigger>
                 </TabsList>
                 <TabsContent value="details">
                   <div className="space-y-4 mt-4 text-sm">
@@ -269,6 +270,9 @@ export default function DDStoreAccounts() {
                 <TabsContent value="loyalty">
                   <LoyaltyPanel storeAccountId={viewing.id} userId={null} />
                 </TabsContent>
+                <TabsContent value="delivery">
+                  <DeliveryPreferencesPanel storeAccountId={viewing.id} />
+                </TabsContent>
               </Tabs>
             </>
           )}
@@ -294,6 +298,119 @@ function DetailRow({ k, v }: { k: string; v: string | null }) {
     <div className="grid grid-cols-3 gap-2 border-b pb-2">
       <div className="text-muted-foreground">{k}</div>
       <div className="col-span-2">{v || "—"}</div>
+    </div>
+  );
+}
+
+function DeliveryPreferencesPanel({ storeAccountId }: { storeAccountId: string }) {
+  const qc = useQueryClient();
+  const { data: prefs, isLoading } = useQuery({
+    queryKey: ["dd-store-delivery", storeAccountId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("store_accounts")
+        .select("preferred_delivery,delivery_address,delivery_city,delivery_state,delivery_zip,delivery_window,delivery_notes,address,city,state,zip")
+        .eq("id", storeAccountId)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
+  const [form, setForm] = useState<any>(null);
+  const current = form ?? prefs;
+
+  const save = useMutation({
+    mutationFn: async (patch: any) => {
+      const { error } = await (supabase as any).from("store_accounts").update(patch).eq("id", storeAccountId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Delivery preferences saved");
+      qc.invalidateQueries({ queryKey: ["dd-store-delivery", storeAccountId] });
+      setForm(null);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
+  });
+
+  if (isLoading || !prefs) return <div className="text-sm text-muted-foreground mt-4">Loading…</div>;
+
+  const method: "shipping" | "local_delivery" = (current?.preferred_delivery as any) ?? "shipping";
+
+  return (
+    <div className="space-y-4 mt-4 text-sm">
+      <div>
+        <Label>Preferred method</Label>
+        <div className="flex gap-3 mt-2">
+          {(["shipping", "local_delivery"] as const).map((m) => (
+            <label key={m} className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="preferred_delivery"
+                value={m}
+                checked={method === m}
+                onChange={() => setForm({ ...current, preferred_delivery: m })}
+              />
+              {m === "shipping" ? "📦 Shipping" : "🚗 Local Delivery"}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {method === "local_delivery" && (
+        <div className="space-y-3 border rounded-md p-3 bg-muted/30">
+          <div>
+            <Label>Delivery address</Label>
+            <Input
+              placeholder={current?.address ?? "Same as store address"}
+              value={current?.delivery_address ?? ""}
+              onChange={(e) => setForm({ ...current, delivery_address: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <Input placeholder="City" value={current?.delivery_city ?? ""}
+              onChange={(e) => setForm({ ...current, delivery_city: e.target.value })} />
+            <Input placeholder="State" value={current?.delivery_state ?? ""}
+              onChange={(e) => setForm({ ...current, delivery_state: e.target.value })} />
+            <Input placeholder="Zip" value={current?.delivery_zip ?? ""}
+              onChange={(e) => setForm({ ...current, delivery_zip: e.target.value })} />
+          </div>
+          <div>
+            <Label>Preferred window</Label>
+            <Select value={current?.delivery_window ?? ""} onValueChange={(v) => setForm({ ...current, delivery_window: v })}>
+              <SelectTrigger><SelectValue placeholder="Select window" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Morning (9am-12pm)">Morning (9am–12pm)</SelectItem>
+                <SelectItem value="Afternoon (12pm-5pm)">Afternoon (12pm–5pm)</SelectItem>
+                <SelectItem value="Anytime">Anytime</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Delivery notes</Label>
+            <Textarea
+              placeholder="e.g. Back entrance, ask for Maria"
+              value={current?.delivery_notes ?? ""}
+              onChange={(e) => setForm({ ...current, delivery_notes: e.target.value })}
+            />
+          </div>
+        </div>
+      )}
+
+      <Button
+        onClick={() => save.mutate({
+          preferred_delivery: current?.preferred_delivery ?? "shipping",
+          delivery_address: current?.delivery_address ?? null,
+          delivery_city: current?.delivery_city ?? null,
+          delivery_state: current?.delivery_state ?? null,
+          delivery_zip: current?.delivery_zip ?? null,
+          delivery_window: current?.delivery_window ?? null,
+          delivery_notes: current?.delivery_notes ?? null,
+        })}
+        disabled={save.isPending || !form}
+      >
+        {save.isPending ? "Saving…" : "Save Preferences"}
+      </Button>
     </div>
   );
 }
