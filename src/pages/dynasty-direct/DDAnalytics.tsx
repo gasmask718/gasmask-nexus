@@ -397,6 +397,77 @@ export default function DDAnalytics() {
   );
 }
 
+function ReferralsAdminSection() {
+  const { data: refs = [] } = useQuery({
+    queryKey: ["dd-admin-referrals"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("dd_store_referrals" as any)
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      return (data || []) as any[];
+    },
+  });
+
+  const visible = refs.filter((r) => r.referred_email !== "link-share@dynastydirect.com");
+  const converted = visible.filter((r) => r.status === "qualified" || r.status === "rewarded").length;
+  const rate = visible.length ? (converted / visible.length) * 100 : 0;
+  const issued = visible
+    .filter((r) => r.status === "rewarded")
+    .reduce((s, r) => s + Number(r.referrer_credit_amount ?? 50), 0);
+
+  const statusBadge = (s: string) => {
+    const map: Record<string, string> = {
+      pending: "outline", signed_up: "secondary", qualified: "default", rewarded: "default",
+    };
+    return <Badge variant={(map[s] ?? "outline") as any}>{s}</Badge>;
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-base">Store Referrals</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Stat label="Referrals Sent" value={visible.length} />
+          <Stat label="Converted" value={converted} />
+          <Stat label="Conversion Rate" value={`${rate.toFixed(1)}%`} />
+          <Stat label="Credits Issued" value={`$${issued.toFixed(0)}`} />
+        </div>
+        {visible.length === 0 ? (
+          <Empty msg="No referrals yet" />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Referrer</TableHead>
+                <TableHead>Referred</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>First Order</TableHead>
+                <TableHead className="text-right">Credit</TableHead>
+                <TableHead>Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {visible.slice(0, 50).map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="text-xs font-mono">{r.referrer_user_id?.slice(0, 8) ?? "—"}</TableCell>
+                  <TableCell className="text-xs">{r.referred_email}</TableCell>
+                  <TableCell>{statusBadge(r.status)}</TableCell>
+                  <TableCell className="text-xs font-mono">{r.first_order_id?.slice(0, 8) ?? "—"}</TableCell>
+                  <TableCell className="text-right">${Number(r.referrer_credit_amount ?? 50).toFixed(0)}</TableCell>
+                  <TableCell className="text-xs">{new Date(r.created_at).toLocaleDateString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+
 function Stat({ label, value }: { label: string; value: any }) {
   return (
     <Card>
