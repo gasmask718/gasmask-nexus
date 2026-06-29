@@ -235,6 +235,9 @@ export default function StoreDashboard() {
           </Card>
         </div>
 
+        {/* Auto-Reorder Subscriptions */}
+        {user?.id && <StoreSubscriptionsTab userId={user.id} />}
+
         {/* Referral Program */}
         {user?.id && (
           <StoreReferralCard
