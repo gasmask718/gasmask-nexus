@@ -36994,6 +36994,9 @@ export type Database = {
           selected: Json
           staged: Json
           status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          submitted_by_wholesaler_id: string | null
           supplier_id: string | null
           updated_at: string
           weight_oz: number | null
@@ -37026,6 +37029,9 @@ export type Database = {
           selected?: Json
           staged?: Json
           status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          submitted_by_wholesaler_id?: string | null
           supplier_id?: string | null
           updated_at?: string
           weight_oz?: number | null
@@ -37058,6 +37064,9 @@ export type Database = {
           selected?: Json
           staged?: Json
           status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          submitted_by_wholesaler_id?: string | null
           supplier_id?: string | null
           updated_at?: string
           weight_oz?: number | null
@@ -37089,6 +37098,48 @@ export type Database = {
             columns: ["published_product_id"]
             isOneToOne: false
             referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_submitted_by_wholesaler_id_fkey"
+            columns: ["submitted_by_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_supplier_map_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_submitted_by_wholesaler_id_fkey"
+            columns: ["submitted_by_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_submitted_by_wholesaler_id_fkey"
+            columns: ["submitted_by_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_performance_summary"
+            referencedColumns: ["vendor_id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_submitted_by_wholesaler_id_fkey"
+            columns: ["submitted_by_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_submitted_by_wholesaler_id_fkey"
+            columns: ["submitted_by_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_submitted_by_wholesaler_id_fkey"
+            columns: ["submitted_by_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
             referencedColumns: ["id"]
           },
         ]
