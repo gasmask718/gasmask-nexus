@@ -122,6 +122,22 @@ serve(async (req) => {
       .eq("id", order_id)
       .neq("fulfillment_status", "delivered");
 
+    // 6) Auto-generate a Purchase Order for each supplier group
+    for (const [wid] of Object.entries(groups)) {
+      if (wid === "unassigned") continue;
+      try {
+        await supabase.functions.invoke("dd-generate-po", {
+          body: {
+            order_id,
+            wholesaler_id: wid,
+            send_to_supplier: true,
+          },
+        });
+      } catch (e) {
+        console.error("[dd-grabba-bridge] PO generation failed for", wid, e);
+      }
+    }
+
     return json({
       success: true,
       synced_order_id: order_id,
