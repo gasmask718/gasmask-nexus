@@ -501,6 +501,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/dynasty-direct/analytics', label: '📈 Analytics', icon: BarChart3 },
       { path: '/dynasty-direct/qa', label: '❓ Q&A', icon: MessageCircle },
       { path: '/dynasty-direct/reviews', label: '⭐ Reviews', icon: Star },
+      { path: '/dynasty-direct/flash-sales', label: '⚡ Flash Sales', icon: Zap },
       { path: '/dynasty-direct/invites', label: '✉️ Invites & Access', icon: Send },
       { path: '/dynasty-direct/store-applications', label: '🏪 Apply-as-Store Queue', icon: Send },
       { path: '/dynasty-direct/settings', label: '⚙️ Settings', icon: Settings },
