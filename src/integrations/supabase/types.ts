@@ -36656,6 +36656,54 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_abandoned_carts: {
+        Row: {
+          cart_data: Json
+          cart_total: number | null
+          created_at: string | null
+          email: string | null
+          id: string
+          item_count: number | null
+          recovered_at: string | null
+          recovery_email_sent_at: string | null
+          recovery_order_id: string | null
+          recovery_sms_sent_at: string | null
+          session_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          cart_data?: Json
+          cart_total?: number | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          item_count?: number | null
+          recovered_at?: string | null
+          recovery_email_sent_at?: string | null
+          recovery_order_id?: string | null
+          recovery_sms_sent_at?: string | null
+          session_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          cart_data?: Json
+          cart_total?: number | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          item_count?: number | null
+          recovered_at?: string | null
+          recovery_email_sent_at?: string | null
+          recovery_order_id?: string | null
+          recovery_sms_sent_at?: string | null
+          session_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       dd_affiliate_events: {
         Row: {
           affiliate_id: string
