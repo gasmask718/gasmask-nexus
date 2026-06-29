@@ -37631,6 +37631,134 @@ export type Database = {
           },
         ]
       }
+      dd_purchase_orders: {
+        Row: {
+          acknowledged_at: string | null
+          actual_ship_date: string | null
+          carrier: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          expected_delivery_date: string | null
+          expected_ship_date: string | null
+          grabba_sync_id: string | null
+          id: string
+          items: Json
+          marketplace_order_id: string | null
+          notes: string | null
+          payment_terms: string
+          po_number: string
+          sent_at: string | null
+          shipping_cost: number
+          status: string
+          subtotal: number
+          total: number
+          tracking_number: string | null
+          updated_at: string
+          wholesaler_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          actual_ship_date?: string | null
+          carrier?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          expected_delivery_date?: string | null
+          expected_ship_date?: string | null
+          grabba_sync_id?: string | null
+          id?: string
+          items?: Json
+          marketplace_order_id?: string | null
+          notes?: string | null
+          payment_terms?: string
+          po_number: string
+          sent_at?: string | null
+          shipping_cost?: number
+          status?: string
+          subtotal?: number
+          total?: number
+          tracking_number?: string | null
+          updated_at?: string
+          wholesaler_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          actual_ship_date?: string | null
+          carrier?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          expected_delivery_date?: string | null
+          expected_ship_date?: string | null
+          grabba_sync_id?: string | null
+          id?: string
+          items?: Json
+          marketplace_order_id?: string | null
+          notes?: string | null
+          payment_terms?: string
+          po_number?: string
+          sent_at?: string | null
+          shipping_cost?: number
+          status?: string
+          subtotal?: number
+          total?: number
+          tracking_number?: string | null
+          updated_at?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_purchase_orders_marketplace_order_id_fkey"
+            columns: ["marketplace_order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_purchase_orders_marketplace_order_id_fkey"
+            columns: ["marketplace_order_id"]
+            isOneToOne: false
+            referencedRelation: "v_marketplace_order_timeline"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "dd_purchase_orders_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_purchase_orders_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_performance_summary"
+            referencedColumns: ["vendor_id"]
+          },
+          {
+            foreignKeyName: "dd_purchase_orders_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "dd_purchase_orders_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "dd_purchase_orders_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_reserve_ledger: {
         Row: {
           amount_cents: number
@@ -124240,6 +124368,14 @@ export type Database = {
         }
         Returns: Json
       }
+      dd_create_purchase_order: {
+        Args: {
+          p_grabba_sync_id?: string
+          p_order_id: string
+          p_wholesaler_id: string
+        }
+        Returns: string
+      }
       dd_decrement_inventory: {
         Args: {
           p_order_id: string
@@ -124249,6 +124385,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      dd_generate_po_number: { Args: never; Returns: string }
       dd_get_effective_margin_pct: {
         Args: { p_product_id: string; p_wholesaler_id: string }
         Returns: number
