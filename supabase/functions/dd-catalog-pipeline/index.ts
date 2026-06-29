@@ -15,6 +15,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 const LOVABLE_KEY = Deno.env.get('LOVABLE_API_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const REMOVEBG_API_KEY = Deno.env.get('REMOVEBG_API_KEY') || '';
 
 const sbAdmin = () => createClient(SUPABASE_URL, SERVICE_ROLE);
 
@@ -502,6 +503,165 @@ Generate a content brief as JSON:
   }
 }
 
+// ---------- new modes: price research, vision recognize, image standardize ----------
+
+async function runPriceResearch(body: any) {
+  const { draft_id, product_name, category, supplier_cost } = body;
+  if (!product_name) throw new Error('product_name required');
+  const cost = Number(supplier_cost) || 0;
+  const hasCost = cost > 0;
+
+  const system = 'You are a pricing analyst for a wholesale-to-retail business. Output STRICT JSON only.';
+  const user = `Product: ${product_name}
+Category: ${category || 'unknown'}
+Supplier cost: ${hasCost ? '$' + cost.toFixed(2) : 'NOT PROVIDED'}
+
+Research this product and provide a best-effort competitive pricing snapshot for the US market.
+
+Return ONLY this JSON (numbers, no $ signs):
+{
+  "amazon_price": 0.00,
+  "walmart_price": 0.00,
+  "competitor_avg": 0.00,
+  "suggested_store_price": 0.00,
+  "suggested_retail_price": 0.00,
+  "store_margin_pct": 0,
+  "retail_margin_pct": 0,
+  "pricing_notes": "brief explanation${hasCost ? '' : '. No supplier cost provided — margin calculations approximate'}"
+}
+
+Pricing rules:
+- store_price = wholesale-to-store price (typically cost × 1.5 to cost × 2.5)
+- retail_price = direct-to-consumer (typically cost × 2.5 to cost × 4)
+- If cost not provided, infer a reasonable cost from competitor data and compute margins from that inference.`;
+
+  const raw = await geminiText(system, user);
+  const parsed = parseJson(raw);
+  const payload = {
+    amazon_price: Number(parsed.amazon_price) || 0,
+    walmart_price: Number(parsed.walmart_price) || 0,
+    competitor_avg: Number(parsed.competitor_avg) || 0,
+    suggested_store_price: Number(parsed.suggested_store_price) || 0,
+    suggested_retail_price: Number(parsed.suggested_retail_price) || 0,
+    store_margin_pct: Number(parsed.store_margin_pct) || 0,
+    retail_margin_pct: Number(parsed.retail_margin_pct) || 0,
+    pricing_notes: String(parsed.pricing_notes || ''),
+    cost_basis: cost,
+    researched_at: new Date().toISOString(),
+  };
+  if (draft_id) {
+    await sbAdmin().from('dd_catalog_drafts').update({ price_research: payload }).eq('id', draft_id);
+  }
+  return payload;
+}
+
+async function runRecognizeProduct(body: any) {
+  const { draft_id, photo_url } = body;
+  if (!photo_url) throw new Error('photo_url required');
+  const dataUrl = await fetchAsDataUrl(photo_url);
+  const visionPrompt = `Look at this product image and identify:
+1. What is this product called?
+2. What category does it belong to?
+3. What are 3 key features visible?
+4. Is this a wholesale/bulk item or a single retail item?
+
+Return ONLY this JSON:
+{
+  "product_name": "string",
+  "category": "string",
+  "key_features": ["string","string","string"],
+  "item_type": "bulk",
+  "confidence": "low|medium|high"
+}`;
+  const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${LOVABLE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-pro',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: visionPrompt },
+          { type: 'image_url', image_url: { url: dataUrl } },
+        ],
+      }],
+    }),
+  });
+  if (!r.ok) throw new Error(`vision recognize ${r.status} ${await r.text()}`);
+  const j = await r.json();
+  const parsed = parseJson(j.choices?.[0]?.message?.content ?? '');
+  const payload = {
+    product_name: String(parsed.product_name || ''),
+    category: String(parsed.category || ''),
+    key_features: Array.isArray(parsed.key_features) ? parsed.key_features.slice(0, 3) : [],
+    item_type: parsed.item_type === 'single' ? 'single' : 'bulk',
+    confidence: parsed.confidence || 'medium',
+    recognized_at: new Date().toISOString(),
+  };
+  if (draft_id) {
+    await sbAdmin().from('dd_catalog_drafts').update({ recognition: payload }).eq('id', draft_id);
+  }
+  return payload;
+}
+
+async function runStandardizeImage(body: any) {
+  const { draft_id, photo_url } = body;
+  if (!photo_url) throw new Error('photo_url required');
+  const id = draft_id || crypto.randomUUID();
+  const variants: { size: string; url: string }[] = [{ size: 'original', url: photo_url }];
+
+  // 1) Background removal via Remove.bg (optional)
+  let cleanUrl = '';
+  if (REMOVEBG_API_KEY) {
+    try {
+      const fd = new FormData();
+      fd.append('image_url', photo_url);
+      fd.append('size', 'auto');
+      fd.append('bg_color', 'ffffff');
+      const rb = await fetch('https://api.remove.bg/v1.0/removebg', {
+        method: 'POST',
+        headers: { 'X-Api-Key': REMOVEBG_API_KEY },
+        body: fd,
+      });
+      if (!rb.ok) {
+        console.warn('remove.bg failed', rb.status, await rb.text());
+      } else {
+        const buf = new Uint8Array(await rb.arrayBuffer());
+        cleanUrl = await uploadPng(buf, `dd-catalog/${id}/clean-${Date.now()}.png`);
+        variants.push({ size: 'clean', url: cleanUrl });
+      }
+    } catch (e) {
+      console.warn('remove.bg error', e);
+    }
+  } else {
+    console.log('Background removal skipped — add REMOVEBG_API_KEY to Vault');
+  }
+
+  // 2) Card (800) + thumb (400) variants via ImageScript
+  const sourceUrl = cleanUrl || photo_url;
+  try {
+    const { Image } = await import('https://deno.land/x/imagescript@1.2.17/mod.ts');
+    const src = await fetch(sourceUrl);
+    const bytes = new Uint8Array(await src.arrayBuffer());
+    const img = await Image.decode(bytes);
+    const card = img.clone().resize(800, Image.RESIZE_AUTO);
+    const cardBytes = await card.encode();
+    const cardUrl = await uploadPng(cardBytes, `dd-catalog/${id}/card-${Date.now()}.png`);
+    variants.push({ size: 'card', url: cardUrl });
+    const thumb = img.clone().resize(400, Image.RESIZE_AUTO);
+    const thumbBytes = await thumb.encode();
+    const thumbUrl = await uploadPng(thumbBytes, `dd-catalog/${id}/thumb-${Date.now()}.png`);
+    variants.push({ size: 'thumb', url: thumbUrl });
+  } catch (e) {
+    console.warn('image variant generation failed', e);
+  }
+
+  if (draft_id) {
+    await sbAdmin().from('dd_catalog_drafts').update({ image_variants: variants }).eq('id', draft_id);
+  }
+  return { variants, removebg_used: !!cleanUrl };
+}
+
 // ---------- entrypoint ----------
 
 Deno.serve(async (req) => {
@@ -516,6 +676,9 @@ Deno.serve(async (req) => {
       case 'copy_pricing':           result = await runCopyPricing(body); break;
       case 'market_check':           result = await runMarketCheck(body); break;
       case 'estimate_measurements':  result = await runEstimateMeasurements(body); break;
+      case 'price_research':         result = await runPriceResearch(body); break;
+      case 'recognize_product':      result = await runRecognizeProduct(body); break;
+      case 'standardize_image':      result = await runStandardizeImage(body); break;
       case 'publish':                result = await runPublish(body); break;
       case 'content_factory':        result = await runContentFactory(body); break;
       default: throw new Error(`unknown mode: ${mode}`);
