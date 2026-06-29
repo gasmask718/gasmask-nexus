@@ -340,6 +340,57 @@ export default function DDAnalytics() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2">
+          <ShoppingCart className="w-4 h-4 text-primary" />
+          <CardTitle className="text-base">Abandoned Carts (last 30 days)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Stat label="Abandoned This Week" value={abStats.thisWeek} />
+            <Stat label="Recovered" value={abStats.recovered} />
+            <Stat label="Recovery Rate" value={`${abStats.rate.toFixed(1)}%`} />
+            <Stat label="Revenue Recovered" value={`$${abStats.revenue.toFixed(0)}`} />
+          </div>
+          {abandoned.length === 0 ? (
+            <Empty msg="No abandoned carts yet" />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead className="text-right">Items</TableHead>
+                  <TableHead className="text-right">Value</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>SMS</TableHead>
+                  <TableHead>Recovered</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {abandoned.slice(0, 25).map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell className="text-xs">{new Date(c.created_at).toLocaleString()}</TableCell>
+                    <TableCell className="text-xs">{c.email ?? "—"}</TableCell>
+                    <TableCell className="text-right">{c.item_count ?? 0}</TableCell>
+                    <TableCell className="text-right">${Number(c.cart_total ?? 0).toFixed(2)}</TableCell>
+                    <TableCell>{c.recovery_email_sent_at ? <Badge variant="secondary">Sent</Badge> : <Badge variant="outline">—</Badge>}</TableCell>
+                    <TableCell>{c.recovery_sms_sent_at ? <Badge variant="secondary">Sent</Badge> : <Badge variant="outline">—</Badge>}</TableCell>
+                    <TableCell>{c.recovered_at ? <Badge>Yes</Badge> : <Badge variant="outline">No</Badge>}</TableCell>
+                    <TableCell>
+                      <Button size="sm" variant="outline" onClick={() => sendManualRecovery(c.id)}>
+                        Send Recovery
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
