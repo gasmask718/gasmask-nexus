@@ -1,5 +1,6 @@
-// Dynasty Direct — customer order-status notifications (SMS + Email)
-// Triggered on: confirmed, processing, shipped, delivered
+// Dynasty Direct — customer order status notifier (SMS + email).
+// Invoked by dd-stripe-webhook (confirmed), dd-grabba-bridge (processing),
+// DDPurchaseOrders (shipped), and DDOrderDetail manual panel (any event).
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
@@ -10,7 +11,7 @@ const corsHeaders = {
 
 type EventType = "confirmed" | "processing" | "shipped" | "delivered";
 
-interface Payload {
+interface Body {
   order_id: string;
   event_type: EventType;
   tracking_number?: string;
@@ -18,92 +19,63 @@ interface Payload {
   tracking_url?: string;
 }
 
-const FRONTEND_BASE_URL = Deno.env.get("FRONTEND_BASE_URL") ?? "https://dynastydirect.com";
-
-function buildSms(p: Payload, ref: string): string {
-  switch (p.event_type) {
-    case "confirmed":
-      return `✅ Order confirmed! #${ref} from Dynasty Direct. We're preparing your items.`;
-    case "processing":
-      return `📦 Your order #${ref} is being prepared by our supplier and will ship within 1-2 business days.`;
-    case "shipped":
-      return `🚚 Your order #${ref} has shipped!${p.carrier ? ` Carrier: ${p.carrier}` : ""}${p.tracking_number ? ` Tracking: ${p.tracking_number}` : ""}${p.tracking_url ? ` Track: ${p.tracking_url}` : ""}`;
-    case "delivered":
-      return `📬 Your Dynasty Direct order #${ref} has been delivered! How was it? Leave a review: ${FRONTEND_BASE_URL}/orders/${p.order_id}/review`;
-  }
+function json(b: unknown, s = 200) {
+  return new Response(JSON.stringify(b), {
+    status: s,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 }
 
-function buildSubject(p: Payload, ref: string): string {
-  switch (p.event_type) {
-    case "confirmed": return `Order Confirmed — #${ref}`;
-    case "processing": return `Order Processing — #${ref}`;
-    case "shipped": return `Your Order Shipped — Track It Here`;
-    case "delivered": return `Order Delivered — How Was It?`;
-  }
-}
-
-function buildHtml(p: Payload, ref: string, name: string): string {
-  const greeting = name ? `Hi ${name},` : "Hi there,";
-  const trackBtn = p.event_type === "shipped" && p.tracking_url
-    ? `<p style="margin:24px 0;"><a href="${p.tracking_url}" style="background:#000;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:600;">Track Your Order</a></p>`
-    : "";
-  const body: Record<EventType, string> = {
-    confirmed: `${greeting}<br/><br/>Your order <strong>#${ref}</strong> has been confirmed. We're getting it ready.`,
-    processing: `${greeting}<br/><br/>Your order <strong>#${ref}</strong> is being prepared and will ship within 1-2 business days.`,
-    shipped: `${greeting}<br/><br/>Great news! Your order <strong>#${ref}</strong> has shipped.${p.carrier ? `<br/><strong>Carrier:</strong> ${p.carrier}` : ""}${p.tracking_number ? `<br/><strong>Tracking:</strong> ${p.tracking_number}` : ""}${trackBtn}`,
-    delivered: `${greeting}<br/><br/>Your order <strong>#${ref}</strong> has been delivered. We'd love your feedback — <a href="${FRONTEND_BASE_URL}/orders/${p.order_id}/review">leave a review</a>.`,
+function buildTrackingUrl(carrier: string | undefined, tracking: string | undefined): string {
+  if (!carrier || !tracking) return "#";
+  const map: Record<string, string> = {
+    UPS: `https://www.ups.com/track?tracknum=${tracking}`,
+    FedEx: `https://www.fedex.com/tracking?trackingnum=${tracking}`,
+    USPS: `https://tools.usps.com/go/TrackConfirmAction?tLabels=${tracking}`,
+    DHL: `https://www.dhl.com/us-en/home/tracking.html?tracking-id=${tracking}`,
+    Amazon: `https://track.amazon.com/tracking/${tracking}`,
   };
-  return `<!doctype html><html><body style="font-family:Arial,sans-serif;background:#fff;color:#111;padding:24px;max-width:600px;margin:0 auto;">
-    <h1 style="font-size:20px;margin:0 0 16px;">Dynasty Direct</h1>
-    <div style="font-size:14px;line-height:1.6;">${body[p.event_type]}</div>
-    <hr style="border:none;border-top:1px solid #eee;margin:32px 0;"/>
-    <p style="font-size:12px;color:#888;">Dynasty Direct · Order #${ref}</p>
-  </body></html>`;
+  return map[carrier] ?? "#";
 }
 
 async function sendSms(to: string, body: string): Promise<boolean> {
   const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const token = Deno.env.get("TWILIO_AUTH_TOKEN");
-  const from = Deno.env.get("TWILIO_PHONE_NUMBER");
-  if (!sid || !token || !from) {
-    console.warn("[dd-notify-customer] Twilio not configured — SMS skipped");
+  const tok = Deno.env.get("TWILIO_AUTH_TOKEN");
+  const from = Deno.env.get("TWILIO_FROM_NUMBER") ?? Deno.env.get("TWILIO_PHONE_NUMBER");
+  if (!sid || !tok || !from) {
+    console.warn("[dd-notify] twilio not configured — skipping sms");
     return false;
   }
   try {
     const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
       method: "POST",
       headers: {
-        Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
+        Authorization: "Basic " + btoa(`${sid}:${tok}`),
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({ To: to, From: from, Body: body }),
+      body: new URLSearchParams({ To: to, From: from, Body: body }).toString(),
     });
     if (!res.ok) {
-      console.error("[dd-notify-customer] SMS failed", res.status, await res.text());
+      console.error("[dd-notify] twilio failed", res.status, await res.text());
       return false;
     }
     return true;
-  } catch (e) {
-    console.error("[dd-notify-customer] SMS error", e);
+  } catch (e: any) {
+    console.error("[dd-notify] sms threw", e?.message);
     return false;
   }
 }
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   const key = Deno.env.get("RESEND_API_KEY");
-  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!key || !lovableKey) {
-    console.warn("[dd-notify-customer] Resend/Lovable key missing — email skipped");
+  if (!key) {
+    console.warn("[dd-notify] RESEND_API_KEY missing — skipping email");
     return false;
   }
   try {
-    const res = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
+    const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${lovableKey}`,
-        "X-Connection-Api-Key": key,
-      },
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         from: "Dynasty Direct <orders@dynastydirect.com>",
         to: [to],
@@ -112,105 +84,168 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
       }),
     });
     if (!res.ok) {
-      console.error("[dd-notify-customer] Email failed", res.status, await res.text());
+      console.error("[dd-notify] resend failed", res.status, await res.text());
       return false;
     }
     return true;
-  } catch (e) {
-    console.error("[dd-notify-customer] Email error", e);
+  } catch (e: any) {
+    console.error("[dd-notify] email threw", e?.message);
     return false;
+  }
+}
+
+const SHELL = (inner: string) => `
+<!doctype html><html><body style="margin:0;background:#f6f7f9;font-family:-apple-system,Segoe UI,Arial,sans-serif;color:#111;">
+<div style="max-width:560px;margin:0 auto;padding:24px;">
+<div style="background:#0a0a0a;color:#fff;padding:18px 22px;border-radius:10px 10px 0 0;font-weight:700;font-size:18px;">Dynasty Direct</div>
+<div style="background:#fff;padding:22px;border-radius:0 0 10px 10px;line-height:1.55;font-size:15px;">${inner}</div>
+<div style="text-align:center;font-size:11px;color:#888;margin-top:14px;">© Dynasty Direct</div>
+</div></body></html>`;
+
+function buildMessages(
+  evt: EventType,
+  orderRef: string,
+  totalPrice: number,
+  carrier?: string,
+  trackingNumber?: string,
+  trackingUrl?: string,
+) {
+  const base = "https://dynastydirect.com";
+  const viewUrl = `${base}/account/orders/${orderRef}`;
+  const tUrl = trackingUrl && trackingUrl !== "#" ? trackingUrl : buildTrackingUrl(carrier, trackingNumber);
+  const btn = (label: string, url: string) =>
+    `<a href="${url}" style="display:inline-block;background:#0a0a0a;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;margin-top:14px;">${label}</a>`;
+  switch (evt) {
+    case "confirmed":
+      return {
+        sms: `✅ Order confirmed! #${orderRef} from Dynasty Direct. We're preparing your items and will ship within 1-2 business days.`,
+        subject: `Order Confirmed — #${orderRef}`,
+        html: SHELL(`
+          <h2 style="margin:0 0 10px;">Your order is confirmed! 🎉</h2>
+          <p>Thank you for ordering from Dynasty Direct.</p>
+          <p><b>Order #${orderRef}</b><br/>Total: $${totalPrice.toFixed(2)}<br/>Placed: ${new Date().toLocaleDateString()}</p>
+          <p>We'll notify you the moment it ships.</p>
+          ${btn("View Order", viewUrl)}
+        `),
+      };
+    case "processing":
+      return {
+        sms: `📦 Your order #${orderRef} is being prepared by our supplier and will ship within 1-2 days. We'll text you when it's on the way!`,
+        subject: `Order Processing — #${orderRef}`,
+        html: SHELL(`
+          <h2 style="margin:0 0 10px;">Your order is being prepared 📦</h2>
+          <p>Order <b>#${orderRef}</b> has been routed to our supplier and will ship within 1-2 business days.</p>
+          ${btn("View Order", viewUrl)}
+        `),
+      };
+    case "shipped":
+      return {
+        sms: `🚚 Your order #${orderRef} has shipped!${carrier ? ` Carrier: ${carrier}` : ""}${trackingNumber ? ` Tracking: ${trackingNumber}` : ""}${tUrl !== "#" ? ` Track: ${tUrl}` : ""}`,
+        subject: `Your Order Shipped — Track It Now`,
+        html: SHELL(`
+          <h2 style="margin:0 0 10px;">Your order is on the way! 🚚</h2>
+          <p>Order <b>#${orderRef}</b> just left our supplier.</p>
+          ${carrier ? `<p><b>Carrier:</b> ${carrier}<br/><b>Tracking #:</b> ${trackingNumber ?? "—"}</p>` : ""}
+          <p>Estimated delivery: 3-5 business days.</p>
+          ${btn("Track Your Package →", tUrl)}
+        `),
+      };
+    case "delivered":
+      return {
+        sms: `📬 Your Dynasty Direct order #${orderRef} has been delivered! Enjoy your products 🎉 Leave a review: ${base}/products`,
+        subject: `Order Delivered — How Was It?`,
+        html: SHELL(`
+          <h2 style="margin:0 0 10px;">Your order arrived! 📬</h2>
+          <p>Order <b>#${orderRef}</b> was delivered. We hope you love it.</p>
+          <p>How was your experience?</p>
+          <p style="font-size:22px;letter-spacing:6px;">
+            <a href="${base}/products" style="text-decoration:none;">⭐⭐⭐⭐⭐</a>
+          </p>
+          ${btn("Leave a Review →", `${base}/products`)}
+        `),
+      };
   }
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  let payload: Payload;
-  try {
-    payload = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  if (!payload.order_id || !payload.event_type) {
-    return new Response(JSON.stringify({ error: "order_id and event_type required" }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } },
   );
+
+  let body: Body;
+  try {
+    body = await req.json();
+  } catch {
+    return json({ error: "invalid json" }, 400);
+  }
+  const { order_id, event_type } = body;
+  if (!order_id || !["confirmed", "processing", "shipped", "delivered"].includes(event_type)) {
+    return json({ error: "order_id and valid event_type required" }, 400);
+  }
 
   const { data: order, error: orderErr } = await supabase
     .from("marketplace_orders")
-    .select("id, user_id, customer_email, customer_phone, notification_log")
-    .eq("id", payload.order_id)
+    .select("id, user_id, total_price, notification_log")
+    .eq("id", order_id)
     .maybeSingle();
+  if (orderErr || !order) return json({ error: "order not found" }, 404);
 
-  if (orderErr || !order) {
-    return new Response(JSON.stringify({ error: "Order not found" }), {
-      status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  let phone: string | null = order.customer_phone ?? null;
-  let email: string | null = order.customer_email ?? null;
-  let fullName = "";
-
+  // Customer email via auth admin lookup, phone via profiles.
+  let customerEmail: string | null = null;
+  let customerPhone: string | null = null;
   if (order.user_id) {
-    const { data: profile } = await supabase
+    const { data: u } = await supabase.auth.admin.getUserById(order.user_id);
+    customerEmail = u?.user?.email ?? null;
+    const { data: prof } = await supabase
       .from("profiles")
-      .select("phone, email, full_name, name")
+      .select("phone")
       .eq("id", order.user_id)
       .maybeSingle();
-    if (profile) {
-      phone = phone ?? (profile as any).phone ?? null;
-      email = email ?? (profile as any).email ?? null;
-      fullName = (profile as any).full_name ?? (profile as any).name ?? "";
-    }
+    customerPhone = (prof as any)?.phone ?? null;
   }
 
-  const ref = payload.order_id.slice(0, 8).toUpperCase();
-  const smsBody = buildSms(payload, ref);
-  const subject = buildSubject(payload, ref);
-  const html = buildHtml(payload, ref, fullName);
+  const orderRef = String(order.id).slice(0, 8).toUpperCase();
+  const trackingUrl = body.tracking_url ?? buildTrackingUrl(body.carrier, body.tracking_number);
+  const msg = buildMessages(
+    event_type,
+    orderRef,
+    Number(order.total_price ?? 0),
+    body.carrier,
+    body.tracking_number,
+    trackingUrl,
+  );
 
-  const channels: string[] = [];
-  let sms_sent = false;
-  let email_sent = false;
+  let smsSent = false;
+  let emailSent = false;
+  if (customerPhone) smsSent = await sendSms(customerPhone, msg.sms);
+  if (customerEmail) emailSent = await sendEmail(customerEmail, msg.subject, msg.html);
 
-  if (phone) {
-    sms_sent = await sendSms(phone, smsBody);
-    if (sms_sent) channels.push("sms");
-  }
-  if (email) {
-    email_sent = await sendEmail(email, subject, html);
-    if (email_sent) channels.push("email");
-  }
-
-  const log = Array.isArray(order.notification_log) ? order.notification_log : [];
-  log.push({
-    type: payload.event_type,
+  const log = Array.isArray(order.notification_log) ? (order.notification_log as any[]) : [];
+  const entry = {
+    type: event_type,
     sent_at: new Date().toISOString(),
-    channels,
-    tracking_number: payload.tracking_number ?? null,
-    carrier: payload.carrier ?? null,
-  });
-
+    channels: [smsSent ? "sms" : null, emailSent ? "email" : null].filter(Boolean),
+    tracking_number: body.tracking_number ?? null,
+    carrier: body.carrier ?? null,
+  };
   await supabase
     .from("marketplace_orders")
     .update({
-      notification_log: log,
+      notification_log: [...log, entry],
       customer_notified_at: new Date().toISOString(),
-      last_notification_type: payload.event_type,
+      last_notification_type: event_type,
     })
-    .eq("id", payload.order_id);
+    .eq("id", order_id);
 
-  return new Response(JSON.stringify({ success: true, sms_sent, email_sent }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  return json({
+    success: true,
+    event_type,
+    sms_sent: smsSent,
+    email_sent: emailSent,
+    order_ref: orderRef,
   });
 });
