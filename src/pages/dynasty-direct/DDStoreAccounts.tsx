@@ -103,7 +103,11 @@ export default function DDStoreAccounts() {
 
   const filtered = useMemo(() => {
     return stores.filter((s) => {
-      if (statusTab !== "all" && s.status !== statusTab) return false;
+      if (statusTab === "pro") {
+        if (!proStats.activeStoreIds.has(s.id)) return false;
+      } else if (statusTab !== "all" && s.status !== statusTab) {
+        return false;
+      }
       if (filter) {
         const q = filter.toLowerCase();
         return (
@@ -113,7 +117,7 @@ export default function DDStoreAccounts() {
       }
       return true;
     });
-  }, [stores, filter, statusTab]);
+  }, [stores, filter, statusTab, proStats.activeStoreIds]);
 
   const suspend = useMutation({
     mutationFn: async (id: string) => {
