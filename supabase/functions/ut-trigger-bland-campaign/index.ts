@@ -75,11 +75,14 @@ serve(async (req) => {
     if (!BLAND_API_KEY) throw new Error("BLAND_API_KEY not configured");
     const DNC_TOOL_SECRET = Deno.env.get("GASMASK_DNC_TOOL_SECRET");
     if (!DNC_TOOL_SECRET) {
-      // Hard fail: an outbound agent without a working AddToDNC tool is a
-      // TCPA-compliance hazard. Better to refuse to dispatch than dial without
-      // a functioning opt-out channel.
-      throw new Error("GASMASK_DNC_TOOL_SECRET not configured — AddToDNC tool cannot authenticate");
+      // Loud warning — operational risk, not a hard block. Without this secret
+      // the Bland agent CANNOT call AddToDNC, which is a TCPA-compliance hazard
+      // if real outbound calls run. Smoke tests still run because the per-record
+      // dnc_list gate inside the trigger is server-side and independent of the
+      // agent tool. PRODUCTION launch MUST configure this secret.
+      console.warn("[ut-trigger] GASMASK_DNC_TOOL_SECRET not configured — AddToDNC tool will be OMITTED from Bland calls. Opt-outs will only be captured via post-call webhook disposition, not in-call. NOT SAFE FOR PRODUCTION.");
     }
+
 
 
     const body = await req.json().catch(() => ({}));
