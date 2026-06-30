@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Phone } from 'lucide-react';
+import KillSwitchButton from './components/KillSwitchButton';
 
 const BIZ_OPTIONS = [
   { value: 'gasmask', label: 'GasMask' }, { value: 'unforgettable_times', label: 'Unforgettable Times' },
