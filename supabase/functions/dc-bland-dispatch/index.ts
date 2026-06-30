@@ -2,6 +2,17 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { isOnDNC, normalizeE164 } from "../_shared/dnc.ts";
+import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
+
+
+// Maps Bland businessType strings → dc_businesses.business_key values
+// so the gate helper can match kill-switches and schedules.
+const BIZ_TYPE_TO_KEY: Record<string, string> = {
+  brandaro: 'brandaro',
+  surplus_funds: 'surplus_funds',
+  wholesale_re: 'real_estate',
+  gasmask: 'gasmask',
+};
 
 
 const AREA_CODE_TO_STATE: Record<string, string> = {
