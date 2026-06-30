@@ -129,10 +129,33 @@ serve(async (req) => {
         console.warn('[re-trigger gate-blocked]', l.id, gate.code, gate.reason);
         if (!gate.retryable) {
           killSwitchHit = true;
-          await supabase.from('re_leads').update({ status: 'cancelled' }).eq('id', l.id);
+          // supabase-js never throws on PostgREST errors — inspect `error` and
+          // surface failures, otherwise CHECK/RLS rejections look like stuck
+          // leads. (See sf-trigger comment for the smoke-test backstory.)
+          const { error: cancelErr } = await supabase.from('re_leads')
+            .update({ status: 'cancelled' }).eq('id', l.id);
+          if (cancelErr) {
+            console.error('[re-trigger cancel update failed]', l.id, cancelErr);
+            await logLeadSync(supabase, {
+              business_unit_key: 'real_estate', lead_id: l.id,
+              sync_direction: 'in', status_after: 'cancelled',
+              sync_source: 're-trigger-bland-campaign:cancel-on-kill-switch',
+              success: false, error_message: cancelErr.message,
+            });
+          }
           const remaining = (leads as any[]).slice((leads as any[]).indexOf(l) + 1).map((r: any) => r.id);
           if (remaining.length > 0) {
-            await supabase.from('re_leads').update({ status: 'cancelled' }).in('id', remaining);
+            const { error: bulkCancelErr } = await supabase.from('re_leads')
+              .update({ status: 'cancelled' }).in('id', remaining);
+            if (bulkCancelErr) {
+              console.error('[re-trigger bulk cancel failed]', remaining, bulkCancelErr);
+              await logLeadSyncBatch(supabase, remaining.map((rid: string) => ({
+                business_unit_key: 'real_estate', lead_id: rid,
+                sync_direction: 'in' as const, status_after: 'cancelled',
+                sync_source: 're-trigger-bland-campaign:cancel-on-kill-switch-bulk',
+                success: false, error_message: bulkCancelErr.message,
+              })));
+            }
             for (const rid of remaining) {
               gateBlocks.push({ lead_id: rid, code: gate.code, reason: gate.reason, retryable: false });
             }
