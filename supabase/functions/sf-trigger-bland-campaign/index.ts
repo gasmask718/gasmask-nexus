@@ -96,8 +96,42 @@ serve(async (req) => {
     let blandSuccessCount = 0;
     let blandError: string | null = null;
     const blandCallIds: string[] = [];
+    const gateBlocks: Array<{ lead_id: string; code: string; reason: string; retryable: boolean }> = [];
+    let killSwitchHit = false;
 
     for (const l of leads as any[]) {
+      // === Per-lead dispatch gate (kill-switch, calling hours, throttle) ===
+      // Campaign row isn't created until after the loop, so we scope on
+      // business_unit_key only. Kill-switch (business_unit) is the critical
+      // mid-batch protection — re-checked per lead so a kill-switch engaged
+      // partway through a batch aborts remaining leads.
+      const gate = await checkDispatchGates(supabase, { businessUnitKey: 'surplus_funds' });
+      if (!gate.allowed) {
+        gateBlocks.push({ lead_id: l.id, code: gate.code, reason: gate.reason, retryable: gate.retryable });
+        console.warn('[sf-trigger gate-blocked]', l.id, gate.code, gate.reason);
+        // Kill-switch = non-retryable → mark lead cancelled and stop dialing
+        // entirely (no point checking subsequent leads against the same switch).
+        if (!gate.retryable) {
+          killSwitchHit = true;
+          await supabase.from('surplus_funds_leads')
+            .update({ status: 'cancelled', bland_abort_reason: gate.reason })
+            .eq('id', l.id);
+          // Cancel the rest of the batch in one shot.
+          const remaining = (leads as any[]).slice((leads as any[]).indexOf(l) + 1).map((r: any) => r.id);
+          if (remaining.length > 0) {
+            await supabase.from('surplus_funds_leads')
+              .update({ status: 'cancelled', bland_abort_reason: gate.reason })
+              .in('id', remaining);
+            for (const rid of remaining) {
+              gateBlocks.push({ lead_id: rid, code: gate.code, reason: gate.reason, retryable: false });
+            }
+          }
+          break;
+        }
+        // Retryable (hours/throttle) → leave lead queued, skip this lead
+        continue;
+      }
+
       const taskPrompt = SF_OUTREACH_PROMPT
         .replaceAll('{{first_name}}', l.first_name || 'there')
         .replaceAll('{{county}}', l.county || 'your county')
