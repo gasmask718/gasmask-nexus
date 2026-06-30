@@ -234,14 +234,18 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
     }
   }, [destination]);
 
-  // 5. Fetch directions
+  // 5. Fetch directions — only on destination change or explicit reroute,
+  //    NOT on every GPS tick. Uses the latest GPS fix at the moment of fetch.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !currentPos || !destination || !MAPBOX_TOKEN) return;
 
     let cancelled = false;
-    setLoadingRoute(true);
+    const isReroute = rerouteToken > 0;
+    if (isReroute) setRerouting(true);
+    else setLoadingRoute(true);
     setRouteError(null);
+    fetchOriginRef.current = currentPos;
 
     const url =
       `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/` +
@@ -268,33 +272,70 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
           geometry: r.geometry,
         };
         setRoute(summary);
+        offRouteSince.current = null;
 
         const src = map.getSource('nav-route') as mapboxgl.GeoJSONSource | undefined;
         if (src) {
           src.setData({ type: 'Feature', properties: {}, geometry: r.geometry });
         }
 
-        // Fit bounds to route
-        const coords: [number, number][] = r.geometry.coordinates;
-        if (coords.length > 1) {
-          const bounds = coords.reduce(
-            (b, c) => b.extend(c as [number, number]),
-            new mapboxgl.LngLatBounds(coords[0], coords[0])
-          );
-          map.fitBounds(bounds, { padding: 80, duration: 800, maxZoom: 15 });
+        // Fit bounds only on first route; subsequent reroutes keep camera on driver.
+        if (!isReroute) {
+          const coords: [number, number][] = r.geometry.coordinates;
+          if (coords.length > 1) {
+            const bounds = coords.reduce(
+              (b, c) => b.extend(c as [number, number]),
+              new mapboxgl.LngLatBounds(coords[0], coords[0])
+            );
+            map.fitBounds(bounds, { padding: 80, duration: 800, maxZoom: 15 });
+          }
         }
       })
       .catch((e) => {
         if (!cancelled) setRouteError(e.message || 'Failed to fetch route');
       })
       .finally(() => {
-        if (!cancelled) setLoadingRoute(false);
+        if (cancelled) return;
+        setLoadingRoute(false);
+        setRerouting(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [currentPos?.lat, currentPos?.lng, destination?.lat, destination?.lng]);
+    // Intentionally NOT depending on currentPos — would refetch on every GPS tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [destination?.lat, destination?.lng, rerouteToken]);
+
+  // 5b. Initial fetch trigger once we get our first GPS fix.
+  useEffect(() => {
+    if (currentPos && destination && !route && !loadingRoute && rerouteToken === 0) {
+      setRerouteToken((t) => t + 1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPos, destination]);
+
+  // 5c. Off-route detection — if driver strays >60m from route polyline for >5s,
+  //     request a fresh route. Throttled to once every 15s.
+  useEffect(() => {
+    if (!currentPos || !route?.geometry?.coordinates?.length) return;
+    const distM = minDistanceToPolyline(currentPos, route.geometry.coordinates as [number, number][]);
+    const OFF_ROUTE_M = 60;
+    const STICKY_MS = 5_000;
+    const COOLDOWN_MS = 15_000;
+    if (distM > OFF_ROUTE_M) {
+      if (offRouteSince.current == null) offRouteSince.current = Date.now();
+      const strayedFor = Date.now() - offRouteSince.current;
+      const sinceLast = Date.now() - lastRerouteAt.current;
+      if (strayedFor >= STICKY_MS && sinceLast >= COOLDOWN_MS) {
+        lastRerouteAt.current = Date.now();
+        offRouteSince.current = null;
+        setRerouteToken((t) => t + 1);
+      }
+    } else {
+      offRouteSince.current = null;
+    }
+  }, [currentPos, route]);
 
   const heavyTraffic =
     route && route.durationTypicalSec
