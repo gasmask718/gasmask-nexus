@@ -10,6 +10,9 @@
  */
 
 import { placeBlandCall } from "../_shared/bland.ts";
+import { isOnDNC } from "../_shared/dnc.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
