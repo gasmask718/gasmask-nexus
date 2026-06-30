@@ -300,8 +300,29 @@ Deno.serve(async (req) => {
       // table may not contain all phones — ignore
     }
 
-    const dialable = clean.filter((t) => !optedOut.has(t.to_number));
+    // DNC filter — global compliance list (must filter BEFORE any dial)
+    const dncBlocked = new Set<string>();
+    try {
+      const phones = clean.map((t) => t.to_number);
+      const { data: dncRows } = await admin
+        .from("dnc_list")
+        .select("phone_e164, phone_number")
+        .or(`phone_e164.in.(${phones.join(",")}),phone_number.in.(${phones.join(",")})`);
+      for (const r of dncRows || []) {
+        if (r.phone_e164) dncBlocked.add(r.phone_e164);
+        if (r.phone_number) dncBlocked.add(r.phone_number);
+      }
+    } catch (e) {
+      // Fail-CLOSED on DNC lookup error — block everything to stay compliant
+      console.error("[dc-bulk-call] DNC lookup failed — blocking all dials in this batch", e);
+      for (const t of clean) dncBlocked.add(t.to_number);
+    }
+
+    const dialable = clean.filter(
+      (t) => !optedOut.has(t.to_number) && !dncBlocked.has(t.to_number),
+    );
     const skippedCount = clean.length - dialable.length;
+
 
     const { data: batch, error: bErr } = await admin
       .from("dc_bulk_batches")
