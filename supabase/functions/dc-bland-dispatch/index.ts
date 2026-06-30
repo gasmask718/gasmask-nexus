@@ -210,6 +210,27 @@ serve(async (req) => {
 
       const { phoneNumber, businessType, contactName, businessName, queueId } = params;
 
+      // === DNC PRE-DIAL CHECK (must run BEFORE any Bland API call) ===
+      const dnc = await isOnDNC(supabase, phoneNumber);
+      if (dnc.blocked) {
+        console.log('[DNC BLOCKED]', { phoneNumber, reason: dnc.reason, queueId });
+        if (queueId) {
+          await supabase.from('dynasty_call_queue').update({
+            status: 'dnc',
+            error_message: `DNC blocked: ${dnc.reason}`,
+            completed_at: new Date().toISOString(),
+          }).eq('id', queueId);
+        }
+        return new Response(JSON.stringify({
+          success: false, dnc_blocked: true, reason: dnc.reason,
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+
+
       // Get state and matching caller ID
       const prospectState = getStateFromPhone(phoneNumber);
       const { data: phoneMatch } = await supabase
