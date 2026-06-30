@@ -114,11 +114,24 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // === DNC PRE-DIAL CHECK — must run BEFORE any Bland API call ===
+    if (SUPABASE_URL && SUPABASE_KEY) {
+      const dncClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+      const dnc = await isOnDNC(dncClient, to_number);
+      if (dnc.blocked) {
+        console.log(`[dc-outbound-call] DNC BLOCKED to=${to_number} reason=${dnc.reason}`);
+        return new Response(JSON.stringify({
+          success: false, dnc_blocked: true, reason: dnc.reason, error: `DNC blocked: ${dnc.reason}`,
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     const BLAND_API_KEY = Deno.env.get("BLAND_API_KEY") || "";
     if (!BLAND_API_KEY) {
       return new Response(JSON.stringify({ success: false, error: "BLAND_API_KEY is not configured.", credential_issue: true }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
 
     const biz = business || "gasmask";
 
