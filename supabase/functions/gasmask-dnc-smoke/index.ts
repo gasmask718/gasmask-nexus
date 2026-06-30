@@ -93,9 +93,13 @@ Deno.serve(async (req) => {
       Authorization: `Bearer ${anon}`,
     },
     body: JSON.stringify({
-      phoneNumber: TEST_PHONE,
-      businessType: 'gasmask',
-      leadName: 'DNC Smoke Test',
+      action: 'make-call',
+      params: {
+        phoneNumber: TEST_PHONE,
+        businessType: 'gasmask',
+        contactName: 'DNC Smoke Test',
+        businessName: 'Smoke Test Co',
+      },
     }),
   });
   results.d_dispatch = { status: d.status, body: await d.json().catch(() => null) };
