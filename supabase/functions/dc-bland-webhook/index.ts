@@ -375,9 +375,13 @@ ${transcript}`
       }
     }
 
-    // === DUAL-WRITE BACK TO SOURCE HUB (Surplus Funds / Real Estate) ===
+    // === DUAL-WRITE BACK TO SOURCE HUB (Surplus Funds / Real Estate / TopTier) ===
+    // Warnings collected by per-hub branches and surfaced in the final 200 response
+    // so silent partial failures (e.g. CHECK violations) are visible upstream.
+    const ttWarnings: string[] = [];
     try {
       const requestData = payload.request_data || payload.variables || {};
+
       let sourceHub: string | null = requestData.hub || null;
       let leadId: string | null = requestData.lead_id || null;
 
@@ -557,8 +561,25 @@ ${transcript}`
           const transcriptFlagsExistingPartner = existingPartnerRegex.test(callTranscript || '');
           const transcriptFlagsDnc = dncRegex.test(callTranscript || '');
 
+          // === STAGE vs DISPOSITION SPLIT (Step 6.2 fix) ===
+          // Stage = lifecycle. Disposition = call-outcome. They are separate
+          // columns and separate UPDATEs. A CHECK violation on the stage write
+          // must NOT roll back the disposition/attempts/timestamp write.
+          //
+          // Stage-mutating dispositions:
+          //   interested      → pending_vetting
+          //   dnc             → dnc
+          //   wrong_number    → attempted (and phone_invalid=true)
+          // Transcript signals (override above unless terminal):
+          //   transcript_dnc          → dnc
+          //   transcript_existing     → existing_partner (only if newStage not dnc)
+          // No stage change:
+          //   not_interested, callback, voicemail, no_answer, called
+
           let newStage: string | null = null;
-          const ttUpdate: Record<string, unknown> = {
+
+          // ---- UPDATE 1: always-runs disposition/attempts/timestamp write ----
+          const dispUpdate: Record<string, unknown> = {
             tt_last_disposition: canonical,
             tt_call_attempts: (prevTt?.tt_call_attempts || 0) + 1,
             tt_last_call_at: new Date().toISOString(),
@@ -568,62 +589,70 @@ ${transcript}`
             case 'interested':
               newStage = 'pending_vetting';
               break;
-            case 'not_interested':
-              newStage = 'not_interested';
-              break;
             case 'dnc':
               newStage = 'dnc';
               break;
             case 'wrong_number':
-              ttUpdate.phone_invalid = true;
+              newStage = 'attempted';
+              dispUpdate.phone_invalid = true;
               break;
             case 'callback': {
-              newStage = 'callback';
               const cbRaw = (payload.variables?.callback_time
                 || payload.analysis?.callback_time
                 || payload.callback_time
                 || null) as string | null;
               if (cbRaw) {
                 const parsed = new Date(cbRaw);
-                if (!isNaN(parsed.getTime())) ttUpdate.tt_callback_at = parsed.toISOString();
+                if (!isNaN(parsed.getTime())) dispUpdate.tt_callback_at = parsed.toISOString();
               }
               break;
             }
-            // voicemail / no_answer / called → no stage change
+            // not_interested / voicemail / no_answer / called → no stage change
           }
 
           // Transcript-based DNC fallback (AddToDNC tool degraded).
-          if (transcriptFlagsDnc) {
-            newStage = 'dnc';
-          }
+          if (transcriptFlagsDnc) newStage = 'dnc';
 
-          // Existing-partner detection — overrides only if stage is non-terminal.
-          // (Terminal = dnc / not_interested. Don't paper over a 'no' with 'existing'.)
-          if (
-            transcriptFlagsExistingPartner
-            && newStage !== 'dnc'
-            && newStage !== 'not_interested'
-          ) {
+          // Existing-partner detection — overrides only if newStage non-terminal.
+          if (transcriptFlagsExistingPartner && newStage !== 'dnc') {
             newStage = 'existing_partner';
           }
 
-          if (newStage) ttUpdate.tt_acquisition_stage = newStage;
-
-          const { error: ttUpdateErr } = await supabase
+          const { error: dispUpdateErr } = await supabase
             .from('crm_partners')
-            .update(ttUpdate)
+            .update(dispUpdate)
             .eq('id', leadId);
 
+          if (dispUpdateErr) {
+            ttWarnings.push(`disposition_update_failed: ${dispUpdateErr.message}`);
+          }
+
+          // ---- UPDATE 2: stage write, only when a stage transition is intended ----
+          let stageWriteErr: string | null = null;
+          if (newStage && newStage !== prevTt?.tt_acquisition_stage) {
+            const { error: stageErr } = await supabase
+              .from('crm_partners')
+              .update({ tt_acquisition_stage: newStage })
+              .eq('id', leadId);
+            if (stageErr) {
+              stageWriteErr = stageErr.message;
+              ttWarnings.push(`stage_update_failed (${prevTt?.tt_acquisition_stage} → ${newStage}): ${stageErr.message}`);
+            }
+          }
+
+          // Log: success only when both intended writes succeeded.
+          const writeSucceeded = !dispUpdateErr && !stageWriteErr;
           await logLeadSync(supabase, {
             business_unit_key: 'top_tier',
             lead_id: leadId,
             sync_direction: 'out',
             status_before: prevTt?.tt_acquisition_stage || null,
-            status_after: (newStage || prevTt?.tt_acquisition_stage || null),
+            status_after: stageWriteErr ? (prevTt?.tt_acquisition_stage || null) : (newStage || prevTt?.tt_acquisition_stage || null),
             sync_source: 'dc-bland-webhook:top_tier',
-            success: !ttUpdateErr,
-            error_message: ttUpdateErr?.message || null,
+            success: writeSucceeded,
+            error_message: dispUpdateErr?.message || stageWriteErr || null,
           });
+
 
           // DNC list insertion via transcript catch (safety net).
           if (transcriptFlagsDnc) {
@@ -661,9 +690,12 @@ ${transcript}`
       console.error('[dual-write failed]', dualWriteErr);
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    const responseBody: Record<string, unknown> = { success: true };
+    if (ttWarnings.length) responseBody.warnings = ttWarnings;
+    return new Response(JSON.stringify(responseBody), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   } catch (error) {
     console.error('Webhook error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
