@@ -114,10 +114,26 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // === DNC PRE-DIAL CHECK — must run BEFORE any Bland API call ===
+    // === PRE-DIAL GATES (order matters: kill-switch → hours → throttle → DNC → Bland) ===
     if (SUPABASE_URL && SUPABASE_KEY) {
-      const dncClient = createClient(SUPABASE_URL, SUPABASE_KEY);
-      const dnc = await isOnDNC(dncClient, to_number);
+      const adminClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      // 1. Kill-switch + calling-hours + throttle (shared gate helper)
+      const { checkDispatchGates } = await import("../_shared/dispatch_gates.ts");
+      const gate = await checkDispatchGates(adminClient, {
+        campaignId: campaign_id || null,
+        businessUnitKey: business || null,
+      });
+      if (!gate.allowed) {
+        console.log(`[dc-outbound-call] GATE BLOCK code=${gate.code} reason=${gate.reason} to=${to_number} campaign=${campaign_id || '-'} biz=${business || '-'}`);
+        return new Response(JSON.stringify({
+          success: false, gate_blocked: true, gate_code: gate.code,
+          gate_retryable: gate.retryable, reason: gate.reason, error: gate.reason,
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // 2. DNC compliance (permanent block, never retryable)
+      const dnc = await isOnDNC(adminClient, to_number);
       if (dnc.blocked) {
         console.log(`[dc-outbound-call] DNC BLOCKED to=${to_number} reason=${dnc.reason}`);
         return new Response(JSON.stringify({

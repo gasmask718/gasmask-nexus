@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Phone } from 'lucide-react';
+import KillSwitchButton from './components/KillSwitchButton';
 
 const BIZ_OPTIONS = [
   { value: 'gasmask', label: 'GasMask' }, { value: 'unforgettable_times', label: 'Unforgettable Times' },
@@ -82,8 +83,8 @@ export default function DCCampaignManager() {
         <CardHeader><CardTitle className="text-base">Active Campaigns</CardTitle></CardHeader>
         <CardContent>
           {campaigns.length === 0 ? <p className="text-sm text-muted-foreground text-center py-4">No campaigns yet</p> : (
-            <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-2">Name</th><th className="pb-2">Business</th><th className="pb-2">Agent</th><th className="pb-2">Leads</th><th className="pb-2">Called</th><th className="pb-2">Status</th></tr></thead><tbody>
-              {campaigns.map((c: any) => <tr key={c.id} className="border-b border-border/50"><td className="py-2 font-medium">{c.name}</td><td className="py-2">{c.business}</td><td className="py-2 text-xs">{c.agent_name || '-'}</td><td className="py-2">{c.total_leads}</td><td className="py-2">{c.calls_made}</td><td className="py-2"><Badge variant="outline" className="text-xs capitalize">{c.status}</Badge></td></tr>)}
+            <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-2">Name</th><th className="pb-2">Business</th><th className="pb-2">Agent</th><th className="pb-2">Leads</th><th className="pb-2">Called</th><th className="pb-2">Status</th><th className="pb-2">Kill</th></tr></thead><tbody>
+              {campaigns.map((c: any) => <tr key={c.id} className="border-b border-border/50"><td className="py-2 font-medium">{c.name}</td><td className="py-2">{c.business}</td><td className="py-2 text-xs">{c.agent_name || '-'}</td><td className="py-2">{c.total_leads}</td><td className="py-2">{c.calls_made}</td><td className="py-2"><Badge variant="outline" className="text-xs capitalize">{c.status}</Badge></td><td className="py-2"><KillSwitchButton scope={{ kind: 'campaign', campaignId: c.id, label: c.name }} variant="compact" /></td></tr>)}
             </tbody></table></div>
           )}
         </CardContent>

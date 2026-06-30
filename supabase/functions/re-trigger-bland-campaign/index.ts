@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
+import { logLeadSyncBatch } from "../_shared/dc_sync_log.ts";
 
 const COLD_SELLER_PROMPT = `You are a real estate acquisition specialist calling homeowners about their property. Be friendly, professional, and respectful.
 
@@ -90,7 +91,25 @@ serve(async (req) => {
       status: 'queued',
       external_ref_id: l.id,
     }));
-    await supabase.from('dc_leads').insert(dcLeadRows);
+    const { data: insertedDcLeads, error: dcInsertErr } = await supabase
+      .from('dc_leads').insert(dcLeadRows).select('id, external_ref_id');
+
+    // === Step 5 sync log (direction='in', source='re-trigger-bland-campaign') ===
+    // Instrumentation only — does not alter sync behavior.
+    await logLeadSyncBatch(supabase, leads.map((l: any) => {
+      const matched = (insertedDcLeads || []).find((d: any) => d.external_ref_id === l.id);
+      return {
+        business_unit_key: 'real_estate',
+        lead_id: l.id,
+        dc_lead_id: matched?.id || null,
+        sync_direction: 'in' as const,
+        status_before: l.status || null,
+        status_after: 'queued',
+        sync_source: 're-trigger-bland-campaign',
+        success: !dcInsertErr,
+        error_message: dcInsertErr?.message || null,
+      };
+    }));
 
     const label = body.campaign_name || `RE_${agentType}_${new Date().toISOString().slice(0,10)}_${Date.now()}`;
 

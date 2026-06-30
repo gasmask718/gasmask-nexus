@@ -2,6 +2,17 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { isOnDNC, normalizeE164 } from "../_shared/dnc.ts";
+import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
+
+
+// Maps Bland businessType strings → dc_businesses.business_key values
+// so the gate helper can match kill-switches and schedules.
+const BIZ_TYPE_TO_KEY: Record<string, string> = {
+  brandaro: 'brandaro',
+  surplus_funds: 'surplus_funds',
+  wholesale_re: 'real_estate',
+  gasmask: 'gasmask',
+};
 
 
 const AREA_CODE_TO_STATE: Record<string, string> = {
@@ -210,6 +221,30 @@ serve(async (req) => {
 
       const { phoneNumber, businessType, contactName, businessName, queueId } = params;
 
+      // === PRE-DIAL GATES (kill-switch + calling-hours + throttle) ===
+      // No campaign_id is available on this path — gate by business unit only.
+      const businessUnitKey = BIZ_TYPE_TO_KEY[businessType as string] || (businessType as string) || null;
+      const gate = await checkDispatchGates(supabase, { businessUnitKey });
+      if (!gate.allowed) {
+        console.log('[GATE BLOCK make-call]', { code: gate.code, reason: gate.reason, businessUnitKey, queueId });
+        if (queueId) {
+          // Retryable blocks (hours/throttle) leave the queue row alone so it
+          // can be retried when the window reopens. Non-retryable (kill-switch)
+          // marks it cancelled so it doesn't sit forever.
+          if (!gate.retryable) {
+            await supabase.from('dynasty_call_queue').update({
+              status: 'cancelled',
+              error_message: `Gate blocked: ${gate.code}: ${gate.reason}`,
+              completed_at: new Date().toISOString(),
+            }).eq('id', queueId);
+          }
+        }
+        return new Response(JSON.stringify({
+          success: false, gate_blocked: true, gate_code: gate.code,
+          gate_retryable: gate.retryable, reason: gate.reason,
+        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
       // === DNC PRE-DIAL CHECK (must run BEFORE any Bland API call) ===
       const dnc = await isOnDNC(supabase, phoneNumber);
       if (dnc.blocked) {
@@ -328,6 +363,18 @@ serve(async (req) => {
 
       const { businessType, concurrency = 5, manualNumberOverride = null, autoMatch = true } = params;
 
+      // === PRE-BATCH GATE (kill-switch + calling-hours) — short-circuit
+      // the entire batch before pulling leads, so we don't even mark them.
+      const businessUnitKey = BIZ_TYPE_TO_KEY[businessType as string] || (businessType as string) || null;
+      const batchGate = await checkDispatchGates(supabase, { businessUnitKey });
+      if (!batchGate.allowed) {
+        console.log('[GATE BLOCK start-campaign batch]', { code: batchGate.code, reason: batchGate.reason, businessUnitKey });
+        return new Response(JSON.stringify({
+          success: false, gate_blocked: true, gate_code: batchGate.code,
+          gate_retryable: batchGate.retryable, reason: batchGate.reason, dispatched: 0,
+        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
       const { data: leads } = await supabase
         .from('dynasty_call_queue')
         .select('*')
@@ -344,6 +391,21 @@ serve(async (req) => {
       const results = [];
       for (const lead of leads) {
         try {
+          // Per-lead gate recheck — honors a kill-switch toggled mid-batch.
+          const perLeadGate = await checkDispatchGates(supabase, { businessUnitKey });
+          if (!perLeadGate.allowed) {
+            console.log('[GATE BLOCK start-campaign per-lead]', { code: perLeadGate.code, leadId: lead.id });
+            if (!perLeadGate.retryable) {
+              await supabase.from('dynasty_call_queue').update({
+                status: 'cancelled',
+                error_message: `Gate blocked: ${perLeadGate.code}`,
+                completed_at: new Date().toISOString(),
+              }).eq('id', lead.id);
+            }
+            results.push({ id: lead.id, status: 'gate_blocked', code: perLeadGate.code });
+            continue;
+          }
+
           // === DNC PRE-DIAL CHECK — must run BEFORE Bland API call ===
           const dncCheck = await isOnDNC(supabase, lead.phone_number);
           if (dncCheck.blocked) {

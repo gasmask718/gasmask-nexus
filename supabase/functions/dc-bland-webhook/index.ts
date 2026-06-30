@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { canonicalizeDisposition } from "../_shared/dnc.ts";
+import { logLeadSync } from "../_shared/dc_sync_log.ts";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -403,8 +404,11 @@ ${transcript}`
         const callTranscript = payload.concatenated_transcript || payload.transcript || null;
 
         if (sourceHub === 'surplus_funds') {
+          // Capture status_before for sync log instrumentation (Step 5).
+          const { data: prevSf } = await supabase
+            .from('surplus_funds_leads').select('status').eq('id', leadId).maybeSingle();
           await supabase.rpc('increment_call_count', { row_id: leadId, target_table: 'surplus_funds_leads' });
-          await supabase.from('surplus_funds_leads').update({
+          const { error: sfUpdateErr } = await supabase.from('surplus_funds_leads').update({
             status: canonical,
             last_called_at: new Date().toISOString(),
             call_outcome: canonical,
@@ -414,6 +418,18 @@ ${transcript}`
             interest_level: canonical === 'interested' ? 'high' : canonical === 'not_interested' ? 'low' : null,
           }).eq('id', leadId);
 
+          // Step 5 sync log — instrumentation only, never alters behavior.
+          await logLeadSync(supabase, {
+            business_unit_key: 'surplus_funds',
+            lead_id: leadId,
+            sync_direction: 'out',
+            status_before: prevSf?.status || null,
+            status_after: canonical,
+            sync_source: 'dc-bland-webhook:surplus_funds',
+            success: !sfUpdateErr,
+            error_message: sfUpdateErr?.message || null,
+          });
+
           if (canonical === 'interested' && callTranscript) {
             // Cutover: dc-post-call-analysis is the unified entry point.
             // sf-post-call-analysis remains deployed but @deprecated.
@@ -422,8 +438,11 @@ ${transcript}`
             }).catch((e) => console.error('[dc-post-call-analysis (surplus_funds) invoke failed]', e));
           }
         } else if (sourceHub === 're') {
+          // Capture status_before for sync log instrumentation (Step 5).
+          const { data: prevRe } = await supabase
+            .from('re_leads').select('status').eq('id', leadId).maybeSingle();
           await supabase.rpc('increment_call_count', { row_id: leadId, target_table: 're_leads' });
-          await supabase.from('re_leads').update({
+          const { error: reUpdateErr } = await supabase.from('re_leads').update({
             status: canonical,
             last_called_at: new Date().toISOString(),
             call_outcome: canonical,
@@ -431,6 +450,18 @@ ${transcript}`
             call_transcript: callTranscript,
             bland_call_id: callId,
           }).eq('id', leadId);
+
+          // Step 5 sync log — instrumentation only, never alters behavior.
+          await logLeadSync(supabase, {
+            business_unit_key: 'real_estate',
+            lead_id: leadId,
+            sync_direction: 'out',
+            status_before: prevRe?.status || null,
+            status_after: canonical,
+            sync_source: 'dc-bland-webhook:real_estate',
+            success: !reUpdateErr,
+            error_message: reUpdateErr?.message || null,
+          });
 
 
 
