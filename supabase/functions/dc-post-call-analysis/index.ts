@@ -192,6 +192,9 @@ const ANALYSIS_CONFIGS: Record<string, AnalysisConfig> = {
             "Confirm partner details, send the onboarding link via their preferred channel, and log the send.",
           due_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         },
+      };
+    },
+  },
   top_tier: {
     systemPrompt:
       "You analyze call transcripts for Top Tier Experience, a luxury concierge dispatch platform recruiting suppliers (chauffeurs, exotic-car operators, helicopter operators, party-bus operators, sprinter-van operators, yacht/watercraft operators) as commission partners (15% standard, never lower). Extract structured data about supplier qualification, fleet capacity, pricing posture, insurance status, and commission acceptance. Return JSON only.",
