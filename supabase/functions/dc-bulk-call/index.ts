@@ -199,6 +199,37 @@ async function runWorker(admin: any, batch_id: string) {
       return { ok: true, status: "cancelled" };
     }
 
+    // === PER-BATCH GATE RECHECK (kill-switch + calling-hours + throttle) ===
+    // dc-outbound-call also gates per call (defense in depth), but checking
+    // here lets us bail out of the entire slice cheaply when hours close or
+    // a kill-switch flips mid-batch.
+    const batchGate = await checkDispatchGates(admin, {
+      campaignId: batch.id, // dc_bulk_batches.id IS the campaign_id in dc-outbound-call
+      businessUnitKey: batch.business || null,
+    });
+    if (!batchGate.allowed) {
+      console.log(`[dc-bulk-call] BATCH GATE BLOCK code=${batchGate.code} batch=${batch_id} reason=${batchGate.reason}`);
+      // Non-retryable (kill-switch) → mark batch cancelled; queued targets stay
+      // marked queued so an admin can re-launch if they reset the switch.
+      // Retryable (hours/throttle) → keep batch running so the next slice can
+      // pick up when the window reopens (self-reinvoke handles continuation).
+      if (!batchGate.retryable) {
+        await admin
+          .from('dc_bulk_batches')
+          .update({
+            status: 'cancelled',
+            error_summary: { gate_code: batchGate.code, reason: batchGate.reason },
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', batch_id);
+        await refreshBatchCounts(admin, batch_id);
+        return { ok: true, status: 'cancelled', reason: batchGate.reason };
+      }
+      // Retryable: pause this invocation; re-schedule worker for later.
+      await refreshBatchCounts(admin, batch_id);
+      return { ok: true, status: 'paused', gate_code: batchGate.code, reason: batchGate.reason };
+    }
+
     // pull next slice of queued targets up to `concurrency`
     const { data: items } = await admin
       .from("dc_bulk_targets")
