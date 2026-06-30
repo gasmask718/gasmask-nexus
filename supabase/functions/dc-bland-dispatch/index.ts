@@ -344,8 +344,22 @@ serve(async (req) => {
       const results = [];
       for (const lead of leads) {
         try {
+          // === DNC PRE-DIAL CHECK — must run BEFORE Bland API call ===
+          const dncCheck = await isOnDNC(supabase, lead.phone_number);
+          if (dncCheck.blocked) {
+            console.log('[DNC BLOCKED]', { phone: lead.phone_number, reason: dncCheck.reason, queueId: lead.id });
+            await supabase.from('dynasty_call_queue').update({
+              status: 'dnc',
+              error_message: `DNC blocked: ${dncCheck.reason}`,
+              completed_at: new Date().toISOString(),
+            }).eq('id', lead.id);
+            results.push({ id: lead.id, status: 'dnc_blocked', reason: dncCheck.reason });
+            continue;
+          }
+
           let fromNumber: string;
           const prospectState = getStateFromPhone(lead.phone_number);
+
 
           if (manualNumberOverride) {
             fromNumber = manualNumberOverride;
