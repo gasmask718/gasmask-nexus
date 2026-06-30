@@ -82,9 +82,11 @@ const ANALYSIS_CONFIGS: Record<string, AnalysisConfig> = {
       if (a.asking_price_mentioned) update.asking_price = a.asking_price_mentioned;
       return update;
     },
-    postProcess: async (supabase, leadId, a) => {
-      if (a.recommended_action === 'book_appointment') {
-        await supabase.from('re_va_tasks').insert({
+    buildPostProcess: (leadId, a) => {
+      if (a.recommended_action !== 'book_appointment') return null;
+      return {
+        table: 're_va_tasks',
+        payload: {
           lead_id: leadId,
           task_type: 'appointment_set',
           priority: 'urgent',
@@ -92,8 +94,8 @@ const ANALYSIS_CONFIGS: Record<string, AnalysisConfig> = {
           notes: `AI recommends booking appointment. Summary: ${a.summary}`,
           script: 'Confirm appointment time and qualify property details.',
           due_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        });
-      }
+        },
+      };
     },
   },
 };
