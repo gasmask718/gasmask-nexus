@@ -113,15 +113,39 @@ serve(async (req) => {
         // entirely (no point checking subsequent leads against the same switch).
         if (!gate.retryable) {
           killSwitchHit = true;
-          await supabase.from('surplus_funds_leads')
+          // NOTE: supabase-js returns errors in `error`, it does NOT throw on
+          // PostgREST failures (CHECK constraint, RLS, FK, etc.). Without this
+          // destructure the failure is invisible — first smoke-test pass on
+          // 2026-06-30 had the 'cancelled' status silently rejected by the
+          // status CHECK constraint and looked like a stuck lead. Always
+          // inspect `error` and fan failures into dc_lead_sync_log.
+          const { error: cancelErr } = await supabase.from('surplus_funds_leads')
             .update({ status: 'cancelled' })
             .eq('id', l.id);
+          if (cancelErr) {
+            console.error('[sf-trigger cancel update failed]', l.id, cancelErr);
+            await logLeadSync(supabase, {
+              business_unit_key: 'surplus_funds', lead_id: l.id,
+              sync_direction: 'in', status_after: 'cancelled',
+              sync_source: 'sf-trigger-bland-campaign:cancel-on-kill-switch',
+              success: false, error_message: cancelErr.message,
+            });
+          }
           // Cancel the rest of the batch in one shot.
           const remaining = (leads as any[]).slice((leads as any[]).indexOf(l) + 1).map((r: any) => r.id);
           if (remaining.length > 0) {
-            await supabase.from('surplus_funds_leads')
+            const { error: bulkCancelErr } = await supabase.from('surplus_funds_leads')
               .update({ status: 'cancelled' })
               .in('id', remaining);
+            if (bulkCancelErr) {
+              console.error('[sf-trigger bulk cancel failed]', remaining, bulkCancelErr);
+              await logLeadSyncBatch(supabase, remaining.map((rid: string) => ({
+                business_unit_key: 'surplus_funds', lead_id: rid,
+                sync_direction: 'in' as const, status_after: 'cancelled',
+                sync_source: 'sf-trigger-bland-campaign:cancel-on-kill-switch-bulk',
+                success: false, error_message: bulkCancelErr.message,
+              })));
+            }
             for (const rid of remaining) {
               gateBlocks.push({ lead_id: rid, code: gate.code, reason: gate.reason, retryable: false });
             }
