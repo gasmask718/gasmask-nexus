@@ -1,3 +1,5 @@
+// @deprecated Use dc-post-call-analysis with business_unit_key='real_estate'.
+// Retained for parallel parity comparison and rollback. Do not extend.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
@@ -13,8 +15,9 @@ serve(async (req) => {
     const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
     if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured');
 
-    const { lead_id, transcript, call_id } = await req.json();
+    const { lead_id, transcript, call_id, dry_run } = await req.json();
     if (!lead_id || !transcript) throw new Error('lead_id and transcript required');
+    const isDryRun = dry_run === true;
 
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -71,10 +74,9 @@ ${transcript}`
     };
     if (analysis.asking_price_mentioned) update.asking_price = analysis.asking_price_mentioned;
 
-    await supabase.from('re_leads').update(update).eq('id', lead_id);
-
+    let wouldInsertTask: Record<string, any> | null = null;
     if (analysis.recommended_action === 'book_appointment') {
-      await supabase.from('re_va_tasks').insert({
+      wouldInsertTask = {
         lead_id,
         task_type: 'appointment_set',
         priority: 'urgent',
@@ -82,10 +84,24 @@ ${transcript}`
         notes: `AI recommends booking appointment. Summary: ${analysis.summary}`,
         script: 'Confirm appointment time and qualify property details.',
         due_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      });
+      };
     }
 
-    return new Response(JSON.stringify({ success: true, analysis, call_id }), {
+    if (!isDryRun) {
+      await supabase.from('re_leads').update(update).eq('id', lead_id);
+      if (wouldInsertTask) {
+        await supabase.from('re_va_tasks').insert(wouldInsertTask);
+      }
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      dry_run: isDryRun,
+      analysis,
+      call_id,
+      would_update: { table: 're_leads', lead_id, payload: update },
+      would_post_process: wouldInsertTask ? { table: 're_va_tasks', payload: wouldInsertTask } : null,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {

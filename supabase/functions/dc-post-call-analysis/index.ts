@@ -10,11 +10,13 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 
+type PostProcessPayload = { table: string; payload: Record<string, any> } | null;
+
 type AnalysisConfig = {
   systemPrompt: string;
   jsonSchema: string;
   applyUpdate: (analysis: any) => Record<string, any>;
-  postProcess?: (supabase: any, leadId: string, analysis: any) => Promise<void>;
+  buildPostProcess?: (leadId: string, analysis: any) => PostProcessPayload;
 };
 
 const ANALYSIS_CONFIGS: Record<string, AnalysisConfig> = {
@@ -80,9 +82,11 @@ const ANALYSIS_CONFIGS: Record<string, AnalysisConfig> = {
       if (a.asking_price_mentioned) update.asking_price = a.asking_price_mentioned;
       return update;
     },
-    postProcess: async (supabase, leadId, a) => {
-      if (a.recommended_action === 'book_appointment') {
-        await supabase.from('re_va_tasks').insert({
+    buildPostProcess: (leadId, a) => {
+      if (a.recommended_action !== 'book_appointment') return null;
+      return {
+        table: 're_va_tasks',
+        payload: {
           lead_id: leadId,
           task_type: 'appointment_set',
           priority: 'urgent',
@@ -90,8 +94,8 @@ const ANALYSIS_CONFIGS: Record<string, AnalysisConfig> = {
           notes: `AI recommends booking appointment. Summary: ${a.summary}`,
           script: 'Confirm appointment time and qualify property details.',
           due_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        });
-      }
+        },
+      };
     },
   },
 };
@@ -112,6 +116,7 @@ serve(async (req) => {
     const leadId: string | undefined = body.lead_id;
     const callId: string | undefined = body.call_id || body.call_log_id;
     let transcript: string | undefined = body.transcript;
+    const isDryRun = body.dry_run === true;
 
     if (!businessUnitKey) throw new Error('business_unit_key required');
     if (!leadId) throw new Error('lead_id required');
@@ -168,20 +173,32 @@ serve(async (req) => {
     const analysis = JSON.parse(match[0]);
 
     const update = config.applyUpdate(analysis);
-    const { error: updateErr } = await supabase.from(leadTable).update(update).eq('id', leadId);
-    if (updateErr) throw new Error(`lead update failed: ${updateErr.message}`);
+    const postProcessPayload: PostProcessPayload = config.buildPostProcess
+      ? config.buildPostProcess(leadId, analysis)
+      : null;
 
-    if (config.postProcess) {
-      try { await config.postProcess(supabase, leadId, analysis); }
-      catch (e) { console.error(`[dc-post-call-analysis] postProcess(${businessUnitKey}) failed`, e); }
+    if (!isDryRun) {
+      const { error: updateErr } = await supabase.from(leadTable).update(update).eq('id', leadId);
+      if (updateErr) throw new Error(`lead update failed: ${updateErr.message}`);
+
+      if (postProcessPayload) {
+        try {
+          await supabase.from(postProcessPayload.table).insert(postProcessPayload.payload);
+        } catch (e) {
+          console.error(`[dc-post-call-analysis] postProcess(${businessUnitKey}) failed`, e);
+        }
+      }
     }
 
     return new Response(JSON.stringify({
       success: true,
+      dry_run: isDryRun,
       business_unit_key: businessUnitKey,
       lead_table: leadTable,
       analysis,
       call_id: callId,
+      would_update: { table: leadTable, lead_id: leadId, payload: update },
+      would_post_process: postProcessPayload,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('[dc-post-call-analysis] error', error);
