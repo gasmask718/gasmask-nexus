@@ -2,6 +2,41 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// Canonical disposition codes — fetched live from dc_disposition_codes.
+// Kept as a fallback in case the table read fails (e.g. offline).
+const FALLBACK_DISPOSITIONS = [
+  'new','queued','called','voicemail','no_answer','callback',
+  'interested','booked','not_interested','wrong_number','dnc',
+] as const;
+
+export type DCDispositionCode = {
+  code: string;
+  label: string;
+  category: 'positive' | 'negative' | 'neutral' | 'compliance';
+};
+
+export function useDispositionCodes() {
+  return useQuery({
+    queryKey: ['dc-disposition-codes'],
+    staleTime: 1000 * 60 * 10,
+    queryFn: async (): Promise<DCDispositionCode[]> => {
+      const { data, error } = await (supabase as any)
+        .from('dc_disposition_codes')
+        .select('code,label,category')
+        .order('category')
+        .order('code');
+      if (error) {
+        console.warn('[useDispositionCodes] falling back to hardcoded list:', error.message);
+        return FALLBACK_DISPOSITIONS.map(code => ({
+          code, label: code, category: 'neutral' as const,
+        }));
+      }
+      return (data || []) as DCDispositionCode[];
+    },
+  });
+}
+
+
 export interface DCLead {
   id: string;
   business_name: string;
