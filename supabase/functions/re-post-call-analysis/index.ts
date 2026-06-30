@@ -13,8 +13,9 @@ serve(async (req) => {
     const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
     if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured');
 
-    const { lead_id, transcript, call_id } = await req.json();
+    const { lead_id, transcript, call_id, dry_run } = await req.json();
     if (!lead_id || !transcript) throw new Error('lead_id and transcript required');
+    const isDryRun = dry_run === true;
 
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
