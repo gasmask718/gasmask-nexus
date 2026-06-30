@@ -467,12 +467,20 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
                         </div>
                       </div>
                     </div>
-                    {heavyTraffic && (
-                      <Badge variant="destructive" className="ml-auto gap-1">
-                        <AlertTriangle className="h-3 w-3" />
-                        Heavy traffic ahead
-                      </Badge>
-                    )}
+                    <div className="ml-auto flex items-center gap-2">
+                      {rerouting && (
+                        <Badge variant="secondary" className="gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Rerouting…
+                        </Badge>
+                      )}
+                      {heavyTraffic && (
+                        <Badge variant="destructive" className="gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          Heavy traffic ahead
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   {route.nextStep && (
                     <div className="flex items-start gap-2 text-sm border-t pt-2">
