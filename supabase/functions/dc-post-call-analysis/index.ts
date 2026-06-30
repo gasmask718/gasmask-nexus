@@ -173,20 +173,32 @@ serve(async (req) => {
     const analysis = JSON.parse(match[0]);
 
     const update = config.applyUpdate(analysis);
-    const { error: updateErr } = await supabase.from(leadTable).update(update).eq('id', leadId);
-    if (updateErr) throw new Error(`lead update failed: ${updateErr.message}`);
+    const postProcessPayload: PostProcessPayload = config.buildPostProcess
+      ? config.buildPostProcess(leadId, analysis)
+      : null;
 
-    if (config.postProcess) {
-      try { await config.postProcess(supabase, leadId, analysis); }
-      catch (e) { console.error(`[dc-post-call-analysis] postProcess(${businessUnitKey}) failed`, e); }
+    if (!isDryRun) {
+      const { error: updateErr } = await supabase.from(leadTable).update(update).eq('id', leadId);
+      if (updateErr) throw new Error(`lead update failed: ${updateErr.message}`);
+
+      if (postProcessPayload) {
+        try {
+          await supabase.from(postProcessPayload.table).insert(postProcessPayload.payload);
+        } catch (e) {
+          console.error(`[dc-post-call-analysis] postProcess(${businessUnitKey}) failed`, e);
+        }
+      }
     }
 
     return new Response(JSON.stringify({
       success: true,
+      dry_run: isDryRun,
       business_unit_key: businessUnitKey,
       lead_table: leadTable,
       analysis,
       call_id: callId,
+      would_update: { table: leadTable, lead_id: leadId, payload: update },
+      would_post_process: postProcessPayload,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('[dc-post-call-analysis] error', error);
