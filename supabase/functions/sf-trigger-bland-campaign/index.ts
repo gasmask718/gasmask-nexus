@@ -207,6 +207,32 @@ serve(async (req) => {
     // Insert campaign record
     const { data: campaign } = await supabase
       .from('dc_campaigns')
+          await supabase.from('surplus_funds_leads')
+            .update({ bland_call_id: blandJson.call_id })
+            .eq('id', l.id)
+            .then(({ error }) => {
+              if (error) {
+                console.error('[sf-trigger bland_call_id write failed]', l.id, error);
+                logLeadSync(supabase, {
+                  business_unit_key: 'surplus_funds', lead_id: l.id,
+                  sync_direction: 'in', sync_source: 'sf-trigger-bland-campaign:bland_call_id-write',
+                  success: false, error_message: error.message,
+                });
+              }
+            });
+        } else {
+          blandError = blandError || JSON.stringify(blandJson);
+          console.error('[bland call failed]', l.id, blandJson);
+        }
+      } catch (e: any) {
+        blandError = blandError || e.message;
+        console.error('[bland call exception]', l.id, e);
+      }
+    }
+
+    // Insert campaign record
+    const { data: campaign, error: campaignErr } = await supabase
+      .from('dc_campaigns')
       .insert({
         name: label,
         business: 'surplus_funds',
@@ -217,13 +243,14 @@ serve(async (req) => {
       })
       .select()
       .single();
+    if (campaignErr) console.error('[sf-trigger dc_campaigns insert failed]', campaignErr);
 
     // Mark leads as in_campaign — but DO NOT clobber cancelled-by-kill-switch
     // status. Only touch leads that weren't gate-blocked as non-retryable.
     const cancelledIds = new Set(gateBlocks.filter((g) => !g.retryable).map((g) => g.lead_id));
     const idsToMark = leads.map((l: any) => l.id).filter((id: string) => !cancelledIds.has(id));
     if (idsToMark.length > 0) {
-      await supabase
+      const { error: queueErr } = await supabase
         .from('surplus_funds_leads')
         .update({
           status: 'queued',
@@ -232,6 +259,15 @@ serve(async (req) => {
           bland_call_triggered_at: new Date().toISOString(),
         })
         .in('id', idsToMark);
+      if (queueErr) {
+        console.error('[sf-trigger post-loop queue update failed]', queueErr);
+        await logLeadSyncBatch(supabase, idsToMark.map((id: string) => ({
+          business_unit_key: 'surplus_funds', lead_id: id,
+          sync_direction: 'in' as const, status_after: 'queued',
+          sync_source: 'sf-trigger-bland-campaign:post-loop-queue',
+          success: false, error_message: queueErr.message,
+        })));
+      }
     }
 
     return new Response(JSON.stringify({
