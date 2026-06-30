@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
-import { logLeadSyncBatch } from "../_shared/dc_sync_log.ts";
+import { logLeadSync, logLeadSyncBatch } from "../_shared/dc_sync_log.ts";
 import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 
 const SF_OUTREACH_PROMPT = `You are calling on behalf of Dynasty Recovery Group. You are a professional, friendly representative helping people recover unclaimed money owed to them.
@@ -113,15 +113,39 @@ serve(async (req) => {
         // entirely (no point checking subsequent leads against the same switch).
         if (!gate.retryable) {
           killSwitchHit = true;
-          await supabase.from('surplus_funds_leads')
+          // NOTE: supabase-js returns errors in `error`, it does NOT throw on
+          // PostgREST failures (CHECK constraint, RLS, FK, etc.). Without this
+          // destructure the failure is invisible — first smoke-test pass on
+          // 2026-06-30 had the 'cancelled' status silently rejected by the
+          // status CHECK constraint and looked like a stuck lead. Always
+          // inspect `error` and fan failures into dc_lead_sync_log.
+          const { error: cancelErr } = await supabase.from('surplus_funds_leads')
             .update({ status: 'cancelled' })
             .eq('id', l.id);
+          if (cancelErr) {
+            console.error('[sf-trigger cancel update failed]', l.id, cancelErr);
+            await logLeadSync(supabase, {
+              business_unit_key: 'surplus_funds', lead_id: l.id,
+              sync_direction: 'in', status_after: 'cancelled',
+              sync_source: 'sf-trigger-bland-campaign:cancel-on-kill-switch',
+              success: false, error_message: cancelErr.message,
+            });
+          }
           // Cancel the rest of the batch in one shot.
           const remaining = (leads as any[]).slice((leads as any[]).indexOf(l) + 1).map((r: any) => r.id);
           if (remaining.length > 0) {
-            await supabase.from('surplus_funds_leads')
+            const { error: bulkCancelErr } = await supabase.from('surplus_funds_leads')
               .update({ status: 'cancelled' })
               .in('id', remaining);
+            if (bulkCancelErr) {
+              console.error('[sf-trigger bulk cancel failed]', remaining, bulkCancelErr);
+              await logLeadSyncBatch(supabase, remaining.map((rid: string) => ({
+                business_unit_key: 'surplus_funds', lead_id: rid,
+                sync_direction: 'in' as const, status_after: 'cancelled',
+                sync_source: 'sf-trigger-bland-campaign:cancel-on-kill-switch-bulk',
+                success: false, error_message: bulkCancelErr.message,
+              })));
+            }
             for (const rid of remaining) {
               gateBlocks.push({ lead_id: rid, code: gate.code, reason: gate.reason, retryable: false });
             }
@@ -167,9 +191,17 @@ serve(async (req) => {
         if (blandRes.ok && blandJson.call_id) {
           blandSuccessCount++;
           blandCallIds.push(blandJson.call_id);
-          await supabase.from('surplus_funds_leads')
+          const { error: callIdErr } = await supabase.from('surplus_funds_leads')
             .update({ bland_call_id: blandJson.call_id })
             .eq('id', l.id);
+          if (callIdErr) {
+            console.error('[sf-trigger bland_call_id write failed]', l.id, callIdErr);
+            await logLeadSync(supabase, {
+              business_unit_key: 'surplus_funds', lead_id: l.id,
+              sync_direction: 'in', sync_source: 'sf-trigger-bland-campaign:bland_call_id-write',
+              success: false, error_message: callIdErr.message,
+            });
+          }
         } else {
           blandError = blandError || JSON.stringify(blandJson);
           console.error('[bland call failed]', l.id, blandJson);
@@ -181,7 +213,7 @@ serve(async (req) => {
     }
 
     // Insert campaign record
-    const { data: campaign } = await supabase
+    const { data: campaign, error: campaignErr } = await supabase
       .from('dc_campaigns')
       .insert({
         name: label,
@@ -193,13 +225,14 @@ serve(async (req) => {
       })
       .select()
       .single();
+    if (campaignErr) console.error('[sf-trigger dc_campaigns insert failed]', campaignErr);
 
     // Mark leads as in_campaign — but DO NOT clobber cancelled-by-kill-switch
     // status. Only touch leads that weren't gate-blocked as non-retryable.
     const cancelledIds = new Set(gateBlocks.filter((g) => !g.retryable).map((g) => g.lead_id));
     const idsToMark = leads.map((l: any) => l.id).filter((id: string) => !cancelledIds.has(id));
     if (idsToMark.length > 0) {
-      await supabase
+      const { error: queueErr } = await supabase
         .from('surplus_funds_leads')
         .update({
           status: 'queued',
@@ -208,6 +241,15 @@ serve(async (req) => {
           bland_call_triggered_at: new Date().toISOString(),
         })
         .in('id', idsToMark);
+      if (queueErr) {
+        console.error('[sf-trigger post-loop queue update failed]', queueErr);
+        await logLeadSyncBatch(supabase, idsToMark.map((id: string) => ({
+          business_unit_key: 'surplus_funds', lead_id: id,
+          sync_direction: 'in' as const, status_after: 'queued',
+          sync_source: 'sf-trigger-bland-campaign:post-loop-queue',
+          success: false, error_message: queueErr.message,
+        })));
+      }
     }
 
     return new Response(JSON.stringify({

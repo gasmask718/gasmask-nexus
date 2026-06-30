@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
-import { logLeadSyncBatch } from "../_shared/dc_sync_log.ts";
+import { logLeadSync, logLeadSyncBatch } from "../_shared/dc_sync_log.ts";
 import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 
 const COLD_SELLER_PROMPT = `You are a real estate acquisition specialist calling homeowners about their property. Be friendly, professional, and respectful.
@@ -129,10 +129,33 @@ serve(async (req) => {
         console.warn('[re-trigger gate-blocked]', l.id, gate.code, gate.reason);
         if (!gate.retryable) {
           killSwitchHit = true;
-          await supabase.from('re_leads').update({ status: 'cancelled' }).eq('id', l.id);
+          // supabase-js never throws on PostgREST errors — inspect `error` and
+          // surface failures, otherwise CHECK/RLS rejections look like stuck
+          // leads. (See sf-trigger comment for the smoke-test backstory.)
+          const { error: cancelErr } = await supabase.from('re_leads')
+            .update({ status: 'cancelled' }).eq('id', l.id);
+          if (cancelErr) {
+            console.error('[re-trigger cancel update failed]', l.id, cancelErr);
+            await logLeadSync(supabase, {
+              business_unit_key: 'real_estate', lead_id: l.id,
+              sync_direction: 'in', status_after: 'cancelled',
+              sync_source: 're-trigger-bland-campaign:cancel-on-kill-switch',
+              success: false, error_message: cancelErr.message,
+            });
+          }
           const remaining = (leads as any[]).slice((leads as any[]).indexOf(l) + 1).map((r: any) => r.id);
           if (remaining.length > 0) {
-            await supabase.from('re_leads').update({ status: 'cancelled' }).in('id', remaining);
+            const { error: bulkCancelErr } = await supabase.from('re_leads')
+              .update({ status: 'cancelled' }).in('id', remaining);
+            if (bulkCancelErr) {
+              console.error('[re-trigger bulk cancel failed]', remaining, bulkCancelErr);
+              await logLeadSyncBatch(supabase, remaining.map((rid: string) => ({
+                business_unit_key: 'real_estate', lead_id: rid,
+                sync_direction: 'in' as const, status_after: 'cancelled',
+                sync_source: 're-trigger-bland-campaign:cancel-on-kill-switch-bulk',
+                success: false, error_message: bulkCancelErr.message,
+              })));
+            }
             for (const rid of remaining) {
               gateBlocks.push({ lead_id: rid, code: gate.code, reason: gate.reason, retryable: false });
             }
@@ -176,9 +199,17 @@ serve(async (req) => {
         if (blandRes.ok && blandJson.call_id) {
           blandSuccessCount++;
           blandCallIds.push(blandJson.call_id);
-          await supabase.from('re_leads')
+          const { error: callIdErr } = await supabase.from('re_leads')
             .update({ bland_call_id: blandJson.call_id })
             .eq('id', l.id);
+          if (callIdErr) {
+            console.error('[re-trigger bland_call_id write failed]', l.id, callIdErr);
+            await logLeadSync(supabase, {
+              business_unit_key: 'real_estate', lead_id: l.id,
+              sync_direction: 'in', sync_source: 're-trigger-bland-campaign:bland_call_id-write',
+              success: false, error_message: callIdErr.message,
+            });
+          }
         } else {
           blandError = blandError || JSON.stringify(blandJson);
           console.error('[bland call failed]', l.id, blandJson);
@@ -189,7 +220,7 @@ serve(async (req) => {
       }
     }
 
-    const { data: campaign } = await supabase
+    const { data: campaign, error: campaignErr } = await supabase
       .from('dc_campaigns')
       .insert({
         name: label,
@@ -201,15 +232,25 @@ serve(async (req) => {
       })
       .select()
       .single();
+    if (campaignErr) console.error('[re-trigger dc_campaigns insert failed]', campaignErr);
 
     // Do NOT clobber cancelled-by-kill-switch leads.
     const cancelledIds = new Set(gateBlocks.filter((g) => !g.retryable).map((g) => g.lead_id));
     const idsToMark = leads.map((l: any) => l.id).filter((id: string) => !cancelledIds.has(id));
     if (idsToMark.length > 0) {
-      await supabase
+      const { error: queueErr } = await supabase
         .from('re_leads')
         .update({ status: 'queued', dc_campaign_id: campaign?.id })
         .in('id', idsToMark);
+      if (queueErr) {
+        console.error('[re-trigger post-loop queue update failed]', queueErr);
+        await logLeadSyncBatch(supabase, idsToMark.map((id: string) => ({
+          business_unit_key: 'real_estate', lead_id: id,
+          sync_direction: 'in' as const, status_after: 'queued',
+          sync_source: 're-trigger-bland-campaign:post-loop-queue',
+          success: false, error_message: queueErr.message,
+        })));
+      }
     }
 
     return new Response(JSON.stringify({
