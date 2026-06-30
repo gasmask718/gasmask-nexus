@@ -1,15 +1,39 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
+import { canonicalizeDisposition } from "../_shared/dnc.ts";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  // === SHARED-SECRET WEBHOOK VERIFICATION ===
+  // Bland's webhook delivery does not include a verifiable HMAC/signature in
+  // their current public API surface, so we require a shared-secret query
+  // param (?secret=<DC_BLAND_WEBHOOK_SECRET>) OR header (x-dc-webhook-secret).
+  // The dispatch side registers the webhook URL with this secret baked in.
+  const expectedSecret = Deno.env.get('DC_BLAND_WEBHOOK_SECRET');
+  if (expectedSecret) {
+    const url = new URL(req.url);
+    const providedSecret = url.searchParams.get('secret')
+      || req.headers.get('x-dc-webhook-secret')
+      || '';
+    if (providedSecret !== expectedSecret) {
+      console.warn('[dc-bland-webhook] rejected — invalid/missing secret');
+      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  } else {
+    console.warn('[dc-bland-webhook] DC_BLAND_WEBHOOK_SECRET not configured — accepting unverified webhook');
+  }
 
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
 
     const payload = await req.json();
     const callId = payload.call_id || payload.callId || payload.id;
