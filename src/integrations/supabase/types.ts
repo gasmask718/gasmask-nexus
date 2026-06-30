@@ -128324,6 +128324,10 @@ export type Database = {
         Args: { _partner_id: string }
         Returns: undefined
       }
+      tt_promote_crm_partner_to_tt_partner: {
+        Args: { p_crm_partner_id: string }
+        Returns: Json
+      }
       tt_resolve_price: {
         Args: {
           _customer_price: number
