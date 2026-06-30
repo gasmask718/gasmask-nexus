@@ -445,9 +445,11 @@ ${transcript}`
               due_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
             });
             if (callTranscript) {
-              supabase.functions.invoke('re-post-call-analysis', {
-                body: { lead_id: leadId, transcript: callTranscript, call_id: callId },
-              }).catch((e) => console.error('[re-post-call-analysis invoke failed]', e));
+              // Cutover: dc-post-call-analysis is the unified entry point.
+              // re-post-call-analysis remains deployed but @deprecated.
+              supabase.functions.invoke('dc-post-call-analysis', {
+                body: { business_unit_key: 'real_estate', lead_id: leadId, transcript: callTranscript, call_id: callId },
+              }).catch((e) => console.error('[dc-post-call-analysis (real_estate) invoke failed]', e));
             }
           }
         }
