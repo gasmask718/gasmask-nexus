@@ -757,6 +757,12 @@ type PartnerPayout = {
 
 function SettlementTab() {
   const qc = useQueryClient();
+  const now = new Date();
+  const [genOpen, setGenOpen] = useState(false);
+  const [genMonth, setGenMonth] = useState<number>(now.getMonth() + 1);
+  const [genYear, setGenYear] = useState<number>(now.getFullYear());
+  const [genPartner, setGenPartner] = useState<string>("all");
+
   const { data: partners = [] } = useQuery({
     queryKey: ["dd-partner-profiles"],
     queryFn: async () => {
@@ -814,6 +820,25 @@ function SettlementTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const generate = useMutation({
+    mutationFn: async (vars: { month: number; year: number; partner_id?: string }) => {
+      const body: Record<string, unknown> = { month: vars.month, year: vars.year, force: true };
+      if (vars.partner_id && vars.partner_id !== "all") body.partner_id = vars.partner_id;
+      const { data, error } = await supabase.functions.invoke("dd-generate-partner-payouts", { body });
+      if (error) throw error;
+      const r = data as { error?: string; payouts_created?: number; total_amount?: number; period?: string } | null;
+      if (r?.error) throw new Error(r.error);
+      return r;
+    },
+    onSuccess: (r) => {
+      toast.success(`Generated ${r?.payouts_created ?? 0} payouts · $${(r?.total_amount ?? 0).toFixed(2)} · ${r?.period ?? ""}`);
+      qc.invalidateQueries({ queryKey: ["dd-partner-payouts"] });
+      qc.invalidateQueries({ queryKey: ["dd-partner-profiles"] });
+      setGenOpen(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const grouped = useMemo(() => {
     const map = new Map<string, PartnerPayout[]>();
     for (const p of payouts) {
@@ -824,12 +849,93 @@ function SettlementTab() {
     return map;
   }, [payouts]);
 
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const thisMonthPayouts = payouts.filter((p) => p.period_start === monthStart);
+  const monthStats = useMemo(() => {
+    const stats = { partners: thisMonthPayouts.length, total: 0, calculating: 0, pending: 0, approved: 0, paid: 0 };
+    for (const p of thisMonthPayouts) {
+      stats.total += Number(p.partner_earnings ?? 0);
+      if (p.status === "calculating") stats.calculating++;
+      else if (p.status === "pending_review") stats.pending++;
+      else if (p.status === "approved") stats.approved++;
+      else if (p.status === "paid") stats.paid++;
+    }
+    return stats;
+  }, [thisMonthPayouts]);
+
+  const MONTH_OPTS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  const generatorUI = (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between flex-wrap gap-2">
+          <span>💸 Monthly Payouts</span>
+          <Dialog open={genOpen} onOpenChange={setGenOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">Generate Payouts</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Generate Monthly Payouts</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <Label>Month</Label>
+                  <Select value={String(genMonth)} onValueChange={(v) => setGenMonth(Number(v))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {MONTH_OPTS.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Year</Label>
+                  <Input type="number" value={genYear} onChange={(e) => setGenYear(Number(e.target.value))} />
+                </div>
+                <div>
+                  <Label>Partner</Label>
+                  <Select value={genPartner} onValueChange={setGenPartner}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Partners</SelectItem>
+                      {partners.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={() => generate.mutate({ month: genMonth, year: genYear, partner_id: genPartner })}
+                  disabled={generate.isPending}>
+                  {generate.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Generate"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-sm">
+          <div><div className="text-muted-foreground">Partners</div><div className="font-bold">{monthStats.partners}</div></div>
+          <div><div className="text-muted-foreground">Total Owed</div><div className="font-bold text-green-600">{money(monthStats.total)}</div></div>
+          <div><div className="text-muted-foreground">Calculating</div><div className="font-bold">{monthStats.calculating}</div></div>
+          <div><div className="text-muted-foreground">Pending</div><div className="font-bold">{monthStats.pending}</div></div>
+          <div><div className="text-muted-foreground">Approved</div><div className="font-bold">{monthStats.approved}</div></div>
+          <div><div className="text-muted-foreground">Paid</div><div className="font-bold">{monthStats.paid}</div></div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   if (!partners.length) {
-    return <Card><CardContent className="p-6 text-muted-foreground">No partners yet.</CardContent></Card>;
+    return (
+      <div className="space-y-4">
+        {generatorUI}
+        <Card><CardContent className="p-6 text-muted-foreground">No partners yet.</CardContent></Card>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
+      {generatorUI}
       {partners.map((partner) => {
         const list = grouped.get(partner.id) ?? [];
         return (
@@ -864,11 +970,14 @@ function SettlementTab() {
                             <Button size="sm" variant="outline" disabled={approve.isPending}
                               onClick={() => approve.mutate(p.id)}>Approve</Button>
                           )}
-                          {p.status === "approved" && (
-                            <Button size="sm" disabled={pay.isPending || !partner.stripe_connect_onboarded}
+                          {p.status === "approved" && partner.stripe_connect_onboarded && (
+                            <Button size="sm" disabled={pay.isPending}
                               onClick={() => pay.mutate(p)}>
                               {pay.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Process Payment"}
                             </Button>
+                          )}
+                          {p.status === "approved" && !partner.stripe_connect_onboarded && (
+                            <span className="text-xs text-amber-600">Bank not connected — partner must complete Stripe Connect at /partner/settings</span>
                           )}
                           {p.status === "paid" && p.stripe_transfer_id && (
                             <span className="text-xs text-muted-foreground">{p.stripe_transfer_id}</span>
