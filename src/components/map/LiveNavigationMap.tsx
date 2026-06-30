@@ -206,7 +206,7 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
     const url =
       `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/` +
       `${currentPos.lng},${currentPos.lat};${destination.lng},${destination.lat}` +
-      `?alternatives=false&annotations=duration,distance,congestion` +
+      `?alternatives=false&annotations=duration,distance,congestion,duration_typical` +
       `&geometries=geojson&overview=full&steps=true&access_token=${MAPBOX_TOKEN}`;
 
     fetch(url)
