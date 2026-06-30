@@ -83458,6 +83458,7 @@ export type Database = {
           converted_store_id: string | null
           created_at: string
           email: string | null
+          gasmask_call_status: string | null
           id: string
           last_contacted: string | null
           lead_type: string
@@ -83486,6 +83487,7 @@ export type Database = {
           converted_store_id?: string | null
           created_at?: string
           email?: string | null
+          gasmask_call_status?: string | null
           id?: string
           last_contacted?: string | null
           lead_type: string
@@ -83514,6 +83516,7 @@ export type Database = {
           converted_store_id?: string | null
           created_at?: string
           email?: string | null
+          gasmask_call_status?: string | null
           id?: string
           last_contacted?: string | null
           lead_type?: string
@@ -93712,6 +93715,7 @@ export type Database = {
           expected_open_dates: string[] | null
           formality_level: string | null
           frustration_triggers: string[] | null
+          gasmask_call_status: string | null
           has_expansion: boolean | null
           health_status: string | null
           id: string
@@ -93797,6 +93801,7 @@ export type Database = {
           expected_open_dates?: string[] | null
           formality_level?: string | null
           frustration_triggers?: string[] | null
+          gasmask_call_status?: string | null
           has_expansion?: boolean | null
           health_status?: string | null
           id?: string
@@ -93882,6 +93887,7 @@ export type Database = {
           expected_open_dates?: string[] | null
           formality_level?: string | null
           frustration_triggers?: string[] | null
+          gasmask_call_status?: string | null
           has_expansion?: boolean | null
           health_status?: string | null
           id?: string
@@ -127844,6 +127850,7 @@ export type Database = {
           expected_open_dates: string[] | null
           formality_level: string | null
           frustration_triggers: string[] | null
+          gasmask_call_status: string | null
           has_expansion: boolean | null
           health_status: string | null
           id: string
