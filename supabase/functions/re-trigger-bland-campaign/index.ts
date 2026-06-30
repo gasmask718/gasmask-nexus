@@ -199,9 +199,17 @@ serve(async (req) => {
         if (blandRes.ok && blandJson.call_id) {
           blandSuccessCount++;
           blandCallIds.push(blandJson.call_id);
-          await supabase.from('re_leads')
+          const { error: callIdErr } = await supabase.from('re_leads')
             .update({ bland_call_id: blandJson.call_id })
             .eq('id', l.id);
+          if (callIdErr) {
+            console.error('[re-trigger bland_call_id write failed]', l.id, callIdErr);
+            await logLeadSync(supabase, {
+              business_unit_key: 'real_estate', lead_id: l.id,
+              sync_direction: 'in', sync_source: 're-trigger-bland-campaign:bland_call_id-write',
+              success: false, error_message: callIdErr.message,
+            });
+          }
         } else {
           blandError = blandError || JSON.stringify(blandJson);
           console.error('[bland call failed]', l.id, blandJson);
@@ -212,7 +220,7 @@ serve(async (req) => {
       }
     }
 
-    const { data: campaign } = await supabase
+    const { data: campaign, error: campaignErr } = await supabase
       .from('dc_campaigns')
       .insert({
         name: label,
@@ -224,15 +232,25 @@ serve(async (req) => {
       })
       .select()
       .single();
+    if (campaignErr) console.error('[re-trigger dc_campaigns insert failed]', campaignErr);
 
     // Do NOT clobber cancelled-by-kill-switch leads.
     const cancelledIds = new Set(gateBlocks.filter((g) => !g.retryable).map((g) => g.lead_id));
     const idsToMark = leads.map((l: any) => l.id).filter((id: string) => !cancelledIds.has(id));
     if (idsToMark.length > 0) {
-      await supabase
+      const { error: queueErr } = await supabase
         .from('re_leads')
         .update({ status: 'queued', dc_campaign_id: campaign?.id })
         .in('id', idsToMark);
+      if (queueErr) {
+        console.error('[re-trigger post-loop queue update failed]', queueErr);
+        await logLeadSyncBatch(supabase, idsToMark.map((id: string) => ({
+          business_unit_key: 'real_estate', lead_id: id,
+          sync_direction: 'in' as const, status_after: 'queued',
+          sync_source: 're-trigger-bland-campaign:post-loop-queue',
+          success: false, error_message: queueErr.message,
+        })));
+      }
     }
 
     return new Response(JSON.stringify({
