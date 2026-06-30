@@ -265,7 +265,9 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 3. Origin marker — smooth glide (no jump) + gentle camera follow
+  // 3. Origin marker — smooth glide (CSS) + throttled camera follow.
+  //    Camera easeTo is throttled to ≥1.2 s between calls so high-frequency GPS
+  //    ticks don't stack animations or constantly re-tile the map (battery saver).
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !currentPos) return;
@@ -278,13 +280,17 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
     } else {
       originMarker.current.setLngLat(lngLat);
     }
-    // Soft camera follow once we have an active route
     if (route) {
-      map.easeTo({ center: lngLat, duration: 600, essential: true });
+      const now = Date.now();
+      if (now - lastCameraEaseAt.current >= 1_200) {
+        lastCameraEaseAt.current = now;
+        map.easeTo({ center: lngLat, duration: 1_000, essential: true });
+      }
     }
   }, [currentPos, route]);
 
-  // 4. Destination marker
+  // 4. Destination marker — depend on primitives so a new query object reference
+  //    doesn't tear down and rebuild the marker on every refetch.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -298,7 +304,7 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
         .setPopup(new mapboxgl.Popup({ offset: 24 }).setText(destination.label || 'Destination'))
         .addTo(map);
     }
-  }, [destination]);
+  }, [destination?.lat, destination?.lng, destination?.label]);
 
   // 5. Fetch directions — only on destination change or explicit reroute,
   //    NOT on every GPS tick. Uses the latest GPS fix at the moment of fetch.
