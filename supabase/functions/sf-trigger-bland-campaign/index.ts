@@ -194,16 +194,21 @@ serve(async (req) => {
       .select()
       .single();
 
-    // Mark leads as in_campaign
-    await supabase
-      .from('surplus_funds_leads')
-      .update({
-        status: 'queued',
-        dc_campaign_id: campaign?.id,
-        bland_call_triggered: true,
-        bland_call_triggered_at: new Date().toISOString(),
-      })
-      .in('id', leads.map((l: any) => l.id));
+    // Mark leads as in_campaign — but DO NOT clobber cancelled-by-kill-switch
+    // status. Only touch leads that weren't gate-blocked as non-retryable.
+    const cancelledIds = new Set(gateBlocks.filter((g) => !g.retryable).map((g) => g.lead_id));
+    const idsToMark = leads.map((l: any) => l.id).filter((id: string) => !cancelledIds.has(id));
+    if (idsToMark.length > 0) {
+      await supabase
+        .from('surplus_funds_leads')
+        .update({
+          status: 'queued',
+          dc_campaign_id: campaign?.id,
+          bland_call_triggered: true,
+          bland_call_triggered_at: new Date().toISOString(),
+        })
+        .in('id', idsToMark);
+    }
 
     return new Response(JSON.stringify({
       success: blandSuccessCount > 0,
@@ -212,9 +217,14 @@ serve(async (req) => {
       bland_call_ids: blandCallIds,
       leads_queued: leads.length,
       bland_error: blandError,
+      gate_blocked_count: gateBlocks.length,
+      gate_blocks: gateBlocks,
+      kill_switch_hit: killSwitchHit,
       message: blandSuccessCount > 0
-        ? `Campaign started. ${blandSuccessCount}/${leads.length} calls initiated.`
-        : 'Leads queued but no Bland calls succeeded.',
+        ? `Campaign started. ${blandSuccessCount}/${leads.length} calls initiated${gateBlocks.length ? `, ${gateBlocks.length} gate-blocked` : ''}.`
+        : killSwitchHit
+          ? 'Dispatch aborted — kill-switch engaged.'
+          : 'Leads queued but no Bland calls succeeded.',
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('[sf-trigger-bland-campaign] error', error);
