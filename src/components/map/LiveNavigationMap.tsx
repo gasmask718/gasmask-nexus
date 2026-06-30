@@ -125,6 +125,8 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
   const lastRerouteAt = useRef(0);
   const offRouteSince = useRef<number | null>(null);
   const fetchOriginRef = useRef<{ lat: number; lng: number } | null>(null);
+  const lastCameraEaseAt = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
   // 1. Geolocation watcher — high-frequency updates for Waze-style smooth tracking.
   //    Transient TIMEOUT / POSITION_UNAVAILABLE (tunnels, parking garages) are
