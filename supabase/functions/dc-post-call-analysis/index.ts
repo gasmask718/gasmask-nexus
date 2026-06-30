@@ -403,6 +403,7 @@ serve(async (req) => {
       call_id: callId,
       would_update: { table: leadTable, lead_id: leadId, payload: update },
       would_post_process: postProcessPayload,
+      null_only_stripped: strippedNullOnly,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('[dc-post-call-analysis] error', error);
