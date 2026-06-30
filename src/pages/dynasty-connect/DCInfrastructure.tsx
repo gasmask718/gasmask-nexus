@@ -52,6 +52,28 @@ export default function DCInfrastructure() {
   return (
     <div className="space-y-6">
       <div><h1 className="text-2xl font-bold">📱 Phone Number Management</h1><p className="text-sm text-muted-foreground">Assign dedicated numbers to each business</p></div>
+
+      {/* === BUSINESS-UNIT KILL-SWITCH BAR (nuclear option) === */}
+      <Card className="border-destructive/40">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base text-destructive flex items-center gap-2">
+            🛑 Emergency Stop — Business Unit Scope
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Engaging a kill-switch here halts ALL dispatch for the business unit (every campaign in that unit). Use the campaign manager for narrower stops.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {BUSINESS_UNIT_KEYS.map((key) => (
+              <div key={key} className="flex items-center justify-between p-2 rounded border border-border">
+                <span className="text-sm font-medium">{key}</span>
+                <KillSwitchButton scope={{ kind: 'business_unit', businessUnitKey: key, label: key }} variant="compact" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader><CardTitle className="text-base">Setup Instructions</CardTitle></CardHeader>
         <CardContent className="space-y-3 text-sm">
