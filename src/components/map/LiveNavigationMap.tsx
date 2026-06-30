@@ -126,7 +126,10 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
   const offRouteSince = useRef<number | null>(null);
   const fetchOriginRef = useRef<{ lat: number; lng: number } | null>(null);
 
-  // 1. Geolocation watcher — high-frequency updates for Waze-style smooth tracking
+  // 1. Geolocation watcher — high-frequency updates for Waze-style smooth tracking.
+  //    Transient TIMEOUT / POSITION_UNAVAILABLE (tunnels, parking garages) are
+  //    suppressed for 15 s so the UI keeps the last-known position and route
+  //    instead of flashing an error on every failed fix.
   useEffect(() => {
     if (origin) {
       setCurrentPos(origin);
@@ -136,14 +139,25 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
       setGeoError('Geolocation is not supported by this browser.');
       return;
     }
+    let firstErrorAt: number | null = null;
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
+        firstErrorAt = null;
         setCurrentPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setGeoError(null);
       },
-      (err) => setGeoError(err.message || 'Unable to access location'),
-      // maximumAge: 0 forces a fresh fix every tick; high accuracy + short timeout
-      // gives a continuous stream so the blue dot glides instead of jumping.
+      (err) => {
+        // PERMISSION_DENIED (1) is permanent → surface immediately.
+        if (err.code === 1) {
+          setGeoError('Location permission denied. Enable GPS to navigate.');
+          return;
+        }
+        // TIMEOUT (3) / POSITION_UNAVAILABLE (2) → likely tunnel; debounce.
+        if (firstErrorAt == null) firstErrorAt = Date.now();
+        if (Date.now() - firstErrorAt > 15_000) {
+          setGeoError('Waiting for GPS signal…');
+        }
+      },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 10_000 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
