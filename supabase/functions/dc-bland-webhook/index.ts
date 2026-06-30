@@ -415,9 +415,11 @@ ${transcript}`
           }).eq('id', leadId);
 
           if (canonical === 'interested' && callTranscript) {
-            supabase.functions.invoke('sf-post-call-analysis', {
-              body: { lead_id: leadId, transcript: callTranscript, call_id: callId },
-            }).catch((e) => console.error('[sf-post-call-analysis invoke failed]', e));
+            // Cutover: dc-post-call-analysis is the unified entry point.
+            // sf-post-call-analysis remains deployed but @deprecated.
+            supabase.functions.invoke('dc-post-call-analysis', {
+              body: { business_unit_key: 'surplus_funds', lead_id: leadId, transcript: callTranscript, call_id: callId },
+            }).catch((e) => console.error('[dc-post-call-analysis (surplus_funds) invoke failed]', e));
           }
         } else if (sourceHub === 're') {
           await supabase.rpc('increment_call_count', { row_id: leadId, target_table: 're_leads' });
