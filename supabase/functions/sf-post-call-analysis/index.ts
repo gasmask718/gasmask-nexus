@@ -67,9 +67,18 @@ ${transcript}`
     };
     if (analysis.email_provided) update.email = analysis.email_provided;
 
-    await supabase.from('surplus_funds_leads').update(update).eq('id', lead_id);
+    if (!isDryRun) {
+      await supabase.from('surplus_funds_leads').update(update).eq('id', lead_id);
+    }
 
-    return new Response(JSON.stringify({ success: true, analysis, call_id }), {
+    return new Response(JSON.stringify({
+      success: true,
+      dry_run: isDryRun,
+      analysis,
+      call_id,
+      would_update: { table: 'surplus_funds_leads', lead_id, payload: update },
+      would_post_process: null,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
