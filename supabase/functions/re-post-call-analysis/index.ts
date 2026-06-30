@@ -72,10 +72,9 @@ ${transcript}`
     };
     if (analysis.asking_price_mentioned) update.asking_price = analysis.asking_price_mentioned;
 
-    await supabase.from('re_leads').update(update).eq('id', lead_id);
-
+    let wouldInsertTask: Record<string, any> | null = null;
     if (analysis.recommended_action === 'book_appointment') {
-      await supabase.from('re_va_tasks').insert({
+      wouldInsertTask = {
         lead_id,
         task_type: 'appointment_set',
         priority: 'urgent',
@@ -83,10 +82,24 @@ ${transcript}`
         notes: `AI recommends booking appointment. Summary: ${analysis.summary}`,
         script: 'Confirm appointment time and qualify property details.',
         due_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      });
+      };
     }
 
-    return new Response(JSON.stringify({ success: true, analysis, call_id }), {
+    if (!isDryRun) {
+      await supabase.from('re_leads').update(update).eq('id', lead_id);
+      if (wouldInsertTask) {
+        await supabase.from('re_va_tasks').insert(wouldInsertTask);
+      }
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      dry_run: isDryRun,
+      analysis,
+      call_id,
+      would_update: { table: 're_leads', lead_id, payload: update },
+      would_post_process: wouldInsertTask ? { table: 're_va_tasks', payload: wouldInsertTask } : null,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
