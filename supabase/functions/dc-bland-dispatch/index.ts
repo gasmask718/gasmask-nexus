@@ -363,6 +363,18 @@ serve(async (req) => {
 
       const { businessType, concurrency = 5, manualNumberOverride = null, autoMatch = true } = params;
 
+      // === PRE-BATCH GATE (kill-switch + calling-hours) — short-circuit
+      // the entire batch before pulling leads, so we don't even mark them.
+      const businessUnitKey = BIZ_TYPE_TO_KEY[businessType as string] || (businessType as string) || null;
+      const batchGate = await checkDispatchGates(supabase, { businessUnitKey });
+      if (!batchGate.allowed) {
+        console.log('[GATE BLOCK start-campaign batch]', { code: batchGate.code, reason: batchGate.reason, businessUnitKey });
+        return new Response(JSON.stringify({
+          success: false, gate_blocked: true, gate_code: batchGate.code,
+          gate_retryable: batchGate.retryable, reason: batchGate.reason, dispatched: 0,
+        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
       const { data: leads } = await supabase
         .from('dynasty_call_queue')
         .select('*')
@@ -379,6 +391,21 @@ serve(async (req) => {
       const results = [];
       for (const lead of leads) {
         try {
+          // Per-lead gate recheck — honors a kill-switch toggled mid-batch.
+          const perLeadGate = await checkDispatchGates(supabase, { businessUnitKey });
+          if (!perLeadGate.allowed) {
+            console.log('[GATE BLOCK start-campaign per-lead]', { code: perLeadGate.code, leadId: lead.id });
+            if (!perLeadGate.retryable) {
+              await supabase.from('dynasty_call_queue').update({
+                status: 'cancelled',
+                error_message: `Gate blocked: ${perLeadGate.code}`,
+                completed_at: new Date().toISOString(),
+              }).eq('id', lead.id);
+            }
+            results.push({ id: lead.id, status: 'gate_blocked', code: perLeadGate.code });
+            continue;
+          }
+
           // === DNC PRE-DIAL CHECK — must run BEFORE Bland API call ===
           const dncCheck = await isOnDNC(supabase, lead.phone_number);
           if (dncCheck.blocked) {
