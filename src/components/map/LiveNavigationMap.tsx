@@ -70,6 +70,11 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
   const [route, setRoute] = useState<RouteSummary | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
   const [loadingRoute, setLoadingRoute] = useState(false);
+  const [rerouteToken, setRerouteToken] = useState(0);
+  const [rerouting, setRerouting] = useState(false);
+  const lastRerouteAt = useRef(0);
+  const offRouteSince = useRef<number | null>(null);
+  const fetchOriginRef = useRef<{ lat: number; lng: number } | null>(null);
 
   // 1. Geolocation watcher — high-frequency updates for Waze-style smooth tracking
   useEffect(() => {
