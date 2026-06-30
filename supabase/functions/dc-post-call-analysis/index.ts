@@ -116,6 +116,7 @@ serve(async (req) => {
     const leadId: string | undefined = body.lead_id;
     const callId: string | undefined = body.call_id || body.call_log_id;
     let transcript: string | undefined = body.transcript;
+    const isDryRun = body.dry_run === true;
 
     if (!businessUnitKey) throw new Error('business_unit_key required');
     if (!leadId) throw new Error('lead_id required');
