@@ -970,11 +970,14 @@ function SettlementTab() {
                             <Button size="sm" variant="outline" disabled={approve.isPending}
                               onClick={() => approve.mutate(p.id)}>Approve</Button>
                           )}
-                          {p.status === "approved" && (
-                            <Button size="sm" disabled={pay.isPending || !partner.stripe_connect_onboarded}
+                          {p.status === "approved" && partner.stripe_connect_onboarded && (
+                            <Button size="sm" disabled={pay.isPending}
                               onClick={() => pay.mutate(p)}>
                               {pay.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Process Payment"}
                             </Button>
+                          )}
+                          {p.status === "approved" && !partner.stripe_connect_onboarded && (
+                            <span className="text-xs text-amber-600">Bank not connected — partner must complete Stripe Connect at /partner/settings</span>
                           )}
                           {p.status === "paid" && p.stripe_transfer_id && (
                             <span className="text-xs text-muted-foreground">{p.stripe_transfer_id}</span>
