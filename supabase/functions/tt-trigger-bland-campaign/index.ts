@@ -179,6 +179,46 @@ serve(async (req) => {
       ? `${SUPABASE_URL}/functions/v1/dc-bland-webhook?secret=${encodeURIComponent(webhookSecret)}`
       : `${SUPABASE_URL}/functions/v1/dc-bland-webhook`;
 
+    // --- Fetch agent prompt from Bland (single source of truth) ---
+    // /v1/calls with agent_id alone is rejected ("Missing required parameter: task").
+    // We resolve prompt + first_sentence from GET /v1/agents once per invocation
+    // and pass them inline on each per-lead /v1/calls payload. dc_agents.system_prompt
+    // is intentionally NOT used as a fallback — it stores a short summary, not the
+    // full script that's registered on Bland's side.
+    let agentTask: string | null = null;
+    let agentFirstSentence: string | null = null;
+    try {
+      const agentsRes = await fetch("https://api.bland.ai/v1/agents", {
+        method: "GET",
+        headers: { "Authorization": BLAND_API_KEY },
+      });
+      const agentsJson = await agentsRes.json();
+      const agentList: any[] = Array.isArray(agentsJson)
+        ? agentsJson
+        : (agentsJson.agents || agentsJson.data || []);
+      const ttAgent = agentList.find((a: any) => a.agent_id === BLAND_AGENT_ID);
+      if (!ttAgent || !ttAgent.prompt || ttAgent.prompt.length < 100) {
+        throw new Error(
+          `TopTier Bland agent ${BLAND_AGENT_ID} not found or prompt missing/empty ` +
+          `(found=${!!ttAgent}, prompt_len=${ttAgent?.prompt?.length ?? 0}). ` +
+          `Re-run tt-create-bland-agent or verify the agent_id constant.`
+        );
+      }
+      agentTask = ttAgent.prompt;
+      agentFirstSentence = ttAgent.first_sentence || null;
+      console.log(
+        `[tt-trigger] Resolved Bland agent prompt (len=${agentTask.length}, ` +
+        `first_sentence_len=${agentFirstSentence?.length ?? 0})`
+      );
+    } catch (e: any) {
+      console.error("[tt-trigger] Failed to resolve Bland agent prompt", e);
+      return new Response(JSON.stringify({
+        success: false,
+        error: `Bland agent prompt resolution failed: ${e.message}. No dispatch attempted.`,
+        leads_loaded: leads.length,
+      }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     let blandSuccessCount = 0;
     let blandError: string | null = null;
     const blandCallIds: string[] = [];
@@ -240,6 +280,8 @@ serve(async (req) => {
       const payload = {
         phone_number: l.phone,
         agent_id: BLAND_AGENT_ID,
+        task: agentTask,
+        first_sentence: agentFirstSentence,
         voice: "June",
         language: "en-US",
         max_duration: 12,
