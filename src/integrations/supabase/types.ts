@@ -34797,9 +34797,16 @@ export type Database = {
           notes: string | null
           partner_category: string
           phone: string | null
+          phone_invalid: boolean
           pricing_range: string | null
           service_area: string[] | null
           state: string | null
+          tt_acquisition_notes: string | null
+          tt_acquisition_stage: string
+          tt_call_attempts: number
+          tt_callback_at: string | null
+          tt_last_call_at: string | null
+          tt_last_disposition: string | null
           updated_at: string
         }
         Insert: {
@@ -34819,9 +34826,16 @@ export type Database = {
           notes?: string | null
           partner_category: string
           phone?: string | null
+          phone_invalid?: boolean
           pricing_range?: string | null
           service_area?: string[] | null
           state?: string | null
+          tt_acquisition_notes?: string | null
+          tt_acquisition_stage?: string
+          tt_call_attempts?: number
+          tt_callback_at?: string | null
+          tt_last_call_at?: string | null
+          tt_last_disposition?: string | null
           updated_at?: string
         }
         Update: {
@@ -34841,9 +34855,16 @@ export type Database = {
           notes?: string | null
           partner_category?: string
           phone?: string | null
+          phone_invalid?: boolean
           pricing_range?: string | null
           service_area?: string[] | null
           state?: string | null
+          tt_acquisition_notes?: string | null
+          tt_acquisition_stage?: string
+          tt_call_attempts?: number
+          tt_callback_at?: string | null
+          tt_last_call_at?: string | null
+          tt_last_disposition?: string | null
           updated_at?: string
         }
         Relationships: []
