@@ -299,6 +299,19 @@ Deno.serve(async (req) => {
       return json({ error: "no_targets" }, 400);
     }
 
+    // === PRE-LAUNCH GATE — block batch creation entirely when a kill-switch
+    // is engaged for this business unit. (Hours/throttle gates fire per-slice
+    // inside runWorker since we don't yet have a campaign_id at launch time.)
+    const launchGate = await checkDispatchGates(admin, {
+      businessUnitKey: business,
+    });
+    if (!launchGate.allowed && !launchGate.retryable) {
+      console.log(`[dc-bulk-call] LAUNCH GATE BLOCK code=${launchGate.code} reason=${launchGate.reason}`);
+      return json({
+        error: "gate_blocked", gate_code: launchGate.code, reason: launchGate.reason,
+      }, 403);
+    }
+
     // normalize + dedupe phones
     const seen = new Set<string>();
     const clean: { to_number: string; lead_name?: string; store_id?: string }[] = [];
