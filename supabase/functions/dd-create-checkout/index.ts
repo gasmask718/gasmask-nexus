@@ -333,7 +333,7 @@ serve(async (req) => {
     const { data: order, error: oErr } = await supabase
       .from("marketplace_orders")
       .select(
-        "id, total, subtotal, shipping_cost, tax_amount, customer_email, payment_status, discount_code, discount_amount, ordering_store_id, order_type",
+        "id, user_id, total, subtotal, shipping_cost, tax_amount, customer_email, payment_status, discount_code, discount_amount, ordering_store_id, order_type",
       )
       .eq("id", orderId)
       .single();
@@ -342,7 +342,7 @@ serve(async (req) => {
       return json({ error: "Order already paid" }, 400);
     }
 
-    // ── Store account verification gate: unverified stores capped at $500.
+    // ── Store account verification gate: unverified stores capped at $2,000.
     const orderTotal = Number(order.total ?? 0);
     const isStoreUser = !!(order as any).ordering_store_id || order.order_type === "store";
     let storeVerified = false;
@@ -353,20 +353,56 @@ serve(async (req) => {
         .eq("id", (order as any).ordering_store_id)
         .maybeSingle();
       storeVerified = !!(storeRow as any)?.identity_verified;
-      if (!storeVerified && orderTotal > 500) {
+      if (!storeVerified && orderTotal > 2000) {
         return json(
           {
             mode: "pending",
             error: "verification_required",
             message:
-              "Orders over $500 require store verification. Contact orders@dynastydirect.com to verify your account.",
+              "Orders over $2,000 require store verification. Contact orders@dynastydirect.com to verify your account.",
           },
           400,
         );
       }
     }
-    const isLargeStoreOrder = isStoreUser && orderTotal > 500;
-    const threeDSMode: "automatic" | "any" = isLargeStoreOrder ? "any" : "automatic";
+
+    // ── Tiered 3DS: only force bank auth for new customers, large orders,
+    // or repeat customers without a clean history. Otherwise let Stripe
+    // Radar decide based on real-time risk signals (low friction).
+    const userId: string | null = (order as any).user_id ?? null;
+    const { count: paidOrderCount } = await supabase
+      .from("marketplace_orders")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId ?? "")
+      .eq("payment_status", "paid");
+    const isNewCustomer = !userId || (paidOrderCount ?? 0) === 0;
+
+    async function determineThreeDSMode(): Promise<"any" | "automatic"> {
+      // TIER 1 — New customers (first order ever) or guest
+      if (isNewCustomer) return "any";
+      // TIER 2 — Large orders regardless of history
+      if (orderTotal >= 500) return "any";
+      // TIER 3 — Repeat customer history check
+      if (userId) {
+        const { data: pastOrders } = await supabase
+          .from("marketplace_orders")
+          .select("id, fraud_review_flag")
+          .eq("user_id", userId)
+          .eq("payment_status", "paid")
+          .limit(5);
+        const hasCleanHistory =
+          !!pastOrders &&
+          pastOrders.length >= 2 &&
+          !pastOrders.some((o: any) => o.fraud_review_flag);
+        if (hasCleanHistory) return "automatic";
+      }
+      // DEFAULT — Radar decides
+      return "automatic";
+    }
+
+    const threeDSMode: "any" | "automatic" = await determineThreeDSMode();
+    const threeDSTier: "new_customer" | "high_value" | "established_customer" =
+      isNewCustomer ? "new_customer" : orderTotal >= 500 ? "high_value" : "established_customer";
 
     // Stamp campaign on the existing order if a campaign_code was passed.
     const hostedCampaignCode: string | null = body?.campaign_code ?? null;
