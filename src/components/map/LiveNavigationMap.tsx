@@ -199,21 +199,24 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 3. Origin marker
+  // 3. Origin marker — smooth glide (no jump) + gentle camera follow
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !currentPos) return;
+    const lngLat: [number, number] = [currentPos.lng, currentPos.lat];
     if (!originMarker.current) {
       const el = document.createElement('div');
       el.style.cssText =
-        'width:18px;height:18px;border-radius:50%;background:#2563eb;border:3px solid white;box-shadow:0 0 0 2px #2563eb;';
-      originMarker.current = new mapboxgl.Marker({ element: el })
-        .setLngLat([currentPos.lng, currentPos.lat])
-        .addTo(map);
+        'width:18px;height:18px;border-radius:50%;background:#2563eb;border:3px solid white;box-shadow:0 0 0 2px #2563eb;transition:transform 600ms linear;';
+      originMarker.current = new mapboxgl.Marker({ element: el }).setLngLat(lngLat).addTo(map);
     } else {
-      originMarker.current.setLngLat([currentPos.lng, currentPos.lat]);
+      originMarker.current.setLngLat(lngLat);
     }
-  }, [currentPos]);
+    // Soft camera follow once we have an active route
+    if (route) {
+      map.easeTo({ center: lngLat, duration: 600, essential: true });
+    }
+  }, [currentPos, route]);
 
   // 4. Destination marker
   useEffect(() => {
