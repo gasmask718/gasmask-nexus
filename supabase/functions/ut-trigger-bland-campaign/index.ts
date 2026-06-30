@@ -253,7 +253,7 @@ serve(async (req) => {
         wait_for_greeting: true,
         record: true,
         amd: true,
-        tools: [addToDncTool],
+        tools: addToDncTool ? [addToDncTool] : [],
         request_data: {
           lead_id: l.id,
           hub: "unforgettable_times",
