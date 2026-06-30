@@ -221,6 +221,30 @@ serve(async (req) => {
 
       const { phoneNumber, businessType, contactName, businessName, queueId } = params;
 
+      // === PRE-DIAL GATES (kill-switch + calling-hours + throttle) ===
+      // No campaign_id is available on this path — gate by business unit only.
+      const businessUnitKey = BIZ_TYPE_TO_KEY[businessType as string] || (businessType as string) || null;
+      const gate = await checkDispatchGates(supabase, { businessUnitKey });
+      if (!gate.allowed) {
+        console.log('[GATE BLOCK make-call]', { code: gate.code, reason: gate.reason, businessUnitKey, queueId });
+        if (queueId) {
+          // Retryable blocks (hours/throttle) leave the queue row alone so it
+          // can be retried when the window reopens. Non-retryable (kill-switch)
+          // marks it cancelled so it doesn't sit forever.
+          if (!gate.retryable) {
+            await supabase.from('dynasty_call_queue').update({
+              status: 'cancelled',
+              error_message: `Gate blocked: ${gate.code}: ${gate.reason}`,
+              completed_at: new Date().toISOString(),
+            }).eq('id', queueId);
+          }
+        }
+        return new Response(JSON.stringify({
+          success: false, gate_blocked: true, gate_code: gate.code,
+          gate_retryable: gate.retryable, reason: gate.reason,
+        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
       // === DNC PRE-DIAL CHECK (must run BEFORE any Bland API call) ===
       const dnc = await isOnDNC(supabase, phoneNumber);
       if (dnc.blocked) {
