@@ -395,34 +395,26 @@ ${transcript}`
       }
 
       if (sourceHub && leadId) {
-        const disposition = (payload.disposition || payload.status || '').toLowerCase();
-        // Constrained allowed status values per hub
-        const sfStatusMap: Record<string, string> = {
-          'interested': 'interested',
-          'do_not_call': 'do_not_contact',
-        };
-        const reStatusMap: Record<string, string> = {
-          'interested': 'interested',
-          'do_not_call': 'dnc',
-        };
-        const newStatusSf = sfStatusMap[disposition] || 'called';
-        const newStatusRe = reStatusMap[disposition] || 'called';
+        const rawDisposition = (payload.disposition || payload.status || '').toLowerCase();
+        // Canonical disposition code (see public.dc_disposition_codes).
+        // Unknown values fall back to 'called' (logged inside canonicalizeDisposition).
+        const canonical = canonicalizeDisposition(rawDisposition);
         const recordingUrl = payload.recording_url || payload.recording || null;
         const callTranscript = payload.concatenated_transcript || payload.transcript || null;
 
         if (sourceHub === 'surplus_funds') {
           await supabase.rpc('increment_call_count', { row_id: leadId, target_table: 'surplus_funds_leads' });
           await supabase.from('surplus_funds_leads').update({
-            status: newStatusSf,
+            status: canonical,
             last_called_at: new Date().toISOString(),
-            call_outcome: disposition || null,
+            call_outcome: canonical,
             call_recording_url: recordingUrl,
             call_transcript: callTranscript,
             bland_call_id: callId,
-            interest_level: disposition === 'interested' ? 'high' : disposition === 'not_interested' ? 'low' : null,
+            interest_level: canonical === 'interested' ? 'high' : canonical === 'not_interested' ? 'low' : null,
           }).eq('id', leadId);
 
-          if (disposition === 'interested' && callTranscript) {
+          if (canonical === 'interested' && callTranscript) {
             supabase.functions.invoke('sf-post-call-analysis', {
               body: { lead_id: leadId, transcript: callTranscript, call_id: callId },
             }).catch((e) => console.error('[sf-post-call-analysis invoke failed]', e));
@@ -430,13 +422,15 @@ ${transcript}`
         } else if (sourceHub === 're') {
           await supabase.rpc('increment_call_count', { row_id: leadId, target_table: 're_leads' });
           await supabase.from('re_leads').update({
-            status: newStatusRe,
+            status: canonical,
             last_called_at: new Date().toISOString(),
-            call_outcome: disposition || null,
+            call_outcome: canonical,
             call_recording_url: recordingUrl,
             call_transcript: callTranscript,
             bland_call_id: callId,
           }).eq('id', leadId);
+
+
 
           if (disposition === 'interested') {
             await supabase.from('re_va_tasks').insert({
