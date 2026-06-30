@@ -690,9 +690,12 @@ ${transcript}`
       console.error('[dual-write failed]', dualWriteErr);
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    const responseBody: Record<string, unknown> = { success: true };
+    if (ttWarnings.length) responseBody.warnings = ttWarnings;
+    return new Response(JSON.stringify(responseBody), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   } catch (error) {
     console.error('Webhook error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
