@@ -9,6 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Phone, Plus, CheckCircle, AlertCircle } from 'lucide-react';
+import KillSwitchButton from './components/KillSwitchButton';
+
+// dc_businesses.business_key values for the nuclear bar
+const BUSINESS_UNIT_KEYS = [
+  'gasmask', 'brandaro', 'surplus_funds', 'real_estate',
+  'top_tier', 'unforgettable_times', 'dynasty_direct', 'iclean', 'playboxxx',
+];
 
 const BIZ_OPTIONS = [
   { value: 'gasmask', label: 'GasMask', defaultNumber: '+18484004179' },
