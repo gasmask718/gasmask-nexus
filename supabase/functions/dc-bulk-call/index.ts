@@ -344,21 +344,22 @@ Deno.serve(async (req) => {
       .single();
     if (bErr || !batch) return json({ error: "batch_insert_failed", details: bErr }, 500);
 
-    // insert opted-out rows as already-skipped
+    // insert opted-out / dnc rows as already-skipped, with the right reason
     if (skippedCount > 0) {
       const skipRows = clean
-        .filter((t) => optedOut.has(t.to_number))
+        .filter((t) => optedOut.has(t.to_number) || dncBlocked.has(t.to_number))
         .map((t) => ({
           batch_id: batch.id,
           to_number: t.to_number,
           lead_name: t.lead_name,
           store_id: t.store_id,
           status: "skipped",
-          skip_reason: "opted_out",
+          skip_reason: dncBlocked.has(t.to_number) ? "dnc" : "opted_out",
           completed_at: new Date().toISOString(),
         }));
       if (skipRows.length) await admin.from("dc_bulk_targets").insert(skipRows);
     }
+
 
     // insert dialable rows
     const queuedRows = dialable.map((t) => ({
