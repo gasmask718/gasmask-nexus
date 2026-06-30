@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { logLeadSyncBatch } from "../_shared/dc_sync_log.ts";
+import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 
 const COLD_SELLER_PROMPT = `You are a real estate acquisition specialist calling homeowners about their property. Be friendly, professional, and respectful.
 
@@ -116,8 +117,31 @@ serve(async (req) => {
     let blandSuccessCount = 0;
     let blandError: string | null = null;
     const blandCallIds: string[] = [];
+    const gateBlocks: Array<{ lead_id: string; code: string; reason: string; retryable: boolean }> = [];
+    let killSwitchHit = false;
 
     for (const l of leads as any[]) {
+      // === Per-lead dispatch gate (kill-switch, calling hours, throttle) ===
+      // Scoped on business_unit_key only; campaign row is created post-loop.
+      const gate = await checkDispatchGates(supabase, { businessUnitKey: 'real_estate' });
+      if (!gate.allowed) {
+        gateBlocks.push({ lead_id: l.id, code: gate.code, reason: gate.reason, retryable: gate.retryable });
+        console.warn('[re-trigger gate-blocked]', l.id, gate.code, gate.reason);
+        if (!gate.retryable) {
+          killSwitchHit = true;
+          await supabase.from('re_leads').update({ status: 'cancelled' }).eq('id', l.id);
+          const remaining = (leads as any[]).slice((leads as any[]).indexOf(l) + 1).map((r: any) => r.id);
+          if (remaining.length > 0) {
+            await supabase.from('re_leads').update({ status: 'cancelled' }).in('id', remaining);
+            for (const rid of remaining) {
+              gateBlocks.push({ lead_id: rid, code: gate.code, reason: gate.reason, retryable: false });
+            }
+          }
+          break;
+        }
+        continue;
+      }
+
       const taskPrompt = basePrompt
         .replaceAll('{{first_name}}', l.first_name || 'there')
         .replaceAll('{{address}}', l.property_address || 'your property')
@@ -178,13 +202,15 @@ serve(async (req) => {
       .select()
       .single();
 
-    await supabase
-      .from('re_leads')
-      .update({
-        status: 'queued',
-        dc_campaign_id: campaign?.id,
-      })
-      .in('id', leads.map((l: any) => l.id));
+    // Do NOT clobber cancelled-by-kill-switch leads.
+    const cancelledIds = new Set(gateBlocks.filter((g) => !g.retryable).map((g) => g.lead_id));
+    const idsToMark = leads.map((l: any) => l.id).filter((id: string) => !cancelledIds.has(id));
+    if (idsToMark.length > 0) {
+      await supabase
+        .from('re_leads')
+        .update({ status: 'queued', dc_campaign_id: campaign?.id })
+        .in('id', idsToMark);
+    }
 
     return new Response(JSON.stringify({
       success: blandSuccessCount > 0,
@@ -193,9 +219,14 @@ serve(async (req) => {
       bland_call_ids: blandCallIds,
       leads_queued: leads.length,
       bland_error: blandError,
+      gate_blocked_count: gateBlocks.length,
+      gate_blocks: gateBlocks,
+      kill_switch_hit: killSwitchHit,
       message: blandSuccessCount > 0
-        ? `Campaign started. ${blandSuccessCount}/${leads.length} calls initiated.`
-        : 'Leads queued but no Bland calls succeeded.',
+        ? `Campaign started. ${blandSuccessCount}/${leads.length} calls initiated${gateBlocks.length ? `, ${gateBlocks.length} gate-blocked` : ''}.`
+        : killSwitchHit
+          ? 'Dispatch aborted — kill-switch engaged.'
+          : 'Leads queued but no Bland calls succeeded.',
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('[re-trigger-bland-campaign] error', error);

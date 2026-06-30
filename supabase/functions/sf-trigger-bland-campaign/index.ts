@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { logLeadSyncBatch } from "../_shared/dc_sync_log.ts";
+import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 
 const SF_OUTREACH_PROMPT = `You are calling on behalf of Dynasty Recovery Group. You are a professional, friendly representative helping people recover unclaimed money owed to them.
 
@@ -95,8 +96,42 @@ serve(async (req) => {
     let blandSuccessCount = 0;
     let blandError: string | null = null;
     const blandCallIds: string[] = [];
+    const gateBlocks: Array<{ lead_id: string; code: string; reason: string; retryable: boolean }> = [];
+    let killSwitchHit = false;
 
     for (const l of leads as any[]) {
+      // === Per-lead dispatch gate (kill-switch, calling hours, throttle) ===
+      // Campaign row isn't created until after the loop, so we scope on
+      // business_unit_key only. Kill-switch (business_unit) is the critical
+      // mid-batch protection — re-checked per lead so a kill-switch engaged
+      // partway through a batch aborts remaining leads.
+      const gate = await checkDispatchGates(supabase, { businessUnitKey: 'surplus_funds' });
+      if (!gate.allowed) {
+        gateBlocks.push({ lead_id: l.id, code: gate.code, reason: gate.reason, retryable: gate.retryable });
+        console.warn('[sf-trigger gate-blocked]', l.id, gate.code, gate.reason);
+        // Kill-switch = non-retryable → mark lead cancelled and stop dialing
+        // entirely (no point checking subsequent leads against the same switch).
+        if (!gate.retryable) {
+          killSwitchHit = true;
+          await supabase.from('surplus_funds_leads')
+            .update({ status: 'cancelled' })
+            .eq('id', l.id);
+          // Cancel the rest of the batch in one shot.
+          const remaining = (leads as any[]).slice((leads as any[]).indexOf(l) + 1).map((r: any) => r.id);
+          if (remaining.length > 0) {
+            await supabase.from('surplus_funds_leads')
+              .update({ status: 'cancelled' })
+              .in('id', remaining);
+            for (const rid of remaining) {
+              gateBlocks.push({ lead_id: rid, code: gate.code, reason: gate.reason, retryable: false });
+            }
+          }
+          break;
+        }
+        // Retryable (hours/throttle) → leave lead queued, skip this lead
+        continue;
+      }
+
       const taskPrompt = SF_OUTREACH_PROMPT
         .replaceAll('{{first_name}}', l.first_name || 'there')
         .replaceAll('{{county}}', l.county || 'your county')
@@ -159,16 +194,21 @@ serve(async (req) => {
       .select()
       .single();
 
-    // Mark leads as in_campaign
-    await supabase
-      .from('surplus_funds_leads')
-      .update({
-        status: 'queued',
-        dc_campaign_id: campaign?.id,
-        bland_call_triggered: true,
-        bland_call_triggered_at: new Date().toISOString(),
-      })
-      .in('id', leads.map((l: any) => l.id));
+    // Mark leads as in_campaign — but DO NOT clobber cancelled-by-kill-switch
+    // status. Only touch leads that weren't gate-blocked as non-retryable.
+    const cancelledIds = new Set(gateBlocks.filter((g) => !g.retryable).map((g) => g.lead_id));
+    const idsToMark = leads.map((l: any) => l.id).filter((id: string) => !cancelledIds.has(id));
+    if (idsToMark.length > 0) {
+      await supabase
+        .from('surplus_funds_leads')
+        .update({
+          status: 'queued',
+          dc_campaign_id: campaign?.id,
+          bland_call_triggered: true,
+          bland_call_triggered_at: new Date().toISOString(),
+        })
+        .in('id', idsToMark);
+    }
 
     return new Response(JSON.stringify({
       success: blandSuccessCount > 0,
@@ -177,9 +217,14 @@ serve(async (req) => {
       bland_call_ids: blandCallIds,
       leads_queued: leads.length,
       bland_error: blandError,
+      gate_blocked_count: gateBlocks.length,
+      gate_blocks: gateBlocks,
+      kill_switch_hit: killSwitchHit,
       message: blandSuccessCount > 0
-        ? `Campaign started. ${blandSuccessCount}/${leads.length} calls initiated.`
-        : 'Leads queued but no Bland calls succeeded.',
+        ? `Campaign started. ${blandSuccessCount}/${leads.length} calls initiated${gateBlocks.length ? `, ${gateBlocks.length} gate-blocked` : ''}.`
+        : killSwitchHit
+          ? 'Dispatch aborted — kill-switch engaged.'
+          : 'Leads queued but no Bland calls succeeded.',
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('[sf-trigger-bland-campaign] error', error);
