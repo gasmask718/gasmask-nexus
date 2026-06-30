@@ -36437,6 +36437,121 @@ export type Database = {
         }
         Relationships: []
       }
+      dc_campaign_schedules: {
+        Row: {
+          active: boolean
+          business_unit_key: string | null
+          calling_hours_end: string
+          calling_hours_start: string
+          campaign_id: string | null
+          created_at: string
+          days_of_week: number[]
+          id: string
+          max_calls_per_hour: number | null
+          max_concurrent_calls: number | null
+          timezone: string
+        }
+        Insert: {
+          active?: boolean
+          business_unit_key?: string | null
+          calling_hours_end?: string
+          calling_hours_start?: string
+          campaign_id?: string | null
+          created_at?: string
+          days_of_week?: number[]
+          id?: string
+          max_calls_per_hour?: number | null
+          max_concurrent_calls?: number | null
+          timezone?: string
+        }
+        Update: {
+          active?: boolean
+          business_unit_key?: string | null
+          calling_hours_end?: string
+          calling_hours_start?: string
+          campaign_id?: string | null
+          created_at?: string
+          days_of_week?: number[]
+          id?: string
+          max_calls_per_hour?: number | null
+          max_concurrent_calls?: number | null
+          timezone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dc_campaign_schedules_business_unit_key_fkey"
+            columns: ["business_unit_key"]
+            isOneToOne: false
+            referencedRelation: "dc_businesses"
+            referencedColumns: ["business_key"]
+          },
+          {
+            foreignKeyName: "dc_campaign_schedules_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "dc_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dc_campaign_templates: {
+        Row: {
+          business_unit_key: string | null
+          created_at: string
+          created_by: string | null
+          default_agent_id: string | null
+          default_schedule_id: string | null
+          description: string | null
+          id: string
+          name: string
+          script_notes: string | null
+        }
+        Insert: {
+          business_unit_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_agent_id?: string | null
+          default_schedule_id?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          script_notes?: string | null
+        }
+        Update: {
+          business_unit_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_agent_id?: string | null
+          default_schedule_id?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          script_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dc_campaign_templates_business_unit_key_fkey"
+            columns: ["business_unit_key"]
+            isOneToOne: false
+            referencedRelation: "dc_businesses"
+            referencedColumns: ["business_key"]
+          },
+          {
+            foreignKeyName: "dc_campaign_templates_default_agent_id_fkey"
+            columns: ["default_agent_id"]
+            isOneToOne: false
+            referencedRelation: "dc_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dc_campaign_templates_default_schedule_id_fkey"
+            columns: ["default_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "dc_campaign_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dc_campaigns: {
         Row: {
           active_days: Json | null
@@ -36529,6 +36644,56 @@ export type Database = {
           label?: string
         }
         Relationships: []
+      }
+      dc_lead_sync_log: {
+        Row: {
+          business_unit_key: string
+          created_at: string
+          dc_lead_id: string | null
+          error_message: string | null
+          id: string
+          lead_id: string
+          status_after: string | null
+          status_before: string | null
+          success: boolean
+          sync_direction: string
+          sync_source: string
+        }
+        Insert: {
+          business_unit_key: string
+          created_at?: string
+          dc_lead_id?: string | null
+          error_message?: string | null
+          id?: string
+          lead_id: string
+          status_after?: string | null
+          status_before?: string | null
+          success?: boolean
+          sync_direction: string
+          sync_source: string
+        }
+        Update: {
+          business_unit_key?: string
+          created_at?: string
+          dc_lead_id?: string | null
+          error_message?: string | null
+          id?: string
+          lead_id?: string
+          status_after?: string | null
+          status_before?: string | null
+          success?: boolean
+          sync_direction?: string
+          sync_source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dc_lead_sync_log_dc_lead_id_fkey"
+            columns: ["dc_lead_id"]
+            isOneToOne: false
+            referencedRelation: "dc_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dc_leads: {
         Row: {
@@ -61024,6 +61189,7 @@ export type Database = {
       kill_switch_state: {
         Row: {
           business_id: string | null
+          business_unit_key: string | null
           campaign_id: string | null
           created_at: string
           id: string
@@ -61039,6 +61205,7 @@ export type Database = {
         }
         Insert: {
           business_id?: string | null
+          business_unit_key?: string | null
           campaign_id?: string | null
           created_at?: string
           id?: string
@@ -61054,6 +61221,7 @@ export type Database = {
         }
         Update: {
           business_id?: string | null
+          business_unit_key?: string | null
           campaign_id?: string | null
           created_at?: string
           id?: string
