@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const BUSINESS_UNIT_KEY = "brandaro";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -52,19 +55,42 @@ serve(async (req) => {
     const leadIds = leads.map((l: any) => l.id);
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: recentCalls } = await supabase
+    const { data: recentCalls, error: recentErr } = await supabase
       .from("brandaro_ai_calls")
       .select("lead_id")
       .in("lead_id", leadIds)
       .gte("created_at", oneDayAgo);
+    if (recentErr) {
+      console.error("[brandaro-ai-caller] recent-calls lookup failed:", recentErr);
+    }
 
     const recentlyCalledIds = new Set((recentCalls || []).map((c: any) => c.lead_id));
     const eligibleLeads = leads.filter((l: any) => !recentlyCalledIds.has(l.id));
 
     const results: any[] = [];
+    let gateBlocked = 0;
 
     for (const lead of eligibleLeads) {
       try {
+        // === PRE-DIAL GATE (kill-switch + calling-hours + throttle) ===
+        // Brandaro retrofit: business-unit scope only (no campaign_id in this flow).
+        // Kill-switch = non-retryable; hours/throttle = retryable (queue/lead untouched).
+        const gate = await checkDispatchGates(supabase, {
+          businessUnitKey: BUSINESS_UNIT_KEY,
+        });
+        if (!gate.allowed) {
+          console.log(`[brandaro-ai-caller] GATE BLOCK code=${gate.code} retryable=${gate.retryable} lead=${lead.id} reason=${gate.reason}`);
+          results.push({
+            lead_id: lead.id,
+            status: "gate_blocked",
+            gate_code: gate.code,
+            gate_retryable: gate.retryable,
+            reason: gate.reason,
+          });
+          gateBlocked++;
+          continue;
+        }
+
         const { data: callRecord, error: insertErr } = await supabase
           .from("brandaro_ai_calls")
           .insert({
@@ -103,18 +129,24 @@ serve(async (req) => {
         const twilioData = await twilioResponse.json();
 
         if (!twilioResponse.ok) {
-          await supabase
+          const { error: failUpdErr } = await supabase
             .from("brandaro_ai_calls")
             .update({ status: "failed", outcome: JSON.stringify(twilioData) })
             .eq("id", callRecord.id);
+          if (failUpdErr) {
+            console.error(`[brandaro-ai-caller] failed-status UPDATE failed for ${callRecord.id}:`, failUpdErr);
+          }
           results.push({ lead_id: lead.id, status: "failed", error: twilioData.message });
           continue;
         }
 
-        await supabase
+        const { error: successUpdErr } = await supabase
           .from("brandaro_ai_calls")
           .update({ call_sid: twilioData.sid, status: "initiated" })
           .eq("id", callRecord.id);
+        if (successUpdErr) {
+          console.error(`[brandaro-ai-caller] success UPDATE (call_sid) failed for ${callRecord.id}:`, successUpdErr);
+        }
 
         results.push({ lead_id: lead.id, status: "initiated", call_sid: twilioData.sid });
 
@@ -130,6 +162,7 @@ serve(async (req) => {
       JSON.stringify({
         total_eligible: eligibleLeads.length,
         results,
+        gate_blocked: gateBlocked,
         called: results.filter((r) => r.status === "initiated").length,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

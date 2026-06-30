@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,6 +8,7 @@ const corsHeaders = {
 };
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
+const BUSINESS_UNIT_KEY = "brandaro";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -78,19 +80,25 @@ serve(async (req) => {
       }));
     } else {
       // Fallback: separate queries
-      const { data: queueOnly } = await supabase
+      const { data: queueOnly, error: queueOnlyErr } = await supabase
         .from("brandaro_call_queue")
         .select("id, lead_id, priority_score, retry_count")
         .eq("is_active", true)
         .order("priority_score", { ascending: false })
         .limit(batchSize);
+      if (queueOnlyErr) {
+        console.error("[brandaro-execute-calls] fallback queue lookup failed:", queueOnlyErr);
+      }
 
       if (queueOnly?.length) {
         const leadIds = queueOnly.map(q => q.lead_id).filter(Boolean);
-        const { data: leads } = await supabase
+        const { data: leads, error: leadsErr } = await supabase
           .from("brandaro_qualified_leads")
           .select("id, business_name, phone_number")
           .in("id", leadIds);
+        if (leadsErr) {
+          console.error("[brandaro-execute-calls] fallback leads lookup failed:", leadsErr);
+        }
 
         const leadMap = new Map((leads || []).map(l => [l.id, l]));
 
@@ -116,14 +124,44 @@ serve(async (req) => {
 
     let initiated = 0;
     let failed = 0;
-    const results: Array<{ queue_id: string; status: string; error?: string }> = [];
+    let gateBlocked = 0;
+    const results: Array<{ queue_id: string; status: string; error?: string; gate_code?: string; gate_retryable?: boolean }> = [];
 
     for (const item of callItems) {
       if (!item.phone) {
         results.push({ queue_id: item.queue_id, status: "skipped", error: "No phone number" });
         // Deactivate from queue
-        await supabase.from("brandaro_call_queue").update({ is_active: false }).eq("id", item.queue_id);
+        const { error: deactErr } = await supabase
+          .from("brandaro_call_queue")
+          .update({ is_active: false })
+          .eq("id", item.queue_id);
+        if (deactErr) {
+          console.error(`[brandaro-execute-calls] queue deactivate (empty-phone) failed for ${item.queue_id}:`, deactErr);
+        }
         failed++;
+        continue;
+      }
+
+      // === PRE-DIAL GATE (kill-switch + calling-hours + throttle) ===
+      // Brandaro retrofit: business-unit scope only. Kill-switch = non-retryable;
+      // hours/throttle = retryable. On retryable block, leave queue/lead state
+      // untouched so the next run picks the same item back up.
+      const gate = await checkDispatchGates(supabase, {
+        businessUnitKey: BUSINESS_UNIT_KEY,
+      });
+      if (!gate.allowed) {
+        console.log(`[brandaro-execute-calls] GATE BLOCK code=${gate.code} retryable=${gate.retryable} queue=${item.queue_id} lead=${item.lead_id} reason=${gate.reason}`);
+        results.push({
+          queue_id: item.queue_id,
+          status: "gate_blocked",
+          gate_code: gate.code,
+          gate_retryable: gate.retryable,
+          error: gate.reason,
+        });
+        gateBlocked++;
+        // Non-retryable (kill-switch): leave queue untouched too — the kill-switch
+        // is the operator's emergency stop; releasing it should let the queue resume
+        // exactly where it left off. No queue mutation either way on a gate block.
         continue;
       }
 
@@ -176,7 +214,7 @@ serve(async (req) => {
 
         if (response.ok) {
           // Log call
-          await supabase.from("brandaro_call_logs").insert({
+          const { error: logErr } = await supabase.from("brandaro_call_logs").insert({
             lead_id: item.lead_id,
             campaign_id: null,
             call_attempt_number: (item.retry_count || 0) + 1,
@@ -184,19 +222,28 @@ serve(async (req) => {
             call_outcome: "initiated",
             phone_used: TWILIO_FROM,
           });
+          if (logErr) {
+            console.error(`[brandaro-execute-calls] call_logs insert failed for lead ${item.lead_id}:`, logErr);
+          }
 
           // Update queue
-          await supabase.from("brandaro_call_queue").update({
+          const { error: queueUpdErr } = await supabase.from("brandaro_call_queue").update({
             is_active: false,
             retry_count: (item.retry_count || 0) + 1,
             updated_at: new Date().toISOString(),
           }).eq("id", item.queue_id);
+          if (queueUpdErr) {
+            console.error(`[brandaro-execute-calls] queue update (post-success) failed for ${item.queue_id}:`, queueUpdErr);
+          }
 
           // Update lead last_call_at
-          await supabase.from("brandaro_qualified_leads").update({
+          const { error: leadUpdErr } = await supabase.from("brandaro_qualified_leads").update({
             last_call_at: new Date().toISOString(),
             call_attempts: (item.retry_count || 0) + 1,
           }).eq("id", item.lead_id);
+          if (leadUpdErr) {
+            console.error(`[brandaro-execute-calls] qualified_leads update (post-success) failed for ${item.lead_id}:`, leadUpdErr);
+          }
 
           results.push({ queue_id: item.queue_id, status: "initiated" });
           initiated++;
@@ -215,11 +262,12 @@ serve(async (req) => {
       }
     }
 
-    console.log(`✅ Call execution complete: ${initiated} initiated, ${failed} failed`);
+    console.log(`✅ Call execution complete: ${initiated} initiated, ${failed} failed, ${gateBlocked} gate-blocked`);
 
     return new Response(JSON.stringify({
       calls_initiated: initiated,
       calls_failed: failed,
+      gate_blocked: gateBlocked,
       total_processed: callItems.length,
       dry_run: dryRun,
       results,
