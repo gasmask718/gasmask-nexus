@@ -350,6 +350,37 @@ serve(async (req) => {
       ? config.buildPostProcess(leadId, analysis)
       : null;
 
+    // Enforce nullOnlyFields: never overwrite an existing non-null row value.
+    // Pulls the candidate columns from the live row and strips conflicting
+    // keys from the update payload. Used by top_tier for pricing_range,
+    // service_area, email.
+    const strippedNullOnly: string[] = [];
+    if (config.nullOnlyFields && config.nullOnlyFields.length > 0) {
+      const candidates = config.nullOnlyFields.filter((f) => f in update);
+      if (candidates.length > 0) {
+        const { data: currentRow, error: currentErr } = await supabase
+          .from(leadTable)
+          .select(candidates.join(','))
+          .eq('id', leadId)
+          .maybeSingle();
+        if (currentErr) {
+          console.warn(`[dc-post-call-analysis] nullOnly precheck failed (${currentErr.message}) — skipping nullOnly enforcement to avoid silent data loss`);
+        } else if (currentRow) {
+          for (const field of candidates) {
+            const existingVal = (currentRow as Record<string, any>)[field];
+            const isNonNull = existingVal !== null && existingVal !== undefined
+              && !(Array.isArray(existingVal) && existingVal.length === 0)
+              && !(typeof existingVal === 'string' && existingVal.trim() === '');
+            if (isNonNull) {
+              delete (update as Record<string, any>)[field];
+              strippedNullOnly.push(field);
+            }
+          }
+        }
+      }
+    }
+
+
     if (!isDryRun) {
       const { error: updateErr } = await supabase.from(leadTable).update(update).eq('id', leadId);
       if (updateErr) throw new Error(`lead update failed: ${updateErr.message}`);
