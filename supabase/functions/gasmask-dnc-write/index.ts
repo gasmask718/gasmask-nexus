@@ -36,10 +36,14 @@ type DncPayload = {
   phone?: string;
   reason?: string;
   source?: string;
+  source_business?: string;   // generalization: per-business tagging.
+                              // Defaults to 'gasmask' for back-compat with the
+                              // existing GasMask agent tool body.
   agent_id?: string;
   call_id?: string;
   notes?: string;
 };
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -91,12 +95,17 @@ Deno.serve(async (req) => {
   // --- Idempotent upsert on phone_e164 ---
   // Unique constraint exists on dnc_list(phone_number); we mirror phone into
   // both phone_e164 and phone_number so isOnDNC()'s OR-query catches it either way.
+  // Per-business tagging — defaults to 'gasmask' so the existing GasMask agent
+  // tool body keeps working unchanged. UT's agent tool passes 'unforgettable_times'.
+  const sourceBusiness = (body.source_business ?? '').toString().trim().toLowerCase()
+    || 'gasmask';
+
   const row = {
     phone_e164,
     phone_number: phone_e164,
     reason,
     source,
-    business: 'gasmask',
+    business: sourceBusiness,
     metadata: {
       agent_id: body.agent_id ?? null,
       call_id: body.call_id ?? null,
@@ -104,6 +113,7 @@ Deno.serve(async (req) => {
       received_at: new Date().toISOString(),
     },
   };
+
 
   const { data, error } = await supabase
     .from('dnc_list')

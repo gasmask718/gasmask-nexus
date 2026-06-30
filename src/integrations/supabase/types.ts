@@ -107605,6 +107605,7 @@ export type Database = {
           ai_call_result: string | null
           ai_handoff_reason: string | null
           ai_score: number | null
+          ai_score_post_call: number | null
           ai_score_reasons: Json | null
           assigned_to: string | null
           assigned_va: string | null
@@ -107650,6 +107651,7 @@ export type Database = {
           ai_call_result?: string | null
           ai_handoff_reason?: string | null
           ai_score?: number | null
+          ai_score_post_call?: number | null
           ai_score_reasons?: Json | null
           assigned_to?: string | null
           assigned_va?: string | null
@@ -107695,6 +107697,7 @@ export type Database = {
           ai_call_result?: string | null
           ai_handoff_reason?: string | null
           ai_score?: number | null
+          ai_score_post_call?: number | null
           ai_score_reasons?: Json | null
           assigned_to?: string | null
           assigned_va?: string | null
@@ -111746,6 +111749,65 @@ export type Database = {
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "ut_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_va_tasks: {
+        Row: {
+          action_type: string | null
+          completed_at: string | null
+          created_at: string | null
+          due_at: string | null
+          escalated_to: string | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          priority: string | null
+          script: string | null
+          source_call_id: string | null
+          status: string | null
+          task_type: string | null
+          va_profile_id: string | null
+        }
+        Insert: {
+          action_type?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          due_at?: string | null
+          escalated_to?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          priority?: string | null
+          script?: string | null
+          source_call_id?: string | null
+          status?: string | null
+          task_type?: string | null
+          va_profile_id?: string | null
+        }
+        Update: {
+          action_type?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          due_at?: string | null
+          escalated_to?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          priority?: string | null
+          script?: string | null
+          source_call_id?: string | null
+          status?: string | null
+          task_type?: string | null
+          va_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_va_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_leads"
             referencedColumns: ["id"]
           },
         ]
