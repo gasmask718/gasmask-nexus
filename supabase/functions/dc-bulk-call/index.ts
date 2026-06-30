@@ -15,6 +15,7 @@
 //     → marks batch + remaining queued targets cancelled.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
