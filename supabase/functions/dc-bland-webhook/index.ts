@@ -483,7 +483,40 @@ ${transcript}`
               }).catch((e) => console.error('[dc-post-call-analysis (real_estate) invoke failed]', e));
             }
           }
+        } else if (sourceHub === 'unforgettable_times' || sourceHub === 'ut') {
+          // Canonical key is 'unforgettable_times' (matches dc_agents.business_unit,
+          // ut-trigger-bland-campaign's BUSINESS_UNIT_KEY, and the AddToDNC tool
+          // body's source_business). 'ut' is accepted as a defensive alias so a
+          // stray short-key dispatch never silently drops on the floor, but every
+          // first-party caller uses the long form.
+          const { data: prevUt } = await supabase
+            .from('ut_partner_leads').select('status, outreach_count').eq('id', leadId).maybeSingle();
+          const { error: utUpdateErr } = await supabase.from('ut_partner_leads').update({
+            status: canonical,
+            ai_call_result: canonical,
+            last_outcome: canonical,
+            last_contacted_at: new Date().toISOString(),
+            outreach_count: (prevUt?.outreach_count || 0) + 1,
+          }).eq('id', leadId);
+
+          await logLeadSync(supabase, {
+            business_unit_key: 'unforgettable_times',
+            lead_id: leadId,
+            sync_direction: 'out',
+            status_before: prevUt?.status || null,
+            status_after: canonical,
+            sync_source: 'dc-bland-webhook:unforgettable_times',
+            success: !utUpdateErr,
+            error_message: utUpdateErr?.message || null,
+          });
+
+          if (canonical === 'interested' && callTranscript) {
+            supabase.functions.invoke('dc-post-call-analysis', {
+              body: { business_unit_key: 'unforgettable_times', lead_id: leadId, transcript: callTranscript, call_id: callId },
+            }).catch((e) => console.error('[dc-post-call-analysis (unforgettable_times) invoke failed]', e));
+          }
         }
+
       }
     } catch (dualWriteErr) {
       console.error('[dual-write failed]', dualWriteErr);
