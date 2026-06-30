@@ -152,6 +152,15 @@ serve(async (req) => {
       });
       if (!gate.allowed) {
         console.log(`[brandaro-execute-calls] GATE BLOCK code=${gate.code} retryable=${gate.retryable} queue=${item.queue_id} lead=${item.lead_id} reason=${gate.reason}`);
+        // Fire-and-forget sync log (helper never throws; failures only console.error'd)
+        await logLeadSync(supabase, {
+          business_unit_key: BUSINESS_UNIT_KEY,
+          lead_id: item.lead_id,
+          sync_direction: 'out',
+          sync_source: 'brandaro-execute-calls',
+          success: false,
+          error_message: `gate_block:${gate.code} retryable=${gate.retryable} ${gate.reason ?? ''}`.trim(),
+        });
         results.push({
           queue_id: item.queue_id,
           status: "gate_blocked",
@@ -164,6 +173,18 @@ serve(async (req) => {
         // is the operator's emergency stop; releasing it should let the queue resume
         // exactly where it left off. No queue mutation either way on a gate block.
         continue;
+      }
+
+      // Gate allowed — log the dispatch attempt (pre-Twilio). Skipped on dry_run
+      // so the sync log only reflects real dispatch attempts.
+      if (!dryRun) {
+        await logLeadSync(supabase, {
+          business_unit_key: BUSINESS_UNIT_KEY,
+          lead_id: item.lead_id,
+          sync_direction: 'out',
+          sync_source: 'brandaro-execute-calls',
+          success: true,
+        });
       }
 
       if (dryRun) {
