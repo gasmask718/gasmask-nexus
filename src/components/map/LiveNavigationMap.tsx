@@ -54,6 +54,56 @@ function formatDistance(m: number): string {
   return `${miles.toFixed(1)} mi`;
 }
 
+// Haversine distance (meters) between two lng/lat points.
+function haversineM(a: [number, number], b: [number, number]): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b[1] - a[1]);
+  const dLng = toRad(b[0] - a[0]);
+  const lat1 = toRad(a[1]);
+  const lat2 = toRad(b[1]);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+// Perpendicular distance (meters) from point p to segment a-b, using a flat
+// equirectangular projection — accurate enough at street scale.
+function pointToSegmentM(
+  p: [number, number],
+  a: [number, number],
+  b: [number, number]
+): number {
+  const mPerDegLat = 111_320;
+  const lat0 = ((a[1] + b[1]) / 2) * (Math.PI / 180);
+  const mPerDegLng = 111_320 * Math.cos(lat0);
+  const ax = a[0] * mPerDegLng, ay = a[1] * mPerDegLat;
+  const bx = b[0] * mPerDegLng, by = b[1] * mPerDegLat;
+  const px = p[0] * mPerDegLng, py = p[1] * mPerDegLat;
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  if (len2 === 0) return haversineM(p, a);
+  let t = ((px - ax) * dx + (py - ay) * dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  const cx = ax + t * dx, cy = ay + t * dy;
+  return Math.hypot(px - cx, py - cy);
+}
+
+function minDistanceToPolyline(
+  pos: { lat: number; lng: number },
+  coords: [number, number][]
+): number {
+  if (!coords.length) return Infinity;
+  const p: [number, number] = [pos.lng, pos.lat];
+  let min = Infinity;
+  for (let i = 0; i < coords.length - 1; i++) {
+    const d = pointToSegmentM(p, coords[i], coords[i + 1]);
+    if (d < min) min = d;
+  }
+  return min;
+}
+
 export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
   destination,
   origin,
