@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
+import { logLeadSync } from "../_shared/dc_sync_log.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -80,6 +81,15 @@ serve(async (req) => {
         });
         if (!gate.allowed) {
           console.log(`[brandaro-ai-caller] GATE BLOCK code=${gate.code} retryable=${gate.retryable} lead=${lead.id} reason=${gate.reason}`);
+          // Fire-and-forget sync log (helper never throws; failures only console.error'd)
+          await logLeadSync(supabase, {
+            business_unit_key: BUSINESS_UNIT_KEY,
+            lead_id: lead.id,
+            sync_direction: 'out',
+            sync_source: 'brandaro-ai-caller',
+            success: false,
+            error_message: `gate_block:${gate.code} retryable=${gate.retryable} ${gate.reason ?? ''}`.trim(),
+          });
           results.push({
             lead_id: lead.id,
             status: "gate_blocked",
@@ -90,6 +100,15 @@ serve(async (req) => {
           gateBlocked++;
           continue;
         }
+
+        // Gate allowed — log the successful dispatch attempt (pre-Twilio)
+        await logLeadSync(supabase, {
+          business_unit_key: BUSINESS_UNIT_KEY,
+          lead_id: lead.id,
+          sync_direction: 'out',
+          sync_source: 'brandaro-ai-caller',
+          success: true,
+        });
 
         const { data: callRecord, error: insertErr } = await supabase
           .from("brandaro_ai_calls")
