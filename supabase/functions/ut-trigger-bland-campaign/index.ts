@@ -152,7 +152,8 @@ serve(async (req) => {
     }));
 
     // ---- Per-record dispatch ----
-    const addToDncTool = buildAddToDncTool(SUPABASE_URL, DNC_TOOL_SECRET);
+    const addToDncTool = DNC_TOOL_SECRET ? buildAddToDncTool(SUPABASE_URL, DNC_TOOL_SECRET) : null;
+
     const webhookSecret = Deno.env.get("DC_BLAND_WEBHOOK_SECRET");
     const webhookUrl = webhookSecret
       ? `${SUPABASE_URL}/functions/v1/dc-bland-webhook?secret=${encodeURIComponent(webhookSecret)}`
