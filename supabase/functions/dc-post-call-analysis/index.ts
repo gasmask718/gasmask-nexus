@@ -17,6 +17,10 @@ type AnalysisConfig = {
   jsonSchema: string;
   applyUpdate: (analysis: any) => Record<string, any>;
   buildPostProcess?: (leadId: string, analysis: any) => PostProcessPayload;
+  // Fields that must NEVER overwrite an existing (non-null) row value.
+  // Handler fetches the current row pre-update and strips conflicting keys
+  // from the update payload. Used by top_tier (pricing_range, service_area, email).
+  nullOnlyFields?: string[];
 };
 
 const ANALYSIS_CONFIGS: Record<string, AnalysisConfig> = {
