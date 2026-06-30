@@ -1,3 +1,5 @@
+// @deprecated Use dc-post-call-analysis with business_unit_key='surplus_funds'.
+// Retained for parallel parity comparison and rollback. Do not extend.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
