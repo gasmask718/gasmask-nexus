@@ -71,7 +71,7 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
   const [routeError, setRouteError] = useState<string | null>(null);
   const [loadingRoute, setLoadingRoute] = useState(false);
 
-  // 1. Geolocation watcher
+  // 1. Geolocation watcher — high-frequency updates for Waze-style smooth tracking
   useEffect(() => {
     if (origin) {
       setCurrentPos(origin);
@@ -87,10 +87,42 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
         setGeoError(null);
       },
       (err) => setGeoError(err.message || 'Unable to access location'),
-      { enableHighAccuracy: true, maximumAge: 10_000, timeout: 15_000 }
+      // maximumAge: 0 forces a fresh fix every tick; high accuracy + short timeout
+      // gives a continuous stream so the blue dot glides instead of jumping.
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10_000 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
   }, [origin]);
+
+  // 1b. Screen Wake Lock — keep the phone awake while navigation is mounted
+  useEffect(() => {
+    let lock: WakeLockSentinel | null = null;
+    let released = false;
+    const anyNav = navigator as Navigator & {
+      wakeLock?: { request: (type: 'screen') => Promise<WakeLockSentinel> };
+    };
+    if (!anyNav.wakeLock) return;
+
+    const acquire = async () => {
+      try {
+        lock = await anyNav.wakeLock!.request('screen');
+      } catch {
+        /* user gesture may be required; ignore */
+      }
+    };
+    acquire();
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible' && !released) acquire();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      released = true;
+      document.removeEventListener('visibilitychange', onVisibility);
+      lock?.release().catch(() => undefined);
+    };
+  }, []);
 
   // 2. Initialize map
   useEffect(() => {
