@@ -375,9 +375,13 @@ ${transcript}`
       }
     }
 
-    // === DUAL-WRITE BACK TO SOURCE HUB (Surplus Funds / Real Estate) ===
+    // === DUAL-WRITE BACK TO SOURCE HUB (Surplus Funds / Real Estate / TopTier) ===
+    // Warnings collected by per-hub branches and surfaced in the final 200 response
+    // so silent partial failures (e.g. CHECK violations) are visible upstream.
+    const ttWarnings: string[] = [];
     try {
       const requestData = payload.request_data || payload.variables || {};
+
       let sourceHub: string | null = requestData.hub || null;
       let leadId: string | null = requestData.lead_id || null;
 
