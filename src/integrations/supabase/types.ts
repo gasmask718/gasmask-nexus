@@ -44122,26 +44122,35 @@ export type Database = {
         Row: {
           added_at: string | null
           added_by: string | null
+          business: string | null
           id: string
+          metadata: Json | null
           phone_e164: string | null
           phone_number: string
           reason: string | null
+          source: string | null
         }
         Insert: {
           added_at?: string | null
           added_by?: string | null
+          business?: string | null
           id?: string
+          metadata?: Json | null
           phone_e164?: string | null
           phone_number: string
           reason?: string | null
+          source?: string | null
         }
         Update: {
           added_at?: string | null
           added_by?: string | null
+          business?: string | null
           id?: string
+          metadata?: Json | null
           phone_e164?: string | null
           phone_number?: string
           reason?: string | null
+          source?: string | null
         }
         Relationships: [
           {
