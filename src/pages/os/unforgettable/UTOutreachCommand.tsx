@@ -118,7 +118,7 @@ export default function UTOutreachCommand() {
     createLead, saveCallDisposition, handoffToPartnerProfile,
     deleteLead, updateLead, sendSmsTemplate, sendOnboardingLink
   } = useUTLeadMutations();
-  const { placeAICall } = useUTAIDialer();
+  // const { placeAICall } = useUTAIDialer();  // removed — see import note above
 
   // Auto-set script category from lead
   useEffect(() => {
@@ -434,11 +434,10 @@ export default function UTOutreachCommand() {
                       <Button variant="outline" className="gap-1.5 flex-1" onClick={() => setShowSmsTemplates(!showSmsTemplates)}>
                         <MessageSquare className="h-4 w-4" /> SMS
                       </Button>
-                      <Button variant="outline" className="gap-1.5" disabled={placeAICall.isPending} onClick={() => {
-                        placeAICall.mutate({ lead: selectedLead });
-                      }}>
-                        <Bot className="h-4 w-4" /> {placeAICall.isPending ? 'Dialing...' : 'AI Call'}
-                      </Button>
+                      {/* AI Call button removed 2026-06-30 — superseded by Bland campaign dispatch.
+                          Manual AI-call CTA had 1 click in entire table lifetime; not part of any active VA workflow.
+                          Lead-level AI eligibility is set via "Send to AI Queue" below (ai_call_eligible flag),
+                          which the new ut-trigger-bland-campaign function reads as its cohort filter. */}
                     </>
                   ) : (
                     <div className="flex-1 text-center text-sm text-destructive bg-destructive/10 rounded-md py-2">⚠️ No phone number</div>
