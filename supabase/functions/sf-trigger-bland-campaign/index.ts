@@ -191,35 +191,17 @@ serve(async (req) => {
         if (blandRes.ok && blandJson.call_id) {
           blandSuccessCount++;
           blandCallIds.push(blandJson.call_id);
-          await supabase.from('surplus_funds_leads')
+          const { error: callIdErr } = await supabase.from('surplus_funds_leads')
             .update({ bland_call_id: blandJson.call_id })
             .eq('id', l.id);
-        } else {
-          blandError = blandError || JSON.stringify(blandJson);
-          console.error('[bland call failed]', l.id, blandJson);
-        }
-      } catch (e: any) {
-        blandError = blandError || e.message;
-        console.error('[bland call exception]', l.id, e);
-      }
-    }
-
-    // Insert campaign record
-    const { data: campaign } = await supabase
-      .from('dc_campaigns')
-          await supabase.from('surplus_funds_leads')
-            .update({ bland_call_id: blandJson.call_id })
-            .eq('id', l.id)
-            .then(({ error }) => {
-              if (error) {
-                console.error('[sf-trigger bland_call_id write failed]', l.id, error);
-                logLeadSync(supabase, {
-                  business_unit_key: 'surplus_funds', lead_id: l.id,
-                  sync_direction: 'in', sync_source: 'sf-trigger-bland-campaign:bland_call_id-write',
-                  success: false, error_message: error.message,
-                });
-              }
+          if (callIdErr) {
+            console.error('[sf-trigger bland_call_id write failed]', l.id, callIdErr);
+            await logLeadSync(supabase, {
+              business_unit_key: 'surplus_funds', lead_id: l.id,
+              sync_direction: 'in', sync_source: 'sf-trigger-bland-campaign:bland_call_id-write',
+              success: false, error_message: callIdErr.message,
             });
+          }
         } else {
           blandError = blandError || JSON.stringify(blandJson);
           console.error('[bland call failed]', l.id, blandJson);
