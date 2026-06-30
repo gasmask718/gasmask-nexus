@@ -125,8 +125,13 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
   const lastRerouteAt = useRef(0);
   const offRouteSince = useRef<number | null>(null);
   const fetchOriginRef = useRef<{ lat: number; lng: number } | null>(null);
+  const lastCameraEaseAt = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
-  // 1. Geolocation watcher — high-frequency updates for Waze-style smooth tracking
+  // 1. Geolocation watcher — high-frequency updates for Waze-style smooth tracking.
+  //    Transient TIMEOUT / POSITION_UNAVAILABLE (tunnels, parking garages) are
+  //    suppressed for 15 s so the UI keeps the last-known position and route
+  //    instead of flashing an error on every failed fix.
   useEffect(() => {
     if (origin) {
       setCurrentPos(origin);
@@ -136,14 +141,25 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
       setGeoError('Geolocation is not supported by this browser.');
       return;
     }
+    let firstErrorAt: number | null = null;
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
+        firstErrorAt = null;
         setCurrentPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setGeoError(null);
       },
-      (err) => setGeoError(err.message || 'Unable to access location'),
-      // maximumAge: 0 forces a fresh fix every tick; high accuracy + short timeout
-      // gives a continuous stream so the blue dot glides instead of jumping.
+      (err) => {
+        // PERMISSION_DENIED (1) is permanent → surface immediately.
+        if (err.code === 1) {
+          setGeoError('Location permission denied. Enable GPS to navigate.');
+          return;
+        }
+        // TIMEOUT (3) / POSITION_UNAVAILABLE (2) → likely tunnel; debounce.
+        if (firstErrorAt == null) firstErrorAt = Date.now();
+        if (Date.now() - firstErrorAt > 15_000) {
+          setGeoError('Waiting for GPS signal…');
+        }
+      },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 10_000 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
@@ -249,7 +265,9 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 3. Origin marker — smooth glide (no jump) + gentle camera follow
+  // 3. Origin marker — smooth glide (CSS) + throttled camera follow.
+  //    Camera easeTo is throttled to ≥1.2 s between calls so high-frequency GPS
+  //    ticks don't stack animations or constantly re-tile the map (battery saver).
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !currentPos) return;
@@ -262,13 +280,17 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
     } else {
       originMarker.current.setLngLat(lngLat);
     }
-    // Soft camera follow once we have an active route
     if (route) {
-      map.easeTo({ center: lngLat, duration: 600, essential: true });
+      const now = Date.now();
+      if (now - lastCameraEaseAt.current >= 1_200) {
+        lastCameraEaseAt.current = now;
+        map.easeTo({ center: lngLat, duration: 1_000, essential: true });
+      }
     }
   }, [currentPos, route]);
 
-  // 4. Destination marker
+  // 4. Destination marker — depend on primitives so a new query object reference
+  //    doesn't tear down and rebuild the marker on every refetch.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -282,16 +304,23 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
         .setPopup(new mapboxgl.Popup({ offset: 24 }).setText(destination.label || 'Destination'))
         .addTo(map);
     }
-  }, [destination]);
+  }, [destination?.lat, destination?.lng, destination?.label]);
 
   // 5. Fetch directions — only on destination change or explicit reroute,
   //    NOT on every GPS tick. Uses the latest GPS fix at the moment of fetch.
+  //    Offline / API errors during a drive preserve the existing route so the
+  //    driver keeps seeing their line and ETA until connectivity returns.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !currentPos || !destination || !MAPBOX_TOKEN) return;
 
-    let cancelled = false;
+    // Abort any in-flight request from a prior effect run.
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     const isReroute = rerouteToken > 0;
+    const hadRoute = !!route;
     if (isReroute) setRerouting(true);
     else setLoadingRoute(true);
     setRouteError(null);
@@ -303,14 +332,31 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
       `?alternatives=false&annotations=duration,distance,congestion,duration_typical` +
       `&geometries=geojson&overview=full&steps=true&access_token=${MAPBOX_TOKEN}`;
 
-    fetch(url)
-      .then((r) => r.json())
+    const handleFailure = (msg: string) => {
+      // Only surface an error / wipe the route on the first fetch.
+      // During the drive, keep the existing route on screen — the driver can
+      // continue navigating with the last good polyline + ETA until the next
+      // successful fetch.
+      if (hadRoute) {
+        // silent retry will happen on next reroute trigger
+        return;
+      }
+      setRouteError(msg);
+      setRoute(null);
+    };
+
+    fetch(url, { signal: ac.signal })
+      .then(async (resp) => {
+        if (!resp.ok) {
+          throw new Error(`Directions API ${resp.status}`);
+        }
+        return resp.json();
+      })
       .then((data) => {
-        if (cancelled) return;
+        if (ac.signal.aborted) return;
         const r = data?.routes?.[0];
-        if (!r) {
-          setRouteError('No route found');
-          setRoute(null);
+        if (!r || !r.geometry?.coordinates?.length) {
+          handleFailure('No route found');
           return;
         }
         const firstStep = r.legs?.[0]?.steps?.[0]?.maneuver?.instruction as string | undefined;
@@ -341,19 +387,21 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
           }
         }
       })
-      .catch((e) => {
-        if (!cancelled) setRouteError(e.message || 'Failed to fetch route');
+      .catch((e: unknown) => {
+        if (ac.signal.aborted) return;
+        const msg = e instanceof Error ? e.message : 'Failed to fetch route';
+        handleFailure(msg);
       })
       .finally(() => {
-        if (cancelled) return;
+        if (ac.signal.aborted) return;
         setLoadingRoute(false);
         setRerouting(false);
       });
 
     return () => {
-      cancelled = true;
+      ac.abort();
     };
-    // Intentionally NOT depending on currentPos — would refetch on every GPS tick.
+    // Intentionally NOT depending on currentPos / route — would refetch on every GPS tick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [destination?.lat, destination?.lng, rerouteToken]);
 
