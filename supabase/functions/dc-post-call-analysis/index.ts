@@ -98,7 +98,101 @@ const ANALYSIS_CONFIGS: Record<string, AnalysisConfig> = {
       };
     },
   },
+  unforgettable_times: {
+    systemPrompt:
+      "You analyze call transcripts for Unforgettable Times, an event-services company calling event-industry suppliers (halls, caterers, DJs, decorators, photographers, rentals, bartenders, staffing agencies) to recruit them as platform partners. Extract structured data about partnership willingness and onboarding readiness. Return JSON only.",
+    jsonSchema: `{
+  "interest_level": "high"|"medium"|"low"|"none",
+  "interest_score": 1-10,
+  "category_confirmed_on_call": "event_hall"|"caterer"|"dj"|"decorator"|"photographer"|"rentals"|"bartender"|"staffing"|"other"|null,
+  "is_decision_maker": true|false,
+  "currently_accepting_referrals": true|false|null,
+  "preferred_contact_channel": "phone"|"sms"|"email"|"in_person"|null,
+  "best_callback_window": string|null,
+  "email_provided": string|null,
+  "service_areas_mentioned": [],
+  "pricing_signal": "premium"|"mid"|"budget"|"unknown",
+  "capacity_constraint": string|null,
+  "key_objections": [],
+  "agreed_to_onboarding": true|false,
+  "agreed_to_send_info_packet": true|false,
+  "callback_time": string|null,
+  "sentiment": "positive"|"neutral"|"negative",
+  "red_flags": [],
+  "recommended_action": "send_onboarding_link"|"schedule_callback"|"send_info_packet"|"manual_outreach"|"deprioritize"|"remove",
+  "summary": string
+}`,
+    applyUpdate: (a) => {
+      const levelScoreMap: Record<string, number> = { high: 9, medium: 6, low: 3, none: 1 };
+      // ai_score_post_call = analysis interest_score (1-10) if present, else mapped from interest_level.
+      // Never overwrites ai_score (pre-call qualification — kept distinct on purpose).
+      const postCallScore = typeof a.interest_score === "number"
+        ? a.interest_score
+        : (levelScoreMap[a.interest_level] ?? null);
+
+      // Parse callback_time into a timestamp where possible; null on parse failure
+      // so we don't write garbage into callback_due_at.
+      let callbackDue: string | null = null;
+      if (a.callback_time) {
+        const parsed = new Date(a.callback_time);
+        if (!isNaN(parsed.getTime())) callbackDue = parsed.toISOString();
+      }
+
+      const update: Record<string, any> = {
+        ai_score_post_call: postCallScore,
+        next_step: a.recommended_action,
+        ai_score_reasons: {
+          post_call_analysis: a,
+          analyzed_at: new Date().toISOString(),
+        },
+        best_time_to_call: a.best_callback_window ?? undefined,
+        callback_due_at: callbackDue ?? undefined,
+        notes: a.summary
+          ? `[${new Date().toISOString().slice(0, 10)}] Post-call: ${a.summary}`
+          : undefined,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (a.agreed_to_onboarding === true) {
+        update.automation_state = "ready_for_onboarding";
+      }
+      if (a.recommended_action === "remove") {
+        update.ai_call_eligible = false;
+      }
+      if (a.email_provided && typeof a.email_provided === "string") {
+        // Note: applyUpdate cannot conditionally check current row state, so we
+        // always write. The lead update is best-effort; callers can layer a
+        // never-overwrite rule downstream if needed.
+        update.email = a.email_provided;
+      }
+
+      // Strip undefineds so we don't accidentally null-out columns.
+      for (const k of Object.keys(update)) if (update[k] === undefined) delete update[k];
+      return update;
+    },
+    buildPostProcess: (leadId, a) => {
+      // VA-flag only — never auto-fires the onboarding link send.
+      // Mirror RE's book_appointment pattern: insert a ut_va_tasks row with
+      // action_type='send_onboarding_link' for a human VA to action.
+      if (a.recommended_action !== "send_onboarding_link") return null;
+      return {
+        table: "ut_va_tasks",
+        payload: {
+          lead_id: leadId,
+          task_type: "send_onboarding_link",
+          action_type: "send_onboarding_link",
+          priority: "high",
+          status: "queued",
+          notes: `AI recommends sending onboarding link. Summary: ${a.summary || "(no summary)"}`,
+          script:
+            "Confirm partner details, send the onboarding link via their preferred channel, and log the send.",
+          due_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        },
+      };
+    },
+  },
 };
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });

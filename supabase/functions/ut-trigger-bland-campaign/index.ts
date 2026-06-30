@@ -18,6 +18,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { logLeadSync, logLeadSyncBatch } from "../_shared/dc_sync_log.ts";
 import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
+import { isOnDNC } from "../_shared/dnc.ts";
+
 
 const BUSINESS_UNIT_KEY = "unforgettable_times";
 const BUSINESS_NAME = "Unforgettable Times";
@@ -26,7 +28,7 @@ const BLAND_AGENT_ID = "0cbd19c2-b3bb-4d06-b8c9-8165a1839fcb";
 // AddToDNC tool exposed to the Bland agent during the call. Points at the
 // (still-named) gasmask-dnc-write endpoint; source_business overrides the
 // hardcoded 'gasmask' row value to 'unforgettable_times'.
-function buildAddToDncTool(supabaseUrl: string) {
+function buildAddToDncTool(supabaseUrl: string, dncToolSecret: string) {
   return {
     name: "AddToDNC",
     description:
@@ -35,11 +37,17 @@ function buildAddToDncTool(supabaseUrl: string) {
       "Do not call for soft objections like 'not interested' alone.",
     url: `${supabaseUrl}/functions/v1/gasmask-dnc-write`,
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      // Shared-secret header expected by gasmask-dnc-write (same env var
+      // GasMask uses — single secret across both businesses for now).
+      "x-gasmask-dnc-secret": dncToolSecret,
+    },
     body: {
       phone: "{{input.phone}}",
       reason: "{{input.reason}}",
       call_id: "{{call_id}}",
+      source: "bland_agent_tool",
       source_business: "unforgettable_times",
     },
     input_schema: {
@@ -56,6 +64,7 @@ function buildAddToDncTool(supabaseUrl: string) {
   };
 }
 
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -64,6 +73,14 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const BLAND_API_KEY = Deno.env.get("BLAND_API_KEY");
     if (!BLAND_API_KEY) throw new Error("BLAND_API_KEY not configured");
+    const DNC_TOOL_SECRET = Deno.env.get("GASMASK_DNC_TOOL_SECRET");
+    if (!DNC_TOOL_SECRET) {
+      // Hard fail: an outbound agent without a working AddToDNC tool is a
+      // TCPA-compliance hazard. Better to refuse to dispatch than dial without
+      // a functioning opt-out channel.
+      throw new Error("GASMASK_DNC_TOOL_SECRET not configured — AddToDNC tool cannot authenticate");
+    }
+
 
     const body = await req.json().catch(() => ({}));
     const leadIds: string[] = body.lead_ids || (body.lead_id ? [body.lead_id] : []);
@@ -132,7 +149,7 @@ serve(async (req) => {
     }));
 
     // ---- Per-record dispatch ----
-    const addToDncTool = buildAddToDncTool(SUPABASE_URL);
+    const addToDncTool = buildAddToDncTool(SUPABASE_URL, DNC_TOOL_SECRET);
     const webhookSecret = Deno.env.get("DC_BLAND_WEBHOOK_SECRET");
     const webhookUrl = webhookSecret
       ? `${SUPABASE_URL}/functions/v1/dc-bland-webhook?secret=${encodeURIComponent(webhookSecret)}`
@@ -185,6 +202,39 @@ serve(async (req) => {
         }
         continue;
       }
+
+      // ---- Per-record DNC enforcement ----
+      // Compliance gate: if the partner's phone hit dnc_list (via AddToDNC tool
+      // on a prior call, or any other source), do NOT dispatch. Mark the lead
+      // ai_call_eligible=false + status='dnc' so it falls out of future cohorts.
+      // isOnDNC fails-CLOSED on lookup error (block dispatch), per dnc.ts contract.
+      const dncCheck = await isOnDNC(supabase, l.phone);
+      if (dncCheck.blocked) {
+        console.warn("[ut-trigger dnc-blocked]", l.id, l.phone, dncCheck.reason);
+        gateBlocks.push({
+          lead_id: l.id,
+          code: "dnc_list_block",
+          reason: `Phone on DNC list (${dncCheck.reason || "dnc_list"})`,
+          retryable: false,
+        });
+        const { error: dncMarkErr } = await supabase.from("ut_partner_leads")
+          .update({
+            status: "dnc",
+            ai_call_result: "dnc",
+            ai_call_eligible: false,
+            last_outcome: "dnc",
+          })
+          .eq("id", l.id);
+        await logLeadSync(supabase, {
+          business_unit_key: BUSINESS_UNIT_KEY, lead_id: l.id,
+          sync_direction: "in", status_before: l.status || null, status_after: "dnc",
+          sync_source: "ut-trigger-bland-campaign:dnc-block",
+          success: !dncMarkErr, error_message: dncMarkErr?.message || null,
+        });
+        continue;
+      }
+
+
 
       // Dispatch via Bland /v1/calls with the dedicated UT agent_id.
       // Prompt variables ({{lead_category}}, {{business_name}}) injected via
