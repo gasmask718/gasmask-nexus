@@ -515,6 +515,145 @@ ${transcript}`
               body: { business_unit_key: 'unforgettable_times', lead_id: leadId, transcript: callTranscript, call_id: callId },
             }).catch((e) => console.error('[dc-post-call-analysis (unforgettable_times) invoke failed]', e));
           }
+        } else if (sourceHub === 'top_tier' || sourceHub === 'tt') {
+          // === TopTier Experience partner-acquisition branch ===
+          // Cohort: crm_partners WHERE business_slug='toptier-experience'.
+          // lead_id = crm_partners.id (uuid).
+          //
+          // Disposition → tt_acquisition_stage map (only mutates stage for
+          // terminal/decisive outcomes; voicemail/no_answer/called leave the
+          // stage as-is so the prospect stays callable next pass).
+          //   interested      → pending_vetting   (NOT auto-promote; vetting team owns promotion)
+          //   not_interested  → not_interested
+          //   dnc             → dnc               (DNC list insertion handled below via transcript fallback,
+          //                                        since the AddToDNC Bland tool remains degraded)
+          //   wrong_number    → (no stage change) + phone_invalid = true
+          //   callback        → callback          + tt_callback_at if parseable
+          //   voicemail / no_answer / called → no stage change
+          //
+          // tt_last_disposition, tt_call_attempts, tt_last_call_at update on
+          // EVERY disposition without exception.
+          //
+          // Existing-partner detection: transcript regex post-call (no global
+          // disposition code for this case). If matched, overrides stage to
+          // 'existing_partner' unless disposition already set a terminal state
+          // (dnc / not_interested).
+          //
+          // DNC transcript fallback: if transcript contains opt-out phrases
+          // ("take me off your list", "do not call", "remove me from your list",
+          // "stop calling me"), set stage='dnc' AND insert into dnc_list. This
+          // is the safety net for the degraded AddToDNC tool path.
+
+          const { data: prevTt } = await supabase
+            .from('crm_partners')
+            .select('tt_acquisition_stage, tt_call_attempts, phone, email')
+            .eq('id', leadId)
+            .maybeSingle();
+
+          const transcriptLower = (callTranscript || '').toLowerCase();
+          const existingPartnerRegex = /\b(already (a |an )?(partner|in your network|work(ing)? with (top ?tier|you))|we already (work|partner) with top ?tier)\b/i;
+          const dncRegex = /\b(take me off (your |the )?(list|database)|do not call( me)?|don'?t call( me)?( anymore)?|stop calling( me)?|remove me from (your |the )?list)\b/i;
+
+          const transcriptFlagsExistingPartner = existingPartnerRegex.test(callTranscript || '');
+          const transcriptFlagsDnc = dncRegex.test(callTranscript || '');
+
+          let newStage: string | null = null;
+          const ttUpdate: Record<string, unknown> = {
+            tt_last_disposition: canonical,
+            tt_call_attempts: (prevTt?.tt_call_attempts || 0) + 1,
+            tt_last_call_at: new Date().toISOString(),
+          };
+
+          switch (canonical) {
+            case 'interested':
+              newStage = 'pending_vetting';
+              break;
+            case 'not_interested':
+              newStage = 'not_interested';
+              break;
+            case 'dnc':
+              newStage = 'dnc';
+              break;
+            case 'wrong_number':
+              ttUpdate.phone_invalid = true;
+              break;
+            case 'callback': {
+              newStage = 'callback';
+              const cbRaw = (payload.variables?.callback_time
+                || payload.analysis?.callback_time
+                || payload.callback_time
+                || null) as string | null;
+              if (cbRaw) {
+                const parsed = new Date(cbRaw);
+                if (!isNaN(parsed.getTime())) ttUpdate.tt_callback_at = parsed.toISOString();
+              }
+              break;
+            }
+            // voicemail / no_answer / called → no stage change
+          }
+
+          // Transcript-based DNC fallback (AddToDNC tool degraded).
+          if (transcriptFlagsDnc) {
+            newStage = 'dnc';
+          }
+
+          // Existing-partner detection — overrides only if stage is non-terminal.
+          // (Terminal = dnc / not_interested. Don't paper over a 'no' with 'existing'.)
+          if (
+            transcriptFlagsExistingPartner
+            && newStage !== 'dnc'
+            && newStage !== 'not_interested'
+          ) {
+            newStage = 'existing_partner';
+          }
+
+          if (newStage) ttUpdate.tt_acquisition_stage = newStage;
+
+          const { error: ttUpdateErr } = await supabase
+            .from('crm_partners')
+            .update(ttUpdate)
+            .eq('id', leadId);
+
+          await logLeadSync(supabase, {
+            business_unit_key: 'top_tier',
+            lead_id: leadId,
+            sync_direction: 'out',
+            status_before: prevTt?.tt_acquisition_stage || null,
+            status_after: (newStage || prevTt?.tt_acquisition_stage || null),
+            sync_source: 'dc-bland-webhook:top_tier',
+            success: !ttUpdateErr,
+            error_message: ttUpdateErr?.message || null,
+          });
+
+          // DNC list insertion via transcript catch (safety net).
+          if (transcriptFlagsDnc) {
+            const dncPhone = prevTt?.phone || payload.to || null;
+            if (dncPhone) {
+              try {
+                await supabase.from('dnc_list').upsert({
+                  phone_number: dncPhone,
+                  phone_e164: dncPhone,
+                  source: 'dc-bland-webhook:top_tier:transcript_optout',
+                  business: 'top_tier',
+                  reason: 'Opt-out detected in call transcript (AddToDNC tool degraded; transcript fallback)',
+                  metadata: {
+                    call_id: callId,
+                    crm_partner_id: leadId,
+                    matched_at: new Date().toISOString(),
+                  },
+                }, { onConflict: 'phone_number' });
+              } catch (dncErr) {
+                console.error('[dc-bland-webhook:top_tier dnc upsert failed]', dncErr);
+              }
+            }
+          }
+
+          // Post-call analysis ONLY on interested (per disposition contract).
+          if (canonical === 'interested' && callTranscript) {
+            supabase.functions.invoke('dc-post-call-analysis', {
+              body: { business_unit_key: 'top_tier', lead_id: leadId, transcript: callTranscript, call_id: callId },
+            }).catch((e) => console.error('[dc-post-call-analysis (top_tier) invoke failed]', e));
+          }
         }
 
       }

@@ -17,6 +17,10 @@ type AnalysisConfig = {
   jsonSchema: string;
   applyUpdate: (analysis: any) => Record<string, any>;
   buildPostProcess?: (leadId: string, analysis: any) => PostProcessPayload;
+  // Fields that must NEVER overwrite an existing (non-null) row value.
+  // Handler fetches the current row pre-update and strips conflicting keys
+  // from the update payload. Used by top_tier (pricing_range, service_area, email).
+  nullOnlyFields?: string[];
 };
 
 const ANALYSIS_CONFIGS: Record<string, AnalysisConfig> = {
@@ -191,7 +195,82 @@ const ANALYSIS_CONFIGS: Record<string, AnalysisConfig> = {
       };
     },
   },
+  top_tier: {
+    systemPrompt:
+      "You analyze call transcripts for Top Tier Experience, a luxury concierge dispatch platform recruiting suppliers (chauffeurs, exotic-car operators, helicopter operators, party-bus operators, sprinter-van operators, yacht/watercraft operators) as commission partners (15% standard, never lower). Extract structured data about supplier qualification, fleet capacity, pricing posture, insurance status, and commission acceptance. Return JSON only.",
+    jsonSchema: `{
+  "interest_level": "high"|"medium"|"low"|"none",
+  "interest_score": 1-10,
+  "is_decision_maker": true|false,
+  "fleet_or_capacity_signal": string|null,
+  "service_area_mentioned": [],
+  "pricing_range_mentioned": string|null,
+  "price_floor_mentioned": number|null,
+  "insurance_on_file": true|false|null,
+  "commission_acceptable_15pct": true|false|null,
+  "preferred_contact_channel": "phone"|"sms"|"email"|null,
+  "email_provided": string|null,
+  "best_callback_window": string|null,
+  "callback_time": string|null,
+  "key_objections": [],
+  "sentiment": "positive"|"neutral"|"negative",
+  "red_flags": [],
+  "recommended_action": "auto_promote"|"vetting_required"|"schedule_callback"|"send_info_packet"|"manual_outreach"|"deprioritize"|"remove",
+  "summary": string
+}`,
+    // pricing_range, service_area, email are nullOnlyFields — see below.
+    nullOnlyFields: ['pricing_range', 'service_area', 'email'],
+    applyUpdate: (a) => {
+      const update: Record<string, any> = {
+        tt_last_disposition: undefined, // do not overwrite webhook-set disposition
+        updated_at: new Date().toISOString(),
+      };
+
+      // Parse callback_time if present (does not overwrite tt_callback_at unless analysis returned one)
+      if (a.callback_time) {
+        const parsed = new Date(a.callback_time);
+        if (!isNaN(parsed.getTime())) update.tt_callback_at = parsed.toISOString();
+      }
+
+      // Pricing range — write only if currently null on the row (enforced by nullOnlyFields).
+      if (a.pricing_range_mentioned && typeof a.pricing_range_mentioned === 'string') {
+        update.pricing_range = a.pricing_range_mentioned;
+      }
+
+      // Service area — only if non-empty array (and only if currently null on row).
+      if (Array.isArray(a.service_area_mentioned) && a.service_area_mentioned.length > 0) {
+        update.service_area = a.service_area_mentioned;
+      }
+
+      // Email — only if currently null on row.
+      if (a.email_provided && typeof a.email_provided === 'string') {
+        update.email = a.email_provided;
+      }
+
+      // Notes — append the analysis summary. Per the v1 contract,
+      // recommended_action='auto_promote' is a vetting-team SIGNAL only;
+      // it never invokes the promotion RPC from here. The note is marked
+      // explicitly so the vetting queue UI can highlight these rows.
+      const today = new Date().toISOString().slice(0, 10);
+      const noteLines: string[] = [];
+      if (a.summary) noteLines.push(`[${today}] Post-call analysis: ${a.summary}`);
+      if (a.recommended_action === 'auto_promote') {
+        noteLines.push(`[${today}] ⚑ analysis recommends auto-promotion — awaiting vetting team review`);
+      } else if (a.recommended_action) {
+        noteLines.push(`[${today}] Recommended action: ${a.recommended_action}`);
+      }
+      if (noteLines.length) update.tt_acquisition_notes = noteLines.join('\n');
+
+      // Strip undefineds so we don't accidentally null-out columns.
+      for (const k of Object.keys(update)) if (update[k] === undefined) delete update[k];
+      return update;
+    },
+    // No buildPostProcess for v1 — vetting team works from stage-filtered views.
+  },
 };
+
+
+
 
 
 serve(async (req) => {
@@ -271,6 +350,37 @@ serve(async (req) => {
       ? config.buildPostProcess(leadId, analysis)
       : null;
 
+    // Enforce nullOnlyFields: never overwrite an existing non-null row value.
+    // Pulls the candidate columns from the live row and strips conflicting
+    // keys from the update payload. Used by top_tier for pricing_range,
+    // service_area, email.
+    const strippedNullOnly: string[] = [];
+    if (config.nullOnlyFields && config.nullOnlyFields.length > 0) {
+      const candidates = config.nullOnlyFields.filter((f) => f in update);
+      if (candidates.length > 0) {
+        const { data: currentRow, error: currentErr } = await supabase
+          .from(leadTable)
+          .select(candidates.join(','))
+          .eq('id', leadId)
+          .maybeSingle();
+        if (currentErr) {
+          console.warn(`[dc-post-call-analysis] nullOnly precheck failed (${currentErr.message}) — skipping nullOnly enforcement to avoid silent data loss`);
+        } else if (currentRow) {
+          for (const field of candidates) {
+            const existingVal = (currentRow as Record<string, any>)[field];
+            const isNonNull = existingVal !== null && existingVal !== undefined
+              && !(Array.isArray(existingVal) && existingVal.length === 0)
+              && !(typeof existingVal === 'string' && existingVal.trim() === '');
+            if (isNonNull) {
+              delete (update as Record<string, any>)[field];
+              strippedNullOnly.push(field);
+            }
+          }
+        }
+      }
+    }
+
+
     if (!isDryRun) {
       const { error: updateErr } = await supabase.from(leadTable).update(update).eq('id', leadId);
       if (updateErr) throw new Error(`lead update failed: ${updateErr.message}`);
@@ -293,6 +403,7 @@ serve(async (req) => {
       call_id: callId,
       would_update: { table: leadTable, lead_id: leadId, payload: update },
       would_post_process: postProcessPayload,
+      null_only_stripped: strippedNullOnly,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('[dc-post-call-analysis] error', error);
