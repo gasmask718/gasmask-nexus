@@ -935,6 +935,7 @@ function SettlementTab() {
 
   return (
     <div className="space-y-4">
+      {generatorUI}
       {partners.map((partner) => {
         const list = grouped.get(partner.id) ?? [];
         return (
