@@ -114,13 +114,13 @@ serve(async (req) => {
         if (!gate.retryable) {
           killSwitchHit = true;
           await supabase.from('surplus_funds_leads')
-            .update({ status: 'cancelled', bland_abort_reason: gate.reason })
+            .update({ status: 'cancelled' })
             .eq('id', l.id);
           // Cancel the rest of the batch in one shot.
           const remaining = (leads as any[]).slice((leads as any[]).indexOf(l) + 1).map((r: any) => r.id);
           if (remaining.length > 0) {
             await supabase.from('surplus_funds_leads')
-              .update({ status: 'cancelled', bland_abort_reason: gate.reason })
+              .update({ status: 'cancelled' })
               .in('id', remaining);
             for (const rid of remaining) {
               gateBlocks.push({ lead_id: rid, code: gate.code, reason: gate.reason, retryable: false });
