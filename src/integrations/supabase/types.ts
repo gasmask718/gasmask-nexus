@@ -36042,11 +36042,54 @@ export type Database = {
         }
         Relationships: []
       }
+      dc_agent_assignments: {
+        Row: {
+          active: boolean
+          agent_id: string
+          business_unit_key: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          active?: boolean
+          agent_id: string
+          business_unit_key: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Update: {
+          active?: boolean
+          agent_id?: string
+          business_unit_key?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dc_agent_assignments_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "dc_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dc_agent_assignments_business_unit_key_fkey"
+            columns: ["business_unit_key"]
+            isOneToOne: false
+            referencedRelation: "dc_businesses"
+            referencedColumns: ["business_key"]
+          },
+        ]
+      }
       dc_agents: {
         Row: {
           agent_id: string | null
           agent_type: string | null
           business: string | null
+          business_unit: string | null
           created_at: string | null
           first_message: string | null
           id: string
@@ -36062,6 +36105,7 @@ export type Database = {
           agent_id?: string | null
           agent_type?: string | null
           business?: string | null
+          business_unit?: string | null
           created_at?: string | null
           first_message?: string | null
           id?: string
@@ -36077,6 +36121,7 @@ export type Database = {
           agent_id?: string | null
           agent_type?: string | null
           business?: string | null
+          business_unit?: string | null
           created_at?: string | null
           first_message?: string | null
           id?: string
@@ -36275,9 +36320,11 @@ export type Database = {
           icon: string
           is_internal: boolean
           is_live: boolean
+          lead_table_name: string | null
           name: string
           phone_default: string | null
           sort_order: number
+          sync_enabled: boolean
           updated_at: string
         }
         Insert: {
@@ -36288,9 +36335,11 @@ export type Database = {
           icon?: string
           is_internal?: boolean
           is_live?: boolean
+          lead_table_name?: string | null
           name: string
           phone_default?: string | null
           sort_order?: number
+          sync_enabled?: boolean
           updated_at?: string
         }
         Update: {
@@ -36301,9 +36350,11 @@ export type Database = {
           icon?: string
           is_internal?: boolean
           is_live?: boolean
+          lead_table_name?: string | null
           name?: string
           phone_default?: string | null
           sort_order?: number
+          sync_enabled?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -36455,6 +36506,27 @@ export type Database = {
           total_leads?: number | null
           updated_at?: string | null
           voicemails_skipped?: number | null
+        }
+        Relationships: []
+      }
+      dc_disposition_codes: {
+        Row: {
+          category: string
+          code: string
+          created_at: string
+          label: string
+        }
+        Insert: {
+          category: string
+          code: string
+          created_at?: string
+          label: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string
+          label?: string
         }
         Relationships: []
       }
@@ -43886,6 +43958,7 @@ export type Database = {
           added_at: string | null
           added_by: string | null
           id: string
+          phone_e164: string | null
           phone_number: string
           reason: string | null
         }
@@ -43893,6 +43966,7 @@ export type Database = {
           added_at?: string | null
           added_by?: string | null
           id?: string
+          phone_e164?: string | null
           phone_number: string
           reason?: string | null
         }
@@ -43900,6 +43974,7 @@ export type Database = {
           added_at?: string | null
           added_by?: string | null
           id?: string
+          phone_e164?: string | null
           phone_number?: string
           reason?: string | null
         }

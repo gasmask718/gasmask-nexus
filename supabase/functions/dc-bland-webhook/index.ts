@@ -1,15 +1,39 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
+import { canonicalizeDisposition } from "../_shared/dnc.ts";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  // === SHARED-SECRET WEBHOOK VERIFICATION ===
+  // Bland's webhook delivery does not include a verifiable HMAC/signature in
+  // their current public API surface, so we require a shared-secret query
+  // param (?secret=<DC_BLAND_WEBHOOK_SECRET>) OR header (x-dc-webhook-secret).
+  // The dispatch side registers the webhook URL with this secret baked in.
+  const expectedSecret = Deno.env.get('DC_BLAND_WEBHOOK_SECRET');
+  if (expectedSecret) {
+    const url = new URL(req.url);
+    const providedSecret = url.searchParams.get('secret')
+      || req.headers.get('x-dc-webhook-secret')
+      || '';
+    if (providedSecret !== expectedSecret) {
+      console.warn('[dc-bland-webhook] rejected — invalid/missing secret');
+      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  } else {
+    console.warn('[dc-bland-webhook] DC_BLAND_WEBHOOK_SECRET not configured — accepting unverified webhook');
+  }
 
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
 
     const payload = await req.json();
     const callId = payload.call_id || payload.callId || payload.id;
@@ -371,34 +395,26 @@ ${transcript}`
       }
 
       if (sourceHub && leadId) {
-        const disposition = (payload.disposition || payload.status || '').toLowerCase();
-        // Constrained allowed status values per hub
-        const sfStatusMap: Record<string, string> = {
-          'interested': 'interested',
-          'do_not_call': 'do_not_contact',
-        };
-        const reStatusMap: Record<string, string> = {
-          'interested': 'interested',
-          'do_not_call': 'dnc',
-        };
-        const newStatusSf = sfStatusMap[disposition] || 'called';
-        const newStatusRe = reStatusMap[disposition] || 'called';
+        const rawDisposition = (payload.disposition || payload.status || '').toLowerCase();
+        // Canonical disposition code (see public.dc_disposition_codes).
+        // Unknown values fall back to 'called' (logged inside canonicalizeDisposition).
+        const canonical = canonicalizeDisposition(rawDisposition);
         const recordingUrl = payload.recording_url || payload.recording || null;
         const callTranscript = payload.concatenated_transcript || payload.transcript || null;
 
         if (sourceHub === 'surplus_funds') {
           await supabase.rpc('increment_call_count', { row_id: leadId, target_table: 'surplus_funds_leads' });
           await supabase.from('surplus_funds_leads').update({
-            status: newStatusSf,
+            status: canonical,
             last_called_at: new Date().toISOString(),
-            call_outcome: disposition || null,
+            call_outcome: canonical,
             call_recording_url: recordingUrl,
             call_transcript: callTranscript,
             bland_call_id: callId,
-            interest_level: disposition === 'interested' ? 'high' : disposition === 'not_interested' ? 'low' : null,
+            interest_level: canonical === 'interested' ? 'high' : canonical === 'not_interested' ? 'low' : null,
           }).eq('id', leadId);
 
-          if (disposition === 'interested' && callTranscript) {
+          if (canonical === 'interested' && callTranscript) {
             supabase.functions.invoke('sf-post-call-analysis', {
               body: { lead_id: leadId, transcript: callTranscript, call_id: callId },
             }).catch((e) => console.error('[sf-post-call-analysis invoke failed]', e));
@@ -406,15 +422,17 @@ ${transcript}`
         } else if (sourceHub === 're') {
           await supabase.rpc('increment_call_count', { row_id: leadId, target_table: 're_leads' });
           await supabase.from('re_leads').update({
-            status: newStatusRe,
+            status: canonical,
             last_called_at: new Date().toISOString(),
-            call_outcome: disposition || null,
+            call_outcome: canonical,
             call_recording_url: recordingUrl,
             call_transcript: callTranscript,
             bland_call_id: callId,
           }).eq('id', leadId);
 
-          if (disposition === 'interested') {
+
+
+          if (canonical === 'interested') {
             await supabase.from('re_va_tasks').insert({
               lead_id: leadId,
               task_type: 'seller_callback',

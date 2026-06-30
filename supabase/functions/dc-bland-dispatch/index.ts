@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
+import { isOnDNC, normalizeE164 } from "../_shared/dnc.ts";
+
 
 const AREA_CODE_TO_STATE: Record<string, string> = {
   '201':'NJ','202':'DC','203':'CT','205':'AL','206':'WA','207':'ME','208':'ID','209':'CA',
@@ -208,6 +210,27 @@ serve(async (req) => {
 
       const { phoneNumber, businessType, contactName, businessName, queueId } = params;
 
+      // === DNC PRE-DIAL CHECK (must run BEFORE any Bland API call) ===
+      const dnc = await isOnDNC(supabase, phoneNumber);
+      if (dnc.blocked) {
+        console.log('[DNC BLOCKED]', { phoneNumber, reason: dnc.reason, queueId });
+        if (queueId) {
+          await supabase.from('dynasty_call_queue').update({
+            status: 'dnc',
+            error_message: `DNC blocked: ${dnc.reason}`,
+            completed_at: new Date().toISOString(),
+          }).eq('id', queueId);
+        }
+        return new Response(JSON.stringify({
+          success: false, dnc_blocked: true, reason: dnc.reason,
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+
+
       // Get state and matching caller ID
       const prospectState = getStateFromPhone(phoneNumber);
       const { data: phoneMatch } = await supabase
@@ -321,8 +344,22 @@ serve(async (req) => {
       const results = [];
       for (const lead of leads) {
         try {
+          // === DNC PRE-DIAL CHECK — must run BEFORE Bland API call ===
+          const dncCheck = await isOnDNC(supabase, lead.phone_number);
+          if (dncCheck.blocked) {
+            console.log('[DNC BLOCKED]', { phone: lead.phone_number, reason: dncCheck.reason, queueId: lead.id });
+            await supabase.from('dynasty_call_queue').update({
+              status: 'dnc',
+              error_message: `DNC blocked: ${dncCheck.reason}`,
+              completed_at: new Date().toISOString(),
+            }).eq('id', lead.id);
+            results.push({ id: lead.id, status: 'dnc_blocked', reason: dncCheck.reason });
+            continue;
+          }
+
           let fromNumber: string;
           const prospectState = getStateFromPhone(lead.phone_number);
+
 
           if (manualNumberOverride) {
             fromNumber = manualNumberOverride;

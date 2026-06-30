@@ -300,8 +300,29 @@ Deno.serve(async (req) => {
       // table may not contain all phones — ignore
     }
 
-    const dialable = clean.filter((t) => !optedOut.has(t.to_number));
+    // DNC filter — global compliance list (must filter BEFORE any dial)
+    const dncBlocked = new Set<string>();
+    try {
+      const phones = clean.map((t) => t.to_number);
+      const { data: dncRows } = await admin
+        .from("dnc_list")
+        .select("phone_e164, phone_number")
+        .or(`phone_e164.in.(${phones.join(",")}),phone_number.in.(${phones.join(",")})`);
+      for (const r of dncRows || []) {
+        if (r.phone_e164) dncBlocked.add(r.phone_e164);
+        if (r.phone_number) dncBlocked.add(r.phone_number);
+      }
+    } catch (e) {
+      // Fail-CLOSED on DNC lookup error — block everything to stay compliant
+      console.error("[dc-bulk-call] DNC lookup failed — blocking all dials in this batch", e);
+      for (const t of clean) dncBlocked.add(t.to_number);
+    }
+
+    const dialable = clean.filter(
+      (t) => !optedOut.has(t.to_number) && !dncBlocked.has(t.to_number),
+    );
     const skippedCount = clean.length - dialable.length;
+
 
     const { data: batch, error: bErr } = await admin
       .from("dc_bulk_batches")
@@ -323,21 +344,22 @@ Deno.serve(async (req) => {
       .single();
     if (bErr || !batch) return json({ error: "batch_insert_failed", details: bErr }, 500);
 
-    // insert opted-out rows as already-skipped
+    // insert opted-out / dnc rows as already-skipped, with the right reason
     if (skippedCount > 0) {
       const skipRows = clean
-        .filter((t) => optedOut.has(t.to_number))
+        .filter((t) => optedOut.has(t.to_number) || dncBlocked.has(t.to_number))
         .map((t) => ({
           batch_id: batch.id,
           to_number: t.to_number,
           lead_name: t.lead_name,
           store_id: t.store_id,
           status: "skipped",
-          skip_reason: "opted_out",
+          skip_reason: dncBlocked.has(t.to_number) ? "dnc" : "opted_out",
           completed_at: new Date().toISOString(),
         }));
       if (skipRows.length) await admin.from("dc_bulk_targets").insert(skipRows);
     }
+
 
     // insert dialable rows
     const queuedRows = dialable.map((t) => ({
@@ -376,8 +398,10 @@ Deno.serve(async (req) => {
       batch_id: batch.id,
       total: clean.length,
       queued: dialable.length,
-      skipped_opted_out: skippedCount,
+      skipped_opted_out: clean.filter((t) => optedOut.has(t.to_number) && !dncBlocked.has(t.to_number)).length,
+      skipped_dnc: clean.filter((t) => dncBlocked.has(t.to_number)).length,
     });
+
   }
 
   return json({ error: "unknown_action" }, 400);

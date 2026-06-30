@@ -2,6 +2,41 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// Canonical disposition codes — fetched live from dc_disposition_codes.
+// Kept as a fallback in case the table read fails (e.g. offline).
+const FALLBACK_DISPOSITIONS = [
+  'new','queued','called','voicemail','no_answer','callback',
+  'interested','booked','not_interested','wrong_number','dnc',
+] as const;
+
+export type DCDispositionCode = {
+  code: string;
+  label: string;
+  category: 'positive' | 'negative' | 'neutral' | 'compliance';
+};
+
+export function useDispositionCodes() {
+  return useQuery({
+    queryKey: ['dc-disposition-codes'],
+    staleTime: 1000 * 60 * 10,
+    queryFn: async (): Promise<DCDispositionCode[]> => {
+      const { data, error } = await (supabase as any)
+        .from('dc_disposition_codes')
+        .select('code,label,category')
+        .order('category')
+        .order('code');
+      if (error) {
+        console.warn('[useDispositionCodes] falling back to hardcoded list:', error.message);
+        return FALLBACK_DISPOSITIONS.map(code => ({
+          code, label: code, category: 'neutral' as const,
+        }));
+      }
+      return (data || []) as DCDispositionCode[];
+    },
+  });
+}
+
+
 export interface DCLead {
   id: string;
   business_name: string;
@@ -135,17 +170,21 @@ export function usePipelineLeads(businessName: string, statusFilter?: string) {
     onError: (e: any) => toast.error('Failed: ' + e.message),
   });
 
+  // Canonical contacted statuses — accepts the new underscored form AND the
+  // legacy hyphenated 'not-interested' for any data not yet migrated.
+  const CONTACTED = ['called', 'interested', 'booked', 'not_interested', 'not-interested', 'callback', 'voicemail', 'no_answer', 'wrong_number'];
+  const calledCount = leads.filter(l => CONTACTED.includes(l.status)).length;
   const stats = {
     total: leads.length,
     new: leads.filter(l => l.status === 'new').length,
-    called: leads.filter(l => ['called', 'interested', 'booked', 'not-interested', 'callback'].includes(l.status)).length,
+    called: calledCount,
     interested: leads.filter(l => l.status === 'interested').length,
     booked: leads.filter(l => l.status === 'booked').length,
-    winRate: leads.filter(l => ['called', 'interested', 'booked', 'not-interested', 'callback'].includes(l.status)).length > 0
-      ? ((leads.filter(l => ['booked', 'interested'].includes(l.status)).length / 
-          leads.filter(l => ['called', 'interested', 'booked', 'not-interested', 'callback'].includes(l.status)).length) * 100).toFixed(1)
+    winRate: calledCount > 0
+      ? ((leads.filter(l => ['booked', 'interested'].includes(l.status)).length / calledCount) * 100).toFixed(1)
       : '0.0',
   };
+
 
   return { leads, isLoading, refetch, addLead, uploadCSV, sendToCampaign, stats };
 }
