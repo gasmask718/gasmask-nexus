@@ -398,8 +398,10 @@ Deno.serve(async (req) => {
       batch_id: batch.id,
       total: clean.length,
       queued: dialable.length,
-      skipped_opted_out: skippedCount,
+      skipped_opted_out: clean.filter((t) => optedOut.has(t.to_number) && !dncBlocked.has(t.to_number)).length,
+      skipped_dnc: clean.filter((t) => dncBlocked.has(t.to_number)).length,
     });
+
   }
 
   return json({ error: "unknown_action" }, 400);
