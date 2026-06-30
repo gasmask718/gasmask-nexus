@@ -28,7 +28,8 @@ import {
   UT_DISPOSITIONS, UTDispositionValue, UT_FOLLOW_UP_PRESETS,
   UT_SCRIPTS, UT_OBJECTIONS, UT_SMS_TEMPLATES, VA_DAILY_QUOTAS
 } from '@/config/utScripts';
-import { useUTAIDialer } from '@/hooks/useUTAIDialer';
+// useUTAIDialer removed 2026-06-30: legacy ElevenLabs path superseded by Bland campaign flow.
+// Hook file retained on disk for git history; has zero call sites and is inert.
 import { toast } from 'sonner';
 import UTLeadImporter from '@/components/unforgettable/UTLeadImporter';
 
