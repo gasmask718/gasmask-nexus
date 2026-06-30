@@ -10,11 +10,13 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 
+type PostProcessPayload = { table: string; payload: Record<string, any> } | null;
+
 type AnalysisConfig = {
   systemPrompt: string;
   jsonSchema: string;
   applyUpdate: (analysis: any) => Record<string, any>;
-  postProcess?: (supabase: any, leadId: string, analysis: any) => Promise<void>;
+  buildPostProcess?: (leadId: string, analysis: any) => PostProcessPayload;
 };
 
 const ANALYSIS_CONFIGS: Record<string, AnalysisConfig> = {
