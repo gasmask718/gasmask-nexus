@@ -432,7 +432,7 @@ ${transcript}`
 
 
 
-          if (disposition === 'interested') {
+          if (canonical === 'interested') {
             await supabase.from('re_va_tasks').insert({
               lead_id: leadId,
               task_type: 'seller_callback',
