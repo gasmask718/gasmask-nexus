@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
+import { logLeadSync } from "../_shared/dc_sync_log.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
