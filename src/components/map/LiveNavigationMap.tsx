@@ -54,6 +54,56 @@ function formatDistance(m: number): string {
   return `${miles.toFixed(1)} mi`;
 }
 
+// Haversine distance (meters) between two lng/lat points.
+function haversineM(a: [number, number], b: [number, number]): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b[1] - a[1]);
+  const dLng = toRad(b[0] - a[0]);
+  const lat1 = toRad(a[1]);
+  const lat2 = toRad(b[1]);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+// Perpendicular distance (meters) from point p to segment a-b, using a flat
+// equirectangular projection — accurate enough at street scale.
+function pointToSegmentM(
+  p: [number, number],
+  a: [number, number],
+  b: [number, number]
+): number {
+  const mPerDegLat = 111_320;
+  const lat0 = ((a[1] + b[1]) / 2) * (Math.PI / 180);
+  const mPerDegLng = 111_320 * Math.cos(lat0);
+  const ax = a[0] * mPerDegLng, ay = a[1] * mPerDegLat;
+  const bx = b[0] * mPerDegLng, by = b[1] * mPerDegLat;
+  const px = p[0] * mPerDegLng, py = p[1] * mPerDegLat;
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  if (len2 === 0) return haversineM(p, a);
+  let t = ((px - ax) * dx + (py - ay) * dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  const cx = ax + t * dx, cy = ay + t * dy;
+  return Math.hypot(px - cx, py - cy);
+}
+
+function minDistanceToPolyline(
+  pos: { lat: number; lng: number },
+  coords: [number, number][]
+): number {
+  if (!coords.length) return Infinity;
+  const p: [number, number] = [pos.lng, pos.lat];
+  let min = Infinity;
+  for (let i = 0; i < coords.length - 1; i++) {
+    const d = pointToSegmentM(p, coords[i], coords[i + 1]);
+    if (d < min) min = d;
+  }
+  return min;
+}
+
 export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
   destination,
   origin,
@@ -70,8 +120,13 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
   const [route, setRoute] = useState<RouteSummary | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
   const [loadingRoute, setLoadingRoute] = useState(false);
+  const [rerouteToken, setRerouteToken] = useState(0);
+  const [rerouting, setRerouting] = useState(false);
+  const lastRerouteAt = useRef(0);
+  const offRouteSince = useRef<number | null>(null);
+  const fetchOriginRef = useRef<{ lat: number; lng: number } | null>(null);
 
-  // 1. Geolocation watcher
+  // 1. Geolocation watcher — high-frequency updates for Waze-style smooth tracking
   useEffect(() => {
     if (origin) {
       setCurrentPos(origin);
@@ -87,10 +142,42 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
         setGeoError(null);
       },
       (err) => setGeoError(err.message || 'Unable to access location'),
-      { enableHighAccuracy: true, maximumAge: 10_000, timeout: 15_000 }
+      // maximumAge: 0 forces a fresh fix every tick; high accuracy + short timeout
+      // gives a continuous stream so the blue dot glides instead of jumping.
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10_000 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
   }, [origin]);
+
+  // 1b. Screen Wake Lock — keep the phone awake while navigation is mounted
+  useEffect(() => {
+    let lock: WakeLockSentinel | null = null;
+    let released = false;
+    const anyNav = navigator as Navigator & {
+      wakeLock?: { request: (type: 'screen') => Promise<WakeLockSentinel> };
+    };
+    if (!anyNav.wakeLock) return;
+
+    const acquire = async () => {
+      try {
+        lock = await anyNav.wakeLock!.request('screen');
+      } catch {
+        /* user gesture may be required; ignore */
+      }
+    };
+    acquire();
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible' && !released) acquire();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      released = true;
+      document.removeEventListener('visibilitychange', onVisibility);
+      lock?.release().catch(() => undefined);
+    };
+  }, []);
 
   // 2. Initialize map
   useEffect(() => {
@@ -162,21 +249,24 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 3. Origin marker
+  // 3. Origin marker — smooth glide (no jump) + gentle camera follow
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !currentPos) return;
+    const lngLat: [number, number] = [currentPos.lng, currentPos.lat];
     if (!originMarker.current) {
       const el = document.createElement('div');
       el.style.cssText =
-        'width:18px;height:18px;border-radius:50%;background:#2563eb;border:3px solid white;box-shadow:0 0 0 2px #2563eb;';
-      originMarker.current = new mapboxgl.Marker({ element: el })
-        .setLngLat([currentPos.lng, currentPos.lat])
-        .addTo(map);
+        'width:18px;height:18px;border-radius:50%;background:#2563eb;border:3px solid white;box-shadow:0 0 0 2px #2563eb;transition:transform 600ms linear;';
+      originMarker.current = new mapboxgl.Marker({ element: el }).setLngLat(lngLat).addTo(map);
     } else {
-      originMarker.current.setLngLat([currentPos.lng, currentPos.lat]);
+      originMarker.current.setLngLat(lngLat);
     }
-  }, [currentPos]);
+    // Soft camera follow once we have an active route
+    if (route) {
+      map.easeTo({ center: lngLat, duration: 600, essential: true });
+    }
+  }, [currentPos, route]);
 
   // 4. Destination marker
   useEffect(() => {
@@ -194,14 +284,18 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
     }
   }, [destination]);
 
-  // 5. Fetch directions
+  // 5. Fetch directions — only on destination change or explicit reroute,
+  //    NOT on every GPS tick. Uses the latest GPS fix at the moment of fetch.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !currentPos || !destination || !MAPBOX_TOKEN) return;
 
     let cancelled = false;
-    setLoadingRoute(true);
+    const isReroute = rerouteToken > 0;
+    if (isReroute) setRerouting(true);
+    else setLoadingRoute(true);
     setRouteError(null);
+    fetchOriginRef.current = currentPos;
 
     const url =
       `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/` +
@@ -228,33 +322,70 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
           geometry: r.geometry,
         };
         setRoute(summary);
+        offRouteSince.current = null;
 
         const src = map.getSource('nav-route') as mapboxgl.GeoJSONSource | undefined;
         if (src) {
           src.setData({ type: 'Feature', properties: {}, geometry: r.geometry });
         }
 
-        // Fit bounds to route
-        const coords: [number, number][] = r.geometry.coordinates;
-        if (coords.length > 1) {
-          const bounds = coords.reduce(
-            (b, c) => b.extend(c as [number, number]),
-            new mapboxgl.LngLatBounds(coords[0], coords[0])
-          );
-          map.fitBounds(bounds, { padding: 80, duration: 800, maxZoom: 15 });
+        // Fit bounds only on first route; subsequent reroutes keep camera on driver.
+        if (!isReroute) {
+          const coords: [number, number][] = r.geometry.coordinates;
+          if (coords.length > 1) {
+            const bounds = coords.reduce(
+              (b, c) => b.extend(c as [number, number]),
+              new mapboxgl.LngLatBounds(coords[0], coords[0])
+            );
+            map.fitBounds(bounds, { padding: 80, duration: 800, maxZoom: 15 });
+          }
         }
       })
       .catch((e) => {
         if (!cancelled) setRouteError(e.message || 'Failed to fetch route');
       })
       .finally(() => {
-        if (!cancelled) setLoadingRoute(false);
+        if (cancelled) return;
+        setLoadingRoute(false);
+        setRerouting(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [currentPos?.lat, currentPos?.lng, destination?.lat, destination?.lng]);
+    // Intentionally NOT depending on currentPos — would refetch on every GPS tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [destination?.lat, destination?.lng, rerouteToken]);
+
+  // 5b. Initial fetch trigger once we get our first GPS fix.
+  useEffect(() => {
+    if (currentPos && destination && !route && !loadingRoute && rerouteToken === 0) {
+      setRerouteToken((t) => t + 1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPos, destination]);
+
+  // 5c. Off-route detection — if driver strays >60m from route polyline for >5s,
+  //     request a fresh route. Throttled to once every 15s.
+  useEffect(() => {
+    if (!currentPos || !route?.geometry?.coordinates?.length) return;
+    const distM = minDistanceToPolyline(currentPos, route.geometry.coordinates as [number, number][]);
+    const OFF_ROUTE_M = 60;
+    const STICKY_MS = 5_000;
+    const COOLDOWN_MS = 15_000;
+    if (distM > OFF_ROUTE_M) {
+      if (offRouteSince.current == null) offRouteSince.current = Date.now();
+      const strayedFor = Date.now() - offRouteSince.current;
+      const sinceLast = Date.now() - lastRerouteAt.current;
+      if (strayedFor >= STICKY_MS && sinceLast >= COOLDOWN_MS) {
+        lastRerouteAt.current = Date.now();
+        offRouteSince.current = null;
+        setRerouteToken((t) => t + 1);
+      }
+    } else {
+      offRouteSince.current = null;
+    }
+  }, [currentPos, route]);
 
   const heavyTraffic =
     route && route.durationTypicalSec
@@ -336,12 +467,20 @@ export const LiveNavigationMap: React.FC<LiveNavigationMapProps> = ({
                         </div>
                       </div>
                     </div>
-                    {heavyTraffic && (
-                      <Badge variant="destructive" className="ml-auto gap-1">
-                        <AlertTriangle className="h-3 w-3" />
-                        Heavy traffic ahead
-                      </Badge>
-                    )}
+                    <div className="ml-auto flex items-center gap-2">
+                      {rerouting && (
+                        <Badge variant="secondary" className="gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Rerouting…
+                        </Badge>
+                      )}
+                      {heavyTraffic && (
+                        <Badge variant="destructive" className="gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          Heavy traffic ahead
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   {route.nextStep && (
                     <div className="flex items-start gap-2 text-sm border-t pt-2">
