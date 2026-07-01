@@ -1,0 +1,1 @@
+ALTER TABLE public.ai_call_campaigns DROP COLUMN IF EXISTS voicemail_drop_template_id;

@@ -2156,7 +2156,6 @@ export type Database = {
           voice_mode_override: string | null
           voice_provider_override: string | null
           voicemail_count: number | null
-          voicemail_drop_template_id: string | null
         }
         Insert: {
           answered_calls?: number | null
@@ -2201,7 +2200,6 @@ export type Database = {
           voice_mode_override?: string | null
           voice_provider_override?: string | null
           voicemail_count?: number | null
-          voicemail_drop_template_id?: string | null
         }
         Update: {
           answered_calls?: number | null
@@ -2246,7 +2244,6 @@ export type Database = {
           voice_mode_override?: string | null
           voice_provider_override?: string | null
           voicemail_count?: number | null
-          voicemail_drop_template_id?: string | null
         }
         Relationships: [
           {
@@ -2275,13 +2272,6 @@ export type Database = {
             columns: ["vertical_id"]
             isOneToOne: false
             referencedRelation: "brand_verticals"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ai_call_campaigns_voicemail_drop_template_id_fkey"
-            columns: ["voicemail_drop_template_id"]
-            isOneToOne: false
-            referencedRelation: "dc_voicemail_templates"
             referencedColumns: ["id"]
           },
         ]
