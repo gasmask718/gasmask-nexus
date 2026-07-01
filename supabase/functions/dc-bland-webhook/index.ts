@@ -407,6 +407,51 @@ ${transcript}`
         const recordingUrl = payload.recording_url || payload.recording || null;
         const callTranscript = payload.concatenated_transcript || payload.transcript || null;
 
+        // --- Fix B Part 2: shared dc_call_logs upsert (all four branches) ---
+        // Keyed on call_sid (UNIQUE). Trigger side pre-creates the row; this
+        // upsert fills in disposition/duration/recording/transcript on
+        // completion, and back-creates the row if the trigger side didn't
+        // (SF/RE/UT trigger paths do not yet pre-create). Failure logged as a
+        // warning; never rolls back the branch-specific writes below.
+        {
+          const durationSeconds: number | null =
+            typeof payload.corrected_duration === 'number' ? payload.corrected_duration
+            : typeof payload.call_length === 'number' ? Math.round(payload.call_length * 60)
+            : null;
+          const branchBusiness = sourceHub === 'tt' ? 'top_tier'
+            : sourceHub === 're' ? 'real_estate'
+            : sourceHub === 'ut' ? 'unforgettable_times'
+            : sourceHub;
+          const sourceTable = branchBusiness === 'top_tier' ? 'crm_partners'
+            : branchBusiness === 'surplus_funds' ? 'surplus_funds_leads'
+            : branchBusiness === 'real_estate' ? 're_leads'
+            : branchBusiness === 'unforgettable_times' ? 'ut_leads'
+            : null;
+          const { error: callLogUpsertErr } = await supabase
+            .from('dc_call_logs')
+            .upsert({
+              call_sid: callId,
+              source_business: branchBusiness,
+              source_table: sourceTable,
+              source_id: leadId,
+              business: branchBusiness,
+              to_number: payload.to || null,
+              from_number: payload.from || null,
+              direction: 'outbound',
+              status: 'completed',
+              outcome: canonical,
+              duration_seconds: durationSeconds,
+              answered_by: payload.answered_by || null,
+              recording_url: recordingUrl,
+              transcript: callTranscript,
+              agent_type: 'bland',
+            }, { onConflict: 'call_sid' });
+          if (callLogUpsertErr) {
+            console.error('[dc-bland-webhook dc_call_logs upsert failed]', callId, sourceHub, callLogUpsertErr);
+            ttWarnings.push(`call_log_upsert_failed: ${callLogUpsertErr.message}`);
+          }
+        }
+
         if (sourceHub === 'surplus_funds') {
           // Capture status_before for sync log instrumentation (Step 5).
           const { data: prevSf } = await supabase
