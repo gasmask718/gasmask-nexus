@@ -1,3 +1,7 @@
+// LAUNCH UI: no frontend launch surface exists for this trigger yet.
+// VM drop plumbing is ready (fetchVoicemailTranscript wired).
+// When a launch UI is built, pass voicemail_drop_template_id in the invoke
+// body to enable VM drop.
 // Dynasty Direct Wholesaler Outreach trigger — Bland-direct dispatch for
 // existing + prospect grabba wholesalers. Modeled on tt-trigger-bland-campaign:
 //   - Per-record dispatch gates (kill-switch via kill_switch_state /
