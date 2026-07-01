@@ -233,6 +233,7 @@ serve(async (req) => {
         status: blandError ? 'failed' : 'active',
         total_leads: leads.length,
         agent_name: 'SF Outreach',
+        voicemail_drop_template_id: body.voicemail_drop_template_id || null,
       })
       .select()
       .single();
