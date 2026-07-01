@@ -36736,6 +36736,89 @@ export type Database = {
         }
         Relationships: []
       }
+      dc_lead_analysis: {
+        Row: {
+          analysis_version: string | null
+          analyzed_at: string | null
+          business_unit_key: string
+          call_id: string
+          callback_requested: boolean | null
+          callback_time: string | null
+          claude_model: string | null
+          contact_confirmed: boolean | null
+          created_at: string | null
+          email_provided: string | null
+          id: string
+          interest_level: string | null
+          interest_score: number | null
+          key_objections: Json | null
+          lead_id: string
+          opted_out: boolean | null
+          qualification_payload: Json | null
+          recommended_action: string | null
+          red_flags: Json | null
+          sentiment: string | null
+          source_table: string
+          summary: string | null
+        }
+        Insert: {
+          analysis_version?: string | null
+          analyzed_at?: string | null
+          business_unit_key: string
+          call_id: string
+          callback_requested?: boolean | null
+          callback_time?: string | null
+          claude_model?: string | null
+          contact_confirmed?: boolean | null
+          created_at?: string | null
+          email_provided?: string | null
+          id?: string
+          interest_level?: string | null
+          interest_score?: number | null
+          key_objections?: Json | null
+          lead_id: string
+          opted_out?: boolean | null
+          qualification_payload?: Json | null
+          recommended_action?: string | null
+          red_flags?: Json | null
+          sentiment?: string | null
+          source_table: string
+          summary?: string | null
+        }
+        Update: {
+          analysis_version?: string | null
+          analyzed_at?: string | null
+          business_unit_key?: string
+          call_id?: string
+          callback_requested?: boolean | null
+          callback_time?: string | null
+          claude_model?: string | null
+          contact_confirmed?: boolean | null
+          created_at?: string | null
+          email_provided?: string | null
+          id?: string
+          interest_level?: string | null
+          interest_score?: number | null
+          key_objections?: Json | null
+          lead_id?: string
+          opted_out?: boolean | null
+          qualification_payload?: Json | null
+          recommended_action?: string | null
+          red_flags?: Json | null
+          sentiment?: string | null
+          source_table?: string
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dc_lead_analysis_business_unit_key_fkey"
+            columns: ["business_unit_key"]
+            isOneToOne: false
+            referencedRelation: "dc_businesses"
+            referencedColumns: ["business_key"]
+          },
+        ]
+      }
       dc_lead_sync_log: {
         Row: {
           business_unit_key: string
