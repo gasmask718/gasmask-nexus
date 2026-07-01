@@ -111,6 +111,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    // 5. Append immutable compliance-audit event (fire-and-forget).
+    await logComplianceEvent(supabase, {
+      event_type: "manual_disposition_override",
+      business_unit_key,
+      lead_id,
+      source_table: mapping.table,
+      actor: "manual_admin",
+      event_data: {
+        old_disposition: status_before,
+        new_disposition,
+        reason,
+      },
+    });
+
+
     return json({
       success: true,
       lead_id,
