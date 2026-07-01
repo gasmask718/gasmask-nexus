@@ -2,7 +2,8 @@ import { Outlet, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   BarChart3, Brain, Phone, Building2, Settings, FileText, 
-  Users, Zap, Radio, BookOpen, Target, Headphones, DollarSign, Rocket
+  Users, Zap, Radio, BookOpen, Target, Headphones, DollarSign, Rocket,
+  Inbox, Mic, ClipboardList, ShieldOff, ShieldCheck
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,9 @@ const dcNavSections = [
       { path: '/dynasty-connect/phone-manager', label: 'Phone Numbers', icon: Phone },
       { path: '/dynasty-connect/dispatch', label: 'Call Dispatch', icon: Zap },
       { path: '/dynasty-connect/results', label: 'Call Results', icon: FileText },
+      { path: '/dynasty-connect/leads', label: 'Leads Inbox', icon: Inbox },
+      { path: '/dynasty-connect/recordings', label: 'Recordings', icon: Mic },
+      { path: '/dynasty-connect/dispositions', label: 'Dispositions', icon: ClipboardList },
       { path: '/dynasty-connect/analytics-dashboard', label: 'Analytics', icon: BarChart3 },
       { path: '/dynasty-connect/lead-pipeline', label: 'Lead Pipeline', icon: Target },
     ],
@@ -68,6 +72,13 @@ const dcNavSections = [
       { path: '/dynasty-connect/phone-numbers', label: 'Phone Config', icon: Phone },
       { path: '/dynasty-connect/infrastructure/numbers', label: 'Phone Numbers', icon: Phone },
       { path: '/dynasty-connect/infrastructure/phone-setup', label: 'Phone Setup', icon: Phone },
+    ],
+  },
+  {
+    title: '🛡️ Compliance & Data',
+    items: [
+      { path: '/dynasty-connect/dnc', label: 'DNC Manager', icon: ShieldOff },
+      { path: '/dynasty-connect/compliance', label: 'Compliance', icon: ShieldCheck },
     ],
   },
   {
