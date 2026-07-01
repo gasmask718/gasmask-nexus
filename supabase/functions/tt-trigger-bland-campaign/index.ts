@@ -30,7 +30,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
-import { logLeadSync, logLeadSyncBatch } from "../_shared/dc_sync_log.ts";
+import { logLeadSync, logLeadSyncBatch, logGateBlock } from "../_shared/dc_sync_log.ts";
 import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 import { isOnDNC } from "../_shared/dnc.ts";
 
@@ -246,6 +246,12 @@ serve(async (req) => {
       const gate = await checkDispatchGates(supabase, { businessUnitKey: BUSINESS_UNIT_KEY });
       if (!gate.allowed) {
         gateBlocks.push({ lead_id: l.id, code: gate.code, reason: gate.reason, retryable: gate.retryable });
+        await logGateBlock(supabase, {
+          businessUnitKey: BUSINESS_UNIT_KEY, leadId: l.id,
+          triggerName: "tt-trigger-bland-campaign",
+          gateCode: gate.code, gateReason: gate.reason,
+          statusBefore: (l as any).tt_stage || null,
+        });
         console.warn("[tt-trigger gate-blocked]", l.id, gate.code, gate.reason);
         if (!gate.retryable) {
           killSwitchHit = true;
