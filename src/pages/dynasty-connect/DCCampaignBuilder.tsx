@@ -127,7 +127,6 @@ export default function DCCampaignBuilder() {
         max_calls_per_minute: parseInt(form.maxPerMinute) || 5,
         status: form.schedule === 'now' ? 'active' : 'draft',
         total_targets: form.useExistingLeads ? leadCount : 0,
-        voicemail_drop_template_id: form.voicemailTemplateId || null,
       }).select('id').single();
       if (error) throw error;
 
