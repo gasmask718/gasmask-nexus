@@ -503,10 +503,16 @@ ${transcript}`
             : sourceHub === 're' ? 'real_estate'
             : sourceHub === 'ut' ? 'unforgettable_times'
             : sourceHub;
+          const gmCohort = (payload.request_data?.cohort_type
+            || payload.variables?.cohort_type
+            || 'prospect') as string;
           const sourceTable = branchBusiness === 'top_tier' ? 'crm_partners'
             : branchBusiness === 'surplus_funds' ? 'surplus_funds_leads'
             : branchBusiness === 'real_estate' ? 're_leads'
             : branchBusiness === 'unforgettable_times' ? 'ut_leads'
+            : branchBusiness === 'dynasty_direct' ? 'wholesalers'
+            : branchBusiness === 'gasmask' ? (gmCohort === 'reactivation' ? 'store_master' : 'sales_prospects')
+            : branchBusiness === 'brandaro' ? 'brandaro_qualified_leads'
             : null;
           const { error: callLogUpsertErr } = await supabase
             .from('dc_call_logs')
