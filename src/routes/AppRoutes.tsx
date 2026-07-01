@@ -437,6 +437,7 @@ const DCFinishedCallsPage = lazy(() => import('@/pages/dynasty-connect/DCFinishe
 const DCLeadInbox = lazy(() => import('@/pages/dynasty-connect/DCLeadInbox'));
 const DCRecordingsPage = lazy(() => import('@/pages/dynasty-connect/DCRecordingsPage'));
 const DCDispositionManager = lazy(() => import('@/pages/dynasty-connect/DCDispositionManager'));
+const DCDNCManager = lazy(() => import('@/pages/dynasty-connect/DCDNCManager'));
 // Pipeline sub-pages
 const SurplusFundsPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/SurplusFundsPipeline'));
 const DCRealEstatePipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/RealEstatePipeline'));
@@ -1564,6 +1565,7 @@ export default function AppRoutes() {
           <Route path="leads" element={<DCLeadInbox />} />
           <Route path="recordings" element={<DCRecordingsPage />} />
           <Route path="dispositions" element={<DCDispositionManager />} />
+          <Route path="dnc" element={<DCDNCManager />} />
         </Route>
 
         {/* 🎙️ Voice Ops Dashboard */}
