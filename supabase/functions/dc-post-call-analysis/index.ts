@@ -695,9 +695,28 @@ serve(async (req) => {
     }
 
 
+    const droppedMissingCols: string[] = [];
     if (!isDryRun) {
-      const { error: updateErr } = await supabase.from(leadTable).update(update).eq('id', leadId);
-      if (updateErr) throw new Error(`lead update failed: ${updateErr.message}`);
+      // Tolerant retry loop: if PostgREST returns 42703 (undefined_column),
+      // strip the offending column from the update and retry. Bounded at 6 tries.
+      let attempts = 0;
+      while (attempts < 6) {
+        attempts++;
+        const { error: updateErr } = await supabase.from(leadTable).update(update).eq('id', leadId);
+        if (!updateErr) break;
+        const msg = String(updateErr.message || '');
+        // PostgREST surfaces missing columns as PGRST204 or code 42703. Match by column name in the message.
+        const missingMatch = msg.match(/column ["']?([a-zA-Z_][a-zA-Z0-9_]*)["']? .* does not exist/i)
+          || msg.match(/Could not find the ["']?([a-zA-Z_][a-zA-Z0-9_]*)["']? column/i);
+        if (missingMatch && missingMatch[1] && missingMatch[1] in update) {
+          const col = missingMatch[1];
+          delete (update as Record<string, any>)[col];
+          droppedMissingCols.push(col);
+          if (Object.keys(update).length === 0) break;
+          continue;
+        }
+        throw new Error(`lead update failed: ${updateErr.message}`);
+      }
 
       if (postProcessPayload) {
         try {
@@ -707,6 +726,7 @@ serve(async (req) => {
         }
       }
     }
+
 
     return new Response(JSON.stringify({
       success: true,
