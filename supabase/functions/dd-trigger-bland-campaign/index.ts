@@ -223,6 +223,12 @@ serve(async (req) => {
       const gate = await checkDispatchGates(supabase, { businessUnitKey: BUSINESS_UNIT_KEY });
       if (!gate.allowed) {
         gateBlocks.push({ lead_id: l.id, code: gate.code, reason: gate.reason, retryable: gate.retryable });
+        await logGateBlock(supabase, {
+          businessUnitKey: BUSINESS_UNIT_KEY, leadId: l.id,
+          triggerName: "dd-trigger-bland-campaign",
+          gateCode: gate.code, gateReason: gate.reason,
+          statusBefore: l.status || null,
+        });
         console.warn("[dd-trigger gate-blocked]", l.id, gate.code, gate.reason);
         if (!gate.retryable) {
           killSwitchHit = true;
