@@ -238,28 +238,7 @@ export default function DCCampaignBuilder() {
               <Input type="number" value={form.maxPerMinute} onChange={e => setForm(f => ({ ...f, maxPerMinute: e.target.value }))} />
             </div>
           </div>
-          {form.pipeline && (
-            <div>
-              <Label>Voicemail Drop Template</Label>
-              <Select
-                value={form.voicemailTemplateId || 'none'}
-                onValueChange={(v) => setForm((f) => ({ ...f, voicemailTemplateId: v === 'none' ? '' : v }))}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None — use agent script (recommended)</SelectItem>
-                  {vmTemplates.map((t: any) => (
-                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                {vmTemplates.length === 0
-                  ? 'No active templates for this business unit. Create one in AI Agents → Voicemail Templates.'
-                  : 'Played by Bland via TTS when AMD detects an answering machine.'}
-              </p>
-            </div>
-          )}
+
           <Button onClick={() => createCampaign.mutate()} disabled={!form.pipeline || createCampaign.isPending} className="w-full">
             {createCampaign.isPending ? 'Creating…' : `🚀 ${form.schedule === 'now' ? 'Launch Campaign' : 'Save Draft'}`}
           </Button>
