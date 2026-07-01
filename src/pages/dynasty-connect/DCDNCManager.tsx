@@ -59,7 +59,7 @@ function AddDncDialog({ open, onOpenChange, businesses }: {
 
   const add = useMutation({
     mutationFn: async () => {
-      if (!normalized.ok) throw new Error(normalized.error);
+      if (!normalized.ok) throw new Error((normalized as { ok: false; error: string }).error);
       if (!business) throw new Error('Business unit required');
       if (reason.trim().length < 10) throw new Error('Reason must be at least 10 characters');
       const { error } = await supabase.from('dnc_list').insert({
