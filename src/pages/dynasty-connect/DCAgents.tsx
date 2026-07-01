@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Brain, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useDCBusinesses } from '@/hooks/useDCBusinesses';
 import { NewAgentDialog, NewBusinessDialog } from '@/components/dynasty-connect/DCAgentDialogs';
+import DCVoicemailTemplates from '@/components/dynasty-connect/DCVoicemailTemplates';
 
 export default function DCAgents() {
   const [filter, setFilter] = useState('all');
