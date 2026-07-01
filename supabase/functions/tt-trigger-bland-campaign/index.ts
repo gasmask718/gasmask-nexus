@@ -33,6 +33,7 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { logLeadSync, logLeadSyncBatch, logGateBlock } from "../_shared/dc_sync_log.ts";
 import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 import { isOnDNC } from "../_shared/dnc.ts";
+import { fetchVoicemailTranscript } from "../_shared/voicemail_template.ts";
 
 const BUSINESS_UNIT_KEY = "top_tier";
 const BUSINESS_NAME = "TopTier Experience";
