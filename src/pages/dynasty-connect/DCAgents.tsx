@@ -61,8 +61,7 @@ export default function DCAgents() {
 
   return (
     <div className="space-y-6">
-  return (
-    <div className="space-y-6">
+
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold">🤖 AI Agent Roster</h1>
