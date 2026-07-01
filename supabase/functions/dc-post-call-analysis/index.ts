@@ -464,6 +464,33 @@ serve(async (req) => {
       }
     }
 
+    // Handle __append_* sentinel keys: read current column value from the lead
+    // row and concat the new segment with a newline. Never overwrites.
+    const appendedFields: string[] = [];
+    const appendKeys = Object.keys(update).filter((k) => k.startsWith('__append_'));
+    if (appendKeys.length > 0) {
+      const targetCols = appendKeys.map((k) => k.replace(/^__append_/, ''));
+      const { data: currentRow, error: appendErr } = await supabase
+        .from(leadTable)
+        .select(targetCols.join(','))
+        .eq('id', leadId)
+        .maybeSingle();
+      if (appendErr) {
+        console.warn(`[dc-post-call-analysis] append precheck failed (${appendErr.message}) — writing new segments without concat`);
+      }
+      for (const k of appendKeys) {
+        const col = k.replace(/^__append_/, '');
+        const segment = String(update[k] ?? '').trim();
+        delete (update as Record<string, any>)[k];
+        if (!segment) continue;
+        const existing = currentRow ? (currentRow as Record<string, any>)[col] : null;
+        (update as Record<string, any>)[col] = existing && String(existing).trim()
+          ? `${existing}\n${segment}`
+          : segment;
+        appendedFields.push(col);
+      }
+    }
+
 
     if (!isDryRun) {
       const { error: updateErr } = await supabase.from(leadTable).update(update).eq('id', leadId);
