@@ -34787,6 +34787,9 @@ export type Database = {
           city: string | null
           commission_rate: number | null
           company_name: string
+          compliance_hold: boolean
+          compliance_hold_at: string | null
+          compliance_hold_reason: string | null
           contact_name: string | null
           contract_status: string | null
           created_at: string
@@ -34816,6 +34819,9 @@ export type Database = {
           city?: string | null
           commission_rate?: number | null
           company_name: string
+          compliance_hold?: boolean
+          compliance_hold_at?: string | null
+          compliance_hold_reason?: string | null
           contact_name?: string | null
           contract_status?: string | null
           created_at?: string
@@ -34845,6 +34851,9 @@ export type Database = {
           city?: string | null
           commission_rate?: number | null
           company_name?: string
+          compliance_hold?: boolean
+          compliance_hold_at?: string | null
+          compliance_hold_reason?: string | null
           contact_name?: string | null
           contract_status?: string | null
           created_at?: string
