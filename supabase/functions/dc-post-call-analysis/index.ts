@@ -614,10 +614,28 @@ serve(async (req) => {
     if (!match) throw new Error('No JSON in Claude response');
     const analysis = JSON.parse(match[0]);
 
+    // Inject cohort into analysis so applyUpdate can branch (gasmask).
+    if (cohort) (analysis as Record<string, any>)._cohort = cohort;
+
     const update = config.applyUpdate(analysis);
     const postProcessPayload: PostProcessPayload = config.buildPostProcess
       ? config.buildPostProcess(leadId, analysis)
       : null;
+
+    // BRANDARO handler flags:
+    //   __increment_total_dc_calls → read current total_dc_calls, COALESCE(_,0)+1
+    //   dc_call_id ← body.call_id (webhook-injected, not from analysis)
+    if (update.__increment_total_dc_calls) {
+      delete update.__increment_total_dc_calls;
+      const { data: curRow } = await supabase
+        .from(leadTable)
+        .select('total_dc_calls')
+        .eq('id', leadId)
+        .maybeSingle();
+      const current = Number((curRow as any)?.total_dc_calls ?? 0);
+      update.total_dc_calls = (isNaN(current) ? 0 : current) + 1;
+      if (callId) update.dc_call_id = callId;
+    }
 
     // Enforce nullOnlyFields: never overwrite an existing non-null row value.
     // Pulls the candidate columns from the live row and strips conflicting
