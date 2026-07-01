@@ -400,7 +400,34 @@ ${transcript}`
       }
 
       if (sourceHub && leadId) {
-        const rawDisposition = (payload.disposition || payload.status || '').toLowerCase();
+        // --- Fix C: Bland analysis_schema semantic override (TT-only) ---
+        // payload.analysis is populated by Bland's LLM post-call analysis when
+        // the dispatch side registered an analysis_schema (see tt-trigger).
+        // For the top_tier branch, semantic signals win over payload.disposition
+        // / payload.status. Other hubs are unaffected — the override block is
+        // gated on sourceHub === 'top_tier' | 'tt'.
+        const blandAnalysis = (payload.analysis || null) as Record<string, unknown> | null;
+        let semanticDisposition: string | null = null;
+        let analysisFlagsExistingPartner = false;
+
+        if ((sourceHub === 'top_tier' || sourceHub === 'tt') && blandAnalysis) {
+          if (blandAnalysis.opted_out === true) {
+            semanticDisposition = 'dnc';
+          } else if (blandAnalysis.already_partner === true) {
+            // 'existing_partner' is a stage value, not a canonical disposition —
+            // route through a flag that mirrors transcriptFlagsExistingPartner.
+            analysisFlagsExistingPartner = true;
+          } else if (blandAnalysis.interested === true) {
+            semanticDisposition = 'interested';
+          } else if (blandAnalysis.callback_requested === true) {
+            semanticDisposition = 'callback';
+          } else if (blandAnalysis.wrong_vertical === true) {
+            semanticDisposition = 'wrong_number';
+          }
+        }
+
+        const rawDisposition = semanticDisposition
+          || (payload.disposition || payload.status || '').toLowerCase();
         // Canonical disposition code (see public.dc_disposition_codes).
         // Unknown values fall back to 'called' (logged inside canonicalizeDisposition).
         const canonical = canonicalizeDisposition(rawDisposition);
@@ -659,8 +686,22 @@ ${transcript}`
           if (transcriptFlagsDnc) newStage = 'dnc';
 
           // Existing-partner detection — overrides only if newStage non-terminal.
-          if (transcriptFlagsExistingPartner && newStage !== 'dnc') {
+          // Signals: transcript regex OR Bland analysis.already_partner === true.
+          if ((transcriptFlagsExistingPartner || analysisFlagsExistingPartner) && newStage !== 'dnc') {
             newStage = 'existing_partner';
+          }
+
+          // --- Fix C: email capture from Bland analysis ---
+          // Only writes when disposition resolved to 'interested' AND the
+          // partner row currently has no email. Never overwrites.
+          if (
+            canonical === 'interested'
+            && blandAnalysis
+            && typeof blandAnalysis.email_captured === 'string'
+            && blandAnalysis.email_captured.includes('@')
+            && !prevTt?.email
+          ) {
+            dispUpdate.email = (blandAnalysis.email_captured as string).trim();
           }
 
           const { error: dispUpdateErr } = await supabase

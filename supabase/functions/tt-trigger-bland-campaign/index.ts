@@ -314,6 +314,36 @@ serve(async (req) => {
           contact_name: l.contact_name || "there",
           city: l.city || "",
         },
+        // --- Fix C: Bland analysis_schema. Bland's LLM post-call analysis
+        // fills these fields into payload.analysis on the webhook. The
+        // dc-bland-webhook top_tier branch uses them (with fallback to
+        // payload.disposition / payload.status) to derive canonical.
+        analysis_schema: {
+          interested: {
+            type: "boolean",
+            description: "True if the contact expressed genuine interest in joining the TopTier partner network, agreed to receive info, or agreed to vetting outreach",
+          },
+          email_captured: {
+            type: "string",
+            description: "Email address provided by the contact during the call, or null if none",
+          },
+          opted_out: {
+            type: "boolean",
+            description: "True if the contact asked to be removed from contact lists or expressed clear refusal of further contact",
+          },
+          callback_requested: {
+            type: "boolean",
+            description: "True if the contact asked to be called back at a later time",
+          },
+          wrong_vertical: {
+            type: "boolean",
+            description: "True if the contact's actual business does not match the expected TopTier partner category",
+          },
+          already_partner: {
+            type: "boolean",
+            description: "True if the contact indicated they are already working with TopTier",
+          },
+        },
         webhook: webhookUrl,
       };
 
