@@ -120401,14 +120401,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -120474,6 +120474,29 @@ export type Database = {
           jobname?: string | null
           last_run?: never
           schedule?: string | null
+        }
+        Relationships: []
+      }
+      dc_unified_leads: {
+        Row: {
+          business_unit_key: string | null
+          call_attempts: number | null
+          city: string | null
+          compliance_hold: boolean | null
+          contact_name: string | null
+          created_at: string | null
+          email: string | null
+          last_contacted_at: string | null
+          last_disposition: string | null
+          lead_id: string | null
+          lead_name: string | null
+          lifecycle_stage: string | null
+          notes: string | null
+          phone: string | null
+          phone_invalid: boolean | null
+          source_table: string | null
+          state: string | null
+          updated_at: string | null
         }
         Relationships: []
       }
