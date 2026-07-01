@@ -1112,7 +1112,7 @@ ${transcript}`
 
           const { data: prevBr, error: prevBrErr } = await supabase
             .from('brandaro_qualified_leads')
-            .select('lead_status, call_notes, total_dc_calls, phone')
+            .select('lead_status, call_notes, total_dc_calls, phone_number')
             .eq('id', leadId)
             .maybeSingle();
           if (prevBrErr) {
