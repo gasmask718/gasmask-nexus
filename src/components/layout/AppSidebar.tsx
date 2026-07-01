@@ -477,11 +477,16 @@ export default function AppSidebar() {
               </div>
               {renderSection('dynasty-connect', 'Dynasty Connect Hub', '📞', [
                 { path: '/dynasty-connect', label: 'Command Center', emoji: '🎯' },
+                { path: '/dynasty-connect/leads', label: 'Lead Inbox', emoji: '📥' },
                 { path: '/dynasty-connect/live', label: 'Live Calls', emoji: '📡' },
                 { path: '/dynasty-connect/campaigns', label: 'Campaigns', emoji: '📋' },
                 { path: '/dynasty-connect/campaigns/builder', label: 'Campaign Builder', emoji: '⚡' },
                 { path: '/dynasty-connect/agents', label: 'AI Agents', emoji: '🤖' },
                 { path: '/dynasty-connect/intelligence', label: 'Call Intelligence', emoji: '🧠' },
+                { path: '/dynasty-connect/recordings', label: '— Recordings', emoji: '🎧' },
+                { path: '/dynasty-connect/dispositions', label: '— Dispositions', emoji: '🏷️' },
+                { path: '/dynasty-connect/dnc', label: '— DNC Management', emoji: '🚫' },
+                { path: '/dynasty-connect/compliance', label: '— Compliance Dashboard', emoji: '🛡️' },
                 { path: '/dynasty-connect/pipelines', label: 'Business Pipelines', emoji: '🏢' },
                 { path: '/dynasty-connect/infrastructure', label: 'Infrastructure', emoji: '⚙️' },
               ], "bg-gradient-to-r from-orange-500/20 to-amber-500/10 text-orange-300 hover:from-orange-500/30")}
