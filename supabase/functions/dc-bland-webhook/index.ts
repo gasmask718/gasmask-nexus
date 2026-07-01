@@ -775,11 +775,21 @@ ${transcript}`
                 }, { onConflict: 'phone_number' });
               } catch (dncErr) {
                 console.error('[dc-bland-webhook:top_tier dnc upsert failed]', dncErr);
+              }
+            }
+          }
+
+          // Post-call analysis ONLY on interested (per disposition contract).
+          if (canonical === 'interested' && callTranscript) {
+            supabase.functions.invoke('dc-post-call-analysis', {
+              body: { business_unit_key: 'top_tier', lead_id: leadId, transcript: callTranscript, call_id: callId },
+            }).catch((e) => console.error('[dc-post-call-analysis (top_tier) invoke failed]', e));
+          }
         } else if (sourceHub === 'dynasty_direct') {
           // === Dynasty Direct wholesaler-outreach branch ===
           // Cohort: public.wholesalers. lead_id = wholesalers.id (uuid).
           //
-          // Writeback columns (added in Step 0 migration, verified present):
+          // Writeback columns (verified present via Step 0 migration):
           //   last_contacted_at, last_call_disposition, call_attempts,
           //   inventory_notes, callback_due_at, preferred_contact.
           //
@@ -789,14 +799,13 @@ ${transcript}`
           //   analysis.callback_requested === true. UPDATE 2 failure MUST NOT
           //   roll back UPDATE 1 — they are separate statements.
           //
-          // Semantic disposition override applied above (opted_out / reorder /
-          // pitch_interested / callback_requested / any_product_low_or_out).
+          // Semantic disposition override applied above (opted_out /
+          // reorder_needed / pitch_interested / callback_requested /
+          // any_product_low_or_out).
           //
-          // DNC on canonical='dnc': insert dnc_list with
-          //   source='dc-bland-webhook:dynasty_direct:transcript_optout'.
-          //
-          // AddToDNC tool remains omitted per degraded posture; opt-out capture
-          // is via analysis.opted_out (→ canonical dnc) + transcript regex.
+          // DNC on canonical='dnc' OR transcript regex fallback: insert dnc_list
+          // with source='dc-bland-webhook:dynasty_direct:transcript_optout'.
+          // AddToDNC tool remains omitted per degraded posture.
 
           const { data: prevDd } = await supabase
             .from('wholesalers')
@@ -804,9 +813,8 @@ ${transcript}`
             .eq('id', leadId)
             .maybeSingle();
 
-          const transcriptLower = (callTranscript || '').toLowerCase();
-          const dncRegex = /\b(take me off (your |the )?(list|database)|do not call( me)?|don'?t call( me)?( anymore)?|stop calling( me)?|remove me from (your |the )?list)\b/i;
-          const transcriptFlagsDnc = dncRegex.test(callTranscript || '');
+          const ddDncRegex = /\b(take me off (your |the )?(list|database)|do not call( me)?|don'?t call( me)?( anymore)?|stop calling( me)?|remove me from (your |the )?list)\b/i;
+          const ddTranscriptFlagsDnc = ddDncRegex.test(callTranscript || '');
 
           const inventorySummary = (blandAnalysis?.inventory_summary as string) || null;
           const preferredFollowup = (blandAnalysis?.preferred_followup as string) || null;
@@ -841,7 +849,7 @@ ${transcript}`
               const parsed = new Date(cbRaw);
               if (!isNaN(parsed.getTime())) callbackDueAt = parsed.toISOString();
             }
-            // Fallback: schedule 48h out if analysis flagged callback but no time parsed.
+            // Fallback: 48h out if callback flagged but no parseable time.
             if (!callbackDueAt) {
               callbackDueAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
             }
@@ -855,7 +863,7 @@ ${transcript}`
             }
           }
 
-          // sync log — success only when UPDATE 1 succeeded (UPDATE 2 is best-effort).
+          // Sync log — success only when UPDATE 1 succeeded.
           await logLeadSync(supabase, {
             business_unit_key: 'dynasty_direct',
             lead_id: leadId,
@@ -868,7 +876,7 @@ ${transcript}`
           });
 
           // DNC list insertion: canonical dnc OR transcript regex fallback.
-          if (canonical === 'dnc' || transcriptFlagsDnc) {
+          if (canonical === 'dnc' || ddTranscriptFlagsDnc) {
             const dncPhone = prevDd?.phone || payload.to || null;
             if (dncPhone) {
               const { error: dncErr } = await supabase.from('dnc_list').upsert({
@@ -877,7 +885,7 @@ ${transcript}`
                 source: 'dc-bland-webhook:dynasty_direct:transcript_optout',
                 business: 'dynasty_direct',
                 reason: canonical === 'dnc'
-                  ? 'Opt-out captured via analysis.opted_out'
+                  ? 'Opt-out captured via analysis.opted_out (canonical=dnc)'
                   : 'Opt-out detected in call transcript (AddToDNC tool degraded; transcript fallback)',
                 metadata: {
                   call_id: callId,
@@ -897,16 +905,6 @@ ${transcript}`
             supabase.functions.invoke('dc-post-call-analysis', {
               body: { business_unit_key: 'dynasty_direct', lead_id: leadId, transcript: callTranscript, call_id: callId },
             }).catch((e) => console.error('[dc-post-call-analysis (dynasty_direct) invoke failed]', e));
-          }
-        }
-            }
-          }
-
-          // Post-call analysis ONLY on interested (per disposition contract).
-          if (canonical === 'interested' && callTranscript) {
-            supabase.functions.invoke('dc-post-call-analysis', {
-              body: { business_unit_key: 'top_tier', lead_id: leadId, transcript: callTranscript, call_id: callId },
-            }).catch((e) => console.error('[dc-post-call-analysis (top_tier) invoke failed]', e));
           }
         }
 
