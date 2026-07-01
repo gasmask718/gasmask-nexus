@@ -334,6 +334,7 @@ serve(async (req) => {
           city: l.city || "",
         },
         webhook: webhookUrl,
+        ...(vmTranscript ? { voicemail: { message: vmTranscript, action: 'leave_message' } } : {}),
       };
 
       try {
