@@ -436,6 +436,7 @@ const DCLiveCallsBoard = lazy(() => import('@/pages/dynasty-connect/DCLiveCallsB
 const DCFinishedCallsPage = lazy(() => import('@/pages/dynasty-connect/DCFinishedCallsPage'));
 const DCLeadInbox = lazy(() => import('@/pages/dynasty-connect/DCLeadInbox'));
 const DCRecordingsPage = lazy(() => import('@/pages/dynasty-connect/DCRecordingsPage'));
+const DCDispositionManager = lazy(() => import('@/pages/dynasty-connect/DCDispositionManager'));
 // Pipeline sub-pages
 const SurplusFundsPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/SurplusFundsPipeline'));
 const DCRealEstatePipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/RealEstatePipeline'));
