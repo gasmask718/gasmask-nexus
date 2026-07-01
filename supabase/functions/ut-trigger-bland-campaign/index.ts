@@ -1,3 +1,7 @@
+// LAUNCH UI: no frontend launch surface exists for this trigger yet.
+// VM drop plumbing is ready (fetchVoicemailTranscript wired).
+// When a launch UI is built, pass voicemail_drop_template_id in the invoke
+// body to enable VM drop.
 // UT Partner Outreach trigger — Bland-direct dispatch for Unforgettable Times
 // supplier/vendor cohort. Mirrors re-trigger-bland-campaign structure:
 //   - Per-record dispatch gates (kill-switch, calling-hours, throttle)

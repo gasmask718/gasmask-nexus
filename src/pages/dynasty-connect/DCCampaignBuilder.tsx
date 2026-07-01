@@ -34,7 +34,6 @@ export default function DCCampaignBuilder() {
     maxPerMinute: '5',
     useExistingLeads: true,
     schedule: 'now',
-    voicemailTemplateId: '',
   });
 
   // Load business pipelines
@@ -46,22 +45,6 @@ export default function DCCampaignBuilder() {
         .select('*')
         .order('business_name');
       return data || [];
-    },
-  });
-
-  // Load active voicemail templates for the selected pipeline's business unit.
-  // Pipeline is a business_name string; we match it against dc_voicemail_templates.business_unit_key.
-  const { data: vmTemplates = [] } = useQuery({
-    queryKey: ['dc-vm-templates-for-builder', form.pipeline],
-    enabled: !!form.pipeline,
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('dc_voicemail_templates')
-        .select('id, name, transcript, business_unit_key')
-        .eq('business_unit_key', form.pipeline)
-        .eq('is_active', true)
-        .order('name');
-      return (data || []).filter((t: any) => (t.transcript || '').trim().length > 0);
     },
   });
 
@@ -144,7 +127,6 @@ export default function DCCampaignBuilder() {
         max_calls_per_minute: parseInt(form.maxPerMinute) || 5,
         status: form.schedule === 'now' ? 'active' : 'draft',
         total_targets: form.useExistingLeads ? leadCount : 0,
-        voicemail_drop_template_id: form.voicemailTemplateId || null,
       }).select('id').single();
       if (error) throw error;
 
@@ -256,28 +238,7 @@ export default function DCCampaignBuilder() {
               <Input type="number" value={form.maxPerMinute} onChange={e => setForm(f => ({ ...f, maxPerMinute: e.target.value }))} />
             </div>
           </div>
-          {form.pipeline && (
-            <div>
-              <Label>Voicemail Drop Template</Label>
-              <Select
-                value={form.voicemailTemplateId || 'none'}
-                onValueChange={(v) => setForm((f) => ({ ...f, voicemailTemplateId: v === 'none' ? '' : v }))}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None — use agent script (recommended)</SelectItem>
-                  {vmTemplates.map((t: any) => (
-                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                {vmTemplates.length === 0
-                  ? 'No active templates for this business unit. Create one in AI Agents → Voicemail Templates.'
-                  : 'Played by Bland via TTS when AMD detects an answering machine.'}
-              </p>
-            </div>
-          )}
+
           <Button onClick={() => createCampaign.mutate()} disabled={!form.pipeline || createCampaign.isPending} className="w-full">
             {createCampaign.isPending ? 'Creating…' : `🚀 ${form.schedule === 'now' ? 'Launch Campaign' : 'Save Draft'}`}
           </Button>

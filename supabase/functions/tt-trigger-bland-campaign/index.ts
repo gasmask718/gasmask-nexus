@@ -1,3 +1,7 @@
+// LAUNCH UI: no frontend launch surface exists for this trigger yet.
+// VM drop plumbing is ready (fetchVoicemailTranscript wired).
+// When a launch UI is built, pass voicemail_drop_template_id in the invoke
+// body to enable VM drop.
 // TopTier Partner Acquisition trigger — Bland-direct dispatch for TopTier
 // luxury-experience partner prospects. Modeled on ut-trigger-bland-campaign:
 //   - Per-record dispatch gates (kill-switch via dc_businesses.sync_enabled,

@@ -189,6 +189,9 @@ export default function RELeadPipeline() {
     const insertedIds = (inserted || []).map((l: any) => l.id);
     if (insertedIds.length > 0) {
       try {
+        // VM drop not supported on CSV auto-launch (no pre-launch config surface).
+        // To add VM drop for RE, build a pre-upload config modal and pass
+        // voicemail_drop_template_id in the invoke body.
         const { data: campaignResult, error: campErr } = await supabase.functions.invoke('re-trigger-bland-campaign', {
           body: {
             lead_ids: insertedIds,
