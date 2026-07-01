@@ -167,12 +167,12 @@ function RemoveDncDialog({ row, open, onOpenChange }: {
         sync_source: 'dnc_manual_removal',
         sync_direction: 'out',
         business_unit_key: row.business ?? 'unknown',
-        lead_id: null as unknown as string, // schema allows null per types (lead_id required, but DB may allow) — send empty via null cast
+        lead_id: row.id, // dc_lead_sync_log.lead_id is NOT NULL; use dnc_list.id as the reference
         status_before: 'dnc',
         status_after: 'cleared',
         error_message: `Manual DNC removal by admin — ${reason.trim() || 'no reason provided'}`,
         success: true,
-      } as never);
+      });
       if (logErr) {
         // Deletion succeeded; log failure surfaces as warning.
         return { warning: `Removed, but sync log failed: ${logErr.message}` };
