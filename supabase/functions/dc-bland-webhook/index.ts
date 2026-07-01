@@ -775,7 +775,130 @@ ${transcript}`
                 }, { onConflict: 'phone_number' });
               } catch (dncErr) {
                 console.error('[dc-bland-webhook:top_tier dnc upsert failed]', dncErr);
+        } else if (sourceHub === 'dynasty_direct') {
+          // === Dynasty Direct wholesaler-outreach branch ===
+          // Cohort: public.wholesalers. lead_id = wholesalers.id (uuid).
+          //
+          // Writeback columns (added in Step 0 migration, verified present):
+          //   last_contacted_at, last_call_disposition, call_attempts,
+          //   inventory_notes, callback_due_at, preferred_contact.
+          //
+          // UPDATE 1 (always): last_contacted_at, call_attempts,
+          //   last_call_disposition, inventory_notes, preferred_contact.
+          // UPDATE 2 (conditional): callback_due_at only when
+          //   analysis.callback_requested === true. UPDATE 2 failure MUST NOT
+          //   roll back UPDATE 1 — they are separate statements.
+          //
+          // Semantic disposition override applied above (opted_out / reorder /
+          // pitch_interested / callback_requested / any_product_low_or_out).
+          //
+          // DNC on canonical='dnc': insert dnc_list with
+          //   source='dc-bland-webhook:dynasty_direct:transcript_optout'.
+          //
+          // AddToDNC tool remains omitted per degraded posture; opt-out capture
+          // is via analysis.opted_out (→ canonical dnc) + transcript regex.
+
+          const { data: prevDd } = await supabase
+            .from('wholesalers')
+            .select('call_attempts, preferred_contact, phone, last_call_disposition')
+            .eq('id', leadId)
+            .maybeSingle();
+
+          const transcriptLower = (callTranscript || '').toLowerCase();
+          const dncRegex = /\b(take me off (your |the )?(list|database)|do not call( me)?|don'?t call( me)?( anymore)?|stop calling( me)?|remove me from (your |the )?list)\b/i;
+          const transcriptFlagsDnc = dncRegex.test(callTranscript || '');
+
+          const inventorySummary = (blandAnalysis?.inventory_summary as string) || null;
+          const preferredFollowup = (blandAnalysis?.preferred_followup as string) || null;
+
+          // ---- UPDATE 1: always-runs writeback ----
+          const ddUpdate1: Record<string, unknown> = {
+            last_contacted_at: new Date().toISOString(),
+            call_attempts: (prevDd?.call_attempts || 0) + 1,
+            last_call_disposition: canonical,
+          };
+          if (inventorySummary) ddUpdate1.inventory_notes = inventorySummary;
+          if (preferredFollowup) ddUpdate1.preferred_contact = preferredFollowup;
+
+          const { error: ddUpdate1Err } = await supabase
+            .from('wholesalers')
+            .update(ddUpdate1)
+            .eq('id', leadId);
+
+          if (ddUpdate1Err) {
+            ttWarnings.push(`dd_update1_failed: ${ddUpdate1Err.message}`);
+          }
+
+          // ---- UPDATE 2: conditional callback_due_at ----
+          let ddUpdate2ErrMsg: string | null = null;
+          if (blandAnalysis?.callback_requested === true) {
+            const cbRaw = (payload.variables?.callback_time
+              || (blandAnalysis as any)?.callback_time
+              || payload.callback_time
+              || null) as string | null;
+            let callbackDueAt: string | null = null;
+            if (cbRaw) {
+              const parsed = new Date(cbRaw);
+              if (!isNaN(parsed.getTime())) callbackDueAt = parsed.toISOString();
+            }
+            // Fallback: schedule 48h out if analysis flagged callback but no time parsed.
+            if (!callbackDueAt) {
+              callbackDueAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+            }
+            const { error: ddUpdate2Err } = await supabase
+              .from('wholesalers')
+              .update({ callback_due_at: callbackDueAt })
+              .eq('id', leadId);
+            if (ddUpdate2Err) {
+              ddUpdate2ErrMsg = ddUpdate2Err.message;
+              ttWarnings.push(`dd_update2_callback_failed: ${ddUpdate2Err.message}`);
+            }
+          }
+
+          // sync log — success only when UPDATE 1 succeeded (UPDATE 2 is best-effort).
+          await logLeadSync(supabase, {
+            business_unit_key: 'dynasty_direct',
+            lead_id: leadId,
+            sync_direction: 'out',
+            status_before: prevDd?.last_call_disposition || null,
+            status_after: canonical,
+            sync_source: 'dc-bland-webhook:dynasty_direct',
+            success: !ddUpdate1Err,
+            error_message: ddUpdate1Err?.message || ddUpdate2ErrMsg || null,
+          });
+
+          // DNC list insertion: canonical dnc OR transcript regex fallback.
+          if (canonical === 'dnc' || transcriptFlagsDnc) {
+            const dncPhone = prevDd?.phone || payload.to || null;
+            if (dncPhone) {
+              const { error: dncErr } = await supabase.from('dnc_list').upsert({
+                phone_number: dncPhone,
+                phone_e164: dncPhone,
+                source: 'dc-bland-webhook:dynasty_direct:transcript_optout',
+                business: 'dynasty_direct',
+                reason: canonical === 'dnc'
+                  ? 'Opt-out captured via analysis.opted_out'
+                  : 'Opt-out detected in call transcript (AddToDNC tool degraded; transcript fallback)',
+                metadata: {
+                  call_id: callId,
+                  wholesaler_id: leadId,
+                  matched_at: new Date().toISOString(),
+                  via: canonical === 'dnc' ? 'analysis' : 'transcript_regex',
+                },
+              }, { onConflict: 'phone_number' });
+              if (dncErr) {
+                ttWarnings.push(`dd_dnc_upsert_failed: ${dncErr.message}`);
               }
+            }
+          }
+
+          // Post-call analysis on interested (parity with other branches).
+          if (canonical === 'interested' && callTranscript) {
+            supabase.functions.invoke('dc-post-call-analysis', {
+              body: { business_unit_key: 'dynasty_direct', lead_id: leadId, transcript: callTranscript, call_id: callId },
+            }).catch((e) => console.error('[dc-post-call-analysis (dynasty_direct) invoke failed]', e));
+          }
+        }
             }
           }
 
