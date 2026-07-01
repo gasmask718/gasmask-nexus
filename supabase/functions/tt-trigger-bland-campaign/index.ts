@@ -87,6 +87,20 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
+
+    // --- HARD-REJECT GUARD (Fix A) ---
+    // Full-cohort dispatch without explicit scope is not permitted post-incident.
+    // Require either partner_ids (non-empty) or a numeric limit > 0.
+    const _guardPartnerIds = Array.isArray(body.partner_ids) ? body.partner_ids : undefined;
+    const _guardLimit = typeof body.limit === "number" && body.limit > 0 ? body.limit : undefined;
+    if ((!_guardPartnerIds || _guardPartnerIds.length === 0) && !_guardLimit) {
+      return new Response(JSON.stringify({
+        error: "strict_mode_violation",
+        message: "partner_ids or limit required. Full-cohort dispatch without explicit scope is not permitted.",
+        bland_calls_started: 0,
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const maxAttempts: number = typeof body.max_attempts === "number" && body.max_attempts > 0
       ? body.max_attempts : DEFAULT_MAX_ATTEMPTS;
 
