@@ -1565,6 +1565,7 @@ export default function AppRoutes() {
           <Route path="leads" element={<DCLeadInbox />} />
           <Route path="recordings" element={<DCRecordingsPage />} />
           <Route path="dispositions" element={<DCDispositionManager />} />
+          <Route path="dnc" element={<DCDNCManager />} />
         </Route>
 
         {/* 🎙️ Voice Ops Dashboard */}
