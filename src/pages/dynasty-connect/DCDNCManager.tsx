@@ -75,8 +75,26 @@ function AddDncDialog({ open, onOpenChange, businesses }: {
         }
         throw error;
       }
+      // Fire-and-forget immutable compliance audit event.
+      try {
+        await supabase.functions.invoke('dc-log-compliance-event', {
+          body: {
+            event_type: 'dnc_added',
+            business_unit_key: business,
+            actor: 'manual_admin',
+            event_data: {
+              phone_e164: normalized.value,
+              reason: reason.trim(),
+              source: 'manual_admin',
+            },
+          },
+        });
+      } catch (e) {
+        console.error('[DCDNCManager] compliance log failed (non-fatal)', e);
+      }
       return { alreadyOnList: false };
     },
+
     onSuccess: (res) => {
       if (res.alreadyOnList) {
         toast.message('Already on DNC list', { description: phone });
@@ -173,12 +191,31 @@ function RemoveDncDialog({ row, open, onOpenChange }: {
         error_message: `Manual DNC removal by admin — ${reason.trim() || 'no reason provided'}`,
         success: true,
       });
+
+      // Fire-and-forget immutable compliance audit event.
+      try {
+        await supabase.functions.invoke('dc-log-compliance-event', {
+          body: {
+            event_type: 'dnc_removed',
+            business_unit_key: row.business ?? null,
+            actor: 'manual_admin',
+            event_data: {
+              phone_e164: row.phone_e164 ?? row.phone_number,
+              reason: reason.trim() || null,
+            },
+          },
+        });
+      } catch (e) {
+        console.error('[DCDNCManager] compliance log failed (non-fatal)', e);
+      }
+
       if (logErr) {
         // Deletion succeeded; log failure surfaces as warning.
         return { warning: `Removed, but sync log failed: ${logErr.message}` };
       }
       return { warning: null };
     },
+
     onSuccess: (res) => {
       if (res.warning) toast.warning(res.warning);
       else toast.success('Removed from DNC list');

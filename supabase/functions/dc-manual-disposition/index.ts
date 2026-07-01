@@ -3,6 +3,7 @@
 // records the change in dc_lead_sync_log.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { logComplianceEvent } from "../_shared/dc_sync_log.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -109,6 +110,21 @@ Deno.serve(async (req) => {
         warning: `Sync log insert failed: ${logErr.message}`,
       });
     }
+
+    // 5. Append immutable compliance-audit event (fire-and-forget).
+    await logComplianceEvent(supabase, {
+      event_type: "manual_disposition_override",
+      business_unit_key,
+      lead_id,
+      source_table: mapping.table,
+      actor: "manual_admin",
+      event_data: {
+        old_disposition: status_before,
+        new_disposition,
+        reason,
+      },
+    });
+
 
     return json({
       success: true,
