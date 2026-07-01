@@ -439,6 +439,7 @@ serve(async (req) => {
         agent_name: "TopTier Partner Acquisition (Bland)",
         status: blandSuccessCount > 0 ? "active" : "failed",
         total_leads: leads.length,
+        voicemail_drop_template_id: body.voicemail_drop_template_id || null,
       })
       .select()
       .single();
