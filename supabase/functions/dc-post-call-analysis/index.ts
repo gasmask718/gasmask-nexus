@@ -559,7 +559,26 @@ serve(async (req) => {
     if (!unit?.lead_table_name) {
       throw new Error(`dc_businesses.lead_table_name not set for ${businessUnitKey}`);
     }
-    const leadTable = unit.lead_table_name as string;
+    let leadTable = unit.lead_table_name as string;
+
+    // GASMASK cohort routing: prospect → sales_prospects, reactivation → store_master.
+    // Resolve from body.cohort first (webhook should pass it); fallback to
+    // dc_leads.lead_type lookup by external_ref_id = leadId (best-effort).
+    let cohort: string | undefined = body.cohort;
+    if (businessUnitKey === 'gasmask') {
+      if (!cohort) {
+        const { data: dcLead } = await supabase
+          .from('dc_leads')
+          .select('lead_type')
+          .eq('external_ref_id', String(leadId))
+          .maybeSingle();
+        cohort = (dcLead?.lead_type as string | undefined) || 'prospect';
+      }
+      if (cohort === 'reactivation') leadTable = 'store_master';
+      else leadTable = 'sales_prospects';
+    }
+
+
 
     // If transcript not provided, try pulling from dynasty_ai_calls by call_id
     if (!transcript && callId) {
