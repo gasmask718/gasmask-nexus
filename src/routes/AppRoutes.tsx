@@ -1563,6 +1563,7 @@ export default function AppRoutes() {
           <Route path="finished" element={<DCFinishedCallsPage />} />
           <Route path="leads" element={<DCLeadInbox />} />
           <Route path="recordings" element={<DCRecordingsPage />} />
+          <Route path="dispositions" element={<DCDispositionManager />} />
         </Route>
 
         {/* 🎙️ Voice Ops Dashboard */}
