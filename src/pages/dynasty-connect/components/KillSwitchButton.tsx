@@ -73,7 +73,28 @@ export default function KillSwitchButton({ scope, variant = 'compact' }: Props) 
 
       const { error } = await (supabase as any).from('kill_switch_state').insert(payload);
       if (error) throw error;
+
+      // Fire-and-forget immutable compliance audit event.
+      try {
+        await supabase.functions.invoke('dc-log-compliance-event', {
+          body: {
+            event_type: 'kill_switch_engaged',
+            business_unit_key: scope.kind === 'business_unit' ? scope.businessUnitKey : null,
+            actor: 'manual_admin',
+            event_data: {
+              trigger_reason: reason || 'Manual emergency stop from UI',
+              requires_manual_reset: true,
+              previous_state: 'inactive',
+              scope: scope.kind,
+              ...(scope.kind === 'campaign' ? { campaign_id: scope.campaignId, campaign_label: scope.label } : {}),
+            },
+          },
+        });
+      } catch (e) {
+        console.error('[KillSwitchButton] compliance log failed (non-fatal)', e);
+      }
     },
+
     onSuccess: () => {
       qc.invalidateQueries({ queryKey });
       toast.success(`Kill-switch ENGAGED for ${scope.label}`);
