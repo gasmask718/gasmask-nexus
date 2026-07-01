@@ -75,8 +75,26 @@ function AddDncDialog({ open, onOpenChange, businesses }: {
         }
         throw error;
       }
+      // Fire-and-forget immutable compliance audit event.
+      try {
+        await supabase.functions.invoke('dc-log-compliance-event', {
+          body: {
+            event_type: 'dnc_added',
+            business_unit_key: business,
+            actor: 'manual_admin',
+            event_data: {
+              phone_e164: normalized.value,
+              reason: reason.trim(),
+              source: 'manual_admin',
+            },
+          },
+        });
+      } catch (e) {
+        console.error('[DCDNCManager] compliance log failed (non-fatal)', e);
+      }
       return { alreadyOnList: false };
     },
+
     onSuccess: (res) => {
       if (res.alreadyOnList) {
         toast.message('Already on DNC list', { description: phone });
