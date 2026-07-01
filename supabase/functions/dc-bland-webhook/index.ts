@@ -442,6 +442,44 @@ ${transcript}`
           }
         }
 
+        // --- GASMASK semantic override ---
+        // Prospect/reactivation outreach analysis fields override raw disposition.
+        //   opted_out                              → dnc
+        //   wrong_number                           → wrong_number
+        //   callback_requested                     → callback
+        //   interested OR reorder_needed           → interested
+        if (sourceHub === 'gasmask' && blandAnalysis) {
+          if (blandAnalysis.opted_out === true) {
+            semanticDisposition = 'dnc';
+          } else if (blandAnalysis.wrong_number === true) {
+            semanticDisposition = 'wrong_number';
+          } else if (blandAnalysis.callback_requested === true) {
+            semanticDisposition = 'callback';
+          } else if (blandAnalysis.interested === true || blandAnalysis.reorder_needed === true) {
+            semanticDisposition = 'interested';
+          }
+        }
+
+        // --- BRANDARO semantic override ---
+        // For BRANDARO, semantic override feeds the local brandaroStatus mapping
+        // below (values like 'disqualified' / 'sold' / 'hot_lead' are not shared
+        // canonicals). We still set semanticDisposition for the shared
+        // rawDisposition/canonical path so downstream dc_call_logs.outcome is
+        // sensible, but the brandaro branch computes its own lead_status.
+        if (sourceHub === 'brandaro' && blandAnalysis) {
+          if (blandAnalysis.opted_out === true) {
+            semanticDisposition = 'dnc';
+          } else if (blandAnalysis.wrong_number === true) {
+            semanticDisposition = 'wrong_number';
+          } else if (blandAnalysis.callback_requested === true) {
+            semanticDisposition = 'callback';
+          } else if (blandAnalysis.interested === true) {
+            semanticDisposition = 'interested';
+          } else if (blandAnalysis.interested === false) {
+            semanticDisposition = 'not_interested';
+          }
+        }
+
         const rawDisposition = semanticDisposition
           || (payload.disposition || payload.status || '').toLowerCase();
         // Canonical disposition code (see public.dc_disposition_codes).
@@ -465,10 +503,16 @@ ${transcript}`
             : sourceHub === 're' ? 'real_estate'
             : sourceHub === 'ut' ? 'unforgettable_times'
             : sourceHub;
+          const gmCohort = (payload.request_data?.cohort_type
+            || payload.variables?.cohort_type
+            || 'prospect') as string;
           const sourceTable = branchBusiness === 'top_tier' ? 'crm_partners'
             : branchBusiness === 'surplus_funds' ? 'surplus_funds_leads'
             : branchBusiness === 'real_estate' ? 're_leads'
             : branchBusiness === 'unforgettable_times' ? 'ut_leads'
+            : branchBusiness === 'dynasty_direct' ? 'wholesalers'
+            : branchBusiness === 'gasmask' ? (gmCohort === 'reactivation' ? 'store_master' : 'sales_prospects')
+            : branchBusiness === 'brandaro' ? 'brandaro_qualified_leads'
             : null;
           const { error: callLogUpsertErr } = await supabase
             .from('dc_call_logs')
@@ -905,6 +949,284 @@ ${transcript}`
             supabase.functions.invoke('dc-post-call-analysis', {
               body: { business_unit_key: 'dynasty_direct', lead_id: leadId, transcript: callTranscript, call_id: callId },
             }).catch((e) => console.error('[dc-post-call-analysis (dynasty_direct) invoke failed]', e));
+          }
+        } else if (sourceHub === 'gasmask') {
+          // === GASMASK prospect / reactivation outreach branch ===
+          // Cohort: 'prospect' → public.sales_prospects, 'reactivation' →
+          // public.store_master. lead_id = <table>.id. Cohort is read from
+          // payload.request_data.cohort_type (default 'prospect').
+          //
+          // Writeback columns (verified):
+          //   <both>          gasmask_call_status (CHECK-constrained), notes (TEXT append), updated_at
+          //   store_master    do_not_call (bool), do_not_call_reason (text)
+          //   sales_prospects (no do_not_call column — opt-out expressed via gasmask_call_status='dnc')
+          //
+          // Split UPDATE pattern:
+          //   UPDATE 1 (always): gasmask_call_status, notes append, updated_at
+          //   UPDATE 2 (reactivation + opted_out only): do_not_call flag set
+          //
+          // Semantic override applied above (opted_out / wrong_number /
+          // callback_requested / interested|reorder_needed). Falls through to
+          // payload.disposition/status if analysis absent.
+          //
+          // DNC on opt-out: insert dnc_list source='dc-bland-webhook:gasmask:transcript_optout'.
+          const cohort = (payload.request_data?.cohort_type
+            || payload.variables?.cohort_type
+            || 'prospect') as string;
+          const targetTable = cohort === 'reactivation' ? 'store_master' : 'sales_prospects';
+          const leadIdColumn = 'id';
+
+          const { data: prevGm, error: prevGmErr } = await supabase
+            .from(targetTable)
+            .select('gasmask_call_status, notes, phone')
+            .eq(leadIdColumn, leadId)
+            .maybeSingle();
+
+          if (prevGmErr) {
+            ttWarnings.push(`gasmask_prev_read_failed: ${prevGmErr.message}`);
+          }
+
+          // Map canonical → gasmask_call_status CHECK-allowed values
+          // CHECK: new|queued|called|voicemail|no_answer|callback|interested|booked|not_interested|wrong_number|dnc|cancelled
+          const gmStatusMap: Record<string, string> = {
+            interested: 'interested',
+            not_interested: 'not_interested',
+            dnc: 'dnc',
+            wrong_number: 'wrong_number',
+            callback: 'callback',
+            voicemail: 'voicemail',
+            no_answer: 'no_answer',
+            called: 'called',
+          };
+          const gmStatus = gmStatusMap[canonical] || 'called';
+
+          const noteLine = `[${new Date().toISOString()}] DC call ${callId} → ${gmStatus}${blandAnalysis?.summary ? ` — ${blandAnalysis.summary}` : ''}`;
+          const gmUpdate1: Record<string, unknown> = {
+            gasmask_call_status: gmStatus,
+            notes: prevGm?.notes ? `${prevGm.notes}\n${noteLine}` : noteLine,
+            updated_at: new Date().toISOString(),
+          };
+          const { error: gmUpdate1Err } = await supabase
+            .from(targetTable)
+            .update(gmUpdate1)
+            .eq(leadIdColumn, leadId);
+          if (gmUpdate1Err) {
+            ttWarnings.push(`gm_update1_failed: ${gmUpdate1Err.message}`);
+          }
+
+          // UPDATE 2: reactivation cohort + opted_out only
+          let gmUpdate2ErrMsg: string | null = null;
+          if (cohort === 'reactivation' && blandAnalysis?.opted_out === true) {
+            const optOutReason = (blandAnalysis?.opt_out_reason as string)
+              || `Opted out via Dynasty Connect call ${callId}`;
+            const { error: gmUpdate2Err } = await supabase
+              .from('store_master')
+              .update({
+                do_not_call: true,
+                do_not_call_reason: optOutReason,
+              })
+              .eq(leadIdColumn, leadId);
+            if (gmUpdate2Err) {
+              gmUpdate2ErrMsg = gmUpdate2Err.message;
+              ttWarnings.push(`gm_update2_dnc_failed: ${gmUpdate2Err.message}`);
+            }
+          }
+
+          await logLeadSync(supabase, {
+            business_unit_key: 'gasmask',
+            lead_id: leadId,
+            sync_direction: 'out',
+            status_before: prevGm?.gasmask_call_status || null,
+            status_after: gmStatus,
+            sync_source: 'dc-bland-webhook:gasmask',
+            success: !gmUpdate1Err,
+            error_message: gmUpdate1Err?.message || gmUpdate2ErrMsg || null,
+          });
+
+          // DNC list insertion on opt-out (transcript_optout parity with other branches)
+          if (gmStatus === 'dnc' || blandAnalysis?.opted_out === true) {
+            const dncPhone = prevGm?.phone || payload.to || null;
+            if (dncPhone) {
+              const { error: dncErr } = await supabase.from('dnc_list').upsert({
+                phone_number: dncPhone,
+                phone_e164: dncPhone,
+                source: 'dc-bland-webhook:gasmask:transcript_optout',
+                business: 'gasmask',
+                reason: (blandAnalysis?.opt_out_reason as string)
+                  || `Opt-out captured on Dynasty Connect call ${callId}`,
+                metadata: {
+                  call_id: callId,
+                  cohort,
+                  target_table: targetTable,
+                  lead_id: leadId,
+                  matched_at: new Date().toISOString(),
+                },
+              }, { onConflict: 'phone_number' });
+              if (dncErr) ttWarnings.push(`gm_dnc_upsert_failed: ${dncErr.message}`);
+            }
+          }
+
+          // Post-call analysis on interested with transcript (parity)
+          if (gmStatus === 'interested' && callTranscript) {
+            supabase.functions.invoke('dc-post-call-analysis', {
+              body: {
+                business_unit_key: 'gasmask',
+                lead_id: leadId,
+                transcript: callTranscript,
+                call_id: callId,
+                _cohort: cohort,
+              },
+            }).catch((e) => console.error('[dc-post-call-analysis (gasmask) invoke failed]', e));
+          }
+        } else if (sourceHub === 'brandaro') {
+          // === BRANDARO qualified-leads outreach branch ===
+          // Cohort: public.brandaro_qualified_leads. lead_id = row.id (uuid).
+          //
+          // Writeback columns (verified):
+          //   lead_status (CHECK: new|queued|calling|no_answer|voicemail|
+          //     wrong_number|not_interested|callback|send_info|interested|
+          //     hot_lead|sold|disqualified),
+          //   call_notes (TEXT append), next_callback_at, last_dc_call_at,
+          //   dc_call_id, total_dc_calls, updated_at.
+          //
+          // Local lead_status mapping (does not use shared canonical for
+          // hot_lead/sold/disqualified — those are brandaro-specific):
+          //   analysis.opted_out                                   → disqualified
+          //   analysis.wrong_number                                → wrong_number
+          //   analysis.proposal_action_on_call === 'accepted'      → sold
+          //   analysis.callback_requested                          → callback
+          //   analysis.interested === true AND
+          //     (budget_confirmed OR is_decision_maker)            → hot_lead
+          //   analysis.interested === true                         → interested
+          //   analysis.interested === false                        → not_interested
+          //   else                                                 → fall through to canonical
+          //
+          // Split UPDATE pattern:
+          //   UPDATE 1 (always): lead_status, call_notes append, last_dc_call_at,
+          //                      dc_call_id, total_dc_calls++, updated_at
+          //   UPDATE 2 (canonical=callback + parseable time): next_callback_at
+          //
+          // demo_status / proposal_status are NEVER written from this branch —
+          // dc-post-call-analysis owns those columns (and only when the action
+          // actually occurred on the call).
+
+          const { data: prevBr, error: prevBrErr } = await supabase
+            .from('brandaro_qualified_leads')
+            .select('lead_status, call_notes, total_dc_calls, phone_number')
+            .eq('id', leadId)
+            .maybeSingle();
+          if (prevBrErr) {
+            ttWarnings.push(`brandaro_prev_read_failed: ${prevBrErr.message}`);
+          }
+
+          // Local status derivation
+          const brAllowed = new Set([
+            'new', 'queued', 'calling', 'no_answer', 'voicemail', 'wrong_number',
+            'not_interested', 'callback', 'send_info', 'interested', 'hot_lead',
+            'sold', 'disqualified',
+          ]);
+          let brStatus: string;
+          if (blandAnalysis?.opted_out === true) {
+            brStatus = 'disqualified';
+          } else if (blandAnalysis?.wrong_number === true) {
+            brStatus = 'wrong_number';
+          } else if ((blandAnalysis as any)?.proposal_action_on_call === 'accepted') {
+            brStatus = 'sold';
+          } else if (blandAnalysis?.callback_requested === true) {
+            brStatus = 'callback';
+          } else if (blandAnalysis?.interested === true
+            && ((blandAnalysis as any).budget_confirmed === true
+              || (blandAnalysis as any).is_decision_maker === true)) {
+            brStatus = 'hot_lead';
+          } else if (blandAnalysis?.interested === true) {
+            brStatus = 'interested';
+          } else if (blandAnalysis?.interested === false) {
+            brStatus = 'not_interested';
+          } else {
+            brStatus = brAllowed.has(canonical) ? canonical : 'calling';
+          }
+
+          const brNoteLine = `[${new Date().toISOString()}] DC call ${callId} → ${brStatus}${blandAnalysis?.summary ? ` — ${blandAnalysis.summary}` : ''}`;
+          const brUpdate1: Record<string, unknown> = {
+            lead_status: brStatus,
+            call_notes: prevBr?.call_notes ? `${prevBr.call_notes}\n${brNoteLine}` : brNoteLine,
+            last_dc_call_at: new Date().toISOString(),
+            dc_call_id: callId,
+            total_dc_calls: (prevBr?.total_dc_calls || 0) + 1,
+            updated_at: new Date().toISOString(),
+          };
+          const { error: brUpdate1Err } = await supabase
+            .from('brandaro_qualified_leads')
+            .update(brUpdate1)
+            .eq('id', leadId);
+          if (brUpdate1Err) {
+            ttWarnings.push(`brandaro_update1_failed: ${brUpdate1Err.message}`);
+          }
+
+          // UPDATE 2: next_callback_at only when canonical/status=callback + parseable time
+          let brUpdate2ErrMsg: string | null = null;
+          if (brStatus === 'callback') {
+            const cbRaw = (payload.variables?.callback_time
+              || (blandAnalysis as any)?.callback_time
+              || payload.callback_time
+              || null) as string | null;
+            if (cbRaw) {
+              const parsed = new Date(cbRaw);
+              if (!isNaN(parsed.getTime())) {
+                const { error: brUpdate2Err } = await supabase
+                  .from('brandaro_qualified_leads')
+                  .update({ next_callback_at: parsed.toISOString() })
+                  .eq('id', leadId);
+                if (brUpdate2Err) {
+                  brUpdate2ErrMsg = brUpdate2Err.message;
+                  ttWarnings.push(`brandaro_update2_callback_failed: ${brUpdate2Err.message}`);
+                }
+              }
+            }
+          }
+
+          await logLeadSync(supabase, {
+            business_unit_key: 'brandaro',
+            lead_id: leadId,
+            sync_direction: 'out',
+            status_before: prevBr?.lead_status || null,
+            status_after: brStatus,
+            sync_source: 'dc-bland-webhook:brandaro',
+            success: !brUpdate1Err,
+            error_message: brUpdate1Err?.message || brUpdate2ErrMsg || null,
+          });
+
+          // DNC on opt-out
+          if (blandAnalysis?.opted_out === true || brStatus === 'disqualified') {
+            const dncPhone = prevBr?.phone_number || payload.to || null;
+            if (dncPhone) {
+              const { error: dncErr } = await supabase.from('dnc_list').upsert({
+                phone_number: dncPhone,
+                phone_e164: dncPhone,
+                source: 'dc-bland-webhook:brandaro:transcript_optout',
+                business: 'brandaro',
+                reason: (blandAnalysis?.opt_out_reason as string)
+                  || `Opt-out captured on Dynasty Connect call ${callId}`,
+                metadata: {
+                  call_id: callId,
+                  brandaro_lead_id: leadId,
+                  matched_at: new Date().toISOString(),
+                },
+              }, { onConflict: 'phone_number' });
+              if (dncErr) ttWarnings.push(`brandaro_dnc_upsert_failed: ${dncErr.message}`);
+            }
+          }
+
+          // Post-call analysis when interested / hot_lead with transcript
+          if ((brStatus === 'interested' || brStatus === 'hot_lead') && callTranscript) {
+            supabase.functions.invoke('dc-post-call-analysis', {
+              body: {
+                business_unit_key: 'brandaro',
+                lead_id: leadId,
+                transcript: callTranscript,
+                call_id: callId,
+              },
+            }).catch((e) => console.error('[dc-post-call-analysis (brandaro) invoke failed]', e));
           }
         }
 
