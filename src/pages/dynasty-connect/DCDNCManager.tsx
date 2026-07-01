@@ -106,7 +106,7 @@ function AddDncDialog({ open, onOpenChange, businesses }: {
                 <span className="text-green-600 dark:text-green-400">Normalized: <span className="font-mono">{normalized.value}</span></span>
               )}
               {phone && !normalized.ok && (
-                <span className="text-red-600 dark:text-red-400">{normalized.error}</span>
+                <span className="text-red-600 dark:text-red-400">{(normalized as { ok: false; error: string }).error}</span>
               )}
             </div>
           </div>
