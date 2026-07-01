@@ -36654,6 +36654,56 @@ export type Database = {
         }
         Relationships: []
       }
+      dc_compliance_events: {
+        Row: {
+          actor: string
+          actor_user_id: string | null
+          business_unit_key: string | null
+          call_id: string | null
+          created_at: string
+          event_data: Json
+          event_type: string
+          id: string
+          lead_id: string | null
+          occurred_at: string
+          source_table: string | null
+        }
+        Insert: {
+          actor?: string
+          actor_user_id?: string | null
+          business_unit_key?: string | null
+          call_id?: string | null
+          created_at?: string
+          event_data?: Json
+          event_type: string
+          id?: string
+          lead_id?: string | null
+          occurred_at?: string
+          source_table?: string | null
+        }
+        Update: {
+          actor?: string
+          actor_user_id?: string | null
+          business_unit_key?: string | null
+          call_id?: string | null
+          created_at?: string
+          event_data?: Json
+          event_type?: string
+          id?: string
+          lead_id?: string | null
+          occurred_at?: string
+          source_table?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dc_compliance_events_business_unit_key_fkey"
+            columns: ["business_unit_key"]
+            isOneToOne: false
+            referencedRelation: "dc_businesses"
+            referencedColumns: ["business_key"]
+          },
+        ]
+      }
       dc_disposition_codes: {
         Row: {
           category: string
