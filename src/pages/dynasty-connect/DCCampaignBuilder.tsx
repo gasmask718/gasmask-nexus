@@ -135,7 +135,7 @@ export default function DCCampaignBuilder() {
   const createCampaign = useMutation({
     mutationFn: async () => {
       // Create campaign
-      const { data: campaign, error } = await supabase.from('ai_call_campaigns').insert({
+      const { data: campaign, error } = await (supabase as any).from('ai_call_campaigns').insert({
         name: form.name || `${form.pipeline} — ${new Date().toLocaleDateString()}`,
         description: form.description,
         target_segment: form.pipeline,
@@ -144,6 +144,7 @@ export default function DCCampaignBuilder() {
         max_calls_per_minute: parseInt(form.maxPerMinute) || 5,
         status: form.schedule === 'now' ? 'active' : 'draft',
         total_targets: form.useExistingLeads ? leadCount : 0,
+        voicemail_drop_template_id: form.voicemailTemplateId || null,
       }).select('id').single();
       if (error) throw error;
 
