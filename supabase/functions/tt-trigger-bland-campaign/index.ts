@@ -288,12 +288,22 @@ serve(async (req) => {
             tt_last_disposition: "dnc",
           })
           .eq("id", l.id);
-        await logLeadSync(supabase, {
-          business_unit_key: BUSINESS_UNIT_KEY, lead_id: l.id,
-          sync_direction: "in",
-          status_before: l.tt_acquisition_stage || null, status_after: "dnc",
-          sync_source: "tt-trigger-bland-campaign:dnc-block",
-          success: !dncMarkErr, error_message: dncMarkErr?.message || null,
+        await logGateBlock(supabase, {
+          businessUnitKey: BUSINESS_UNIT_KEY, leadId: l.id,
+          triggerName: "tt-trigger-bland-campaign",
+          gateCode: "dnc_list_block",
+          gateReason: `Phone on DNC list (${dncCheck.reason || "dnc_list"})`,
+          statusBefore: l.tt_acquisition_stage || null,
+        });
+        if (dncMarkErr) {
+          await logLeadSync(supabase, {
+            business_unit_key: BUSINESS_UNIT_KEY, lead_id: l.id,
+            sync_direction: "in",
+            status_before: l.tt_acquisition_stage || null, status_after: "dnc",
+            sync_source: "tt-trigger-bland-campaign:dnc-mark-failed",
+            success: false, error_message: dncMarkErr.message,
+          });
+        }
         });
         continue;
       }
