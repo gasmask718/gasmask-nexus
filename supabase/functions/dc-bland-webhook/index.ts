@@ -1198,7 +1198,7 @@ ${transcript}`
 
           // DNC on opt-out
           if (blandAnalysis?.opted_out === true || brStatus === 'disqualified') {
-            const dncPhone = prevBr?.phone || payload.to || null;
+            const dncPhone = prevBr?.phone_number || payload.to || null;
             if (dncPhone) {
               const { error: dncErr } = await supabase.from('dnc_list').upsert({
                 phone_number: dncPhone,
