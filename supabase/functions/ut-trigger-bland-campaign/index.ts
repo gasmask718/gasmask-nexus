@@ -214,6 +214,9 @@ serve(async (req) => {
     const gateBlocks: Array<{ lead_id: string; code: string; reason: string; retryable: boolean }> = [];
     let killSwitchHit = false;
 
+    // Voicemail drop template (optional). Fire-and-forget; falls back silently.
+    const vmTranscript = await fetchVoicemailTranscript(supabase, body.voicemail_drop_template_id);
+
     for (let i = 0; i < leads.length; i++) {
       const l: any = leads[i];
 
