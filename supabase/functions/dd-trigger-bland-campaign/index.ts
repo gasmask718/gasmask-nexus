@@ -28,6 +28,7 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { logLeadSync, logLeadSyncBatch, logGateBlock } from "../_shared/dc_sync_log.ts";
 import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 import { isOnDNC, normalizeE164 } from "../_shared/dnc.ts";
+import { fetchVoicemailTranscript } from "../_shared/voicemail_template.ts";
 
 const BUSINESS_UNIT_KEY = "dynasty_direct";
 const BUSINESS_NAME = "Dynasty Direct";
@@ -197,6 +198,10 @@ serve(async (req) => {
     const blandCallIds: string[] = [];
     const gateBlocks: Array<{ lead_id: string; code: string; reason: string; retryable: boolean }> = [];
     let killSwitchHit = false;
+
+    // Voicemail drop template (optional). No-op unless caller passed a template id
+    // AND the template has a non-empty transcript. Fetch failures fall back silently.
+    const vmTranscript = await fetchVoicemailTranscript(supabase, body.voicemail_drop_template_id);
 
     for (let i = 0; i < leads.length; i++) {
       const l: any = leads[i];
@@ -379,6 +384,7 @@ serve(async (req) => {
           },
         },
         webhook: webhookUrl,
+        ...(vmTranscript ? { voicemail: { message: vmTranscript, action: 'leave_message' } } : {}),
       };
 
       try {
@@ -448,6 +454,7 @@ serve(async (req) => {
         agent_name: AGENT_DISPLAY_NAME,
         status: blandSuccessCount > 0 ? "active" : "failed",
         total_leads: leads.length,
+        voicemail_drop_template_id: body.voicemail_drop_template_id || null,
       })
       .select()
       .single();

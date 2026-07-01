@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { logLeadSync, logLeadSyncBatch, logGateBlock } from "../_shared/dc_sync_log.ts";
 import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
+import { fetchVoicemailTranscript } from "../_shared/voicemail_template.ts";
 
 const SF_OUTREACH_PROMPT = `You are calling on behalf of Dynasty Recovery Group. You are a professional, friendly representative helping people recover unclaimed money owed to them.
 
@@ -99,6 +100,9 @@ serve(async (req) => {
     const gateBlocks: Array<{ lead_id: string; code: string; reason: string; retryable: boolean }> = [];
     let killSwitchHit = false;
 
+    // Voicemail drop template (optional). Fire-and-forget; falls back silently.
+    const vmTranscript = await fetchVoicemailTranscript(supabase, body.voicemail_drop_template_id);
+
     for (const l of leads as any[]) {
       // === Per-lead dispatch gate (kill-switch, calling hours, throttle) ===
       // Campaign row isn't created until after the loop, so we scope on
@@ -185,6 +189,7 @@ serve(async (req) => {
           state: l.state,
         },
         webhook: `${SUPABASE_URL}/functions/v1/dc-bland-webhook`,
+        ...(vmTranscript ? { voicemail: { message: vmTranscript, action: 'leave_message' } } : {}),
       };
 
       try {
@@ -228,6 +233,7 @@ serve(async (req) => {
         status: blandError ? 'failed' : 'active',
         total_leads: leads.length,
         agent_name: 'SF Outreach',
+        voicemail_drop_template_id: body.voicemail_drop_template_id || null,
       })
       .select()
       .single();

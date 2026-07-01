@@ -33,6 +33,7 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { logLeadSync, logLeadSyncBatch, logGateBlock } from "../_shared/dc_sync_log.ts";
 import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 import { isOnDNC } from "../_shared/dnc.ts";
+import { fetchVoicemailTranscript } from "../_shared/voicemail_template.ts";
 
 const BUSINESS_UNIT_KEY = "top_tier";
 const BUSINESS_NAME = "TopTier Experience";
@@ -240,6 +241,9 @@ serve(async (req) => {
     const gateBlocks: Array<{ lead_id: string; code: string; reason: string; retryable: boolean }> = [];
     let killSwitchHit = false;
 
+    // Voicemail drop template (optional). Fire-and-forget; falls back silently.
+    const vmTranscript = await fetchVoicemailTranscript(supabase, body.voicemail_drop_template_id);
+
     for (let i = 0; i < leads.length; i++) {
       const l: any = leads[i];
 
@@ -360,6 +364,7 @@ serve(async (req) => {
           },
         },
         webhook: webhookUrl,
+        ...(vmTranscript ? { voicemail: { message: vmTranscript, action: 'leave_message' } } : {}),
       };
 
       try {
@@ -434,6 +439,7 @@ serve(async (req) => {
         agent_name: "TopTier Partner Acquisition (Bland)",
         status: blandSuccessCount > 0 ? "active" : "failed",
         total_leads: leads.length,
+        voicemail_drop_template_id: body.voicemail_drop_template_id || null,
       })
       .select()
       .single();
