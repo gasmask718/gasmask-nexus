@@ -36604,6 +36604,7 @@ export type Database = {
           status: string | null
           total_leads: number | null
           updated_at: string | null
+          voicemail_drop_template_id: string | null
           voicemails_skipped: number | null
         }
         Insert: {
@@ -36627,6 +36628,7 @@ export type Database = {
           status?: string | null
           total_leads?: number | null
           updated_at?: string | null
+          voicemail_drop_template_id?: string | null
           voicemails_skipped?: number | null
         }
         Update: {
@@ -36650,9 +36652,18 @@ export type Database = {
           status?: string | null
           total_leads?: number | null
           updated_at?: string | null
+          voicemail_drop_template_id?: string | null
           voicemails_skipped?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dc_campaigns_voicemail_drop_template_id_fkey"
+            columns: ["voicemail_drop_template_id"]
+            isOneToOne: false
+            referencedRelation: "dc_voicemail_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dc_compliance_events: {
         Row: {
@@ -36936,6 +36947,59 @@ export type Database = {
           webhook_url?: string | null
         }
         Relationships: []
+      }
+      dc_voicemail_templates: {
+        Row: {
+          audio_url: string
+          business_unit_key: string
+          created_at: string
+          created_by: string | null
+          duration_seconds: number | null
+          id: string
+          is_active: boolean
+          language: string
+          name: string
+          transcript: string | null
+          updated_at: string
+          voice_talent: string | null
+        }
+        Insert: {
+          audio_url: string
+          business_unit_key: string
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_active?: boolean
+          language?: string
+          name: string
+          transcript?: string | null
+          updated_at?: string
+          voice_talent?: string | null
+        }
+        Update: {
+          audio_url?: string
+          business_unit_key?: string
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_active?: boolean
+          language?: string
+          name?: string
+          transcript?: string | null
+          updated_at?: string
+          voice_talent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dc_voicemail_templates_business_unit_key_fkey"
+            columns: ["business_unit_key"]
+            isOneToOne: false
+            referencedRelation: "dc_businesses"
+            referencedColumns: ["business_key"]
+          },
+        ]
       }
       dc_webhook_assertion_log: {
         Row: {
