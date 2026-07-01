@@ -294,6 +294,8 @@ serve(async (req) => {
       const payload = {
         phone_number: l.phone,
         agent_id: BLAND_AGENT_ID,
+        task: agentTask,
+        first_sentence: agentFirstSentence,
         voice: "June",
         language: "en-US",
         max_duration: 12,
