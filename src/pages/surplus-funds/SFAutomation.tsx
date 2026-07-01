@@ -202,6 +202,26 @@ export default function SFAutomation() {
             </div>
           </div>
 
+          <div>
+            <Label>Voicemail Drop Template <span className="text-muted-foreground text-xs">(optional)</span></Label>
+            <Select value={voicemailTemplateId || 'none'} onValueChange={(v) => setVoicemailTemplateId(v === 'none' ? '' : v)}>
+              <SelectTrigger>
+                <SelectValue placeholder={vmTemplates.length === 0 ? 'No templates available' : 'None — agent handles VM'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None — let agent handle voicemail</SelectItem>
+                {vmTemplates.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {vmTemplates.length === 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Create a template with a transcript under AI Agents → Voicemail Templates to enable drops.
+              </p>
+            )}
+          </div>
+
           {availableLeads > 0 ? (
             <div className="text-sm text-emerald-400">📋 {availableLeads} leads ready to call in {state}</div>
           ) : (
