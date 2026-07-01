@@ -189,6 +189,7 @@ serve(async (req) => {
           state: l.state,
         },
         webhook: `${SUPABASE_URL}/functions/v1/dc-bland-webhook`,
+        ...(vmTranscript ? { voicemail: { message: vmTranscript, action: 'leave_message' } } : {}),
       };
 
       try {
