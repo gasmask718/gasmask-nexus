@@ -105,6 +105,7 @@ serve(async (req) => {
       .eq("business_slug", BUSINESS_SLUG)
       .eq("is_simulation", false)
       .eq("phone_invalid", false)
+      .eq("compliance_hold", false)
       .not("phone", "is", null)
       .in("tt_acquisition_stage", CALLABLE_STAGES)
       .or(`tt_callback_at.is.null,tt_callback_at.lte.${new Date().toISOString()}`)
