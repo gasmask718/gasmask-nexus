@@ -240,6 +240,7 @@ serve(async (req) => {
         status: blandSuccessCount > 0 ? 'active' : 'failed',
         total_leads: leads.length,
         agent_name: `RE ${agentType}`,
+        voicemail_drop_template_id: body.voicemail_drop_template_id || null,
       })
       .select()
       .single();
