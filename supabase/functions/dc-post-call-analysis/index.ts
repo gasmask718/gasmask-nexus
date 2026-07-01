@@ -739,6 +739,8 @@ serve(async (req) => {
       would_post_process: postProcessPayload,
       null_only_stripped: strippedNullOnly,
       appended_fields: appendedFields,
+      dropped_missing_columns: droppedMissingCols,
+      cohort: cohort ?? null,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('[dc-post-call-analysis] error', error);
