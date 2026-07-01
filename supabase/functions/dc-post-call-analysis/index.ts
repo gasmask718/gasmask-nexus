@@ -267,6 +267,90 @@ const ANALYSIS_CONFIGS: Record<string, AnalysisConfig> = {
     },
     // No buildPostProcess for v1 — vetting team works from stage-filtered views.
   },
+  dynasty_direct: {
+    systemPrompt:
+      "You analyze call transcripts for Dynasty Direct, a wholesale distributor calling smoke shop / convenience store wholesalers. Anthony runs one of two flows on the call: an inventory_check (existing account, checking reorder needs on previously ordered products) or a new_pitch (introducing the catalog to a prospect). Extract structured data about reorder needs, stock status, pitch reception, opt-outs, callback preferences, contact confirmation, preferred follow-up channel, and a plain-English inventory summary. Return JSON only.",
+    jsonSchema: `{
+  "call_type": "inventory_check"|"new_pitch"|"unknown",
+  "reorder_needed": true|false,
+  "any_product_low_or_out": true|false,
+  "pitch_interested": true|false,
+  "opted_out": true|false,
+  "callback_requested": true|false,
+  "callback_time": string|null,
+  "contact_confirmed": true|false,
+  "new_products_interest": [],
+  "preferred_followup": "phone"|"sms"|"email"|"in_person"|null,
+  "inventory_summary": string|null,
+  "relationship_sentiment": "positive"|"neutral"|"negative",
+  "action_required": "send_order_form"|"schedule_delivery"|"schedule_callback"|"remove"|"none",
+  "action_notes": string|null,
+  "summary": string
+}`,
+    applyUpdate: (a) => {
+      const now = new Date().toISOString();
+      const today = now.slice(0, 10);
+
+      // Canonical disposition (mirrors webhook mapping order)
+      let disposition: string | null = null;
+      if (a.opted_out === true) disposition = 'dnc';
+      else if (a.reorder_needed === true || a.pitch_interested === true) disposition = 'interested';
+      else if (a.callback_requested === true || a.any_product_low_or_out === true) disposition = 'callback';
+      else if (a.action_required === 'remove') disposition = 'dnc';
+
+      // Parse callback_time; null on parse failure so we never write garbage.
+      let callbackDue: string | null = null;
+      if (a.callback_time) {
+        const parsed = new Date(a.callback_time);
+        if (!isNaN(parsed.getTime())) callbackDue = parsed.toISOString();
+      }
+
+      const update: Record<string, any> = {
+        last_call_disposition: disposition ?? undefined,
+        callback_due_at: callbackDue ?? undefined,
+        updated_at: now,
+      };
+
+      // inventory_notes: append timestamped inventory_summary (COALESCE-style
+      // via applyUpdate cannot read existing row; handler-level append is done
+      // through nullOnlyFields elsewhere. Here we mark the append via a sentinel
+      // string and rely on Postgres side to concat — but since applyUpdate is
+      // a plain update payload, we prepend today's line and let the caller
+      // concat by reading current value. Simpler: write only the new line as
+      // an append segment; the handler reads existing value and concats.
+      if (a.inventory_summary && typeof a.inventory_summary === 'string') {
+        update.__append_inventory_notes = `[${today}] ${a.inventory_summary}`;
+      }
+
+      // preferred_contact: only if currently null (enforced via nullOnlyFields).
+      if (a.preferred_followup && typeof a.preferred_followup === 'string') {
+        update.preferred_contact = a.preferred_followup;
+      }
+
+      // phone_invalid: set true if disposition is wrong_number (from action_required
+      // or explicit signal). Not part of Anthony's schema directly — leave for
+      // webhook to set; do not overwrite here.
+
+      for (const k of Object.keys(update)) if (update[k] === undefined) delete update[k];
+      return update;
+    },
+    nullOnlyFields: ['preferred_contact'],
+    buildPostProcess: (leadId, a) => {
+      if (a.reorder_needed !== true && a.any_product_low_or_out !== true) return null;
+      const note = a.inventory_summary || a.action_notes || a.summary || '(no summary)';
+      return {
+        table: 'dc_lead_sync_log',
+        payload: {
+          business_unit_key: 'dynasty_direct',
+          lead_id: leadId,
+          sync_direction: 'out',
+          sync_source: 'dc-post-call-analysis:dynasty_direct:reorder_flag',
+          success: true,
+          error_message: note,
+        },
+      };
+    },
+  },
 };
 
 
@@ -380,6 +464,33 @@ serve(async (req) => {
       }
     }
 
+    // Handle __append_* sentinel keys: read current column value from the lead
+    // row and concat the new segment with a newline. Never overwrites.
+    const appendedFields: string[] = [];
+    const appendKeys = Object.keys(update).filter((k) => k.startsWith('__append_'));
+    if (appendKeys.length > 0) {
+      const targetCols = appendKeys.map((k) => k.replace(/^__append_/, ''));
+      const { data: currentRow, error: appendErr } = await supabase
+        .from(leadTable)
+        .select(targetCols.join(','))
+        .eq('id', leadId)
+        .maybeSingle();
+      if (appendErr) {
+        console.warn(`[dc-post-call-analysis] append precheck failed (${appendErr.message}) — writing new segments without concat`);
+      }
+      for (const k of appendKeys) {
+        const col = k.replace(/^__append_/, '');
+        const segment = String(update[k] ?? '').trim();
+        delete (update as Record<string, any>)[k];
+        if (!segment) continue;
+        const existing = currentRow ? (currentRow as Record<string, any>)[col] : null;
+        (update as Record<string, any>)[col] = existing && String(existing).trim()
+          ? `${existing}\n${segment}`
+          : segment;
+        appendedFields.push(col);
+      }
+    }
+
 
     if (!isDryRun) {
       const { error: updateErr } = await supabase.from(leadTable).update(update).eq('id', leadId);
@@ -404,6 +515,7 @@ serve(async (req) => {
       would_update: { table: leadTable, lead_id: leadId, payload: update },
       would_post_process: postProcessPayload,
       null_only_stripped: strippedNullOnly,
+      appended_fields: appendedFields,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('[dc-post-call-analysis] error', error);
