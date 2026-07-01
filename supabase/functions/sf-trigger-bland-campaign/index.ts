@@ -38,7 +38,13 @@ serve(async (req) => {
 
     const body = await req.json();
     const ids: string[] = body.lead_ids || (body.lead_id ? [body.lead_id] : []);
-    if (ids.length === 0) throw new Error('lead_ids or lead_id required');
+    if (ids.length === 0) {
+      return new Response(JSON.stringify({
+        error: 'strict_mode_violation',
+        message: 'lead_ids or lead_id required. Full-cohort dispatch without explicit scope is not permitted.',
+        bland_calls_started: 0,
+      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     const { data: leads, error: leadsErr } = await supabase
       .from('surplus_funds_leads')

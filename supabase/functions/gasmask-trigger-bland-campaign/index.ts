@@ -61,8 +61,9 @@ serve(async (req) => {
     }
     if (leadIds.length === 0) {
       return new Response(JSON.stringify({
-        success: false,
-        error: "lead_ids (or lead_id) required — caller selects the cohort universe",
+        error: "strict_mode_violation",
+        message: "lead_ids or lead_id required. Full-cohort dispatch without explicit scope is not permitted.",
+        bland_calls_started: 0,
       }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
