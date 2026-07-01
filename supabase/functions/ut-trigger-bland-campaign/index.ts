@@ -86,11 +86,20 @@ serve(async (req) => {
 
 
     const body = await req.json().catch(() => ({}));
-    const leadIds: string[] = body.lead_ids || (body.lead_id ? [body.lead_id] : []);
+
+    // --- HARD-REJECT GUARD (parity with tt-trigger Fix A) ---
+    // Accepts ut_partner_ids | lead_ids | lead_id. Full-cohort dispatch
+    // without explicit scope is not permitted.
+    const leadIds: string[] = Array.isArray(body.ut_partner_ids) && body.ut_partner_ids.length > 0
+      ? body.ut_partner_ids
+      : Array.isArray(body.lead_ids) && body.lead_ids.length > 0
+        ? body.lead_ids
+        : body.lead_id ? [body.lead_id] : [];
     if (leadIds.length === 0) {
       return new Response(JSON.stringify({
-        success: false,
-        error: "lead_ids or lead_id required — caller selects the cohort universe",
+        error: "strict_mode_violation",
+        message: "ut_partner_ids (or lead_ids / lead_id) required. Full-cohort dispatch without explicit scope is not permitted.",
+        bland_calls_started: 0,
       }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
