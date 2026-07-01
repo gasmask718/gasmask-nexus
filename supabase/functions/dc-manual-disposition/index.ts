@@ -3,6 +3,7 @@
 // records the change in dc_lead_sync_log.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { logComplianceEvent } from "../_shared/dc_sync_log.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
