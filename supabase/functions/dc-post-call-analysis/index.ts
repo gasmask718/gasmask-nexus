@@ -197,20 +197,23 @@ const ANALYSIS_CONFIGS: Record<string, AnalysisConfig> = {
   },
   top_tier: {
     systemPrompt:
-      "You analyze call transcripts for Top Tier Experience, a luxury concierge dispatch platform recruiting suppliers (chauffeurs, exotic-car operators, helicopter operators, party-bus operators, sprinter-van operators, yacht/watercraft operators) as commission partners (15% standard, never lower). Extract structured data about supplier qualification, fleet capacity, pricing posture, insurance status, and commission acceptance. Return JSON only.",
+      "You analyze call transcripts for Top Tier Experience, a luxury concierge dispatch platform recruiting suppliers (chauffeurs, exotic-car operators, helicopter operators, party-bus operators, sprinter-van operators, yacht/watercraft operators) as commission partners at a fixed 15% (never lower). Extract structured data about supplier qualification, category fit, decision-maker status, fleet/capacity, service area, pricing posture, insurance, commission acceptance, and onboarding readiness. Return JSON only.",
     jsonSchema: `{
   "interest_level": "high"|"medium"|"low"|"none",
   "interest_score": 1-10,
+  "category_confirmed_on_call": true|false,
   "is_decision_maker": true|false,
-  "fleet_or_capacity_signal": string|null,
+  "already_top_tier_partner": true|false,
   "service_area_mentioned": [],
-  "pricing_range_mentioned": string|null,
+  "fleet_or_capacity_signal": string|null,
   "price_floor_mentioned": number|null,
   "insurance_on_file": true|false|null,
+  "minimum_lead_time": string|null,
   "commission_acceptable_15pct": true|false|null,
+  "agreed_to_onboarding": true|false,
+  "agreed_to_info_packet": true|false,
   "preferred_contact_channel": "phone"|"sms"|"email"|null,
   "email_provided": string|null,
-  "best_callback_window": string|null,
   "callback_time": string|null,
   "key_objections": [],
   "sentiment": "positive"|"neutral"|"negative",
@@ -218,54 +221,217 @@ const ANALYSIS_CONFIGS: Record<string, AnalysisConfig> = {
   "recommended_action": "auto_promote"|"vetting_required"|"schedule_callback"|"send_info_packet"|"manual_outreach"|"deprioritize"|"remove",
   "summary": string
 }`,
-    // pricing_range, service_area, email are nullOnlyFields — see below.
+    // pricing_range, service_area, email are null-only on crm_partners.
+    // ai_score_post_call and ai_call_eligible may not exist on crm_partners —
+    // handler drops them via 42703 tolerant-retry if missing.
     nullOnlyFields: ['pricing_range', 'service_area', 'email'],
     applyUpdate: (a) => {
-      const update: Record<string, any> = {
-        tt_last_disposition: undefined, // do not overwrite webhook-set disposition
-        updated_at: new Date().toISOString(),
-      };
+      const update: Record<string, any> = { updated_at: new Date().toISOString() };
+      const today = new Date().toISOString().slice(0, 10);
 
-      // Parse callback_time if present (does not overwrite tt_callback_at unless analysis returned one)
+      // interest_score → ai_score_post_call (1–10)
+      if (typeof a.interest_score === 'number' && a.interest_score >= 1 && a.interest_score <= 10) {
+        update.ai_score_post_call = a.interest_score;
+      }
+
+      // callback_time → tt_callback_at (parsed)
       if (a.callback_time) {
         const parsed = new Date(a.callback_time);
         if (!isNaN(parsed.getTime())) update.tt_callback_at = parsed.toISOString();
       }
 
-      // Pricing range — write only if currently null on the row (enforced by nullOnlyFields).
-      if (a.pricing_range_mentioned && typeof a.pricing_range_mentioned === 'string') {
-        update.pricing_range = a.pricing_range_mentioned;
+      // already_top_tier_partner=true → tt_acquisition_stage='existing_partner'
+      // (only for true; never overwrite otherwise — vetting team owns stage)
+      if (a.already_top_tier_partner === true) {
+        update.tt_acquisition_stage = 'existing_partner';
       }
 
-      // Service area — only if non-empty array (and only if currently null on row).
+      // Null-only writes (gated by nullOnlyFields precheck).
+      if (a.price_floor_mentioned != null) update.pricing_range = String(a.price_floor_mentioned);
+      // service_area is ARRAY column — write array directly (no join).
       if (Array.isArray(a.service_area_mentioned) && a.service_area_mentioned.length > 0) {
         update.service_area = a.service_area_mentioned;
       }
+      if (a.email_provided && typeof a.email_provided === 'string') update.email = a.email_provided;
 
-      // Email — only if currently null on row.
-      if (a.email_provided && typeof a.email_provided === 'string') {
-        update.email = a.email_provided;
-      }
+      // recommended_action='remove' → ai_call_eligible=false (tolerated if column absent)
+      if (a.recommended_action === 'remove') update.ai_call_eligible = false;
 
-      // Notes — append the analysis summary. Per the v1 contract,
-      // recommended_action='auto_promote' is a vetting-team SIGNAL only;
-      // it never invokes the promotion RPC from here. The note is marked
-      // explicitly so the vetting queue UI can highlight these rows.
-      const today = new Date().toISOString().slice(0, 10);
+      // Timestamped append to tt_acquisition_notes (concat via __append_ sentinel)
       const noteLines: string[] = [];
       if (a.summary) noteLines.push(`[${today}] Post-call analysis: ${a.summary}`);
       if (a.recommended_action === 'auto_promote') {
-        noteLines.push(`[${today}] ⚑ analysis recommends auto-promotion — awaiting vetting team review`);
+        noteLines.push(`[${today}] ⚑ analysis recommends auto-promotion — awaiting vetting team review (NO promotion RPC called)`);
+      } else if (a.recommended_action === 'remove') {
+        noteLines.push(`[${today}] ⚑ analysis recommends removal — ai_call_eligible set false`);
       } else if (a.recommended_action) {
         noteLines.push(`[${today}] Recommended action: ${a.recommended_action}`);
       }
-      if (noteLines.length) update.tt_acquisition_notes = noteLines.join('\n');
+      if (a.category_confirmed_on_call === false) noteLines.push(`[${today}] Category NOT confirmed on call`);
+      if (a.agreed_to_onboarding === true) noteLines.push(`[${today}] Agreed to onboarding`);
+      if (a.agreed_to_info_packet === true) noteLines.push(`[${today}] Agreed to info packet`);
+      if (a.minimum_lead_time) noteLines.push(`[${today}] Minimum lead time: ${a.minimum_lead_time}`);
+      if (Array.isArray(a.key_objections) && a.key_objections.length) {
+        noteLines.push(`[${today}] Objections: ${a.key_objections.join('; ')}`);
+      }
+      if (noteLines.length) update.__append_tt_acquisition_notes = noteLines.join('\n');
 
-      // Strip undefineds so we don't accidentally null-out columns.
       for (const k of Object.keys(update)) if (update[k] === undefined) delete update[k];
       return update;
     },
-    // No buildPostProcess for v1 — vetting team works from stage-filtered views.
+    // No buildPostProcess for v1 — vetting team gates all promotions.
+  },
+  gasmask: {
+    systemPrompt:
+      "You analyze call transcripts for GasMask, a smoke-shop distribution brand. Two cohorts: (1) NEW-STORE PROSPECTS — cold outreach to smoke shops offering wholesale onboarding; (2) REACTIVATION — dormant existing store accounts being re-engaged for reorders. Extract interest, reorder/onboarding readiness, product categories, store type confirmation, contact confirmation, opt-out, callback, wrong-number, and objections. Return JSON only.",
+    jsonSchema: `{
+  "cohort": "prospect"|"reactivation",
+  "interested": true|false|null,
+  "reorder_needed": true|false|null,
+  "onboarding_readiness": "ready"|"considering"|"not_ready"|null,
+  "product_categories_interested": [],
+  "store_type_confirmed": true|false|null,
+  "contact_confirmed": true|false|null,
+  "opted_out": true|false,
+  "opt_out_reason": string|null,
+  "callback_requested": true|false,
+  "callback_time": string|null,
+  "wrong_number": true|false,
+  "objections": [],
+  "sentiment": "positive"|"neutral"|"negative",
+  "summary": string,
+  "overall_score": 1-10
+}`,
+    applyUpdate: (a) => {
+      const today = new Date().toISOString().slice(0, 10);
+      const update: Record<string, any> = { updated_at: new Date().toISOString() };
+
+      // Map analysis → gasmask_call_status CHECK values:
+      // new|queued|called|voicemail|no_answer|callback|interested|booked|not_interested|wrong_number|dnc|cancelled
+      let status: string = 'called';
+      if (a.wrong_number === true) status = 'wrong_number';
+      else if (a.opted_out === true) status = 'dnc';
+      else if (a.callback_requested === true) status = 'callback';
+      else if (a.interested === true || a.reorder_needed === true) status = 'interested';
+      else if (a.interested === false) status = 'not_interested';
+      update.gasmask_call_status = status;
+
+      // Append to notes (TEXT, no length limit on both tables)
+      const noteLines: string[] = [];
+      if (a.summary) noteLines.push(`[${today}] Post-call: ${a.summary}`);
+      if (Array.isArray(a.product_categories_interested) && a.product_categories_interested.length) {
+        noteLines.push(`[${today}] Categories: ${a.product_categories_interested.join(', ')}`);
+      }
+      if (a.onboarding_readiness) noteLines.push(`[${today}] Onboarding readiness: ${a.onboarding_readiness}`);
+      if (a.store_type_confirmed === false) noteLines.push(`[${today}] Store type NOT confirmed`);
+      if (a.contact_confirmed === false) noteLines.push(`[${today}] Contact NOT confirmed`);
+      if (typeof a.overall_score === 'number') noteLines.push(`[${today}] Score: ${a.overall_score}/10`);
+      if (a.callback_time) noteLines.push(`[${today}] Callback requested: ${a.callback_time}`);
+      if (Array.isArray(a.objections) && a.objections.length) {
+        noteLines.push(`[${today}] Objections: ${a.objections.join('; ')}`);
+      }
+      if (noteLines.length) update.__append_notes = noteLines.join('\n');
+
+      // Reactivation cohort ONLY: also write do_not_call fields on store_master.
+      // Handler strips these keys automatically if target table is sales_prospects
+      // (via 42703 tolerant-retry).
+      if (a._cohort === 'reactivation' && a.opted_out === true) {
+        update.do_not_call = true;
+        update.do_not_call_reason = a.opt_out_reason || 'Opted out on post-call analysis';
+      }
+
+      for (const k of Object.keys(update)) if (update[k] === undefined) delete update[k];
+      return update;
+    },
+    // Handler resolves cohort from body.cohort (fallback: dc_leads.lead_type by external_ref_id).
+    // Handler overrides leadTable: 'sales_prospects' (prospect) or 'store_master' (reactivation).
+  },
+  brandaro: {
+    systemPrompt:
+      "You analyze call transcripts for Brandaro, a done-for-you web-design and lead-generation agency for local service businesses. Extract interest, decision-maker status, budget signal, and demo/proposal actions ACTUALLY TAKEN on the call (never infer these from interest alone). Also extract objections, callback, and opt-out. Return JSON only.",
+    jsonSchema: `{
+  "interested": true|false|null,
+  "is_decision_maker": true|false|null,
+  "budget_confirmed": true|false|null,
+  "budget_range_mentioned": string|null,
+  "demo_action_on_call": "none"|"scheduled"|"sent"|"viewed_together"|"follow_up_needed",
+  "proposal_action_on_call": "none"|"drafted"|"sent"|"discussed"|"negotiated"|"accepted"|"rejected",
+  "contact_confirmed": true|false|null,
+  "callback_requested": true|false,
+  "callback_time": string|null,
+  "opted_out": true|false,
+  "wrong_number": true|false,
+  "objections": [],
+  "sentiment": "positive"|"neutral"|"negative",
+  "summary": string,
+  "overall_score": 1-10
+}`,
+    applyUpdate: (a) => {
+      const today = new Date().toISOString().slice(0, 10);
+      const nowIso = new Date().toISOString();
+      const update: Record<string, any> = { updated_at: nowIso };
+
+      // lead_status CHECK: new|queued|calling|no_answer|voicemail|wrong_number|not_interested|callback|send_info|interested|hot_lead|sold|disqualified
+      let lead_status: string | undefined;
+      if (a.wrong_number === true) lead_status = 'wrong_number';
+      else if (a.opted_out === true) lead_status = 'disqualified';
+      else if (a.proposal_action_on_call === 'accepted') lead_status = 'sold';
+      else if (a.callback_requested === true) lead_status = 'callback';
+      else if (a.interested === true && (a.budget_confirmed === true || a.is_decision_maker === true)) lead_status = 'hot_lead';
+      else if (a.interested === true) lead_status = 'interested';
+      else if (a.interested === false) lead_status = 'not_interested';
+      if (lead_status) update.lead_status = lead_status;
+
+      // demo_status — ONLY if analysis confirms a demo action occurred on call.
+      // CHECK values: pending|generating|generated|sent|opened|viewed|follow_up_needed
+      switch (a.demo_action_on_call) {
+        case 'scheduled': update.demo_status = 'pending'; break;
+        case 'sent': update.demo_status = 'sent'; break;
+        case 'viewed_together': update.demo_status = 'viewed'; break;
+        case 'follow_up_needed': update.demo_status = 'follow_up_needed'; break;
+        // 'none' → no write
+      }
+
+      // proposal_status — ONLY if analysis confirms a proposal action on call.
+      // CHECK values: draft|sent|viewed|negotiation|accepted|rejected
+      switch (a.proposal_action_on_call) {
+        case 'drafted': update.proposal_status = 'draft'; break;
+        case 'sent': update.proposal_status = 'sent'; break;
+        case 'discussed': update.proposal_status = 'viewed'; break;
+        case 'negotiated': update.proposal_status = 'negotiation'; break;
+        case 'accepted': update.proposal_status = 'accepted'; break;
+        case 'rejected': update.proposal_status = 'rejected'; break;
+        // 'none' → no write
+      }
+
+      // Callback timestamp
+      if (a.callback_time) {
+        const parsed = new Date(a.callback_time);
+        if (!isNaN(parsed.getTime())) update.next_callback_at = parsed.toISOString();
+      }
+
+      // Call telemetry (handler flags — not columns)
+      update.__increment_total_dc_calls = true;
+      update.last_dc_call_at = nowIso;
+      // dc_call_id: handler injects from webhook payload
+
+      // Append to call_notes (TEXT, no length limit)
+      const noteLines: string[] = [];
+      if (a.summary) noteLines.push(`[${today}] Post-call: ${a.summary}`);
+      if (typeof a.overall_score === 'number') noteLines.push(`[${today}] Score: ${a.overall_score}/10`);
+      if (a.budget_range_mentioned) noteLines.push(`[${today}] Budget: ${a.budget_range_mentioned}`);
+      if (a.is_decision_maker === false) noteLines.push(`[${today}] Not decision maker`);
+      if (a.contact_confirmed === false) noteLines.push(`[${today}] Contact NOT confirmed`);
+      if (Array.isArray(a.objections) && a.objections.length) {
+        noteLines.push(`[${today}] Objections: ${a.objections.join('; ')}`);
+      }
+      if (noteLines.length) update.__append_call_notes = noteLines.join('\n');
+
+      for (const k of Object.keys(update)) if (update[k] === undefined) delete update[k];
+      return update;
+    },
+    // Handler: __increment_total_dc_calls → COALESCE(current,0)+1; dc_call_id ← body.call_id.
+    // No buildPostProcess for v1.
   },
   dynasty_direct: {
     systemPrompt:
@@ -393,7 +559,26 @@ serve(async (req) => {
     if (!unit?.lead_table_name) {
       throw new Error(`dc_businesses.lead_table_name not set for ${businessUnitKey}`);
     }
-    const leadTable = unit.lead_table_name as string;
+    let leadTable = unit.lead_table_name as string;
+
+    // GASMASK cohort routing: prospect → sales_prospects, reactivation → store_master.
+    // Resolve from body.cohort first (webhook should pass it); fallback to
+    // dc_leads.lead_type lookup by external_ref_id = leadId (best-effort).
+    let cohort: string | undefined = body.cohort;
+    if (businessUnitKey === 'gasmask') {
+      if (!cohort) {
+        const { data: dcLead } = await supabase
+          .from('dc_leads')
+          .select('lead_type')
+          .eq('external_ref_id', String(leadId))
+          .maybeSingle();
+        cohort = (dcLead?.lead_type as string | undefined) || 'prospect';
+      }
+      if (cohort === 'reactivation') leadTable = 'store_master';
+      else leadTable = 'sales_prospects';
+    }
+
+
 
     // If transcript not provided, try pulling from dynasty_ai_calls by call_id
     if (!transcript && callId) {
@@ -429,10 +614,28 @@ serve(async (req) => {
     if (!match) throw new Error('No JSON in Claude response');
     const analysis = JSON.parse(match[0]);
 
+    // Inject cohort into analysis so applyUpdate can branch (gasmask).
+    if (cohort) (analysis as Record<string, any>)._cohort = cohort;
+
     const update = config.applyUpdate(analysis);
     const postProcessPayload: PostProcessPayload = config.buildPostProcess
       ? config.buildPostProcess(leadId, analysis)
       : null;
+
+    // BRANDARO handler flags:
+    //   __increment_total_dc_calls → read current total_dc_calls, COALESCE(_,0)+1
+    //   dc_call_id ← body.call_id (webhook-injected, not from analysis)
+    if (update.__increment_total_dc_calls) {
+      delete update.__increment_total_dc_calls;
+      const { data: curRow } = await supabase
+        .from(leadTable)
+        .select('total_dc_calls')
+        .eq('id', leadId)
+        .maybeSingle();
+      const current = Number((curRow as any)?.total_dc_calls ?? 0);
+      update.total_dc_calls = (isNaN(current) ? 0 : current) + 1;
+      if (callId) update.dc_call_id = callId;
+    }
 
     // Enforce nullOnlyFields: never overwrite an existing non-null row value.
     // Pulls the candidate columns from the live row and strips conflicting
@@ -492,9 +695,28 @@ serve(async (req) => {
     }
 
 
+    const droppedMissingCols: string[] = [];
     if (!isDryRun) {
-      const { error: updateErr } = await supabase.from(leadTable).update(update).eq('id', leadId);
-      if (updateErr) throw new Error(`lead update failed: ${updateErr.message}`);
+      // Tolerant retry loop: if PostgREST returns 42703 (undefined_column),
+      // strip the offending column from the update and retry. Bounded at 6 tries.
+      let attempts = 0;
+      while (attempts < 6) {
+        attempts++;
+        const { error: updateErr } = await supabase.from(leadTable).update(update).eq('id', leadId);
+        if (!updateErr) break;
+        const msg = String(updateErr.message || '');
+        // PostgREST surfaces missing columns as PGRST204 or code 42703. Match by column name in the message.
+        const missingMatch = msg.match(/column ["']?([a-zA-Z_][a-zA-Z0-9_]*)["']? .* does not exist/i)
+          || msg.match(/Could not find the ["']?([a-zA-Z_][a-zA-Z0-9_]*)["']? column/i);
+        if (missingMatch && missingMatch[1] && missingMatch[1] in update) {
+          const col = missingMatch[1];
+          delete (update as Record<string, any>)[col];
+          droppedMissingCols.push(col);
+          if (Object.keys(update).length === 0) break;
+          continue;
+        }
+        throw new Error(`lead update failed: ${updateErr.message}`);
+      }
 
       if (postProcessPayload) {
         try {
@@ -504,6 +726,7 @@ serve(async (req) => {
         }
       }
     }
+
 
     return new Response(JSON.stringify({
       success: true,
@@ -516,6 +739,8 @@ serve(async (req) => {
       would_post_process: postProcessPayload,
       null_only_stripped: strippedNullOnly,
       appended_fields: appendedFields,
+      dropped_missing_columns: droppedMissingCols,
+      cohort: cohort ?? null,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('[dc-post-call-analysis] error', error);
