@@ -44,3 +44,31 @@ export async function logLeadSyncBatch(supabase: any, entries: SyncLogEntry[]): 
     console.error('[dc_lead_sync_log] batch insert failed (non-fatal)', e, { count: entries.length });
   }
 }
+
+/**
+ * Log a per-lead gate-block event. Fires when checkDispatchGates()
+ * denies dispatch for a lead (kill-switch, DNC, bad phone, etc.).
+ * Emits success=false with the gate reason so blocked leads are
+ * distinguishable from successful entry-point rows in the log.
+ */
+export async function logGateBlock(
+  supabase: any,
+  args: {
+    businessUnitKey: string;
+    leadId: string;
+    triggerName: string; // e.g. 'dd-trigger-bland-campaign'
+    gateCode: string;
+    gateReason: string;
+    statusBefore?: string | null;
+  },
+): Promise<void> {
+  return logLeadSync(supabase, {
+    business_unit_key: args.businessUnitKey,
+    lead_id: args.leadId,
+    sync_direction: 'in',
+    status_before: args.statusBefore ?? null,
+    sync_source: `${args.triggerName}:gate_block:${args.gateCode}`,
+    success: false,
+    error_message: args.gateReason,
+  });
+}
