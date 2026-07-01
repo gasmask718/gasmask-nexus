@@ -49,6 +49,22 @@ export default function DCCampaignBuilder() {
     },
   });
 
+  // Load active voicemail templates for the selected pipeline's business unit.
+  // Pipeline is a business_name string; we match it against dc_voicemail_templates.business_unit_key.
+  const { data: vmTemplates = [] } = useQuery({
+    queryKey: ['dc-vm-templates-for-builder', form.pipeline],
+    enabled: !!form.pipeline,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('dc_voicemail_templates')
+        .select('id, name, transcript, business_unit_key')
+        .eq('business_unit_key', form.pipeline)
+        .eq('is_active', true)
+        .order('name');
+      return (data || []).filter((t: any) => (t.transcript || '').trim().length > 0);
+    },
+  });
+
   // Count available leads for selected pipeline
   const { data: leadCount = 0 } = useQuery({
     queryKey: ['dc-lead-count', form.pipeline],
