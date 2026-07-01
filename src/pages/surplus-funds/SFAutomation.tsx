@@ -53,6 +53,20 @@ export default function SFAutomation() {
   const [maxCalls, setMaxCalls] = useState<number>(100);
   const [availableLeads, setAvailableLeads] = useState<number>(0);
   const [launching, setLaunching] = useState(false);
+  const [voicemailTemplateId, setVoicemailTemplateId] = useState<string>('');
+  const [vmTemplates, setVmTemplates] = useState<Array<{ id: string; name: string; transcript: string | null }>>([]);
+
+  useEffect(() => {
+    (supabase as any)
+      .from('dc_voicemail_templates')
+      .select('id, name, transcript')
+      .eq('business_unit_key', 'surplus_funds')
+      .eq('is_active', true)
+      .order('name')
+      .then(({ data }: any) => {
+        setVmTemplates((data ?? []).filter((t: any) => t.transcript && t.transcript.trim().length > 0));
+      });
+  }, []);
 
   const [campaigns, setCampaigns] = useState<any[] | null>(null);
   const [outcomes, setOutcomes] = useState<Record<string, number>>({});
