@@ -686,8 +686,22 @@ ${transcript}`
           if (transcriptFlagsDnc) newStage = 'dnc';
 
           // Existing-partner detection — overrides only if newStage non-terminal.
-          if (transcriptFlagsExistingPartner && newStage !== 'dnc') {
+          // Signals: transcript regex OR Bland analysis.already_partner === true.
+          if ((transcriptFlagsExistingPartner || analysisFlagsExistingPartner) && newStage !== 'dnc') {
             newStage = 'existing_partner';
+          }
+
+          // --- Fix C: email capture from Bland analysis ---
+          // Only writes when disposition resolved to 'interested' AND the
+          // partner row currently has no email. Never overwrites.
+          if (
+            canonical === 'interested'
+            && blandAnalysis
+            && typeof blandAnalysis.email_captured === 'string'
+            && blandAnalysis.email_captured.includes('@')
+            && !prevTt?.email
+          ) {
+            dispUpdate.email = (blandAnalysis.email_captured as string).trim();
           }
 
           const { error: dispUpdateErr } = await supabase
