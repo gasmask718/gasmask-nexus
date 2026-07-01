@@ -304,7 +304,6 @@ serve(async (req) => {
             success: false, error_message: dncMarkErr.message,
           });
         }
-        });
         continue;
       }
 
