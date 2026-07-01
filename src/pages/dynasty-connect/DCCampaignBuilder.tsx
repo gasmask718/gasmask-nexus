@@ -34,6 +34,7 @@ export default function DCCampaignBuilder() {
     maxPerMinute: '5',
     useExistingLeads: true,
     schedule: 'now',
+    voicemailTemplateId: '',
   });
 
   // Load business pipelines
