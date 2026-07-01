@@ -118096,9 +118096,13 @@ export type Database = {
           backup_contact_name: string | null
           backup_contact_phone: string | null
           borough: string | null
+          call_attempts: number
+          callback_due_at: string | null
           city: string | null
           company_id: string | null
           compliance_documents: Json | null
+          compliance_hold: boolean
+          compliance_hold_reason: string | null
           contact_name: string | null
           contract_end_date: string | null
           contract_start_date: string | null
@@ -118120,8 +118124,11 @@ export type Database = {
           incentives: Json | null
           insurance_expiry: string | null
           insurance_policy: string | null
+          inventory_notes: string | null
           is_frozen: boolean | null
           is_simulation: boolean | null
+          last_call_disposition: string | null
+          last_contacted_at: string | null
           last_order_at: string | null
           last_visit_date: string | null
           latitude: number | null
@@ -118140,6 +118147,7 @@ export type Database = {
           payment_terms: string | null
           penalties: Json | null
           phone: string | null
+          phone_invalid: boolean
           phone_secondary: string | null
           phone_whatsapp: string | null
           preferred: boolean | null
@@ -118180,9 +118188,13 @@ export type Database = {
           backup_contact_name?: string | null
           backup_contact_phone?: string | null
           borough?: string | null
+          call_attempts?: number
+          callback_due_at?: string | null
           city?: string | null
           company_id?: string | null
           compliance_documents?: Json | null
+          compliance_hold?: boolean
+          compliance_hold_reason?: string | null
           contact_name?: string | null
           contract_end_date?: string | null
           contract_start_date?: string | null
@@ -118204,8 +118216,11 @@ export type Database = {
           incentives?: Json | null
           insurance_expiry?: string | null
           insurance_policy?: string | null
+          inventory_notes?: string | null
           is_frozen?: boolean | null
           is_simulation?: boolean | null
+          last_call_disposition?: string | null
+          last_contacted_at?: string | null
           last_order_at?: string | null
           last_visit_date?: string | null
           latitude?: number | null
@@ -118224,6 +118239,7 @@ export type Database = {
           payment_terms?: string | null
           penalties?: Json | null
           phone?: string | null
+          phone_invalid?: boolean
           phone_secondary?: string | null
           phone_whatsapp?: string | null
           preferred?: boolean | null
@@ -118264,9 +118280,13 @@ export type Database = {
           backup_contact_name?: string | null
           backup_contact_phone?: string | null
           borough?: string | null
+          call_attempts?: number
+          callback_due_at?: string | null
           city?: string | null
           company_id?: string | null
           compliance_documents?: Json | null
+          compliance_hold?: boolean
+          compliance_hold_reason?: string | null
           contact_name?: string | null
           contract_end_date?: string | null
           contract_start_date?: string | null
@@ -118288,8 +118308,11 @@ export type Database = {
           incentives?: Json | null
           insurance_expiry?: string | null
           insurance_policy?: string | null
+          inventory_notes?: string | null
           is_frozen?: boolean | null
           is_simulation?: boolean | null
+          last_call_disposition?: string | null
+          last_contacted_at?: string | null
           last_order_at?: string | null
           last_visit_date?: string | null
           latitude?: number | null
@@ -118308,6 +118331,7 @@ export type Database = {
           payment_terms?: string | null
           penalties?: Json | null
           phone?: string | null
+          phone_invalid?: boolean
           phone_secondary?: string | null
           phone_whatsapp?: string | null
           preferred?: boolean | null
