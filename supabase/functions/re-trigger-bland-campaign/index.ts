@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { logLeadSync, logLeadSyncBatch, logGateBlock } from "../_shared/dc_sync_log.ts";
 import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
+import { fetchVoicemailTranscript } from "../_shared/voicemail_template.ts";
 
 const COLD_SELLER_PROMPT = `You are a real estate acquisition specialist calling homeowners about their property. Be friendly, professional, and respectful.
 
