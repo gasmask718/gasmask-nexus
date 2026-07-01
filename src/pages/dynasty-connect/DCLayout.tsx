@@ -75,6 +75,13 @@ const dcNavSections = [
     ],
   },
   {
+    title: '🛡️ Compliance & Data',
+    items: [
+      { path: '/dynasty-connect/dnc', label: 'DNC Manager', icon: ShieldOff },
+      { path: '/dynasty-connect/compliance', label: 'Compliance', icon: ShieldCheck },
+    ],
+  },
+  {
     title: '💰 Clients',
     items: [
       { path: '/dynasty-connect/clients', label: 'Client Management', icon: DollarSign },
