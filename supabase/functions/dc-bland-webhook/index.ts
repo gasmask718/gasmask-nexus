@@ -426,6 +426,22 @@ ${transcript}`
           }
         }
 
+        // --- Dynasty Direct semantic override ---
+        // Wholesaler outreach analysis_schema fields override raw disposition.
+        //   opted_out                                     → dnc
+        //   reorder_needed OR pitch_interested            → interested
+        //   callback_requested OR any_product_low_or_out  → callback
+        // Falls through to payload.disposition/payload.status when analysis absent.
+        if (sourceHub === 'dynasty_direct' && blandAnalysis) {
+          if (blandAnalysis.opted_out === true) {
+            semanticDisposition = 'dnc';
+          } else if (blandAnalysis.reorder_needed === true || blandAnalysis.pitch_interested === true) {
+            semanticDisposition = 'interested';
+          } else if (blandAnalysis.callback_requested === true || blandAnalysis.any_product_low_or_out === true) {
+            semanticDisposition = 'callback';
+          }
+        }
+
         const rawDisposition = semanticDisposition
           || (payload.disposition || payload.status || '').toLowerCase();
         // Canonical disposition code (see public.dc_disposition_codes).
