@@ -22,7 +22,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
-import { logLeadSync, logLeadSyncBatch } from "../_shared/dc_sync_log.ts";
+import { logLeadSync, logLeadSyncBatch, logGateBlock } from "../_shared/dc_sync_log.ts";
 import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 
 type CohortType = "prospect" | "reactivation";
@@ -152,6 +152,12 @@ serve(async (req) => {
       const gate = await checkDispatchGates(supabase, { businessUnitKey: BUSINESS_UNIT });
       if (!gate.allowed) {
         gateBlocks.push({ lead_id: r.id, code: gate.code, reason: gate.reason, retryable: gate.retryable });
+        await logGateBlock(supabase, {
+          businessUnitKey: BUSINESS_UNIT, leadId: r.id,
+          triggerName: `gasmask-trigger-bland-campaign:${cohortType}`,
+          gateCode: gate.code, gateReason: gate.reason,
+          statusBefore: (r as any).gasmask_call_status || null,
+        });
         console.warn("[gasmask-trigger gate-blocked]", r.id, gate.code, gate.reason);
         if (!gate.retryable) {
           killSwitchHit = true;
