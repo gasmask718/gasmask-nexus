@@ -442,6 +442,44 @@ ${transcript}`
           }
         }
 
+        // --- GASMASK semantic override ---
+        // Prospect/reactivation outreach analysis fields override raw disposition.
+        //   opted_out                              → dnc
+        //   wrong_number                           → wrong_number
+        //   callback_requested                     → callback
+        //   interested OR reorder_needed           → interested
+        if (sourceHub === 'gasmask' && blandAnalysis) {
+          if (blandAnalysis.opted_out === true) {
+            semanticDisposition = 'dnc';
+          } else if (blandAnalysis.wrong_number === true) {
+            semanticDisposition = 'wrong_number';
+          } else if (blandAnalysis.callback_requested === true) {
+            semanticDisposition = 'callback';
+          } else if (blandAnalysis.interested === true || blandAnalysis.reorder_needed === true) {
+            semanticDisposition = 'interested';
+          }
+        }
+
+        // --- BRANDARO semantic override ---
+        // For BRANDARO, semantic override feeds the local brandaroStatus mapping
+        // below (values like 'disqualified' / 'sold' / 'hot_lead' are not shared
+        // canonicals). We still set semanticDisposition for the shared
+        // rawDisposition/canonical path so downstream dc_call_logs.outcome is
+        // sensible, but the brandaro branch computes its own lead_status.
+        if (sourceHub === 'brandaro' && blandAnalysis) {
+          if (blandAnalysis.opted_out === true) {
+            semanticDisposition = 'dnc';
+          } else if (blandAnalysis.wrong_number === true) {
+            semanticDisposition = 'wrong_number';
+          } else if (blandAnalysis.callback_requested === true) {
+            semanticDisposition = 'callback';
+          } else if (blandAnalysis.interested === true) {
+            semanticDisposition = 'interested';
+          } else if (blandAnalysis.interested === false) {
+            semanticDisposition = 'not_interested';
+          }
+        }
+
         const rawDisposition = semanticDisposition
           || (payload.disposition || payload.status || '').toLowerCase();
         // Canonical disposition code (see public.dc_disposition_codes).
