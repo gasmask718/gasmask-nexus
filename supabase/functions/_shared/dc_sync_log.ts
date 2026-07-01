@@ -72,3 +72,51 @@ export async function logGateBlock(
     error_message: args.gateReason,
   });
 }
+
+// ============================================================
+// Dynasty Connect — immutable compliance event logger
+// ============================================================
+// Fire-and-forget audit ledger writes to dc_compliance_events.
+// Same guarantees as logLeadSync: never throws, never blocks.
+// INSERT policy on the table is service_role only, so callers
+// must use a service-role client.
+// ============================================================
+
+export interface ComplianceEventEntry {
+  event_type: string;
+  business_unit_key?: string | null;
+  lead_id?: string | null;
+  source_table?: string | null;
+  call_id?: string | null;
+  actor?: string;
+  actor_user_id?: string | null;
+  event_data?: Record<string, unknown>;
+  occurred_at?: string;
+}
+
+export async function logComplianceEvent(
+  supabase: any,
+  event: ComplianceEventEntry,
+): Promise<void> {
+  try {
+    const { error } = await supabase.from('dc_compliance_events').insert({
+      event_type: event.event_type,
+      business_unit_key: event.business_unit_key ?? null,
+      lead_id: event.lead_id ?? null,
+      source_table: event.source_table ?? null,
+      call_id: event.call_id ?? null,
+      actor: event.actor ?? 'system',
+      actor_user_id: event.actor_user_id ?? null,
+      event_data: event.event_data ?? {},
+      occurred_at: event.occurred_at ?? new Date().toISOString(),
+    });
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.error('[dc_compliance_events] insert failed (non-fatal)', error.message, event);
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[dc_compliance_events] insert threw (non-fatal)', err, event);
+  }
+}
+
