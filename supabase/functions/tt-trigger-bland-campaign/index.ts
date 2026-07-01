@@ -327,6 +327,30 @@ serve(async (req) => {
         if (blandRes.ok && blandJson.call_id) {
           blandSuccessCount++;
           blandCallIds.push(blandJson.call_id);
+
+          // --- Fix B Part 1: pre-create dc_call_logs row so the call is
+          // visible in the Call Logs UI immediately. Webhook will upsert the
+          // same row (keyed on call_sid) on disposition arrival. Failure here
+          // is a warning, NOT a dispatch failure — the Bland call already went
+          // out and the webhook can still create the row on completion.
+          const { error: callLogErr } = await supabase.from("dc_call_logs").insert({
+            call_sid: blandJson.call_id,
+            source_business: BUSINESS_UNIT_KEY,
+            source_table: "crm_partners",
+            source_id: l.id,
+            business: BUSINESS_UNIT_KEY,
+            to_number: l.phone,
+            direction: "outbound",
+            status: "dialing",
+            agent_id: BLAND_AGENT_ID,
+            agent_type: "bland",
+            agent_name: "TopTier Partner Acquisition (Bland)",
+            lead_name: l.contact_name || l.company_name || null,
+          });
+          if (callLogErr) {
+            console.error("[tt-trigger dc_call_logs insert failed]", l.id, blandJson.call_id, callLogErr);
+          }
+
           // Do NOT mutate stage/disposition here — that's the webhook's job on
           // terminal disposition. We only need attempt-side bookkeeping; the
           // webhook increments tt_call_attempts on disposition arrival.
