@@ -121,7 +121,13 @@ export default function SFAutomation() {
       }
 
       const { error } = await supabase.functions.invoke('sf-trigger-bland-campaign', {
-        body: { lead_ids: ids, campaign_name: campaignName, state, agent_type: agent },
+        body: {
+          lead_ids: ids,
+          campaign_name: campaignName,
+          state,
+          agent_type: agent,
+          voicemail_drop_template_id: voicemailTemplateId || null,
+        },
       });
       if (error) throw error;
 
