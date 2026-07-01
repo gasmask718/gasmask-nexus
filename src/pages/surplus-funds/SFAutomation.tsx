@@ -53,6 +53,20 @@ export default function SFAutomation() {
   const [maxCalls, setMaxCalls] = useState<number>(100);
   const [availableLeads, setAvailableLeads] = useState<number>(0);
   const [launching, setLaunching] = useState(false);
+  const [voicemailTemplateId, setVoicemailTemplateId] = useState<string>('');
+  const [vmTemplates, setVmTemplates] = useState<Array<{ id: string; name: string; transcript: string | null }>>([]);
+
+  useEffect(() => {
+    (supabase as any)
+      .from('dc_voicemail_templates')
+      .select('id, name, transcript')
+      .eq('business_unit_key', 'surplus_funds')
+      .eq('is_active', true)
+      .order('name')
+      .then(({ data }: any) => {
+        setVmTemplates((data ?? []).filter((t: any) => t.transcript && t.transcript.trim().length > 0));
+      });
+  }, []);
 
   const [campaigns, setCampaigns] = useState<any[] | null>(null);
   const [outcomes, setOutcomes] = useState<Record<string, number>>({});
@@ -107,7 +121,13 @@ export default function SFAutomation() {
       }
 
       const { error } = await supabase.functions.invoke('sf-trigger-bland-campaign', {
-        body: { lead_ids: ids, campaign_name: campaignName, state, agent_type: agent },
+        body: {
+          lead_ids: ids,
+          campaign_name: campaignName,
+          state,
+          agent_type: agent,
+          voicemail_drop_template_id: voicemailTemplateId || null,
+        },
       });
       if (error) throw error;
 
@@ -180,6 +200,26 @@ export default function SFAutomation() {
                 ))}
               </div>
             </div>
+          </div>
+
+          <div>
+            <Label>Voicemail Drop Template <span className="text-muted-foreground text-xs">(optional)</span></Label>
+            <Select value={voicemailTemplateId || 'none'} onValueChange={(v) => setVoicemailTemplateId(v === 'none' ? '' : v)}>
+              <SelectTrigger>
+                <SelectValue placeholder={vmTemplates.length === 0 ? 'No templates available' : 'None — agent handles VM'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None — let agent handle voicemail</SelectItem>
+                {vmTemplates.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {vmTemplates.length === 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Create a template with a transcript under AI Agents → Voicemail Templates to enable drops.
+              </p>
+            )}
           </div>
 
           {availableLeads > 0 ? (
