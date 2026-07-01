@@ -121,6 +121,9 @@ serve(async (req) => {
     const gateBlocks: Array<{ lead_id: string; code: string; reason: string; retryable: boolean }> = [];
     let killSwitchHit = false;
 
+    // Voicemail drop template (optional). Fire-and-forget; falls back silently.
+    const vmTranscript = await fetchVoicemailTranscript(supabase, body.voicemail_drop_template_id);
+
     for (const l of leads as any[]) {
       // === Per-lead dispatch gate (kill-switch, calling hours, throttle) ===
       // Scoped on business_unit_key only; campaign row is created post-loop.
