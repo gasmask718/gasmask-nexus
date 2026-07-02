@@ -27,6 +27,7 @@ import {
 import { format } from "date-fns";
 import { CallTranscriptViewer } from "@/components/communication/CallTranscriptViewer";
 import { CallAnalysisPanel } from "@/components/communication/CallAnalysisPanel";
+import { LeadIntelligencePanel } from "@/components/communication/LeadIntelligencePanel";
 import { cn } from "@/lib/utils";
 
 type FinishedCall = {
