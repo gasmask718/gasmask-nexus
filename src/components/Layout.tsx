@@ -120,6 +120,9 @@ import {
   Camera,
   MessageCircle,
   Handshake,
+  Gift,
+  Scale,
+  FolderOpen,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
