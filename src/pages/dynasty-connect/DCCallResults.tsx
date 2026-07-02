@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Search, Eye, Phone, Clock, Flame, TrendingUp, BarChart3, Star, MessageSquare } from 'lucide-react';
+import { Search, Eye, Phone, Clock, Flame, TrendingUp, BarChart3, Star, MessageSquare, Brain } from 'lucide-react';
+import { LeadIntelligencePanel } from '@/components/communication/LeadIntelligencePanel';
 
 const QUALITY_BADGE: Record<string, { emoji: string; class: string }> = {
   hot: { emoji: '🔥', class: 'bg-red-500/10 text-red-500 border-red-500' },
