@@ -2189,6 +2189,14 @@ export default function AppRoutes() {
         <Route path="/funding-machine/settings" element={<FundingMachineSettings />} />
         {/* UBEN HQ — Non-Profit Operations Tracker */}
         <Route path="/os/uben" element={<UbenHQ />} />
+        <Route path="/os/uben/grants" element={<UbenGrantTracker />} />
+        <Route path="/os/uben/applications" element={<UbenApplications />} />
+        <Route path="/os/uben/programs" element={<UbenPrograms />} />
+        <Route path="/os/uben/impact" element={<UbenImpact />} />
+        <Route path="/os/uben/donors" element={<UbenDonors />} />
+        <Route path="/os/uben/compliance" element={<UbenCompliance />} />
+        <Route path="/os/uben/documents" element={<UbenDocuments />} />
+        <Route path="/os/uben/commissions" element={<UbenCommissions />} />
         <Route path="/os/dynasty-earn" element={<DynastyEarn />} />
         <Route path="/os/brand-acquisition" element={<BrandAcquisitionSystem />} />
         <Route path="/os/dynasty-sales" element={<DynastySalesNetwork />} />
