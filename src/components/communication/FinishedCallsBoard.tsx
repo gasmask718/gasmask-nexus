@@ -383,11 +383,19 @@ export function FinishedCallsBoard({
                     </p>
                   )}
 
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
-                      <Sparkles className="h-3 w-3 text-purple-400" /> AI Analysis
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+                        <Sparkles className="h-3 w-3 text-purple-400" /> Coaching
+                      </div>
+                      <CallAnalysisPanel callId={c.call_id} />
                     </div>
-                    <CallAnalysisPanel callId={c.call_id} />
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+                        <Sparkles className="h-3 w-3 text-amber-400" /> Lead Intelligence
+                      </div>
+                      <LeadIntelligencePanel callId={c.call_id} />
+                    </div>
                   </div>
 
                   <div>
