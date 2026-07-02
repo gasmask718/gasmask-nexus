@@ -103412,8 +103412,11 @@ export type Database = {
       }
       uben_programs: {
         Row: {
+          category: string | null
           created_at: string
           description: string | null
+          eligibility: string | null
+          how_to_apply: string | null
           id: string
           name: string
           participant_count: number | null
@@ -103422,8 +103425,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           description?: string | null
+          eligibility?: string | null
+          how_to_apply?: string | null
           id?: string
           name: string
           participant_count?: number | null
@@ -103432,8 +103438,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           description?: string | null
+          eligibility?: string | null
+          how_to_apply?: string | null
           id?: string
           name?: string
           participant_count?: number | null
