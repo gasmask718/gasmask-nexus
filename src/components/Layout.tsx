@@ -120,6 +120,9 @@ import {
   Camera,
   MessageCircle,
   Handshake,
+  Gift,
+  Scale,
+  FolderOpen,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
@@ -458,6 +461,14 @@ const DYNASTY_NAVIGATION = {
     name: '💛 UBEN HQ',
     items: [
       { path: '/os/uben', label: '💛 UBEN Dashboard', icon: Heart },
+      { path: '/os/uben/grants', label: '🏆 Grant Tracker', icon: Trophy },
+      { path: '/os/uben/applications', label: '📋 Applications', icon: ClipboardList },
+      { path: '/os/uben/programs', label: '💛 Programs', icon: Heart },
+      { path: '/os/uben/impact', label: '📊 Impact Reports', icon: BarChart3 },
+      { path: '/os/uben/donors', label: '🎁 Donors', icon: Gift },
+      { path: '/os/uben/compliance', label: '⚖️ Compliance', icon: Scale },
+      { path: '/os/uben/documents', label: '📁 Documents', icon: FolderOpen },
+      { path: '/os/uben/commissions', label: '💰 Commissions', icon: DollarSign },
       { path: '/os/dynasty-earn', label: '💰 Monetization Engine', icon: DollarSign },
       { path: '/os/brand-acquisition', label: '👑 Brand Acquisition', icon: Crown },
       { path: '/os/dynasty-sales', label: '🔥 Sales Domination', icon: Target },

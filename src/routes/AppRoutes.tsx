@@ -1007,6 +1007,14 @@ const FundingMachineCreditUnionIntel = lazy(() => import('@/pages/funding-machin
 const FundingMachineAutoFinancing = lazy(() => import('@/pages/funding-machine/AutoFinancingPage'));
 const FundingMachineShelfCorp = lazy(() => import('@/pages/funding-machine/ShelfCorpPage'));
 const UbenHQ = lazy(() => import('@/pages/os/uben/UbenHQ'));
+const UbenGrantTracker = lazy(() => import('@/pages/os/uben/UbenGrantTracker'));
+const UbenApplications = lazy(() => import('@/pages/os/uben/UbenApplications'));
+const UbenPrograms = lazy(() => import('@/pages/os/uben/UbenPrograms'));
+const UbenImpact = lazy(() => import('@/pages/os/uben/UbenImpact'));
+const UbenDonors = lazy(() => import('@/pages/os/uben/UbenDonors'));
+const UbenCompliance = lazy(() => import('@/pages/os/uben/UbenCompliance'));
+const UbenDocuments = lazy(() => import('@/pages/os/uben/UbenDocuments'));
+const UbenCommissions = lazy(() => import('@/pages/os/uben/UbenCommissions'));
 const DynastyEarn = lazy(() => import('@/pages/os/dynasty-earn/DynastyEarn'));
 const BrandAcquisitionSystem = lazy(() => import('@/pages/os/brand-acquisition/BrandAcquisitionSystem'));
 const DynastySalesNetwork = lazy(() => import('@/pages/os/dynasty-sales/DynastySalesNetwork'));
@@ -2181,6 +2189,14 @@ export default function AppRoutes() {
         <Route path="/funding-machine/settings" element={<FundingMachineSettings />} />
         {/* UBEN HQ — Non-Profit Operations Tracker */}
         <Route path="/os/uben" element={<UbenHQ />} />
+        <Route path="/os/uben/grants" element={<UbenGrantTracker />} />
+        <Route path="/os/uben/applications" element={<UbenApplications />} />
+        <Route path="/os/uben/programs" element={<UbenPrograms />} />
+        <Route path="/os/uben/impact" element={<UbenImpact />} />
+        <Route path="/os/uben/donors" element={<UbenDonors />} />
+        <Route path="/os/uben/compliance" element={<UbenCompliance />} />
+        <Route path="/os/uben/documents" element={<UbenDocuments />} />
+        <Route path="/os/uben/commissions" element={<UbenCommissions />} />
         <Route path="/os/dynasty-earn" element={<DynastyEarn />} />
         <Route path="/os/brand-acquisition" element={<BrandAcquisitionSystem />} />
         <Route path="/os/dynasty-sales" element={<DynastySalesNetwork />} />
