@@ -726,6 +726,64 @@ serve(async (req) => {
           console.error(`[dc-post-call-analysis] postProcess(${businessUnitKey}) failed`, e);
         }
       }
+
+      // dc_lead_analysis upsert — non-fatal surface for post-call analysis output.
+      // Preserves full raw analysis in qualification_payload regardless of unit.
+      // onConflict: call_id → re-runs update rather than duplicate.
+      if (callId) {
+        try {
+          const scoreToLevel = (s: any): string | null => {
+            const n = Number(s);
+            if (!Number.isFinite(n)) return null;
+            if (n >= 8) return 'high';
+            if (n >= 5) return 'medium';
+            if (n >= 3) return 'low';
+            if (n >= 1) return 'none';
+            return null;
+          };
+          const rawScore = analysis.interest_score ?? analysis.overall_score ?? null;
+          const interestScore = typeof rawScore === 'number' ? rawScore : (Number.isFinite(Number(rawScore)) ? Number(rawScore) : null);
+          const interestLevel = analysis.interest_level ?? (interestScore != null ? scoreToLevel(interestScore) : null);
+          const sentiment = analysis.sentiment ?? analysis.relationship_sentiment ?? null;
+          const recommendedAction = analysis.recommended_action ?? analysis.action_required ?? analysis.next_action ?? null;
+          const callbackRequested = analysis.callback_requested ?? analysis.agreed_to_callback ?? null;
+          const summary = analysis.summary ?? analysis.inventory_summary ?? null;
+          const keyObjections = analysis.key_objections ?? analysis.objections ?? null;
+          const redFlags = analysis.red_flags ?? null;
+
+          const analysisRow: Record<string, any> = {
+            call_id: callId,
+            business_unit_key: businessUnitKey,
+            lead_id: String(leadId),
+            source_table: leadTable,
+            interest_level: interestLevel,
+            interest_score: interestScore,
+            sentiment,
+            recommended_action: recommendedAction,
+            opted_out: analysis.opted_out ?? null,
+            callback_requested: callbackRequested,
+            callback_time: analysis.callback_time ?? null,
+            contact_confirmed: analysis.contact_confirmed ?? null,
+            summary,
+            key_objections: keyObjections,
+            red_flags: redFlags,
+            email_provided: analysis.email_provided ?? null,
+            qualification_payload: analysis,
+            analysis_version: 'v1',
+            claude_model: claudeModel,
+            analyzed_at: new Date().toISOString(),
+          };
+
+          const { error: analysisErr } = await supabase
+            .from('dc_lead_analysis')
+            .upsert(analysisRow, { onConflict: 'call_id' });
+          if (analysisErr) {
+            console.error(`[dc-post-call-analysis] dc_lead_analysis upsert failed (non-fatal): ${analysisErr.message}`);
+          }
+        } catch (e) {
+          console.error('[dc-post-call-analysis] dc_lead_analysis upsert threw (non-fatal)', e);
+        }
+      }
     }
 
 
