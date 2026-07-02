@@ -609,6 +609,7 @@ serve(async (req) => {
       }),
     });
     const claudeJson = await claudeRes.json();
+    const claudeModel: string = (claudeJson && typeof claudeJson.model === 'string' && claudeJson.model) || 'claude-sonnet-4-6';
     const text = claudeJson.content?.[0]?.text || '';
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) throw new Error('No JSON in Claude response');
