@@ -103341,8 +103341,11 @@ export type Database = {
       }
       uben_impact_log: {
         Row: {
+          category: string | null
           created_at: string
           date: string
+          description: string | null
+          dynasty_business: string | null
           id: string
           logged_by: string | null
           outcome_notes: string | null
@@ -103350,8 +103353,11 @@ export type Database = {
           program_id: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           date?: string
+          description?: string | null
+          dynasty_business?: string | null
           id?: string
           logged_by?: string | null
           outcome_notes?: string | null
@@ -103359,8 +103365,11 @@ export type Database = {
           program_id: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           date?: string
+          description?: string | null
+          dynasty_business?: string | null
           id?: string
           logged_by?: string | null
           outcome_notes?: string | null
