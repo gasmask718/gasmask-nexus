@@ -102996,6 +102996,53 @@ export type Database = {
           },
         ]
       }
+      uben_beneficiaries: {
+        Row: {
+          created_at: string | null
+          dynasty_business_referred: string | null
+          email: string | null
+          enrollment_date: string | null
+          id: string
+          name: string
+          outcome_notes: string | null
+          phone: string | null
+          program_id: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dynasty_business_referred?: string | null
+          email?: string | null
+          enrollment_date?: string | null
+          id?: string
+          name: string
+          outcome_notes?: string | null
+          phone?: string | null
+          program_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dynasty_business_referred?: string | null
+          email?: string | null
+          enrollment_date?: string | null
+          id?: string
+          name?: string
+          outcome_notes?: string | null
+          phone?: string | null
+          program_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uben_beneficiaries_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "uben_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       uben_commission_config: {
         Row: {
           ambassador_commission_rate: number
@@ -103134,6 +103181,161 @@ export type Database = {
           id?: string
           name?: string
           uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      uben_donations: {
+        Row: {
+          amount: number
+          created_at: string | null
+          donation_type: string | null
+          donor_email: string | null
+          donor_id: string | null
+          donor_name: string | null
+          id: string
+          notes: string | null
+          status: string | null
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          donation_type?: string | null
+          donor_email?: string | null
+          donor_id?: string | null
+          donor_name?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          donation_type?: string | null
+          donor_email?: string | null
+          donor_id?: string | null
+          donor_name?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uben_donations_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "uben_donors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      uben_donors: {
+        Row: {
+          created_at: string | null
+          donor_email: string | null
+          donor_name: string
+          donor_phone: string | null
+          donor_type: string | null
+          first_donation_date: string | null
+          id: string
+          is_recurring: boolean | null
+          last_donation_date: string | null
+          notes: string | null
+          stripe_customer_id: string | null
+          total_donated: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          donor_email?: string | null
+          donor_name: string
+          donor_phone?: string | null
+          donor_type?: string | null
+          first_donation_date?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          last_donation_date?: string | null
+          notes?: string | null
+          stripe_customer_id?: string | null
+          total_donated?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          donor_email?: string | null
+          donor_name?: string
+          donor_phone?: string | null
+          donor_type?: string | null
+          first_donation_date?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          last_donation_date?: string | null
+          notes?: string | null
+          stripe_customer_id?: string | null
+          total_donated?: number | null
+        }
+        Relationships: []
+      }
+      uben_grant_applications: {
+        Row: {
+          amount_awarded: number | null
+          amount_requested: number | null
+          application_date: string | null
+          award_date: string | null
+          contact_email: string | null
+          contact_name: string | null
+          created_at: string | null
+          deadline: string | null
+          dynasty_business: string | null
+          funder_name: string
+          funder_type: string | null
+          grant_name: string
+          id: string
+          notes: string | null
+          report_due: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount_awarded?: number | null
+          amount_requested?: number | null
+          application_date?: string | null
+          award_date?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          dynasty_business?: string | null
+          funder_name: string
+          funder_type?: string | null
+          grant_name: string
+          id?: string
+          notes?: string | null
+          report_due?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount_awarded?: number | null
+          amount_requested?: number | null
+          application_date?: string | null
+          award_date?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          dynasty_business?: string | null
+          funder_name?: string
+          funder_type?: string | null
+          grant_name?: string
+          id?: string
+          notes?: string | null
+          report_due?: string | null
+          status?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
