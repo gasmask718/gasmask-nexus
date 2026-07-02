@@ -1007,6 +1007,14 @@ const FundingMachineCreditUnionIntel = lazy(() => import('@/pages/funding-machin
 const FundingMachineAutoFinancing = lazy(() => import('@/pages/funding-machine/AutoFinancingPage'));
 const FundingMachineShelfCorp = lazy(() => import('@/pages/funding-machine/ShelfCorpPage'));
 const UbenHQ = lazy(() => import('@/pages/os/uben/UbenHQ'));
+const UbenGrantTracker = lazy(() => import('@/pages/os/uben/UbenGrantTracker'));
+const UbenApplications = lazy(() => import('@/pages/os/uben/UbenApplications'));
+const UbenPrograms = lazy(() => import('@/pages/os/uben/UbenPrograms'));
+const UbenImpact = lazy(() => import('@/pages/os/uben/UbenImpact'));
+const UbenDonors = lazy(() => import('@/pages/os/uben/UbenDonors'));
+const UbenCompliance = lazy(() => import('@/pages/os/uben/UbenCompliance'));
+const UbenDocuments = lazy(() => import('@/pages/os/uben/UbenDocuments'));
+const UbenCommissions = lazy(() => import('@/pages/os/uben/UbenCommissions'));
 const DynastyEarn = lazy(() => import('@/pages/os/dynasty-earn/DynastyEarn'));
 const BrandAcquisitionSystem = lazy(() => import('@/pages/os/brand-acquisition/BrandAcquisitionSystem'));
 const DynastySalesNetwork = lazy(() => import('@/pages/os/dynasty-sales/DynastySalesNetwork'));
