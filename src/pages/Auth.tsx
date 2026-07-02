@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Package } from 'lucide-react';
 import { getRoleRedirectPath, type OSRole } from '@/config/osNavigation';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -24,21 +25,27 @@ const Auth = () => {
   const { user } = useAuth();
   const markManualSignIn = useMarkManualSignIn();
   const { data: profileData, isLoading: profileLoading } = useCurrentUserProfile();
+  const { role: rbacRole, loading: rbacLoading } = useUserRole();
 
   useEffect(() => {
     if (!user) return;
-    if (profileLoading) return;
+    if (profileLoading || rbacLoading) return;
 
-    // Role-based routing — no hardcoded email lists.
-    if (profileData?.profile?.primary_role) {
-      const role = profileData.profile.primary_role as OSRole;
-      const redirectPath = getRoleRedirectPath(role);
-      navigate(redirectPath, { replace: true });
+    // Prefer the profile's primary_role; fall back to the RBAC role from
+    // user_roles so users who were granted a role but never got a profile
+    // row (e.g. the master admin) still route into the platform.
+    const resolvedRole =
+      (profileData?.profile?.primary_role as OSRole | undefined) ??
+      (rbacRole as OSRole | null | undefined) ??
+      null;
+
+    if (resolvedRole) {
+      navigate(getRoleRedirectPath(resolvedRole), { replace: true });
     } else {
-      // No profile/role yet — show pending-approval screen
+      // Genuinely no role assigned — new signup awaiting admin approval.
       navigate('/pending-approval', { replace: true });
     }
-  }, [user, profileData, profileLoading, navigate]);
+  }, [user, profileData, profileLoading, rbacRole, rbacLoading, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
