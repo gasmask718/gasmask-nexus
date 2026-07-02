@@ -229,6 +229,19 @@ export default function UbenApplications() {
       });
       if (insErr) throw insErr;
 
+      // Increment participant_count on the program
+      const { data: prog, error: progErr } = await supabase
+        .from('uben_programs')
+        .select('participant_count')
+        .eq('id', payload.programId)
+        .single();
+      if (progErr) throw progErr;
+      const { error: bumpErr } = await supabase
+        .from('uben_programs')
+        .update({ participant_count: (prog?.participant_count ?? 0) + 1 })
+        .eq('id', payload.programId);
+      if (bumpErr) throw bumpErr;
+
       if (payload.app.application_status !== 'approved') {
         const { error: updErr } = await supabase
           .from('uben_ambassador_applications')
@@ -241,6 +254,7 @@ export default function UbenApplications() {
       toast.success('Enrolled in program & marked approved');
       qc.invalidateQueries({ queryKey: ['uben_ambassador_applications'] });
       qc.invalidateQueries({ queryKey: ['uben_beneficiaries'] });
+      qc.invalidateQueries({ queryKey: ['uben_programs'] });
       setAssignOpen(false);
       setSelectedProgram('');
     },
