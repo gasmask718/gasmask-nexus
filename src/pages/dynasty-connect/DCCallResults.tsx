@@ -193,6 +193,19 @@ export default function DCCallResults() {
                       </div>
                     </CardContent></Card>
 
+                    {/* Lead Intelligence (dc_lead_analysis) */}
+                    <Card className="border-amber-500/30">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Brain className="h-4 w-4 text-amber-400" /> Lead Intelligence
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <LeadIntelligencePanel callId={selectedCall.call_id} />
+                      </CardContent>
+                    </Card>
+
+
                     {/* Analysis */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <Card className="border-green-500/30"><CardHeader className="pb-2"><CardTitle className="text-sm text-green-500">✅ What Went Well</CardTitle></CardHeader><CardContent><ul className="text-sm space-y-1">{selectedCall.analysis.what_went_well?.map((w: string, i: number) => <li key={i}>• {w}</li>)}</ul></CardContent></Card>
