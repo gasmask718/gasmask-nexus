@@ -1018,6 +1018,14 @@ const UbenCommissions = lazy(() => import('@/pages/os/uben/UbenCommissions'));
 const DynastyEarn = lazy(() => import('@/pages/os/dynasty-earn/DynastyEarn'));
 const BrandAcquisitionSystem = lazy(() => import('@/pages/os/brand-acquisition/BrandAcquisitionSystem'));
 const DynastySalesNetwork = lazy(() => import('@/pages/os/dynasty-sales/DynastySalesNetwork'));
+const ClipperDashboard = lazy(() => import('@/pages/os/clipper/ClipperDashboard'));
+const ClipperClippers = lazy(() => import('@/pages/os/clipper/ClipperClippers'));
+const ClipperCampaigns = lazy(() => import('@/pages/os/clipper/ClipperCampaigns'));
+const ClipperSubmissions = lazy(() => import('@/pages/os/clipper/ClipperSubmissions'));
+const ClipperAnalytics = lazy(() => import('@/pages/os/clipper/ClipperAnalytics'));
+const ClipperConversions = lazy(() => import('@/pages/os/clipper/ClipperConversions'));
+const ClipperPayouts = lazy(() => import('@/pages/os/clipper/ClipperPayouts'));
+const ClipperSettings = lazy(() => import('@/pages/os/clipper/ClipperSettings'));
 const BettingDashboard = lazy(() => import('@/pages/os/betting/BettingDashboard'));
 const LineIntake = lazy(() => import('@/pages/os/betting/LineIntake'));
 const SimulationPage = lazy(() => import('@/pages/os/betting/SimulationPage'));
@@ -2200,6 +2208,14 @@ export default function AppRoutes() {
         <Route path="/os/dynasty-earn" element={<DynastyEarn />} />
         <Route path="/os/brand-acquisition" element={<BrandAcquisitionSystem />} />
         <Route path="/os/dynasty-sales" element={<DynastySalesNetwork />} />
+        <Route path="/os/clipper-nation" element={<ClipperDashboard />} />
+        <Route path="/os/clipper-nation/clippers" element={<ClipperClippers />} />
+        <Route path="/os/clipper-nation/campaigns" element={<ClipperCampaigns />} />
+        <Route path="/os/clipper-nation/submissions" element={<ClipperSubmissions />} />
+        <Route path="/os/clipper-nation/analytics" element={<ClipperAnalytics />} />
+        <Route path="/os/clipper-nation/conversions" element={<ClipperConversions />} />
+        <Route path="/os/clipper-nation/payouts" element={<ClipperPayouts />} />
+        <Route path="/os/clipper-nation/settings" element={<ClipperSettings />} />
         <Route path="/os/revenue-orchestrator" element={<DynastyRevenueOrchestrator />} />
         <Route path="/os/sports-betting" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/analytics" element={<Navigate to="/os/sports-betting/dashboard" replace />} />

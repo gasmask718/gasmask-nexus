@@ -123,6 +123,9 @@ import {
   Gift,
   Scale,
   FolderOpen,
+  Film,
+  Video,
+  Settings2,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
@@ -474,6 +477,20 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/dynasty-sales', label: '🔥 Sales Domination', icon: Target },
     ],
   },
+  clipperNation: {
+    id: 'clipper-nation',
+    name: '🎬 Clipper Nation',
+    items: [
+      { path: '/os/clipper-nation', label: '🎬 Dashboard', icon: Film },
+      { path: '/os/clipper-nation/clippers', label: '👥 Clippers', icon: Users },
+      { path: '/os/clipper-nation/campaigns', label: '📢 Campaigns', icon: Megaphone },
+      { path: '/os/clipper-nation/submissions', label: '📹 Submissions', icon: Video },
+      { path: '/os/clipper-nation/analytics', label: '📊 Analytics', icon: BarChart3 },
+      { path: '/os/clipper-nation/conversions', label: '💰 Conversions', icon: DollarSign },
+      { path: '/os/clipper-nation/payouts', label: '💳 Payouts', icon: CreditCard },
+      { path: '/os/clipper-nation/settings', label: '⚙️ Settings', icon: Settings2 },
+    ],
+  },
   financeAcquisition: {
     id: 'finance-acquisition',
     name: '💰 Finance & Acquisition',
@@ -735,7 +752,7 @@ const Layout = ({ children }: LayoutProps) => {
   const [openSections, setOpenSections] = useState<string[]>([
     'penthouse', 'sbo-ai-engine', 'security-governance',
     'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9',
-    'surplus-funds-os', 'dynasty-funding-hub', 'uben-hq', 'real-estate-os', 'solar-os',
+    'surplus-funds-os', 'dynasty-funding-hub', 'uben-hq', 'clipper-nation', 'real-estate-os', 'solar-os',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
     'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
     'brandaro-hub', 'dynasty-connect', 'voice-ops', 'global-dashboard', 'portals',
@@ -1058,6 +1075,19 @@ const Layout = ({ children }: LayoutProps) => {
           DYNASTY_NAVIGATION.ubenHq.items
         )}
       </div>
+
+      {/* 🎬 CLIPPER NATION */}
+      <div className="pt-2 border-t border-pink-600/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-pink-400/80 tracking-wider">
+          🎬 Clipper Nation
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.clipperNation.id,
+          DYNASTY_NAVIGATION.clipperNation.name,
+          DYNASTY_NAVIGATION.clipperNation.items
+        )}
+      </div>
+
 
       {/* 🏠 REAL ESTATE OS — STANDALONE HUB */}
       <div className="pt-2 border-t border-green-600/30">
