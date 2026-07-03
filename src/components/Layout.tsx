@@ -1076,6 +1076,19 @@ const Layout = ({ children }: LayoutProps) => {
         )}
       </div>
 
+      {/* 🎬 CLIPPER NATION */}
+      <div className="pt-2 border-t border-pink-600/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-pink-400/80 tracking-wider">
+          🎬 Clipper Nation
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.clipperNation.id,
+          DYNASTY_NAVIGATION.clipperNation.name,
+          DYNASTY_NAVIGATION.clipperNation.items
+        )}
+      </div>
+
+
       {/* 🏠 REAL ESTATE OS — STANDALONE HUB */}
       <div className="pt-2 border-t border-green-600/30">
         <div className="px-3 py-1 text-[10px] font-semibold uppercase text-green-600/80 tracking-wider">
