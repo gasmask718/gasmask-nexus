@@ -133,6 +133,12 @@ export default function DCLeadInbox() {
         .order('last_contacted_at', { ascending: false, nullsFirst: false })
         .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
 
+      console.log('[DCLeadInbox] executing dc_unified_leads query at', new Date().toISOString(), {
+        hasUser: !!user, hasSession: !!session,
+      });
+        .order('last_contacted_at', { ascending: false, nullsFirst: false })
+        .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+
       if (bu !== 'all') q = q.eq('business_unit_key', bu);
       if (dispo !== 'all') q = q.eq('last_disposition', dispo);
       if (dateFrom) q = q.gte('last_contacted_at', dateFrom);
