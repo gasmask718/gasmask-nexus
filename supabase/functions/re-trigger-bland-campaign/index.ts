@@ -59,15 +59,20 @@ serve(async (req) => {
     const BLAND_API_KEY = Deno.env.get('BLAND_API_KEY');
     if (!BLAND_API_KEY) throw new Error('BLAND_API_KEY not configured');
 
-    const body = await req.json();
-    const ids: string[] = body.lead_ids || (body.lead_id ? [body.lead_id] : []);
-    if (ids.length === 0) {
+    // HARD-REJECT GUARD - Prevent accidental full-cohort dispatch
+    let body: any = {};
+    try { body = await req.json(); } catch { body = {}; }
+    const rawIds = Array.isArray(body?.lead_ids)
+      ? body.lead_ids
+      : (body?.lead_id ? [body.lead_id] : null);
+    if (!rawIds || !Array.isArray(rawIds) || rawIds.length === 0) {
       return new Response(JSON.stringify({
         error: 'strict_mode_violation',
-        message: 'lead_ids or lead_id required. Full-cohort dispatch without explicit scope is not permitted.',
+        message: 'Hard reject: lead_ids array is required and cannot be empty. Full-cohort dispatch without explicit scope is not permitted.',
         bland_calls_started: 0,
       }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+    const ids: string[] = rawIds;
     const agentType = body.agent_type || 'cold_seller';
     const basePrompt = PROMPTS[agentType] || COLD_SELLER_PROMPT;
 
