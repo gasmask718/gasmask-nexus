@@ -120818,14 +120818,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -121074,6 +121074,1053 @@ export type Database = {
             referencedColumns: ["ambassador_id"]
           },
         ]
+      }
+      dp_activity_log: {
+        Row: {
+          action: string | null
+          actor_id: string | null
+          actor_type:
+            | "system"
+            | "ai_agent"
+            | "admin"
+            | "partner"
+            | "ambassador"
+            | null
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string | null
+          metadata: Json | null
+          partner_id: string | null
+          updated_at: string | null
+          visible_to_partner: boolean | null
+        }
+        Insert: {
+          action?: string | null
+          actor_id?: string | null
+          actor_type?:
+            | "system"
+            | "ai_agent"
+            | "admin"
+            | "partner"
+            | "ambassador"
+            | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string | null
+          metadata?: Json | null
+          partner_id?: string | null
+          updated_at?: string | null
+          visible_to_partner?: boolean | null
+        }
+        Update: {
+          action?: string | null
+          actor_id?: string | null
+          actor_type?:
+            | "system"
+            | "ai_agent"
+            | "admin"
+            | "partner"
+            | "ambassador"
+            | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string | null
+          metadata?: Json | null
+          partner_id?: string | null
+          updated_at?: string | null
+          visible_to_partner?: boolean | null
+        }
+        Relationships: []
+      }
+      dp_add_ons: {
+        Row: {
+          addon_type: string | null
+          amount_cents: number | null
+          created_at: string | null
+          expires_at: string | null
+          id: string | null
+          metadata: Json | null
+          partner_id: string | null
+          purchased_at: string | null
+          status: string | null
+          stripe_payment_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          addon_type?: string | null
+          amount_cents?: number | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          metadata?: Json | null
+          partner_id?: string | null
+          purchased_at?: string | null
+          status?: string | null
+          stripe_payment_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          addon_type?: string | null
+          amount_cents?: number | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          metadata?: Json | null
+          partner_id?: string | null
+          purchased_at?: string | null
+          status?: string | null
+          stripe_payment_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      dp_ai_personas: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          is_default: boolean | null
+          name: string | null
+          platform_id: string | null
+          sample_messages: Json | null
+          system_prompt: string | null
+          updated_at: string | null
+          voice_description: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          is_default?: boolean | null
+          name?: string | null
+          platform_id?: string | null
+          sample_messages?: Json | null
+          system_prompt?: string | null
+          updated_at?: string | null
+          voice_description?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          is_default?: boolean | null
+          name?: string | null
+          platform_id?: string | null
+          sample_messages?: Json | null
+          system_prompt?: string | null
+          updated_at?: string | null
+          voice_description?: string | null
+        }
+        Relationships: []
+      }
+      dp_ambassadors: {
+        Row: {
+          campaign_id: string | null
+          churned_at: string | null
+          contract_envelope_id: string | null
+          contract_signed_at: string | null
+          contract_url: string | null
+          created_at: string | null
+          email: string | null
+          external_handle: string | null
+          full_name: string | null
+          id: string | null
+          joined_at: string | null
+          lead_id: string | null
+          partner_id: string | null
+          payout_method: string | null
+          phone: string | null
+          platform_id: string | null
+          promo_kit_url: string | null
+          status:
+            | "onboarding"
+            | "active"
+            | "dormant"
+            | "churned"
+            | "banned"
+            | null
+          stripe_connect_account_id: string | null
+          total_commission_earned_cents: number | null
+          total_sales_count: number | null
+          total_sales_volume_cents: number | null
+          tracking_link_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          churned_at?: string | null
+          contract_envelope_id?: string | null
+          contract_signed_at?: string | null
+          contract_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          external_handle?: string | null
+          full_name?: string | null
+          id?: string | null
+          joined_at?: string | null
+          lead_id?: string | null
+          partner_id?: string | null
+          payout_method?: string | null
+          phone?: string | null
+          platform_id?: string | null
+          promo_kit_url?: string | null
+          status?:
+            | "onboarding"
+            | "active"
+            | "dormant"
+            | "churned"
+            | "banned"
+            | null
+          stripe_connect_account_id?: string | null
+          total_commission_earned_cents?: number | null
+          total_sales_count?: number | null
+          total_sales_volume_cents?: number | null
+          tracking_link_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          churned_at?: string | null
+          contract_envelope_id?: string | null
+          contract_signed_at?: string | null
+          contract_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          external_handle?: string | null
+          full_name?: string | null
+          id?: string | null
+          joined_at?: string | null
+          lead_id?: string | null
+          partner_id?: string | null
+          payout_method?: string | null
+          phone?: string | null
+          platform_id?: string | null
+          promo_kit_url?: string | null
+          status?:
+            | "onboarding"
+            | "active"
+            | "dormant"
+            | "churned"
+            | "banned"
+            | null
+          stripe_connect_account_id?: string | null
+          total_commission_earned_cents?: number | null
+          total_sales_count?: number | null
+          total_sales_volume_cents?: number | null
+          tracking_link_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      dp_campaigns: {
+        Row: {
+          ai_persona_id: string | null
+          budget_cents: number | null
+          created_at: string | null
+          current_ambassador_count: number | null
+          end_date: string | null
+          id: string | null
+          messaging_config: Json | null
+          name: string | null
+          partner_id: string | null
+          platform_id: string | null
+          spent_cents: number | null
+          start_date: string | null
+          status:
+            | "draft"
+            | "sourcing"
+            | "outreach"
+            | "active"
+            | "paused"
+            | "completed"
+            | null
+          target_ambassador_count: number | null
+          type:
+            | "ig_dm"
+            | "tiktok_dm"
+            | "sms_blast"
+            | "email"
+            | "paid_ads"
+            | "mixed"
+            | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_persona_id?: string | null
+          budget_cents?: number | null
+          created_at?: string | null
+          current_ambassador_count?: number | null
+          end_date?: string | null
+          id?: string | null
+          messaging_config?: Json | null
+          name?: string | null
+          partner_id?: string | null
+          platform_id?: string | null
+          spent_cents?: number | null
+          start_date?: string | null
+          status?:
+            | "draft"
+            | "sourcing"
+            | "outreach"
+            | "active"
+            | "paused"
+            | "completed"
+            | null
+          target_ambassador_count?: number | null
+          type?:
+            | "ig_dm"
+            | "tiktok_dm"
+            | "sms_blast"
+            | "email"
+            | "paid_ads"
+            | "mixed"
+            | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_persona_id?: string | null
+          budget_cents?: number | null
+          created_at?: string | null
+          current_ambassador_count?: number | null
+          end_date?: string | null
+          id?: string | null
+          messaging_config?: Json | null
+          name?: string | null
+          partner_id?: string | null
+          platform_id?: string | null
+          spent_cents?: number | null
+          start_date?: string | null
+          status?:
+            | "draft"
+            | "sourcing"
+            | "outreach"
+            | "active"
+            | "paused"
+            | "completed"
+            | null
+          target_ambassador_count?: number | null
+          type?:
+            | "ig_dm"
+            | "tiktok_dm"
+            | "sms_blast"
+            | "email"
+            | "paid_ads"
+            | "mixed"
+            | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      dp_commission_splits: {
+        Row: {
+          ambassador_id: string | null
+          ambassador_share_cents: number | null
+          created_at: string | null
+          dynasty_share_cents: number | null
+          id: string | null
+          is_trailing: boolean | null
+          paid_at: string | null
+          partner_id: string | null
+          partner_share_cents: number | null
+          partner_tier_at_sale: "foundation" | "equity" | "sovereign" | null
+          payout_id: string | null
+          sale_id: string | null
+          status: "pending" | "paid" | "held" | "clawed_back" | "voided" | null
+          updated_at: string | null
+        }
+        Insert: {
+          ambassador_id?: string | null
+          ambassador_share_cents?: number | null
+          created_at?: string | null
+          dynasty_share_cents?: number | null
+          id?: string | null
+          is_trailing?: boolean | null
+          paid_at?: string | null
+          partner_id?: string | null
+          partner_share_cents?: number | null
+          partner_tier_at_sale?: "foundation" | "equity" | "sovereign" | null
+          payout_id?: string | null
+          sale_id?: string | null
+          status?: "pending" | "paid" | "held" | "clawed_back" | "voided" | null
+          updated_at?: string | null
+        }
+        Update: {
+          ambassador_id?: string | null
+          ambassador_share_cents?: number | null
+          created_at?: string | null
+          dynasty_share_cents?: number | null
+          id?: string | null
+          is_trailing?: boolean | null
+          paid_at?: string | null
+          partner_id?: string | null
+          partner_share_cents?: number | null
+          partner_tier_at_sale?: "foundation" | "equity" | "sovereign" | null
+          payout_id?: string | null
+          sale_id?: string | null
+          status?: "pending" | "paid" | "held" | "clawed_back" | "voided" | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      dp_leads: {
+        Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          campaign_id: string | null
+          converted_at: string | null
+          created_at: string | null
+          external_handle: string | null
+          external_id: string | null
+          fit_score: number | null
+          id: string | null
+          last_contacted_at: string | null
+          last_response_at: string | null
+          partner_id: string | null
+          platform_id: string | null
+          profile_data: Json | null
+          source: Database["public"]["Enums"]["lead_source"] | null
+          status:
+            | "new"
+            | "scoring"
+            | "contacted"
+            | "replied"
+            | "qualified"
+            | "onboarding"
+            | "onboarded"
+            | "archived"
+            | "do_not_contact"
+            | "needs_human"
+            | null
+          touch_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          campaign_id?: string | null
+          converted_at?: string | null
+          created_at?: string | null
+          external_handle?: string | null
+          external_id?: string | null
+          fit_score?: number | null
+          id?: string | null
+          last_contacted_at?: string | null
+          last_response_at?: string | null
+          partner_id?: string | null
+          platform_id?: string | null
+          profile_data?: Json | null
+          source?: Database["public"]["Enums"]["lead_source"] | null
+          status?:
+            | "new"
+            | "scoring"
+            | "contacted"
+            | "replied"
+            | "qualified"
+            | "onboarding"
+            | "onboarded"
+            | "archived"
+            | "do_not_contact"
+            | "needs_human"
+            | null
+          touch_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          campaign_id?: string | null
+          converted_at?: string | null
+          created_at?: string | null
+          external_handle?: string | null
+          external_id?: string | null
+          fit_score?: number | null
+          id?: string | null
+          last_contacted_at?: string | null
+          last_response_at?: string | null
+          partner_id?: string | null
+          platform_id?: string | null
+          profile_data?: Json | null
+          source?: Database["public"]["Enums"]["lead_source"] | null
+          status?:
+            | "new"
+            | "scoring"
+            | "contacted"
+            | "replied"
+            | "qualified"
+            | "onboarding"
+            | "onboarded"
+            | "archived"
+            | "do_not_contact"
+            | "needs_human"
+            | null
+          touch_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      dp_mrr_subscriptions: {
+        Row: {
+          canceled_at: string | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string | null
+          monthly_amount_cents: number | null
+          next_billing_date: string | null
+          partner_id: string | null
+          status: "active" | "past_due" | "canceled" | "paused" | null
+          stripe_subscription_id: string | null
+          tier: "foundation" | "equity" | "sovereign" | null
+          updated_at: string | null
+        }
+        Insert: {
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string | null
+          monthly_amount_cents?: number | null
+          next_billing_date?: string | null
+          partner_id?: string | null
+          status?: "active" | "past_due" | "canceled" | "paused" | null
+          stripe_subscription_id?: string | null
+          tier?: "foundation" | "equity" | "sovereign" | null
+          updated_at?: string | null
+        }
+        Update: {
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string | null
+          monthly_amount_cents?: number | null
+          next_billing_date?: string | null
+          partner_id?: string | null
+          status?: "active" | "past_due" | "canceled" | "paused" | null
+          stripe_subscription_id?: string | null
+          tier?: "foundation" | "equity" | "sovereign" | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      dp_notifications: {
+        Row: {
+          body: string | null
+          channel: "push" | "email" | "sms" | "in_app" | null
+          created_at: string | null
+          id: string | null
+          link_url: string | null
+          recipient_id: string | null
+          recipient_type: string | null
+          scheduled_for: string | null
+          sent_at: string | null
+          status: "queued" | "sent" | "delivered" | "failed" | "read" | null
+          subject: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          body?: string | null
+          channel?: "push" | "email" | "sms" | "in_app" | null
+          created_at?: string | null
+          id?: string | null
+          link_url?: string | null
+          recipient_id?: string | null
+          recipient_type?: string | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: "queued" | "sent" | "delivered" | "failed" | "read" | null
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          body?: string | null
+          channel?: "push" | "email" | "sms" | "in_app" | null
+          created_at?: string | null
+          id?: string | null
+          link_url?: string | null
+          recipient_id?: string | null
+          recipient_type?: string | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: "queued" | "sent" | "delivered" | "failed" | "read" | null
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      dp_outreach_messages: {
+        Row: {
+          ai_generated: boolean | null
+          ai_model: string | null
+          ambassador_id: string | null
+          channel: "ig_dm" | "tiktok_dm" | "sms" | "email" | null
+          content: string | null
+          created_at: string | null
+          delivered_at: string | null
+          direction: "outbound" | "inbound" | null
+          external_message_id: string | null
+          failed_reason: string | null
+          id: string | null
+          lead_id: string | null
+          read_at: string | null
+          sent_at: string | null
+          status:
+            | "queued"
+            | "sent"
+            | "delivered"
+            | "read"
+            | "replied"
+            | "failed"
+            | "blocked"
+            | null
+          touch_number: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          ai_model?: string | null
+          ambassador_id?: string | null
+          channel?: "ig_dm" | "tiktok_dm" | "sms" | "email" | null
+          content?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          direction?: "outbound" | "inbound" | null
+          external_message_id?: string | null
+          failed_reason?: string | null
+          id?: string | null
+          lead_id?: string | null
+          read_at?: string | null
+          sent_at?: string | null
+          status?:
+            | "queued"
+            | "sent"
+            | "delivered"
+            | "read"
+            | "replied"
+            | "failed"
+            | "blocked"
+            | null
+          touch_number?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_generated?: boolean | null
+          ai_model?: string | null
+          ambassador_id?: string | null
+          channel?: "ig_dm" | "tiktok_dm" | "sms" | "email" | null
+          content?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          direction?: "outbound" | "inbound" | null
+          external_message_id?: string | null
+          failed_reason?: string | null
+          id?: string | null
+          lead_id?: string | null
+          read_at?: string | null
+          sent_at?: string | null
+          status?:
+            | "queued"
+            | "sent"
+            | "delivered"
+            | "read"
+            | "replied"
+            | "failed"
+            | "blocked"
+            | null
+          touch_number?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      dp_partner_platforms: {
+        Row: {
+          activated_at: string | null
+          created_at: string | null
+          custom_commission_rate: number | null
+          deactivated_at: string | null
+          id: string | null
+          partner_id: string | null
+          platform_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string | null
+          custom_commission_rate?: number | null
+          deactivated_at?: string | null
+          id?: string | null
+          partner_id?: string | null
+          platform_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string | null
+          custom_commission_rate?: number | null
+          deactivated_at?: string | null
+          id?: string | null
+          partner_id?: string | null
+          platform_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      dp_partners: {
+        Row: {
+          business_name: string | null
+          created_at: string | null
+          dormant_since: string | null
+          email: string | null
+          entry_fee_amount: number | null
+          entry_fee_paid_at: string | null
+          full_name: string | null
+          id: string | null
+          mrr_active_until: string | null
+          mrr_amount: number | null
+          phone: string | null
+          profile_data: Json | null
+          reactivation_count: number | null
+          status:
+            | "pending_onboarding"
+            | "active"
+            | "dormant"
+            | "suspended"
+            | "churned"
+            | null
+          stripe_customer_id: string | null
+          stripe_entry_payment_id: string | null
+          stripe_subscription_id: string | null
+          tier: "foundation" | "equity" | "sovereign" | null
+          total_lifetime_earnings_cents: number | null
+          total_lifetime_paid_cents: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          business_name?: string | null
+          created_at?: string | null
+          dormant_since?: string | null
+          email?: string | null
+          entry_fee_amount?: number | null
+          entry_fee_paid_at?: string | null
+          full_name?: string | null
+          id?: string | null
+          mrr_active_until?: string | null
+          mrr_amount?: number | null
+          phone?: string | null
+          profile_data?: Json | null
+          reactivation_count?: number | null
+          status?:
+            | "pending_onboarding"
+            | "active"
+            | "dormant"
+            | "suspended"
+            | "churned"
+            | null
+          stripe_customer_id?: string | null
+          stripe_entry_payment_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: "foundation" | "equity" | "sovereign" | null
+          total_lifetime_earnings_cents?: number | null
+          total_lifetime_paid_cents?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          business_name?: string | null
+          created_at?: string | null
+          dormant_since?: string | null
+          email?: string | null
+          entry_fee_amount?: number | null
+          entry_fee_paid_at?: string | null
+          full_name?: string | null
+          id?: string | null
+          mrr_active_until?: string | null
+          mrr_amount?: number | null
+          phone?: string | null
+          profile_data?: Json | null
+          reactivation_count?: number | null
+          status?:
+            | "pending_onboarding"
+            | "active"
+            | "dormant"
+            | "suspended"
+            | "churned"
+            | null
+          stripe_customer_id?: string | null
+          stripe_entry_payment_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: "foundation" | "equity" | "sovereign" | null
+          total_lifetime_earnings_cents?: number | null
+          total_lifetime_paid_cents?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      dp_payouts: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          failure_reason: string | null
+          id: string | null
+          period_end: string | null
+          period_start: string | null
+          processed_at: string | null
+          recipient_id: string | null
+          recipient_type: "ambassador" | "partner" | null
+          scheduled_for: string | null
+          status:
+            | "scheduled"
+            | "processing"
+            | "completed"
+            | "failed"
+            | "reversed"
+            | null
+          stripe_transfer_id: string | null
+          total_amount_cents: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          failure_reason?: string | null
+          id?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          processed_at?: string | null
+          recipient_id?: string | null
+          recipient_type?: "ambassador" | "partner" | null
+          scheduled_for?: string | null
+          status?:
+            | "scheduled"
+            | "processing"
+            | "completed"
+            | "failed"
+            | "reversed"
+            | null
+          stripe_transfer_id?: string | null
+          total_amount_cents?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          failure_reason?: string | null
+          id?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          processed_at?: string | null
+          recipient_id?: string | null
+          recipient_type?: "ambassador" | "partner" | null
+          scheduled_for?: string | null
+          status?:
+            | "scheduled"
+            | "processing"
+            | "completed"
+            | "failed"
+            | "reversed"
+            | null
+          stripe_transfer_id?: string | null
+          total_amount_cents?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      dp_platforms: {
+        Row: {
+          brand_color: string | null
+          commission_pool_rate: number | null
+          config: Json | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          logo_url: string | null
+          name: string | null
+          product_base_url: string | null
+          slug: string | null
+          status: "active" | "draft" | "archived" | "maintenance" | null
+          stripe_account_id: string | null
+          tracking_method:
+            | "shopify"
+            | "stripe_webhook"
+            | "custom_pixel"
+            | "manual"
+            | null
+          updated_at: string | null
+        }
+        Insert: {
+          brand_color?: string | null
+          commission_pool_rate?: number | null
+          config?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+          product_base_url?: string | null
+          slug?: string | null
+          status?: "active" | "draft" | "archived" | "maintenance" | null
+          stripe_account_id?: string | null
+          tracking_method?:
+            | "shopify"
+            | "stripe_webhook"
+            | "custom_pixel"
+            | "manual"
+            | null
+          updated_at?: string | null
+        }
+        Update: {
+          brand_color?: string | null
+          commission_pool_rate?: number | null
+          config?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+          product_base_url?: string | null
+          slug?: string | null
+          status?: "active" | "draft" | "archived" | "maintenance" | null
+          stripe_account_id?: string | null
+          tracking_method?:
+            | "shopify"
+            | "stripe_webhook"
+            | "custom_pixel"
+            | "manual"
+            | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      dp_sales: {
+        Row: {
+          ambassador_id: string | null
+          amount_cents: number | null
+          cleared_at: string | null
+          commission_pool_cents: number | null
+          created_at: string | null
+          currency: string | null
+          customer_email_hash: string | null
+          external_sale_id: string | null
+          id: string | null
+          partner_id: string | null
+          platform_id: string | null
+          refunded_at: string | null
+          sold_at: string | null
+          status:
+            | "pending"
+            | "completed"
+            | "refunded"
+            | "disputed"
+            | "chargebacked"
+            | null
+          tracking_link_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ambassador_id?: string | null
+          amount_cents?: number | null
+          cleared_at?: string | null
+          commission_pool_cents?: number | null
+          created_at?: string | null
+          currency?: string | null
+          customer_email_hash?: string | null
+          external_sale_id?: string | null
+          id?: string | null
+          partner_id?: string | null
+          platform_id?: string | null
+          refunded_at?: string | null
+          sold_at?: string | null
+          status?:
+            | "pending"
+            | "completed"
+            | "refunded"
+            | "disputed"
+            | "chargebacked"
+            | null
+          tracking_link_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ambassador_id?: string | null
+          amount_cents?: number | null
+          cleared_at?: string | null
+          commission_pool_cents?: number | null
+          created_at?: string | null
+          currency?: string | null
+          customer_email_hash?: string | null
+          external_sale_id?: string | null
+          id?: string | null
+          partner_id?: string | null
+          platform_id?: string | null
+          refunded_at?: string | null
+          sold_at?: string | null
+          status?:
+            | "pending"
+            | "completed"
+            | "refunded"
+            | "disputed"
+            | "chargebacked"
+            | null
+          tracking_link_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      dp_tracking_links: {
+        Row: {
+          ambassador_id: string | null
+          campaign_id: string | null
+          click_count: number | null
+          conversion_count: number | null
+          created_at: string | null
+          destination_url: string | null
+          id: string | null
+          is_active: boolean | null
+          platform_id: string | null
+          short_code: string | null
+          updated_at: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          ambassador_id?: string | null
+          campaign_id?: string | null
+          click_count?: number | null
+          conversion_count?: number | null
+          created_at?: string | null
+          destination_url?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          platform_id?: string | null
+          short_code?: string | null
+          updated_at?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          ambassador_id?: string | null
+          campaign_id?: string | null
+          click_count?: number | null
+          conversion_count?: number | null
+          created_at?: string | null
+          destination_url?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          platform_id?: string | null
+          short_code?: string | null
+          updated_at?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
       }
       invoice_source_summary: {
         Row: {
