@@ -37,7 +37,8 @@ export async function logAdminAction(opts: {
   // Full implementation when schema is exposed:
   const { data: u } = await supabase.auth.getUser();
   await (supabase as any)
-    .from("dp_activity_log")
+    .schema("partners")
+    .from("activity_log")
     .insert({
       actor_type: "admin",
       actor_id: u.user?.id ?? null,
