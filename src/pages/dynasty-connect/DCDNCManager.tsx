@@ -118,7 +118,26 @@ function AddDncDialog({ open, onOpenChange, businesses }: {
         <div className="space-y-3">
           <div>
             <Label>Phone number</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 555-5555" />
+            <Input
+              value={phone}
+              inputMode="tel"
+              autoComplete="tel"
+              onChange={(e) => {
+                // Enforce E.164 charset: digits only, with a single optional leading '+'
+                const raw = e.target.value;
+                const hasPlus = raw.trimStart().startsWith('+');
+                const digits = raw.replace(/\D/g, '').slice(0, 15);
+                setPhone(hasPlus ? `+${digits}` : digits);
+              }}
+              onKeyDown={(e) => {
+                const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
+                if (allowed.includes(e.key) || e.metaKey || e.ctrlKey) return;
+                if (e.key === '+' && (e.currentTarget.selectionStart ?? 0) === 0 && !phone.startsWith('+')) return;
+                if (/^[0-9]$/.test(e.key)) return;
+                e.preventDefault();
+              }}
+              placeholder="+15555550001"
+            />
             <div className="text-xs mt-1">
               {phone && normalized.ok && (
                 <span className="text-green-600 dark:text-green-400">Normalized: <span className="font-mono">{normalized.value}</span></span>
