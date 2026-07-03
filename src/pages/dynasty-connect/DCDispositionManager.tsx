@@ -215,6 +215,7 @@ function ManualOverride() {
   const [newDisp, setNewDisp] = useState<string>('');
   const [reason, setReason] = useState('');
   const [lastResult, setLastResult] = useState<{ old: string | null; next: string; name: string | null } | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const qc = useQueryClient();
 
   const { data: results = [], isFetching } = useQuery({
