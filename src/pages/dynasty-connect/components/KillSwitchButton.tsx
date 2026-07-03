@@ -7,10 +7,14 @@
  *   - { businessUnitKey } — stops ALL dialing for a business unit (nuclear)
  *
  * UX guarantees:
- *   - Engaging requires typing the campaign name / unit key in a confirm modal
- *     (no single-click footguns)
- *   - Disengaging requires a separate confirmation
- *   - Live status indicator queried every 5s
+ *   - Both ENGAGE and RELEASE require typing `dynasty_direct` in a custom modal
+ *     (no native confirm(), no single-click footguns)
+ *   - Engage modal = destructive red theme
+ *   - Release modal = success green theme
+ *   - State badge reflects DB truth:
+ *       is_active = true  → ACTIVE (red)
+ *       is_active = false → INACTIVE (green)
+ *   - Auto-refetches after any mutation + 5s poll
  */
 
 import { useState } from 'react';
@@ -24,7 +28,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { ShieldAlert, Octagon } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Octagon, CheckCircle2 } from 'lucide-react';
 
 type KillSwitchScope =
   | { kind: 'campaign'; campaignId: string; label: string }
@@ -36,9 +40,12 @@ interface Props {
   variant?: 'compact' | 'banner';
 }
 
+const CONFIRM_PHRASE = 'dynasty_direct';
+
 export default function KillSwitchButton({ scope, variant = 'compact' }: Props) {
   const qc = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [engageOpen, setEngageOpen] = useState(false);
+  const [releaseOpen, setReleaseOpen] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [reason, setReason] = useState('');
 
@@ -59,6 +66,13 @@ export default function KillSwitchButton({ scope, variant = 'compact' }: Props) 
     },
   });
 
+  const isActive = !!activeSwitch;
+
+  const resetForm = () => {
+    setConfirmText('');
+    setReason('');
+  };
+
   const engage = useMutation({
     mutationFn: async () => {
       const payload: any = {
@@ -74,7 +88,6 @@ export default function KillSwitchButton({ scope, variant = 'compact' }: Props) 
       const { error } = await (supabase as any).from('kill_switch_state').insert(payload);
       if (error) throw error;
 
-      // Fire-and-forget immutable compliance audit event.
       try {
         await supabase.functions.invoke('dc-log-compliance-event', {
           body: {
@@ -94,27 +107,25 @@ export default function KillSwitchButton({ scope, variant = 'compact' }: Props) 
         console.error('[KillSwitchButton] compliance log failed (non-fatal)', e);
       }
     },
-
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey });
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey });
+      await qc.refetchQueries({ queryKey });
       toast.success(`Kill-switch ENGAGED for ${scope.label}`);
-      setOpen(false);
-      setConfirmText('');
-      setReason('');
+      setEngageOpen(false);
+      resetForm();
     },
     onError: (e: any) => toast.error(`Kill-switch failed: ${e.message}`),
   });
 
   const release = useMutation({
     mutationFn: async () => {
-      if (!activeSwitch?.id) return;
+      if (!activeSwitch?.id) throw new Error('No active kill-switch found');
       const { error } = await (supabase as any).from('kill_switch_state').update({
         is_active: false,
         reset_at: new Date().toISOString(),
       }).eq('id', activeSwitch.id);
       if (error) throw error;
 
-      // Fire-and-forget immutable compliance audit event.
       try {
         await supabase.functions.invoke('dc-log-compliance-event', {
           body: {
@@ -124,6 +135,7 @@ export default function KillSwitchButton({ scope, variant = 'compact' }: Props) 
             event_data: {
               previous_state: 'active',
               released_at: new Date().toISOString(),
+              release_reason: reason || 'Manual release from UI',
               scope: scope.kind,
               ...(scope.kind === 'campaign' ? { campaign_id: scope.campaignId, campaign_label: scope.label } : {}),
             },
@@ -133,53 +145,57 @@ export default function KillSwitchButton({ scope, variant = 'compact' }: Props) 
         console.error('[KillSwitchButton] compliance log failed (non-fatal)', e);
       }
     },
-
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey });
-      toast.success(`Kill-switch released for ${scope.label}`);
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey });
+      await qc.refetchQueries({ queryKey });
+      toast.success(`Kill-switch released for ${scope.label} — dispatch resumed`);
+      setReleaseOpen(false);
+      resetForm();
     },
     onError: (e: any) => toast.error(`Release failed: ${e.message}`),
   });
 
-  // Currently engaged → show RELEASE control
-  if (activeSwitch) {
-    return (
-      <div className={variant === 'banner' ? 'flex items-center gap-3' : 'flex items-center gap-2'}>
-        <Badge variant="destructive" className="gap-1">
-          <Octagon className="h-3 w-3" /> KILLED
-        </Badge>
-        <Button
-          variant="outline" size="sm"
-          onClick={() => {
-            if (confirm(`Release kill-switch for ${scope.label}? Dispatch will resume.`)) {
-              release.mutate();
-            }
-          }}
-          disabled={release.isPending}
-        >
-          {release.isPending ? 'Releasing…' : 'Release'}
-        </Button>
-      </div>
-    );
-  }
-
-  // Not engaged → show ENGAGE control with typed-confirmation modal
-  const expected = scope.kind === 'campaign' ? scope.label : scope.businessUnitKey;
-  const canFire = confirmText.trim() === expected;
+  const canFire = confirmText.trim() === CONFIRM_PHRASE;
 
   return (
-    <>
-      <Button
-        variant="destructive"
-        size={variant === 'banner' ? 'default' : 'sm'}
-        onClick={() => setOpen(true)}
-        className="gap-1"
-      >
-        <ShieldAlert className="h-4 w-4" />
-        {variant === 'banner' ? `Emergency Stop ${scope.label}` : 'Stop'}
-      </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+    <div className={variant === 'banner' ? 'flex items-center gap-3' : 'flex items-center gap-2'}>
+      {/* Status badge — DB truth */}
+      {isActive ? (
+        <Badge variant="destructive" className="gap-1">
+          <Octagon className="h-3 w-3" /> ACTIVE
+        </Badge>
+      ) : (
+        <Badge className="gap-1 bg-emerald-600 hover:bg-emerald-600 text-white border-transparent">
+          <CheckCircle2 className="h-3 w-3" /> INACTIVE
+        </Badge>
+      )}
+
+      {/* Action button */}
+      {isActive ? (
+        <Button
+          size={variant === 'banner' ? 'default' : 'sm'}
+          className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+          onClick={() => { resetForm(); setReleaseOpen(true); }}
+          disabled={release.isPending}
+        >
+          <ShieldCheck className="h-4 w-4" />
+          {release.isPending ? 'Releasing…' : 'Release'}
+        </Button>
+      ) : (
+        <Button
+          variant="destructive"
+          size={variant === 'banner' ? 'default' : 'sm'}
+          onClick={() => { resetForm(); setEngageOpen(true); }}
+          className="gap-1"
+        >
+          <ShieldAlert className="h-4 w-4" />
+          {variant === 'banner' ? `Emergency Stop ${scope.label}` : 'Stop'}
+        </Button>
+      )}
+
+      {/* ENGAGE modal — RED */}
+      <Dialog open={engageOpen} onOpenChange={(o) => { setEngageOpen(o); if (!o) resetForm(); }}>
+        <DialogContent className="border-destructive/60 border-2">
           <DialogHeader>
             <DialogTitle className="text-destructive flex items-center gap-2">
               <ShieldAlert className="h-5 w-5" /> Engage Kill-Switch
@@ -195,13 +211,14 @@ export default function KillSwitchButton({ scope, variant = 'compact' }: Props) 
           <div className="space-y-3 py-2">
             <div>
               <Label className="text-xs">
-                Type <code className="bg-muted px-1 rounded">{expected}</code> to confirm
+                Type <code className="bg-destructive/10 text-destructive px-1 rounded font-mono">{CONFIRM_PHRASE}</code> to confirm
               </Label>
               <Input
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
-                placeholder={expected}
+                placeholder={CONFIRM_PHRASE}
                 autoComplete="off"
+                className="font-mono"
               />
             </div>
             <div>
@@ -214,7 +231,7 @@ export default function KillSwitchButton({ scope, variant = 'compact' }: Props) 
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => { setOpen(false); setConfirmText(''); }}>Cancel</Button>
+            <Button variant="ghost" onClick={() => { setEngageOpen(false); resetForm(); }}>Cancel</Button>
             <Button
               variant="destructive"
               disabled={!canFire || engage.isPending}
@@ -225,6 +242,54 @@ export default function KillSwitchButton({ scope, variant = 'compact' }: Props) 
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+
+      {/* RELEASE modal — GREEN */}
+      <Dialog open={releaseOpen} onOpenChange={(o) => { setReleaseOpen(o); if (!o) resetForm(); }}>
+        <DialogContent className="border-emerald-600/60 border-2">
+          <DialogHeader>
+            <DialogTitle className="text-emerald-600 flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5" /> Release Kill-Switch
+            </DialogTitle>
+            <DialogDescription>
+              This will resume dispatch for <strong>{scope.label}</strong>
+              {scope.kind === 'business_unit' && ' (every campaign in this unit)'}.
+              {' '}New calls will begin flowing again immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <Label className="text-xs">
+                Type <code className="bg-emerald-600/10 text-emerald-700 dark:text-emerald-400 px-1 rounded font-mono">{CONFIRM_PHRASE}</code> to confirm
+              </Label>
+              <Input
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder={CONFIRM_PHRASE}
+                autoComplete="off"
+                className="font-mono"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Reason (optional, logged for audit)</Label>
+              <Input
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="e.g. issue resolved, resuming normal ops"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setReleaseOpen(false); resetForm(); }}>Cancel</Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={!canFire || release.isPending}
+              onClick={() => release.mutate()}
+            >
+              {release.isPending ? 'Releasing…' : 'CONFIRM RELEASE'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
