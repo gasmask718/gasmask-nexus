@@ -194,11 +194,17 @@ function RemoveDncDialog({ row, open, onOpenChange }: {
     mutationFn: async () => {
       if (!row) throw new Error('No row selected');
       if (!armed) throw new Error('Confirmation phone does not match');
-      const { error: delErr } = await supabase
+      const { data: deleted, error: delErr } = await supabase
         .from('dnc_list')
         .delete()
-        .eq('phone_number', row.phone_number);
+        .eq('id', row.id)
+        .select('id');
       if (delErr) throw delErr;
+      if (!deleted || deleted.length === 0) {
+        throw new Error(
+          'Deletion blocked: no rows were removed. You may not have admin permission to remove DNC entries, or your session has expired. Please sign in again and retry.'
+        );
+      }
 
       const { error: logErr } = await supabase.from('dc_lead_sync_log').insert({
         sync_source: 'dnc_manual_removal',
