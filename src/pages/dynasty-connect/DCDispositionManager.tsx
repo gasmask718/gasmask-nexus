@@ -271,12 +271,15 @@ function ManualOverride() {
       setSelected(null);
       setNewDisp('');
       setReason('');
+      setConfirmOpen(false);
       qc.invalidateQueries({ queryKey: ['dc-disp-search'] });
       qc.invalidateQueries({ queryKey: ['dc-unified-leads'] });
       toast.success('Disposition overridden');
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const newDispLabel = codes.find((c) => c.code === newDisp)?.label;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
