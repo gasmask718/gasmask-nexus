@@ -1,43 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// View name mapping — maps partners schema table names to public dp_* wrapper views
-const VIEW_MAP: Record<string, string> = {
-  partners: "dp_partners",
-  platforms: "dp_platforms",
-  ambassadors: "dp_ambassadors",
-  campaigns: "dp_campaigns",
-  sales: "dp_sales",
-  commission_splits: "dp_commission_splits",
-  payouts: "dp_payouts",
-  leads: "dp_leads",
-  activity_log: "dp_activity_log",
-  notifications: "dp_notifications",
-  mrr_subscriptions: "dp_mrr_subscriptions",
-  partner_platforms: "dp_partner_platforms",
-  tracking_links: "dp_tracking_links",
-  outreach_messages: "dp_outreach_messages",
-  ai_personas: "dp_ai_personas",
-  add_ons: "dp_add_ons",
-};
+// Direct schema access — 'partners' is exposed via PostgREST.
+export const dp = () => (supabase as any).schema("partners");
 
-// Read-only adapter — maps old dp().from("table") calls to
-// supabase.from("dp_table") via public wrapper views. SELECT only.
-export const dp = () => ({
-  from: (table: string) => {
-    const viewName = VIEW_MAP[table];
-    if (!viewName) {
-      console.warn(`[dpClient] No view mapping for table: ${table}`);
-    }
-    return (supabase as any).from(viewName ?? `dp_${table}`);
-  },
-});
+// Writes enabled.
+export const DP_READ_ONLY = false;
 
-// Read-only mode flag. Set to false when PGRST106 is fixed by adding
-// 'partners' to exposed schemas on qalaaroashbggynpvqct.
-export const DP_READ_ONLY = true;
-
-export const DP_READ_ONLY_MESSAGE =
-  "Admin writes are temporarily disabled while the database schema configuration is being updated. Data is visible but cannot be modified. Contact david@dynastyconnect.com if urgent.";
+export const DP_READ_ONLY_MESSAGE = "";
 
 // Utility functions (unchanged)
 export const fmtMoney = (cents: number | null | undefined) =>
