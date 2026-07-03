@@ -29126,6 +29126,466 @@ export type Database = {
           },
         ]
       }
+      clipper_accounts: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          status: string | null
+          stripe_connect_id: string | null
+          stripe_connect_onboarded: boolean | null
+          tier: string | null
+          total_earnings: number | null
+          total_views: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          status?: string | null
+          stripe_connect_id?: string | null
+          stripe_connect_onboarded?: boolean | null
+          tier?: string | null
+          total_earnings?: number | null
+          total_views?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          status?: string | null
+          stripe_connect_id?: string | null
+          stripe_connect_onboarded?: boolean | null
+          tier?: string | null
+          total_earnings?: number | null
+          total_views?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      clipper_assignments: {
+        Row: {
+          assigned_at: string | null
+          campaign_id: string | null
+          clipper_id: string | null
+          id: string
+          status: string | null
+          tracking_link: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          campaign_id?: string | null
+          clipper_id?: string | null
+          id?: string
+          status?: string | null
+          tracking_link?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          campaign_id?: string | null
+          clipper_id?: string | null
+          id?: string
+          status?: string | null
+          tracking_link?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clipper_assignments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "clipper_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clipper_assignments_clipper_id_fkey"
+            columns: ["clipper_id"]
+            isOneToOne: false
+            referencedRelation: "clipper_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clipper_campaigns: {
+        Row: {
+          base_rate_per_1k: number
+          brand_name: string
+          brief: string | null
+          commission_rate: number
+          created_at: string | null
+          description: string | null
+          donts: string | null
+          dos: string | null
+          dynasty_business: string
+          end_date: string | null
+          hashtags: string[] | null
+          id: string
+          raw_footage_url: string | null
+          start_date: string | null
+          status: string | null
+          title: string
+          total_clips: number | null
+          total_views: number | null
+          tracking_base_url: string | null
+        }
+        Insert: {
+          base_rate_per_1k?: number
+          brand_name: string
+          brief?: string | null
+          commission_rate?: number
+          created_at?: string | null
+          description?: string | null
+          donts?: string | null
+          dos?: string | null
+          dynasty_business: string
+          end_date?: string | null
+          hashtags?: string[] | null
+          id?: string
+          raw_footage_url?: string | null
+          start_date?: string | null
+          status?: string | null
+          title: string
+          total_clips?: number | null
+          total_views?: number | null
+          tracking_base_url?: string | null
+        }
+        Update: {
+          base_rate_per_1k?: number
+          brand_name?: string
+          brief?: string | null
+          commission_rate?: number
+          created_at?: string | null
+          description?: string | null
+          donts?: string | null
+          dos?: string | null
+          dynasty_business?: string
+          end_date?: string | null
+          hashtags?: string[] | null
+          id?: string
+          raw_footage_url?: string | null
+          start_date?: string | null
+          status?: string | null
+          title?: string
+          total_clips?: number | null
+          total_views?: number | null
+          tracking_base_url?: string | null
+        }
+        Relationships: []
+      }
+      clipper_conversions: {
+        Row: {
+          campaign_id: string | null
+          clipper_id: string | null
+          commission_amount: number | null
+          converted_at: string | null
+          id: string
+          order_value: number | null
+          stripe_payment_id: string | null
+          submission_id: string | null
+          tracking_link: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          clipper_id?: string | null
+          commission_amount?: number | null
+          converted_at?: string | null
+          id?: string
+          order_value?: number | null
+          stripe_payment_id?: string | null
+          submission_id?: string | null
+          tracking_link?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          clipper_id?: string | null
+          commission_amount?: number | null
+          converted_at?: string | null
+          id?: string
+          order_value?: number | null
+          stripe_payment_id?: string | null
+          submission_id?: string | null
+          tracking_link?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clipper_conversions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "clipper_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clipper_conversions_clipper_id_fkey"
+            columns: ["clipper_id"]
+            isOneToOne: false
+            referencedRelation: "clipper_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clipper_conversions_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "clipper_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clipper_earnings: {
+        Row: {
+          amount: number
+          campaign_id: string | null
+          clipper_id: string | null
+          created_at: string | null
+          earning_type: string | null
+          id: string
+          status: string | null
+          submission_id: string | null
+          views_at_calculation: number | null
+        }
+        Insert: {
+          amount: number
+          campaign_id?: string | null
+          clipper_id?: string | null
+          created_at?: string | null
+          earning_type?: string | null
+          id?: string
+          status?: string | null
+          submission_id?: string | null
+          views_at_calculation?: number | null
+        }
+        Update: {
+          amount?: number
+          campaign_id?: string | null
+          clipper_id?: string | null
+          created_at?: string | null
+          earning_type?: string | null
+          id?: string
+          status?: string | null
+          submission_id?: string | null
+          views_at_calculation?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clipper_earnings_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "clipper_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clipper_earnings_clipper_id_fkey"
+            columns: ["clipper_id"]
+            isOneToOne: false
+            referencedRelation: "clipper_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clipper_earnings_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "clipper_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clipper_payouts: {
+        Row: {
+          amount: number
+          clipper_id: string | null
+          created_at: string | null
+          id: string
+          paid_at: string | null
+          period_end: string
+          period_start: string
+          status: string | null
+          stripe_transfer_id: string | null
+        }
+        Insert: {
+          amount: number
+          clipper_id?: string | null
+          created_at?: string | null
+          id?: string
+          paid_at?: string | null
+          period_end: string
+          period_start: string
+          status?: string | null
+          stripe_transfer_id?: string | null
+        }
+        Update: {
+          amount?: number
+          clipper_id?: string | null
+          created_at?: string | null
+          id?: string
+          paid_at?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string | null
+          stripe_transfer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clipper_payouts_clipper_id_fkey"
+            columns: ["clipper_id"]
+            isOneToOne: false
+            referencedRelation: "clipper_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clipper_social_accounts: {
+        Row: {
+          clipper_id: string | null
+          connected_at: string | null
+          follower_count: number | null
+          handle: string
+          id: string
+          is_active: boolean | null
+          is_verified: boolean | null
+          phyllo_account_id: string | null
+          platform: string
+          profile_url: string | null
+        }
+        Insert: {
+          clipper_id?: string | null
+          connected_at?: string | null
+          follower_count?: number | null
+          handle: string
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          phyllo_account_id?: string | null
+          platform: string
+          profile_url?: string | null
+        }
+        Update: {
+          clipper_id?: string | null
+          connected_at?: string | null
+          follower_count?: number | null
+          handle?: string
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          phyllo_account_id?: string | null
+          platform?: string
+          profile_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clipper_social_accounts_clipper_id_fkey"
+            columns: ["clipper_id"]
+            isOneToOne: false
+            referencedRelation: "clipper_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clipper_submissions: {
+        Row: {
+          approved_at: string | null
+          base_earnings: number | null
+          campaign_id: string | null
+          clicks: number | null
+          clipper_id: string | null
+          comments: number | null
+          conversion_earnings: number | null
+          conversions: number | null
+          id: string
+          last_synced_at: string | null
+          likes: number | null
+          phyllo_content_id: string | null
+          platform: string
+          post_id: string | null
+          post_url: string
+          shares: number | null
+          social_account_id: string | null
+          status: string | null
+          submitted_at: string | null
+          total_earnings: number | null
+          views: number | null
+        }
+        Insert: {
+          approved_at?: string | null
+          base_earnings?: number | null
+          campaign_id?: string | null
+          clicks?: number | null
+          clipper_id?: string | null
+          comments?: number | null
+          conversion_earnings?: number | null
+          conversions?: number | null
+          id?: string
+          last_synced_at?: string | null
+          likes?: number | null
+          phyllo_content_id?: string | null
+          platform: string
+          post_id?: string | null
+          post_url: string
+          shares?: number | null
+          social_account_id?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          total_earnings?: number | null
+          views?: number | null
+        }
+        Update: {
+          approved_at?: string | null
+          base_earnings?: number | null
+          campaign_id?: string | null
+          clicks?: number | null
+          clipper_id?: string | null
+          comments?: number | null
+          conversion_earnings?: number | null
+          conversions?: number | null
+          id?: string
+          last_synced_at?: string | null
+          likes?: number | null
+          phyllo_content_id?: string | null
+          platform?: string
+          post_id?: string | null
+          post_url?: string
+          shares?: number | null
+          social_account_id?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          total_earnings?: number | null
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clipper_submissions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "clipper_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clipper_submissions_clipper_id_fkey"
+            columns: ["clipper_id"]
+            isOneToOne: false
+            referencedRelation: "clipper_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clipper_submissions_social_account_id_fkey"
+            columns: ["social_account_id"]
+            isOneToOne: false
+            referencedRelation: "clipper_social_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       closing_partners: {
         Row: {
           address: string | null
