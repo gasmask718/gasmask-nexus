@@ -339,6 +339,11 @@ serve(async (req) => {
         amd: true,
         tools: [], // AddToDNC omitted per degraded posture
         request_data: {
+          // lead_id is the canonical key the webhook (dc-bland-webhook) reads to
+          // resolve the wholesaler row for writeback (last_contacted_at,
+          // call_attempts, last_call_disposition, inventory_notes). Without it
+          // the webhook cannot locate the wholesaler and the UPDATE is skipped.
+          lead_id: l.id,
           wholesaler_id: l.id,
           hub: "dynasty_direct",
           business_unit_key: BUSINESS_UNIT_KEY,
