@@ -71,7 +71,7 @@ const DISPO_OPTIONS = [
 const PAGE_SIZE = 50;
 
 export default function DCLeadInbox() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [bu, setBu] = useState('all');
   const [dispo, setDispo] = useState('all');
   const [search, setSearch] = useState('');
@@ -82,7 +82,7 @@ export default function DCLeadInbox() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['dc-unified-leads', user?.id, bu, dispo, search, dateFrom, dateTo, page],
-    enabled: !authLoading && !!user,
+    enabled: !authLoading && !!user && !!session,
     queryFn: async () => {
       // View sort: last_contacted_at DESC nulls last.
       // supabase-js: .order('col', { ascending: false, nullsFirst: false })
@@ -188,13 +188,13 @@ export default function DCLeadInbox() {
                 {(authLoading || isLoading) && (
                   <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">Loading leads…</td></tr>
                 )}
-                {!authLoading && !user && !isLoading && (
+                {!authLoading && (!user || !session) && !isLoading && (
                   <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">Sign in to view leads.</td></tr>
                 )}
                 {error && !authLoading && !isLoading && (
                   <tr><td colSpan={9} className="p-8 text-center text-red-500">Error: {(error as Error).message}</td></tr>
                 )}
-                {!authLoading && !isLoading && !error && user && rows.length === 0 && (
+                {!authLoading && !isLoading && !error && user && session && rows.length === 0 && (
                   <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">No leads match these filters</td></tr>
                 )}
                 {rows.map((r) => (

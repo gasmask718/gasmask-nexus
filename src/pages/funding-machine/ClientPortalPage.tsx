@@ -113,7 +113,7 @@ export default function ClientPortalPage() {
       }
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${window.location.origin}/portal` },
+        options: { emailRedirectTo: `${window.location.origin}/funding-machine/portal` },
       });
       if (error) throw error;
       setLinkSent(true);
@@ -123,6 +123,12 @@ export default function ClientPortalPage() {
     } finally {
       setSendingLink(false);
     }
+  };
+
+  const handlePortalSignOut = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    queryClient.clear();
   };
 
   if (loading) return (
@@ -189,7 +195,7 @@ export default function ClientPortalPage() {
         <CardContent className="py-12 text-center">
           <p className="font-medium">No funding account found for this email.</p>
           <p className="text-sm text-muted-foreground mt-2">Contact your funding specialist for access.</p>
-          <Button variant="outline" className="mt-4" onClick={() => supabase.auth.signOut()}>Sign Out</Button>
+          <Button variant="outline" className="mt-4" onClick={handlePortalSignOut}>Sign Out</Button>
         </CardContent>
       </Card>
     </div>
@@ -215,7 +221,7 @@ export default function ClientPortalPage() {
           <h1 className="text-2xl font-bold">Welcome, {client.first_name}</h1>
           <p className="text-muted-foreground">Your Dynasty Funding Machine Portal</p>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()}>
+        <Button variant="ghost" size="sm" onClick={handlePortalSignOut}>
           <LogOut className="h-4 w-4 mr-1" /> Sign Out
         </Button>
       </div>

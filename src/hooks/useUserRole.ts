@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AppRole } from '@/utils/roleRouting';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Check if we're in development/preview mode
 const isDev = import.meta.env.DEV || window.location.hostname.includes('lovable');
 
 export function useUserRole(currentBusinessId?: string | null) {
+  const { user: authUser, loading: authLoading } = useAuth();
   const [role, setRole] = useState<AppRole | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +17,11 @@ export function useUserRole(currentBusinessId?: string | null) {
   const [bikerAssignmentBusinessId, setBikerAssignmentBusinessId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
     async function fetchUserRole() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -25,14 +32,6 @@ export function useUserRole(currentBusinessId?: string | null) {
         }
         
         if (!user) {
-          // In dev mode, default to admin for testing
-          if (isDev) {
-            console.log('🔧 DEV MODE: No user, defaulting to admin role for preview');
-            setRole('admin');
-            setRoles(['admin']);
-            setLoading(false);
-            return;
-          }
           setRole(null);
           setRoles([]);
           setLoading(false);
@@ -232,23 +231,14 @@ export function useUserRole(currentBusinessId?: string | null) {
             });
             console.log('🔐 [RBAC DEBUG] Final roles:', rolesList, 'Primary:', primaryRole);
           }
-        } else if (isDev) {
-          // In dev mode with logged-in user but no roles, default to admin
-          console.log('🔧 DEV MODE: No roles found, defaulting to admin');
-          setRole('admin');
-          setRoles(['admin']);
-        }
-      } catch (error) {
-        console.error('Error fetching user role:', error);
-        // In dev mode, still default to admin on error
-        if (isDev) {
-          console.log('🔧 DEV MODE: Error fetching roles, defaulting to admin');
-          setRole('admin');
-          setRoles(['admin']);
         } else {
           setRole(null);
           setRoles([]);
         }
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+        setRole(null);
+        setRoles([]);
       } finally {
         setLoading(false);
       }
@@ -297,7 +287,7 @@ export function useUserRole(currentBusinessId?: string | null) {
     return () => {
       channel.unsubscribe();
     };
-  }, [currentBusinessId]);
+  }, [currentBusinessId, authLoading, authUser?.id]);
 
   const hasRole = (checkRole: AppRole): boolean => {
     return roles.includes(checkRole);

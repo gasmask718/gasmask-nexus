@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   getCurrentUserProfile, 
   createUserProfile, 
@@ -10,9 +11,12 @@ import {
 } from '@/services/roleService';
 
 export function useCurrentUserProfile() {
+  const { user, loading: authLoading } = useAuth();
+
   return useQuery({
-    queryKey: ['currentUserProfile'],
+    queryKey: ['currentUserProfile', user?.id],
     queryFn: getCurrentUserProfile,
+    enabled: !authLoading && !!user,
     staleTime: 5 * 60 * 1000,
   });
 }

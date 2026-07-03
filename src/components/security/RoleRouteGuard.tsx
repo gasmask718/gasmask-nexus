@@ -211,11 +211,6 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
     return <>{children}</>;
   }
 
-  // If no roles at all, let ProtectedRoute/auth handle it
-  if (allRoles.length === 0) {
-    return <>{children}</>;
-  }
-
   const currentPath = location.pathname;
 
   // Check universal paths
@@ -226,6 +221,12 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
   // Exact match for portal root (role router)
   if (currentPath === "/portal") {
     return <>{children}</>;
+  }
+
+  // Authenticated users with no assigned OS role should not fall through into
+  // protected workspaces. Send them to the explicit approval state instead.
+  if (allRoles.length === 0) {
+    return <Navigate to="/pending-approval" replace />;
   }
 
   // Check if any of the user's roles grant access to the current path
