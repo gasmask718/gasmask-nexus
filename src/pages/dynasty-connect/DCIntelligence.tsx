@@ -16,9 +16,9 @@ const BIZ_OPTIONS = [
 ];
 
 export default function DCIntelligence() {
-  const [bizFilter, setBizFilter] = useState('');
-  const [dirFilter, setDirFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [bizFilter, setBizFilter] = useState(ALL_VALUE);
+  const [dirFilter, setDirFilter] = useState(ALL_VALUE);
+  const [statusFilter, setStatusFilter] = useState(ALL_VALUE);
   const [page, setPage] = useState(0);
   const pageSize = 50;
 
