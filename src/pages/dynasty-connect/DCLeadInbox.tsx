@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,6 +80,47 @@ export default function DCLeadInbox() {
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<UnifiedLead | null>(null);
 
+  // 🔍 TEMP DEBUG: log auth state + backend-visible role/uid/jwt
+  useEffect(() => {
+    console.log('[DCLeadInbox] render', {
+      authLoading,
+      hasUser: !!user,
+      hasSession: !!session,
+      userId: user?.id,
+      queryWillRun: !authLoading && !!user && !!session,
+      timestamp: new Date().toISOString(),
+    });
+  }, [authLoading, user, session]);
+
+  useEffect(() => {
+    (async () => {
+      console.log('[DCLeadInbox] === AUTH DEBUG START ===', new Date().toISOString());
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        console.log('[DCLeadInbox] SESSION:', sessionData.session);
+        console.log('[DCLeadInbox] SESSION access_token present:', !!sessionData.session?.access_token);
+        console.log('[DCLeadInbox] SESSION expires_at:', sessionData.session?.expires_at);
+      } catch (e) {
+        console.log('[DCLeadInbox] SESSION ERROR:', e);
+      }
+      try {
+        const { data: userData, error: userErr } = await supabase.auth.getUser();
+        console.log('[DCLeadInbox] USER:', userData.user);
+        console.log('[DCLeadInbox] USER ERROR:', userErr);
+      } catch (e) {
+        console.log('[DCLeadInbox] getUser threw:', e);
+      }
+      try {
+        const { data, error } = await supabase.rpc('debug_auth' as any);
+        console.log('[DCLeadInbox] DEBUG AUTH:', data);
+        console.log('[DCLeadInbox] DEBUG AUTH ERROR:', error);
+      } catch (e) {
+        console.log('[DCLeadInbox] debug_auth threw:', e);
+      }
+      console.log('[DCLeadInbox] === AUTH DEBUG END ===');
+    })();
+  }, []);
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['dc-unified-leads', user?.id, bu, dispo, search, dateFrom, dateTo, page],
     enabled: !authLoading && !!user && !!session,
@@ -91,6 +132,10 @@ export default function DCLeadInbox() {
         .select('*', { count: 'exact' })
         .order('last_contacted_at', { ascending: false, nullsFirst: false })
         .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+
+      console.log('[DCLeadInbox] executing dc_unified_leads query at', new Date().toISOString(), {
+        hasUser: !!user, hasSession: !!session,
+      });
 
       if (bu !== 'all') q = q.eq('business_unit_key', bu);
       if (dispo !== 'all') q = q.eq('last_disposition', dispo);
