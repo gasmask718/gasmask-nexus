@@ -2208,6 +2208,14 @@ export default function AppRoutes() {
         <Route path="/os/dynasty-earn" element={<DynastyEarn />} />
         <Route path="/os/brand-acquisition" element={<BrandAcquisitionSystem />} />
         <Route path="/os/dynasty-sales" element={<DynastySalesNetwork />} />
+        <Route path="/os/clipper-nation" element={<ClipperDashboard />} />
+        <Route path="/os/clipper-nation/clippers" element={<ClipperClippers />} />
+        <Route path="/os/clipper-nation/campaigns" element={<ClipperCampaigns />} />
+        <Route path="/os/clipper-nation/submissions" element={<ClipperSubmissions />} />
+        <Route path="/os/clipper-nation/analytics" element={<ClipperAnalytics />} />
+        <Route path="/os/clipper-nation/conversions" element={<ClipperConversions />} />
+        <Route path="/os/clipper-nation/payouts" element={<ClipperPayouts />} />
+        <Route path="/os/clipper-nation/settings" element={<ClipperSettings />} />
         <Route path="/os/revenue-orchestrator" element={<DynastyRevenueOrchestrator />} />
         <Route path="/os/sports-betting" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/analytics" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
