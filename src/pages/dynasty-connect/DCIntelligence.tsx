@@ -69,8 +69,8 @@ export default function DCIntelligence() {
       </div>
       <div className="flex flex-wrap gap-3">
         <Select value={bizFilter} onValueChange={setBizFilter}><SelectTrigger className="w-44"><SelectValue placeholder="All Businesses" /></SelectTrigger><SelectContent>{BIZ_OPTIONS.map((b) => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}</SelectContent></Select>
-        <Select value={dirFilter} onValueChange={setDirFilter}><SelectTrigger className="w-36"><SelectValue placeholder="Direction" /></SelectTrigger><SelectContent><SelectItem value="">All</SelectItem><SelectItem value="inbound">Inbound</SelectItem><SelectItem value="outbound">Outbound</SelectItem></SelectContent></Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="">All</SelectItem><SelectItem value="connected">Connected</SelectItem><SelectItem value="completed">Completed</SelectItem><SelectItem value="voicemail">Voicemail</SelectItem><SelectItem value="initiated">Initiated</SelectItem></SelectContent></Select>
+        <Select value={dirFilter} onValueChange={setDirFilter}><SelectTrigger className="w-36"><SelectValue placeholder="Direction" /></SelectTrigger><SelectContent><SelectItem value={ALL_VALUE}>All</SelectItem><SelectItem value="inbound">Inbound</SelectItem><SelectItem value="outbound">Outbound</SelectItem></SelectContent></Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value={ALL_VALUE}>All</SelectItem><SelectItem value="connected">Connected</SelectItem><SelectItem value="completed">Completed</SelectItem><SelectItem value="voicemail">Voicemail</SelectItem><SelectItem value="initiated">Initiated</SelectItem></SelectContent></Select>
       </div>
       <Card>
         <CardContent className="p-0">
