@@ -26,9 +26,9 @@ export default function DCIntelligence() {
     queryKey: ['dc-call-logs', bizFilter, dirFilter, statusFilter, page],
     queryFn: async () => {
       let q = (supabase as any).from('dc_call_logs').select('*').order('created_at', { ascending: false }).range(page * pageSize, (page + 1) * pageSize - 1);
-      if (bizFilter) q = q.eq('business', bizFilter);
-      if (dirFilter) q = q.eq('direction', dirFilter);
-      if (statusFilter) q = q.eq('status', statusFilter);
+      if (bizFilter && bizFilter !== ALL_VALUE) q = q.eq('business', bizFilter);
+      if (dirFilter && dirFilter !== ALL_VALUE) q = q.eq('direction', dirFilter);
+      if (statusFilter && statusFilter !== ALL_VALUE) q = q.eq('status', statusFilter);
       const { data } = await q;
       return data || [];
     },
