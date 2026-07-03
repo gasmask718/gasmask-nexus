@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Zap, Upload, Users, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AGENTS = [
   { id: 'agent_0301kmdmp16aevv8svr78pbr75n8', name: 'DC — Sales Outreach' },
@@ -23,6 +24,7 @@ const AGENTS = [
 export default function DCCampaignBuilder() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user, loading: authLoading } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
@@ -39,11 +41,13 @@ export default function DCCampaignBuilder() {
   // Load business pipelines
   const { data: pipelines = [] } = useQuery({
     queryKey: ['dc-builder-pipelines'],
+    enabled: !authLoading && !!user,
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from('dc_business_pipelines')
         .select('*')
         .order('business_name');
+      if (error) throw error;
       return data || [];
     },
   });
@@ -51,13 +55,14 @@ export default function DCCampaignBuilder() {
   // Count available leads for selected pipeline
   const { data: leadCount = 0 } = useQuery({
     queryKey: ['dc-lead-count', form.pipeline],
-    enabled: !!form.pipeline,
+    enabled: !authLoading && !!user && !!form.pipeline,
     queryFn: async () => {
-      const { count } = await (supabase as any)
+      const { count, error } = await (supabase as any)
         .from('dc_leads')
         .select('*', { count: 'exact', head: true })
         .eq('business_name', form.pipeline)
         .eq('status', 'new');
+      if (error) throw error;
       return count ?? 0;
     },
   });
