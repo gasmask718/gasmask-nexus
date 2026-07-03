@@ -33,7 +33,7 @@ const statusColor = (s: string) => {
 
 export default function DCCampaigns() {
   const queryClient = useQueryClient();
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [businessFilter, setBusinessFilter] = useState('all');
@@ -44,19 +44,21 @@ export default function DCCampaigns() {
   });
 
   const { data: campaigns = [], isLoading } = useQuery({
-    queryKey: ['dc-campaigns'],
+    queryKey: ['dc-campaigns', user?.id],
+    enabled: !authLoading && !!user && !!session,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('ai_call_campaigns')
         .select('*')
         .order('created_at', { ascending: false });
+      if (error) throw error;
       return data || [];
     },
   });
 
   const { data: pipelines = [] } = useQuery({
-    queryKey: ['dc-pipelines-list'],
-    enabled: !authLoading && !!user,
+    queryKey: ['dc-pipelines-list', user?.id],
+    enabled: !authLoading && !!user && !!session,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from('dc_business_pipelines')

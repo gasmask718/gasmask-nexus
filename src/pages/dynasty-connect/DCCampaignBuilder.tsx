@@ -24,7 +24,7 @@ const AGENTS = [
 export default function DCCampaignBuilder() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
@@ -40,8 +40,8 @@ export default function DCCampaignBuilder() {
 
   // Load business pipelines
   const { data: pipelines = [] } = useQuery({
-    queryKey: ['dc-builder-pipelines'],
-    enabled: !authLoading && !!user,
+    queryKey: ['dc-builder-pipelines', user?.id],
+    enabled: !authLoading && !!user && !!session,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from('dc_business_pipelines')
@@ -54,8 +54,8 @@ export default function DCCampaignBuilder() {
 
   // Count available leads for selected pipeline
   const { data: leadCount = 0 } = useQuery({
-    queryKey: ['dc-lead-count', form.pipeline],
-    enabled: !authLoading && !!user && !!form.pipeline,
+    queryKey: ['dc-lead-count', user?.id, form.pipeline],
+    enabled: !authLoading && !!user && !!session && !!form.pipeline,
     queryFn: async () => {
       const { count, error } = await (supabase as any)
         .from('dc_leads')
