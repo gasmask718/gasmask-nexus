@@ -128952,6 +128952,7 @@ export type Database = {
         Args: { p_store_id: string }
         Returns: Json
       }
+      debug_auth: { Args: never; Returns: Json }
       default_cadence_days: { Args: { status: string }; Returns: number }
       detect_data_duplicates_in_group: {
         Args: { p_group_id: number }
