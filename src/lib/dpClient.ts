@@ -18,6 +18,7 @@ const VIEW_MAP: Record<string, string> = {
   outreach_messages: "dp_outreach_messages",
   ai_personas: "dp_ai_personas",
   add_ons: "dp_add_ons",
+  partner_admins: "dp_partner_admins",
 };
 
 // Read-only adapter — maps old dp().from("table") calls to
@@ -32,14 +33,15 @@ export const dp = () => ({
   },
 });
 
-// Read-only mode flag. Set to false when PGRST106 is fixed by adding
-// 'partners' to exposed schemas on qalaaroashbggynpvqct.
+// Read-only mode flag. Set to false once 'partners' is added to PostgREST
+// exposed schemas on qalaaroashbggynpvqct, then switch dp() back to
+// (supabase as any).schema("partners").
 export const DP_READ_ONLY = true;
 
 export const DP_READ_ONLY_MESSAGE =
   "Admin writes are temporarily disabled while the database schema configuration is being updated. Data is visible but cannot be modified. Contact david@dynastyconnect.com if urgent.";
 
-// Utility functions (unchanged)
+// Utility functions
 export const fmtMoney = (cents: number | null | undefined) =>
   `$${((cents ?? 0) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -65,7 +67,6 @@ export async function logAdminAction(opts: {
     console.log("[dpAdmin] action logged (read-only mode):", opts.action);
     return;
   }
-  // Full implementation when schema is exposed:
   const { data: u } = await supabase.auth.getUser();
   await (supabase as any)
     .from("dp_activity_log")
