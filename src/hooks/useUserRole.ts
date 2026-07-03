@@ -25,14 +25,6 @@ export function useUserRole(currentBusinessId?: string | null) {
         }
         
         if (!user) {
-          // In dev mode, default to admin for testing
-          if (isDev) {
-            console.log('🔧 DEV MODE: No user, defaulting to admin role for preview');
-            setRole('admin');
-            setRoles(['admin']);
-            setLoading(false);
-            return;
-          }
           setRole(null);
           setRoles([]);
           setLoading(false);
@@ -232,23 +224,14 @@ export function useUserRole(currentBusinessId?: string | null) {
             });
             console.log('🔐 [RBAC DEBUG] Final roles:', rolesList, 'Primary:', primaryRole);
           }
-        } else if (isDev) {
-          // In dev mode with logged-in user but no roles, default to admin
-          console.log('🔧 DEV MODE: No roles found, defaulting to admin');
-          setRole('admin');
-          setRoles(['admin']);
-        }
-      } catch (error) {
-        console.error('Error fetching user role:', error);
-        // In dev mode, still default to admin on error
-        if (isDev) {
-          console.log('🔧 DEV MODE: Error fetching roles, defaulting to admin');
-          setRole('admin');
-          setRoles(['admin']);
         } else {
           setRole(null);
           setRoles([]);
         }
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+        setRole(null);
+        setRoles([]);
       } finally {
         setLoading(false);
       }

@@ -70,7 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const initialized = useRef(false);
   const manualSignIn = useRef(false);
-  const manualSignOut = useRef(false);
 
   markManualSignInFn = () => {
     manualSignIn.current = true;
@@ -187,6 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(newSession?.user ?? null);
           setBackendUnreachable(false);
           if (newSession?.user) fetchUserRole(newSession.user.id);
+          qc.removeQueries({ queryKey: ["currentUserProfile"] });
           qc.invalidateQueries({ queryKey: ["dp-is-admin"] });
           if (manualSignIn.current) {
             manualSignIn.current = false;
@@ -201,15 +201,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           break;
         }
         case "SIGNED_OUT": {
-          if (manualSignOut.current) {
-            setSession(null);
-            setUser(null);
-            setUserRole(null);
-            setLoading(false);
-            manualSignOut.current = false;
-          } else {
-            console.error("[AUTH BLOCKED] Unexpected sign-out prevented.");
-          }
+          setSession(null);
+          setUser(null);
+          setUserRole(null);
+          setBackendUnreachable(false);
+          setLoading(false);
+          qc.clear();
           break;
         }
         default:
@@ -224,12 +221,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [qc]);
 
   const signOut = async () => {
-    manualSignOut.current = true;
-    await supabase.auth.signOut();
-    setSession(null);
-    setUser(null);
-    setUserRole(null);
-    navigate("/auth");
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      setSession(null);
+      setUser(null);
+      setUserRole(null);
+      setBackendUnreachable(false);
+      qc.clear();
+      navigate("/auth", { replace: true });
+    }
   };
 
   // Show offline fallback if backend is unreachable and no session

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { useAuth, useMarkManualSignIn } from '@/contexts/AuthContext';
@@ -22,6 +22,7 @@ const Auth = () => {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const markManualSignIn = useMarkManualSignIn();
   const { data: profileData, isLoading: profileLoading } = useCurrentUserProfile();
@@ -40,12 +41,14 @@ const Auth = () => {
       null;
 
     if (resolvedRole) {
-      navigate(getRoleRedirectPath(resolvedRole), { replace: true });
+      const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+      const safeReturnTo = returnTo?.startsWith('/') && !returnTo.startsWith('/auth') ? returnTo : null;
+      navigate(safeReturnTo || getRoleRedirectPath(resolvedRole), { replace: true });
     } else {
       // Genuinely no role assigned — new signup awaiting admin approval.
       navigate('/pending-approval', { replace: true });
     }
-  }, [user, profileData, profileLoading, rbacRole, rbacLoading, navigate]);
+  }, [user, profileData, profileLoading, rbacRole, rbacLoading, navigate, location.state]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
