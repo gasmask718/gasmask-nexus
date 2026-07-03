@@ -477,6 +477,20 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/dynasty-sales', label: '🔥 Sales Domination', icon: Target },
     ],
   },
+  clipperNation: {
+    id: 'clipper-nation',
+    name: '🎬 Clipper Nation',
+    items: [
+      { path: '/os/clipper-nation', label: '🎬 Dashboard', icon: Film },
+      { path: '/os/clipper-nation/clippers', label: '👥 Clippers', icon: Users },
+      { path: '/os/clipper-nation/campaigns', label: '📢 Campaigns', icon: Megaphone },
+      { path: '/os/clipper-nation/submissions', label: '📹 Submissions', icon: Video },
+      { path: '/os/clipper-nation/analytics', label: '📊 Analytics', icon: BarChart3 },
+      { path: '/os/clipper-nation/conversions', label: '💰 Conversions', icon: DollarSign },
+      { path: '/os/clipper-nation/payouts', label: '💳 Payouts', icon: CreditCard },
+      { path: '/os/clipper-nation/settings', label: '⚙️ Settings', icon: Settings2 },
+    ],
+  },
   financeAcquisition: {
     id: 'finance-acquisition',
     name: '💰 Finance & Acquisition',
