@@ -107,7 +107,7 @@ export default function DCAgents() {
                     </div>
                   </div>
                   <div className="space-y-1 text-xs text-muted-foreground">
-                    <div className="flex justify-between"><span>Agent ID:</span><span className="font-mono truncate ml-2 max-w-[140px]">{agent.agent_id}</span></div>
+                    <div className="flex justify-between"><span>Agent ID:</span><span className="font-mono truncate ml-2 max-w-[140px]">{agent.agent_id || <span className="italic text-amber-600">not set</span>}</span></div>
                     <div className="flex justify-between"><span>Type:</span><Badge variant="outline" className="text-xs capitalize">{agent.agent_type}</Badge></div>
                     <div className="flex justify-between"><span>Total Calls:</span><span>{agent.total_calls || 0}</span></div>
                   </div>
