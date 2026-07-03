@@ -1,0 +1,35 @@
+CREATE OR REPLACE VIEW public.dp_partners WITH (security_invoker = true) AS SELECT * FROM partners.partners;
+CREATE OR REPLACE VIEW public.dp_platforms WITH (security_invoker = true) AS SELECT * FROM partners.platforms;
+CREATE OR REPLACE VIEW public.dp_ambassadors WITH (security_invoker = true) AS SELECT * FROM partners.ambassadors;
+CREATE OR REPLACE VIEW public.dp_campaigns WITH (security_invoker = true) AS SELECT * FROM partners.campaigns;
+CREATE OR REPLACE VIEW public.dp_sales WITH (security_invoker = true) AS SELECT * FROM partners.sales;
+CREATE OR REPLACE VIEW public.dp_commission_splits WITH (security_invoker = true) AS SELECT * FROM partners.commission_splits;
+CREATE OR REPLACE VIEW public.dp_payouts WITH (security_invoker = true) AS SELECT * FROM partners.payouts;
+CREATE OR REPLACE VIEW public.dp_leads WITH (security_invoker = true) AS SELECT * FROM partners.leads;
+CREATE OR REPLACE VIEW public.dp_activity_log WITH (security_invoker = true) AS SELECT * FROM partners.activity_log;
+CREATE OR REPLACE VIEW public.dp_notifications WITH (security_invoker = true) AS SELECT * FROM partners.notifications;
+CREATE OR REPLACE VIEW public.dp_mrr_subscriptions WITH (security_invoker = true) AS SELECT * FROM partners.mrr_subscriptions;
+CREATE OR REPLACE VIEW public.dp_partner_platforms WITH (security_invoker = true) AS SELECT * FROM partners.partner_platforms;
+CREATE OR REPLACE VIEW public.dp_tracking_links WITH (security_invoker = true) AS SELECT * FROM partners.tracking_links;
+CREATE OR REPLACE VIEW public.dp_outreach_messages WITH (security_invoker = true) AS SELECT * FROM partners.outreach_messages;
+CREATE OR REPLACE VIEW public.dp_ai_personas WITH (security_invoker = true) AS SELECT * FROM partners.ai_personas;
+CREATE OR REPLACE VIEW public.dp_add_ons WITH (security_invoker = true) AS SELECT * FROM partners.add_ons;
+
+GRANT USAGE ON SCHEMA partners TO authenticated;
+
+GRANT SELECT ON public.dp_partners TO authenticated;
+GRANT SELECT ON public.dp_platforms TO authenticated;
+GRANT SELECT ON public.dp_ambassadors TO authenticated;
+GRANT SELECT ON public.dp_campaigns TO authenticated;
+GRANT SELECT ON public.dp_sales TO authenticated;
+GRANT SELECT ON public.dp_commission_splits TO authenticated;
+GRANT SELECT ON public.dp_payouts TO authenticated;
+GRANT SELECT ON public.dp_leads TO authenticated;
+GRANT SELECT ON public.dp_activity_log TO authenticated;
+GRANT SELECT ON public.dp_notifications TO authenticated;
+GRANT SELECT ON public.dp_mrr_subscriptions TO authenticated;
+GRANT SELECT ON public.dp_partner_platforms TO authenticated;
+GRANT SELECT ON public.dp_tracking_links TO authenticated;
+GRANT SELECT ON public.dp_outreach_messages TO authenticated;
+GRANT SELECT ON public.dp_ai_personas TO authenticated;
+GRANT SELECT ON public.dp_add_ons TO authenticated;
