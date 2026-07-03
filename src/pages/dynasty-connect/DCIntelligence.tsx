@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Download } from 'lucide-react';
 
+const ALL_VALUE = '__all__';
 const BIZ_OPTIONS = [
-  { value: '', label: 'All Businesses' }, { value: 'gasmask', label: 'GasMask' },
+  { value: ALL_VALUE, label: 'All Businesses' }, { value: 'gasmask', label: 'GasMask' },
   { value: 'unforgettable_times', label: 'Unforgettable Times' }, { value: 'real_estate', label: 'Real Estate' },
   { value: 'surplus_funds', label: 'Surplus Funds' }, { value: 'top_tier', label: 'Top Tier' },
   { value: 'brandaro', label: 'Brandaro' }, { value: 'playboxxx', label: 'PlayBoxxx' }, { value: 'iclean', label: 'iClean' },
