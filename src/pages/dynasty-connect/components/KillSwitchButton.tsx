@@ -85,30 +85,38 @@ export default function KillSwitchButton({ scope, variant = 'compact' }: Props) 
       if (scope.kind === 'campaign') payload.campaign_id = scope.campaignId;
       else payload.business_unit_key = scope.businessUnitKey;
 
-      const { error } = await (supabase as any).from('kill_switch_state').insert(payload);
+      const { data: inserted, error } = await (supabase as any)
+        .from('kill_switch_state')
+        .insert(payload)
+        .select('id')
+        .maybeSingle();
       if (error) throw error;
+      if (!inserted?.id) throw new Error('Kill-switch insert blocked (no row returned). Check RLS.');
 
-      try {
-        await supabase.functions.invoke('dc-log-compliance-event', {
-          body: {
-            event_type: 'kill_switch_engaged',
+      // Compliance ledger write — AWAITED so we surface failures to the user.
+      const { data: logResp, error: logErr } = await supabase.functions.invoke('dc-log-compliance-event', {
+        body: {
+          event_type: 'kill_switch_engaged',
+          business_unit_key: scope.kind === 'business_unit' ? scope.businessUnitKey : null,
+          actor: 'manual_admin',
+          event_data: {
             business_unit_key: scope.kind === 'business_unit' ? scope.businessUnitKey : null,
-            actor: 'manual_admin',
-            event_data: {
-              trigger_reason: reason || 'Manual emergency stop from UI',
-              requires_manual_reset: true,
-              previous_state: 'inactive',
-              scope: scope.kind,
-              ...(scope.kind === 'campaign' ? { campaign_id: scope.campaignId, campaign_label: scope.label } : {}),
-            },
+            trigger_reason: reason || 'Manual emergency stop from UI',
+            requires_manual_reset: true,
+            previous_state: 'inactive',
+            scope: scope.kind,
+            kill_switch_id: inserted.id,
+            ...(scope.kind === 'campaign' ? { campaign_id: scope.campaignId, campaign_label: scope.label } : {}),
           },
-        });
-      } catch (e) {
-        console.error('[KillSwitchButton] compliance log failed (non-fatal)', e);
+        },
+      });
+      if (logErr || (logResp && logResp.logged === false)) {
+        console.error('[KillSwitchButton] kill_switch_engaged log failed', logErr || logResp);
       }
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey });
+      await qc.invalidateQueries({ queryKey: ['kill-switch'] });
+      await qc.invalidateQueries({ queryKey: ['dc-compliance'] });
       await qc.refetchQueries({ queryKey });
       toast.success(`Kill-switch ENGAGED for ${scope.label}`);
       setEngageOpen(false);
@@ -120,33 +128,43 @@ export default function KillSwitchButton({ scope, variant = 'compact' }: Props) 
   const release = useMutation({
     mutationFn: async () => {
       if (!activeSwitch?.id) throw new Error('No active kill-switch found');
-      const { error } = await (supabase as any).from('kill_switch_state').update({
-        is_active: false,
-        reset_at: new Date().toISOString(),
-      }).eq('id', activeSwitch.id);
+      const { data: updated, error } = await (supabase as any)
+        .from('kill_switch_state')
+        .update({ is_active: false, reset_at: new Date().toISOString() })
+        .eq('id', activeSwitch.id)
+        .select('id, is_active');
       if (error) throw error;
+      if (!updated || updated.length === 0) {
+        throw new Error('Release blocked: no rows updated. RLS may be denying the write.');
+      }
 
-      try {
-        await supabase.functions.invoke('dc-log-compliance-event', {
-          body: {
-            event_type: 'kill_switch_released',
+      // Compliance ledger write — AWAITED so failures surface via toast.
+      const { data: logResp, error: logErr } = await supabase.functions.invoke('dc-log-compliance-event', {
+        body: {
+          event_type: 'kill_switch_released',
+          business_unit_key: scope.kind === 'business_unit' ? scope.businessUnitKey : null,
+          actor: 'manual_admin',
+          event_data: {
             business_unit_key: scope.kind === 'business_unit' ? scope.businessUnitKey : null,
-            actor: 'manual_admin',
-            event_data: {
-              previous_state: 'active',
-              released_at: new Date().toISOString(),
-              release_reason: reason || 'Manual release from UI',
-              scope: scope.kind,
-              ...(scope.kind === 'campaign' ? { campaign_id: scope.campaignId, campaign_label: scope.label } : {}),
-            },
+            previous_state: 'active',
+            released_at: new Date().toISOString(),
+            release_reason: reason || 'Manual release from UI',
+            scope: scope.kind,
+            kill_switch_id: activeSwitch.id,
+            ...(scope.kind === 'campaign' ? { campaign_id: scope.campaignId, campaign_label: scope.label } : {}),
           },
-        });
-      } catch (e) {
-        console.error('[KillSwitchButton] compliance log failed (non-fatal)', e);
+        },
+      });
+      if (logErr || (logResp && logResp.logged === false)) {
+        console.error('[KillSwitchButton] kill_switch_released log failed', logErr || logResp);
+        throw new Error(`Released, but compliance log failed: ${logErr?.message || logResp?.error || 'unknown'}`);
       }
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey });
+      // Nuke cached active row immediately so UI flips to INACTIVE green with no flicker.
+      qc.setQueryData(queryKey, null);
+      await qc.invalidateQueries({ queryKey: ['kill-switch'] });
+      await qc.invalidateQueries({ queryKey: ['dc-compliance'] });
       await qc.refetchQueries({ queryKey });
       toast.success(`Kill-switch released for ${scope.label} — dispatch resumed`);
       setReleaseOpen(false);
