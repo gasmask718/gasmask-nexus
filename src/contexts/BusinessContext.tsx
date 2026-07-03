@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Business {
   id: string;
@@ -28,11 +29,16 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
 
   const fetchBusinesses = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setCurrentBusiness(null);
+        setBusinesses([]);
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .rpc('get_user_businesses', { user_id: user.id });
@@ -90,8 +96,9 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    if (authLoading) return;
     fetchBusinesses();
-  }, []);
+  }, [authLoading, user?.id]);
 
   return (
     <BusinessContext.Provider value={{
