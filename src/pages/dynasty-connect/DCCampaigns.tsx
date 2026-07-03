@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Target, Play, Pause, Archive, Plus, Search, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AGENTS = [
   { id: 'agent_0301kmdmp16aevv8svr78pbr75n8', name: 'DC — Sales Outreach' },
@@ -32,6 +33,7 @@ const statusColor = (s: string) => {
 
 export default function DCCampaigns() {
   const queryClient = useQueryClient();
+  const { user, loading: authLoading } = useAuth();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [businessFilter, setBusinessFilter] = useState('all');
@@ -54,10 +56,12 @@ export default function DCCampaigns() {
 
   const { data: pipelines = [] } = useQuery({
     queryKey: ['dc-pipelines-list'],
+    enabled: !authLoading && !!user,
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from('dc_business_pipelines')
         .select('id, business_name, pipeline_type');
+      if (error) throw error;
       return data || [];
     },
   });
