@@ -123,6 +123,9 @@ import {
   Gift,
   Scale,
   FolderOpen,
+  Film,
+  Video,
+  Settings2,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
