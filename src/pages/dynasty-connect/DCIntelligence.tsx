@@ -7,17 +7,18 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Download } from 'lucide-react';
 
+const ALL_VALUE = '__all__';
 const BIZ_OPTIONS = [
-  { value: '', label: 'All Businesses' }, { value: 'gasmask', label: 'GasMask' },
+  { value: ALL_VALUE, label: 'All Businesses' }, { value: 'gasmask', label: 'GasMask' },
   { value: 'unforgettable_times', label: 'Unforgettable Times' }, { value: 'real_estate', label: 'Real Estate' },
   { value: 'surplus_funds', label: 'Surplus Funds' }, { value: 'top_tier', label: 'Top Tier' },
   { value: 'brandaro', label: 'Brandaro' }, { value: 'playboxxx', label: 'PlayBoxxx' }, { value: 'iclean', label: 'iClean' },
 ];
 
 export default function DCIntelligence() {
-  const [bizFilter, setBizFilter] = useState('');
-  const [dirFilter, setDirFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [bizFilter, setBizFilter] = useState(ALL_VALUE);
+  const [dirFilter, setDirFilter] = useState(ALL_VALUE);
+  const [statusFilter, setStatusFilter] = useState(ALL_VALUE);
   const [page, setPage] = useState(0);
   const pageSize = 50;
 
@@ -25,9 +26,9 @@ export default function DCIntelligence() {
     queryKey: ['dc-call-logs', bizFilter, dirFilter, statusFilter, page],
     queryFn: async () => {
       let q = (supabase as any).from('dc_call_logs').select('*').order('created_at', { ascending: false }).range(page * pageSize, (page + 1) * pageSize - 1);
-      if (bizFilter) q = q.eq('business', bizFilter);
-      if (dirFilter) q = q.eq('direction', dirFilter);
-      if (statusFilter) q = q.eq('status', statusFilter);
+      if (bizFilter && bizFilter !== ALL_VALUE) q = q.eq('business', bizFilter);
+      if (dirFilter && dirFilter !== ALL_VALUE) q = q.eq('direction', dirFilter);
+      if (statusFilter && statusFilter !== ALL_VALUE) q = q.eq('status', statusFilter);
       const { data } = await q;
       return data || [];
     },
@@ -68,8 +69,8 @@ export default function DCIntelligence() {
       </div>
       <div className="flex flex-wrap gap-3">
         <Select value={bizFilter} onValueChange={setBizFilter}><SelectTrigger className="w-44"><SelectValue placeholder="All Businesses" /></SelectTrigger><SelectContent>{BIZ_OPTIONS.map((b) => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}</SelectContent></Select>
-        <Select value={dirFilter} onValueChange={setDirFilter}><SelectTrigger className="w-36"><SelectValue placeholder="Direction" /></SelectTrigger><SelectContent><SelectItem value="">All</SelectItem><SelectItem value="inbound">Inbound</SelectItem><SelectItem value="outbound">Outbound</SelectItem></SelectContent></Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="">All</SelectItem><SelectItem value="connected">Connected</SelectItem><SelectItem value="completed">Completed</SelectItem><SelectItem value="voicemail">Voicemail</SelectItem><SelectItem value="initiated">Initiated</SelectItem></SelectContent></Select>
+        <Select value={dirFilter} onValueChange={setDirFilter}><SelectTrigger className="w-36"><SelectValue placeholder="Direction" /></SelectTrigger><SelectContent><SelectItem value={ALL_VALUE}>All</SelectItem><SelectItem value="inbound">Inbound</SelectItem><SelectItem value="outbound">Outbound</SelectItem></SelectContent></Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value={ALL_VALUE}>All</SelectItem><SelectItem value="connected">Connected</SelectItem><SelectItem value="completed">Completed</SelectItem><SelectItem value="voicemail">Voicemail</SelectItem><SelectItem value="initiated">Initiated</SelectItem></SelectContent></Select>
       </div>
       <Card>
         <CardContent className="p-0">
