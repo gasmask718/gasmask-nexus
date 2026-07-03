@@ -14,6 +14,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
   DialogFooter, DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -211,6 +215,7 @@ function ManualOverride() {
   const [newDisp, setNewDisp] = useState<string>('');
   const [reason, setReason] = useState('');
   const [lastResult, setLastResult] = useState<{ old: string | null; next: string; name: string | null } | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const qc = useQueryClient();
 
   const { data: results = [], isFetching } = useQuery({
@@ -266,12 +271,15 @@ function ManualOverride() {
       setSelected(null);
       setNewDisp('');
       setReason('');
+      setConfirmOpen(false);
       qc.invalidateQueries({ queryKey: ['dc-disp-search'] });
       qc.invalidateQueries({ queryKey: ['dc-unified-leads'] });
       toast.success('Disposition overridden');
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const newDispLabel = codes.find((c) => c.code === newDisp)?.label;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -388,7 +396,7 @@ function ManualOverride() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => submit.mutate()}
+                  onClick={() => setConfirmOpen(true)}
                   disabled={submit.isPending || !newDisp || reason.trim().length < 10}
                 >
                   {submit.isPending ? 'Applying…' : 'Apply Override'}
@@ -398,6 +406,55 @@ function ManualOverride() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={confirmOpen} onOpenChange={(o) => { if (!submit.isPending) setConfirmOpen(o); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm disposition override</AlertDialogTitle>
+            <AlertDialogDescription>
+              Review the change before applying. This action is recorded to the sync log.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {selected && (
+            <div className="space-y-3 text-sm">
+              <div className="rounded-md border p-3 space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-medium">{selected.lead_name || '(no name)'}</div>
+                  <Badge variant="outline" className={UNIT_COLORS[selected.business_unit_key] ?? ''}>
+                    {selected.business_unit_key}
+                  </Badge>
+                </div>
+                <div className="text-xs text-muted-foreground">{selected.phone || 'no phone'}</div>
+              </div>
+              <div className="rounded-md border p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground text-xs uppercase tracking-wide">Old value</span>
+                  <span className="font-mono">{selected.last_disposition ?? '—'}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground text-xs uppercase tracking-wide">New value</span>
+                  <span className="font-mono">
+                    {newDisp}{newDispLabel ? ` — ${newDispLabel}` : ''}
+                  </span>
+                </div>
+              </div>
+              <div className="rounded-md border p-3">
+                <div className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Reason</div>
+                <div className="whitespace-pre-wrap">{reason.trim()}</div>
+              </div>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submit.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); submit.mutate(); }}
+              disabled={submit.isPending}
+            >
+              {submit.isPending ? 'Applying…' : 'Confirm override'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
