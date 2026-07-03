@@ -98,7 +98,13 @@ export default function DCAgents() {
                       <Badge className={`${bizColor[agent.business] || 'bg-muted'} text-white text-xs mb-1`}>{bizLabel[agent.business] || agent.business}</Badge>
                       <h3 className="font-semibold text-sm">{agent.name}</h3>
                     </div>
-                    <Brain className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex items-center gap-1">
+                      <Badge variant={agent.is_active ? 'default' : 'secondary'} className={`text-[10px] ${agent.is_active ? 'bg-green-500/15 text-green-600 border-green-500/30' : 'bg-muted text-muted-foreground'}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full mr-1 ${agent.is_active ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+                        {agent.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                      <Brain className="h-4 w-4 text-muted-foreground" />
+                    </div>
                   </div>
                   <div className="space-y-1 text-xs text-muted-foreground">
                     <div className="flex justify-between"><span>Agent ID:</span><span className="font-mono truncate ml-2 max-w-[140px]">{agent.agent_id}</span></div>
