@@ -861,16 +861,18 @@ ${transcript}`
           const ddTranscriptFlagsDnc = ddDncRegex.test(callTranscript || '');
 
           const inventorySummary = (blandAnalysis?.inventory_summary as string) || null;
-          const preferredFollowup = (blandAnalysis?.preferred_followup as string) || null;
 
           // ---- UPDATE 1: always-runs writeback ----
+          // NOTE: preferred_contact is intentionally NOT written here. It has a
+          // Postgres CHECK constraint and unexpected Bland payload values were
+          // causing the entire webhook update to fail. Keep this update minimal,
+          // constraint-safe, and idempotent on retry.
           const ddUpdate1: Record<string, unknown> = {
             last_contacted_at: new Date().toISOString(),
             call_attempts: (prevDd?.call_attempts || 0) + 1,
             last_call_disposition: canonical,
           };
           if (inventorySummary) ddUpdate1.inventory_notes = inventorySummary;
-          if (preferredFollowup) ddUpdate1.preferred_contact = preferredFollowup;
 
           const { error: ddUpdate1Err } = await supabase
             .from('wholesalers')
