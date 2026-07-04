@@ -87177,6 +87177,7 @@ export type Database = {
           parlay_date: string | null
           potential_payout: number | null
           result: string | null
+          sport_key: string | null
           stake: number | null
           status: string | null
           suggested_stake: number | null
@@ -87200,6 +87201,7 @@ export type Database = {
           parlay_date?: string | null
           potential_payout?: number | null
           result?: string | null
+          sport_key?: string | null
           stake?: number | null
           status?: string | null
           suggested_stake?: number | null
@@ -87223,6 +87225,7 @@ export type Database = {
           parlay_date?: string | null
           potential_payout?: number | null
           result?: string | null
+          sport_key?: string | null
           stake?: number | null
           status?: string | null
           suggested_stake?: number | null
