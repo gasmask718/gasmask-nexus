@@ -196,7 +196,11 @@ export function FinishedCallsBoard({
         raw_transcript: c.transcript || null,
       }));
 
-      const list = [...dynList, ...dcList].sort(
+      // Hide synthetic health-check rows (dynasty_ai_calls call_id like 'health_*')
+      const filteredDyn = dynList.filter(
+        (c: any) => !(typeof c.call_id === "string" && c.call_id.startsWith("health_"))
+      );
+      const list = [...filteredDyn, ...dcList].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       if (list.length === 0) return list;
