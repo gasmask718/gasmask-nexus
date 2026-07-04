@@ -29129,10 +29129,14 @@ export type Database = {
       clipper_accounts: {
         Row: {
           bio: string | null
+          country: string | null
           created_at: string | null
+          currency: string | null
           email: string
           full_name: string
           id: string
+          payout_method: string | null
+          paypal_email: string | null
           phone: string | null
           status: string | null
           stripe_connect_id: string | null
@@ -29142,13 +29146,19 @@ export type Database = {
           total_views: number | null
           updated_at: string | null
           user_id: string | null
+          wise_account_id: string | null
+          wise_email: string | null
         }
         Insert: {
           bio?: string | null
+          country?: string | null
           created_at?: string | null
+          currency?: string | null
           email: string
           full_name: string
           id?: string
+          payout_method?: string | null
+          paypal_email?: string | null
           phone?: string | null
           status?: string | null
           stripe_connect_id?: string | null
@@ -29158,13 +29168,19 @@ export type Database = {
           total_views?: number | null
           updated_at?: string | null
           user_id?: string | null
+          wise_account_id?: string | null
+          wise_email?: string | null
         }
         Update: {
           bio?: string | null
+          country?: string | null
           created_at?: string | null
+          currency?: string | null
           email?: string
           full_name?: string
           id?: string
+          payout_method?: string | null
+          paypal_email?: string | null
           phone?: string | null
           status?: string | null
           stripe_connect_id?: string | null
@@ -29174,6 +29190,8 @@ export type Database = {
           total_views?: number | null
           updated_at?: string | null
           user_id?: string | null
+          wise_account_id?: string | null
+          wise_email?: string | null
         }
         Relationships: []
       }
