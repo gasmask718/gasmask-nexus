@@ -200,9 +200,11 @@ export function FinishedCallsBoard({
       const filteredDyn = dynList.filter(
         (c: any) => !(typeof c.call_id === "string" && c.call_id.startsWith("health_"))
       );
-      const list = [...filteredDyn, ...dcList].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
+      // Sort by the same date the row displays (call_started_at || created_at) so
+      // the visible order is strictly newest-first.
+      const rowDate = (c: any) =>
+        new Date(c.call_started_at || c.created_at).getTime();
+      const list = [...filteredDyn, ...dcList].sort((a, b) => rowDate(b) - rowDate(a));
       if (list.length === 0) return list;
 
       // 2. Enrich: dynasty_call_analysis (coaching) + dc_lead_analysis (lead intel).
