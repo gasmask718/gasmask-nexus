@@ -115,7 +115,8 @@ export function FinishedCallsBoard({
       phoneFilter,
     ],
     queryFn: async () => {
-      let q = (supabase as any)
+      // 1. Fetch from BOTH sources in parallel
+      let dynQ = (supabase as any)
         .from("dynasty_ai_calls")
         .select(
           "id, call_id, business_unit, agent_id, agent_name, direction, from_number, to_number, contact_name, company_name, outcome, duration_seconds, recording_url, call_started_at, call_ended_at, created_at"
@@ -123,24 +124,84 @@ export function FinishedCallsBoard({
         .order("created_at", { ascending: false })
         .limit(300);
 
-      if (business !== "all") q = q.eq("business_unit", business);
-      if (outcome !== "all") q = q.eq("outcome", outcome);
-      if (agentQ.trim()) q = q.ilike("agent_name", `%${agentQ.trim()}%`);
-      if (fromDate) q = q.gte("created_at", `${fromDate}T00:00:00Z`);
-      if (toDate) q = q.lte("created_at", `${toDate}T23:59:59Z`);
+      let dcQ = (supabase as any)
+        .from("dc_call_logs")
+        .select(
+          "id, call_sid, business, source_business, agent_id, agent_name, agent_type, direction, from_number, to_number, lead_name, outcome, duration_seconds, recording_url, transcript, created_at, updated_at"
+        )
+        .order("created_at", { ascending: false })
+        .limit(300);
+
+      if (business !== "all") {
+        dynQ = dynQ.eq("business_unit", business);
+        dcQ = dcQ.or(`business.eq.${business},source_business.eq.${business}`);
+      }
+      if (outcome !== "all") {
+        dynQ = dynQ.eq("outcome", outcome);
+        dcQ = dcQ.eq("outcome", outcome);
+      }
+      if (agentQ.trim()) {
+        const q = `%${agentQ.trim()}%`;
+        dynQ = dynQ.ilike("agent_name", q);
+        dcQ = dcQ.ilike("agent_name", q);
+      }
+      if (fromDate) {
+        dynQ = dynQ.gte("created_at", `${fromDate}T00:00:00Z`);
+        dcQ = dcQ.gte("created_at", `${fromDate}T00:00:00Z`);
+      }
+      if (toDate) {
+        dynQ = dynQ.lte("created_at", `${toDate}T23:59:59Z`);
+        dcQ = dcQ.lte("created_at", `${toDate}T23:59:59Z`);
+      }
       if (phoneFilter) {
         const tail = phoneFilter.replace(/\D/g, "").slice(-10);
-        if (tail) q = q.or(`to_number.ilike.%${tail}%,from_number.ilike.%${tail}%`);
+        if (tail) {
+          const or = `to_number.ilike.%${tail}%,from_number.ilike.%${tail}%`;
+          dynQ = dynQ.or(or);
+          dcQ = dcQ.or(or);
+        }
       }
 
-      const { data: calls, error } = await q;
-      if (error) throw error;
-      const list = (calls || []) as FinishedCall[];
+      const [dynRes, dcRes] = await Promise.all([dynQ, dcQ]);
+      if (dynRes.error) throw dynRes.error;
+      if (dcRes.error) throw dcRes.error;
+
+      const dynList: FinishedCall[] = (dynRes.data || []).map((c: any) => ({
+        ...c,
+        source: "dynasty" as const,
+        raw_transcript: null,
+      }));
+
+      const dcList: FinishedCall[] = (dcRes.data || []).map((c: any) => ({
+        id: `dc:${c.id}`,
+        // dc_lead_analysis.call_id links primarily via call_sid; fall back to id
+        call_id: c.call_sid || c.id,
+        business_unit: c.business || c.source_business || null,
+        agent_id: c.agent_id || null,
+        agent_name: c.agent_name || c.agent_type || null,
+        direction: c.direction || null,
+        from_number: c.from_number || null,
+        to_number: c.to_number || null,
+        contact_name: c.lead_name || null,
+        company_name: null,
+        outcome: c.outcome || null,
+        duration_seconds: c.duration_seconds ?? null,
+        recording_url: c.recording_url || null,
+        call_started_at: c.created_at || null,
+        call_ended_at: c.updated_at || null,
+        created_at: c.created_at,
+        source: "dc" as const,
+        raw_transcript: c.transcript || null,
+      }));
+
+      const list = [...dynList, ...dcList].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
       if (list.length === 0) return list;
 
-      // Enrich with analysis + transcript counts
+      // 2. Enrich: dynasty_call_analysis (coaching sentiment/score) + dc_lead_analysis (lead intel)
       const ids = list.map((c) => c.call_id).filter(Boolean);
-      const [{ data: an }, { data: tx }] = await Promise.all([
+      const [{ data: an }, { data: tx }, { data: la }] = await Promise.all([
         (supabase as any)
           .from("dynasty_call_analysis")
           .select("call_id, customer_sentiment, overall_score")
@@ -149,19 +210,32 @@ export function FinishedCallsBoard({
           .from("dynasty_call_transcripts")
           .select("call_id")
           .in("call_id", ids),
+        (supabase as any)
+          .from("dc_lead_analysis")
+          .select("call_id, sentiment, interest_score")
+          .in("call_id", ids),
       ]);
       const anMap = new Map<string, any>((an || []).map((r: any) => [r.call_id, r]));
+      const laMap = new Map<string, any>((la || []).map((r: any) => [r.call_id, r]));
       const txCounts = new Map<string, number>();
       (tx || []).forEach((r: any) =>
         txCounts.set(r.call_id, (txCounts.get(r.call_id) || 0) + 1)
       );
 
-      let enriched = list.map((c) => ({
-        ...c,
-        customer_sentiment: anMap.get(c.call_id)?.customer_sentiment ?? null,
-        overall_score: anMap.get(c.call_id)?.overall_score ?? null,
-        transcript_count: txCounts.get(c.call_id) || 0,
-      }));
+      let enriched = list.map((c) => {
+        const anRow = anMap.get(c.call_id);
+        const laRow = laMap.get(c.call_id);
+        const txN = txCounts.get(c.call_id) || 0;
+        // For dc rows, prefer lead-analysis sentiment; overall_score comes from coaching only.
+        const sentimentVal =
+          anRow?.customer_sentiment ?? laRow?.sentiment ?? null;
+        return {
+          ...c,
+          customer_sentiment: sentimentVal,
+          overall_score: anRow?.overall_score ?? null,
+          transcript_count: txN + (c.raw_transcript ? 1 : 0),
+        };
+      });
 
       if (sentiment !== "all") {
         enriched = enriched.filter(
@@ -171,6 +245,7 @@ export function FinishedCallsBoard({
       return enriched;
     },
   });
+
 
   // Build option lists from data
   const businesses = useMemo(
