@@ -84548,6 +84548,8 @@ export type Database = {
           created_at: string | null
           date: string
           id: string
+          prop_breakdown: Json | null
+          sport_key: string | null
           total_predictions: number | null
         }
         Insert: {
@@ -84558,6 +84560,8 @@ export type Database = {
           created_at?: string | null
           date: string
           id?: string
+          prop_breakdown?: Json | null
+          sport_key?: string | null
           total_predictions?: number | null
         }
         Update: {
@@ -84568,6 +84572,8 @@ export type Database = {
           created_at?: string | null
           date?: string
           id?: string
+          prop_breakdown?: Json | null
+          sport_key?: string | null
           total_predictions?: number | null
         }
         Relationships: []
@@ -86295,6 +86301,7 @@ export type Database = {
           home_team: string
           id: string
           sport: string | null
+          sport_key: string | null
           status: string | null
           updated_at: string | null
           winner: string | null
@@ -86309,6 +86316,7 @@ export type Database = {
           home_team: string
           id?: string
           sport?: string | null
+          sport_key?: string | null
           status?: string | null
           updated_at?: string | null
           winner?: string | null
@@ -86323,6 +86331,7 @@ export type Database = {
           home_team?: string
           id?: string
           sport?: string | null
+          sport_key?: string | null
           status?: string | null
           updated_at?: string | null
           winner?: string | null
@@ -86815,6 +86824,7 @@ export type Database = {
           id: string
           market_type: string
           over_odds: number | null
+          sport_key: string | null
           sportsbook: string
           total_line: number | null
           under_odds: number | null
@@ -86830,6 +86840,7 @@ export type Database = {
           id?: string
           market_type: string
           over_odds?: number | null
+          sport_key?: string | null
           sportsbook: string
           total_line?: number | null
           under_odds?: number | null
@@ -86845,6 +86856,7 @@ export type Database = {
           id?: string
           market_type?: string
           over_odds?: number | null
+          sport_key?: string | null
           sportsbook?: string
           total_line?: number | null
           under_odds?: number | null
@@ -87386,6 +87398,7 @@ export type Database = {
           player_name: string
           prop_type: string
           source: string | null
+          sport_key: string | null
           team: string
           under_odds: number | null
           updated_at: string | null
@@ -87408,6 +87421,7 @@ export type Database = {
           player_name: string
           prop_type: string
           source?: string | null
+          sport_key?: string | null
           team: string
           under_odds?: number | null
           updated_at?: string | null
@@ -87430,6 +87444,7 @@ export type Database = {
           player_name?: string
           prop_type?: string
           source?: string | null
+          sport_key?: string | null
           team?: string
           under_odds?: number | null
           updated_at?: string | null
@@ -87970,6 +87985,7 @@ export type Database = {
           recommended_stake: number | null
           recommended_units: number | null
           sharp_indicator: boolean | null
+          sport_key: string | null
           stats_brain_reasoning: string | null
           stats_brain_score: number | null
           updated_at: string | null
@@ -88004,6 +88020,7 @@ export type Database = {
           recommended_stake?: number | null
           recommended_units?: number | null
           sharp_indicator?: boolean | null
+          sport_key?: string | null
           stats_brain_reasoning?: string | null
           stats_brain_score?: number | null
           updated_at?: string | null
@@ -88038,6 +88055,7 @@ export type Database = {
           recommended_stake?: number | null
           recommended_units?: number | null
           sharp_indicator?: boolean | null
+          sport_key?: string | null
           stats_brain_reasoning?: string | null
           stats_brain_score?: number | null
           updated_at?: string | null
@@ -88063,6 +88081,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sbo_prop_accuracy: {
+        Row: {
+          best_line_max: number | null
+          best_line_min: number | null
+          created_at: string | null
+          elite_correct: number | null
+          elite_total: number | null
+          id: string
+          moderate_correct: number | null
+          moderate_total: number | null
+          over_correct: number | null
+          over_total: number | null
+          prop_type: string
+          sport_key: string
+          strong_correct: number | null
+          strong_total: number | null
+          under_correct: number | null
+          under_total: number | null
+          updated_at: string | null
+          weak_correct: number | null
+          weak_total: number | null
+        }
+        Insert: {
+          best_line_max?: number | null
+          best_line_min?: number | null
+          created_at?: string | null
+          elite_correct?: number | null
+          elite_total?: number | null
+          id?: string
+          moderate_correct?: number | null
+          moderate_total?: number | null
+          over_correct?: number | null
+          over_total?: number | null
+          prop_type: string
+          sport_key: string
+          strong_correct?: number | null
+          strong_total?: number | null
+          under_correct?: number | null
+          under_total?: number | null
+          updated_at?: string | null
+          weak_correct?: number | null
+          weak_total?: number | null
+        }
+        Update: {
+          best_line_max?: number | null
+          best_line_min?: number | null
+          created_at?: string | null
+          elite_correct?: number | null
+          elite_total?: number | null
+          id?: string
+          moderate_correct?: number | null
+          moderate_total?: number | null
+          over_correct?: number | null
+          over_total?: number | null
+          prop_type?: string
+          sport_key?: string
+          strong_correct?: number | null
+          strong_total?: number | null
+          under_correct?: number | null
+          under_total?: number | null
+          updated_at?: string | null
+          weak_correct?: number | null
+          weak_total?: number | null
+        }
+        Relationships: []
       }
       sbo_prop_correlations: {
         Row: {
@@ -88745,6 +88829,66 @@ export type Database = {
           send_type?: string | null
           sent_at?: string | null
           status?: string | null
+        }
+        Relationships: []
+      }
+      sbo_sports: {
+        Row: {
+          accuracy_rate: number | null
+          context_weight: number | null
+          correct_predictions: number | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          learned_context_weight: number | null
+          learned_market_weight: number | null
+          learned_stats_weight: number | null
+          market_weight: number | null
+          season_end: string | null
+          season_start: string | null
+          sport_key: string
+          sport_name: string
+          stats_weight: number | null
+          total_predictions: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          accuracy_rate?: number | null
+          context_weight?: number | null
+          correct_predictions?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          learned_context_weight?: number | null
+          learned_market_weight?: number | null
+          learned_stats_weight?: number | null
+          market_weight?: number | null
+          season_end?: string | null
+          season_start?: string | null
+          sport_key: string
+          sport_name: string
+          stats_weight?: number | null
+          total_predictions?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          accuracy_rate?: number | null
+          context_weight?: number | null
+          correct_predictions?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          learned_context_weight?: number | null
+          learned_market_weight?: number | null
+          learned_stats_weight?: number | null
+          market_weight?: number | null
+          season_end?: string | null
+          season_start?: string | null
+          sport_key?: string
+          sport_name?: string
+          stats_weight?: number | null
+          total_predictions?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
