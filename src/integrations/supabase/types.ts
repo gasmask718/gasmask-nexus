@@ -29135,6 +29135,8 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          payoneer_email: string | null
+          payoneer_id: string | null
           payout_method: string | null
           paypal_email: string | null
           phone: string | null
@@ -29157,6 +29159,8 @@ export type Database = {
           email: string
           full_name: string
           id?: string
+          payoneer_email?: string | null
+          payoneer_id?: string | null
           payout_method?: string | null
           paypal_email?: string | null
           phone?: string | null
@@ -29179,6 +29183,8 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          payoneer_email?: string | null
+          payoneer_id?: string | null
           payout_method?: string | null
           paypal_email?: string | null
           phone?: string | null
