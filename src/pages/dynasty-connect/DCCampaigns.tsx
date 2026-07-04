@@ -160,15 +160,19 @@ export default function DCCampaigns() {
             <SelectItem value="paused">Paused</SelectItem>
             <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="failed">Failed</SelectItem>
           </SelectContent>
         </Select>
         <Select value={businessFilter} onValueChange={setBusinessFilter}>
           <SelectTrigger className="w-[160px]"><SelectValue placeholder="All Businesses" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Businesses</SelectItem>
-            {pipelines.map((p: any) => <SelectItem key={p.id} value={p.business_name}>{p.business_name}</SelectItem>)}
+            {Array.from(new Set(campaigns.map((c: any) => c.business).filter(Boolean))).map((b: any) => (
+              <SelectItem key={b} value={b}>{b}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
+
       </div>
 
       {/* Campaign table */}
