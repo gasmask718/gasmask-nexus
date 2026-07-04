@@ -492,7 +492,12 @@ export function FinishedCallsBoard({
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
                       <FileText className="h-3 w-3" /> Transcript
                     </div>
-                    <CallTranscriptViewer callId={c.call_id} maxHeight="280px" />
+                    <CallTranscriptViewer
+                      callId={c.call_id}
+                      maxHeight="280px"
+                      rawTranscript={c.raw_transcript}
+                    />
+
                   </div>
                 </div>
               )}
