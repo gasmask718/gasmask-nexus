@@ -30,7 +30,7 @@ function speakerStyle(s: string | null) {
   return { label: s || "—", icon: User, cls: "bg-muted/40 border-border text-muted-foreground" };
 }
 
-export function CallTranscriptViewer({ callId, className, maxHeight = "320px" }: Props) {
+export function CallTranscriptViewer({ callId, className, maxHeight = "320px", rawTranscript }: Props) {
   const { data, isLoading } = useQuery({
     queryKey: ["call-transcripts", callId],
     queryFn: async () => {
@@ -43,10 +43,25 @@ export function CallTranscriptViewer({ callId, className, maxHeight = "320px" }:
       if (error) throw error;
       return (data || []) as TxRow[];
     },
-    enabled: !!callId,
+    enabled: !!callId && !rawTranscript,
   });
 
+  // Raw transcript path (e.g. dc_call_logs.transcript is a single text blob)
+  if (rawTranscript && rawTranscript.trim()) {
+    return (
+      <div
+        className={cn("overflow-y-auto pr-1 rounded border border-border bg-muted/20 p-2.5", className)}
+        style={{ maxHeight }}
+      >
+        <p className="whitespace-pre-wrap leading-relaxed text-xs text-foreground/90">
+          {rawTranscript}
+        </p>
+      </div>
+    );
+  }
+
   if (isLoading) {
+
     return (
       <div className={cn("flex items-center justify-center py-4", className)}>
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
