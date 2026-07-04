@@ -58,13 +58,27 @@ export default function DCCallResults() {
 
   const analysisMap = analyses.reduce((acc: any, a: any) => { acc[a.call_id] = a; return acc; }, {});
 
+  // Unified quality mapping — derive from AI score, fallback to stored lead_quality
+  const qualityFromScore = (score: number | null | undefined): 'hot' | 'warm' | 'cold' | 'dead' | null => {
+    if (score == null) return null;
+    if (score >= 8) return 'hot';
+    if (score >= 5) return 'warm';
+    if (score >= 1) return 'cold';
+    return 'dead';
+  };
+  const resolveQuality = (r: any): 'hot' | 'warm' | 'cold' | 'dead' | null => {
+    const score = analysisMap[r.call_id]?.overall_score;
+    return qualityFromScore(score) ?? (r.lead_quality as any) ?? null;
+  };
+
   const filtered = results.filter((r: any) => {
     if (search && !r.to_number?.includes(search) && !r.contact_name?.toLowerCase().includes(search.toLowerCase()) && !r.company_name?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
-  const hotCount = results.filter((r: any) => r.lead_quality === 'hot').length;
+  const hotCount = results.filter((r: any) => resolveQuality(r) === 'hot').length;
   const avgScore = analyses.length > 0 ? Math.round(analyses.reduce((s: number, a: any) => s + (a.overall_score || 0), 0) / analyses.length) : 0;
+
 
   const ScoreBar = ({ label, score }: { label: string; score: number }) => (
     <div className="flex items-center gap-2">
