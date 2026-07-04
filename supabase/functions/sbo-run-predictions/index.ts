@@ -586,9 +586,17 @@ CRITICAL RULES FROM CALIBRATION DATA:
       .maybeSingle();
 
     if (sportRow) {
-      const SW = sportRow.learned_stats_weight ?? sportRow.stats_weight ?? 0.40;
-      const MW = sportRow.learned_market_weight ?? sportRow.market_weight ?? 0.35;
-      const CW = sportRow.learned_context_weight ?? sportRow.context_weight ?? 0.25;
+      let SW = Number(sportRow.learned_stats_weight ?? sportRow.stats_weight ?? 0.40);
+      let MW = Number(sportRow.learned_market_weight ?? sportRow.market_weight ?? 0.35);
+      let CW = Number(sportRow.learned_context_weight ?? sportRow.context_weight ?? 0.25);
+
+      // sbo_sports stores weights as percentages (e.g. 40/35/25). Normalize to decimals if > 1.
+      const sumRaw = SW + MW + CW;
+      if (sumRaw > 1.5) {
+        SW = SW / 100;
+        MW = MW / 100;
+        CW = CW / 100;
+      }
 
       // Preserve existing polymarket weight logic — pull from sbo_model_performance
       const { data: activeConfig } = await supabase
