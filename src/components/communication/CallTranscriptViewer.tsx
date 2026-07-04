@@ -7,7 +7,10 @@ interface Props {
   callId: string;
   className?: string;
   maxHeight?: string;
+  /** If provided, render this raw transcript text instead of querying dynasty_call_transcripts. */
+  rawTranscript?: string | null;
 }
+
 
 type TxRow = {
   id: string;
