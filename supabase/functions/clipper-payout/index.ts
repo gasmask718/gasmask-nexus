@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     const { data: clipper, error: cErr } = await (supabase as any)
       .from("clipper_accounts")
       .select(
-        "id, stripe_connect_id, stripe_connect_onboarded, payout_method, wise_account_id, wise_email, paypal_email, country, currency",
+        "id, stripe_connect_id, stripe_connect_onboarded, payout_method, wise_account_id, wise_email, paypal_email, payoneer_email, payoneer_id, country, currency",
       )
       .eq("id", clipper_id)
       .maybeSingle();
@@ -244,6 +244,63 @@ Deno.serve(async (req) => {
       }
       const paypalPayout = await payoutRes.json();
       transferId = `paypal_${paypalPayout.batch_header.payout_batch_id}`;
+    } else if (payoutMethod === "payoneer") {
+      const PAYONEER_USERNAME = Deno.env.get("PAYONEER_USERNAME");
+      const PAYONEER_PASSWORD = Deno.env.get("PAYONEER_PASSWORD");
+      const PAYONEER_PARTNER_ID = Deno.env.get("PAYONEER_PARTNER_ID");
+
+      if (!PAYONEER_USERNAME || !PAYONEER_PASSWORD || !PAYONEER_PARTNER_ID) {
+        return new Response(
+          JSON.stringify({
+            error: "Payoneer not configured",
+            message:
+              "Add PAYONEER_USERNAME, PAYONEER_PASSWORD, and PAYONEER_PARTNER_ID to vault",
+          }),
+          {
+            status: 503,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      if (!clipper.payoneer_email && !clipper.payoneer_id) {
+        throw new Error(
+          "Add your Payoneer email or ID in portal settings first",
+        );
+      }
+
+      // Payoneer Mass Payment API
+      const payoneerRes = await fetch(
+        `https://api.payoneer.com/v2/programs/${PAYONEER_PARTNER_ID}/payouts`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${btoa(`${PAYONEER_USERNAME}:${PAYONEER_PASSWORD}`)}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            client_reference_id: crypto.randomUUID(),
+            description: "Dynasty Clipper Nation payout",
+            payee: {
+              id: clipper.payoneer_id || clipper.payoneer_email,
+              id_type: clipper.payoneer_id ? "PAYONEER_ID" : "EMAIL",
+            },
+            amount: {
+              value: amount_cents / 100,
+              currency: "USD",
+            },
+          }),
+        },
+      );
+
+      if (!payoneerRes.ok) {
+        const err = await payoneerRes.json().catch(() => ({}));
+        throw new Error(
+          `Payoneer error: ${err.message || err.description || "Unknown error"}`,
+        );
+      }
+      const payoneerData = await payoneerRes.json();
+      transferId = `payoneer_${payoneerData.payout_id || payoneerData.id || crypto.randomUUID()}`;
     } else {
       throw new Error(`Unknown payout_method: ${payoutMethod}`);
     }
