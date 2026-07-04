@@ -50,7 +50,10 @@ type FinishedCall = {
   customer_sentiment?: string | null;
   overall_score?: number | null;
   transcript_count?: number;
+  source: "dynasty" | "dc";
+  raw_transcript?: string | null;
 };
+
 
 function fmtDur(sec: number | null) {
   if (sec == null) return "—";
