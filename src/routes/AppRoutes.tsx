@@ -1016,6 +1016,13 @@ const UbenCompliance = lazy(() => import('@/pages/os/uben/UbenCompliance'));
 const UbenDocuments = lazy(() => import('@/pages/os/uben/UbenDocuments'));
 const UbenCommissions = lazy(() => import('@/pages/os/uben/UbenCommissions'));
 const DynastyEarn = lazy(() => import('@/pages/os/dynasty-earn/DynastyEarn'));
+const EarnEarners = lazy(() => import('@/pages/os/dynasty-earn/EarnEarners'));
+const EarnBrands = lazy(() => import('@/pages/os/dynasty-earn/EarnBrands'));
+const EarnPrograms = lazy(() => import('@/pages/os/dynasty-earn/EarnPrograms'));
+const EarnCommissions = lazy(() => import('@/pages/os/dynasty-earn/EarnCommissions'));
+const EarnCampaigns = lazy(() => import('@/pages/os/dynasty-earn/EarnCampaigns'));
+const EarnPayouts = lazy(() => import('@/pages/os/dynasty-earn/EarnPayouts'));
+const EarnSettings = lazy(() => import('@/pages/os/dynasty-earn/EarnSettings'));
 const BrandAcquisitionSystem = lazy(() => import('@/pages/os/brand-acquisition/BrandAcquisitionSystem'));
 const DynastySalesNetwork = lazy(() => import('@/pages/os/dynasty-sales/DynastySalesNetwork'));
 const ClipperDashboard = lazy(() => import('@/pages/os/clipper/ClipperDashboard'));
@@ -2207,6 +2214,13 @@ export default function AppRoutes() {
         <Route path="/os/uben/documents" element={<UbenDocuments />} />
         <Route path="/os/uben/commissions" element={<UbenCommissions />} />
         <Route path="/os/dynasty-earn" element={<DynastyEarn />} />
+        <Route path="/os/dynasty-earn/earners" element={<EarnEarners />} />
+        <Route path="/os/dynasty-earn/brands" element={<EarnBrands />} />
+        <Route path="/os/dynasty-earn/programs" element={<EarnPrograms />} />
+        <Route path="/os/dynasty-earn/commissions" element={<EarnCommissions />} />
+        <Route path="/os/dynasty-earn/campaigns" element={<EarnCampaigns />} />
+        <Route path="/os/dynasty-earn/payouts" element={<EarnPayouts />} />
+        <Route path="/os/dynasty-earn/settings" element={<EarnSettings />} />
         <Route path="/os/brand-acquisition" element={<BrandAcquisitionSystem />} />
         <Route path="/os/dynasty-sales" element={<DynastySalesNetwork />} />
         <Route path="/os/clipper-nation" element={<ClipperDashboard />} />

@@ -126,6 +126,7 @@ import {
   Film,
   Video,
   Settings2,
+  Receipt,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
@@ -472,9 +473,23 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/uben/compliance', label: '⚖️ Compliance', icon: Scale },
       { path: '/os/uben/documents', label: '📁 Documents', icon: FolderOpen },
       { path: '/os/uben/commissions', label: '💰 Commissions', icon: DollarSign },
-      { path: '/os/dynasty-earn', label: '💰 Monetization Engine', icon: DollarSign },
+      
       { path: '/os/brand-acquisition', label: '👑 Brand Acquisition', icon: Crown },
       { path: '/os/dynasty-sales', label: '🔥 Sales Domination', icon: Target },
+    ],
+  },
+  dynastyEarn: {
+    id: 'dynasty-earn',
+    name: '💰 Dynasty Earn',
+    items: [
+      { path: '/os/dynasty-earn', label: '💰 Earn Dashboard', icon: DollarSign },
+      { path: '/os/dynasty-earn/earners', label: '👥 Earners', icon: Users },
+      { path: '/os/dynasty-earn/brands', label: '🏢 Brands', icon: Building2 },
+      { path: '/os/dynasty-earn/programs', label: '📋 Programs', icon: ClipboardList },
+      { path: '/os/dynasty-earn/commissions', label: '🧾 Commissions', icon: Receipt },
+      { path: '/os/dynasty-earn/campaigns', label: '📢 Campaigns', icon: Megaphone },
+      { path: '/os/dynasty-earn/payouts', label: '💳 Payouts', icon: CreditCard },
+      { path: '/os/dynasty-earn/settings', label: '⚙️ Settings', icon: Settings2 },
     ],
   },
   clipperNation: {
@@ -752,7 +767,7 @@ const Layout = ({ children }: LayoutProps) => {
   const [openSections, setOpenSections] = useState<string[]>([
     'penthouse', 'sbo-ai-engine', 'security-governance',
     'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9',
-    'surplus-funds-os', 'dynasty-funding-hub', 'uben-hq', 'clipper-nation', 'real-estate-os', 'solar-os',
+    'surplus-funds-os', 'dynasty-funding-hub', 'uben-hq', 'dynasty-earn', 'clipper-nation', 'real-estate-os', 'solar-os',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
     'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
     'brandaro-hub', 'dynasty-connect', 'voice-ops', 'global-dashboard', 'portals',
@@ -1073,6 +1088,18 @@ const Layout = ({ children }: LayoutProps) => {
           DYNASTY_NAVIGATION.ubenHq.id,
           DYNASTY_NAVIGATION.ubenHq.name,
           DYNASTY_NAVIGATION.ubenHq.items
+        )}
+      </div>
+
+      {/* 💰 DYNASTY EARN — MONETIZATION ENGINE */}
+      <div className="pt-2 border-t border-emerald-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-emerald-400/80 tracking-wider">
+          💰 Dynasty Earn
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.dynastyEarn.id,
+          DYNASTY_NAVIGATION.dynastyEarn.name,
+          DYNASTY_NAVIGATION.dynastyEarn.items
         )}
       </div>
 
