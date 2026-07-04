@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Building2, Phone, DollarSign, Bot, ChevronDown, Eye, BarChart3, Settings, AlertTriangle, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
 
 const AGENTS = [
   { id: 'agent_0301kmdmp16aevv8svr78pbr75n8', name: 'DC — Sales Outreach' },
@@ -35,21 +37,25 @@ const outcomeIsWin = (o: string) => ['booked', 'interested'].includes(o);
 
 export default function DCPipelines() {
   const navigate = useNavigate();
+  const { session, loading: authLoading } = useAuth();
   const [externalOpen, setExternalOpen] = useState(false);
 
-  const { data: dbPipelines = [] } = useQuery({
-    queryKey: ['dc-business-pipelines'],
+  const { data: dbPipelines = [], isSuccess: pipelinesLoaded } = useQuery({
+    queryKey: ['dc-business-pipelines', session?.user?.id],
+    enabled: !authLoading && !!session,
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from('dc_business_pipelines')
         .select('*')
         .order('pipeline_type', { ascending: true });
+      if (error) throw error;
       return data || [];
     },
   });
 
   const { data: campaigns = [] } = useQuery({
-    queryKey: ['dc-pipeline-campaigns'],
+    queryKey: ['dc-pipeline-campaigns', session?.user?.id],
+    enabled: !authLoading && !!session,
     queryFn: async () => {
       const { data } = await supabase
         .from('ai_call_campaigns')
@@ -59,7 +65,8 @@ export default function DCPipelines() {
   });
 
   const { data: callLogs = [] } = useQuery({
-    queryKey: ['dc-pipeline-call-logs'],
+    queryKey: ['dc-pipeline-call-logs', session?.user?.id],
+    enabled: !authLoading && !!session,
     queryFn: async () => {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -72,9 +79,14 @@ export default function DCPipelines() {
     },
   });
 
-  const pipelines = dbPipelines.length > 0 ? dbPipelines : FALLBACK_PIPELINES;
+  // Only fall back to hard-coded demo pipelines if the authenticated fetch
+  // succeeded but returned zero rows. Never fall back while auth/data is still
+  // loading — the fallback business_names don't match the slug map, which was
+  // silently breaking Launch routing for every unit except Unforgettable Times.
+  const pipelines = pipelinesLoaded && dbPipelines.length === 0 ? FALLBACK_PIPELINES : dbPipelines;
   const internal = pipelines.filter((p: any) => p.pipeline_type === 'internal');
   const external = pipelines.filter((p: any) => p.pipeline_type === 'external');
+
 
   const getStats = (pipe: any) => {
     const nameKey = (pipe.business_name || '').toLowerCase().split(' ')[0];
