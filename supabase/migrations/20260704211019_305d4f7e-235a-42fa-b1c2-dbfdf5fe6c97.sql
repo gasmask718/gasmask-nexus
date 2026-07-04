@@ -1,0 +1,1 @@
+ALTER TABLE public.sbo_parlays ADD COLUMN IF NOT EXISTS sport_key text DEFAULT 'nba';
