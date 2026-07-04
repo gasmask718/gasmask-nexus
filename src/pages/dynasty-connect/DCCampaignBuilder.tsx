@@ -170,8 +170,12 @@ export default function DCCampaignBuilder() {
             <Select value={form.pipeline} onValueChange={handlePipelineChange}>
               <SelectTrigger><SelectValue placeholder="Select business" /></SelectTrigger>
               <SelectContent>
-                {pipelines.map((p: any) => (
-                  <SelectItem key={p.id} value={p.business_name}>{p.business_name}</SelectItem>
+                {Array.from(
+                  new Map(
+                    (pipelines as any[]).map((p: any) => [p.business_name, p])
+                  ).values()
+                ).map((p: any) => (
+                  <SelectItem key={p.business_name} value={p.business_name}>{p.business_name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
