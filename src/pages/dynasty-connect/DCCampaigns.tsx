@@ -192,24 +192,25 @@ export default function DCCampaigns() {
               </thead>
               <tbody>
                 {filtered.map((c: any) => {
-                  const convPct = c.completed_calls > 0
-                    ? ((c.conversion_count || 0) / c.completed_calls * 100).toFixed(1)
+                  const convPct = c.calls_made > 0
+                    ? ((c.appointments_set || 0) / c.calls_made * 100).toFixed(1)
                     : '—';
                   return (
                     <tr key={c.id} className="border-t hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3 font-medium truncate max-w-[200px]">{c.name}</td>
-                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{c.target_segment || '—'}</td>
+                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{c.business || '—'}</td>
                       <td className="px-4 py-3 hidden lg:table-cell">
-                        <span className="text-xs">{agentName(c.flow_id)}</span>
+                        <span className="text-xs">{c.agent_name || agentName(c.agent_id)}</span>
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant="outline" className={statusColor(c.status || 'draft')}>
                           {c.status || 'draft'}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">{c.total_targets || 0}</td>
-                      <td className="px-4 py-3 text-right tabular-nums hidden md:table-cell">{c.completed_calls || 0}</td>
+                      <td className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">{c.total_leads || 0}</td>
+                      <td className="px-4 py-3 text-right tabular-nums hidden md:table-cell">{c.calls_made || 0}</td>
                       <td className="px-4 py-3 text-right tabular-nums hidden lg:table-cell">{convPct}%</td>
+
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           {c.status === 'active' && (
