@@ -136,7 +136,8 @@ export default function DCCallResults() {
               <tbody>
                 {filtered.map((r: any) => {
                   const analysis = analysisMap[r.call_id];
-                  const q = QUALITY_BADGE[r.lead_quality] || QUALITY_BADGE.cold;
+                  const quality = resolveQuality(r);
+                  const q = quality ? QUALITY_BADGE[quality] : null;
                   return (
                     <tr key={r.id} className="border-b border-border/50 hover:bg-accent/50">
                       <td className="p-3 text-xs">{new Date(r.created_at).toLocaleString()}</td>
@@ -157,7 +158,7 @@ export default function DCCallResults() {
                       <td className="p-3 font-medium">{r.contact_name || '-'}<br /><span className="text-xs text-muted-foreground">{r.company_name}</span></td>
                       <td className="p-3 font-mono text-xs">{r.to_number}</td>
                       <td className="p-3">{r.duration_seconds ? `${r.duration_seconds}s` : '-'}</td>
-                      <td className="p-3">{r.lead_quality && <Badge variant="outline" className={q.class}>{q.emoji} {r.lead_quality}</Badge>}</td>
+                      <td className="p-3">{quality && q && <Badge variant="outline" className={q.class}>{q.emoji} {quality}</Badge>}</td>
                       <td className="p-3">{analysis ? <span className={`font-bold ${analysis.overall_score >= 7 ? 'text-green-500' : analysis.overall_score >= 4 ? 'text-yellow-500' : 'text-red-500'}`}>{analysis.overall_score}/10</span> : '-'}</td>
                       <td className="p-3"><Button size="sm" variant="ghost" onClick={() => setSelectedCall({ ...r, analysis })}><Eye className="h-3 w-3 mr-1" /> View</Button></td>
                     </tr>
