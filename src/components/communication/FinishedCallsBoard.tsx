@@ -172,10 +172,12 @@ export function FinishedCallsBoard({
         raw_transcript: null,
       }));
 
-      const dcList: FinishedCall[] = (dcRes.data || []).map((c: any) => ({
+      const dcList: (FinishedCall & { _dcId?: string; _dcSid?: string })[] = (dcRes.data || []).map((c: any) => ({
         id: `dc:${c.id}`,
-        // dc_lead_analysis.call_id links primarily via call_sid; fall back to id
+        // Provisional: prefer call_sid, fall back to id. Re-resolved below against dc_lead_analysis.
         call_id: c.call_sid || c.id,
+        _dcId: c.id,
+        _dcSid: c.call_sid || null,
         business_unit: c.business || c.source_business || null,
         agent_id: c.agent_id || null,
         agent_name: c.agent_name || c.agent_type || null,
@@ -199,21 +201,27 @@ export function FinishedCallsBoard({
       );
       if (list.length === 0) return list;
 
-      // 2. Enrich: dynasty_call_analysis (coaching sentiment/score) + dc_lead_analysis (lead intel)
-      const ids = list.map((c) => c.call_id).filter(Boolean);
+      // 2. Enrich: dynasty_call_analysis (coaching) + dc_lead_analysis (lead intel).
+      //    dc_lead_analysis.call_id is keyed inconsistently — sometimes call_sid,
+      //    sometimes dc_call_logs.id. Query BOTH sets and match either way.
+      const dynIds = dynList.map((c) => c.call_id).filter(Boolean);
+      const dcSids = dcList.map((c) => c._dcSid).filter(Boolean) as string[];
+      const dcRowIds = dcList.map((c) => c._dcId).filter(Boolean) as string[];
+      const analysisLookupIds = Array.from(new Set([...dynIds, ...dcSids, ...dcRowIds]));
+
       const [{ data: an }, { data: tx }, { data: la }] = await Promise.all([
         (supabase as any)
           .from("dynasty_call_analysis")
           .select("call_id, customer_sentiment, overall_score")
-          .in("call_id", ids),
+          .in("call_id", analysisLookupIds),
         (supabase as any)
           .from("dynasty_call_transcripts")
           .select("call_id")
-          .in("call_id", ids),
+          .in("call_id", analysisLookupIds),
         (supabase as any)
           .from("dc_lead_analysis")
           .select("call_id, sentiment, interest_score")
-          .in("call_id", ids),
+          .in("call_id", analysisLookupIds),
       ]);
       const anMap = new Map<string, any>((an || []).map((r: any) => [r.call_id, r]));
       const laMap = new Map<string, any>((la || []).map((r: any) => [r.call_id, r]));
@@ -222,15 +230,42 @@ export function FinishedCallsBoard({
         txCounts.set(r.call_id, (txCounts.get(r.call_id) || 0) + 1)
       );
 
-      let enriched = list.map((c) => {
-        const anRow = anMap.get(c.call_id);
-        const laRow = laMap.get(c.call_id);
-        const txN = txCounts.get(c.call_id) || 0;
-        // For dc rows, prefer lead-analysis sentiment; overall_score comes from coaching only.
+      // Debug: source distribution + dc join resolution
+      // eslint-disable-next-line no-console
+      console.log("[FinishedCalls] rows", {
+        dynasty: dynList.length,
+        dc: dcList.length,
+        dc_lead_analysis_matches: la?.length ?? 0,
+      });
+
+      let enriched = list.map((c: any) => {
+        // Resolve real call_id for dc rows: prefer whichever key actually has analysis.
+        let effectiveCallId = c.call_id;
+        if (c.source === "dc") {
+          if (c._dcSid && (laMap.has(c._dcSid) || anMap.has(c._dcSid))) {
+            effectiveCallId = c._dcSid;
+          } else if (c._dcId && (laMap.has(c._dcId) || anMap.has(c._dcId))) {
+            effectiveCallId = c._dcId;
+          }
+          // eslint-disable-next-line no-console
+          console.log("[FinishedCalls] dc row", {
+            id: c._dcId,
+            call_sid: c._dcSid,
+            effectiveCallId,
+            hasLeadAnalysis: laMap.has(effectiveCallId),
+            hasCoaching: anMap.has(effectiveCallId),
+            agent: c.agent_name,
+            business: c.business_unit,
+          });
+        }
+        const anRow = anMap.get(effectiveCallId);
+        const laRow = laMap.get(effectiveCallId);
+        const txN = txCounts.get(effectiveCallId) || 0;
         const sentimentVal =
           anRow?.customer_sentiment ?? laRow?.sentiment ?? null;
         return {
           ...c,
+          call_id: effectiveCallId,
           customer_sentiment: sentimentVal,
           overall_score: anRow?.overall_score ?? null,
           transcript_count: txN + (c.raw_transcript ? 1 : 0),
