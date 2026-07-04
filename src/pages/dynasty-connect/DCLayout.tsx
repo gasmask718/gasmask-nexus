@@ -98,7 +98,7 @@ export default function DCLayout() {
   return (
     <div className="flex h-full min-h-screen">
       {/* DC Sidebar */}
-      <aside className="w-64 border-r border-border bg-card/50 flex-shrink-0 hidden lg:block">
+      <aside className="w-64 border-r border-border bg-card/50 flex-shrink-0 hidden lg:block sticky top-14 self-start h-[calc(100vh-3.5rem)]">
         <ScrollArea className="h-full">
           <div className="p-4">
             <div className="flex items-center gap-2 mb-6">
