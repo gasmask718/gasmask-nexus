@@ -47,8 +47,8 @@ export default function DCCampaigns() {
     queryKey: ['dc-campaigns', user?.id],
     enabled: !authLoading && !!user && !!session,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ai_call_campaigns')
+      const { data, error } = await (supabase as any)
+        .from('dc_campaigns')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -72,10 +72,11 @@ export default function DCCampaigns() {
     return campaigns.filter((c: any) => {
       const matchesSearch = !search || (c.name || '').toLowerCase().includes(search.toLowerCase());
       const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
-      const matchesBusiness = businessFilter === 'all' || (c.target_segment || '').toLowerCase().includes(businessFilter.toLowerCase());
+      const matchesBusiness = businessFilter === 'all' || (c.business || '').toLowerCase() === businessFilter.toLowerCase();
       return matchesSearch && matchesStatus && matchesBusiness;
     });
   }, [campaigns, search, statusFilter, businessFilter]);
+
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
