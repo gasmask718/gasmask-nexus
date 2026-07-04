@@ -121302,14 +121302,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -122213,6 +122213,21 @@ export type Database = {
             | null
           touch_number?: number | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      dp_partner_admins: {
+        Row: {
+          created_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

@@ -33,10 +33,10 @@ export const dp = () => ({
   },
 });
 
-// Read-only mode flag. Set to false once 'partners' is added to PostgREST
-// exposed schemas on qalaaroashbggynpvqct, then switch dp() back to
-// (supabase as any).schema("partners").
-export const DP_READ_ONLY = true;
+// Writes go through the public.dp_* wrapper views (auto-updatable simple
+// views over partners.*). RLS on the base tables gates row visibility.
+export const DP_READ_ONLY = false;
+
 
 export const DP_READ_ONLY_MESSAGE =
   "Admin writes are temporarily disabled while the database schema configuration is being updated. Data is visible but cannot be modified. Contact david@dynastyconnect.com if urgent.";
