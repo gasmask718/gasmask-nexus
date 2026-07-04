@@ -261,6 +261,18 @@ export function FinishedCallsBoard({
             agent: c.agent_name,
             business: c.business_unit,
           });
+          // Extra: highlight TopTier Paul Benjie call for verification
+          if (
+            c._dcId?.startsWith("5a126283") ||
+            c._dcSid?.includes("c4494ed8")
+          ) {
+            // eslint-disable-next-line no-console
+            console.log("[FinishedCalls] 🎯 TopTier Paul call resolved", {
+              effectiveCallId,
+              laRow: laMap.get(effectiveCallId),
+              anRow: anMap.get(effectiveCallId),
+            });
+          }
         }
         const anRow = anMap.get(effectiveCallId);
         const laRow = laMap.get(effectiveCallId);
