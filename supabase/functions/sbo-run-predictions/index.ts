@@ -6,6 +6,68 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+// ═══════════════════════════════════════════════════════════
+// SPORT_CONTEXT — sport-aware prompts for stats + context brains
+// Market brain stays sport-neutral (reads odds, not sport context)
+// ═══════════════════════════════════════════════════════════
+const SPORT_CONTEXT: Record<string, { stats_role: string; context_role: string; key_signals: string }> = {
+  nba: {
+    stats_role: "You are an elite NBA statistical analyst.",
+    context_role: "You are an NBA insider analyst.",
+    key_signals: `Key accuracy signals:
+Blocks are 91% predictive.
+Steals are 83% predictive.
+UNDER bets hit 68% of the time.
+Consider: back-to-back schedule, home/away rest, pace matchup, injury impact on rotations.`,
+  },
+  nfl: {
+    stats_role: "You are an elite NFL statistical analyst.",
+    context_role: "You are an NFL insider analyst.",
+    key_signals: `Key accuracy signals:
+Home field worth ~3 points.
+Wind >15mph kills passing games.
+Injury report is critical — Full/Limited/Out status matters.
+Rest advantage: bye week team +4pts.
+Short week favors home team.`,
+  },
+  mlb: {
+    stats_role: "You are an elite MLB statistical analyst.",
+    context_role: "You are an MLB insider analyst.",
+    key_signals: `Key accuracy signals:
+Starting pitcher ERA is #1 factor.
+Bullpen usage last 72 hours.
+Park factor affects run totals.
+Platoon splits (L vs R matchup).
+Day vs night game splits.
+Wind direction affects HRs.`,
+  },
+  nhl: {
+    stats_role: "You are an elite NHL statistical analyst.",
+    context_role: "You are an NHL insider analyst.",
+    key_signals: `Key accuracy signals:
+Confirmed starting goalie critical.
+Back-to-back games cause fatigue.
+Power play efficiency matters.
+Corsi possession % is predictive.
+Home ice gives +10% win probability.`,
+  },
+  mma: {
+    stats_role: "You are an elite MMA fight analyst.",
+    context_role: "You are an MMA insider with camp connections.",
+    key_signals: `Key accuracy signals:
+Reach advantage in striking fights.
+Grappling record vs striking record.
+Weight cut difficulty and history.
+Southpaw vs orthodox matchup.
+Training camp reports critical.
+5-round vs 3-round performance.`,
+  },
+};
+
+function getSportCtx(sport_key: string) {
+  return SPORT_CONTEXT[sport_key] ?? SPORT_CONTEXT['nba'];
+}
+
 // Use Lovable AI gateway instead of direct Anthropic (fixes IPv6 connection reset)
 async function callAI(system: string, user: string): Promise<string> {
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -65,9 +127,10 @@ async function callAI(system: string, user: string): Promise<string> {
   }
 }
 
-async function runStatsBrain(ctx: any, supabase: any): Promise<{ score: number; reasoning: string; data_quality: string; ai_recommendation?: string; player_avg?: string; edge?: string }> {
+async function runStatsBrain(ctx: any, supabase: any, calibrationText: string): Promise<{ score: number; reasoning: string; data_quality: string; ai_recommendation?: string; player_avg?: string; edge?: string }> {
   let statsContext = '';
   let dataQuality = 'odds_only';
+  const sportCtx = getSportCtx(ctx.sport_key || 'nba');
 
   try {
     if (ctx.prediction_type === 'player_prop' && ctx.player_name) {
@@ -183,10 +246,11 @@ No real stats available. Base prediction on odds and context only. Cap confidenc
   }
 
   if (ctx.prediction_type === 'player_prop') {
-    // Build calibration hints dynamically from live sbo_calibration data
     const auditCalibration = calibrationText;
 
-    const system = `You are an elite NBA prop analyst for Dynasty OS SBO Engine. You must decide whether a player goes OVER or UNDER a given prop line based on actual statistics. Do NOT default to OVER. If the player's season average is below the line, lean UNDER. Respond ONLY with valid JSON.
+    const system = `${sportCtx.stats_role} You are working for the Dynasty OS SBO Engine. You must decide whether a player goes OVER or UNDER a given prop line based on actual statistics. Do NOT default to OVER. If the player's season average is below the line, lean UNDER. Respond ONLY with valid JSON.
+
+${sportCtx.key_signals}
 
 ${auditCalibration}`;
 
@@ -195,6 +259,7 @@ PLAYER: ${ctx.player_name} (${ctx.team || 'Unknown'})
 PROP: ${ctx.prop_type} line ${ctx.line}
 ODDS: Over ${ctx.over_odds} / Under ${ctx.under_odds}
 GAME: ${ctx.away_team || 'TBD'} @ ${ctx.home_team || 'TBD'}
+SPORT: ${(ctx.sport_key || 'nba').toUpperCase()}
 
 ${statsContext || 'No detailed stats available.'}
 
@@ -237,8 +302,10 @@ Return ONLY valid JSON:
     }
   }
 
-  const system = `You are a professional NBA statistical analyst. You are given REAL current season data for tonight's game. Analyze the actual numbers provided — do not use general knowledge, use only the data given. Give a confidence score 0-100 based purely on the statistics.
+  const system = `${sportCtx.stats_role} You are given REAL current season data for tonight's game. Analyze the actual numbers provided — do not use general knowledge, use only the data given. Give a confidence score 0-100 based purely on the statistics.
 If stats show N/A or are missing, acknowledge the gap and lower your confidence.
+
+${sportCtx.key_signals}
 
 Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences referencing the actual stats provided"}`;
 
@@ -265,6 +332,7 @@ Statistical confidence 0-100.`;
 }
 
 async function runMarketBrain(ctx: any) {
+  // Market brain stays sport-neutral — reads odds signals, not sport context
   const system = `You are a professional sports betting market analyst. Read betting lines as signals: sharp money, line movement, implied probabilities, consensus across books. Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences max"}`;
   const impliedProb = ctx.home_odds
     ? ctx.home_odds < 0 ? Math.abs(ctx.home_odds) / (Math.abs(ctx.home_odds) + 100) * 100 : 100 / (ctx.home_odds + 100) * 100
@@ -280,10 +348,15 @@ async function runMarketBrain(ctx: any) {
 }
 
 async function runContextBrain(ctx: any) {
-  const system = `You are an NBA insider analyst. Assess qualitative factors: injuries, load management, motivation, revenge games, travel fatigue, coaching matchups, contract years, back-to-backs. Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences max"}`;
+  const sportCtx = getSportCtx(ctx.sport_key || 'nba');
+  const system = `${sportCtx.context_role} Assess qualitative factors: injuries, load management, motivation, revenge games, travel fatigue, coaching matchups, contract years, rest/schedule spots.
+
+${sportCtx.key_signals}
+
+Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences max"}`;
   const user = ctx.prediction_type === 'moneyline'
-    ? `${ctx.away_team} @ ${ctx.home_team} on ${ctx.game_date}. Predict: ${ctx.predicted_outcome === 'home' ? ctx.home_team : ctx.away_team} wins. Contextual/situational confidence 0-100.`
-    : `${ctx.player_name} (${ctx.team}) — ${ctx.prop_type} ${(ctx.final_recommendation || ctx.predicted_outcome || 'OVER').toUpperCase()} ${ctx.line}. Game: ${ctx.away_team} @ ${ctx.home_team}. Context confidence 0-100.`;
+    ? `${ctx.away_team} @ ${ctx.home_team} on ${ctx.game_date}. Sport: ${(ctx.sport_key || 'nba').toUpperCase()}. Predict: ${ctx.predicted_outcome === 'home' ? ctx.home_team : ctx.away_team} wins. Contextual/situational confidence 0-100.`
+    : `${ctx.player_name} (${ctx.team}) — ${ctx.prop_type} ${(ctx.final_recommendation || ctx.predicted_outcome || 'OVER').toUpperCase()} ${ctx.line}. Sport: ${(ctx.sport_key || 'nba').toUpperCase()}. Game: ${ctx.away_team} @ ${ctx.home_team}. Context confidence 0-100.`;
   const raw = await callAI(system, user);
   try {
     const p = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
@@ -465,11 +538,25 @@ CRITICAL RULES FROM CALIBRATION DATA:
 
     if (prop_id) {
       const { data: prop } = await supabase.from('sbo_player_props').select('*, sbo_games(*)').eq('id', prop_id).single();
-      ctx = { ...ctx, ...prop, home_team: (prop as any).sbo_games?.home_team, away_team: (prop as any).sbo_games?.away_team, game_date: (prop as any).sbo_games?.game_date, game_id: (prop as any).game_id };
+      ctx = {
+        ...ctx,
+        ...prop,
+        home_team: (prop as any).sbo_games?.home_team,
+        away_team: (prop as any).sbo_games?.away_team,
+        game_date: (prop as any).sbo_games?.game_date,
+        game_id: (prop as any).game_id,
+        // Prop's own sport_key wins if present, else fall back to parent game's sport_key
+        sport_key: (prop as any).sport_key || (prop as any).sbo_games?.sport_key || ctx.sport_key,
+      };
     }
 
+    // ═══ DERIVE SPORT_KEY (default 'nba' — protects existing NBA flow) ═══
+    const sport_key: string = (ctx.sport_key || 'nba').toLowerCase();
+    ctx.sport_key = sport_key;
+    console.log(`Prediction sport_key resolved: ${sport_key}`);
+
     // Run stats brain first for props to get AI recommendation
-    const statsResult = await runStatsBrain(ctx, supabase);
+    const statsResult = await runStatsBrain(ctx, supabase, calibrationText);
 
     let finalOutcome = predicted_outcome;
     if (prediction_type === 'player_prop' && statsResult.ai_recommendation) {
@@ -488,18 +575,52 @@ CRITICAL RULES FROM CALIBRATION DATA:
     const stats = { score: statsResult.score, reasoning: statsResult.reasoning };
     const dataQuality = statsResult.data_quality;
 
-    const { data: activeConfig } = await supabase
-      .from('sbo_model_performance')
-      .select('stats_weight, market_weight, context_weight, polymarket_weight')
-      .eq('is_active', true)
+    // ═══ WEIGHTS: prefer sbo_sports (learned_X ?? base_X), fallback to sbo_model_performance ═══
+    let weights = { stats: 0.40, market: 0.35, context: 0.25, polymarket: 0.00 };
+    let weightsSource: 'sbo_sports' | 'sbo_model_performance' | 'default' = 'default';
+
+    const { data: sportRow } = await supabase
+      .from('sbo_sports')
+      .select('stats_weight, market_weight, context_weight, learned_stats_weight, learned_market_weight, learned_context_weight')
+      .eq('sport_key', sport_key)
       .maybeSingle();
 
-    const weights = {
-      stats: activeConfig?.stats_weight || 0.40,
-      market: activeConfig?.market_weight || 0.35,
-      context: activeConfig?.context_weight || 0.25,
-      polymarket: activeConfig?.polymarket_weight || 0.00,
-    };
+    if (sportRow) {
+      const SW = sportRow.learned_stats_weight ?? sportRow.stats_weight ?? 0.40;
+      const MW = sportRow.learned_market_weight ?? sportRow.market_weight ?? 0.35;
+      const CW = sportRow.learned_context_weight ?? sportRow.context_weight ?? 0.25;
+
+      // Preserve existing polymarket weight logic — pull from sbo_model_performance
+      const { data: activeConfig } = await supabase
+        .from('sbo_model_performance')
+        .select('polymarket_weight')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      weights = {
+        stats: Number(SW),
+        market: Number(MW),
+        context: Number(CW),
+        polymarket: Number(activeConfig?.polymarket_weight ?? 0.00),
+      };
+      weightsSource = 'sbo_sports';
+    } else {
+      // Secondary fallback: existing sbo_model_performance behavior
+      const { data: activeConfig } = await supabase
+        .from('sbo_model_performance')
+        .select('stats_weight, market_weight, context_weight, polymarket_weight')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      weights = {
+        stats: activeConfig?.stats_weight || 0.40,
+        market: activeConfig?.market_weight || 0.35,
+        context: activeConfig?.context_weight || 0.25,
+        polymarket: activeConfig?.polymarket_weight || 0.00,
+      };
+      weightsSource = activeConfig ? 'sbo_model_performance' : 'default';
+    }
+    console.log(`Weights source: ${weightsSource} for sport ${sport_key}`, weights);
 
     let finalScore = polyResult.has_data
       ? Math.round(
@@ -534,7 +655,6 @@ CRITICAL RULES FROM CALIBRATION DATA:
     }
 
     // ═══ LIVE CALIBRATION ADJUSTMENT ═══
-    // Apply calibration_score from historical accuracy data
     if (calibrationData.length > 0) {
       const bucket = calibrationData.find(b => {
         const [low, high] = b.confidence_bucket.split('-').map(Number);
@@ -543,13 +663,11 @@ CRITICAL RULES FROM CALIBRATION DATA:
       if (bucket && bucket.total_picks >= 10) {
         const cal = bucket.calibration_score;
         if (cal < 0.85) {
-          // This bucket is overconfident — deflate
           const penalty = Math.round((1 - cal) * 15);
           const before = finalScore;
           finalScore = Math.max(50, finalScore - penalty);
           console.log(`Live calibration: ${bucket.confidence_bucket}% bucket overconfident (cal=${cal}), deflated ${before}→${finalScore}`);
         } else if (cal > 1.1 && finalScore < 87) {
-          // This bucket is underconfident — slight boost
           const bonus = Math.round((cal - 1) * 5);
           const before = finalScore;
           finalScore = Math.min(87, finalScore + bonus);
@@ -575,6 +693,7 @@ CRITICAL RULES FROM CALIBRATION DATA:
       prop_id: prop_id || null,
       prediction_type,
       predicted_outcome: finalOutcome,
+      sport_key,
       stats_brain_score: stats.score,
       stats_brain_reasoning: stats.reasoning,
       market_brain_score: market.score,
@@ -589,6 +708,28 @@ CRITICAL RULES FROM CALIBRATION DATA:
       weights_used: weights,
       data_quality: dataQuality,
     }).select().single();
+
+    // ═══ INCREMENT sbo_sports.total_predictions (non-fatal) ═══
+    if (prediction?.id) {
+      try {
+        const { data: cur } = await supabase
+          .from('sbo_sports')
+          .select('total_predictions')
+          .eq('sport_key', sport_key)
+          .maybeSingle();
+        if (cur) {
+          await supabase
+            .from('sbo_sports')
+            .update({
+              total_predictions: (cur.total_predictions || 0) + 1,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('sport_key', sport_key);
+        }
+      } catch (counterErr) {
+        console.error('Non-fatal: failed to increment sbo_sports.total_predictions:', counterErr);
+      }
+    }
 
     // AUTO-SAVE to sbo_saved_picks
     if (prediction?.id) {
@@ -625,7 +766,7 @@ CRITICAL RULES FROM CALIBRATION DATA:
             result: 'pending',
             pick_date: pickDate,
             game_date: ctx.game_date ? new Date(ctx.game_date).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) : pickDate,
-            sport: 'NBA',
+            sport: sport_key.toUpperCase(),
           });
         }
       } catch (saveErr) {
@@ -636,10 +777,12 @@ CRITICAL RULES FROM CALIBRATION DATA:
     return new Response(JSON.stringify({
       success: true,
       prediction_id: prediction?.id,
+      sport_key,
       final_confidence: finalScore,
       confidence_tier: tier,
       data_quality: dataQuality,
       predicted_outcome: finalOutcome,
+      weights_source: weightsSource,
       brains: { stats, market, context, polymarket: polyResult },
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
