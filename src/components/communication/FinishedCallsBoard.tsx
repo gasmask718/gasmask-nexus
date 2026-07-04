@@ -386,6 +386,18 @@ export function FinishedCallsBoard({
                   <Badge className="bg-purple-500/15 text-purple-400 border-purple-500/30 text-[10px]">
                     <Bot className="h-3 w-3 mr-1" /> AI Call
                   </Badge>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-[10px] uppercase tracking-wider",
+                      c.source === "dc"
+                        ? "bg-cyan-500/15 text-cyan-400 border-cyan-500/30"
+                        : "bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30"
+                    )}
+                  >
+                    {c.source === "dc" ? "DC" : "Dynasty"}
+                  </Badge>
+
                   {c.business_unit && (
                     <Badge variant="outline" className="text-[10px] capitalize">
                       {c.business_unit}
