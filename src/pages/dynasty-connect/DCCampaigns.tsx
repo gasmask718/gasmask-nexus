@@ -47,8 +47,8 @@ export default function DCCampaigns() {
     queryKey: ['dc-campaigns', user?.id],
     enabled: !authLoading && !!user && !!session,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ai_call_campaigns')
+      const { data, error } = await (supabase as any)
+        .from('dc_campaigns')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -72,14 +72,15 @@ export default function DCCampaigns() {
     return campaigns.filter((c: any) => {
       const matchesSearch = !search || (c.name || '').toLowerCase().includes(search.toLowerCase());
       const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
-      const matchesBusiness = businessFilter === 'all' || (c.target_segment || '').toLowerCase().includes(businessFilter.toLowerCase());
+      const matchesBusiness = businessFilter === 'all' || (c.business || '').toLowerCase() === businessFilter.toLowerCase();
       return matchesSearch && matchesStatus && matchesBusiness;
     });
   }, [campaigns, search, statusFilter, businessFilter]);
 
+
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from('ai_call_campaigns').update({ status }).eq('id', id);
+      const { error } = await (supabase as any).from('dc_campaigns').update({ status }).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -90,13 +91,16 @@ export default function DCCampaigns() {
 
   const duplicateCampaign = useMutation({
     mutationFn: async (campaign: any) => {
-      const { error } = await supabase.from('ai_call_campaigns').insert({
+      const { error } = await (supabase as any).from('dc_campaigns').insert({
         name: `${campaign.name} (Copy)`,
-        description: campaign.description,
-        target_segment: campaign.target_segment,
-        flow_id: campaign.flow_id,
-        max_concurrent_calls: campaign.max_concurrent_calls,
-        max_calls_per_minute: campaign.max_calls_per_minute,
+        business: campaign.business,
+        agent_id: campaign.agent_id,
+        agent_name: campaign.agent_name,
+        calls_per_hour: campaign.calls_per_hour,
+        max_attempts: campaign.max_attempts,
+        start_time: campaign.start_time,
+        end_time: campaign.end_time,
+        active_days: campaign.active_days,
         status: 'draft',
       });
       if (error) throw error;
@@ -108,13 +112,12 @@ export default function DCCampaigns() {
   });
   const createCampaign = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from('ai_call_campaigns').insert({
+      const agent = AGENTS.find(a => a.id === form.agentId);
+      const { error } = await (supabase as any).from('dc_campaigns').insert({
         name: form.name,
-        description: form.description,
-        target_segment: form.pipeline,
-        flow_id: form.agentId || null,
-        max_concurrent_calls: parseInt(form.maxConcurrent) || 3,
-        max_calls_per_minute: parseInt(form.maxPerMinute) || 5,
+        business: form.pipeline,
+        agent_id: form.agentId || null,
+        agent_name: agent?.name || '',
         status: 'draft',
       });
       if (error) throw error;
@@ -127,6 +130,7 @@ export default function DCCampaigns() {
     },
     onError: (e: any) => toast.error('Failed: ' + e.message),
   });
+
 
   return (
     <div className="space-y-6">
@@ -156,15 +160,19 @@ export default function DCCampaigns() {
             <SelectItem value="paused">Paused</SelectItem>
             <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="failed">Failed</SelectItem>
           </SelectContent>
         </Select>
         <Select value={businessFilter} onValueChange={setBusinessFilter}>
           <SelectTrigger className="w-[160px]"><SelectValue placeholder="All Businesses" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Businesses</SelectItem>
-            {pipelines.map((p: any) => <SelectItem key={p.id} value={p.business_name}>{p.business_name}</SelectItem>)}
+            {Array.from(new Set(campaigns.map((c: any) => c.business).filter(Boolean))).map((b: any) => (
+              <SelectItem key={b} value={b}>{b}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
+
       </div>
 
       {/* Campaign table */}
@@ -188,24 +196,25 @@ export default function DCCampaigns() {
               </thead>
               <tbody>
                 {filtered.map((c: any) => {
-                  const convPct = c.completed_calls > 0
-                    ? ((c.conversion_count || 0) / c.completed_calls * 100).toFixed(1)
+                  const convPct = c.calls_made > 0
+                    ? ((c.appointments_set || 0) / c.calls_made * 100).toFixed(1)
                     : '—';
                   return (
                     <tr key={c.id} className="border-t hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3 font-medium truncate max-w-[200px]">{c.name}</td>
-                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{c.target_segment || '—'}</td>
+                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{c.business || '—'}</td>
                       <td className="px-4 py-3 hidden lg:table-cell">
-                        <span className="text-xs">{agentName(c.flow_id)}</span>
+                        <span className="text-xs">{c.agent_name || agentName(c.agent_id)}</span>
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant="outline" className={statusColor(c.status || 'draft')}>
                           {c.status || 'draft'}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">{c.total_targets || 0}</td>
-                      <td className="px-4 py-3 text-right tabular-nums hidden md:table-cell">{c.completed_calls || 0}</td>
+                      <td className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">{c.total_leads || 0}</td>
+                      <td className="px-4 py-3 text-right tabular-nums hidden md:table-cell">{c.calls_made || 0}</td>
                       <td className="px-4 py-3 text-right tabular-nums hidden lg:table-cell">{convPct}%</td>
+
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           {c.status === 'active' && (
