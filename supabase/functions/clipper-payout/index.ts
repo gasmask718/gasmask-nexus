@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     const { data: clipper, error: cErr } = await (supabase as any)
       .from("clipper_accounts")
       .select(
-        "id, stripe_connect_id, stripe_connect_onboarded, payout_method, wise_account_id, wise_email, paypal_email, country, currency",
+        "id, stripe_connect_id, stripe_connect_onboarded, payout_method, wise_account_id, wise_email, paypal_email, payoneer_email, payoneer_id, country, currency",
       )
       .eq("id", clipper_id)
       .maybeSingle();
