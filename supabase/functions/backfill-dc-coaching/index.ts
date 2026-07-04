@@ -189,6 +189,28 @@ Deno.serve(async (req) => {
     for (const r of toRun) {
       const key = r.call_sid || r.id;
       try {
+        // Parent row required by dynasty_call_analysis.call_id FK
+        // → upsert a stub dynasty_ai_calls row keyed on call_sid.
+        const { error: stubErr } = await supabase
+          .from("dynasty_ai_calls")
+          .upsert(
+            {
+              call_id: key,
+              business_unit: r.business || r.source_business || "top_tier",
+              agent_id: r.agent_name || "dc-bland-agent",
+              agent_name: r.agent_name || null,
+              direction: "outbound",
+              call_type: "ai_outbound",
+              duration_seconds: r.duration_seconds ?? null,
+              contact_name: r.lead_name || null,
+              call_started_at: r.created_at || null,
+              call_ended_at: r.created_at || null,
+              outcome: "completed",
+            },
+            { onConflict: "call_id" },
+          );
+        if (stubErr) throw stubErr;
+
         const a = await analyzeOne({
           transcript: r.transcript,
           business: r.business || r.source_business || "top_tier",
