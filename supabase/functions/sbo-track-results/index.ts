@@ -253,6 +253,40 @@ serve(async (req) => {
       results.polymarket_resolve_error = e.message;
     }
 
+    // 5b. TRIGGER WEIGHT OPTIMIZER per sport when total graded hits a 50-multiple
+    try {
+      const gradedSports = new Set<string>();
+      const { data: recentGraded } = await supabase
+        .from('sbo_predictions')
+        .select('sport_key')
+        .not('was_correct', 'is', null)
+        .gte('updated_at', new Date(Date.now() - 3600000).toISOString());
+      for (const r of recentGraded || []) {
+        if ((r as any).sport_key) gradedSports.add((r as any).sport_key);
+      }
+      for (const sk of gradedSports) {
+        const { count } = await supabase
+          .from('sbo_predictions')
+          .select('id', { count: 'exact', head: true })
+          .eq('sport_key', sk)
+          .not('was_correct', 'is', null);
+        if (count && count > 0 && count % 50 === 0) {
+          await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/sbo-weight-optimizer`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            },
+            body: JSON.stringify({ sport_key: sk }),
+          }).catch((err) => console.error('weight-optimizer trigger failed', sk, err));
+        }
+      }
+    } catch (e: any) {
+      results.weight_optimizer_error = e.message;
+    }
+
+
+
     // 6. LOG
     await supabase.from('sbo_sync_log').insert({
       feed_name: 'result_tracking',
