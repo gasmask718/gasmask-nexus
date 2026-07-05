@@ -2256,6 +2256,7 @@ export default function AppRoutes() {
         <Route path="/sbo-ai-engine/capper-intelligence" element={<SBOCapperTracker />} />
         <Route path="/sbo-ai-engine/signal-alignment" element={<SBOSignalAlignment />} />
         <Route path="/sbo-ai-engine/tonight" element={<SBOTonightPage />} />
+        <Route path="/sbo-ai-engine/nightly" element={<SBONightlyBoardPage />} />
         <Route path="/sbo-ai-engine/props" element={<Navigate to="/sbo-ai-engine/prop-hub" replace />} />
         <Route path="/sbo-ai-engine/props-intelligence" element={<Navigate to="/sbo-ai-engine/prop-hub" replace />} />
         <Route path="/sbo-ai-engine/parlay" element={<Navigate to="/sbo-ai-engine/prop-hub" replace />} />
