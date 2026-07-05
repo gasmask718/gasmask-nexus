@@ -165,44 +165,8 @@ serve(async (req) => {
       };
     }));
 
-    // ---- Fetch agent prompt from Bland (Fix D parity with tt-trigger) ----
-    // /v1/calls with agent_id alone is rejected ("Missing required parameter: task").
-    // Resolve prompt + first_sentence via GET /v1/agents once per invocation
-    // and pass inline on each per-lead /v1/calls payload. Fail-fast (502) if
-    // the agent is missing or the prompt is too short to be a real script.
-    let agentTask: string | null = null;
-    let agentFirstSentence: string | null = null;
-    try {
-      const agentsRes = await fetch("https://api.bland.ai/v1/agents", {
-        method: "GET",
-        headers: { "Authorization": BLAND_API_KEY },
-      });
-      const agentsJson = await agentsRes.json();
-      const agentList: any[] = Array.isArray(agentsJson)
-        ? agentsJson
-        : (agentsJson.agents || agentsJson.data || []);
-      const utAgent = agentList.find((a: any) => a.agent_id === BLAND_AGENT_ID);
-      if (!utAgent || !utAgent.prompt || utAgent.prompt.length < 100) {
-        throw new Error(
-          `UT Bland agent ${BLAND_AGENT_ID} not found or prompt missing/empty ` +
-          `(found=${!!utAgent}, prompt_len=${utAgent?.prompt?.length ?? 0}). ` +
-          `Verify the agent_id constant.`
-        );
-      }
-      agentTask = utAgent.prompt;
-      agentFirstSentence = utAgent.first_sentence || null;
-      console.log(
-        `[ut-trigger] Resolved Bland agent prompt (len=${agentTask.length}, ` +
-        `first_sentence_len=${agentFirstSentence?.length ?? 0})`
-      );
-    } catch (e: any) {
-      console.error("[ut-trigger] Failed to resolve Bland agent prompt", e);
-      return new Response(JSON.stringify({
-        success: false,
-        error: `Bland agent prompt resolution failed: ${e.message}. No dispatch attempted.`,
-        leads_loaded: leads.length,
-      }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+    // ---- Pathway mode: Bland stores prompt + first message on the pathway itself.
+    // No GET /v1/agents lookup needed; pass pathway_id on each /v1/calls payload.
 
     // ---- Per-record dispatch ----
     const addToDncTool = DNC_TOOL_SECRET ? buildAddToDncTool(SUPABASE_URL, DNC_TOOL_SECRET) : null;
