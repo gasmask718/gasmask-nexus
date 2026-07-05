@@ -127,6 +127,7 @@ import {
   Video,
   Settings2,
   Receipt,
+  Moon,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
@@ -167,6 +168,7 @@ const DYNASTY_NAVIGATION = {
     name: '🧠 SBO AI Engine',
     items: [
       { path: '/os/sports-betting/ai-os', label: '🎯 SBO Cockpit', icon: Target },
+      { path: '/sbo-ai-engine/nightly', label: '🌙 Nightly Board', icon: Moon },
       { path: '/sbo-ai-engine/tonight', label: '🏀 Tonight', icon: Calendar },
       { path: '/sbo-ai-engine/prop-hub', label: '⚡ Prop Intelligence Hub', icon: TrendingUp },
       { path: '/sbo-ai-engine/value', label: '💎 Value Spots', icon: Star },
