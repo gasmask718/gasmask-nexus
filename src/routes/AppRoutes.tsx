@@ -1055,6 +1055,7 @@ const SBOWalletTracker = lazy(() => import('@/pages/os/betting/SBOWalletTracker'
 const SBOCapperTracker = lazy(() => import('@/pages/os/betting/SBOCapperTracker'));
 const SBOSignalAlignment = lazy(() => import('@/pages/os/betting/SBOSignalAlignment'));
 const SBOTonightPage = lazy(() => import('@/pages/sports-betting/pages/TonightPage'));
+const SBONightlyBoardPage = lazy(() => import('@/pages/sports-betting/pages/NightlyBoardPage'));
 const SBOPropsPage = lazy(() => import('@/pages/sports-betting/pages/PropsPage'));
 const SBOPropsIntelligencePage = lazy(() => import('@/pages/sports-betting/pages/PropsIntelligencePage'));
 const SBOParlayPage = lazy(() => import('@/pages/sports-betting/pages/ParlayPage'));
