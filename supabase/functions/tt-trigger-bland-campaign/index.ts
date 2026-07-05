@@ -361,7 +361,9 @@ serve(async (req) => {
       };
 
       // TEMP DEBUG
-      console.log("========== BLAND PAYLOAD ==========");
+      console.log("========== BLAND REQUEST ==========");
+      console.log("Endpoint: https://api.bland.ai/v1/calls");
+      console.log("Payload:");
       console.log(JSON.stringify(payload, null, 2));
       console.log("===================================");
 
