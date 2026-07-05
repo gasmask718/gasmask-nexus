@@ -98,7 +98,10 @@ export function UTOutreachPanel({ leads, onLogOutreach }: Props) {
                       entityName={lead.business_name}
                       entityType="store"
                       entityId={lead.id}
-                      businessKey="unforgettable"
+                      businessKey="unforgettable_times"
+                      agentType="outbound"
+                      sourceTable="ut_partner_leads"
+                      sourceBusiness="unforgettable_times"
                       compact
                     />
                   )}
