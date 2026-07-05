@@ -311,7 +311,7 @@ function PropsPanel({
         <div key={playerName} className="rounded-lg border border-border/50 bg-card/40 p-3">
           <div className="mb-2 text-sm font-bold">{playerName}</div>
           <div className="space-y-2">
-            {playerProps.map((prop: any) => {
+            {(playerProps as any[]).map((prop: any) => {
               const pred = prop.sbo_predictions?.[0];
               const acc = prop.sbo_prop_accuracy?.[0];
               const overAcc = acc?.over_total > 10 ? Math.round((acc.over_correct / acc.over_total) * 100) : null;
