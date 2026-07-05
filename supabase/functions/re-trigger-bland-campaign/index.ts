@@ -50,6 +50,8 @@ const PROMPTS: Record<string, string> = {
   warm_follow_up: WARM_FOLLOWUP_PROMPT,
 };
 
+const BLAND_AGENT_ID = "b3375dc8-cb93-4d10-9d63-8556631a8887";
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -197,6 +199,7 @@ serve(async (req) => {
 
       const payload = {
         phone_number: l.phone,
+        pathway_id: BLAND_AGENT_ID,
         task: taskPrompt,
         voice: 'June',
         language: 'en-US',
