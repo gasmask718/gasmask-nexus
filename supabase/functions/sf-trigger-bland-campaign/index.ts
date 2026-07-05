@@ -27,6 +27,8 @@ If not interested: Thank them and end politely.
 If wrong number: Apologize and end call.
 If voicemail: "Hi, this message is for {{first_name}}. This is Dynasty Recovery Group calling about unclaimed funds that may be owed to you from {{county}} county. Please call us back. This is a legitimate recovery service — no cost to you unless we recover."`;
 
+const BLAND_AGENT_ID = "d3a5f544-bc68-4a2c-9b35-56e489b78e6d";
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -189,6 +191,7 @@ serve(async (req) => {
 
       const payload = {
         phone_number: l.phone,
+        pathway_id: BLAND_AGENT_ID,
         task: taskPrompt,
         voice: 'June',
         language: 'en-US',
