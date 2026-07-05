@@ -42,7 +42,7 @@ import { fetchVoicemailTranscript } from "../_shared/voicemail_template.ts";
 const BUSINESS_UNIT_KEY = "top_tier";
 const BUSINESS_NAME = "TopTier Experience";
 const BUSINESS_SLUG = "toptier-experience";
-const BLAND_AGENT_ID = "2c037b23-b980-47b6-9b51-046633d62847";
+const BLAND_AGENT_ID = "67a5afdd-0389-46d0-80d0-67a0f4e1d4a5";
 const DEFAULT_MAX_ATTEMPTS = 5;
 const CALLABLE_STAGES = ["prospect", "attempted", "info_requested"];
 const EXCLUDED_CATEGORIES = ["luxury_residences", "amusementparks_affiliate"];
