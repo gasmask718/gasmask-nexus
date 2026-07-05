@@ -89425,6 +89425,8 @@ export type Database = {
           polymarket_weight_before: number | null
           predictions_analyzed: number | null
           reason: string
+          sample_size: number | null
+          sport_key: string | null
           stats_weight_after: number | null
           stats_weight_before: number | null
         }
@@ -89442,6 +89444,8 @@ export type Database = {
           polymarket_weight_before?: number | null
           predictions_analyzed?: number | null
           reason: string
+          sample_size?: number | null
+          sport_key?: string | null
           stats_weight_after?: number | null
           stats_weight_before?: number | null
         }
@@ -89459,6 +89463,8 @@ export type Database = {
           polymarket_weight_before?: number | null
           predictions_analyzed?: number | null
           reason?: string
+          sample_size?: number | null
+          sport_key?: string | null
           stats_weight_after?: number | null
           stats_weight_before?: number | null
         }
