@@ -276,14 +276,12 @@ serve(async (req) => {
 
 
 
-      // Dispatch via Bland /v1/calls with the dedicated UT agent_id.
+      // Dispatch via Bland /v1/calls with the dedicated UT pathway_id.
       // Prompt variables ({{lead_category}}, {{business_name}}) injected via
-      // request_data — Bland substitutes them into the agent's stored prompt.
+      // request_data — Bland substitutes them into the pathway's stored prompt.
       const payload = {
         phone_number: l.phone,
-        agent_id: BLAND_AGENT_ID,
-        task: agentTask,
-        first_sentence: agentFirstSentence,
+        pathway_id: BLAND_AGENT_ID,
         voice: "June",
         language: "en-US",
         max_duration: 12,
