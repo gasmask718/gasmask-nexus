@@ -88,7 +88,9 @@ serve(async (req) => {
     if (!BLAND_API_KEY) throw new Error("BLAND_API_KEY not configured");
     const DNC_TOOL_SECRET = Deno.env.get("GASMASK_DNC_TOOL_SECRET");
     if (!DNC_TOOL_SECRET) {
-      console.warn("[tt-trigger] GASMASK_DNC_TOOL_SECRET not configured — AddToDNC tool will be OMITTED from Bland calls. Opt-outs will only be captured via post-call webhook disposition, not in-call. NOT SAFE FOR PRODUCTION.");
+      console.warn(
+        "[tt-trigger] GASMASK_DNC_TOOL_SECRET not configured — AddToDNC tool will be OMITTED from Bland calls. Opt-outs will only be captured via post-call webhook disposition, not in-call. NOT SAFE FOR PRODUCTION.",
+      );
     }
 
     const body = await req.json().catch(() => ({}));
@@ -99,28 +101,32 @@ serve(async (req) => {
     const _guardPartnerIds = Array.isArray(body.partner_ids) ? body.partner_ids : undefined;
     const _guardLimit = typeof body.limit === "number" && body.limit > 0 ? body.limit : undefined;
     if ((!_guardPartnerIds || _guardPartnerIds.length === 0) && !_guardLimit) {
-      return new Response(JSON.stringify({
-        error: "strict_mode_violation",
-        message: "partner_ids or limit required. Full-cohort dispatch without explicit scope is not permitted.",
-        bland_calls_started: 0,
-      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(
+        JSON.stringify({
+          error: "strict_mode_violation",
+          message: "partner_ids or limit required. Full-cohort dispatch without explicit scope is not permitted.",
+          bland_calls_started: 0,
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    const maxAttempts: number = typeof body.max_attempts === "number" && body.max_attempts > 0
-      ? body.max_attempts : DEFAULT_MAX_ATTEMPTS;
+    const maxAttempts: number =
+      typeof body.max_attempts === "number" && body.max_attempts > 0 ? body.max_attempts : DEFAULT_MAX_ATTEMPTS;
 
     // --- Cohort selection ---
     // If caller passes explicit partner_ids, scope to those (still applying
     // every gate). Otherwise pull the full eligible universe and optionally
     // cap with body.limit.
-    const partnerIds: string[] | null = Array.isArray(body.partner_ids) && body.partner_ids.length > 0
-      ? body.partner_ids
-      : null;
+    const partnerIds: string[] | null =
+      Array.isArray(body.partner_ids) && body.partner_ids.length > 0 ? body.partner_ids : null;
     const limit: number | null = typeof body.limit === "number" && body.limit > 0 ? body.limit : null;
 
     let q = supabase
       .from("crm_partners")
-      .select("id, company_name, contact_name, phone, email, city, state, partner_category, tt_acquisition_stage, tt_call_attempts, tt_callback_at, is_simulation, phone_invalid, business_slug")
+      .select(
+        "id, company_name, contact_name, phone, email, city, state, partner_category, tt_acquisition_stage, tt_call_attempts, tt_callback_at, is_simulation, phone_invalid, business_slug",
+      )
       .eq("business_slug", BUSINESS_SLUG)
       .eq("is_simulation", false)
       .eq("phone_invalid", false)
@@ -137,18 +143,21 @@ serve(async (req) => {
     const { data: leads, error: leadsErr } = await q;
     if (leadsErr) throw leadsErr;
     if (!leads || leads.length === 0) {
-      return new Response(JSON.stringify({
-        success: false,
-        cohort_filter: {
-          business_slug: BUSINESS_SLUG,
-          callable_stages: CALLABLE_STAGES,
-          excluded_categories: EXCLUDED_CATEGORIES,
-          max_attempts: maxAttempts,
-          partner_ids: partnerIds,
-          limit,
-        },
-        error: "No callable TopTier partner prospects matched the cohort filter.",
-      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          cohort_filter: {
+            business_slug: BUSINESS_SLUG,
+            callable_stages: CALLABLE_STAGES,
+            excluded_categories: EXCLUDED_CATEGORIES,
+            max_attempts: maxAttempts,
+            partner_ids: partnerIds,
+            limit,
+          },
+          error: "No callable TopTier partner prospects matched the cohort filter.",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // --- dc_leads insert (sync direction='in') ---
@@ -173,23 +182,28 @@ serve(async (req) => {
       } as any,
     }));
     const { data: insertedDcLeads, error: dcInsertErr } = await supabase
-      .from("dc_leads").insert(dcLeadRows).select("id, external_ref_id");
+      .from("dc_leads")
+      .insert(dcLeadRows)
+      .select("id, external_ref_id");
     if (dcInsertErr) console.error("[tt-trigger dc_leads insert failed]", dcInsertErr);
 
-    await logLeadSyncBatch(supabase, (leads as any[]).map((l) => {
-      const matched = (insertedDcLeads || []).find((d: any) => d.external_ref_id === l.id);
-      return {
-        business_unit_key: BUSINESS_UNIT_KEY,
-        lead_id: l.id,
-        dc_lead_id: matched?.id || null,
-        sync_direction: "in" as const,
-        status_before: l.tt_acquisition_stage || null,
-        status_after: "queued",
-        sync_source: "tt-trigger-bland-campaign",
-        success: !dcInsertErr,
-        error_message: dcInsertErr?.message || null,
-      };
-    }));
+    await logLeadSyncBatch(
+      supabase,
+      (leads as any[]).map((l) => {
+        const matched = (insertedDcLeads || []).find((d: any) => d.external_ref_id === l.id);
+        return {
+          business_unit_key: BUSINESS_UNIT_KEY,
+          lead_id: l.id,
+          dc_lead_id: matched?.id || null,
+          sync_direction: "in" as const,
+          status_before: l.tt_acquisition_stage || null,
+          status_after: "queued",
+          sync_source: "tt-trigger-bland-campaign",
+          success: !dcInsertErr,
+          error_message: dcInsertErr?.message || null,
+        };
+      }),
+    );
 
     // --- Per-record dispatch ---
     const addToDncTool = DNC_TOOL_SECRET ? buildAddToDncTool(SUPABASE_URL, DNC_TOOL_SECRET) : null;
@@ -218,9 +232,11 @@ serve(async (req) => {
       if (!gate.allowed) {
         gateBlocks.push({ lead_id: l.id, code: gate.code, reason: gate.reason, retryable: gate.retryable });
         await logGateBlock(supabase, {
-          businessUnitKey: BUSINESS_UNIT_KEY, leadId: l.id,
+          businessUnitKey: BUSINESS_UNIT_KEY,
+          leadId: l.id,
           triggerName: "tt-trigger-bland-campaign",
-          gateCode: gate.code, gateReason: gate.reason,
+          gateCode: gate.code,
+          gateReason: gate.reason,
           statusBefore: (l as any).tt_stage || null,
         });
         console.warn("[tt-trigger gate-blocked]", l.id, gate.code, gate.reason);
@@ -232,12 +248,17 @@ serve(async (req) => {
           }
           // No "cancelled" stage on crm_partners — leave stage untouched; the
           // gate block is recorded in gateBlocks + dc_lead_sync_log only.
-          await logLeadSyncBatch(supabase, remaining.map((rid: string) => ({
-            business_unit_key: BUSINESS_UNIT_KEY, lead_id: rid,
-            sync_direction: "in" as const,
-            sync_source: "tt-trigger-bland-campaign:kill-switch-abort",
-            success: false, error_message: `${gate.code}: ${gate.reason}`,
-          })));
+          await logLeadSyncBatch(
+            supabase,
+            remaining.map((rid: string) => ({
+              business_unit_key: BUSINESS_UNIT_KEY,
+              lead_id: rid,
+              sync_direction: "in" as const,
+              sync_source: "tt-trigger-bland-campaign:kill-switch-abort",
+              success: false,
+              error_message: `${gate.code}: ${gate.reason}`,
+            })),
+          );
           break;
         }
         continue;
@@ -253,14 +274,16 @@ serve(async (req) => {
           reason: `Phone on DNC list (${dncCheck.reason || "dnc_list"})`,
           retryable: false,
         });
-        const { error: dncMarkErr } = await supabase.from("crm_partners")
+        const { error: dncMarkErr } = await supabase
+          .from("crm_partners")
           .update({
             tt_acquisition_stage: "dnc",
             tt_last_disposition: "dnc",
           })
           .eq("id", l.id);
         await logGateBlock(supabase, {
-          businessUnitKey: BUSINESS_UNIT_KEY, leadId: l.id,
+          businessUnitKey: BUSINESS_UNIT_KEY,
+          leadId: l.id,
           triggerName: "tt-trigger-bland-campaign",
           gateCode: "dnc_list_block",
           gateReason: `Phone on DNC list (${dncCheck.reason || "dnc_list"})`,
@@ -268,11 +291,14 @@ serve(async (req) => {
         });
         if (dncMarkErr) {
           await logLeadSync(supabase, {
-            business_unit_key: BUSINESS_UNIT_KEY, lead_id: l.id,
+            business_unit_key: BUSINESS_UNIT_KEY,
+            lead_id: l.id,
             sync_direction: "in",
-            status_before: l.tt_acquisition_stage || null, status_after: "dnc",
+            status_before: l.tt_acquisition_stage || null,
+            status_after: "dnc",
             sync_source: "tt-trigger-bland-campaign:dnc-mark-failed",
-            success: false, error_message: dncMarkErr.message,
+            success: false,
+            error_message: dncMarkErr.message,
           });
         }
         continue;
@@ -305,7 +331,8 @@ serve(async (req) => {
         analysis_schema: {
           interested: {
             type: "boolean",
-            description: "True if the contact expressed genuine interest in joining the TopTier partner network, agreed to receive info, or agreed to vetting outreach",
+            description:
+              "True if the contact expressed genuine interest in joining the TopTier partner network, agreed to receive info, or agreed to vetting outreach",
           },
           email_captured: {
             type: "string",
@@ -313,7 +340,8 @@ serve(async (req) => {
           },
           opted_out: {
             type: "boolean",
-            description: "True if the contact asked to be removed from contact lists or expressed clear refusal of further contact",
+            description:
+              "True if the contact asked to be removed from contact lists or expressed clear refusal of further contact",
           },
           callback_requested: {
             type: "boolean",
@@ -329,13 +357,18 @@ serve(async (req) => {
           },
         },
         webhook: webhookUrl,
-        ...(vmTranscript ? { voicemail: { message: vmTranscript, action: 'leave_message' } } : {}),
+        ...(vmTranscript ? { voicemail: { message: vmTranscript, action: "leave_message" } } : {}),
       };
+
+      // TEMP DEBUG
+      console.log("========== BLAND PAYLOAD ==========");
+      console.log(JSON.stringify(payload, null, 2));
+      console.log("===================================");
 
       try {
         const blandRes = await fetch("https://api.bland.ai/v1/calls", {
           method: "POST",
-          headers: { "Authorization": BLAND_API_KEY, "Content-Type": "application/json" },
+          headers: { Authorization: BLAND_API_KEY, "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
         const blandJson = await blandRes.json();
@@ -373,7 +406,8 @@ serve(async (req) => {
           blandError = blandError || JSON.stringify(blandJson);
           console.error("[bland call failed]", l.id, blandJson);
           await logLeadSync(supabase, {
-            business_unit_key: BUSINESS_UNIT_KEY, lead_id: l.id,
+            business_unit_key: BUSINESS_UNIT_KEY,
+            lead_id: l.id,
             sync_direction: "in",
             sync_source: "tt-trigger-bland-campaign:bland-dispatch-failed",
             success: false,
@@ -384,17 +418,18 @@ serve(async (req) => {
         blandError = blandError || e.message;
         console.error("[bland call exception]", l.id, e);
         await logLeadSync(supabase, {
-          business_unit_key: BUSINESS_UNIT_KEY, lead_id: l.id,
+          business_unit_key: BUSINESS_UNIT_KEY,
+          lead_id: l.id,
           sync_direction: "in",
           sync_source: "tt-trigger-bland-campaign:bland-dispatch-exception",
-          success: false, error_message: e.message,
+          success: false,
+          error_message: e.message,
         });
       }
     }
 
     // --- dc_campaigns row ---
-    const label = body.campaign_name
-      || `TT_partner_${new Date().toISOString().slice(0, 10)}_${Date.now()}`;
+    const label = body.campaign_name || `TT_partner_${new Date().toISOString().slice(0, 10)}_${Date.now()}`;
     const { data: campaign, error: campaignErr } = await supabase
       .from("dc_campaigns")
       .insert({
@@ -410,34 +445,39 @@ serve(async (req) => {
       .single();
     if (campaignErr) console.error("[tt-trigger dc_campaigns insert failed]", campaignErr);
 
-    return new Response(JSON.stringify({
-      success: blandSuccessCount > 0,
-      campaign_id: campaign?.id,
-      bland_calls_started: blandSuccessCount,
-      bland_call_ids: blandCallIds,
-      leads_loaded: leads.length,
-      cohort_filter: {
-        business_slug: BUSINESS_SLUG,
-        callable_stages: CALLABLE_STAGES,
-        excluded_categories: EXCLUDED_CATEGORIES,
-        max_attempts: maxAttempts,
-        partner_ids: partnerIds,
-        limit,
-      },
-      bland_error: blandError,
-      gate_blocked_count: gateBlocks.length,
-      gate_blocks: gateBlocks,
-      kill_switch_hit: killSwitchHit,
-      message: blandSuccessCount > 0
-        ? `Dispatched ${blandSuccessCount}/${leads.length} TopTier partner calls${gateBlocks.length ? `, ${gateBlocks.length} gate-blocked` : ""}.`
-        : killSwitchHit
-          ? "Dispatch aborted — kill-switch engaged."
-          : "Cohort loaded but no Bland calls succeeded.",
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(
+      JSON.stringify({
+        success: blandSuccessCount > 0,
+        campaign_id: campaign?.id,
+        bland_calls_started: blandSuccessCount,
+        bland_call_ids: blandCallIds,
+        leads_loaded: leads.length,
+        cohort_filter: {
+          business_slug: BUSINESS_SLUG,
+          callable_stages: CALLABLE_STAGES,
+          excluded_categories: EXCLUDED_CATEGORIES,
+          max_attempts: maxAttempts,
+          partner_ids: partnerIds,
+          limit,
+        },
+        bland_error: blandError,
+        gate_blocked_count: gateBlocks.length,
+        gate_blocks: gateBlocks,
+        kill_switch_hit: killSwitchHit,
+        message:
+          blandSuccessCount > 0
+            ? `Dispatched ${blandSuccessCount}/${leads.length} TopTier partner calls${gateBlocks.length ? `, ${gateBlocks.length} gate-blocked` : ""}.`
+            : killSwitchHit
+              ? "Dispatch aborted — kill-switch engaged."
+              : "Cohort loaded but no Bland calls succeeded.",
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (error: any) {
     console.error("[tt-trigger-bland-campaign] error", error);
     return new Response(JSON.stringify({ success: false, error: error.message }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
