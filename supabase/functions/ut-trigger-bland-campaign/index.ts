@@ -25,7 +25,6 @@ import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 import { isOnDNC } from "../_shared/dnc.ts";
 import { fetchVoicemailTranscript } from "../_shared/voicemail_template.ts";
 
-
 const BUSINESS_UNIT_KEY = "unforgettable_times";
 const BUSINESS_NAME = "Unforgettable Times";
 const BLAND_AGENT_ID = "d571d8bc-43b1-4af6-812f-a94b0aff84f9";
@@ -69,7 +68,6 @@ function buildAddToDncTool(supabaseUrl: string, dncToolSecret: string) {
   };
 }
 
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -85,35 +83,41 @@ serve(async (req) => {
       // if real outbound calls run. Smoke tests still run because the per-record
       // dnc_list gate inside the trigger is server-side and independent of the
       // agent tool. PRODUCTION launch MUST configure this secret.
-      console.warn("[ut-trigger] GASMASK_DNC_TOOL_SECRET not configured — AddToDNC tool will be OMITTED from Bland calls. Opt-outs will only be captured via post-call webhook disposition, not in-call. NOT SAFE FOR PRODUCTION.");
+      console.warn(
+        "[ut-trigger] GASMASK_DNC_TOOL_SECRET not configured — AddToDNC tool will be OMITTED from Bland calls. Opt-outs will only be captured via post-call webhook disposition, not in-call. NOT SAFE FOR PRODUCTION.",
+      );
     }
-
-
 
     const body = await req.json().catch(() => ({}));
 
     // --- HARD-REJECT GUARD (parity with tt-trigger Fix A) ---
     // Accepts ut_partner_ids | lead_ids | lead_id. Full-cohort dispatch
     // without explicit scope is not permitted.
-    const leadIds: string[] = Array.isArray(body.ut_partner_ids) && body.ut_partner_ids.length > 0
-      ? body.ut_partner_ids
-      : Array.isArray(body.lead_ids) && body.lead_ids.length > 0
-        ? body.lead_ids
-        : body.lead_id ? [body.lead_id] : [];
+    const leadIds: string[] =
+      Array.isArray(body.ut_partner_ids) && body.ut_partner_ids.length > 0
+        ? body.ut_partner_ids
+        : Array.isArray(body.lead_ids) && body.lead_ids.length > 0
+          ? body.lead_ids
+          : body.lead_id
+            ? [body.lead_id]
+            : [];
     if (leadIds.length === 0) {
-      return new Response(JSON.stringify({
-        error: "strict_mode_violation",
-        message: "ut_partner_ids (or lead_ids / lead_id) required. Full-cohort dispatch without explicit scope is not permitted.",
-        bland_calls_started: 0,
-      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(
+        JSON.stringify({
+          error: "strict_mode_violation",
+          message:
+            "ut_partner_ids (or lead_ids / lead_id) required. Full-cohort dispatch without explicit scope is not permitted.",
+          bland_calls_started: 0,
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // ---- Cohort query: ai_call_eligible=true, has usable phone, status='new' ----
     // 'new' is the canonical pre-touch status on ut_partner_leads. Callers can
     // override with body.status_filter (array) for re-queue scenarios.
-    const statusFilter: string[] = Array.isArray(body.status_filter) && body.status_filter.length > 0
-      ? body.status_filter
-      : ["new"];
+    const statusFilter: string[] =
+      Array.isArray(body.status_filter) && body.status_filter.length > 0 ? body.status_filter : ["new"];
 
     const { data: leads, error: leadsErr } = await supabase
       .from("ut_partner_leads")
@@ -124,10 +128,13 @@ serve(async (req) => {
       .not("phone", "is", null);
     if (leadsErr) throw leadsErr;
     if (!leads || leads.length === 0) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: "No callable UT partner leads matched (ai_call_eligible=true, status in filter, phone present).",
-      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "No callable UT partner leads matched (ai_call_eligible=true, status in filter, phone present).",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // ---- Insert dc_leads (sync direction='in') ----
@@ -147,23 +154,28 @@ serve(async (req) => {
       metadata: { category: l.category, business_name: l.business_name } as any,
     }));
     const { data: insertedDcLeads, error: dcInsertErr } = await supabase
-      .from("dc_leads").insert(dcLeadRows).select("id, external_ref_id");
+      .from("dc_leads")
+      .insert(dcLeadRows)
+      .select("id, external_ref_id");
     if (dcInsertErr) console.error("[ut-trigger dc_leads insert failed]", dcInsertErr);
 
-    await logLeadSyncBatch(supabase, (leads as any[]).map((l) => {
-      const matched = (insertedDcLeads || []).find((d: any) => d.external_ref_id === l.id);
-      return {
-        business_unit_key: BUSINESS_UNIT_KEY,
-        lead_id: l.id,
-        dc_lead_id: matched?.id || null,
-        sync_direction: "in" as const,
-        status_before: l.status || null,
-        status_after: "queued",
-        sync_source: "ut-trigger-bland-campaign",
-        success: !dcInsertErr,
-        error_message: dcInsertErr?.message || null,
-      };
-    }));
+    await logLeadSyncBatch(
+      supabase,
+      (leads as any[]).map((l) => {
+        const matched = (insertedDcLeads || []).find((d: any) => d.external_ref_id === l.id);
+        return {
+          business_unit_key: BUSINESS_UNIT_KEY,
+          lead_id: l.id,
+          dc_lead_id: matched?.id || null,
+          sync_direction: "in" as const,
+          status_before: l.status || null,
+          status_after: "queued",
+          sync_source: "ut-trigger-bland-campaign",
+          success: !dcInsertErr,
+          error_message: dcInsertErr?.message || null,
+        };
+      }),
+    );
 
     // ---- Pathway mode: Bland stores prompt + first message on the pathway itself.
     // No GET /v1/agents lookup needed; pass pathway_id on each /v1/calls payload.
@@ -192,37 +204,52 @@ serve(async (req) => {
       if (!gate.allowed) {
         gateBlocks.push({ lead_id: l.id, code: gate.code, reason: gate.reason, retryable: gate.retryable });
         await logGateBlock(supabase, {
-          businessUnitKey: BUSINESS_UNIT_KEY, leadId: l.id,
+          businessUnitKey: BUSINESS_UNIT_KEY,
+          leadId: l.id,
           triggerName: "ut-trigger-bland-campaign",
-          gateCode: gate.code, gateReason: gate.reason,
+          gateCode: gate.code,
+          gateReason: gate.reason,
           statusBefore: (l as any).status || null,
         });
         console.warn("[ut-trigger gate-blocked]", l.id, gate.code, gate.reason);
         if (!gate.retryable) {
           killSwitchHit = true;
-          const { error: cancelErr } = await supabase.from("ut_partner_leads")
-            .update({ status: "cancelled" }).eq("id", l.id);
+          const { error: cancelErr } = await supabase
+            .from("ut_partner_leads")
+            .update({ status: "cancelled" })
+            .eq("id", l.id);
           if (cancelErr) {
             console.error("[ut-trigger cancel update failed]", l.id, cancelErr);
             await logLeadSync(supabase, {
-              business_unit_key: BUSINESS_UNIT_KEY, lead_id: l.id,
-              sync_direction: "in", status_after: "cancelled",
+              business_unit_key: BUSINESS_UNIT_KEY,
+              lead_id: l.id,
+              sync_direction: "in",
+              status_after: "cancelled",
               sync_source: "ut-trigger-bland-campaign:cancel-on-kill-switch",
-              success: false, error_message: cancelErr.message,
+              success: false,
+              error_message: cancelErr.message,
             });
           }
           const remaining = (leads as any[]).slice(i + 1).map((r) => r.id);
           if (remaining.length > 0) {
-            const { error: bulkCancelErr } = await supabase.from("ut_partner_leads")
-              .update({ status: "cancelled" }).in("id", remaining);
+            const { error: bulkCancelErr } = await supabase
+              .from("ut_partner_leads")
+              .update({ status: "cancelled" })
+              .in("id", remaining);
             if (bulkCancelErr) {
               console.error("[ut-trigger bulk cancel failed]", bulkCancelErr);
-              await logLeadSyncBatch(supabase, remaining.map((rid: string) => ({
-                business_unit_key: BUSINESS_UNIT_KEY, lead_id: rid,
-                sync_direction: "in" as const, status_after: "cancelled",
-                sync_source: "ut-trigger-bland-campaign:cancel-on-kill-switch-bulk",
-                success: false, error_message: bulkCancelErr.message,
-              })));
+              await logLeadSyncBatch(
+                supabase,
+                remaining.map((rid: string) => ({
+                  business_unit_key: BUSINESS_UNIT_KEY,
+                  lead_id: rid,
+                  sync_direction: "in" as const,
+                  status_after: "cancelled",
+                  sync_source: "ut-trigger-bland-campaign:cancel-on-kill-switch-bulk",
+                  success: false,
+                  error_message: bulkCancelErr.message,
+                })),
+              );
             }
             for (const rid of remaining) {
               gateBlocks.push({ lead_id: rid, code: gate.code, reason: gate.reason, retryable: false });
@@ -247,7 +274,8 @@ serve(async (req) => {
           reason: `Phone on DNC list (${dncCheck.reason || "dnc_list"})`,
           retryable: false,
         });
-        const { error: dncMarkErr } = await supabase.from("ut_partner_leads")
+        const { error: dncMarkErr } = await supabase
+          .from("ut_partner_leads")
           .update({
             status: "dnc",
             ai_call_result: "dnc",
@@ -256,7 +284,8 @@ serve(async (req) => {
           })
           .eq("id", l.id);
         await logGateBlock(supabase, {
-          businessUnitKey: BUSINESS_UNIT_KEY, leadId: l.id,
+          businessUnitKey: BUSINESS_UNIT_KEY,
+          leadId: l.id,
           triggerName: "ut-trigger-bland-campaign",
           gateCode: "dnc_list_block",
           gateReason: `Phone on DNC list (${dncCheck.reason || "dnc_list"})`,
@@ -264,17 +293,18 @@ serve(async (req) => {
         });
         if (dncMarkErr) {
           await logLeadSync(supabase, {
-            business_unit_key: BUSINESS_UNIT_KEY, lead_id: l.id,
+            business_unit_key: BUSINESS_UNIT_KEY,
+            lead_id: l.id,
             sync_direction: "in",
-            status_before: l.status || null, status_after: "dnc",
+            status_before: l.status || null,
+            status_after: "dnc",
             sync_source: "ut-trigger-bland-campaign:dnc-mark-failed",
-            success: false, error_message: dncMarkErr.message,
+            success: false,
+            error_message: dncMarkErr.message,
           });
         }
         continue;
       }
-
-
 
       // Dispatch via Bland /v1/calls with the dedicated UT pathway_id.
       // Prompt variables ({{lead_category}}, {{business_name}}) injected via
@@ -300,16 +330,34 @@ serve(async (req) => {
           city: l.city || "",
         },
         webhook: webhookUrl,
-        ...(vmTranscript ? { voicemail: { message: vmTranscript, action: 'leave_message' } } : {}),
+        ...(vmTranscript ? { voicemail: { message: vmTranscript, action: "leave_message" } } : {}),
       };
 
       try {
         const blandRes = await fetch("https://api.bland.ai/v1/calls", {
           method: "POST",
-          headers: { "Authorization": BLAND_API_KEY, "Content-Type": "application/json" },
+          headers: { Authorization: BLAND_API_KEY, "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
         const blandJson = await blandRes.json();
+
+        // ===== DEBUG ONLY =====
+        return new Response(
+          JSON.stringify(
+            {
+              payload,
+              bland: blandJson,
+            },
+            null,
+            2,
+          ),
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
         if (blandRes.ok && blandJson.call_id) {
           blandSuccessCount++;
           blandCallIds.push(blandJson.call_id);
@@ -317,16 +365,19 @@ serve(async (req) => {
           // mutate ai_call_result here — that's the webhook's job on terminal
           // disposition (avoids the orphan-optimistic-update class of bug that
           // useUTAIDialer caused).
-          const { error: attemptErr } = await supabase.from("ut_partner_leads")
+          const { error: attemptErr } = await supabase
+            .from("ut_partner_leads")
             .update({ ai_call_last_attempt_at: new Date().toISOString() })
             .eq("id", l.id);
           if (attemptErr) {
             console.error("[ut-trigger attempt-timestamp write failed]", l.id, attemptErr);
             await logLeadSync(supabase, {
-              business_unit_key: BUSINESS_UNIT_KEY, lead_id: l.id,
+              business_unit_key: BUSINESS_UNIT_KEY,
+              lead_id: l.id,
               sync_direction: "in",
               sync_source: "ut-trigger-bland-campaign:attempt-timestamp-write",
-              success: false, error_message: attemptErr.message,
+              success: false,
+              error_message: attemptErr.message,
             });
           }
         } else {
@@ -340,8 +391,7 @@ serve(async (req) => {
     }
 
     // ---- dc_campaigns row ----
-    const label = body.campaign_name
-      || `UT_partner_${new Date().toISOString().slice(0, 10)}_${Date.now()}`;
+    const label = body.campaign_name || `UT_partner_${new Date().toISOString().slice(0, 10)}_${Date.now()}`;
     const { data: campaign, error: campaignErr } = await supabase
       .from("dc_campaigns")
       .insert({
@@ -361,39 +411,52 @@ serve(async (req) => {
     const cancelledIds = new Set(gateBlocks.filter((g) => !g.retryable).map((g) => g.lead_id));
     const idsToMark = (leads as any[]).map((l) => l.id).filter((id) => !cancelledIds.has(id));
     if (idsToMark.length > 0) {
-      const { error: queueErr } = await supabase.from("ut_partner_leads")
-        .update({ status: "queued" }).in("id", idsToMark);
+      const { error: queueErr } = await supabase
+        .from("ut_partner_leads")
+        .update({ status: "queued" })
+        .in("id", idsToMark);
       if (queueErr) {
         console.error("[ut-trigger post-loop queue update failed]", queueErr);
-        await logLeadSyncBatch(supabase, idsToMark.map((id) => ({
-          business_unit_key: BUSINESS_UNIT_KEY, lead_id: id,
-          sync_direction: "in" as const, status_after: "queued",
-          sync_source: "ut-trigger-bland-campaign:post-loop-queue",
-          success: false, error_message: queueErr.message,
-        })));
+        await logLeadSyncBatch(
+          supabase,
+          idsToMark.map((id) => ({
+            business_unit_key: BUSINESS_UNIT_KEY,
+            lead_id: id,
+            sync_direction: "in" as const,
+            status_after: "queued",
+            sync_source: "ut-trigger-bland-campaign:post-loop-queue",
+            success: false,
+            error_message: queueErr.message,
+          })),
+        );
       }
     }
 
-    return new Response(JSON.stringify({
-      success: blandSuccessCount > 0,
-      campaign_id: campaign?.id,
-      bland_calls_started: blandSuccessCount,
-      bland_call_ids: blandCallIds,
-      leads_loaded: leads.length,
-      bland_error: blandError,
-      gate_blocked_count: gateBlocks.length,
-      gate_blocks: gateBlocks,
-      kill_switch_hit: killSwitchHit,
-      message: blandSuccessCount > 0
-        ? `Dispatched ${blandSuccessCount}/${leads.length} UT partner calls${gateBlocks.length ? `, ${gateBlocks.length} gate-blocked` : ""}.`
-        : killSwitchHit
-          ? "Dispatch aborted — kill-switch engaged."
-          : "Cohort loaded but no Bland calls succeeded.",
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(
+      JSON.stringify({
+        success: blandSuccessCount > 0,
+        campaign_id: campaign?.id,
+        bland_calls_started: blandSuccessCount,
+        bland_call_ids: blandCallIds,
+        leads_loaded: leads.length,
+        bland_error: blandError,
+        gate_blocked_count: gateBlocks.length,
+        gate_blocks: gateBlocks,
+        kill_switch_hit: killSwitchHit,
+        message:
+          blandSuccessCount > 0
+            ? `Dispatched ${blandSuccessCount}/${leads.length} UT partner calls${gateBlocks.length ? `, ${gateBlocks.length} gate-blocked` : ""}.`
+            : killSwitchHit
+              ? "Dispatch aborted — kill-switch engaged."
+              : "Cohort loaded but no Bland calls succeeded.",
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (error: any) {
     console.error("[ut-trigger-bland-campaign] error", error);
     return new Response(JSON.stringify({ success: false, error: error.message }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
