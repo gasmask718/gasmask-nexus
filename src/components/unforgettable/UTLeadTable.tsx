@@ -145,7 +145,10 @@ export function UTLeadTable({ leads, isLoading, selectedLead, onSelectLead, onUp
                       entityName={selectedLead.business_name}
                       entityType="store"
                       entityId={selectedLead.id}
-                      businessKey="unforgettable"
+                      businessKey="unforgettable_times"
+                      agentType="outbound"
+                      sourceTable="ut_partner_leads"
+                      sourceBusiness="unforgettable_times"
                     />
                   )}
                 </div>
