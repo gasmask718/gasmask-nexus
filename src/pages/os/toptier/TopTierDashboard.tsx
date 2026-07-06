@@ -85,8 +85,11 @@ export default function TopTierDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  <p className="text-3xl font-bold mt-1">{stat.value}</p>
-                  <p className="text-xs text-emerald-500 mt-1">{stat.change}</p>
+                  {loading ? (
+                    <div className="animate-pulse bg-gray-200 rounded h-8 w-24 mt-1" />
+                  ) : (
+                    <p className="text-3xl font-bold mt-1">{stat.value}</p>
+                  )}
                 </div>
                 <div className={`p-3 rounded-xl bg-muted/50 ${stat.color}`}>
                   <stat.icon className="h-6 w-6" />
