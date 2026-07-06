@@ -257,6 +257,29 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
+  // === AUTH GUARD (added: block unauthenticated external callers) ===
+  // Two allowed identities:
+  //   1. Internal self-invoke → Authorization: Bearer <SERVICE_ROLE_KEY>
+  //   2. Authenticated end user → Authorization: Bearer <user JWT>
+  // Anything else is rejected before ANY DB write or outbound fetch.
+  const authHeader = req.headers.get("Authorization") || "";
+  const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+  if (!bearer) {
+    return json({ error: "unauthorized", reason: "missing_bearer" }, 401);
+  }
+  const isInternalServiceCall = bearer === SERVICE_KEY;
+  if (!isInternalServiceCall) {
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const authed = createClient(SUPABASE_URL, ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data, error } = await authed.auth.getClaims(bearer);
+    if (error || !data?.claims?.sub) {
+      return json({ error: "unauthorized", reason: "invalid_jwt" }, 401);
+    }
+  }
+  // === END AUTH GUARD ===
+
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
   let body: any;
   try {
@@ -265,6 +288,11 @@ Deno.serve(async (req) => {
     return json({ error: "invalid_json" }, 400);
   }
   const action = body?.action || "launch";
+
+  // External callers (user JWT) may NOT invoke the internal worker action.
+  if (action === "run" && !isInternalServiceCall) {
+    return json({ error: "forbidden", reason: "run_is_internal_only" }, 403);
+  }
 
   if (action === "run") {
     if (!body.batch_id) return json({ error: "missing_batch_id" }, 400);
