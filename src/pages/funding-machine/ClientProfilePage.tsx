@@ -109,6 +109,120 @@ export default function ClientProfilePage() {
     },
   });
 
+  // ---- Grants tab ----
+  const [checkingEligibility, setCheckingEligibility] = useState(false);
+
+  const { data: eligibility, refetch: refetchEligibility } = useQuery({
+    queryKey: ['funding-client-grant-eligibility', clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('funding_clients')
+        .select('grant_eligible, grant_checked_at')
+        .eq('id', clientId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { grant_eligible: boolean | null; grant_checked_at: string | null } | null;
+    },
+    enabled: !!clientId,
+  });
+
+  const { data: grantMatches = [], refetch: refetchMatches } = useQuery({
+    queryKey: ['funding-client-grant-matches', clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('client_grant_matches')
+        .select('*')
+        .eq('client_id', clientId!)
+        .neq('status', 'ineligible')
+        .order('eligibility_score', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!clientId,
+  });
+
+  const { data: activeApps = [], refetch: refetchActiveApps } = useQuery({
+    queryKey: ['funding-client-grant-active', clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('grant_applications')
+        .select('id, grant_name, funder_name, status, amount_requested, deadline')
+        .eq('funding_client_id', clientId!)
+        .not('status', 'in', '(awarded,denied,closed)')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!clientId,
+  });
+
+  const { data: wonApps = [], refetch: refetchWon } = useQuery({
+    queryKey: ['funding-client-grant-won', clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('grant_applications')
+        .select('id, grant_name, funder_name, amount_awarded, award_date')
+        .eq('funding_client_id', clientId!)
+        .eq('status', 'awarded')
+        .order('award_date', { ascending: false, nullsFirst: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!clientId,
+  });
+
+  const refetchGrantData = () => {
+    refetchEligibility();
+    refetchMatches();
+    refetchActiveApps();
+    refetchWon();
+  };
+
+  const handleCheckEligibility = async () => {
+    setCheckingEligibility(true);
+    const { data, error } = await supabase.functions.invoke('grant-eligibility-check', {
+      body: { client_id: clientId },
+    });
+    setCheckingEligibility(false);
+    if (error) { toast.error(error.message); return; }
+    const result = data as any;
+    if (result?.error) { toast.error(result.error); return; }
+    toast.success(
+      `${result.eligible_count ?? 0} grants found! Up to $${(result.total_available ?? 0).toLocaleString()} available.`
+    );
+    refetchGrantData();
+  };
+
+  const handleStartApplication = async (m: any) => {
+    const { data: newApp, error } = await supabase
+      .from('grant_applications')
+      .insert({
+        funding_client_id: clientId,
+        grant_name: m.grant_name,
+        funder_name: m.funder_name,
+        amount_requested: m.grant_amount,
+        deadline: m.deadline,
+        status: 'drafting',
+        applicant_type: 'funding_client',
+        opportunity_id: m.opportunity_id ?? null,
+      })
+      .select('id')
+      .single();
+    if (error || !newApp) { toast.error(error?.message || 'Failed'); return; }
+    toast.success('Application started!');
+    navigate(`/os/grants/${newApp.id}`);
+  };
+
+  const handleSkipMatch = async (matchId: string) => {
+    const { error } = await supabase
+      .from('client_grant_matches')
+      .update({ status: 'ineligible' })
+      .eq('id', matchId);
+    if (error) { toast.error(error.message); return; }
+    refetchMatches();
+  };
+
+
   const toggleStep = useMutation({
     mutationFn: async ({ id, currentStatus }: { id: string; currentStatus: string }) => {
       const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
