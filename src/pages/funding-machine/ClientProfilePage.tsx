@@ -300,6 +300,9 @@ export default function ClientProfilePage() {
           <TabsTrigger value="relationships">
             <Building2 className="h-3 w-3 mr-1" /> Relationships
           </TabsTrigger>
+          <TabsTrigger value="grants">
+            <Award className="h-3 w-3 mr-1" /> Grants
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
