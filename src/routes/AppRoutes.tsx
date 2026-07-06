@@ -2190,6 +2190,7 @@ export default function AppRoutes() {
         {/* /os/funding removed — orphan mock page, real system is /funding-machine */}
         <Route path="/os/grants" element={<GrantsDashboard />} />
         <Route path="/os/grants/opportunities" element={<GrantOpportunities />} />
+        <Route path="/os/grants/applications" element={<GrantsDashboard />} />
         <Route path="/os/grants/:id" element={<GrantApplicationDetail />} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
         {/* Floor 10 — Dynasty Funding Machine */}

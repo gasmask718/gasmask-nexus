@@ -1160,8 +1160,8 @@ const Layout = ({ children }: LayoutProps) => {
       </div>
 
       {/* 🏆 GRANT OS */}
-      <div className="pt-2 border-t border-yellow-500/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-yellow-400/80 tracking-wider">
+      <div className="pt-2 border-t border-[#C9A84C]/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-[#C9A84C]/80 tracking-wider">
           🏆 Grant OS
         </div>
         {renderSection(
