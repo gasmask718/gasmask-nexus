@@ -570,8 +570,16 @@ const DYNASTY_NAVIGATION = {
     id: 'finance-acquisition',
     name: '💰 Finance & Acquisition',
     items: [
-      { path: '/os/grants', label: '🏆 Grant Company OS', icon: Trophy },
       { path: '/os/wealth-engine', label: '📈 Wealth Engine OS', icon: TrendingUp },
+    ],
+  },
+  grantOS: {
+    id: 'grant-os',
+    name: '🏆 Grant OS',
+    items: [
+      { path: '/os/grants', label: '📊 Dashboard', icon: LayoutDashboard },
+      { path: '/os/grants/opportunities', label: '🗂️ Opportunities', icon: Database },
+      { path: '/os/grants/applications', label: '📝 Applications', icon: FileText },
     ],
   },
   communicationSystems: {
@@ -1150,6 +1158,19 @@ const Layout = ({ children }: LayoutProps) => {
           DYNASTY_NAVIGATION.ubenHq.items
         )}
       </div>
+
+      {/* 🏆 GRANT OS */}
+      <div className="pt-2 border-t border-yellow-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-yellow-400/80 tracking-wider">
+          🏆 Grant OS
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.grantOS.id,
+          DYNASTY_NAVIGATION.grantOS.name,
+          DYNASTY_NAVIGATION.grantOS.items
+        )}
+      </div>
+
 
       {/* 💰 DYNASTY EARN — MONETIZATION ENGINE */}
       <div className="pt-2 border-t border-emerald-500/30">
