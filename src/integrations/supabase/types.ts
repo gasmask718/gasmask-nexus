@@ -29126,6 +29126,66 @@ export type Database = {
           },
         ]
       }
+      client_grant_matches: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          deadline: string | null
+          eligibility_notes: string | null
+          eligibility_score: number
+          funder_name: string
+          grant_amount: number | null
+          grant_name: string
+          id: string
+          opportunity_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          deadline?: string | null
+          eligibility_notes?: string | null
+          eligibility_score: number
+          funder_name: string
+          grant_amount?: number | null
+          grant_name: string
+          id?: string
+          opportunity_id: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          deadline?: string | null
+          eligibility_notes?: string | null
+          eligibility_score?: number
+          funder_name?: string
+          grant_amount?: number | null
+          grant_name?: string
+          id?: string
+          opportunity_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_grant_matches_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_grant_matches_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "grant_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clipper_accounts: {
         Row: {
           bio: string | null
@@ -53924,9 +53984,12 @@ export type Database = {
           first_name: string
           full_name: string | null
           funding_goal: string | null
+          grant_checked_at: string | null
+          grant_eligible: boolean | null
           id: string
           intake_status: string | null
           last_name: string
+          minority_owned: boolean | null
           monthly_income: number | null
           monthly_revenue: number | null
           notes: string | null
@@ -53942,6 +54005,8 @@ export type Database = {
           time_in_business_months: number | null
           updated_at: string
           user_id: string
+          veteran_owned: boolean | null
+          women_owned: boolean | null
           zip_code: string | null
         }
         Insert: {
@@ -53969,9 +54034,12 @@ export type Database = {
           first_name: string
           full_name?: string | null
           funding_goal?: string | null
+          grant_checked_at?: string | null
+          grant_eligible?: boolean | null
           id?: string
           intake_status?: string | null
           last_name: string
+          minority_owned?: boolean | null
           monthly_income?: number | null
           monthly_revenue?: number | null
           notes?: string | null
@@ -53987,6 +54055,8 @@ export type Database = {
           time_in_business_months?: number | null
           updated_at?: string
           user_id: string
+          veteran_owned?: boolean | null
+          women_owned?: boolean | null
           zip_code?: string | null
         }
         Update: {
@@ -54014,9 +54084,12 @@ export type Database = {
           first_name?: string
           full_name?: string | null
           funding_goal?: string | null
+          grant_checked_at?: string | null
+          grant_eligible?: boolean | null
           id?: string
           intake_status?: string | null
           last_name?: string
+          minority_owned?: boolean | null
           monthly_income?: number | null
           monthly_revenue?: number | null
           notes?: string | null
@@ -54032,6 +54105,8 @@ export type Database = {
           time_in_business_months?: number | null
           updated_at?: string
           user_id?: string
+          veteran_owned?: boolean | null
+          women_owned?: boolean | null
           zip_code?: string | null
         }
         Relationships: []
@@ -55819,6 +55894,259 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      grant_applications: {
+        Row: {
+          ai_draft: string | null
+          amount_awarded: number | null
+          amount_requested: number | null
+          applicant_type: string
+          application_date: string | null
+          award_date: string | null
+          contact_email: string | null
+          contact_name: string | null
+          created_at: string | null
+          created_by: string | null
+          deadline: string | null
+          funder_name: string
+          funding_client_id: string | null
+          grant_name: string
+          id: string
+          notes: string | null
+          opportunity_id: string | null
+          report_due: string | null
+          status: string
+          uben_source_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_draft?: string | null
+          amount_awarded?: number | null
+          amount_requested?: number | null
+          applicant_type?: string
+          application_date?: string | null
+          award_date?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deadline?: string | null
+          funder_name: string
+          funding_client_id?: string | null
+          grant_name: string
+          id?: string
+          notes?: string | null
+          opportunity_id?: string | null
+          report_due?: string | null
+          status?: string
+          uben_source_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_draft?: string | null
+          amount_awarded?: number | null
+          amount_requested?: number | null
+          applicant_type?: string
+          application_date?: string | null
+          award_date?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deadline?: string | null
+          funder_name?: string
+          funding_client_id?: string | null
+          grant_name?: string
+          id?: string
+          notes?: string | null
+          opportunity_id?: string | null
+          report_due?: string | null
+          status?: string
+          uben_source_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grant_applications_funding_client_id_fkey"
+            columns: ["funding_client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grant_applications_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "grant_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grant_documents: {
+        Row: {
+          application_id: string
+          created_at: string | null
+          doc_name: string
+          doc_type: string | null
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          application_id: string
+          created_at?: string | null
+          doc_name: string
+          doc_type?: string | null
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          application_id?: string
+          created_at?: string | null
+          doc_name?: string
+          doc_type?: string | null
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grant_documents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "grant_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grant_opportunities: {
+        Row: {
+          amount_max: number | null
+          amount_min: number | null
+          amount_typical: number | null
+          application_url: string | null
+          category: string | null
+          created_at: string | null
+          deadline_type: string | null
+          description: string | null
+          eligible_industries: string[] | null
+          eligible_states: string[] | null
+          funder_name: string
+          funder_type: string | null
+          grant_name: string
+          id: string
+          is_active: boolean | null
+          min_credit_score: number | null
+          min_time_in_business_months: number | null
+          next_deadline: string | null
+          requires_minority_owned: boolean | null
+          requires_nonprofit: boolean | null
+          requires_veteran_owned: boolean | null
+          requires_women_owned: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount_max?: number | null
+          amount_min?: number | null
+          amount_typical?: number | null
+          application_url?: string | null
+          category?: string | null
+          created_at?: string | null
+          deadline_type?: string | null
+          description?: string | null
+          eligible_industries?: string[] | null
+          eligible_states?: string[] | null
+          funder_name: string
+          funder_type?: string | null
+          grant_name: string
+          id?: string
+          is_active?: boolean | null
+          min_credit_score?: number | null
+          min_time_in_business_months?: number | null
+          next_deadline?: string | null
+          requires_minority_owned?: boolean | null
+          requires_nonprofit?: boolean | null
+          requires_veteran_owned?: boolean | null
+          requires_women_owned?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount_max?: number | null
+          amount_min?: number | null
+          amount_typical?: number | null
+          application_url?: string | null
+          category?: string | null
+          created_at?: string | null
+          deadline_type?: string | null
+          description?: string | null
+          eligible_industries?: string[] | null
+          eligible_states?: string[] | null
+          funder_name?: string
+          funder_type?: string | null
+          grant_name?: string
+          id?: string
+          is_active?: boolean | null
+          min_credit_score?: number | null
+          min_time_in_business_months?: number | null
+          next_deadline?: string | null
+          requires_minority_owned?: boolean | null
+          requires_nonprofit?: boolean | null
+          requires_veteran_owned?: boolean | null
+          requires_women_owned?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      grant_tasks: {
+        Row: {
+          application_id: string
+          assigned_to: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          application_id: string
+          assigned_to?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          application_id?: string
+          assigned_to?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grant_tasks_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "grant_applications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       guest_order_lookup_attempts: {
         Row: {
