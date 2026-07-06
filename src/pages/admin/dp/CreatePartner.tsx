@@ -33,7 +33,7 @@ export default function CreatePartner() {
     setPlatforms((prev) => {
       if (prev.includes(slug)) return prev.filter((p) => p !== slug);
       if (prev.length >= maxPlatforms) {
-        toast.error(`${tierDef.label} tier allows a maximum of ${maxPlatforms} platform${maxPlatforms === 1 ? "" : "s"}.`);
+        toast.error(`${tierDef.label} tier allows a maximum of ${maxPlatforms} platform${(maxPlatforms as number) === 1 ? "" : "s"}.`);
         return prev;
       }
       return [...prev, slug];
@@ -136,7 +136,7 @@ export default function CreatePartner() {
               <SelectContent>
                 {DP_TIERS.map((t) => (
                   <SelectItem key={t.value} value={t.value}>
-                    {t.label} — {fmtMoney(t.entryFeeCents)} entry + {fmtMoney(t.mrrCents)}/mo · {t.commissionRate}% commission · up to {t.maxPlatforms} platform{t.maxPlatforms === 1 ? "" : "s"}
+                    {t.label} — {fmtMoney(t.entryFeeCents)} entry + {fmtMoney(t.mrrCents)}/mo · {t.commissionRate}% commission · up to {t.maxPlatforms} platform{t.(maxPlatforms as number) === 1 ? "" : "s"}
                   </SelectItem>
                 ))}
               </SelectContent>
