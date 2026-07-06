@@ -8,16 +8,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { dp, fmtMoney, fmtDate, logAdminAction } from "@/lib/dpClient";
+import { dp, dpWrite, fmtMoney, fmtDate, logAdminAction } from "@/lib/dpClient";
 import { toast } from "sonner";
-import { Eye, Pause, Ban } from "lucide-react";
+import { Eye, Pause, Ban, Plus, Check, Play, DollarSign, Wallet } from "lucide-react";
+import { SchemaNotExposedBanner, isSchemaNotExposedError } from "@/components/admin/SchemaNotExposedBanner";
+import { RecordSaleDialog } from "@/components/admin/dp/RecordSaleDialog";
+import { ProcessPayoutDialog } from "@/components/admin/dp/ProcessPayoutDialog";
+
 
 type Partner = {
   id: string; full_name: string; email: string; tier: string; status: string;
   created_at: string; mrr_active_until: string | null;
   total_lifetime_earnings_cents: number;
+  total_lifetime_paid_cents?: number | null;
+  profile_data?: { platforms?: string[] } | null;
   ambassador_count?: number; churn_risk?: number;
 };
+
 
 export default function DPPartners() {
   const qc = useQueryClient();
