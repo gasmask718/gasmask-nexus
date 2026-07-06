@@ -33,13 +33,16 @@ export default function DPPartners() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [saleTarget, setSaleTarget] = useState<Partner | null>(null);
+  const [payoutTarget, setPayoutTarget] = useState<Partner | null>(null);
+
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["dp-partners-list"],
     queryFn: async () => {
       const { data: partners, error } = await dp()
         .from("partners")
-        .select("id, full_name, email, tier, status, created_at, mrr_active_until, total_lifetime_earnings_cents")
+        .select("id, full_name, email, tier, status, created_at, mrr_active_until, total_lifetime_earnings_cents, total_lifetime_paid_cents, profile_data")
         .order("created_at", { ascending: false });
       if (error) throw error;
 
