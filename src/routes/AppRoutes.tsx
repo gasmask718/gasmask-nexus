@@ -985,6 +985,7 @@ const SpecialNeedsDashboard = lazy(() => import('@/pages/os/specialneeds/Special
 // FundingDashboard (orphan /os/funding) — REMOVED, use /funding-machine instead
 const GrantsDashboard = lazy(() => import('@/pages/os/grants/GrantsDashboard'));
 const GrantOpportunities = lazy(() => import('@/pages/os/grants/GrantOpportunities'));
+const GrantApplicationDetail = lazy(() => import('@/pages/os/grants/GrantApplicationDetail'));
 const WealthEngineDashboard = lazy(() => import('@/pages/os/wealth/WealthEngineDashboard'));
 // Funding Machine (Floor 10)
 const FundingMachineDashboard = lazy(() => import('@/pages/funding-machine/FundingMachineDashboard'));
@@ -2189,6 +2190,7 @@ export default function AppRoutes() {
         {/* /os/funding removed — orphan mock page, real system is /funding-machine */}
         <Route path="/os/grants" element={<GrantsDashboard />} />
         <Route path="/os/grants/opportunities" element={<GrantOpportunities />} />
+        <Route path="/os/grants/:id" element={<GrantApplicationDetail />} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
         {/* Floor 10 — Dynasty Funding Machine */}
         <Route path="/funding-machine" element={<FundingMachineDashboard />} />
