@@ -109,6 +109,42 @@ serve(async (req) => {
     const now = new Date();
     const results: any[] = [];
 
+    // sla_breach cooldown: cron sends a string bucket key (e.g. "sla_breach:2026-07-06-14")
+    // in data.related_id. related_id column is uuid so we stash the bucket in
+    // metadata.dedup_key and gate on that. Scoped to sla_breach ONLY — all other
+    // event_types keep their original behavior untouched.
+    const slaDedupKey: string | null =
+      event_type === "sla_breach"
+        ? ((data?.related_id ?? related_id ?? null) as string | null)
+        : null;
+
+    if (event_type === "sla_breach" && slaDedupKey) {
+      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+      const { data: recent } = await supabase
+        .from("admin_notifications_log")
+        .select("sent_at")
+        .eq("event_type", "sla_breach")
+        .eq("status", "sent")
+        .filter("metadata->>dedup_key", "eq", slaDedupKey)
+        .gte("sent_at", sixHoursAgo)
+        .limit(1);
+      if (recent && recent.length > 0) {
+        await supabase.from("admin_notifications_log").insert({
+          event_type,
+          related_table,
+          channel: "none",
+          recipient: "none",
+          body: sms,
+          status: "suppressed",
+          metadata: { ...data, dedup_key: slaDedupKey, reason: "cooldown_active" },
+        });
+        return new Response(
+          JSON.stringify({ ok: true, suppressed: true, reason: "cooldown_active" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     // Fallback global recipients via secrets
     const globalSms = Deno.env.get("ADMIN_ALERT_PHONE");
     const globalEmail = Deno.env.get("ADMIN_ALERT_EMAIL");
@@ -156,10 +192,20 @@ serve(async (req) => {
       return true;
     });
 
+    // For sla_breach, do NOT put the string bucket into the uuid related_id column,
+    // and stamp metadata.dedup_key on every log row so the cooldown query above sees it.
+    const logRelatedId = event_type === "sla_breach" ? null : related_id;
+    const metaBase: Record<string, any> = { ...data };
+    if (event_type === "sla_breach" && slaDedupKey) metaBase.dedup_key = slaDedupKey;
+
     for (const r of unique) {
       try {
         if (r.channel === "sms") {
-          const idem = `admin-notify:${event_type}:${related_id ?? crypto.randomUUID()}:${r.address}`;
+          const idemKey =
+            event_type === "sla_breach" && slaDedupKey
+              ? slaDedupKey
+              : (related_id ?? crypto.randomUUID());
+          const idem = `admin-notify:${event_type}:${idemKey}:${r.address}`;
           const resp = await supabase.functions.invoke("send-sms", {
             body: {
               to_number: r.address,
@@ -176,18 +222,18 @@ serve(async (req) => {
           if (!er.success) throw new Error(er.error || "email failed");
         }
         await supabase.from("admin_notifications_log").insert({
-          event_type, related_id, related_table,
+          event_type, related_id: logRelatedId, related_table,
           channel: r.channel, recipient: r.address,
           body: r.channel === "sms" ? sms : emailBody,
-          status: "sent", metadata: data,
+          status: "sent", metadata: metaBase,
         });
         results.push({ ...r, ok: true });
       } catch (err: any) {
         await supabase.from("admin_notifications_log").insert({
-          event_type, related_id, related_table,
+          event_type, related_id: logRelatedId, related_table,
           channel: r.channel, recipient: r.address,
           body: r.channel === "sms" ? sms : emailBody,
-          status: "failed", metadata: { ...data, error: err?.message },
+          status: "failed", metadata: { ...metaBase, error: err?.message },
         });
         results.push({ ...r, ok: false, error: err?.message });
       }
@@ -195,9 +241,9 @@ serve(async (req) => {
 
     if (unique.length === 0) {
       await supabase.from("admin_notifications_log").insert({
-        event_type, related_id, related_table,
+        event_type, related_id: logRelatedId, related_table,
         channel: "none", recipient: "none",
-        body: sms, status: "suppressed", metadata: data,
+        body: sms, status: "suppressed", metadata: metaBase,
       });
     }
 
