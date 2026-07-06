@@ -1257,6 +1257,31 @@ const Layout = ({ children }: LayoutProps) => {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🚗 TOPTIER EXPERIENCE — dedicated hub */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t" style={{ borderTopColor: '#C9A84C' }}>
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#C9A84C' }}>
+          🚗 TopTier Experience
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.topTierExperience.id,
+          DYNASTY_NAVIGATION.topTierExperience.name,
+          DYNASTY_NAVIGATION.topTierExperience.items
+        )}
+        {renderSection(
+          DYNASTY_NAVIGATION.topTierCRM.id,
+          DYNASTY_NAVIGATION.topTierCRM.name,
+          DYNASTY_NAVIGATION.topTierCRM.items
+        )}
+        {renderSection(
+          DYNASTY_NAVIGATION.topTierPenthouse.id,
+          DYNASTY_NAVIGATION.topTierPenthouse.name,
+          DYNASTY_NAVIGATION.topTierPenthouse.items
+        )}
+      </div>
+
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 💰 FINANCE & ACQUISITION */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="pt-2 border-t border-border/50">
