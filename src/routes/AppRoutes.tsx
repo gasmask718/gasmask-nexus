@@ -1209,6 +1209,8 @@ const DPActivity = lazy(() => import('@/pages/admin/dp/DPActivity'));
 const DPManual = lazy(() => import('@/pages/admin/dp/DPManual'));
 const DPNotifications = lazy(() => import('@/pages/admin/dp/DPNotifications'));
 const AdminDebug = lazy(() => import('@/pages/admin/dp/AdminDebug'));
+const DPCreatePartner = lazy(() => import('@/pages/admin/dp/CreatePartner'));
+
 
 /**
  * ProtectedLayout - Wraps all protected routes with auth and layout
@@ -1355,6 +1357,8 @@ export default function AppRoutes() {
       <Route path="/admin" element={<DPAdminLayout />}>
         <Route index element={<DPDashboard />} />
         <Route path="partners" element={<DPPartners />} />
+        <Route path="create-partner" element={<DPCreatePartner />} />
+
         <Route path="mrr" element={<DPMrr />} />
         <Route path="platforms" element={<DPPlatforms />} />
         <Route path="recruitment" element={<DPRecruitment />} />

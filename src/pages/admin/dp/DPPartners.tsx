@@ -8,16 +8,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { dp, fmtMoney, fmtDate, logAdminAction } from "@/lib/dpClient";
+import { dp, dpWrite, fmtMoney, fmtDate, logAdminAction } from "@/lib/dpClient";
 import { toast } from "sonner";
-import { Eye, Pause, Ban } from "lucide-react";
+import { Eye, Pause, Ban, Plus, Check, Play, DollarSign, Wallet } from "lucide-react";
+import { SchemaNotExposedBanner, isSchemaNotExposedError } from "@/components/admin/SchemaNotExposedBanner";
+import { RecordSaleDialog } from "@/components/admin/dp/RecordSaleDialog";
+import { ProcessPayoutDialog } from "@/components/admin/dp/ProcessPayoutDialog";
+
 
 type Partner = {
   id: string; full_name: string; email: string; tier: string; status: string;
   created_at: string; mrr_active_until: string | null;
   total_lifetime_earnings_cents: number;
+  total_lifetime_paid_cents?: number | null;
+  profile_data?: { platforms?: string[] } | null;
   ambassador_count?: number; churn_risk?: number;
 };
+
 
 export default function DPPartners() {
   const qc = useQueryClient();
@@ -26,13 +33,16 @@ export default function DPPartners() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [saleTarget, setSaleTarget] = useState<Partner | null>(null);
+  const [payoutTarget, setPayoutTarget] = useState<Partner | null>(null);
+
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["dp-partners-list"],
     queryFn: async () => {
       const { data: partners, error } = await dp()
         .from("partners")
-        .select("id, full_name, email, tier, status, created_at, mrr_active_until, total_lifetime_earnings_cents")
+        .select("id, full_name, email, tier, status, created_at, mrr_active_until, total_lifetime_earnings_cents, total_lifetime_paid_cents, profile_data")
         .order("created_at", { ascending: false });
       if (error) throw error;
 
@@ -85,6 +95,27 @@ export default function DPPartners() {
     onError: (e: any) => toast.error(e.message ?? "Bulk update failed"),
   });
 
+  const statusMut = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await dpWrite().from("partners").update({ status }).eq("id", id);
+      if (error) throw error;
+      await logAdminAction({ action: `partner_${status}`, entity_type: "partner", entity_id: id, partner_id: id });
+    },
+    onSuccess: (_, vars) => {
+      const p = rows?.find((r) => r.id === vars.id);
+      toast.success(`${p?.full_name ?? "Partner"} → ${vars.status}`);
+      qc.invalidateQueries({ queryKey: ["dp-partners-list"] });
+    },
+    onError: (e: any) => {
+      if (isSchemaNotExposedError(e)) {
+        toast.error("Partners schema not exposed yet — writes are blocked until the backend schema list is updated.");
+      } else {
+        toast.error(e.message ?? "Update failed");
+      }
+    },
+  });
+
+
   const toggle = (id: string) => {
     const next = new Set(selected);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -93,7 +124,14 @@ export default function DPPartners() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold">All Partners</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">All Partners</h2>
+        <Button size="sm" onClick={() => nav("/admin/create-partner")}>
+          <Plus className="h-4 w-4 mr-1" /> Create Partner
+        </Button>
+      </div>
+      <SchemaNotExposedBanner />
+
 
       <Card>
         <CardHeader><CardTitle>Filters</CardTitle></CardHeader>
@@ -167,9 +205,32 @@ export default function DPPartners() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button size="sm" variant="ghost" onClick={() => nav(`/admin?as=${p.id}`)}>
-                        <Eye className="h-3 w-3 mr-1" /> Impersonate
-                      </Button>
+                      <div className="flex flex-wrap gap-1 justify-end">
+                        {p.status === "pending_onboarding" && (
+                          <Button size="sm" variant="outline" onClick={() => statusMut.mutate({ id: p.id, status: "active" })} disabled={statusMut.isPending}>
+                            <Check className="h-3 w-3 mr-1" /> Approve
+                          </Button>
+                        )}
+                        {p.status === "active" && (
+                          <Button size="sm" variant="outline" onClick={() => statusMut.mutate({ id: p.id, status: "suspended" })} disabled={statusMut.isPending}>
+                            <Ban className="h-3 w-3 mr-1" /> Suspend
+                          </Button>
+                        )}
+                        {p.status === "suspended" && (
+                          <Button size="sm" variant="outline" onClick={() => statusMut.mutate({ id: p.id, status: "active" })} disabled={statusMut.isPending}>
+                            <Play className="h-3 w-3 mr-1" /> Reactivate
+                          </Button>
+                        )}
+                        <Button size="sm" variant="ghost" onClick={() => setSaleTarget(p)}>
+                          <DollarSign className="h-3 w-3 mr-1" /> Record Sale
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setPayoutTarget(p)}>
+                          <Wallet className="h-3 w-3 mr-1" /> Payout
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => nav(`/admin?as=${p.id}`)}>
+                          <Eye className="h-3 w-3 mr-1" /> View
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -178,6 +239,10 @@ export default function DPPartners() {
           )}
         </CardContent>
       </Card>
+
+      <RecordSaleDialog partner={saleTarget} open={!!saleTarget} onOpenChange={(v) => !v && setSaleTarget(null)} />
+      <ProcessPayoutDialog partner={payoutTarget} open={!!payoutTarget} onOpenChange={(v) => !v && setPayoutTarget(null)} />
     </div>
   );
+
 }

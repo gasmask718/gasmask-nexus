@@ -37,6 +37,18 @@ export const dp = () => ({
 // views over partners.*). RLS on the base tables gates row visibility.
 export const DP_READ_ONLY = false;
 
+/**
+ * Direct write access to the `partners` schema. Preferred for INSERT/UPDATE
+ * on tables whose columns aren't fully covered by the read-only dp_* views
+ * (e.g. `partners.partners`, `partners.sales`, `partners.payouts`).
+ *
+ * Requires the backend to have `partners` in its exposed schemas list.
+ * Until then, calls return a PGRST106 error which callers surface via
+ * `isSchemaNotExposedError` from `@/components/admin/SchemaNotExposedBanner`.
+ */
+export const dpWrite = () => (supabase as any).schema("partners");
+
+
 
 export const DP_READ_ONLY_MESSAGE =
   "Admin writes are temporarily disabled while the database schema configuration is being updated. Data is visible but cannot be modified. Contact david@dynastyconnect.com if urgent.";
