@@ -205,9 +205,32 @@ export default function DPPartners() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button size="sm" variant="ghost" onClick={() => nav(`/admin?as=${p.id}`)}>
-                        <Eye className="h-3 w-3 mr-1" /> Impersonate
-                      </Button>
+                      <div className="flex flex-wrap gap-1 justify-end">
+                        {p.status === "pending_onboarding" && (
+                          <Button size="sm" variant="outline" onClick={() => statusMut.mutate({ id: p.id, status: "active" })} disabled={statusMut.isPending}>
+                            <Check className="h-3 w-3 mr-1" /> Approve
+                          </Button>
+                        )}
+                        {p.status === "active" && (
+                          <Button size="sm" variant="outline" onClick={() => statusMut.mutate({ id: p.id, status: "suspended" })} disabled={statusMut.isPending}>
+                            <Ban className="h-3 w-3 mr-1" /> Suspend
+                          </Button>
+                        )}
+                        {p.status === "suspended" && (
+                          <Button size="sm" variant="outline" onClick={() => statusMut.mutate({ id: p.id, status: "active" })} disabled={statusMut.isPending}>
+                            <Play className="h-3 w-3 mr-1" /> Reactivate
+                          </Button>
+                        )}
+                        <Button size="sm" variant="ghost" onClick={() => setSaleTarget(p)}>
+                          <DollarSign className="h-3 w-3 mr-1" /> Record Sale
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setPayoutTarget(p)}>
+                          <Wallet className="h-3 w-3 mr-1" /> Payout
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => nav(`/admin?as=${p.id}`)}>
+                          <Eye className="h-3 w-3 mr-1" /> View
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -216,6 +239,10 @@ export default function DPPartners() {
           )}
         </CardContent>
       </Card>
+
+      <RecordSaleDialog partner={saleTarget} open={!!saleTarget} onOpenChange={(v) => !v && setSaleTarget(null)} />
+      <ProcessPayoutDialog partner={payoutTarget} open={!!payoutTarget} onOpenChange={(v) => !v && setPayoutTarget(null)} />
     </div>
   );
+
 }
