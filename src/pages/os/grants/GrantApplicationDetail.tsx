@@ -462,6 +462,206 @@ export default function GrantApplicationDetail() {
           </CardContent>
         </Card>
       )}
+
+      {/* SECTION F — Timeline */}
+      <Card>
+        <CardHeader><CardTitle>Progress</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-2 overflow-x-auto pb-2">
+            {TIMELINE_STEPS.map((step, i) => {
+              const done = !isDenied && i < currentIndex;
+              const current = !isDenied && i === currentIndex;
+              const isLast = i === TIMELINE_STEPS.length - 1;
+              return (
+                <div key={step} className="flex items-center flex-1 min-w-[80px]">
+                  <div className="flex flex-col items-center gap-2 flex-1">
+                    <div
+                      className={`h-9 w-9 rounded-full flex items-center justify-center border-2 ${
+                        done ? "bg-emerald-500 border-emerald-500 text-white" :
+                        current ? "text-black animate-pulse" :
+                        "bg-transparent border-muted text-muted-foreground"
+                      }`}
+                      style={current ? { backgroundColor: GOLD, borderColor: GOLD } : undefined}
+                    >
+                      {done ? <Check className="h-4 w-4" /> : <span className="text-xs font-bold">{i + 1}</span>}
+                    </div>
+                    <div
+                      className={`text-[10px] text-center capitalize ${
+                        current ? "font-bold" :
+                        done ? "text-muted-foreground" : "text-muted-foreground/60"
+                      }`}
+                      style={current ? { color: GOLD } : undefined}
+                    >
+                      {step.replace(/_/g, " ")}
+                    </div>
+                  </div>
+                  {!isLast && (
+                    <div className={`h-0.5 flex-1 -mt-6 ${done ? "bg-emerald-500" : "bg-muted"}`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {isDenied && (
+            <div className="mt-3 flex items-center gap-2 text-red-400 text-sm">
+              <X className="h-4 w-4" /> Denied
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* SECTION D — Tasks */}
+      <Card>
+        <CardHeader><CardTitle>Tasks</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          {tasksLoading ? (
+            <Skeleton className="h-20 w-full" />
+          ) : tasks.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              No tasks yet. Add tasks to track your progress.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {tasks.map((t) => {
+                const overdue = t.due_date && t.status !== "done" &&
+                  new Date(t.due_date).getTime() < Date.now();
+                return (
+                  <div key={t.id} className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0">
+                    <Checkbox
+                      checked={t.status === "done"}
+                      onCheckedChange={() => toggleTask(t)}
+                      className={t.status === "done" ? "border-emerald-500 data-[state=checked]:bg-emerald-500" : ""}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-sm ${t.status === "done" ? "line-through text-muted-foreground" : ""}`}>
+                        {t.title}
+                      </div>
+                      {t.due_date && (
+                        <div className={`text-xs mt-0.5 ${overdue ? "text-red-400" : "text-muted-foreground"}`}>
+                          Due {new Date(t.due_date).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => deleteTask(t.id)}>
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div className="flex gap-2 pt-2 flex-wrap">
+            <Input
+              placeholder="Add a task..."
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addTask()}
+              className="flex-1 min-w-[180px]"
+            />
+            <Input
+              type="date"
+              value={newTaskDue}
+              onChange={(e) => setNewTaskDue(e.target.value)}
+              className="w-40"
+            />
+            <Button
+              onClick={addTask}
+              disabled={!newTaskTitle.trim()}
+              style={{ backgroundColor: GOLD, color: "#000" }}
+            >
+              <Plus className="h-4 w-4 mr-1" /> Add
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SECTION E — Documents */}
+      <Card>
+        <CardHeader><CardTitle>Documents</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <input
+            type="file"
+            hidden
+            ref={fileInputRef}
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            onChange={handleUpload}
+          />
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary transition"
+          >
+            {uploading ? (
+              <div className="flex items-center justify-center gap-2 text-sm">
+                <Loader2 className="h-4 w-4 animate-spin" /> Uploading...
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
+                <Upload className="h-6 w-6" />
+                <span>Click to upload a document</span>
+                <span className="text-xs">PDF, DOC, DOCX, JPG, PNG</span>
+              </div>
+            )}
+          </div>
+
+          {docsLoading ? (
+            <Skeleton className="h-20 w-full" />
+          ) : docs.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              No documents uploaded yet.
+            </p>
+          ) : (
+            <div className="grid gap-2">
+              {docs.map((d) => (
+                <div key={d.id} className="flex items-center gap-3 p-3 border border-border rounded-lg">
+                  {docIcon(d.mime_type)}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm truncate">{d.doc_name}</div>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <Badge variant="outline" className="text-[10px]">{d.doc_type}</Badge>
+                      <span className="text-xs text-muted-foreground">{fmtSize(d.size_bytes)}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(d.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => downloadDoc(d)}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => deleteDoc(d)}>
+                    <Trash2 className="h-4 w-4 text-red-400" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* SECTION G — Notes */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Notes</span>
+            <span className="text-xs font-normal">
+              {notesSaving ? (
+                <span className="text-muted-foreground flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Saving...
+                </span>
+              ) : notesSaved ? (
+                <span className="text-emerald-400">Saved ✓</span>
+              ) : null}
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            value={notesValue}
+            onChange={(e) => handleNotesChange(e.target.value)}
+            placeholder="Add notes about this application..."
+            className="min-h-[150px]"
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }
