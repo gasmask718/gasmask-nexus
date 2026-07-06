@@ -81519,6 +81519,7 @@ export type Database = {
           bathrooms: number | null
           bedrooms: number | null
           bland_call_id: string | null
+          bland_campaign_id: string | null
           call_count: number | null
           call_outcome: string | null
           call_recording_url: string | null
@@ -81531,27 +81532,40 @@ export type Database = {
           created_at: string | null
           dc_campaign_id: string | null
           deal_score: string | null
+          dnc: boolean
           docusign_envelope_id: string | null
           email: string | null
+          emails_all: string[] | null
           equity_percentage: number | null
           estimated_repairs: number | null
           estimated_value: number | null
+          first_contacted_at: string | null
           first_name: string | null
           id: string
+          imported_batch_id: string | null
           interest_level: string | null
           interest_score: number | null
           last_called_at: string | null
+          last_contacted_at: string | null
           last_name: string | null
+          lead_score: number | null
           lead_source: string | null
           lead_type: string | null
           lot_size: string | null
+          mailing_address: string | null
+          mailing_city: string | null
+          mailing_state: string | null
+          mailing_zip: string | null
           mao: number | null
           market_zone: string | null
           motivation: string | null
           notes: string | null
           phone: string | null
+          phones_all: string[] | null
           property_address: string
           property_type: string | null
+          raw_payload: Json | null
+          realestateapi_property_id: string | null
           recommended_action: string | null
           seller_motivation_score: number | null
           skip_traced: boolean | null
@@ -81572,6 +81586,7 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           bland_call_id?: string | null
+          bland_campaign_id?: string | null
           call_count?: number | null
           call_outcome?: string | null
           call_recording_url?: string | null
@@ -81584,27 +81599,40 @@ export type Database = {
           created_at?: string | null
           dc_campaign_id?: string | null
           deal_score?: string | null
+          dnc?: boolean
           docusign_envelope_id?: string | null
           email?: string | null
+          emails_all?: string[] | null
           equity_percentage?: number | null
           estimated_repairs?: number | null
           estimated_value?: number | null
+          first_contacted_at?: string | null
           first_name?: string | null
           id?: string
+          imported_batch_id?: string | null
           interest_level?: string | null
           interest_score?: number | null
           last_called_at?: string | null
+          last_contacted_at?: string | null
           last_name?: string | null
+          lead_score?: number | null
           lead_source?: string | null
           lead_type?: string | null
           lot_size?: string | null
+          mailing_address?: string | null
+          mailing_city?: string | null
+          mailing_state?: string | null
+          mailing_zip?: string | null
           mao?: number | null
           market_zone?: string | null
           motivation?: string | null
           notes?: string | null
           phone?: string | null
+          phones_all?: string[] | null
           property_address: string
           property_type?: string | null
+          raw_payload?: Json | null
+          realestateapi_property_id?: string | null
           recommended_action?: string | null
           seller_motivation_score?: number | null
           skip_traced?: boolean | null
@@ -81625,6 +81653,7 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           bland_call_id?: string | null
+          bland_campaign_id?: string | null
           call_count?: number | null
           call_outcome?: string | null
           call_recording_url?: string | null
@@ -81637,27 +81666,40 @@ export type Database = {
           created_at?: string | null
           dc_campaign_id?: string | null
           deal_score?: string | null
+          dnc?: boolean
           docusign_envelope_id?: string | null
           email?: string | null
+          emails_all?: string[] | null
           equity_percentage?: number | null
           estimated_repairs?: number | null
           estimated_value?: number | null
+          first_contacted_at?: string | null
           first_name?: string | null
           id?: string
+          imported_batch_id?: string | null
           interest_level?: string | null
           interest_score?: number | null
           last_called_at?: string | null
+          last_contacted_at?: string | null
           last_name?: string | null
+          lead_score?: number | null
           lead_source?: string | null
           lead_type?: string | null
           lot_size?: string | null
+          mailing_address?: string | null
+          mailing_city?: string | null
+          mailing_state?: string | null
+          mailing_zip?: string | null
           mao?: number | null
           market_zone?: string | null
           motivation?: string | null
           notes?: string | null
           phone?: string | null
+          phones_all?: string[] | null
           property_address?: string
           property_type?: string | null
+          raw_payload?: Json | null
+          realestateapi_property_id?: string | null
           recommended_action?: string | null
           seller_motivation_score?: number | null
           skip_traced?: boolean | null
