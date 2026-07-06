@@ -95,6 +95,27 @@ export default function DPPartners() {
     onError: (e: any) => toast.error(e.message ?? "Bulk update failed"),
   });
 
+  const statusMut = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await dpWrite().from("partners").update({ status }).eq("id", id);
+      if (error) throw error;
+      await logAdminAction({ action: `partner_${status}`, entity_type: "partner", entity_id: id, partner_id: id });
+    },
+    onSuccess: (_, vars) => {
+      const p = rows?.find((r) => r.id === vars.id);
+      toast.success(`${p?.full_name ?? "Partner"} → ${vars.status}`);
+      qc.invalidateQueries({ queryKey: ["dp-partners-list"] });
+    },
+    onError: (e: any) => {
+      if (isSchemaNotExposedError(e)) {
+        toast.error("Partners schema not exposed yet — writes are blocked until the backend schema list is updated.");
+      } else {
+        toast.error(e.message ?? "Update failed");
+      }
+    },
+  });
+
+
   const toggle = (id: string) => {
     const next = new Set(selected);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -103,7 +124,14 @@ export default function DPPartners() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold">All Partners</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">All Partners</h2>
+        <Button size="sm" onClick={() => nav("/admin/create-partner")}>
+          <Plus className="h-4 w-4 mr-1" /> Create Partner
+        </Button>
+      </div>
+      <SchemaNotExposedBanner />
+
 
       <Card>
         <CardHeader><CardTitle>Filters</CardTitle></CardHeader>
