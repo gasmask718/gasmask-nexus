@@ -136,7 +136,7 @@ export default function CreatePartner() {
               <SelectContent>
                 {DP_TIERS.map((t) => (
                   <SelectItem key={t.value} value={t.value}>
-                    {t.label} — {fmtMoney(t.entryFeeCents)} entry + {fmtMoney(t.mrrCents)}/mo · {t.commissionRate}% commission · up to {t.maxPlatforms} platform{t.(maxPlatforms as number) === 1 ? "" : "s"}
+                    {t.label} — {fmtMoney(t.entryFeeCents)} entry + {fmtMoney(t.mrrCents)}/mo · {t.commissionRate}% commission · up to {t.maxPlatforms} platform{(t.maxPlatforms as number) === 1 ? "" : "s"}
                   </SelectItem>
                 ))}
               </SelectContent>
