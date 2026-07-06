@@ -29186,6 +29186,144 @@ export type Database = {
           },
         ]
       }
+      client_notes: {
+        Row: {
+          client_id: string
+          content: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_pinned: boolean | null
+          note_type: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          note_type?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          note_type?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_reminders: {
+        Row: {
+          client_id: string
+          completed_at: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string
+          due_time: string | null
+          id: string
+          is_completed: boolean | null
+          priority: string | null
+          reminder_type: string | null
+          title: string
+        }
+        Insert: {
+          client_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date: string
+          due_time?: string | null
+          id?: string
+          is_completed?: boolean | null
+          priority?: string | null
+          reminder_type?: string | null
+          title: string
+        }
+        Update: {
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string
+          due_time?: string | null
+          id?: string
+          is_completed?: boolean | null
+          priority?: string | null
+          reminder_type?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_reminders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_score_history: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          score_date: string
+          score_eq: number | null
+          score_ex: number | null
+          score_tu: number | null
+          source: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          score_date: string
+          score_eq?: number | null
+          score_ex?: number | null
+          score_tu?: number | null
+          source?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          score_date?: string
+          score_eq?: number | null
+          score_ex?: number | null
+          score_tu?: number | null
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_score_history_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clipper_accounts: {
         Row: {
           bio: string | null
@@ -53984,6 +54122,8 @@ export type Database = {
           first_name: string
           full_name: string | null
           funding_goal: string | null
+          funding_received: number | null
+          funding_target: number | null
           grant_checked_at: string | null
           grant_eligible: boolean | null
           id: string
@@ -53997,10 +54137,16 @@ export type Database = {
           portal_invite_sent_at: string | null
           portal_user_id: string | null
           projected_funding_ceiling: number | null
+          score_eq: number | null
+          score_ex: number | null
+          score_tu: number | null
+          score_updated_at: string | null
           ssn_encrypted: string | null
           ssn_last4: string | null
+          stage: string | null
           state: string | null
           status: string
+          target_credit_score: number | null
           target_funding_amount: number | null
           time_in_business_months: number | null
           updated_at: string
@@ -54034,6 +54180,8 @@ export type Database = {
           first_name: string
           full_name?: string | null
           funding_goal?: string | null
+          funding_received?: number | null
+          funding_target?: number | null
           grant_checked_at?: string | null
           grant_eligible?: boolean | null
           id?: string
@@ -54047,10 +54195,16 @@ export type Database = {
           portal_invite_sent_at?: string | null
           portal_user_id?: string | null
           projected_funding_ceiling?: number | null
+          score_eq?: number | null
+          score_ex?: number | null
+          score_tu?: number | null
+          score_updated_at?: string | null
           ssn_encrypted?: string | null
           ssn_last4?: string | null
+          stage?: string | null
           state?: string | null
           status?: string
+          target_credit_score?: number | null
           target_funding_amount?: number | null
           time_in_business_months?: number | null
           updated_at?: string
@@ -54084,6 +54238,8 @@ export type Database = {
           first_name?: string
           full_name?: string | null
           funding_goal?: string | null
+          funding_received?: number | null
+          funding_target?: number | null
           grant_checked_at?: string | null
           grant_eligible?: boolean | null
           id?: string
@@ -54097,10 +54253,16 @@ export type Database = {
           portal_invite_sent_at?: string | null
           portal_user_id?: string | null
           projected_funding_ceiling?: number | null
+          score_eq?: number | null
+          score_ex?: number | null
+          score_tu?: number | null
+          score_updated_at?: string | null
           ssn_encrypted?: string | null
           ssn_last4?: string | null
+          stage?: string | null
           state?: string | null
           status?: string
+          target_credit_score?: number | null
           target_funding_amount?: number | null
           time_in_business_months?: number | null
           updated_at?: string
