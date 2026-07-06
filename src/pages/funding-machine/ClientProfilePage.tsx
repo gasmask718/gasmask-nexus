@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,11 +10,22 @@ import { toast } from "sonner";
 import {
   User, Building2, Target, Shield, CreditCard, TrendingUp,
   CheckCircle, Clock, AlertTriangle, ArrowLeft, RefreshCw,
-  ExternalLink, FileText, Send
+  ExternalLink, FileText, Send, Award, Search, Loader2
 } from "lucide-react";
 import DocumentVault from "@/components/funding-machine/DocumentVault";
 import ScoreSimulator from "@/components/funding-machine/ScoreSimulator";
 import LenderRelationships from "@/components/funding-machine/LenderRelationships";
+
+const GOLD = "#C9A84C";
+
+const timeAgo = (iso: string | null) => {
+  if (!iso) return "";
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+};
 
 const DFS_DIMENSIONS = [
   { key: 'personal_credit_tu', label: 'Personal Credit (TU)', max: 10 },
