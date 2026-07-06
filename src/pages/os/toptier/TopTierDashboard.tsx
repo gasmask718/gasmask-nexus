@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutDashboard } from "lucide-react";
 import { TopTierCommandDashboard } from "@/components/toptier/TopTierCommandDashboard";
@@ -5,13 +6,59 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Car, Gift, DollarSign, Star } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function TopTierDashboard() {
+  const [loading, setLoading] = useState(true);
+  const [activeBookings, setActiveBookings] = useState(0);
+  const [fleetVehicles, setFleetVehicles] = useState(0);
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
+  const [customerRating, setCustomerRating] = useState(0);
+
+  useEffect(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    Promise.all([
+      (supabase as any)
+        .from("tt_bookings")
+        .select("*", { count: "exact", head: true })
+        .not("status", "in", "(completed,cancelled)")
+        .then(({ count }: any) => setActiveBookings(count ?? 0), () => setActiveBookings(0)),
+
+      (supabase as any)
+        .from("tt_vehicles")
+        .select("*", { count: "exact", head: true })
+        .eq("is_active", true)
+        .then(({ count }: any) => setFleetVehicles(count ?? 0), () => setFleetVehicles(0)),
+
+      (supabase as any)
+        .from("tt_bookings")
+        .select("total_price")
+        .eq("status", "completed")
+        .gte("created_at", monthStart)
+        .then(({ data }: any) => {
+          const sum = (data ?? []).reduce((s: number, r: any) => s + (Number(r.total_price) || 0), 0);
+          setMonthlyRevenue(sum);
+        }, () => setMonthlyRevenue(0)),
+
+      (supabase as any)
+        .from("tt_customer_reviews")
+        .select("rating")
+        .gte("created_at", monthStart)
+        .then(({ data }: any) => {
+          const rows = (data ?? []).filter((r: any) => r.rating != null);
+          const avg = rows.length ? rows.reduce((s: number, r: any) => s + Number(r.rating), 0) / rows.length : 0;
+          setCustomerRating(Math.round(avg * 10) / 10);
+        }, () => setCustomerRating(0)),
+    ]).finally(() => setLoading(false));
+  }, []);
+
   const stats = [
-    { label: "Active Bookings", value: "24", icon: Calendar, change: "+12%", color: "text-blue-500" },
-    { label: "Fleet Vehicles", value: "8", icon: Car, change: "+2", color: "text-emerald-500" },
-    { label: "This Month Revenue", value: "$42,500", icon: DollarSign, change: "+18%", color: "text-amber-500" },
-    { label: "Customer Rating", value: "4.9", icon: Star, change: "+0.2", color: "text-purple-500" },
+    { label: "Active Bookings", value: activeBookings.toLocaleString(), icon: Calendar, color: "text-blue-500" },
+    { label: "Fleet Vehicles", value: fleetVehicles.toLocaleString(), icon: Car, color: "text-emerald-500" },
+    { label: "This Month Revenue", value: `$${monthlyRevenue.toLocaleString()}`, icon: DollarSign, color: "text-amber-500" },
+    { label: "Customer Rating", value: customerRating > 0 ? `${customerRating.toFixed(1)} ★` : "N/A ★", icon: Star, color: "text-purple-500" },
   ];
 
   return (
