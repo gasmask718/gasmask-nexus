@@ -109,6 +109,42 @@ serve(async (req) => {
     const now = new Date();
     const results: any[] = [];
 
+    // sla_breach cooldown: cron sends a string bucket key (e.g. "sla_breach:2026-07-06-14")
+    // in data.related_id. related_id column is uuid so we stash the bucket in
+    // metadata.dedup_key and gate on that. Scoped to sla_breach ONLY — all other
+    // event_types keep their original behavior untouched.
+    const slaDedupKey: string | null =
+      event_type === "sla_breach"
+        ? ((data?.related_id ?? related_id ?? null) as string | null)
+        : null;
+
+    if (event_type === "sla_breach" && slaDedupKey) {
+      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+      const { data: recent } = await supabase
+        .from("admin_notifications_log")
+        .select("sent_at")
+        .eq("event_type", "sla_breach")
+        .eq("status", "sent")
+        .filter("metadata->>dedup_key", "eq", slaDedupKey)
+        .gte("sent_at", sixHoursAgo)
+        .limit(1);
+      if (recent && recent.length > 0) {
+        await supabase.from("admin_notifications_log").insert({
+          event_type,
+          related_table,
+          channel: "none",
+          recipient: "none",
+          body: sms,
+          status: "suppressed",
+          metadata: { ...data, dedup_key: slaDedupKey, reason: "cooldown_active" },
+        });
+        return new Response(
+          JSON.stringify({ ok: true, suppressed: true, reason: "cooldown_active" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     // Fallback global recipients via secrets
     const globalSms = Deno.env.get("ADMIN_ALERT_PHONE");
     const globalEmail = Deno.env.get("ADMIN_ALERT_EMAIL");
