@@ -86,8 +86,20 @@ function isInQuietHours(now: Date, startStr?: string | null, endStr?: string | n
   return minutes >= start || minutes < end;
 }
 
+const ADMIN_NOTIFY_VERSION = "2026-07-06T-sla-cooldown-v2";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Version probe: GET or ?version=1 returns the deployed version marker
+  const url = new URL(req.url);
+  if (req.method === "GET" || url.searchParams.get("version")) {
+    return new Response(
+      JSON.stringify({ ok: true, version: ADMIN_NOTIFY_VERSION, deployed_at: new Date().toISOString() }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
 
   try {
     const body = (await req.json()) as Payload;
