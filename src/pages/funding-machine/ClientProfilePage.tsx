@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,11 +10,22 @@ import { toast } from "sonner";
 import {
   User, Building2, Target, Shield, CreditCard, TrendingUp,
   CheckCircle, Clock, AlertTriangle, ArrowLeft, RefreshCw,
-  ExternalLink, FileText, Send
+  ExternalLink, FileText, Send, Award, Search, Loader2
 } from "lucide-react";
 import DocumentVault from "@/components/funding-machine/DocumentVault";
 import ScoreSimulator from "@/components/funding-machine/ScoreSimulator";
 import LenderRelationships from "@/components/funding-machine/LenderRelationships";
+
+const GOLD = "#C9A84C";
+
+const timeAgo = (iso: string | null) => {
+  if (!iso) return "";
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+};
 
 const DFS_DIMENSIONS = [
   { key: 'personal_credit_tu', label: 'Personal Credit (TU)', max: 10 },
@@ -97,6 +109,120 @@ export default function ClientProfilePage() {
     },
   });
 
+  // ---- Grants tab ----
+  const [checkingEligibility, setCheckingEligibility] = useState(false);
+
+  const { data: eligibility, refetch: refetchEligibility } = useQuery({
+    queryKey: ['funding-client-grant-eligibility', clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('funding_clients')
+        .select('grant_eligible, grant_checked_at')
+        .eq('id', clientId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { grant_eligible: boolean | null; grant_checked_at: string | null } | null;
+    },
+    enabled: !!clientId,
+  });
+
+  const { data: grantMatches = [], refetch: refetchMatches } = useQuery({
+    queryKey: ['funding-client-grant-matches', clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('client_grant_matches')
+        .select('*')
+        .eq('client_id', clientId!)
+        .neq('status', 'ineligible')
+        .order('eligibility_score', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!clientId,
+  });
+
+  const { data: activeApps = [], refetch: refetchActiveApps } = useQuery({
+    queryKey: ['funding-client-grant-active', clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('grant_applications')
+        .select('id, grant_name, funder_name, status, amount_requested, deadline')
+        .eq('funding_client_id', clientId!)
+        .not('status', 'in', '(awarded,denied,closed)')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!clientId,
+  });
+
+  const { data: wonApps = [], refetch: refetchWon } = useQuery({
+    queryKey: ['funding-client-grant-won', clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('grant_applications')
+        .select('id, grant_name, funder_name, amount_awarded, award_date')
+        .eq('funding_client_id', clientId!)
+        .eq('status', 'awarded')
+        .order('award_date', { ascending: false, nullsFirst: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!clientId,
+  });
+
+  const refetchGrantData = () => {
+    refetchEligibility();
+    refetchMatches();
+    refetchActiveApps();
+    refetchWon();
+  };
+
+  const handleCheckEligibility = async () => {
+    setCheckingEligibility(true);
+    const { data, error } = await supabase.functions.invoke('grant-eligibility-check', {
+      body: { client_id: clientId },
+    });
+    setCheckingEligibility(false);
+    if (error) { toast.error(error.message); return; }
+    const result = data as any;
+    if (result?.error) { toast.error(result.error); return; }
+    toast.success(
+      `${result.eligible_count ?? 0} grants found! Up to $${(result.total_available ?? 0).toLocaleString()} available.`
+    );
+    refetchGrantData();
+  };
+
+  const handleStartApplication = async (m: any) => {
+    const { data: newApp, error } = await supabase
+      .from('grant_applications')
+      .insert({
+        funding_client_id: clientId,
+        grant_name: m.grant_name,
+        funder_name: m.funder_name,
+        amount_requested: m.grant_amount,
+        deadline: m.deadline,
+        status: 'drafting',
+        applicant_type: 'funding_client',
+        opportunity_id: m.opportunity_id ?? null,
+      })
+      .select('id')
+      .single();
+    if (error || !newApp) { toast.error(error?.message || 'Failed'); return; }
+    toast.success('Application started!');
+    navigate(`/os/grants/${newApp.id}`);
+  };
+
+  const handleSkipMatch = async (matchId: string) => {
+    const { error } = await supabase
+      .from('client_grant_matches')
+      .update({ status: 'ineligible' })
+      .eq('id', matchId);
+    if (error) { toast.error(error.message); return; }
+    refetchMatches();
+  };
+
+
   const toggleStep = useMutation({
     mutationFn: async ({ id, currentStatus }: { id: string; currentStatus: string }) => {
       const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
@@ -173,6 +299,9 @@ export default function ClientProfilePage() {
           </TabsTrigger>
           <TabsTrigger value="relationships">
             <Building2 className="h-3 w-3 mr-1" /> Relationships
+          </TabsTrigger>
+          <TabsTrigger value="grants">
+            <Award className="h-3 w-3 mr-1" /> Grants
           </TabsTrigger>
         </TabsList>
 
@@ -328,6 +457,202 @@ export default function ClientProfilePage() {
 
         <TabsContent value="relationships">
           <LenderRelationships clientId={clientId!} />
+        </TabsContent>
+
+        <TabsContent value="grants" className="space-y-6">
+          {/* A — Eligibility Banner */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex-1 min-w-[240px]">
+                  {eligibility?.grant_eligible ? (
+                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                      <div className="text-emerald-300 font-medium">✅ This client qualifies for grants</div>
+                      {eligibility.grant_checked_at && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Last checked: {timeAgo(eligibility.grant_checked_at)}
+                        </div>
+                      )}
+                    </div>
+                  ) : eligibility?.grant_checked_at ? (
+                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                      <div className="text-amber-300 font-medium">No grants matched yet.</div>
+                      <div className="text-xs text-muted-foreground mt-1">Re-check as credit improves.</div>
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-lg bg-muted/40 border border-border">
+                      <div className="text-muted-foreground">Grant eligibility not yet checked.</div>
+                    </div>
+                  )}
+                </div>
+                <Button
+                  onClick={handleCheckEligibility}
+                  disabled={checkingEligibility}
+                  style={{ backgroundColor: GOLD, color: '#000' }}
+                  className="hover:opacity-90"
+                >
+                  {checkingEligibility ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> 🔍 Checking...</>
+                  ) : (
+                    <><Search className="h-4 w-4 mr-2" /> 🔍 Check Grant Eligibility</>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* B — Matched Grants */}
+          <Card>
+            <CardHeader><CardTitle>Matched Grants</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {grantMatches.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  {eligibility?.grant_checked_at
+                    ? 'No grants matched current profile. Re-check as credit score improves.'
+                    : 'Click Check Eligibility above to find grants for this client.'}
+                </p>
+              ) : (
+                <div className="grid gap-3">
+                  {grantMatches.map((m: any) => (
+                    <div key={m.id} className="border border-border rounded-lg p-4 space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="font-semibold">🏆 {m.grant_name}</div>
+                          <div className="text-sm text-muted-foreground">{m.funder_name}</div>
+                        </div>
+                        {m.grant_amount != null && (
+                          <div className="text-lg font-bold" style={{ color: GOLD }}>
+                            ${Number(m.grant_amount).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="w-full bg-muted rounded h-2">
+                          <div
+                            className="h-2 rounded"
+                            style={{ width: `${m.eligibility_score ?? 0}%`, backgroundColor: GOLD }}
+                          />
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {m.eligibility_score ?? 0}% match
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Deadline: {m.deadline ? new Date(m.deadline).toLocaleDateString() : 'Rolling'}
+                      </div>
+                      {m.eligibility_notes && (
+                        <div className="text-xs text-muted-foreground italic">{m.eligibility_notes}</div>
+                      )}
+                      <div className="flex gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          onClick={() => handleStartApplication(m)}
+                          style={{ backgroundColor: GOLD, color: '#000' }}
+                        >
+                          Start Application
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleSkipMatch(m.id)}>
+                          Skip
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* C — Active Applications */}
+          <Card>
+            <CardHeader><CardTitle>Active Applications</CardTitle></CardHeader>
+            <CardContent>
+              {activeApps.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  No active applications. Start one from matched grants above.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs text-muted-foreground border-b border-border">
+                        <th className="py-2 pr-3">Grant</th>
+                        <th className="py-2 pr-3">Status</th>
+                        <th className="py-2 pr-3">Requested</th>
+                        <th className="py-2 pr-3">Deadline</th>
+                        <th className="py-2">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeApps.map((a: any) => (
+                        <tr key={a.id} className="border-b border-border/50">
+                          <td className="py-2 pr-3">
+                            <div className="font-medium">{a.grant_name}</div>
+                            <div className="text-xs text-muted-foreground">{a.funder_name}</div>
+                          </td>
+                          <td className="py-2 pr-3">
+                            <Badge variant="outline" className="capitalize">{a.status}</Badge>
+                          </td>
+                          <td className="py-2 pr-3">
+                            {a.amount_requested != null ? `$${Number(a.amount_requested).toLocaleString()}` : '—'}
+                          </td>
+                          <td className="py-2 pr-3">
+                            {a.deadline ? new Date(a.deadline).toLocaleDateString() : 'Rolling'}
+                          </td>
+                          <td className="py-2">
+                            <Button size="sm" variant="outline" onClick={() => navigate(`/os/grants/${a.id}`)}>
+                              View
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* D — Won Grants */}
+          <Card>
+            <CardHeader><CardTitle>Won Grants</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {wonApps.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  No grants awarded yet. Keep applying.
+                </p>
+              ) : (
+                <>
+                  <div
+                    className="p-4 rounded-lg border"
+                    style={{ backgroundColor: `${GOLD}15`, borderColor: `${GOLD}55` }}
+                  >
+                    <div className="text-sm text-muted-foreground">Total awarded</div>
+                    <div className="text-2xl font-bold" style={{ color: GOLD }}>
+                      🏆 ${wonApps.reduce((s: number, a: any) => s + Number(a.amount_awarded || 0), 0).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    {wonApps.map((a: any) => (
+                      <div key={a.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                        <div>
+                          <div className="font-medium">{a.grant_name}</div>
+                          <div className="text-xs text-muted-foreground">{a.funder_name}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold" style={{ color: GOLD }}>
+                            ${Number(a.amount_awarded || 0).toLocaleString()}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {a.award_date ? new Date(a.award_date).toLocaleDateString() : ''}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
