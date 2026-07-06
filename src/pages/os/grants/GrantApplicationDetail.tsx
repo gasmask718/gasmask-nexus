@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -15,7 +17,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { ArrowLeft, Sparkles, Copy, Save, Trash2, Loader2 } from "lucide-react";
+import {
+  ArrowLeft, Sparkles, Copy, Save, Trash2, Loader2, Plus,
+  FileText, Image as ImageIcon, File as FileIcon, Download, Upload, Check, X,
+} from "lucide-react";
 
 const GOLD = "#C9A84C";
 
@@ -46,6 +51,165 @@ export default function GrantApplicationDetail() {
   const [draftState, setDraftState] = useState("");
   const [generating, setGenerating] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+
+  // Section D — Tasks
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDue, setNewTaskDue] = useState("");
+
+  // Section E — Documents
+  const [docs, setDocs] = useState<any[]>([]);
+  const [docsLoading, setDocsLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Section G — Notes
+  const [notesValue, setNotesValue] = useState("");
+  const [notesSaving, setNotesSaving] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
+  const notesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchTasks = async () => {
+    if (!id) return;
+    setTasksLoading(true);
+    const { data } = await supabase
+      .from("grant_tasks")
+      .select("*")
+      .eq("application_id", id)
+      .order("due_date", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true });
+    setTasks(data ?? []);
+    setTasksLoading(false);
+  };
+
+  const fetchDocs = async () => {
+    if (!id) return;
+    setDocsLoading(true);
+    const { data } = await supabase
+      .from("grant_documents")
+      .select("*")
+      .eq("application_id", id)
+      .order("created_at", { ascending: false });
+    setDocs(data ?? []);
+    setDocsLoading(false);
+  };
+
+  useEffect(() => { fetchTasks(); fetchDocs(); /* eslint-disable-next-line */ }, [id]);
+
+  useEffect(() => {
+    if (app) setNotesValue(app.notes ?? "");
+  }, [app?.id]);
+
+  const toggleTask = async (task: any) => {
+    const nextStatus = task.status === "done" ? "pending" : "done";
+    const { error } = await supabase
+      .from("grant_tasks")
+      .update({ status: nextStatus, updated_at: new Date().toISOString() })
+      .eq("id", task.id);
+    if (error) { toast.error(error.message); return; }
+    fetchTasks();
+  };
+
+  const deleteTask = async (taskId: string) => {
+    const { error } = await supabase.from("grant_tasks").delete().eq("id", taskId);
+    if (error) { toast.error(error.message); return; }
+    setTasks((t) => t.filter((x) => x.id !== taskId));
+  };
+
+  const addTask = async () => {
+    if (!id || !newTaskTitle.trim()) return;
+    const { error } = await supabase.from("grant_tasks").insert({
+      application_id: id,
+      title: newTaskTitle.trim(),
+      description: null,
+      due_date: newTaskDue || null,
+      status: "pending",
+      assigned_to: "David",
+    });
+    if (error) { toast.error(error.message); return; }
+    setNewTaskTitle("");
+    setNewTaskDue("");
+    fetchTasks();
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !id) return;
+    setUploading(true);
+    const path = `${id}/${Date.now()}-${file.name}`;
+    const { error: upErr } = await supabase.storage
+      .from("grant-documents")
+      .upload(path, file);
+    if (upErr) { setUploading(false); toast.error(upErr.message); return; }
+    const { error: insErr } = await supabase.from("grant_documents").insert({
+      application_id: id,
+      doc_name: file.name,
+      doc_type: "supporting",
+      storage_path: path,
+      mime_type: file.type,
+      size_bytes: file.size,
+      uploaded_by: "David",
+    });
+    setUploading(false);
+    if (e.target) e.target.value = "";
+    if (insErr) { toast.error(insErr.message); return; }
+    toast.success("Document uploaded");
+    fetchDocs();
+  };
+
+  const downloadDoc = async (doc: any) => {
+    const { data, error } = await supabase.storage
+      .from("grant-documents")
+      .createSignedUrl(doc.storage_path, 60);
+    if (error || !data) { toast.error(error?.message || "Download failed"); return; }
+    window.open(data.signedUrl, "_blank");
+  };
+
+  const deleteDoc = async (doc: any) => {
+    await supabase.storage.from("grant-documents").remove([doc.storage_path]);
+    const { error } = await supabase.from("grant_documents").delete().eq("id", doc.id);
+    if (error) { toast.error(error.message); return; }
+    setDocs((d) => d.filter((x) => x.id !== doc.id));
+    toast.success("Document deleted");
+  };
+
+  const handleNotesChange = (v: string) => {
+    setNotesValue(v);
+    setNotesSaved(false);
+    if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
+    notesTimerRef.current = setTimeout(async () => {
+      if (!id) return;
+      setNotesSaving(true);
+      const { error } = await supabase
+        .from("grant_applications")
+        .update({ notes: v, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      setNotesSaving(false);
+      if (!error) {
+        setNotesSaved(true);
+        setTimeout(() => setNotesSaved(false), 2000);
+      }
+    }, 2000);
+  };
+
+  const fmtSize = (b: number | null | undefined) => {
+    if (!b) return "—";
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+    return `${(b / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  const docIcon = (mime: string | null) => {
+    if (!mime) return <FileIcon className="h-5 w-5 text-gray-400" />;
+    if (mime.includes("pdf")) return <FileText className="h-5 w-5 text-red-400" />;
+    if (mime.startsWith("image/")) return <ImageIcon className="h-5 w-5 text-blue-400" />;
+    return <FileIcon className="h-5 w-5 text-gray-400" />;
+  };
+
+  const TIMELINE_STEPS = ["identified", "drafting", "submitted", "under_review", "approved", "awarded"];
+  const currentIndex = TIMELINE_STEPS.indexOf(app?.status ?? "");
+  const isDenied = app?.status === "denied";
 
   const fetchApp = async () => {
     if (!id) return;
