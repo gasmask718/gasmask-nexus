@@ -92,6 +92,7 @@ export default function GrantsDashboard() {
   // Section B — stats
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<Stats>({ total: 0, awarded: 0, totalAwardedAmt: 0, pending: 0, opportunities: 0 });
+  const [submittedToday, setSubmittedToday] = useState<number>(0);
 
   // Section C — deadlines
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
