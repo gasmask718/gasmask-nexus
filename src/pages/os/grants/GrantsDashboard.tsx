@@ -107,6 +107,24 @@ export default function GrantsDashboard() {
     dynasty_business: 0, funding_client: 0, uben: 0,
   });
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [runningEligibility, setRunningEligibility] = useState(false);
+
+  const handleRunAllEligibility = async () => {
+    setRunningEligibility(true);
+    try {
+      const { data: clients } = await supabase.from("funding_clients").select("id").limit(50);
+      let count = 0;
+      for (const client of clients ?? []) {
+        await supabase.functions.invoke("grant-eligibility-check", { body: { client_id: client.id } });
+        count++;
+      }
+      toast.success(`Eligibility checked for ${count} clients`);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setRunningEligibility(false);
+    }
+  };
 
   // Stats + pipeline
   useEffect(() => {
