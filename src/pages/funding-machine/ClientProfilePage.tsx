@@ -642,6 +642,7 @@ export default function ClientProfilePage() {
           </TabsTrigger>
           <TabsTrigger value="notes">📝 Notes</TabsTrigger>
           <TabsTrigger value="reminders">⏰ Reminders</TabsTrigger>
+          <TabsTrigger value="lenders">💰 Lenders</TabsTrigger>
           <TabsTrigger value="bureau">📬 Bureau Tracking</TabsTrigger>
           <TabsTrigger value="scores">📊 Score History</TabsTrigger>
           <TabsTrigger value="grants">
