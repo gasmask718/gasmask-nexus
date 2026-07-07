@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Building, FileText } from 'lucide-react';
-import { usePipelineLeads } from './shared/usePipelineLeads';
+import { useRealEstatePipelineLeads } from './shared/useRealEstatePipelineLeads';
 import { PipelineLeadTable } from './shared/PipelineLeadTable';
 import { PipelineStats } from './shared/PipelineStats';
 
 export default function RealEstatePipeline() {
   const [statusFilter, setStatusFilter] = useState('all');
-  const { leads, isLoading, refetch, uploadCSV, sendToCampaign, stats } = usePipelineLeads('Dynasty Real Estate', statusFilter === 'all' ? undefined : statusFilter);
+  const { leads, isLoading, refetch, uploadCSV, sendToCampaign, stats } = useRealEstatePipelineLeads(statusFilter === 'all' ? undefined : statusFilter);
 
   const columns = [
     { key: 'address', label: 'Address', render: (l: any) => l.address || '—' },
