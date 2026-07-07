@@ -358,6 +358,63 @@ function FundingVelocity() {
 }
 
 
+function RevenueSnapshot() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['revenue-snapshot'],
+    queryFn: async () => {
+      const [clientsRes, grantsRes] = await Promise.all([
+        supabase.from('funding_clients').select('funding_received, stage'),
+        (supabase.from('client_grant_matches' as any) as any).select('awarded_amount').eq('status', 'awarded'),
+      ]);
+      const clients = (clientsRes.data ?? []) as any[];
+      const grants = (grantsRes.data ?? []) as any[];
+      const totalFunded = clients.reduce((s, c) => s + Number(c.funding_received ?? 0), 0);
+      const clientsFunded = clients.filter(c => c.stage === 'funded' || c.stage === 'complete').length;
+      const withFunding = clients.filter(c => Number(c.funding_received ?? 0) > 0).length;
+      const avgFunding = withFunding ? totalFunded / withFunding : 0;
+      const totalGrants = grants.reduce((s, g) => s + Number(g.awarded_amount ?? 0), 0);
+      return { totalFunded, clientsFunded, avgFunding, totalGrants };
+    },
+  });
+  const fmt = (n: number) => `$${Math.round(n).toLocaleString()}`;
+  return (
+    <Card className="border-[#C9A84C]/30 bg-gradient-to-br from-background to-[#C9A84C]/5">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <span>💰</span> Capital Deployed
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {isLoading ? (
+          <>
+            <div className="h-8 bg-muted/40 rounded animate-pulse" />
+            <div className="h-8 bg-muted/40 rounded animate-pulse" />
+          </>
+        ) : (
+          <>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Total Funded</span>
+              <span className="font-bold text-[#C9A84C]">{fmt(data?.totalFunded ?? 0)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Clients Funded</span>
+              <span className="font-bold">{data?.clientsFunded ?? 0}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Avg per Client</span>
+              <span className="font-bold">{fmt(data?.avgFunding ?? 0)}</span>
+            </div>
+            <div className="flex justify-between text-sm pt-2 border-t border-[#C9A84C]/20">
+              <span className="text-muted-foreground">Grant Awards</span>
+              <span className="font-bold text-purple-400">{fmt(data?.totalGrants ?? 0)}</span>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function FundingMachineDashboard() {
   const navigate = useNavigate();
 
@@ -449,11 +506,12 @@ export default function FundingMachineDashboard() {
       </div>
 
       {/* Widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <TodaysReminders />
         <ClientPipeline />
         <ScoreWins />
         <FundingVelocity />
+        <RevenueSnapshot />
       </div>
 
 
