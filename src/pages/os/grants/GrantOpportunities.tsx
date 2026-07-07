@@ -40,6 +40,7 @@ type Opportunity = {
   next_deadline: string | null;
   deadline_type: string | null;
   application_url: string | null;
+  contact_email: string | null;
   is_active: boolean;
 };
 
