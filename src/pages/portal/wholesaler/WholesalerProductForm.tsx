@@ -243,6 +243,23 @@ export default function WholesalerProductForm() {
               </div>
             </CardContent>
           </Card>
+
+          <ProductDimensionsPanel
+            value={{
+              length_in: formData.length_in ?? null,
+              width_in: formData.width_in ?? null,
+              height_in: formData.height_in ?? null,
+              weight_oz: formData.weight_oz ?? null,
+              is_fragile: !!formData.is_fragile,
+              stackable: formData.stackable !== false,
+              units_per_case: formData.units_per_case ?? null,
+              case_length_in: formData.case_length_in ?? null,
+              case_width_in: formData.case_width_in ?? null,
+              case_height_in: formData.case_height_in ?? null,
+              case_weight_oz: formData.case_weight_oz ?? null,
+            }}
+            onChange={(next: ProductDimensions) => setFormData((prev) => ({ ...prev, ...next }))}
+          />
         </div>
 
         {/* Sidebar */}
