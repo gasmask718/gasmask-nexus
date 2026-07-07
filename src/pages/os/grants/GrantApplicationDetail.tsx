@@ -462,6 +462,13 @@ export default function GrantApplicationDetail() {
                 <Button variant="outline" onClick={handleCopy}>
                   <Copy className="h-4 w-4 mr-2" /> Copy
                 </Button>
+                <button
+                  onClick={handleGenerate}
+                  disabled={generating}
+                  className="px-3 py-1.5 text-xs border border-[#C9A84C]/40 text-[#C9A84C] rounded hover:bg-[#C9A84C]/10 disabled:opacity-50 transition"
+                >
+                  {generating ? "⏳ Regenerating..." : "🔄 Re-generate Draft"}
+                </button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline" className="text-red-400">
