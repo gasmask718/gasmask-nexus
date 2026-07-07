@@ -33,7 +33,7 @@ export interface CreateProductData {
   images?: string[];
   unit_type?: string;
   inventory_qty?: number;
-  weight_oz?: number;
+  weight_oz?: number | null;
   dimensions?: { length: number; width: number; height: number };
   retail_price?: number;
   store_price?: number;
@@ -41,6 +41,17 @@ export interface CreateProductData {
   shipping_from_city?: string;
   shipping_from_state?: string;
   processing_time?: string;
+  // Shipping dimensions (products_all)
+  length_in?: number | null;
+  width_in?: number | null;
+  height_in?: number | null;
+  is_fragile?: boolean;
+  stackable?: boolean;
+  units_per_case?: number | null;
+  case_length_in?: number | null;
+  case_width_in?: number | null;
+  case_height_in?: number | null;
+  case_weight_oz?: number | null;
 }
 
 export function useWholesalerProducts() {

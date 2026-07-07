@@ -14,6 +14,7 @@ import {
   Truck, Package, Ruler, PackageCheck, Clock, AlertTriangle, Info,
   RefreshCw, Boxes,
 } from 'lucide-react';
+import { validateProductsForShipping } from '@/components/products/ProductDimensionsPanel';
 
 const GOLD = '#C9A84C';
 
@@ -125,11 +126,17 @@ export default function ShippingPage() {
   async function runPackingPreview() {
     setManifest(null);
     setManifestError(null);
-    const chosen = products.filter(
-      (p) => selectedProductIds.includes(p.id) && hasCompleteDims(p),
-    );
+    const chosen = products.filter((p) => selectedProductIds.includes(p.id));
     if (chosen.length === 0) {
-      setManifestError('Select at least one product with complete dimensions.');
+      setManifestError('Select at least one product.');
+      return;
+    }
+    const { ok, errors } = validateProductsForShipping(chosen);
+    if (!ok) {
+      setManifestError(
+        'Cannot run packing — the following products are missing required dimensions:\n' +
+        errors.map((e) => `• ${e.product_name} (missing: ${e.missing.join(', ')})`).join('\n'),
+      );
       return;
     }
     setManifestLoading(true);
@@ -259,7 +266,7 @@ export default function ShippingPage() {
             <Alert variant="destructive">
               <AlertTriangle className="w-4 h-4" />
               <AlertTitle>Packing failed</AlertTitle>
-              <AlertDescription>{manifestError}</AlertDescription>
+              <AlertDescription className="whitespace-pre-line">{manifestError}</AlertDescription>
             </Alert>
           )}
           {manifestLoading && (
