@@ -581,6 +581,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/grants', label: '📊 Dashboard', icon: LayoutDashboard },
       { path: '/os/grants/opportunities', label: '🗂️ Opportunities', icon: Database },
       { path: '/os/grants/applications', label: '📝 Applications', icon: FileText },
+      { path: '/os/grants/funder-crm', label: '🤝 Funder CRM', icon: Handshake },
     ],
   },
   communicationSystems: {
