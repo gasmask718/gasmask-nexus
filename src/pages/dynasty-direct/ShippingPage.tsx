@@ -266,7 +266,7 @@ export default function ShippingPage() {
             <Alert variant="destructive">
               <AlertTriangle className="w-4 h-4" />
               <AlertTitle>Packing failed</AlertTitle>
-              <AlertDescription>{manifestError}</AlertDescription>
+              <AlertDescription className="whitespace-pre-line">{manifestError}</AlertDescription>
             </Alert>
           )}
           {manifestLoading && (
