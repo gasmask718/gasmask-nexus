@@ -571,6 +571,7 @@ export default function ClientProfilePage() {
           </TabsTrigger>
           <TabsTrigger value="notes">📝 Notes</TabsTrigger>
           <TabsTrigger value="reminders">⏰ Reminders</TabsTrigger>
+          <TabsTrigger value="bureau">📬 Bureau Tracking</TabsTrigger>
           <TabsTrigger value="scores">📊 Score History</TabsTrigger>
           <TabsTrigger value="grants">
             <Award className="h-3 w-3 mr-1" /> Grants
