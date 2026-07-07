@@ -56141,6 +56141,7 @@ export type Database = {
           opportunity_id: string | null
           report_due: string | null
           status: string
+          submitted_at: string | null
           uben_source_id: string | null
           updated_at: string | null
         }
@@ -56164,6 +56165,7 @@ export type Database = {
           opportunity_id?: string | null
           report_due?: string | null
           status?: string
+          submitted_at?: string | null
           uben_source_id?: string | null
           updated_at?: string | null
         }
@@ -56187,6 +56189,7 @@ export type Database = {
           opportunity_id?: string | null
           report_due?: string | null
           status?: string
+          submitted_at?: string | null
           uben_source_id?: string | null
           updated_at?: string | null
         }
@@ -56258,6 +56261,7 @@ export type Database = {
           amount_typical: number | null
           application_url: string | null
           category: string | null
+          contact_email: string | null
           created_at: string | null
           deadline_type: string | null
           description: string | null
@@ -56283,6 +56287,7 @@ export type Database = {
           amount_typical?: number | null
           application_url?: string | null
           category?: string | null
+          contact_email?: string | null
           created_at?: string | null
           deadline_type?: string | null
           description?: string | null
@@ -56308,6 +56313,7 @@ export type Database = {
           amount_typical?: number | null
           application_url?: string | null
           category?: string | null
+          contact_email?: string | null
           created_at?: string | null
           deadline_type?: string | null
           description?: string | null
@@ -56338,6 +56344,7 @@ export type Database = {
           due_date: string | null
           id: string
           status: string
+          task_type: string | null
           title: string
           updated_at: string | null
         }
@@ -56349,6 +56356,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           status?: string
+          task_type?: string | null
           title: string
           updated_at?: string | null
         }
@@ -56360,6 +56368,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           status?: string
+          task_type?: string | null
           title?: string
           updated_at?: string | null
         }
