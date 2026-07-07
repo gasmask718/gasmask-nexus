@@ -8,8 +8,9 @@ import { SurplusVisibilityPanel, RealEstateVisibilityPanel } from "@/components/
 import {
   Users, TrendingUp, CreditCard, Building2, FileText,
   Shield, Landmark, Clock, AlertTriangle, Plus, RefreshCw,
-  Bell, GitBranch, Trophy
+  Bell, GitBranch, Trophy, Zap
 } from "lucide-react";
+
 
 // ============ Dashboard Widgets ============
 
