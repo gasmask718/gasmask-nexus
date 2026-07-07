@@ -436,6 +436,20 @@ export default function ClientProfilePage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {negativeItems.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-red-500/40 text-red-400 hover:bg-red-500/10"
+              onClick={() => navigate(`/funding-machine/credit-repair?client=${clientId}`)}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Generate Dispute Letters
+              <Badge className="ml-2 bg-red-500/20 text-red-300 border-red-500/40">
+                {negativeItems.length}
+              </Badge>
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={sendPortalInvite} className="border-amber-500/30 text-amber-400">
             <Send className="h-3 w-3 mr-1" /> Send Portal Invite
           </Button>
@@ -446,6 +460,7 @@ export default function ClientProfilePage() {
             {client.status}
           </Badge>
         </div>
+
       </div>
 
       <div className="rounded-xl border border-[#C9A84C]/30 bg-[#C9A84C]/5 p-5 mb-4">
