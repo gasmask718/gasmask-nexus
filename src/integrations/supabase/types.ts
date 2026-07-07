@@ -54096,6 +54096,63 @@ export type Database = {
           },
         ]
       }
+      funding_client_lender_matches: {
+        Row: {
+          applied_at: string | null
+          approved_amount: number | null
+          client_id: string
+          decision_at: string | null
+          id: string
+          lender_id: string
+          match_reasons: Json | null
+          match_score: number
+          matched_at: string | null
+          notes: string | null
+          status: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          approved_amount?: number | null
+          client_id: string
+          decision_at?: string | null
+          id?: string
+          lender_id: string
+          match_reasons?: Json | null
+          match_score?: number
+          matched_at?: string | null
+          notes?: string | null
+          status?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          approved_amount?: number | null
+          client_id?: string
+          decision_at?: string | null
+          id?: string
+          lender_id?: string
+          match_reasons?: Json | null
+          match_score?: number
+          matched_at?: string | null
+          notes?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_client_lender_matches_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funding_client_lender_matches_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "funding_lender_database"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funding_clients: {
         Row: {
           address: string | null
