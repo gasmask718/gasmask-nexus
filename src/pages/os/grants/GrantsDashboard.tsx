@@ -232,10 +232,17 @@ export default function GrantsDashboard() {
             Unified grant tracking across all Dynasty businesses and funding clients
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={() => navigate("/os/grants/opportunities")}>
             🗂️ Opportunities
           </Button>
+          <button
+            onClick={handleRunAllEligibility}
+            disabled={runningEligibility}
+            className="px-3 py-1.5 text-sm border border-[#C9A84C]/40 text-[#C9A84C] rounded hover:bg-[#C9A84C]/10 disabled:opacity-50 transition"
+          >
+            {runningEligibility ? "⏳ Running..." : "🎯 Run Eligibility Check"}
+          </button>
           <Button
             style={{ backgroundColor: GOLD, color: "#0A0A0A" }}
             className="hover:opacity-90"
