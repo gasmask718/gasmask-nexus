@@ -16,6 +16,7 @@ import TaskCardsPage from '@/pages/funding-machine/TaskCardsPage';
 import MorningBriefingPage from '@/pages/funding-machine/MorningBriefingPage';
 import FundingMachineSettingsPage from '@/pages/funding-machine/FundingMachineSettingsPage';
 import ApplicationsPage from '@/pages/funding-machine/ApplicationsPage';
+import RevenueDashboardPage from '@/pages/funding-machine/RevenueDashboardPage';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/funding-machine/morning-briefing', label: 'Morning Briefing', icon: Sunrise },
