@@ -64141,6 +64141,36 @@ export type Database = {
           },
         ]
       }
+      make_automation_log: {
+        Row: {
+          created_at: string | null
+          id: string
+          payload: Json | null
+          result: Json | null
+          scenario_name: string | null
+          status: string | null
+          trigger_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          payload?: Json | null
+          result?: Json | null
+          scenario_name?: string | null
+          status?: string | null
+          trigger_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          payload?: Json | null
+          result?: Json | null
+          scenario_name?: string | null
+          status?: string | null
+          trigger_type?: string | null
+        }
+        Relationships: []
+      }
       manual_backfill_entries: {
         Row: {
           actual_stat_value: number | null
