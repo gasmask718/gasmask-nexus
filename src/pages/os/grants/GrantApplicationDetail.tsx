@@ -261,6 +261,28 @@ export default function GrantApplicationDetail() {
     toast.success("Status updated");
   };
 
+  const handleSubmit = async (method: 'email' | 'api' | 'manual') => {
+    if (!id) return;
+    setSubmitting(method);
+    try {
+      const { data, error } = await supabase.functions.invoke('submit-grant-application', {
+        body: { application_id: id, submission_method: method },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(
+        method === 'manual'
+          ? 'Added to manual queue'
+          : `Application submitted to ${app?.funder_name ?? 'funder'}`
+      );
+      fetchApp();
+    } catch (e: any) {
+      toast.error(e.message ?? 'Submission failed');
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!id) return;
     setGenerating(true);
