@@ -8,8 +8,9 @@ import { SurplusVisibilityPanel, RealEstateVisibilityPanel } from "@/components/
 import {
   Users, TrendingUp, CreditCard, Building2, FileText,
   Shield, Landmark, Clock, AlertTriangle, Plus, RefreshCw,
-  Bell, GitBranch, Trophy
+  Bell, GitBranch, Trophy, Zap
 } from "lucide-react";
+
 
 // ============ Dashboard Widgets ============
 
@@ -246,6 +247,117 @@ function ScoreWins() {
   );
 }
 
+function FundingVelocity() {
+  const navigate = useNavigate();
+
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ['dashboard-funding-velocity'],
+    queryFn: async () => {
+      const { data: clients, error } = await supabase
+        .from('funding_clients')
+        .select('id, first_name, last_name, stage, created_at, credit_score_estimate')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+
+      const ids = (clients ?? []).map((c: any) => c.id);
+      let historyByClient: Record<string, any[]> = {};
+      if (ids.length) {
+        const { data: hist } = await supabase
+          .from('client_score_history')
+          .select('client_id, score_date, score_tu, score_eq, score_ex')
+          .in('client_id', ids)
+          .order('score_date', { ascending: false });
+        (hist ?? []).forEach((h: any) => {
+          if (!historyByClient[h.client_id]) historyByClient[h.client_id] = [];
+          historyByClient[h.client_id].push(h);
+        });
+      }
+
+      const now = Date.now();
+      return (clients ?? []).map((c: any) => {
+        const days = Math.max(
+          0,
+          Math.floor((now - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24))
+        );
+        const h = historyByClient[c.id] ?? [];
+        const updates = h.length;
+        const lastDate = h[0]?.score_date ?? null;
+        const latest = h[0];
+        const latestScore = latest
+          ? Math.max(latest.score_tu ?? 0, latest.score_eq ?? 0, latest.score_ex ?? 0)
+          : (c.credit_score_estimate ?? 0);
+
+        let label = '⚠️ Needs Attention';
+        let tone = 'border-amber-500/40 text-amber-500';
+        if (updates >= 2 && days <= 30) {
+          label = '🚀 Fast Track';
+          tone = 'border-[#C9A84C]/60 text-[#C9A84C]';
+        } else if (days < 90 && (c.stage ?? 'intake') !== 'intake') {
+          label = '⚡ Active';
+          tone = 'border-blue-500/40 text-blue-400';
+        }
+
+        return {
+          id: c.id,
+          name: `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() || 'Unnamed',
+          days,
+          stage: c.stage ?? 'intake',
+          latestScore,
+          lastDate,
+          label,
+          tone,
+        };
+      });
+    },
+  });
+
+  return (
+    <Card className="border-[#C9A84C]/30 bg-gradient-to-br from-background to-[#C9A84C]/5">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Zap className="h-4 w-4 text-[#C9A84C]" />
+          ⚡ Funding Velocity
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2 max-h-[280px] overflow-y-auto">
+        {isLoading ? (
+          <>
+            <div className="h-14 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-14 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-14 rounded-md bg-muted/40 animate-pulse" />
+          </>
+        ) : rows.length === 0 ? (
+          <div className="text-center py-8">
+            <Zap className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">
+              No clients yet. Add a client to start tracking velocity.
+            </p>
+          </div>
+        ) : (
+          rows.map((r: any) => (
+            <div
+              key={r.id}
+              onClick={() => navigate(`/funding-machine/client/${r.id}`)}
+              className={`p-2 rounded-md border ${r.tone} bg-background/40 hover:bg-[#C9A84C]/5 cursor-pointer transition-all`}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium truncate">{r.name}</p>
+                <span className="text-[10px] font-semibold whitespace-nowrap ml-2">{r.label}</span>
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-1">
+                <span>{r.days}d · {r.stage}</span>
+                <span>Score {r.latestScore || '—'}{r.lastDate ? ` · ${r.lastDate}` : ''}</span>
+              </div>
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+
 export default function FundingMachineDashboard() {
   const navigate = useNavigate();
 
@@ -337,11 +449,13 @@ export default function FundingMachineDashboard() {
       </div>
 
       {/* Widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <TodaysReminders />
         <ClientPipeline />
         <ScoreWins />
+        <FundingVelocity />
       </div>
+
 
       {/* Module Grid */}
       <div>
