@@ -605,6 +605,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/dynasty-direct/delivery', label: '🚗 Local Delivery', icon: Truck },
       { path: '/dynasty-direct/stores', label: '🏪 Store Accounts', icon: Store },
       { path: '/dynasty-direct/fulfillment', label: '🚚 Fulfillment', icon: Truck },
+      { path: '/dynasty-direct/shipping', label: '🚚 Shipping', icon: Truck },
       { path: '/dynasty-direct/splits', label: '💵 Splits & Reserves', icon: DollarSign },
       { path: '/dynasty-direct/suppliers/network', label: '🗺️ Supplier Network', icon: Map },
       { path: '/dynasty-direct/suppliers/portal', label: '👥 Supplier Onboarding', icon: Users },
