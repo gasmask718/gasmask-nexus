@@ -527,6 +527,17 @@ export default function ClientProfilePage() {
           </h3>
           <div className="flex gap-2 flex-wrap">
             <button
+              onClick={async () => {
+                await runBrain('credit');
+                await runBrain('lenders');
+                await runBrain('grants');
+              }}
+              disabled={running !== null}
+              className="px-3 py-1.5 text-xs bg-background border border-[#C9A84C]/40 text-[#C9A84C] rounded font-medium hover:bg-[#C9A84C]/10 disabled:opacity-50 transition"
+            >
+              {running !== null ? '⏳ Running...' : '⚡ Run All'}
+            </button>
+            <button
               onClick={() => runBrain('credit')}
               disabled={running === 'credit'}
               className="px-3 py-1.5 text-xs bg-[#C9A84C] text-black rounded font-medium hover:bg-[#B8963E] disabled:opacity-50 transition"
