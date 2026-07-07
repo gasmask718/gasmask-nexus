@@ -203,6 +203,7 @@ export default function GrantOpportunities() {
                 </div>
                 <div><Label>Next Deadline</Label><Input type="date" value={form.next_deadline} onChange={(e)=>setForm({...form,next_deadline:e.target.value})}/></div>
                 <div><Label>Application URL</Label><Input value={form.application_url} onChange={(e)=>setForm({...form,application_url:e.target.value})}/></div>
+                <div><Label>Contact Email</Label><Input type="email" placeholder="grants@funder.com" value={form.contact_email} onChange={(e)=>setForm({...form,contact_email:e.target.value})}/></div>
               </div>
               <div><Label>Description</Label><Textarea value={form.description} onChange={(e)=>setForm({...form,description:e.target.value})}/></div>
               <div className="flex flex-wrap gap-4 text-sm">
