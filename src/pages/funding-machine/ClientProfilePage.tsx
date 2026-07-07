@@ -129,6 +129,8 @@ export default function ClientProfilePage() {
   const [reminderPriority, setReminderPriority] = useState('medium');
 
   const [scoreHistory, setScoreHistory] = useState<any[]>([]);
+  const [running, setRunning] = useState<string | null>(null);
+  const [lastAnalysis, setLastAnalysis] = useState<string | null>(null);
   const [scoreLoading, setScoreLoading] = useState(true);
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [scoreTU, setScoreTU] = useState('');
@@ -391,6 +393,35 @@ export default function ClientProfilePage() {
     }
   };
 
+  const runBrain = async (type: 'credit' | 'lenders' | 'grants') => {
+    setRunning(type);
+    try {
+      const fnMap = {
+        credit: 'credit-analysis-brain',
+        lenders: 'lender-matching-engine',
+        grants: 'strategic-grant-brain',
+      };
+      const { data, error } = await supabase.functions.invoke(fnMap[type], {
+        body: { client_id: clientId },
+      });
+      if (error) throw error;
+      const analysis = type === 'credit' ? data.analysis : data.strategy;
+      setLastAnalysis(analysis ?? '');
+      toast.success(
+        type === 'credit'
+          ? 'Credit analysis complete'
+          : type === 'lenders'
+            ? `${data.matched_count ?? 0} lenders matched`
+            : 'Grant plan generated'
+      );
+      loadNotesAndReminders();
+    } catch (e: any) {
+      toast.error(e.message ?? 'Brain call failed');
+    } finally {
+      setRunning(null);
+    }
+  };
+
   return (
     <div className="min-h-screen p-6 space-y-6">
       {/* Header */}
@@ -415,6 +446,47 @@ export default function ClientProfilePage() {
             {client.status}
           </Badge>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-[#C9A84C]/30 bg-[#C9A84C]/5 p-5 mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-sm flex items-center gap-2">
+            <span>🧠</span>
+            AI Strategic Brain
+          </h3>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => runBrain('credit')}
+              disabled={running === 'credit'}
+              className="px-3 py-1.5 text-xs bg-[#C9A84C] text-black rounded font-medium hover:bg-[#B8963E] disabled:opacity-50 transition"
+            >
+              {running === 'credit' ? '🧠 Analyzing...' : '🧠 Credit Analysis'}
+            </button>
+            <button
+              onClick={() => runBrain('lenders')}
+              disabled={running === 'lenders'}
+              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+            >
+              {running === 'lenders' ? '💰 Matching...' : '💰 Match Lenders'}
+            </button>
+            <button
+              onClick={() => runBrain('grants')}
+              disabled={running === 'grants'}
+              className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded font-medium hover:bg-purple-700 disabled:opacity-50 transition"
+            >
+              {running === 'grants' ? '🏆 Planning...' : '🏆 Grant Plan'}
+            </button>
+          </div>
+        </div>
+        {lastAnalysis ? (
+          <div className="bg-background/60 rounded-lg p-4 text-sm text-foreground whitespace-pre-wrap max-h-64 overflow-y-auto border border-border/50">
+            {lastAnalysis}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Click a brain button to generate an AI strategic analysis for this client.
+          </p>
+        )}
       </div>
 
       <Tabs defaultValue="overview">
