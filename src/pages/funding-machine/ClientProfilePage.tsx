@@ -154,6 +154,14 @@ export default function ClientProfilePage() {
   const [scoreEX, setScoreEX] = useState('');
   const [scoreDate, setScoreDate] = useState(new Date().toISOString().split('T')[0]);
 
+  // ==== Bureau Response Tracking state ====
+  const [bureauTracking, setBureauTracking] = useState<any[]>([]);
+  const [bureauLoading, setBureauLoading] = useState(true);
+  const [showBureauModal, setShowBureauModal] = useState(false);
+  const [newBureau, setNewBureau] = useState('TransUnion');
+  const [newLetterDate, setNewLetterDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newCertifiedMail, setNewCertifiedMail] = useState('');
+
   const [clientStage, setClientStage] = useState('intake');
 
   const loadNotesAndReminders = async () => {
