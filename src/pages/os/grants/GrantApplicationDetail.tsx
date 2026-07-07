@@ -51,6 +51,7 @@ export default function GrantApplicationDetail() {
   const [draftState, setDraftState] = useState("");
   const [generating, setGenerating] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [submitting, setSubmitting] = useState<string | null>(null);
 
   // Section D — Tasks
   const [tasks, setTasks] = useState<any[]>([]);
