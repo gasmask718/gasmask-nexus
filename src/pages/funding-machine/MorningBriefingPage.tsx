@@ -61,10 +61,26 @@ export default function MorningBriefingPage() {
   const [disputes, setDisputes] = useState<DisputeRow[]>([]);
   const [generating, setGenerating] = useState(false);
   const [aiBrief, setAiBrief] = useState('');
+  const [todayBriefing, setTodayBriefing] = useState<any>(null);
+  const [loadingBriefing, setLoadingBriefing] = useState(true);
 
   useEffect(() => {
     loadAll();
+    loadTodayBriefing();
   }, []);
+
+  const loadTodayBriefing = async () => {
+    setLoadingBriefing(true);
+    const today = new Date().toISOString().split('T')[0];
+    const { data } = await supabase
+      .from('funding_morning_briefings')
+      .select('*')
+      .eq('briefing_date', today)
+      .maybeSingle();
+    setTodayBriefing(data);
+    if (data?.ai_summary) setAiBrief(data.ai_summary);
+    setLoadingBriefing(false);
+  };
 
   const loadAll = async () => {
     const [c, d, t, vc, vt, dr] = await Promise.all([
