@@ -2113,6 +2113,8 @@ export default function AppRoutes() {
           <Route path="ambassadors" element={<TTAmbassadors />} />
           <Route path="operations" element={<TTOperations />} />
           <Route path="ai" element={<TTAIBrain />} />
+          <Route path="ai-brain" element={<TTAIBrain />} />
+          <Route path="drivers" element={<TTFleet />} />
           <Route path="settings" element={<TTSettings />} />
           <Route path="pricing" element={<TTPricing />} />
           <Route path="dispatch" element={<TTDispatch />} />
