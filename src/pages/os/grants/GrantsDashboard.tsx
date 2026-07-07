@@ -130,6 +130,7 @@ export default function GrantsDashboard() {
         pending: pending.count ?? 0,
         opportunities: opps.count ?? 0,
       });
+      setSubmittedToday(submittedTodayRes.count ?? 0);
       const counts: Record<string, number> = { dynasty_business: 0, funding_client: 0, uben: 0 };
       (pipelineRes.data ?? []).forEach((r: any) => {
         if (r.applicant_type && counts[r.applicant_type] !== undefined) counts[r.applicant_type]++;
