@@ -2218,6 +2218,7 @@ export default function AppRoutes() {
         <Route path="/funding-machine/auto-financing" element={<FundingMachineAutoFinancing />} />
         <Route path="/funding-machine/shelf-corp" element={<FundingMachineShelfCorp />} />
         <Route path="/funding-machine/settings" element={<FundingMachineSettings />} />
+        <Route path="/funding-machine/revenue" element={<FundingMachineRevenue />} />
         {/* UBEN HQ — Non-Profit Operations Tracker */}
         <Route path="/os/uben" element={<UbenHQ />} />
         <Route path="/os/uben/grants" element={<UbenGrantTracker />} />
