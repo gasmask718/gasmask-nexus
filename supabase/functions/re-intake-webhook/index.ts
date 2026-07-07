@@ -17,6 +17,14 @@ const FUNCTION_VERSION = "v1";
 const SECRET_ENV = "RE_REAL_ESTATE_WEBHOOK_SECRET";
 const MAX_BODY_BYTES = 64 * 1024;
 
+// Boot-time readability probe (logs presence + length + last-4 chars only — never the full value).
+{
+  const v = Deno.env.get(SECRET_ENV) ?? "";
+  console.log(
+    `[intake:boot] ${SECRET_ENV} present=${v.length > 0} length=${v.length} tail=${v ? v.slice(-4) : "n/a"}`,
+  );
+}
+
 // ---------- helpers ----------
 
 function trim(v: unknown): string | null {
