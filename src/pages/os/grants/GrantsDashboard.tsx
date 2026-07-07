@@ -197,7 +197,9 @@ export default function GrantsDashboard() {
     { label: "Total Awarded",      value: fmtMoney(stats.totalAwardedAmt),   icon: DollarSign,  gold: true  },
     { label: "Pending Review",     value: stats.pending,                     icon: Clock,       gold: false },
     { label: "Opportunities",      value: stats.opportunities,               icon: Database,    gold: false },
+    { label: "Submitted Today",    value: submittedToday,                    icon: CheckCircle, gold: true, sub: "auto-pipeline" },
   ] as const;
+
 
   return (
     <div className="p-6 space-y-6">
