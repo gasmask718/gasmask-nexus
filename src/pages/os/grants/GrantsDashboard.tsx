@@ -229,7 +229,7 @@ export default function GrantsDashboard() {
       </div>
 
       {/* SECTION B — Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {statCards.map((c) => (
           <Card key={c.label}>
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
@@ -240,9 +240,14 @@ export default function GrantsDashboard() {
               {loading ? (
                 <Skeleton className="h-8 w-20" />
               ) : (
-                <div className="text-2xl font-bold" style={c.gold ? { color: GOLD } : undefined}>
-                  {c.value}
-                </div>
+                <>
+                  <div className="text-2xl font-bold" style={c.gold ? { color: GOLD } : undefined}>
+                    {c.value}
+                  </div>
+                  {"sub" in c && c.sub && (
+                    <div className="text-xs text-muted-foreground mt-1">{c.sub}</div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
