@@ -40,6 +40,7 @@ type Opportunity = {
   next_deadline: string | null;
   deadline_type: string | null;
   application_url: string | null;
+  contact_email: string | null;
   is_active: boolean;
 };
 
@@ -69,6 +70,7 @@ export default function GrantOpportunities() {
     grant_name: "", funder_name: "", funder_type: "federal", category: "",
     description: "", amount_min: "", amount_max: "", amount_typical: "",
     next_deadline: "", deadline_type: "fixed", application_url: "",
+    contact_email: "",
     requires_minority_owned: false, requires_women_owned: false,
     requires_veteran_owned: false, requires_nonprofit: false,
   };
@@ -141,6 +143,7 @@ export default function GrantOpportunities() {
       next_deadline: form.next_deadline || null,
       deadline_type: form.deadline_type,
       application_url: form.application_url || null,
+      contact_email: form.contact_email.trim() || null,
       requires_minority_owned: form.requires_minority_owned,
       requires_women_owned: form.requires_women_owned,
       requires_veteran_owned: form.requires_veteran_owned,
@@ -200,6 +203,7 @@ export default function GrantOpportunities() {
                 </div>
                 <div><Label>Next Deadline</Label><Input type="date" value={form.next_deadline} onChange={(e)=>setForm({...form,next_deadline:e.target.value})}/></div>
                 <div><Label>Application URL</Label><Input value={form.application_url} onChange={(e)=>setForm({...form,application_url:e.target.value})}/></div>
+                <div><Label>Contact Email</Label><Input type="email" placeholder="grants@funder.com" value={form.contact_email} onChange={(e)=>setForm({...form,contact_email:e.target.value})}/></div>
               </div>
               <div><Label>Description</Label><Textarea value={form.description} onChange={(e)=>setForm({...form,description:e.target.value})}/></div>
               <div className="flex flex-wrap gap-4 text-sm">
@@ -296,6 +300,11 @@ export default function GrantOpportunities() {
                     </Button>
                   )}
                 </div>
+                {o.contact_email && (
+                  <a href={`mailto:${o.contact_email}`} className="text-xs text-muted-foreground hover:text-foreground transition truncate">
+                    📧 {o.contact_email}
+                  </a>
+                )}
               </CardContent>
             </Card>
           ))}
