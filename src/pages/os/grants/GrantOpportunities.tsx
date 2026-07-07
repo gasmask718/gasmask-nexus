@@ -70,6 +70,7 @@ export default function GrantOpportunities() {
     grant_name: "", funder_name: "", funder_type: "federal", category: "",
     description: "", amount_min: "", amount_max: "", amount_typical: "",
     next_deadline: "", deadline_type: "fixed", application_url: "",
+    contact_email: "",
     requires_minority_owned: false, requires_women_owned: false,
     requires_veteran_owned: false, requires_nonprofit: false,
   };
