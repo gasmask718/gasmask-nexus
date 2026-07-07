@@ -393,6 +393,35 @@ export default function ClientProfilePage() {
     }
   };
 
+  const runBrain = async (type: 'credit' | 'lenders' | 'grants') => {
+    setRunning(type);
+    try {
+      const fnMap = {
+        credit: 'credit-analysis-brain',
+        lenders: 'lender-matching-engine',
+        grants: 'strategic-grant-brain',
+      };
+      const { data, error } = await supabase.functions.invoke(fnMap[type], {
+        body: { client_id: clientId },
+      });
+      if (error) throw error;
+      const analysis = type === 'credit' ? data.analysis : data.strategy;
+      setLastAnalysis(analysis ?? '');
+      toast.success(
+        type === 'credit'
+          ? 'Credit analysis complete'
+          : type === 'lenders'
+            ? `${data.matched_count ?? 0} lenders matched`
+            : 'Grant plan generated'
+      );
+      loadNotesAndReminders();
+    } catch (e: any) {
+      toast.error(e.message ?? 'Brain call failed');
+    } finally {
+      setRunning(null);
+    }
+  };
+
   return (
     <div className="min-h-screen p-6 space-y-6">
       {/* Header */}
