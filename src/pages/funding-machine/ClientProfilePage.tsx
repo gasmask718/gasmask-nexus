@@ -129,6 +129,8 @@ export default function ClientProfilePage() {
   const [reminderPriority, setReminderPriority] = useState('medium');
 
   const [scoreHistory, setScoreHistory] = useState<any[]>([]);
+  const [running, setRunning] = useState<string | null>(null);
+  const [lastAnalysis, setLastAnalysis] = useState<string | null>(null);
   const [scoreLoading, setScoreLoading] = useState(true);
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [scoreTU, setScoreTU] = useState('');
