@@ -54156,6 +54156,8 @@ export type Database = {
       funding_clients: {
         Row: {
           address: string | null
+          ai_analysis_date: string | null
+          ai_last_analysis: string | null
           assigned_advisor: string | null
           assigned_operator: string | null
           business_name: string | null
@@ -54214,6 +54216,8 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          ai_analysis_date?: string | null
+          ai_last_analysis?: string | null
           assigned_advisor?: string | null
           assigned_operator?: string | null
           business_name?: string | null
@@ -54272,6 +54276,8 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          ai_analysis_date?: string | null
+          ai_last_analysis?: string | null
           assigned_advisor?: string | null
           assigned_operator?: string | null
           business_name?: string | null
