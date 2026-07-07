@@ -143,6 +143,7 @@ export default function GrantOpportunities() {
       next_deadline: form.next_deadline || null,
       deadline_type: form.deadline_type,
       application_url: form.application_url || null,
+      contact_email: form.contact_email.trim() || null,
       requires_minority_owned: form.requires_minority_owned,
       requires_women_owned: form.requires_women_owned,
       requires_veteran_owned: form.requires_veteran_owned,
