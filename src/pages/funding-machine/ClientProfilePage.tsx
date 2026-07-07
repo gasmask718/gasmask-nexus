@@ -1025,6 +1025,96 @@ export default function ClientProfilePage() {
           </div>
         </TabsContent>
 
+        <TabsContent value="lenders">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Matched Lenders</h3>
+              <button
+                onClick={handleApplyTop3}
+                disabled={applyingAll || lenderMatches.filter(m => m.status === 'identified').length === 0}
+                className="px-3 py-1.5 bg-[#C9A84C] text-black rounded text-sm font-medium hover:bg-[#B8963E] disabled:opacity-50"
+              >
+                {applyingAll ? '⏳ Applying...' : '⚡ Apply Top 3'}
+              </button>
+            </div>
+            {lendersLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-20 bg-muted/40 rounded animate-pulse" />
+                ))}
+              </div>
+            ) : lenderMatches.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="text-lg mb-1">💰</p>
+                <p className="text-sm">No lender matches yet.</p>
+                <p className="text-xs mt-1">Click 💰 Match Lenders in the AI Brain panel above.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {lenderMatches.map(m => {
+                  const statusColor =
+                    m.status === 'applied' ? 'text-green-400 bg-green-500/10 border-green-500/30'
+                    : m.status === 'approved' ? 'text-[#C9A84C] bg-[#C9A84C]/10 border-[#C9A84C]/30'
+                    : m.status === 'denied' ? 'text-red-400 bg-red-500/10 border-red-500/30'
+                    : 'text-muted-foreground bg-muted border-border';
+                  return (
+                    <div key={m.id} className="rounded-lg border p-4 flex items-start gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <p className="font-medium text-sm">{m.lender_name}</p>
+                          <span className={`text-xs px-2 py-0.5 rounded border ${statusColor} capitalize`}>
+                            {m.status}
+                          </span>
+                          {m.has_soft_pull_prequal && (
+                            <span className="text-xs text-green-400">✓ Soft Pull</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {m.product_name}
+                          {m.category && ` · ${m.category}`}
+                          {m.max_amount && ` · Up to $${Number(m.max_amount).toLocaleString()}`}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Match:</span>
+                          <div className="flex-1 max-w-32 h-1.5 bg-muted/40 rounded">
+                            <div
+                              className="h-full bg-[#C9A84C] rounded transition"
+                              style={{ width: `${m.match_score ?? 0}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-mono">{m.match_score}/100</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2 shrink-0">
+                        {m.status === 'identified' && (
+                          <button
+                            onClick={() => handleApplyLender(m.id)}
+                            disabled={applyingLender === m.id}
+                            className="px-3 py-1.5 text-xs bg-[#C9A84C] text-black rounded font-medium disabled:opacity-50"
+                          >
+                            {applyingLender === m.id ? '⏳' : 'Apply'}
+                          </button>
+                        )}
+                        {m.prequal_url && (
+                          <a
+                            href={m.prequal_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 text-xs border border-border rounded text-center text-muted-foreground hover:border-[#C9A84C]/40 no-underline"
+                          >
+                            View
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+
         <TabsContent value="bureau" className="space-y-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Bureau Response Tracking</h3>
