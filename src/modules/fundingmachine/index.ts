@@ -49,6 +49,7 @@ export const FundingMachineModule: DynastyModule = {
   routes: [
     { path: '', component: FundingMachineDashboard, label: 'Dashboard', icon: LayoutDashboard, requiresAuth: true },
     { path: '/morning-briefing', component: MorningBriefingPage, label: 'Morning Briefing', icon: Sunrise, requiresAuth: true },
+    { path: '/revenue', component: RevenueDashboardPage, label: 'Revenue', icon: DollarSign, requiresAuth: true },
     { path: '/intake', component: ClientIntakePage, label: 'New Client', icon: Plus, requiresAuth: true },
     { path: '/client/:clientId', component: ClientProfilePage, label: 'Client Profile', icon: Users, requiresAuth: true },
     { path: '/credit-repair', component: CreditRepairPage, label: 'Credit Repair', icon: Shield, requiresAuth: true },
