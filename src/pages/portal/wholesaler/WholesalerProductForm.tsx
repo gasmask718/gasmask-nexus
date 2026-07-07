@@ -205,34 +205,22 @@ export default function WholesalerProductForm() {
               <CardTitle>Shipping</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <Label>Weight (oz)</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={formData.weight_oz}
-                    onChange={(e) => handleChange('weight_oz', parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <Label>Processing Time</Label>
-                  <Select
-                    value={formData.processing_time}
-                    onValueChange={(v) => handleChange('processing_time', v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Same day">Same day</SelectItem>
-                      <SelectItem value="1-3 days">1-3 days</SelectItem>
-                      <SelectItem value="3-5 days">3-5 days</SelectItem>
-                      <SelectItem value="1-2 weeks">1-2 weeks</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label>Processing Time</Label>
+                <Select
+                  value={formData.processing_time}
+                  onValueChange={(v) => handleChange('processing_time', v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Same day">Same day</SelectItem>
+                    <SelectItem value="1-3 days">1-3 days</SelectItem>
+                    <SelectItem value="3-5 days">3-5 days</SelectItem>
+                    <SelectItem value="1-2 weeks">1-2 weeks</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <Separator />
               <div className="grid sm:grid-cols-2 gap-4">
