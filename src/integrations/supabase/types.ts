@@ -38100,6 +38100,54 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_box_sizes: {
+        Row: {
+          box_name: string
+          carrier: string | null
+          cost_per_box: number | null
+          created_at: string | null
+          flat_rate_price: number | null
+          height_in: number
+          id: string
+          is_active: boolean | null
+          is_flat_rate: boolean | null
+          length_in: number
+          max_weight_oz: number
+          sort_order: number | null
+          width_in: number
+        }
+        Insert: {
+          box_name: string
+          carrier?: string | null
+          cost_per_box?: number | null
+          created_at?: string | null
+          flat_rate_price?: number | null
+          height_in: number
+          id?: string
+          is_active?: boolean | null
+          is_flat_rate?: boolean | null
+          length_in: number
+          max_weight_oz: number
+          sort_order?: number | null
+          width_in: number
+        }
+        Update: {
+          box_name?: string
+          carrier?: string | null
+          cost_per_box?: number | null
+          created_at?: string | null
+          flat_rate_price?: number | null
+          height_in?: number
+          id?: string
+          is_active?: boolean | null
+          is_flat_rate?: boolean | null
+          length_in?: number
+          max_weight_oz?: number
+          sort_order?: number | null
+          width_in?: number
+        }
+        Relationships: []
+      }
       dd_bundle_items: {
         Row: {
           bundle_id: string
@@ -39871,6 +39919,51 @@ export type Database = {
           },
         ]
       }
+      dd_pickup_schedules: {
+        Row: {
+          carrier: string
+          created_at: string | null
+          easypost_pickup_id: string | null
+          id: string
+          instructions: string | null
+          pickup_address: Json | null
+          pickup_date: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          shipment_ids: string[] | null
+          status: string | null
+          wholesaler_id: string
+        }
+        Insert: {
+          carrier: string
+          created_at?: string | null
+          easypost_pickup_id?: string | null
+          id?: string
+          instructions?: string | null
+          pickup_address?: Json | null
+          pickup_date: string
+          pickup_window_end?: string | null
+          pickup_window_start?: string | null
+          shipment_ids?: string[] | null
+          status?: string | null
+          wholesaler_id: string
+        }
+        Update: {
+          carrier?: string
+          created_at?: string | null
+          easypost_pickup_id?: string | null
+          id?: string
+          instructions?: string | null
+          pickup_address?: Json | null
+          pickup_date?: string
+          pickup_window_end?: string | null
+          pickup_window_start?: string | null
+          shipment_ids?: string[] | null
+          status?: string | null
+          wholesaler_id?: string
+        }
+        Relationships: []
+      }
       dd_pro_subscriptions: {
         Row: {
           billing_cycle_day: number | null
@@ -40461,6 +40554,126 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dd_shipments: {
+        Row: {
+          actual_delivery: string | null
+          box_count: number | null
+          carrier: string
+          created_at: string | null
+          easypost_shipment_id: string | null
+          estimated_delivery: string | null
+          from_address: Json | null
+          height_in: number | null
+          id: string
+          label_pdf_url: string | null
+          label_url: string | null
+          length_in: number | null
+          order_id: string | null
+          packing_result: Json | null
+          rate_selected: number | null
+          rates_compared: Json | null
+          service_level: string | null
+          status: string | null
+          store_id: string | null
+          to_address: Json | null
+          tracking_number: string | null
+          updated_at: string | null
+          weight_oz: number | null
+          wholesaler_id: string | null
+          width_in: number | null
+        }
+        Insert: {
+          actual_delivery?: string | null
+          box_count?: number | null
+          carrier: string
+          created_at?: string | null
+          easypost_shipment_id?: string | null
+          estimated_delivery?: string | null
+          from_address?: Json | null
+          height_in?: number | null
+          id?: string
+          label_pdf_url?: string | null
+          label_url?: string | null
+          length_in?: number | null
+          order_id?: string | null
+          packing_result?: Json | null
+          rate_selected?: number | null
+          rates_compared?: Json | null
+          service_level?: string | null
+          status?: string | null
+          store_id?: string | null
+          to_address?: Json | null
+          tracking_number?: string | null
+          updated_at?: string | null
+          weight_oz?: number | null
+          wholesaler_id?: string | null
+          width_in?: number | null
+        }
+        Update: {
+          actual_delivery?: string | null
+          box_count?: number | null
+          carrier?: string
+          created_at?: string | null
+          easypost_shipment_id?: string | null
+          estimated_delivery?: string | null
+          from_address?: Json | null
+          height_in?: number | null
+          id?: string
+          label_pdf_url?: string | null
+          label_url?: string | null
+          length_in?: number | null
+          order_id?: string | null
+          packing_result?: Json | null
+          rate_selected?: number | null
+          rates_compared?: Json | null
+          service_level?: string | null
+          status?: string | null
+          store_id?: string | null
+          to_address?: Json | null
+          tracking_number?: string | null
+          updated_at?: string | null
+          weight_oz?: number | null
+          wholesaler_id?: string | null
+          width_in?: number | null
+        }
+        Relationships: []
+      }
+      dd_shipping_accounts: {
+        Row: {
+          account_number: string | null
+          carrier: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          pickup_address: Json | null
+          pickup_scheduled: boolean | null
+          pickup_time_window: string | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          carrier: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          pickup_address?: Json | null
+          pickup_scheduled?: boolean | null
+          pickup_time_window?: string | null
+          wholesaler_id?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          carrier?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          pickup_address?: Json | null
+          pickup_scheduled?: boolean | null
+          pickup_time_window?: string | null
+          wholesaler_id?: string | null
+        }
+        Relationships: []
       }
       dd_sla_snapshots: {
         Row: {
@@ -80255,16 +80468,23 @@ export type Database = {
         Row: {
           avg_rating: number | null
           brand_id: string | null
+          case_height_in: number | null
+          case_length_in: number | null
           case_price_store: number | null
           case_qty: number | null
+          case_weight_oz: number | null
+          case_width_in: number | null
           category: string | null
           created_at: string | null
           description: string | null
           dimensions: Json | null
           has_variants: boolean
+          height_in: number | null
           id: string
           images: Json | null
           inventory_qty: number | null
+          is_fragile: boolean | null
+          length_in: number | null
           low_stock_threshold: number | null
           min_order_qty: number | null
           processing_time: string | null
@@ -80273,30 +80493,40 @@ export type Database = {
           review_count: number | null
           shipping_from_city: string | null
           shipping_from_state: string | null
+          stackable: boolean | null
           status: string | null
           store_price: number | null
           street_price: number | null
           track_inventory: boolean | null
           unit_type: string | null
+          units_per_case: number | null
           updated_at: string | null
           variant_types: string[]
           weight_oz: number | null
           wholesale_price: number | null
           wholesaler_id: string | null
+          width_in: number | null
         }
         Insert: {
           avg_rating?: number | null
           brand_id?: string | null
+          case_height_in?: number | null
+          case_length_in?: number | null
           case_price_store?: number | null
           case_qty?: number | null
+          case_weight_oz?: number | null
+          case_width_in?: number | null
           category?: string | null
           created_at?: string | null
           description?: string | null
           dimensions?: Json | null
           has_variants?: boolean
+          height_in?: number | null
           id?: string
           images?: Json | null
           inventory_qty?: number | null
+          is_fragile?: boolean | null
+          length_in?: number | null
           low_stock_threshold?: number | null
           min_order_qty?: number | null
           processing_time?: string | null
@@ -80305,30 +80535,40 @@ export type Database = {
           review_count?: number | null
           shipping_from_city?: string | null
           shipping_from_state?: string | null
+          stackable?: boolean | null
           status?: string | null
           store_price?: number | null
           street_price?: number | null
           track_inventory?: boolean | null
           unit_type?: string | null
+          units_per_case?: number | null
           updated_at?: string | null
           variant_types?: string[]
           weight_oz?: number | null
           wholesale_price?: number | null
           wholesaler_id?: string | null
+          width_in?: number | null
         }
         Update: {
           avg_rating?: number | null
           brand_id?: string | null
+          case_height_in?: number | null
+          case_length_in?: number | null
           case_price_store?: number | null
           case_qty?: number | null
+          case_weight_oz?: number | null
+          case_width_in?: number | null
           category?: string | null
           created_at?: string | null
           description?: string | null
           dimensions?: Json | null
           has_variants?: boolean
+          height_in?: number | null
           id?: string
           images?: Json | null
           inventory_qty?: number | null
+          is_fragile?: boolean | null
+          length_in?: number | null
           low_stock_threshold?: number | null
           min_order_qty?: number | null
           processing_time?: string | null
@@ -80337,16 +80577,19 @@ export type Database = {
           review_count?: number | null
           shipping_from_city?: string | null
           shipping_from_state?: string | null
+          stackable?: boolean | null
           status?: string | null
           store_price?: number | null
           street_price?: number | null
           track_inventory?: boolean | null
           unit_type?: string | null
+          units_per_case?: number | null
           updated_at?: string | null
           variant_types?: string[]
           weight_oz?: number | null
           wholesale_price?: number | null
           wholesaler_id?: string | null
+          width_in?: number | null
         }
         Relationships: [
           {
@@ -129913,16 +130156,23 @@ export type Database = {
         Returns: {
           avg_rating: number | null
           brand_id: string | null
+          case_height_in: number | null
+          case_length_in: number | null
           case_price_store: number | null
           case_qty: number | null
+          case_weight_oz: number | null
+          case_width_in: number | null
           category: string | null
           created_at: string | null
           description: string | null
           dimensions: Json | null
           has_variants: boolean
+          height_in: number | null
           id: string
           images: Json | null
           inventory_qty: number | null
+          is_fragile: boolean | null
+          length_in: number | null
           low_stock_threshold: number | null
           min_order_qty: number | null
           processing_time: string | null
@@ -129931,16 +130181,19 @@ export type Database = {
           review_count: number | null
           shipping_from_city: string | null
           shipping_from_state: string | null
+          stackable: boolean | null
           status: string | null
           store_price: number | null
           street_price: number | null
           track_inventory: boolean | null
           unit_type: string | null
+          units_per_case: number | null
           updated_at: string | null
           variant_types: string[]
           weight_oz: number | null
           wholesale_price: number | null
           wholesaler_id: string | null
+          width_in: number | null
         }[]
         SetofOptions: {
           from: "*"
