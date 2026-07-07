@@ -2194,8 +2194,8 @@ export default function AppRoutes() {
         <Route path="/os/grants" element={<GrantsDashboard />} />
         <Route path="/os/grants/opportunities" element={<GrantOpportunities />} />
         <Route path="/os/grants/applications" element={<GrantsDashboard />} />
-        <Route path="/os/grants/:id" element={<GrantApplicationDetail />} />
         <Route path="/os/grants/funder-crm" element={<GrantFunderCRMPage />} />
+        <Route path="/os/grants/:id" element={<GrantApplicationDetail />} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
         {/* Floor 10 — Dynasty Funding Machine */}
         <Route path="/funding-machine" element={<FundingMachineDashboard />} />
