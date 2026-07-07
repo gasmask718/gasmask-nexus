@@ -1,5 +1,22 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { z } from 'npm:zod@3';
+
+const ItemSchema = z.object({
+  product_id: z.string().min(1),
+  quantity: z.number().int().positive().max(10000),
+  length_in: z.number().positive().max(200),
+  width_in: z.number().positive().max(200),
+  height_in: z.number().positive().max(200),
+  weight_oz: z.number().positive().max(50000),
+  is_fragile: z.boolean().optional(),
+  stackable: z.boolean().optional(),
+});
+const BodySchema = z.object({
+  items: z.array(ItemSchema).min(1),
+  carrier_preference: z.enum(['any', 'ups', 'fedex', 'usps']).optional(),
+  prefer_flat_rate: z.boolean().optional(),
+});
 
 interface InputItem {
   product_id: string;
@@ -69,13 +86,26 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const body = await req.json().catch(() => null);
-    if (!body || !Array.isArray(body.items) || body.items.length === 0) {
+    const raw = await req.json().catch(() => null);
+    const parsed = BodySchema.safeParse(raw);
+    if (!parsed.success) {
+      // Name offending items so callers can surface a per-product error.
+      const issues = parsed.error.issues.map((iss) => {
+        const path = iss.path.join('.');
+        const idxMatch = /^items\.(\d+)/.exec(path);
+        const itemIdx = idxMatch ? Number(idxMatch[1]) : null;
+        const productId = itemIdx != null ? raw?.items?.[itemIdx]?.product_id ?? null : null;
+        return { path, message: iss.message, product_id: productId };
+      });
       return new Response(
-        JSON.stringify({ error: 'items array is required and must not be empty' }),
+        JSON.stringify({
+          error: 'Invalid packing request: one or more items are missing required positive numeric dimensions (length_in, width_in, height_in, weight_oz).',
+          issues,
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
+    const body = parsed.data;
 
     const carrierPref: string = body.carrier_preference || 'any';
     const preferFlatRate: boolean = !!body.prefer_flat_rate;
