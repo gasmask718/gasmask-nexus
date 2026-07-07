@@ -51,6 +51,7 @@ export default function GrantApplicationDetail() {
   const [draftState, setDraftState] = useState("");
   const [generating, setGenerating] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [submitting, setSubmitting] = useState<string | null>(null);
 
   // Section D — Tasks
   const [tasks, setTasks] = useState<any[]>([]);
@@ -260,6 +261,28 @@ export default function GrantApplicationDetail() {
     toast.success("Status updated");
   };
 
+  const handleSubmit = async (method: 'email' | 'api' | 'manual') => {
+    if (!id) return;
+    setSubmitting(method);
+    try {
+      const { data, error } = await supabase.functions.invoke('submit-grant-application', {
+        body: { application_id: id, submission_method: method },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(
+        method === 'manual'
+          ? 'Added to manual queue'
+          : `Application submitted to ${app?.funder_name ?? 'funder'}`
+      );
+      fetchApp();
+    } catch (e: any) {
+      toast.error(e.message ?? 'Submission failed');
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!id) return;
     setGenerating(true);
@@ -461,6 +484,53 @@ export default function GrantApplicationDetail() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* SECTION B2 — Submission Tracker */}
+      {app?.status === 'drafting' && app?.ai_draft && (
+        <div className="rounded-xl border border-[#C9A84C]/30 bg-[#C9A84C]/5 p-5">
+          <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+            <span>🚀</span>
+            Submit Application
+          </h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Draft is ready. Choose a submission method:
+          </p>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => handleSubmit('email')}
+              disabled={submitting === 'email'}
+              className="px-3 py-2 text-xs bg-[#C9A84C] text-black rounded font-medium hover:bg-[#B8963E] disabled:opacity-50 transition"
+            >
+              {submitting === 'email' ? '📧 Sending...' : '📧 Send by Email'}
+            </button>
+            <button
+              onClick={() => handleSubmit('manual')}
+              disabled={submitting === 'manual'}
+              className="px-3 py-2 text-xs border border-border rounded font-medium hover:border-[#C9A84C]/40 disabled:opacity-50 transition"
+            >
+              {submitting === 'manual' ? '📋 Queuing...' : '📋 Add to Manual Queue'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {app?.status === 'submitted' && (
+        <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-4">
+          <div className="flex items-center gap-2">
+            <span className="text-green-400 text-sm">✅</span>
+            <div>
+              <p className="text-sm font-medium text-green-400">Application Submitted</p>
+              {app?.submitted_at && (
+                <p className="text-xs text-muted-foreground">
+                  {new Date(app.submitted_at).toLocaleDateString('en-US', {
+                    month: 'long', day: 'numeric', year: 'numeric',
+                  })}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* SECTION F — Timeline */}

@@ -92,6 +92,7 @@ export default function GrantsDashboard() {
   // Section B — stats
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<Stats>({ total: 0, awarded: 0, totalAwardedAmt: 0, pending: 0, opportunities: 0 });
+  const [submittedToday, setSubmittedToday] = useState<number>(0);
 
   // Section C — deadlines
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
@@ -111,13 +112,15 @@ export default function GrantsDashboard() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [total, awarded, awardedSum, pending, opps, pipelineRes] = await Promise.all([
+      const todayStart = new Date().toISOString().split("T")[0] + "T00:00:00";
+      const [total, awarded, awardedSum, pending, opps, pipelineRes, submittedTodayRes] = await Promise.all([
         supabase.from("grant_applications").select("*", { count: "exact", head: true }),
         supabase.from("grant_applications").select("*", { count: "exact", head: true }).in("status", ["approved", "awarded"]),
         supabase.from("grant_applications").select("amount_awarded").eq("status", "awarded"),
         supabase.from("grant_applications").select("*", { count: "exact", head: true }).in("status", ["submitted", "under_review", "drafting"]),
         supabase.from("grant_opportunities").select("*", { count: "exact", head: true }).eq("is_active", true),
         supabase.from("grant_applications").select("applicant_type"),
+        supabase.from("grant_applications").select("*", { count: "exact", head: true }).eq("status", "submitted").gte("submitted_at", todayStart),
       ]);
       const sum = (awardedSum.data ?? []).reduce((a: number, r: any) => a + Number(r.amount_awarded || 0), 0);
       setStats({
@@ -127,6 +130,7 @@ export default function GrantsDashboard() {
         pending: pending.count ?? 0,
         opportunities: opps.count ?? 0,
       });
+      setSubmittedToday(submittedTodayRes.count ?? 0);
       const counts: Record<string, number> = { dynasty_business: 0, funding_client: 0, uben: 0 };
       (pipelineRes.data ?? []).forEach((r: any) => {
         if (r.applicant_type && counts[r.applicant_type] !== undefined) counts[r.applicant_type]++;
@@ -193,7 +197,9 @@ export default function GrantsDashboard() {
     { label: "Total Awarded",      value: fmtMoney(stats.totalAwardedAmt),   icon: DollarSign,  gold: true  },
     { label: "Pending Review",     value: stats.pending,                     icon: Clock,       gold: false },
     { label: "Opportunities",      value: stats.opportunities,               icon: Database,    gold: false },
+    { label: "Submitted Today",    value: submittedToday,                    icon: CheckCircle, gold: true, sub: "auto-pipeline" },
   ] as const;
+
 
   return (
     <div className="p-6 space-y-6">
@@ -223,7 +229,7 @@ export default function GrantsDashboard() {
       </div>
 
       {/* SECTION B — Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {statCards.map((c) => (
           <Card key={c.label}>
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
@@ -234,9 +240,14 @@ export default function GrantsDashboard() {
               {loading ? (
                 <Skeleton className="h-8 w-20" />
               ) : (
-                <div className="text-2xl font-bold" style={c.gold ? { color: GOLD } : undefined}>
-                  {c.value}
-                </div>
+                <>
+                  <div className="text-2xl font-bold" style={c.gold ? { color: GOLD } : undefined}>
+                    {c.value}
+                  </div>
+                  {"sub" in c && c.sub && (
+                    <div className="text-xs text-muted-foreground mt-1">{c.sub}</div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
