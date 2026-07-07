@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LineChart, Line, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, Legend } from "recharts";
 import { toast } from "sonner";
 import {
   User, Building2, Target, Shield, CreditCard, TrendingUp,
@@ -425,6 +426,9 @@ export default function ClientProfilePage() {
           <TabsTrigger value="relationships">
             <Building2 className="h-3 w-3 mr-1" /> Relationships
           </TabsTrigger>
+          <TabsTrigger value="notes">📝 Notes</TabsTrigger>
+          <TabsTrigger value="reminders">⏰ Reminders</TabsTrigger>
+          <TabsTrigger value="scores">📊 Score History</TabsTrigger>
           <TabsTrigger value="grants">
             <Award className="h-3 w-3 mr-1" /> Grants
           </TabsTrigger>
@@ -583,6 +587,338 @@ export default function ClientProfilePage() {
         <TabsContent value="relationships">
           <LenderRelationships clientId={clientId!} />
         </TabsContent>
+
+        <TabsContent value="notes">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Client Notes</h3>
+              <button onClick={() => setShowNoteModal(true)}
+                className="px-3 py-1.5 bg-[#C9A84C] text-black rounded text-sm font-medium hover:bg-[#B8963E]">
+                + Add Note
+              </button>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {['all','general','credit','funding','grant','call','pinned'].map(f => (
+                <button key={f} onClick={() => setNotesFilter(f)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition ${
+                    notesFilter === f
+                      ? 'bg-[#C9A84C]/20 border-[#C9A84C] text-[#C9A84C]'
+                      : 'border-border text-muted-foreground'
+                  }`}>
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </button>
+              ))}
+            </div>
+            {notesLoading ? (
+              <div className="animate-pulse space-y-3">
+                {[1,2,3].map(i => <div key={i} className="h-20 bg-muted rounded" />)}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {notes
+                  .filter(n => {
+                    if (notesFilter === 'all') return true;
+                    if (notesFilter === 'pinned') return n.is_pinned;
+                    return n.note_type === notesFilter;
+                  })
+                  .map(note => (
+                    <div key={note.id} className={`p-4 rounded-lg border relative ${
+                      note.is_pinned ? 'border-[#C9A84C]/40 bg-[#C9A84C]/5' : 'border-border bg-card'
+                    }`}>
+                      {note.is_pinned && <span className="absolute top-2 right-8 text-[#C9A84C] text-xs">📌</span>}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
+                              {note.note_type}
+                            </span>
+                            {note.title && <span className="text-sm font-medium truncate">{note.title}</span>}
+                          </div>
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{note.content}</p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {new Date(note.created_at).toLocaleDateString()} · {note.created_by}
+                          </p>
+                        </div>
+                        <button onClick={() => handleDeleteNote(note.id)}
+                          className="text-muted-foreground hover:text-destructive shrink-0 p-1">✕</button>
+                      </div>
+                    </div>
+                  ))}
+                {notes.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <p className="text-lg mb-1">📝</p>
+                    <p className="text-sm">No notes yet.</p>
+                    <p className="text-xs mt-1">Click Add Note to get started.</p>
+                  </div>
+                )}
+              </div>
+            )}
+            {showNoteModal && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-card rounded-xl border p-6 w-full max-w-md space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-semibold text-lg">Add Note</h4>
+                    <button onClick={() => setShowNoteModal(false)} className="text-muted-foreground hover:text-foreground">✕</button>
+                  </div>
+                  <select value={noteType} onChange={e => setNoteType(e.target.value)}
+                    className="w-full p-2 rounded border bg-background text-sm">
+                    {['general','credit','funding','grant','call','email','document','milestone'].map(t => (
+                      <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                    ))}
+                  </select>
+                  <input type="text" placeholder="Title (optional)" value={noteTitle}
+                    onChange={e => setNoteTitle(e.target.value)}
+                    className="w-full p-2 rounded border bg-background text-sm" />
+                  <textarea placeholder="Note content..." value={noteContent}
+                    onChange={e => setNoteContent(e.target.value)} rows={4}
+                    className="w-full p-2 rounded border bg-background text-sm resize-none" />
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" checked={notesPinned}
+                      onChange={e => setNotesPinned(e.target.checked)} className="rounded" />
+                    Pin this note
+                  </label>
+                  <div className="flex gap-2">
+                    <button onClick={handleAddNote} disabled={!noteContent.trim()}
+                      className="flex-1 py-2 bg-[#C9A84C] text-black rounded font-medium text-sm disabled:opacity-50">
+                      Save Note
+                    </button>
+                    <button onClick={() => setShowNoteModal(false)}
+                      className="flex-1 py-2 border rounded text-sm">Cancel</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="reminders">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Reminders</h3>
+              <button onClick={() => setShowReminderModal(true)}
+                className="px-3 py-1.5 bg-[#C9A84C] text-black rounded text-sm font-medium hover:bg-[#B8963E]">
+                + Add Reminder
+              </button>
+            </div>
+            {reminders.filter(r => !r.is_completed && new Date(r.due_date) < new Date()).length > 0 && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                ⚠️ {reminders.filter(r => !r.is_completed && new Date(r.due_date) < new Date()).length} overdue reminder(s)
+              </div>
+            )}
+            {remindersLoading ? (
+              <div className="animate-pulse space-y-3">
+                {[1,2,3].map(i => <div key={i} className="h-16 bg-muted rounded" />)}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {reminders.map(reminder => {
+                  const isOverdue = !reminder.is_completed && new Date(reminder.due_date) < new Date();
+                  const isDueToday = !reminder.is_completed && reminder.due_date === new Date().toISOString().split('T')[0];
+                  return (
+                    <div key={reminder.id} className={`p-4 rounded-lg border flex items-start gap-3 transition ${
+                      reminder.is_completed ? 'opacity-50 bg-muted/30'
+                        : isOverdue ? 'border-red-500/30 bg-red-500/5'
+                        : isDueToday ? 'border-amber-500/30 bg-amber-500/5'
+                        : 'border-border bg-card'
+                    }`}>
+                      <input type="checkbox" checked={reminder.is_completed}
+                        onChange={() => handleCompleteReminder(reminder.id, reminder.is_completed)}
+                        className="mt-1 rounded cursor-pointer" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                          <span className={`font-medium text-sm ${reminder.is_completed ? 'line-through' : ''}`}>
+                            {reminder.title}
+                          </span>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${
+                            reminder.priority === 'urgent' ? 'bg-red-500/20 text-red-400'
+                            : reminder.priority === 'high' ? 'bg-orange-500/20 text-orange-400'
+                            : 'bg-muted text-muted-foreground'
+                          }`}>
+                            {reminder.priority}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground capitalize">
+                            {reminder.reminder_type.replace('_',' ')}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            · Due {new Date(reminder.due_date + 'T00:00:00').toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <button onClick={() => handleDeleteReminder(reminder.id)}
+                        className="text-muted-foreground hover:text-destructive shrink-0 p-1 text-xs">✕</button>
+                    </div>
+                  );
+                })}
+                {reminders.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <p className="text-lg mb-1">⏰</p>
+                    <p className="text-sm">No reminders yet.</p>
+                  </div>
+                )}
+              </div>
+            )}
+            {showReminderModal && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-card rounded-xl border p-6 w-full max-w-md space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-semibold text-lg">Add Reminder</h4>
+                    <button onClick={() => setShowReminderModal(false)}>✕</button>
+                  </div>
+                  <input type="text" placeholder="Reminder title" value={reminderTitle}
+                    onChange={e => setReminderTitle(e.target.value)}
+                    className="w-full p-2 rounded border bg-background text-sm" />
+                  <select value={reminderType} onChange={e => setReminderType(e.target.value)}
+                    className="w-full p-2 rounded border bg-background text-sm">
+                    {['task','follow_up','dispute_deadline','application_deadline','grant_deadline','call_scheduled','document_needed'].map(t => (
+                      <option key={t} value={t}>
+                        {t.replace(/_/g,' ').charAt(0).toUpperCase() + t.replace(/_/g,' ').slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Due Date</label>
+                      <input type="date" value={reminderDue}
+                        onChange={e => setReminderDue(e.target.value)}
+                        className="w-full p-2 rounded border bg-background text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Priority</label>
+                      <select value={reminderPriority} onChange={e => setReminderPriority(e.target.value)}
+                        className="w-full p-2 rounded border bg-background text-sm">
+                        {['low','medium','high','urgent'].map(p => (
+                          <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={handleAddReminder}
+                      disabled={!reminderTitle.trim() || !reminderDue}
+                      className="flex-1 py-2 bg-[#C9A84C] text-black rounded font-medium text-sm disabled:opacity-50">
+                      Save Reminder
+                    </button>
+                    <button onClick={() => setShowReminderModal(false)}
+                      className="flex-1 py-2 border rounded text-sm">Cancel</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="scores">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Credit Score History</h3>
+              <button onClick={() => setShowScoreModal(true)}
+                className="px-3 py-1.5 bg-[#C9A84C] text-black rounded text-sm font-medium hover:bg-[#B8963E]">
+                + Add Score Update
+              </button>
+            </div>
+            {scoreLoading ? (
+              <div className="h-64 bg-muted rounded animate-pulse" />
+            ) : scoreHistory.length > 0 ? (
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={scoreHistory}>
+                    <XAxis dataKey="score_date" tick={{ fontSize: 11 }}
+                      tickFormatter={d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
+                    <YAxis domain={[300, 850]} tick={{ fontSize: 11 }} />
+                    <RTooltip formatter={(v: any, name: string) => [v, name.toUpperCase()]} />
+                    <Legend />
+                    <Line type="monotone" dataKey="score_tu" name="TU" stroke="#3B82F6" dot={{ r: 3 }} strokeWidth={2} connectNulls={false} />
+                    <Line type="monotone" dataKey="score_eq" name="EQ" stroke="#22C55E" dot={{ r: 3 }} strokeWidth={2} connectNulls={false} />
+                    <Line type="monotone" dataKey="score_ex" name="EX" stroke="#EF4444" dot={{ r: 3 }} strokeWidth={2} connectNulls={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-40 rounded-lg border border-dashed flex items-center justify-center text-muted-foreground text-sm">
+                No score history yet. Add a score update to start tracking progress.
+              </div>
+            )}
+            {scoreHistory.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-muted-foreground text-xs">
+                      <th className="pb-2 text-left">Date</th>
+                      <th className="pb-2 text-center">TransUnion</th>
+                      <th className="pb-2 text-center">Equifax</th>
+                      <th className="pb-2 text-center">Experian</th>
+                      <th className="pb-2 text-center">Avg</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...scoreHistory].reverse().map(row => {
+                      const scores = [row.score_tu, row.score_eq, row.score_ex].filter(Boolean) as number[];
+                      const avg = scores.length ? Math.round(scores.reduce((a,b) => a+b, 0) / scores.length) : null;
+                      return (
+                        <tr key={row.id} className="border-b border-border/50">
+                          <td className="py-2">{new Date(row.score_date + 'T00:00:00').toLocaleDateString()}</td>
+                          <td className="py-2 text-center text-blue-400">{row.score_tu ?? '—'}</td>
+                          <td className="py-2 text-center text-green-400">{row.score_eq ?? '—'}</td>
+                          <td className="py-2 text-center text-red-400">{row.score_ex ?? '—'}</td>
+                          <td className="py-2 text-center font-medium">{avg ?? '—'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {showScoreModal && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-card rounded-xl border p-6 w-full max-w-sm space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-semibold text-lg">Add Score Update</h4>
+                    <button onClick={() => setShowScoreModal(false)}>✕</button>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Date</label>
+                    <input type="date" value={scoreDate}
+                      onChange={e => setScoreDate(e.target.value)}
+                      className="w-full p-2 rounded border bg-background text-sm" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs text-blue-400 mb-1 block">TransUnion</label>
+                      <input type="number" min="300" max="850" placeholder="TU" value={scoreTU}
+                        onChange={e => setScoreTU(e.target.value)}
+                        className="w-full p-2 rounded border bg-background text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-green-400 mb-1 block">Equifax</label>
+                      <input type="number" min="300" max="850" placeholder="EQ" value={scoreEQ}
+                        onChange={e => setScoreEQ(e.target.value)}
+                        className="w-full p-2 rounded border bg-background text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-red-400 mb-1 block">Experian</label>
+                      <input type="number" min="300" max="850" placeholder="EX" value={scoreEX}
+                        onChange={e => setScoreEX(e.target.value)}
+                        className="w-full p-2 rounded border bg-background text-sm" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={handleAddScore}
+                      disabled={!scoreTU && !scoreEQ && !scoreEX}
+                      className="flex-1 py-2 bg-[#C9A84C] text-black rounded font-medium text-sm disabled:opacity-50">
+                      Save Scores
+                    </button>
+                    <button onClick={() => setShowScoreModal(false)}
+                      className="flex-1 py-2 border rounded text-sm">Cancel</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+
 
         <TabsContent value="grants" className="space-y-6">
           {/* A — Eligibility Banner */}
