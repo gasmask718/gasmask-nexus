@@ -54969,33 +54969,54 @@ export type Database = {
       }
       funding_morning_briefings: {
         Row: {
+          ai_summary: string | null
           alerts: Json | null
           briefing_date: string
+          clients_active: number | null
           clients_summary: Json | null
+          clients_total: number | null
           created_at: string
+          funding_received_mtd: number | null
+          generated_at: string | null
           generated_by: string | null
           id: string
           operator_actions: Json | null
+          raw_data: Json | null
+          reminders_due_today: number | null
           total_active_clients: number | null
         }
         Insert: {
+          ai_summary?: string | null
           alerts?: Json | null
           briefing_date?: string
+          clients_active?: number | null
           clients_summary?: Json | null
+          clients_total?: number | null
           created_at?: string
+          funding_received_mtd?: number | null
+          generated_at?: string | null
           generated_by?: string | null
           id?: string
           operator_actions?: Json | null
+          raw_data?: Json | null
+          reminders_due_today?: number | null
           total_active_clients?: number | null
         }
         Update: {
+          ai_summary?: string | null
           alerts?: Json | null
           briefing_date?: string
+          clients_active?: number | null
           clients_summary?: Json | null
+          clients_total?: number | null
           created_at?: string
+          funding_received_mtd?: number | null
+          generated_at?: string | null
           generated_by?: string | null
           id?: string
           operator_actions?: Json | null
+          raw_data?: Json | null
+          reminders_due_today?: number | null
           total_active_clients?: number | null
         }
         Relationships: []
