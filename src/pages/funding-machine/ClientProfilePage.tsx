@@ -287,6 +287,7 @@ export default function ClientProfilePage() {
     loadScoreHistory();
     loadClientStage();
     loadBureauTracking();
+    loadLenderMatches();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
