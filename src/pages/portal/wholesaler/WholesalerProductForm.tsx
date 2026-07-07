@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Save, Loader2, Package, Upload } from "lucide-react";
 import { useWholesalerProfile } from "@/services/wholesaler/useWholesalerProfile";
 import { BulkUploadModule } from "@/components/wholesaler-console";
+import { ProductDimensionsPanel, ProductDimensions } from "@/components/products/ProductDimensionsPanel";
 
 export default function WholesalerProductForm() {
   const { productId } = useParams();
@@ -32,14 +33,25 @@ export default function WholesalerProductForm() {
     store_price: 0,
     wholesale_price: 0,
     inventory_qty: 0,
-    weight_oz: 0,
+    weight_oz: null,
     processing_time: '1-3 days',
     shipping_from_city: '',
     shipping_from_state: '',
+    length_in: null,
+    width_in: null,
+    height_in: null,
+    is_fragile: false,
+    stackable: true,
+    units_per_case: null,
+    case_length_in: null,
+    case_width_in: null,
+    case_height_in: null,
+    case_weight_oz: null,
   });
 
   useEffect(() => {
     if (existingProduct && isEditing) {
+      const ep = existingProduct as any;
       setFormData({
         product_name: existingProduct.product_name,
         description: existingProduct.description || '',
@@ -48,10 +60,20 @@ export default function WholesalerProductForm() {
         store_price: existingProduct.store_price || 0,
         wholesale_price: existingProduct.wholesale_price || 0,
         inventory_qty: existingProduct.inventory_qty || 0,
-        weight_oz: existingProduct.weight_oz || 0,
+        weight_oz: existingProduct.weight_oz ?? null,
         processing_time: existingProduct.processing_time || '1-3 days',
         shipping_from_city: existingProduct.shipping_from_city || '',
         shipping_from_state: existingProduct.shipping_from_state || '',
+        length_in: ep.length_in ?? null,
+        width_in: ep.width_in ?? null,
+        height_in: ep.height_in ?? null,
+        is_fragile: !!ep.is_fragile,
+        stackable: ep.stackable !== false,
+        units_per_case: ep.units_per_case ?? null,
+        case_length_in: ep.case_length_in ?? null,
+        case_width_in: ep.case_width_in ?? null,
+        case_height_in: ep.case_height_in ?? null,
+        case_weight_oz: ep.case_weight_oz ?? null,
       });
     }
   }, [existingProduct, isEditing]);
