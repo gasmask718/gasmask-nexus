@@ -300,6 +300,11 @@ export default function GrantOpportunities() {
                     </Button>
                   )}
                 </div>
+                {o.contact_email && (
+                  <a href={`mailto:${o.contact_email}`} className="text-xs text-muted-foreground hover:text-foreground transition truncate">
+                    📧 {o.contact_email}
+                  </a>
+                )}
               </CardContent>
             </Card>
           ))}
