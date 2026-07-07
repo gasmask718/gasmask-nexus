@@ -112,13 +112,15 @@ export default function GrantsDashboard() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [total, awarded, awardedSum, pending, opps, pipelineRes] = await Promise.all([
+      const todayStart = new Date().toISOString().split("T")[0] + "T00:00:00";
+      const [total, awarded, awardedSum, pending, opps, pipelineRes, submittedTodayRes] = await Promise.all([
         supabase.from("grant_applications").select("*", { count: "exact", head: true }),
         supabase.from("grant_applications").select("*", { count: "exact", head: true }).in("status", ["approved", "awarded"]),
         supabase.from("grant_applications").select("amount_awarded").eq("status", "awarded"),
         supabase.from("grant_applications").select("*", { count: "exact", head: true }).in("status", ["submitted", "under_review", "drafting"]),
         supabase.from("grant_opportunities").select("*", { count: "exact", head: true }).eq("is_active", true),
         supabase.from("grant_applications").select("applicant_type"),
+        supabase.from("grant_applications").select("*", { count: "exact", head: true }).eq("status", "submitted").gte("submitted_at", todayStart),
       ]);
       const sum = (awardedSum.data ?? []).reduce((a: number, r: any) => a + Number(r.amount_awarded || 0), 0);
       setStats({
