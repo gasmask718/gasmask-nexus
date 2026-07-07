@@ -154,6 +154,14 @@ export default function ClientProfilePage() {
   const [scoreEX, setScoreEX] = useState('');
   const [scoreDate, setScoreDate] = useState(new Date().toISOString().split('T')[0]);
 
+  // ==== Bureau Response Tracking state ====
+  const [bureauTracking, setBureauTracking] = useState<any[]>([]);
+  const [bureauLoading, setBureauLoading] = useState(true);
+  const [showBureauModal, setShowBureauModal] = useState(false);
+  const [newBureau, setNewBureau] = useState('TransUnion');
+  const [newLetterDate, setNewLetterDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newCertifiedMail, setNewCertifiedMail] = useState('');
+
   const [clientStage, setClientStage] = useState('intake');
 
   const loadNotesAndReminders = async () => {
@@ -183,11 +191,43 @@ export default function ClientProfilePage() {
     if (data) setClientStage((data as any).stage ?? 'intake');
   };
 
+  const loadBureauTracking = async () => {
+    const { data } = await (supabase.from('bureau_response_tracking' as any)
+      .select('*').eq('client_id', clientId as any)
+      .order('letter_sent_date', { ascending: false }));
+    setBureauTracking((data as any) ?? []);
+    setBureauLoading(false);
+  };
+
+  const handleLogLetter = async () => {
+    const { error } = await (supabase.from('bureau_response_tracking' as any).insert({
+      client_id: clientId,
+      bureau: newBureau,
+      letter_sent_date: newLetterDate,
+      certified_mail_number: newCertifiedMail.trim() || null,
+    } as any));
+    if (error) { toast.error(error.message); return; }
+    toast.success('Letter logged for ' + newBureau);
+    setShowBureauModal(false);
+    setNewCertifiedMail('');
+    loadBureauTracking();
+  };
+
+  const handleMarkResponse = async (id: string, responseType: string) => {
+    await (supabase.from('bureau_response_tracking' as any).update({
+      response_received_date: new Date().toISOString().split('T')[0],
+      response_type: responseType,
+    } as any).eq('id', id));
+    loadBureauTracking();
+    toast.success('Response recorded');
+  };
+
   useEffect(() => {
     if (!clientId) return;
     loadNotesAndReminders();
     loadScoreHistory();
     loadClientStage();
+    loadBureauTracking();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
@@ -531,6 +571,7 @@ export default function ClientProfilePage() {
           </TabsTrigger>
           <TabsTrigger value="notes">📝 Notes</TabsTrigger>
           <TabsTrigger value="reminders">⏰ Reminders</TabsTrigger>
+          <TabsTrigger value="bureau">📬 Bureau Tracking</TabsTrigger>
           <TabsTrigger value="scores">📊 Score History</TabsTrigger>
           <TabsTrigger value="grants">
             <Award className="h-3 w-3 mr-1" /> Grants
@@ -910,6 +951,133 @@ export default function ClientProfilePage() {
               </div>
             )}
           </div>
+        </TabsContent>
+
+        <TabsContent value="bureau" className="space-y-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Bureau Response Tracking</h3>
+            <button
+              onClick={() => setShowBureauModal(true)}
+              className="px-3 py-1.5 bg-[#C9A84C] text-black rounded text-sm font-medium hover:bg-[#B8963E]"
+            >
+              + Log Letter Sent
+            </button>
+          </div>
+
+          {bureauLoading ? (
+            <div className="space-y-3">
+              {[1,2,3].map(i => <div key={i} className="h-24 rounded-lg bg-muted/40 animate-pulse" />)}
+            </div>
+          ) : bureauTracking.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              No letters logged yet. Click + Log Letter Sent to start tracking bureau responses.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {bureauTracking.map((row: any) => {
+                const bureauColor =
+                  row.bureau === 'TransUnion' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+                  : row.bureau === 'Equifax'   ? 'bg-green-500/15 text-green-400 border-green-500/30'
+                  : 'bg-red-500/15 text-red-400 border-red-500/30';
+                const today = new Date(new Date().toISOString().split('T')[0]);
+                const responded = !!row.response_received_date;
+
+                const deadlineStatus = (dStr: string) => {
+                  if (responded) return { label: '✅ Responded', cls: 'text-green-400' };
+                  const d = new Date(dStr);
+                  const days = Math.ceil((d.getTime() - today.getTime()) / 86400000);
+                  if (days < 0) return { label: '🔴 OVERDUE', cls: 'text-red-400' };
+                  if (days <= 7) return { label: `🟡 Due in ${days}d`, cls: 'text-amber-400' };
+                  return { label: '⬜ Pending', cls: 'text-muted-foreground' };
+                };
+
+                const d30 = deadlineStatus(row.response_deadline_30);
+                const d45 = deadlineStatus(row.response_deadline_45);
+                const d60 = deadlineStatus(row.response_deadline_60);
+
+                return (
+                  <div key={row.id} className="rounded-lg border p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Badge className={`border ${bureauColor}`}>{row.bureau}</Badge>
+                        <span className="text-sm">Sent {new Date(row.letter_sent_date).toLocaleDateString()}</span>
+                        {row.certified_mail_number && (
+                          <span className="text-xs text-muted-foreground">Cert #{row.certified_mail_number}</span>
+                        )}
+                      </div>
+                      {responded && row.response_type && (
+                        <Badge variant="outline" className="capitalize">{String(row.response_type).replace('_',' ')}</Badge>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <p className="text-muted-foreground mb-1">30-day ({new Date(row.response_deadline_30).toLocaleDateString()})</p>
+                        <p className={d30.cls}>{d30.label}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">45-day ({new Date(row.response_deadline_45).toLocaleDateString()})</p>
+                        <p className={d45.cls}>{d45.label}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">60-day ({new Date(row.response_deadline_60).toLocaleDateString()})</p>
+                        <p className={d60.cls}>{d60.label}</p>
+                      </div>
+                    </div>
+
+                    {!responded && (
+                      <div className="flex items-center gap-2 pt-2 border-t">
+                        <span className="text-xs text-muted-foreground">Mark response:</span>
+                        <select
+                          onChange={(e) => { const v = e.target.value; if (v) { handleMarkResponse(row.id, v); e.target.value = ''; } }}
+                          className="text-xs bg-background border rounded px-2 py-1"
+                          defaultValue=""
+                        >
+                          <option value="" disabled>Select…</option>
+                          <option value="deleted">Deleted</option>
+                          <option value="verified">Verified</option>
+                          <option value="updated">Updated</option>
+                          <option value="no_response">No Response</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {showBureauModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowBureauModal(false)}>
+              <div className="w-full max-w-md rounded-xl bg-card border p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+                <h3 className="text-lg font-semibold">Log Letter Sent</h3>
+                <div>
+                  <label className="text-xs text-muted-foreground">Bureau</label>
+                  <select value={newBureau} onChange={(e) => setNewBureau(e.target.value)}
+                    className="w-full mt-1 bg-background border rounded px-3 py-2 text-sm">
+                    <option value="TransUnion">TransUnion</option>
+                    <option value="Equifax">Equifax</option>
+                    <option value="Experian">Experian</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Letter sent date</label>
+                  <input type="date" value={newLetterDate} onChange={(e) => setNewLetterDate(e.target.value)}
+                    className="w-full mt-1 bg-background border rounded px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Certified mail # (optional)</label>
+                  <input type="text" value={newCertifiedMail} onChange={(e) => setNewCertifiedMail(e.target.value)}
+                    placeholder="7014 XXXX XXXX XXXX XXXX"
+                    className="w-full mt-1 bg-background border rounded px-3 py-2 text-sm" />
+                </div>
+                <div className="flex gap-2 justify-end pt-2">
+                  <button onClick={() => setShowBureauModal(false)} className="px-3 py-1.5 text-sm border rounded">Cancel</button>
+                  <button onClick={handleLogLetter} className="px-3 py-1.5 bg-[#C9A84C] text-black rounded text-sm font-medium">Save</button>
+                </div>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="scores">
