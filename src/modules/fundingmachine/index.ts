@@ -1,7 +1,7 @@
 import { DynastyModule, SidebarItem } from '../types';
 import {
   Landmark, Users, Shield, Building2, CreditCard,
-  TrendingUp, FileText, ClipboardList, LayoutDashboard, Plus, Sunrise, Settings
+  TrendingUp, FileText, ClipboardList, LayoutDashboard, Plus, Sunrise, Settings, DollarSign
 } from 'lucide-react';
 import FundingMachineDashboard from '@/pages/funding-machine/FundingMachineDashboard';
 import ClientIntakePage from '@/pages/funding-machine/ClientIntakePage';
@@ -16,9 +16,11 @@ import TaskCardsPage from '@/pages/funding-machine/TaskCardsPage';
 import MorningBriefingPage from '@/pages/funding-machine/MorningBriefingPage';
 import FundingMachineSettingsPage from '@/pages/funding-machine/FundingMachineSettingsPage';
 import ApplicationsPage from '@/pages/funding-machine/ApplicationsPage';
+import RevenueDashboardPage from '@/pages/funding-machine/RevenueDashboardPage';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/funding-machine/morning-briefing', label: 'Morning Briefing', icon: Sunrise },
+  { path: '/funding-machine/revenue', label: '💰 Revenue', icon: DollarSign },
   { path: '/funding-machine', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/funding-machine/intake', label: 'New Client', icon: Plus },
   { path: '/funding-machine/credit-repair', label: 'Credit Repair', icon: Shield },
@@ -47,6 +49,7 @@ export const FundingMachineModule: DynastyModule = {
   routes: [
     { path: '', component: FundingMachineDashboard, label: 'Dashboard', icon: LayoutDashboard, requiresAuth: true },
     { path: '/morning-briefing', component: MorningBriefingPage, label: 'Morning Briefing', icon: Sunrise, requiresAuth: true },
+    { path: '/revenue', component: RevenueDashboardPage, label: 'Revenue', icon: DollarSign, requiresAuth: true },
     { path: '/intake', component: ClientIntakePage, label: 'New Client', icon: Plus, requiresAuth: true },
     { path: '/client/:clientId', component: ClientProfilePage, label: 'Client Profile', icon: Users, requiresAuth: true },
     { path: '/credit-repair', component: CreditRepairPage, label: 'Credit Repair', icon: Shield, requiresAuth: true },
