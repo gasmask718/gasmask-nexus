@@ -1,7 +1,7 @@
 import { DynastyModule, SidebarItem } from '../types';
 import {
   Landmark, Users, Shield, Building2, CreditCard,
-  TrendingUp, FileText, ClipboardList, LayoutDashboard, Plus, Sunrise, Settings
+  TrendingUp, FileText, ClipboardList, LayoutDashboard, Plus, Sunrise, Settings, DollarSign
 } from 'lucide-react';
 import FundingMachineDashboard from '@/pages/funding-machine/FundingMachineDashboard';
 import ClientIntakePage from '@/pages/funding-machine/ClientIntakePage';
