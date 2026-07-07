@@ -1,6 +1,6 @@
 // Real Estate lead intake webhook.
 // Contract: Make.com (or any external source) POSTs a JSON lead payload with
-// header `x-webhook-secret: <RE_INTAKE_WEBHOOK_SECRET>`.
+// header `x-webhook-secret: <RE_REAL_ESTATE_WEBHOOK_SECRET>`.
 // Flow: authenticate → validate envelope → normalize → dedupe → insert → log.
 // This function is the canonical template for future *business* intake endpoints.
 
@@ -14,7 +14,7 @@ import {
 
 const FUNCTION_NAME = "re-intake-webhook";
 const FUNCTION_VERSION = "v1";
-const SECRET_ENV = "RE_INTAKE_WEBHOOK_SECRET";
+const SECRET_ENV = "RE_REAL_ESTATE_WEBHOOK_SECRET";
 const MAX_BODY_BYTES = 64 * 1024;
 
 // ---------- helpers ----------
