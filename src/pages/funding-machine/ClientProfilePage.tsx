@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -108,6 +108,131 @@ export default function ClientProfilePage() {
       return data || [];
     },
   });
+
+  // ==== Notes / Reminders / Score History state ====
+  const [notes, setNotes] = useState<any[]>([]);
+  const [notesLoading, setNotesLoading] = useState(true);
+  const [noteType, setNoteType] = useState('general');
+  const [noteTitle, setNoteTitle] = useState('');
+  const [noteContent, setNoteContent] = useState('');
+  const [notesPinned, setNotesPinned] = useState(false);
+  const [notesFilter, setNotesFilter] = useState('all');
+  const [showNoteModal, setShowNoteModal] = useState(false);
+
+  const [reminders, setReminders] = useState<any[]>([]);
+  const [remindersLoading, setRemindersLoading] = useState(true);
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [reminderTitle, setReminderTitle] = useState('');
+  const [reminderType, setReminderType] = useState('task');
+  const [reminderDue, setReminderDue] = useState('');
+  const [reminderPriority, setReminderPriority] = useState('medium');
+
+  const [scoreHistory, setScoreHistory] = useState<any[]>([]);
+  const [scoreLoading, setScoreLoading] = useState(true);
+  const [showScoreModal, setShowScoreModal] = useState(false);
+  const [scoreTU, setScoreTU] = useState('');
+  const [scoreEQ, setScoreEQ] = useState('');
+  const [scoreEX, setScoreEX] = useState('');
+  const [scoreDate, setScoreDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const [clientStage, setClientStage] = useState('intake');
+
+  const loadNotesAndReminders = async () => {
+    const [notesRes, remindersRes] = await Promise.all([
+      (supabase.from('client_notes' as any).select('*').eq('client_id', clientId as any)
+        .order('is_pinned', { ascending: false })
+        .order('created_at', { ascending: false })),
+      (supabase.from('client_reminders' as any).select('*').eq('client_id', clientId as any)
+        .order('due_date', { ascending: true })),
+    ]);
+    setNotes((notesRes as any).data ?? []);
+    setNotesLoading(false);
+    setReminders((remindersRes as any).data ?? []);
+    setRemindersLoading(false);
+  };
+
+  const loadScoreHistory = async () => {
+    const { data } = await (supabase.from('client_score_history' as any)
+      .select('*').eq('client_id', clientId as any).order('score_date', { ascending: true }));
+    setScoreHistory((data as any) ?? []);
+    setScoreLoading(false);
+  };
+
+  const loadClientStage = async () => {
+    const { data } = await supabase.from('funding_clients')
+      .select('stage, score_tu, score_eq, score_ex').eq('id', clientId!).single();
+    if (data) setClientStage((data as any).stage ?? 'intake');
+  };
+
+  useEffect(() => {
+    if (!clientId) return;
+    loadNotesAndReminders();
+    loadScoreHistory();
+    loadClientStage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId]);
+
+  const handleAddNote = async () => {
+    if (!noteContent.trim()) return;
+    const { error } = await (supabase.from('client_notes' as any).insert({
+      client_id: clientId, note_type: noteType,
+      title: noteTitle.trim() || null, content: noteContent.trim(),
+      is_pinned: notesPinned, created_by: 'David',
+    } as any));
+    if (error) { toast.error(error.message); return; }
+    toast.success('Note added');
+    setNoteTitle(''); setNoteContent(''); setNotesPinned(false); setShowNoteModal(false);
+    loadNotesAndReminders();
+  };
+
+  const handleDeleteNote = async (id: string) => {
+    await supabase.from('client_notes' as any).delete().eq('id', id);
+    setNotes(prev => prev.filter(n => n.id !== id));
+    toast.success('Note deleted');
+  };
+
+  const handleAddReminder = async () => {
+    if (!reminderTitle.trim() || !reminderDue) return;
+    const { error } = await (supabase.from('client_reminders' as any).insert({
+      client_id: clientId, title: reminderTitle.trim(),
+      reminder_type: reminderType, due_date: reminderDue,
+      priority: reminderPriority, is_completed: false,
+    } as any));
+    if (error) { toast.error(error.message); return; }
+    toast.success('Reminder added');
+    setReminderTitle(''); setReminderDue(''); setShowReminderModal(false);
+    loadNotesAndReminders();
+  };
+
+  const handleCompleteReminder = async (id: string, current: boolean) => {
+    await (supabase.from('client_reminders' as any).update({
+      is_completed: !current,
+      completed_at: !current ? new Date().toISOString() : null,
+    } as any).eq('id', id));
+    setReminders(prev => prev.map(r => r.id === id ? { ...r, is_completed: !current } : r));
+  };
+
+  const handleDeleteReminder = async (id: string) => {
+    await supabase.from('client_reminders' as any).delete().eq('id', id);
+    setReminders(prev => prev.filter(r => r.id !== id));
+  };
+
+  const handleAddScore = async () => {
+    if (!scoreTU && !scoreEQ && !scoreEX) return;
+    const { error } = await (supabase.from('client_score_history' as any).upsert({
+      client_id: clientId, score_date: scoreDate,
+      score_tu: scoreTU ? parseInt(scoreTU) : null,
+      score_eq: scoreEQ ? parseInt(scoreEQ) : null,
+      score_ex: scoreEX ? parseInt(scoreEX) : null,
+      source: 'manual',
+    } as any, { onConflict: 'client_id,score_date' }));
+    if (error) { toast.error(error.message); return; }
+    toast.success('Score updated');
+    setScoreTU(''); setScoreEQ(''); setScoreEX(''); setShowScoreModal(false);
+    loadScoreHistory();
+  };
+
+
 
   // ---- Grants tab ----
   const [checkingEligibility, setCheckingEligibility] = useState(false);
