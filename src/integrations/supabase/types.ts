@@ -22323,6 +22323,72 @@ export type Database = {
         }
         Relationships: []
       }
+      bureau_response_tracking: {
+        Row: {
+          bureau: string
+          certified_mail_number: string | null
+          client_id: string
+          created_at: string | null
+          dispute_round_id: string | null
+          escalation_sent: boolean | null
+          id: string
+          letter_sent_date: string
+          response_deadline_30: string | null
+          response_deadline_45: string | null
+          response_deadline_60: string | null
+          response_notes: string | null
+          response_received_date: string | null
+          response_type: string | null
+        }
+        Insert: {
+          bureau: string
+          certified_mail_number?: string | null
+          client_id: string
+          created_at?: string | null
+          dispute_round_id?: string | null
+          escalation_sent?: boolean | null
+          id?: string
+          letter_sent_date: string
+          response_deadline_30?: string | null
+          response_deadline_45?: string | null
+          response_deadline_60?: string | null
+          response_notes?: string | null
+          response_received_date?: string | null
+          response_type?: string | null
+        }
+        Update: {
+          bureau?: string
+          certified_mail_number?: string | null
+          client_id?: string
+          created_at?: string | null
+          dispute_round_id?: string | null
+          escalation_sent?: boolean | null
+          id?: string
+          letter_sent_date?: string
+          response_deadline_30?: string | null
+          response_deadline_45?: string | null
+          response_deadline_60?: string | null
+          response_notes?: string | null
+          response_received_date?: string | null
+          response_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bureau_response_tracking_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bureau_response_tracking_dispute_round_id_fkey"
+            columns: ["dispute_round_id"]
+            isOneToOne: false
+            referencedRelation: "funding_dispute_rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_call_readiness: {
         Row: {
           after_hours_configured: boolean | null
