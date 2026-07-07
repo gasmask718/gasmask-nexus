@@ -164,6 +164,65 @@ export default function ClientProfilePage() {
 
   const [clientStage, setClientStage] = useState('intake');
 
+  const [lenderMatches, setLenderMatches] = useState<any[]>([]);
+  const [lendersLoading, setLendersLoading] = useState(true);
+  const [applyingLender, setApplyingLender] = useState<string | null>(null);
+  const [applyingAll, setApplyingAll] = useState(false);
+
+  const loadLenderMatches = async () => {
+    setLendersLoading(true);
+    const { data } = await (supabase.from('funding_client_lender_matches' as any) as any)
+      .select(`
+        *,
+        funding_lender_database:lender_id(
+          lender_name, product_name, category, max_amount,
+          prequal_url, has_soft_pull_prequal, product_type
+        )
+      `)
+      .eq('client_id', clientId)
+      .order('match_score', { ascending: false });
+    const enriched = (data ?? []).map((r: any) => ({ ...r, ...(r.funding_lender_database ?? {}) }));
+    setLenderMatches(enriched);
+    setLendersLoading(false);
+  };
+
+  const handleApplyLender = async (matchId: string) => {
+    setApplyingLender(matchId);
+    try {
+      const { data, error } = await supabase.functions.invoke('submit-lender-application', {
+        body: { client_id: clientId, lender_match_id: matchId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Applied to ${(data as any)?.lender_name ?? 'lender'}`);
+      loadLenderMatches();
+      loadNotesAndReminders();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setApplyingLender(null);
+    }
+  };
+
+  const handleApplyTop3 = async () => {
+    setApplyingAll(true);
+    try {
+      const top3 = lenderMatches.filter(m => m.status === 'identified').slice(0, 3);
+      for (const match of top3) {
+        await supabase.functions.invoke('submit-lender-application', {
+          body: { client_id: clientId, lender_match_id: match.id },
+        });
+      }
+      toast.success(`Applied to top ${top3.length} lenders`);
+      loadLenderMatches();
+      loadNotesAndReminders();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setApplyingAll(false);
+    }
+  };
+
   const loadNotesAndReminders = async () => {
     const [notesRes, remindersRes] = await Promise.all([
       (supabase.from('client_notes' as any).select('*').eq('client_id', clientId as any)
