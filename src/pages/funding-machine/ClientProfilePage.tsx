@@ -110,6 +110,22 @@ export default function ClientProfilePage() {
     },
   });
 
+  const { data: negativeItems = [] } = useQuery({
+    queryKey: ['client-negative-items', clientId],
+    queryFn: async () => {
+      if (!clientId) return [];
+      const { data, error } = await supabase
+        .from('funding_credit_items' as any)
+        .select('id')
+        .eq('client_id', clientId as any)
+        .eq('status', 'negative' as any);
+      if (error) throw error;
+      return (data as any[]) ?? [];
+    },
+    enabled: !!clientId,
+  });
+
+
   // ==== Notes / Reminders / Score History state ====
   const [notes, setNotes] = useState<any[]>([]);
   const [notesLoading, setNotesLoading] = useState(true);
