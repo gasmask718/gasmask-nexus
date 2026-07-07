@@ -7,8 +7,244 @@ import { supabase } from "@/integrations/supabase/client";
 import { SurplusVisibilityPanel, RealEstateVisibilityPanel } from "@/components/funding/CrossSystemPanels";
 import {
   Users, TrendingUp, CreditCard, Building2, FileText,
-  Shield, Landmark, Clock, AlertTriangle, Plus, RefreshCw
+  Shield, Landmark, Clock, AlertTriangle, Plus, RefreshCw,
+  Bell, GitBranch, Trophy
 } from "lucide-react";
+
+// ============ Dashboard Widgets ============
+
+function TodaysReminders() {
+  const navigate = useNavigate();
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data: reminders = [], isLoading } = useQuery({
+    queryKey: ['dashboard-todays-reminders', today],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('client_reminders')
+        .select('id, client_id, title, due_date, priority, funding_clients(first_name, last_name)')
+        .eq('is_completed', false)
+        .lte('due_date', today)
+        .order('due_date', { ascending: true })
+        .limit(10);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  return (
+    <Card className="border-[#C9A84C]/30 bg-gradient-to-br from-background to-[#C9A84C]/5">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Bell className="h-4 w-4 text-[#C9A84C]" />
+          Today's Reminders
+          {reminders.length > 0 && (
+            <Badge className="ml-auto bg-[#C9A84C] text-black">{reminders.length}</Badge>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2 max-h-[280px] overflow-y-auto">
+        {isLoading ? (
+          <>
+            <div className="h-12 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-12 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-12 rounded-md bg-muted/40 animate-pulse" />
+          </>
+        ) : reminders.length === 0 ? (
+          <div className="text-center py-8">
+            <Bell className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">All caught up</p>
+          </div>
+        ) : (
+          reminders.map((r: any) => (
+            <div
+              key={r.id}
+              onClick={() => navigate(`/funding-machine/client/${r.client_id}`)}
+              className="flex items-start justify-between p-2 rounded-md border border-border/50 hover:border-[#C9A84C]/40 hover:bg-[#C9A84C]/5 cursor-pointer transition-all"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">{r.title}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {r.funding_clients?.first_name} {r.funding_clients?.last_name} · {r.due_date}
+                </p>
+              </div>
+              {r.priority === 'high' && (
+                <Badge variant="outline" className="border-red-500/40 text-red-500 text-[10px] ml-2">HIGH</Badge>
+              )}
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ClientPipeline() {
+  const { data: clients = [], isLoading } = useQuery({
+    queryKey: ['dashboard-client-pipeline'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('funding_clients')
+        .select('stage, status');
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const stages = [
+    { key: 'intake', label: 'Intake', color: 'bg-gray-500' },
+    { key: 'credit_repair', label: 'Credit Repair', color: 'bg-amber-500' },
+    { key: 'credit_ready', label: 'Credit Ready', color: 'bg-yellow-500' },
+    { key: 'funding_active', label: 'Funding Active', color: 'bg-blue-500' },
+    { key: 'funded', label: 'Funded', color: 'bg-[#C9A84C]' },
+    { key: 'grant_eligible', label: 'Grant Eligible', color: 'bg-purple-500' },
+    { key: 'complete', label: 'Complete', color: 'bg-emerald-500' },
+  ];
+
+  const counts = stages.map(s => ({
+    ...s,
+    count: clients.filter((c: any) => (c.stage || 'intake') === s.key).length,
+  }));
+  const total = clients.length || 1;
+
+  return (
+    <Card className="border-[#C9A84C]/30 bg-gradient-to-br from-background to-[#C9A84C]/5">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <GitBranch className="h-4 w-4 text-[#C9A84C]" />
+          Client Pipeline
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {isLoading ? (
+          <>
+            <div className="h-8 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-8 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-8 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-8 rounded-md bg-muted/40 animate-pulse" />
+          </>
+        ) : clients.length === 0 ? (
+          <div className="text-center py-8">
+            <GitBranch className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">No clients in pipeline</p>
+          </div>
+        ) : (
+          counts.map(s => (
+            <div key={s.key}>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-muted-foreground">{s.label}</span>
+                <span className="font-semibold">{s.count}</span>
+              </div>
+              <div className="h-2 bg-muted/40 rounded-full overflow-hidden">
+                <div
+                  className={`h-full ${s.color} transition-all`}
+                  style={{ width: `${(s.count / total) * 100}%` }}
+                />
+              </div>
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ScoreWins() {
+  const { data: wins = [], isLoading } = useQuery({
+    queryKey: ['dashboard-score-wins'],
+    queryFn: async () => {
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+      const { data, error } = await supabase
+        .from('client_score_history')
+        .select(`
+          id, client_id, score_date,
+          score_tu, score_eq, score_ex,
+          funding_clients!inner(first_name, last_name, id)
+        `)
+        .gte('score_date', monthStart.toISOString().split('T')[0])
+        .order('score_date', { ascending: true });
+      if (error) throw error;
+
+      const byClient: Record<string, any[]> = {};
+      (data ?? []).forEach((r: any) => {
+        const cid = r.client_id;
+        if (!byClient[cid]) byClient[cid] = [];
+        byClient[cid].push(r);
+      });
+
+      const results: any[] = [];
+      Object.entries(byClient).forEach(([_, rows]) => {
+        if (rows.length < 2) return;
+        const first = rows[0];
+        const last = rows[rows.length - 1];
+        const tuGain = (last.score_tu ?? 0) - (first.score_tu ?? 0);
+        const eqGain = (last.score_eq ?? 0) - (first.score_eq ?? 0);
+        const exGain = (last.score_ex ?? 0) - (first.score_ex ?? 0);
+        const totalGain =
+          Math.max(tuGain, 0) + Math.max(eqGain, 0) + Math.max(exGain, 0);
+        if (totalGain < 20) return;
+        results.push({
+          client_id: rows[0].client_id,
+          full_name:
+            (last.funding_clients as any)?.first_name +
+            ' ' +
+            (last.funding_clients as any)?.last_name,
+          total_gain: totalGain,
+          tu_gain: Math.max(tuGain, 0),
+          eq_gain: Math.max(eqGain, 0),
+          ex_gain: Math.max(exGain, 0),
+        });
+      });
+
+      return results.sort((a, b) => b.total_gain - a.total_gain).slice(0, 5);
+    },
+  });
+
+  return (
+    <Card className="border-[#C9A84C]/30 bg-gradient-to-br from-background to-[#C9A84C]/5">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Trophy className="h-4 w-4 text-[#C9A84C]" />
+          Score Wins (MTD)
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2 max-h-[280px] overflow-y-auto">
+        {isLoading ? (
+          <>
+            <div className="h-12 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-12 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-12 rounded-md bg-muted/40 animate-pulse" />
+          </>
+        ) : wins.length === 0 ? (
+          <div className="text-center py-8">
+            <Trophy className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">No score gains yet</p>
+          </div>
+        ) : (
+          wins.map((w: any) => (
+            <div key={w.client_id} className="flex items-center justify-between p-2 rounded-md border border-border/50">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">{w.full_name}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {[
+                    w.tu_gain > 0 ? `TU+${w.tu_gain}` : null,
+                    w.eq_gain > 0 ? `EQ+${w.eq_gain}` : null,
+                    w.ex_gain > 0 ? `EX+${w.ex_gain}` : null,
+                  ].filter(Boolean).join(' ')}
+                </p>
+              </div>
+              <div className="text-right ml-2">
+                <p className="text-sm font-bold text-emerald-500">+{w.total_gain} pts</p>
+              </div>
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function FundingMachineDashboard() {
   const navigate = useNavigate();
@@ -98,6 +334,13 @@ export default function FundingMachineDashboard() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Widgets */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <TodaysReminders />
+        <ClientPipeline />
+        <ScoreWins />
       </div>
 
       {/* Module Grid */}
