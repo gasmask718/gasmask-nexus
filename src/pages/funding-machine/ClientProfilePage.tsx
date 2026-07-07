@@ -191,11 +191,43 @@ export default function ClientProfilePage() {
     if (data) setClientStage((data as any).stage ?? 'intake');
   };
 
+  const loadBureauTracking = async () => {
+    const { data } = await (supabase.from('bureau_response_tracking' as any)
+      .select('*').eq('client_id', clientId as any)
+      .order('letter_sent_date', { ascending: false }));
+    setBureauTracking((data as any) ?? []);
+    setBureauLoading(false);
+  };
+
+  const handleLogLetter = async () => {
+    const { error } = await (supabase.from('bureau_response_tracking' as any).insert({
+      client_id: clientId,
+      bureau: newBureau,
+      letter_sent_date: newLetterDate,
+      certified_mail_number: newCertifiedMail.trim() || null,
+    } as any));
+    if (error) { toast.error(error.message); return; }
+    toast.success('Letter logged for ' + newBureau);
+    setShowBureauModal(false);
+    setNewCertifiedMail('');
+    loadBureauTracking();
+  };
+
+  const handleMarkResponse = async (id: string, responseType: string) => {
+    await (supabase.from('bureau_response_tracking' as any).update({
+      response_received_date: new Date().toISOString().split('T')[0],
+      response_type: responseType,
+    } as any).eq('id', id));
+    loadBureauTracking();
+    toast.success('Response recorded');
+  };
+
   useEffect(() => {
     if (!clientId) return;
     loadNotesAndReminders();
     loadScoreHistory();
     loadClientStage();
+    loadBureauTracking();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
