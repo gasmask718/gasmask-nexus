@@ -374,7 +374,17 @@ export default function GrantApplicationDetail() {
             <h1 className="text-2xl font-bold">{app.grant_name}</h1>
             <p className="text-muted-foreground mt-1">{app.funder_name}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            {app.grant_opportunities?.application_url && (
+              <a
+                href={app.grant_opportunities.application_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 text-xs border border-border rounded text-muted-foreground hover:border-[#C9A84C]/40 hover:text-foreground transition flex items-center gap-1 no-underline"
+              >
+                🌐 Open Portal
+              </a>
+            )}
             <Badge className={`px-3 py-1 text-sm border ${statusBase}`}
               style={app.status === "awarded" ? { backgroundColor: GOLD } : undefined}>
               {app.status}
@@ -462,6 +472,13 @@ export default function GrantApplicationDetail() {
                 <Button variant="outline" onClick={handleCopy}>
                   <Copy className="h-4 w-4 mr-2" /> Copy
                 </Button>
+                <button
+                  onClick={handleGenerate}
+                  disabled={generating}
+                  className="px-3 py-1.5 text-xs border border-[#C9A84C]/40 text-[#C9A84C] rounded hover:bg-[#C9A84C]/10 disabled:opacity-50 transition"
+                >
+                  {generating ? "⏳ Regenerating..." : "🔄 Re-generate Draft"}
+                </button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline" className="text-red-400">
