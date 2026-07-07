@@ -986,6 +986,7 @@ const SpecialNeedsDashboard = lazy(() => import('@/pages/os/specialneeds/Special
 const GrantsDashboard = lazy(() => import('@/pages/os/grants/GrantsDashboard'));
 const GrantOpportunities = lazy(() => import('@/pages/os/grants/GrantOpportunities'));
 const GrantApplicationDetail = lazy(() => import('@/pages/os/grants/GrantApplicationDetail'));
+const GrantFunderCRMPage = lazy(() => import('@/pages/funding-machine/grants/GrantFunderCRMPage'));
 const WealthEngineDashboard = lazy(() => import('@/pages/os/wealth/WealthEngineDashboard'));
 // Funding Machine (Floor 10)
 const FundingMachineDashboard = lazy(() => import('@/pages/funding-machine/FundingMachineDashboard'));
@@ -1008,6 +1009,7 @@ const FundingMachineSecureIntake = lazy(() => import('@/pages/funding-machine/Se
 const FundingMachineCreditUnionIntel = lazy(() => import('@/pages/funding-machine/CreditUnionIntelPage'));
 const FundingMachineAutoFinancing = lazy(() => import('@/pages/funding-machine/AutoFinancingPage'));
 const FundingMachineShelfCorp = lazy(() => import('@/pages/funding-machine/ShelfCorpPage'));
+const FundingMachineRevenue = lazy(() => import('@/pages/funding-machine/RevenueDashboardPage'));
 const UbenHQ = lazy(() => import('@/pages/os/uben/UbenHQ'));
 const UbenGrantTracker = lazy(() => import('@/pages/os/uben/UbenGrantTracker'));
 const UbenApplications = lazy(() => import('@/pages/os/uben/UbenApplications'));
@@ -2193,6 +2195,7 @@ export default function AppRoutes() {
         <Route path="/os/grants" element={<GrantsDashboard />} />
         <Route path="/os/grants/opportunities" element={<GrantOpportunities />} />
         <Route path="/os/grants/applications" element={<GrantsDashboard />} />
+        <Route path="/os/grants/funder-crm" element={<GrantFunderCRMPage />} />
         <Route path="/os/grants/:id" element={<GrantApplicationDetail />} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
         {/* Floor 10 — Dynasty Funding Machine */}
@@ -2215,6 +2218,7 @@ export default function AppRoutes() {
         <Route path="/funding-machine/auto-financing" element={<FundingMachineAutoFinancing />} />
         <Route path="/funding-machine/shelf-corp" element={<FundingMachineShelfCorp />} />
         <Route path="/funding-machine/settings" element={<FundingMachineSettings />} />
+        <Route path="/funding-machine/revenue" element={<FundingMachineRevenue />} />
         {/* UBEN HQ — Non-Profit Operations Tracker */}
         <Route path="/os/uben" element={<UbenHQ />} />
         <Route path="/os/uben/grants" element={<UbenGrantTracker />} />
