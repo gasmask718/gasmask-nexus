@@ -56341,6 +56341,131 @@ export type Database = {
           },
         ]
       }
+      grant_funder_interactions: {
+        Row: {
+          created_at: string | null
+          funder_id: string | null
+          id: string
+          interaction_date: string | null
+          interaction_type: string | null
+          notes: string | null
+          outcome: string | null
+          subject: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          funder_id?: string | null
+          id?: string
+          interaction_date?: string | null
+          interaction_type?: string | null
+          notes?: string | null
+          outcome?: string | null
+          subject?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          funder_id?: string | null
+          id?: string
+          interaction_date?: string | null
+          interaction_type?: string | null
+          notes?: string | null
+          outcome?: string | null
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grant_funder_interactions_funder_id_fkey"
+            columns: ["funder_id"]
+            isOneToOne: false
+            referencedRelation: "grant_funders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grant_funders: {
+        Row: {
+          accepts_unsolicited: boolean | null
+          application_deadline_typical: string | null
+          created_at: string | null
+          focus_areas: string[] | null
+          funder_type: string | null
+          grant_size_max: number | null
+          grant_size_min: number | null
+          id: string
+          is_active: boolean | null
+          last_contact_date: string | null
+          name: string
+          next_follow_up_date: string | null
+          primary_contact_email: string | null
+          primary_contact_name: string | null
+          primary_contact_phone: string | null
+          primary_contact_title: string | null
+          relationship_notes: string | null
+          relationship_status: string | null
+          secondary_contact_email: string | null
+          secondary_contact_name: string | null
+          success_rate: number | null
+          total_applications: number | null
+          total_awarded: number | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          accepts_unsolicited?: boolean | null
+          application_deadline_typical?: string | null
+          created_at?: string | null
+          focus_areas?: string[] | null
+          funder_type?: string | null
+          grant_size_max?: number | null
+          grant_size_min?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_contact_date?: string | null
+          name: string
+          next_follow_up_date?: string | null
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          primary_contact_phone?: string | null
+          primary_contact_title?: string | null
+          relationship_notes?: string | null
+          relationship_status?: string | null
+          secondary_contact_email?: string | null
+          secondary_contact_name?: string | null
+          success_rate?: number | null
+          total_applications?: number | null
+          total_awarded?: number | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          accepts_unsolicited?: boolean | null
+          application_deadline_typical?: string | null
+          created_at?: string | null
+          focus_areas?: string[] | null
+          funder_type?: string | null
+          grant_size_max?: number | null
+          grant_size_min?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_contact_date?: string | null
+          name?: string
+          next_follow_up_date?: string | null
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          primary_contact_phone?: string | null
+          primary_contact_title?: string | null
+          relationship_notes?: string | null
+          relationship_status?: string | null
+          secondary_contact_email?: string | null
+          secondary_contact_name?: string | null
+          success_rate?: number | null
+          total_applications?: number | null
+          total_awarded?: number | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       grant_opportunities: {
         Row: {
           amount_max: number | null
