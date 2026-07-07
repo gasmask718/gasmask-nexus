@@ -164,30 +164,11 @@ export default function MorningBriefingPage() {
   const generateBrief = async () => {
     setGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('funding-ai-agent', {
-        body: {
-          action: 'generate_morning_brief',
-          clients: clients.map(c => ({ name: `${c.first_name} ${c.last_name}`, dfs: getLatestDfs(c.id).score, phase: getPhase(c.id), pending_tasks: tasks.filter(t => t.client_id === c.id && t.status === 'pending').length })),
-          red_alerts: redAlerts,
-          amber_warnings: amberWarnings,
-          green_updates: greenUpdates,
-          vault: { revenue: vaultRevenue, occupied: occupiedSlots, total: totalSlots, pending_payouts: pendingPayouts },
-          tasks_due_today: dueToday,
-          total_pipeline: totalPipeline,
-        },
-      });
+      const { data, error } = await supabase.functions.invoke('funding-morning-briefing', { body: {} });
       if (error) throw error;
-      setAiBrief(data.brief || data.raw || 'No brief generated');
-
-      // Save to morning briefings table
-      await supabase.from('funding_morning_briefings').insert({
-        briefing_date: new Date().toISOString().split('T')[0],
-        total_active_clients: clients.length,
-        alerts: { red: redAlerts, amber: amberWarnings, green: greenUpdates } as any,
-        clients_summary: clients.map(c => ({ name: `${c.first_name} ${c.last_name}`, dfs: getLatestDfs(c.id).score })) as any,
-        operator_actions: { brief: data.brief || data.raw } as any,
-      });
-      toast.success("Morning brief generated");
+      if (data?.success === false) throw new Error(data.error || 'Generation failed');
+      toast.success(`Briefing generated${data?.ai_generated ? ' (AI)' : ''}`);
+      await loadTodayBriefing();
     } catch (e: any) {
       toast.error(e.message || 'Failed');
     } finally {
@@ -200,6 +181,9 @@ export default function MorningBriefingPage() {
     trend === 'down' ? <ArrowDown className="h-3 w-3 text-red-400" /> :
     <Minus className="h-3 w-3 text-muted-foreground" />;
 
+  const briefingReminders: any[] = todayBriefing?.raw_data?.reminders ?? [];
+  const briefingGrantDeadlines: any[] = todayBriefing?.raw_data?.grant_deadlines ?? [];
+
   return (
     <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between">
@@ -207,10 +191,45 @@ export default function MorningBriefingPage() {
           <h1 className="text-3xl font-black text-amber-400 flex items-center gap-2"><Sunrise className="h-8 w-8" /> Morning Briefing</h1>
           <p className="text-muted-foreground">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
-        <Button onClick={generateBrief} disabled={generating} className="bg-amber-600 hover:bg-amber-700">
-          {generating ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating…</> : <><Sunrise className="h-4 w-4 mr-2" /> Generate Today's Brief</>}
+        <Button onClick={generateBrief} disabled={generating} className="bg-[#C9A84C] hover:bg-[#C9A84C]/80 text-black">
+          {generating ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating…</> : <><Sunrise className="h-4 w-4 mr-2" /> Generate Today's Briefing</>}
         </Button>
       </div>
+
+      {!loadingBriefing && !todayBriefing && (
+        <div className="rounded border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+          No briefing yet — click Generate to create today's.
+        </div>
+      )}
+
+      {(briefingReminders.length > 0 || briefingGrantDeadlines.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm text-amber-400 flex items-center gap-2"><Clock className="h-4 w-4" /> Reminders Due ({briefingReminders.length})</CardTitle></CardHeader>
+            <CardContent className="space-y-1">
+              {briefingReminders.length === 0 ? <p className="text-xs text-muted-foreground">None</p> :
+                briefingReminders.map((r: any, i: number) => (
+                  <div key={i} className="text-xs flex justify-between gap-2">
+                    <span>{r.title} <span className="text-muted-foreground">({r.funding_clients?.full_name ?? '?'})</span></span>
+                    <Badge variant="outline" className="text-[10px]">{r.priority}</Badge>
+                  </div>
+                ))}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm text-amber-400 flex items-center gap-2"><DollarSign className="h-4 w-4" /> Grant Deadlines &lt; 30d ({briefingGrantDeadlines.length})</CardTitle></CardHeader>
+            <CardContent className="space-y-1">
+              {briefingGrantDeadlines.length === 0 ? <p className="text-xs text-muted-foreground">None</p> :
+                briefingGrantDeadlines.map((g: any, i: number) => (
+                  <div key={i} className="text-xs flex justify-between gap-2">
+                    <span>{g.grant_name} <span className="text-muted-foreground">({g.funding_clients?.full_name ?? '?'})</span></span>
+                    <span className="text-amber-300">{g.deadline} · ${Number(g.grant_amount ?? 0).toLocaleString()}</span>
+                  </div>
+                ))}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Section 1 — Daily Score */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
