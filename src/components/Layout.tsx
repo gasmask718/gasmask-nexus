@@ -517,6 +517,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/funding-machine/velocity', label: '📈 Floor 8 — Velocity Calculator', icon: TrendingUp },
       { path: '/funding-machine/tradeline-vault', label: '📄 Floor 9 — Tradeline Vault', icon: FileText },
       { path: '/funding-machine/tasks', label: '✅ Floor 10 — Task Cards', icon: CheckSquare },
+      { path: '/funding-machine/revenue', label: '💰 Revenue Dashboard', icon: TrendingUp },
       { path: '/funding-machine/settings', label: '⚙️ Settings', icon: Settings },
     ],
   },
