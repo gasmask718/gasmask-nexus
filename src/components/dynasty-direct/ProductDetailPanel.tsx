@@ -162,15 +162,19 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
     setSaving(true);
     try {
       if (breaches.length > 0) {
-        // Ask DB trigger to skip floor check for this transaction.
-        await supabase.rpc('set_config' as any, {
-          setting_name: 'app.allow_below_floor',
-          new_value: 'true',
-          is_local: true,
+        const { error } = await supabase.rpc('dd_update_product_pricing', {
+          p_product_id: productId,
+          p_supplier_cost: payload.supplier_cost ?? null,
+          p_store_price_a: payload.store_price_a ?? null,
+          p_dtc_price_b: payload.dtc_price_b ?? null,
+          p_map_price: payload.map_price ?? null,
+          p_allow_override: true,
         });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('products_all').update(payload).eq('id', productId);
+        if (error) throw error;
       }
-      const { error } = await supabase.from('products_all').update(payload).eq('id', productId);
-      if (error) throw error;
       toast.success(
         breaches.length > 0
           ? 'Pricing saved with override — margin floor bypassed'
