@@ -146,7 +146,7 @@ serve(async (req) => {
         try {
           const { data: sel, error: selErr } = await supabase.rpc(
             "select_best_number_for_business",
-            { p_business_key: "brandaro" }
+            { p_business: "brandaro" }
           );
           if (selErr) throw selErr;
           const row = Array.isArray(sel) ? sel[0] : sel;
