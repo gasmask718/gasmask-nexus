@@ -258,11 +258,11 @@ export default function REVADesk() {
                 <div className="text-xs font-semibold mb-2 text-muted-foreground">DISPOSITION</div>
                 <div className="grid gap-2">
                   {DISPOSITIONS.map(d => (
-                    <Button key={d.value} type="button" onClick={() => setDisposition(d.value)} className={`${d.cls} text-white ${disposition === d.value ? 'ring-2 ring-white' : ''}`}>
+                    <Button key={d.value} type="button" size="lg" onClick={() => setDisposition(d.value)} className={`${d.cls} text-white min-h-[44px] ${disposition === d.value ? 'ring-2 ring-white' : ''}`}>
                       {d.label}
                     </Button>
                   ))}
-                  <Button type="button" onClick={escalate} className="bg-purple-600 hover:bg-purple-700 border-2 border-purple-400 text-white">🚨 Escalate to David</Button>
+                  <Button type="button" size="lg" onClick={escalate} className="bg-purple-600 hover:bg-purple-700 border-2 border-purple-400 text-white min-h-[44px]">🚨 Escalate to David</Button>
                 </div>
               </div>
 
