@@ -1,3 +1,6 @@
+// Twilio outbound call status callback for dc-outbound-call pool.
+// T7b.1: now writes answered_by + derives outcome so recompute_answer_rates
+// has a real composite signal to work with. Mirrors twilio-call-status mapping.
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -10,12 +13,41 @@ Deno.serve(async (req) => {
 
   try {
     const formData = await req.formData()
-    const callSid = formData.get('CallSid') as string
-    const callStatus = formData.get('CallStatus') as string
-    const callDuration = formData.get('CallDuration') as string
+    const callSid = String(formData.get('CallSid') || '')
+    const callStatus = String(formData.get('CallStatus') || '')
+    const callDuration = String(formData.get('CallDuration') || '0')
+    const answeredBy = String(formData.get('AnsweredBy') || '')
+    const recordingUrl = String(formData.get('RecordingUrl') || '')
 
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
     const SUPABASE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+    const updates: Record<string, unknown> = {
+      status: callStatus,
+      duration_seconds: parseInt(callDuration || '0', 10) || 0,
+      updated_at: new Date().toISOString(),
+    }
+    if (answeredBy) updates.answered_by = answeredBy
+    if (recordingUrl) updates.recording_url = `${recordingUrl}.mp3`
+
+    // Derive outcome from terminal Twilio statuses. Non-terminal statuses
+    // (ringing/in-progress/queued/initiated) leave outcome untouched.
+    if (callStatus === 'completed') {
+      if (answeredBy.startsWith('machine') || answeredBy === 'fax') {
+        updates.outcome = 'voicemail'
+      } else if (answeredBy === 'human') {
+        updates.outcome = 'answered'
+      } else {
+        // AMD not run or inconclusive — infer from duration.
+        updates.outcome = (parseInt(callDuration || '0', 10) || 0) > 0 ? 'answered' : 'no_answer'
+      }
+    } else if (callStatus === 'no-answer') {
+      updates.outcome = 'no_answer'
+    } else if (callStatus === 'busy') {
+      updates.outcome = 'busy'
+    } else if (callStatus === 'failed' || callStatus === 'canceled') {
+      updates.outcome = 'failed'
+    }
 
     await fetch(
       `${SUPABASE_URL}/rest/v1/dc_call_logs?call_sid=eq.${callSid}`,
@@ -24,13 +56,9 @@ Deno.serve(async (req) => {
         headers: {
           apikey: SUPABASE_KEY,
           Authorization: `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          status: callStatus,
-          duration_seconds: parseInt(callDuration || '0'),
-          updated_at: new Date().toISOString()
-        })
+        body: JSON.stringify(updates),
       }
     )
 
