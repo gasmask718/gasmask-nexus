@@ -146,7 +146,7 @@ serve(async (req) => {
         try {
           const { data: sel, error: selErr } = await supabase.rpc(
             "select_best_number_for_business",
-            { p_business_key: "brandaro" }
+            { p_business: "brandaro" }
           );
           if (selErr) throw selErr;
           const row = Array.isArray(sel) ? sel[0] : sel;
@@ -167,9 +167,8 @@ serve(async (req) => {
           const { data: fallbackRows } = await supabase
             .from("dc_phone_numbers")
             .select("phone_number")
-            .eq("business_key", "brandaro")
+            .eq("business", "brandaro")
             .eq("status", "active")
-            .eq("can_dial", true)
             .order("daily_call_count", { ascending: true })
             .limit(1);
           const fb = fallbackRows?.[0]?.phone_number;
@@ -226,7 +225,7 @@ serve(async (req) => {
         // Bookkeeping: only when the pool cascade (not emergency fallback) supplied the number.
         if (fromSource === "pool" && poolRowId) {
           const { error: bumpErr } = await supabase.rpc("bump_number_usage_v2", {
-            p_number_id: poolRowId,
+            p_id: poolRowId,
           });
           if (bumpErr) {
             console.error(`[brandaro-ai-caller] bump_number_usage_v2 failed for ${poolRowId}:`, bumpErr);
