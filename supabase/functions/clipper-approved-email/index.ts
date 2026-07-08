@@ -88,22 +88,35 @@ Deno.serve(async (req) => {
       }),
     ]);
 
-    if ((clipperRes as any)?.error) console.error("clipper email error", clipperRes);
-    if ((adminRes as any)?.error) console.error("admin email error", adminRes);
+    const clipperErr = (clipperRes as any)?.error ?? null;
+    const adminErr = (adminRes as any)?.error ?? null;
+    if (clipperErr) console.error("clipper email error", clipperErr);
+    if (adminErr) console.error("admin email error", adminErr);
+
+    const clipper_sent = !clipperErr && !!(clipperRes as any)?.data?.id;
+    const admin_sent = !adminErr && !!(adminRes as any)?.data?.id;
+    const success = clipper_sent && admin_sent;
 
     return new Response(
       JSON.stringify({
-        success: true,
+        success,
         clipper_id,
+        clipper_sent,
+        admin_sent,
         clipper_message_id: (clipperRes as any)?.data?.id ?? null,
         admin_message_id: (adminRes as any)?.data?.id ?? null,
+        clipper_error: clipperErr,
+        admin_error: adminErr,
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      {
+        status: success ? 200 : 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   } catch (e) {
     console.error("[clipper-approved-email] error", e);
     return new Response(
-      JSON.stringify({ error: String((e as Error).message) }),
+      JSON.stringify({ success: false, error: String((e as Error).message) }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
