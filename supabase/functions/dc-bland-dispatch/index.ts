@@ -395,6 +395,9 @@ serve(async (req) => {
       const blandData = await blandRes.json();
       if (!blandRes.ok) throw new Error(`Bland API error: ${JSON.stringify(blandData)}`);
 
+      // T7c-A Phase 3: bump pool bookkeeping only when a Twilio pool row was picked.
+      await bumpPoolUsageIfApplicable(supabase, poolPick);
+
       // Fetch source tracking from queue record if available
       let sourceTable: string | null = null;
       let sourceLeadId: string | null = null;
