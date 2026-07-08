@@ -1,0 +1,3 @@
+ALTER TABLE public.products_all DROP CONSTRAINT IF EXISTS products_all_category_check;
+UPDATE public.products_all SET status='deleted', category='accessories' WHERE category IS NULL OR category IN ('QA','uncategorized','vapes');
+ALTER TABLE public.products_all ADD CONSTRAINT products_all_category_check CHECK (category IN ('disposable_vape','nicotine_pouch','tobacco_grabba','rolling_papers','lighters','grinders','glass','vape_hardware','cbd_hemp','accessories'));
