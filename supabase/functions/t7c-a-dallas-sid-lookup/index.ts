@@ -11,13 +11,11 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const token = Deno.env.get("TWILIO_AUTH_TOKEN");
-  if (!sid || !token) {
-    return new Response(JSON.stringify({ error: "twilio creds missing", have_sid: !!sid, have_token: !!token }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  // Check BOTH Twilio accounts: primary (DC) and Brandaro-dedicated.
+  const accounts = [
+    { label: "primary", sid: Deno.env.get("TWILIO_ACCOUNT_SID"), token: Deno.env.get("TWILIO_AUTH_TOKEN") },
+    { label: "brandaro", sid: Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID"), token: Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN") },
+  ];
 
   const target = "+12142394316";
   const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(target)}`;
