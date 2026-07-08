@@ -226,7 +226,7 @@ serve(async (req) => {
         // Bookkeeping: only when the pool cascade (not emergency fallback) supplied the number.
         if (fromSource === "pool" && poolRowId) {
           const { error: bumpErr } = await supabase.rpc("bump_number_usage_v2", {
-            p_number_id: poolRowId,
+            p_id: poolRowId,
           });
           if (bumpErr) {
             console.error(`[brandaro-ai-caller] bump_number_usage_v2 failed for ${poolRowId}:`, bumpErr);
