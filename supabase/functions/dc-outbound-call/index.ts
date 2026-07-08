@@ -290,6 +290,13 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // T7c-A Phase 2: bump pool bookkeeping (only when the pool actually picked the number).
+    if (selectedPoolId) {
+      await bumpPoolUsage(selectedPoolId);
+    }
+
+
+
     if (SUPABASE_URL && SUPABASE_KEY) {
       const restHeaders = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" };
       await fetch(`${SUPABASE_URL}/rest/v1/dc_call_logs`, {
