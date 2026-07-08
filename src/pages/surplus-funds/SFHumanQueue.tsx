@@ -186,7 +186,7 @@ export function SFHumanQueue() {
       </Card>
 
       <Dialog open={!!active} onOpenChange={o => !o && close()}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[100vh] sm:max-h-[90vh] overflow-y-auto w-screen h-screen sm:h-auto sm:w-full max-w-none sm:max-w-3xl rounded-none sm:rounded-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Phone className="h-5 w-5" />

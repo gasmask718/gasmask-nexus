@@ -1,130 +1,37 @@
-# System Audit — June 25, 2026
-Scope: Auth & Access Control · Communications (Twilio/SMS/Voice) · CRM / Stores / Territory
-Lenses: Missing pieces · Bugs & broken flows · Security & RLS gaps · UX gaps
 
-Legend: ✅ working · ⚠️ partial / risky · ❌ broken or missing
+# 📱 Mobile QA Report — 375px iPhone Safari
 
----
+Static analysis of the current codebase against Apple HIG (44×44 tap targets) and horizontal‑overflow rules. Sources: `SFCommandCenter.tsx`, `SFLeadPipeline.tsx`, `SFAutomation.tsx`, `SFHumanQueue.tsx`, `RECommandCenter.tsx`, `REVADesk.tsx`, `REAnalyzer.tsx`, `SFLayout.tsx`, `RELayout.tsx`, `Layout.tsx`, `components/ui/button.tsx`, `components/ui/input.tsx`.
 
-## 1. Auth & Access Control
+Key baseline pulled from the shared UI kit:
+- `Button` default = `h-10` (40px) → **fails 44px HIG** unless page passes `size="lg"` (h‑11 = 44px).
+- `Input` = `h-10` (40px), `text-base` on mobile (16px) → **prevents iOS auto‑zoom** ✅.
 
-### What exists
-- `src/pages/Auth.tsx` — email/password + Google OAuth, "Forgot password?" link, redirect-by-role via `getRoleRedirectPath`.
-- `src/pages/ForgotPassword.tsx` → `resetPasswordForEmail` → `/reset-password`.
-- `src/pages/ResetPassword.tsx` — `PASSWORD_RECOVERY` listener → `updateUser` → sign out.
-- `src/pages/PendingApproval.tsx` — landing for unprivileged accounts.
-- `src/config/osNavigation.ts` line 783 — `pending` → `/pending-approval`.
-- Migration `20260624153002` — adds `'pending'` to `app_role`, `handle_new_user` defaults new profiles to `pending`.
-- Roles in DB: 22 enum values incl. `admin, owner, ambassador, driver, biker, wholesaler, csr, pending, …`. `user_roles` table has RLS with admin-only writes ✅.
+## Report
 
-### Findings
-| # | Sev | Area | Finding |
-|---|---|---|---|
-| A1 | ⚠️ Bug | Sign-up | `Auth.tsx` toast says *"Account created! You can now sign in."* — misleading. With email confirmation on, the user must confirm first; with the `pending` role, they cannot access anything. Should say "Check your email to confirm, then wait for admin approval." |
-| A2 | ⚠️ Bug | Sign-up redirect | `handleSignUp` uses `emailRedirectTo: ${origin}/`. The redirect dumps confirmed users on `/`, which then bounces through role-routing. A `pending` user hits `/pending-approval` correctly only because of `osNavigation` — verify the path; users without a profile row briefly land on `/`. |
-| A3 | ❌ Missing | Profile/role split | `profiles.role` is being set by `handle_new_user`, but the project's Core rule says roles live only in `user_roles`. New `pending` sign-ups are NOT inserted into `user_roles` — only `profiles.role`. Any `has_role()` check returns false → user is invisible to all RLS that depends on `user_roles`. |
-| A4 | ⚠️ Missing | Admin promotion UI | No surfaced screen to list pending users and promote them to a real role. `useUserRolesAdmin` exists but there's no `/admin/pending-users` route. Pending users sit in limbo forever. |
-| A5 | ❌ Security | Leaked-password protection | Scanner flag `SUPA_auth_leaked_password_protection` — HIBP check OFF. Enable via `configure_auth`. |
-| A6 | ❌ Security | RLS errors from scanner | `SUPA_policy_exists_rls_disabled` = **error** level. At least one table has policies defined while RLS is disabled (data is fully exposed). Needs immediate `ENABLE ROW LEVEL SECURITY`. |
-| A7 | ⚠️ Security | SECURITY DEFINER exposure | Multiple definer functions are EXECUTE-able by `anon`/`authenticated`. Audit and `REVOKE EXECUTE … FROM PUBLIC, authenticated` on anything that isn't intended to be callable. |
-| A8 | ⚠️ Security | Mutable `search_path` | Several functions lack `SET search_path = public`. Search-path hijack risk. |
-| A9 | ⚠️ UX | Reset-password page | Forces sign-out after update — good. But there is no "session expired / link invalid" branch shown; broken/expired links land on a blank state. |
-| A10 | ⚠️ Bug | Forgot password — silent leak | Always toasts success even for unknown emails (Supabase default) — fine for privacy, but no UX hint when a real typo happens. Acceptable; document the choice. |
-| A11 | ⚠️ UX | No "resend confirmation" path on sign-in for unconfirmed users. |
-| A12 | ⚠️ Security | Hard-coded `DEV_ONLY_EMAILS = ['dev@gmail.com']` in `Auth.tsx`. Magic-string privileged routing — move to a flag or `user_roles`. |
+| # | Page | Test | Pass/Fail | Notes / Failure Reason |
+|---|---|---|---|---|
+| 1 | SF Penthouse | Stat cards stack 2×2 | PASS | `grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6` — 6 cards render 2‑wide at 375px (3 rows of 2). No overlap. |
+| 2 | SF Leads | Table scrolls horizontally | PASS | Table wrapped in `<div className="overflow-x-auto">` at line 357 of `SFLeadPipeline.tsx`; page container itself does not overflow. |
+| 3 | SF Automation | Campaign launcher usable | PASS (with caveat) | Uses shadcn `Input` (h‑10, 16px text — no iOS zoom), `Select` (h‑10), stacked in default flex; Launch button default h‑10 = 40px, technically below 44px HIG but still tappable. Recommend `size="lg"` on the primary Launch CTA. |
+| 4 | Human Queue | Call panel is full screen | FAIL | `SFHumanQueue.tsx` L189 uses `<DialogContent className="max-w-3xl max-h-[90vh]">`. shadcn Dialog default is a centered card with side gutters and `rounded-lg` — not `w-full`/edge‑to‑edge full‑screen on mobile. Needs `w-screen h-screen max-w-none rounded-none` (or a `Sheet side="bottom"`) at `<sm`. |
+| 5 | Human Queue | Disposition buttons ≥44px | FAIL | L254‑268: Interested / No Answer / Schedule Callback / Not Interested all use default `<Button>` (h‑10 = 40px). Below 44px HIG. Add `size="lg"` or `className="h-11"`. |
+| 6 | Human Queue | Phone number is `<a href="tel:...">` | PASS | L209 wraps the dial CTA in `<a href={\`tel:${active.phone}\`}>`. Native tap‑to‑call works. |
+| 7 | RE Penthouse | Stat cards readable | FAIL | `RECommandCenter.tsx` L146‑158: 7 metric cards use `grid-cols-2 md:grid-cols-4 lg:grid-cols-7` (OK) but labels use `text-[10px]` (10px) — below the ≥14px body‑text bar and hard to read on 375px. Values are `text-xl` (fine). Bump labels to `text-xs` (12px) minimum, ideally `text-sm`. |
+| 8 | RE VA Desk | Call panel full screen | PASS | L238: `<SheetContent className="w-full sm:max-w-xl">` — full width on mobile, capped only from `sm:` up. Sheet slides in edge‑to‑edge on 375px. |
+| 9 | RE VA Desk | All 6 disposition buttons tappable | FAIL | L260‑264 renders the 6 `DISPOSITIONS` buttons at default size (h‑10 = 40px). Below 44px HIG. Add `size="lg"` or `min-h-[44px]`. |
+| 10 | RE VA Desk | Escalate to David visible | PASS | L265: rendered inside the same `grid gap-2` in the Sheet body, immediately after the disposition list. Sheet is `overflow-y-auto`; button is never clipped or pushed off‑screen. (Same 40px height caveat as #9.) |
+| 11 | RE Analyzer | Form fields usable on mobile | PASS | Outer form is `grid lg:grid-cols-2` — collapses to a single column at 375px. `Input` uses `text-base` (16px) so iOS won't zoom on focus. Only sub‑caveat: the inner `grid-cols-3` for Beds/Baths/Sqft (L180) is cramped at 375px (~110px per input) but does not overflow. |
+| 12 | RE Analyzer | Grade badge readable | PASS | L240: `<Badge className="text-base px-4 py-1">{grade} — {gradeMeta.label}</Badge>` — 16px text, single line, centered in the calc card. No awkward wrap. |
+| 13 | Global sidebar | Collapses correctly on mobile | PASS (with caveat) | `Layout.tsx` L1451‑1468: header renders a `md:hidden` hamburger that opens a `Sheet side="left" w-72` with full nav. Content isn't obscured. **Caveat (not in the 13‑point scope, worth flagging):** the *inner* OS shells `SFLayout.tsx` L49 and `RELayout.tsx` L57 both use `hidden lg:block` on their secondary sidebar with **no** mobile trigger — on `/surplus-funds/*` and `/real-estate/*` at 375px users lose access to the OS‑local nav (Command Center / Leads / VA Desk / etc.) entirely. Recommend a Sheet‑backed trigger in the OS page headers. |
 
----
+## Summary
+- **Pass:** 8 (1, 2, 3, 6, 8, 10, 11, 12, 13) — counted 13 as pass.
+- **Fail:** 4 (4, 5, 7, 9).
+- **Root causes are concentrated:**
+  1. Default shadcn `Button` size (h‑10) is used everywhere → drives fails 5 and 9, and lurks under 3, 10.
+  2. `DialogContent` used for the mobile call panel in Human Queue instead of `Sheet` / full‑screen dialog → fail 4.
+  3. `text-[10px]` labels on RE Penthouse metric cards → fail 7.
+  4. OS‑local sidebars (`SFLayout`, `RELayout`) have no mobile hamburger — a secondary but real UX gap.
 
-## 2. Communications Stack (Twilio / SMS / Voice)
-
-### What exists
-- ~150+ edge functions covering SMS, voice, AI calls, webhooks, dialer, recordings, transcripts.
-- `send-sms` — robust: A2P 10DLC guard, toll-free fallback `+18776818621`, API-key + auth-token candidates, AC-SID validation.
-- `comms-health-monitor`, `check-twilio-health`, `system-health`, `voice-pipeline-audit`, `validate-twilio-credentials`.
-- `/admin/twilio-test` console.
-- `CommunicationLogModal` with `entityPhone` — store profile composer ✅ (A5.2 closed).
-- `StoreDetail.tsx` line 693 passes `store.phone || store.alt_phone`.
-- `twilio-sms-webhook`, `sms-inbound-webhook`, `twilio-status-webhook` registered.
-- `communication_logs` RLS enabled.
-
-### Findings
-| # | Sev | Area | Finding |
-|---|---|---|---|
-| C1 | ⚠️ Bug | Modal mirror | Mirror insert into `communication_logs` uses field `summary: 'Manual SMS from store profile'` but the `CommunicationTimelineCRM` may sort by `created_at` only. Confirm the channel/direction filters in the timeline component pick this up; otherwise messages won't surface immediately. |
-| C2 | ⚠️ Bug | Toast on partial success | `wantsLiveSend` checks `success !== false && status !== 'blocked'`. Twilio returns 200 with various error codes (queued / undelivered) that need status callbacks. Surface the Twilio `error_code` from `send-sms` so users know if the message was deferred. |
-| C3 | ❌ Missing | No outbound throttling / dedupe | The `idempotency_key` is set but no DB-side unique constraint enforces it. Double-clicks can double-send. Add `UNIQUE (idempotency_key)` on `communication_logs`. |
-| C4 | ⚠️ Security | RLS policy sprawl | `communication_logs` has **9 overlapping policies** (admins, CSR, ambassadors, business owners, generic "authenticated can insert"). The "Authenticated users can create logs" is permissive — any logged-in user can insert any row, bypassing per-store scoping. Consolidate and tighten. |
-| C5 | ⚠️ Risk | Provider creds in env vs connector | `send-sms` reads `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` directly, but the project has a Twilio **connector** available. Decide one path; mixing both leads to silent failovers and inconsistent SIDs across functions. |
-| C6 | ⚠️ Risk | SMS Pumping Protection / Geo Permissions — not confirmed enabled in Twilio console. Required before production traffic. |
-| C7 | ❌ Missing | No surfaced "delivery status" badge per message — status webhook writes `twilio_sms_status` events but they aren't reflected on the timeline row. |
-| C8 | ⚠️ Bug | `TWILIO_PHONE_NUMBER` env can be silently overridden to toll-free fallback. Operators won't know why their configured number was ignored — log a warning to a visible health surface (currently only `console.log`). |
-| C9 | ⚠️ Duplication | Many near-identical functions: `bland-send-sms`, `relay-sms`, `ambassador-send-sms`, `bulk-sms-processor`, `messaging-send-worker`, `send-operator-sms`, `send-approval-sms`, `send-biztext-sms`, `send-invoice-sms`, `brandaro-sms-dispatch`. Maintenance hazard — consolidate around `send-sms` with `purpose`/`template` params. |
-| C10 | ⚠️ UX | No "SMS opt-out / STOP" handling visible on store profile. Required for TCPA compliance — flag opted-out numbers in the composer and disable the toggle. |
-| C11 | ⚠️ Voice | Many call functions (`call-ai-*`, `twilio-bridge*`, `brandaro-call-twiml`) — no central health dashboard showing which webhooks are wired vs. orphaned. `discover-twiml-apps` exists but isn't surfaced. |
-
----
-
-## 3. CRM / Stores / Territory
-
-### What exists
-- `Stores`, `StoreDetail`, `CRMCustomerDetail`, `CRMContactDetail`, `MasterOpportunities`, `OpportunityRadar`.
-- Territory hub: `TerritoryOverview`, `VisitConsole`, `ScoutConsole`, `CallConsole`, `TerritoryCandidates`, `TerritoryGapIntelligence`, `PromotionsPending/History`, `TerritoryIngestion`, `TerritoryPlaybooks`, AI permissions screens.
-- Ingestion: `ingest-google-places`, `ingest-yelp`, `ingest-openstreetmap`, `ingestion-enrich-phones`, `batch-geocode-stores`, `batch-phone-detection`.
-
-### Findings
-| # | Sev | Area | Finding |
-|---|---|---|---|
-| T1 | ❌ Bug (per memory) | Prospect pages misuse | `mem://territory/prospect-pages-promote-not-dispatch` — VisitConsole/ScoutConsole/TerritoryCandidates/GapIntelligence are for pre-CRM addresses. Confirm they call `request_store_promotion` and NOT `RouteAssignmentDialog`. Needs verification pass. |
-| T2 | ⚠️ Backlog | Merge engine rename gap | `mem://governance/merge-engine-rename-gap-and-rename-pass-scope` — Phase E.5 is log-only. ~2,400 stores still hold pre-merge names. Pending smart-rename pass. |
-| T3 | ⚠️ Backlog | Merge engine future fixes | `mem://governance/merge-engine-future-fixes` — address-keyed override matching + survivor scoring rule (Bayridge mis-merge root cause). |
-| T4 | ⚠️ Data | Post-dedup orphan classification | `mem://governance/merge-dedup-skipped-orphans` — orphan counts must exclude dedup-skipped rows; verify any "orphan cleanup" jobs aren't hard-deleting them. |
-| T5 | ⚠️ UX | Store profile completeness | Composer requires `store.phone || store.alt_phone`. Stores without either silently get the composer hidden — surface "Add a phone number to enable SMS" rather than no UI at all. |
-| T6 | ⚠️ Security | `stores` policies not audited here, but `communication_logs` cross-references `store_id` without policy joining to store ownership in the permissive insert (see C4). |
-| T7 | ⚠️ Missing | No "communication preferences" record per store (SMS / call / email opt-in, quiet hours). Required for the cadence rules in `mem://crm/relationship-tier-and-cadence-standard`. |
-| T8 | ⚠️ Bug | `CommunicationLogModal` `onSuccess` callback fires only on the live-SMS path early-return; the manual `communication_events` insert path also calls it — confirm timeline refreshes for both. |
-| T9 | ❌ Missing | No admin view of `pending` users tied to CRM (e.g. store contacts who self-signed up). They sit in `auth.users` with `pending` role and no link back to a store record. |
-| T10 | ⚠️ UX | Territory ingestion pages need a visible "last enrichment run" status — `ingestion-enrich-phones` runs sequentially but no progress meter is surfaced. |
-
----
-
-## 4. Cross-cutting Security Findings (from scanner)
-
-| ID | Level | Action |
-|---|---|---|
-| `SUPA_policy_exists_rls_disabled` | **error** | Find tables with policies + RLS disabled, `ALTER TABLE … ENABLE ROW LEVEL SECURITY`. |
-| `SUPA_anon_security_definer_function_executable` | warn | Audit + `REVOKE EXECUTE … FROM anon`. |
-| `SUPA_authenticated_security_definer_function_executable` | warn | Same for `authenticated` where not intended. |
-| `SUPA_function_search_path_mutable` | warn | Add `SET search_path = public` to flagged functions. |
-| `SUPA_materialized_view_in_api` | warn | Revoke API access or move out of `public`. |
-| `SUPA_public_bucket_allows_listing` | warn | Tighten storage SELECT policies. |
-| `SUPA_auth_leaked_password_protection` | warn | Enable HIBP via `configure_auth`. |
-
----
-
-## Recommended Fix Order
-
-1. **Critical (this week)**
-   - A6 — find RLS-disabled tables with policies and enable RLS.
-   - A3 — make `handle_new_user` also insert `user_roles (user_id, 'pending')`, or document why `profiles.role` is the source of truth alongside the Core rule.
-   - C4 — drop the permissive `"Authenticated users can create logs"` policy on `communication_logs` and replace with store-scoped insert.
-   - C3 — add `UNIQUE (idempotency_key)` on `communication_logs` to stop double-sends.
-
-2. **High (next sprint)**
-   - A4 / T9 — build `/admin/pending-users` promotion screen.
-   - A5 — enable HIBP leaked-password protection.
-   - C7 — wire status-webhook updates back to the timeline row.
-   - C10 — surface STOP/opt-out state in the composer.
-   - T1 — verify prospect-page CTAs match the promote-not-dispatch rule.
-
-3. **Medium**
-   - A1, A11, A12 — sign-up copy, resend-confirmation, remove hard-coded dev emails.
-   - C9 — consolidate the SMS-sending function zoo.
-   - T7 — per-store communication preferences table.
-   - A7/A8 — function-level REVOKE + search_path hardening sweep.
-
-4. **Backlog**
-   - T2, T3 — merge engine rename + override-matching upgrades.
-
----
-
-Tell me which section to drill into and I'll switch to build mode to start fixing.
+Awaiting your confirmation before switching to Build Mode to apply fixes.
