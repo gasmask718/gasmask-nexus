@@ -433,6 +433,12 @@ export default function ProductManagementPage() {
           )}
         </CardContent>
       </Card>
+
+      <ProductDetailPanel
+        productId={detailId}
+        open={!!detailId}
+        onOpenChange={(o) => { if (!o) setDetailId(null); }}
+      />
     </div>
   );
 }
