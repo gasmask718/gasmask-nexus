@@ -149,13 +149,53 @@ Rules: prices must charm-round to .49 or .99. Never go below MAP if MAP > 0. Nev
   return { ...parsed, source: 'ai' } as Analysis;
 }
 
+async function computeAlerts(
+  supabase: any,
+  product: ProductRow,
+): Promise<Array<Record<string, unknown>>> {
+  const { data: marketRows } = await supabase
+    .from('dd_market_prices')
+    .select('source, price')
+    .eq('product_id', product.id)
+    .order('observed_at', { ascending: false })
+    .limit(20);
+  const samples = (marketRows || []).map((r: any) => ({ source: r.source, price: Number(r.price) }));
+  const marketAvg = samples.length
+    ? samples.reduce((s: number, r: any) => s + r.price, 0) / samples.length
+    : null;
+
+  const alerts: Array<Record<string, unknown>> = [];
+  const cost = Number(product.supplier_cost || 0);
+  const store = Number(product.store_price_a || 0);
+  const dtc = Number(product.dtc_price_b || 0);
+  const map = Number(product.map_price || 0);
+  const minStore = Number(product.min_store_margin_pct ?? 0);
+  const minDtc = Number(product.min_dtc_margin_pct ?? 0);
+
+  if (map > 0 && store > 0 && store < map)
+    alerts.push({ product_id: product.id, alert_type: 'map_violation', structure: 'store_price_a', current_price: store, recommended_price: map, message: `store_price_a $${store} below MAP $${map}` });
+  if (map > 0 && dtc > 0 && dtc < map)
+    alerts.push({ product_id: product.id, alert_type: 'map_violation', structure: 'dtc_price_b', current_price: dtc, recommended_price: map, message: `dtc_price_b $${dtc} below MAP $${map}` });
+  if (minStore > 0 && cost > 0 && store > 0 && marginPctFromPrice(store, cost) < minStore)
+    alerts.push({ product_id: product.id, alert_type: 'below_floor', structure: 'store_price_a', current_price: store, message: `store margin below floor ${minStore}%` });
+  if (minDtc > 0 && cost > 0 && dtc > 0 && marginPctFromPrice(dtc, cost) < minDtc)
+    alerts.push({ product_id: product.id, alert_type: 'below_floor', structure: 'dtc_price_b', current_price: dtc, message: `dtc margin below floor ${minDtc}%` });
+  if (marketAvg && store > 0 && store < marketAvg * 0.85)
+    alerts.push({ product_id: product.id, alert_type: 'undercut', structure: 'store_price_a', current_price: store, competitor_price: marketAvg, message: `store_price_a >15% below market avg $${marketAvg.toFixed(2)}` });
+
+  return alerts;
+}
+
+const PRODUCT_COLS =
+  'id, product_name, brand, category, supplier_cost, store_price_a, dtc_price_b, map_price, target_store_margin_pct, target_dtc_margin_pct, min_store_margin_pct, min_dtc_margin_pct';
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
     const { product_id, action } = await req.json().catch(() => ({}));
-    if (!product_id || !action) return ok({ error: 'product_id and action are required' });
-    if (!['analyze', 'set_optimal', 'check_alerts'].includes(action))
+    if (!action) return ok({ error: 'action is required' });
+    if (!['analyze', 'set_optimal', 'check_alerts', 'check_all_alerts'].includes(action))
       return ok({ error: `unknown action: ${action}` });
 
     const supabase = createClient(
@@ -163,18 +203,57 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
+    // ============ CHECK_ALL_ALERTS: batch across active products ============
+    if (action === 'check_all_alerts') {
+      let checked = 0;
+      let alertsCreated = 0;
+      const errors: Array<{ product_id: string; error: string }> = [];
+      const PAGE = 1000;
+      let from = 0;
+
+      while (true) {
+        const { data: batch, error: bErr } = await supabase
+          .from('products_all')
+          .select(PRODUCT_COLS)
+          .neq('status', 'deleted')
+          .range(from, from + PAGE - 1);
+        if (bErr) return ok({ error: bErr.message, checked, alerts_created: alertsCreated });
+        if (!batch || batch.length === 0) break;
+
+        for (const row of batch as ProductRow[]) {
+          checked++;
+          try {
+            const alerts = await computeAlerts(supabase, row);
+            if (alerts.length) {
+              const { error: insErr } = await supabase.from('dd_price_alerts').insert(alerts);
+              if (insErr) errors.push({ product_id: row.id, error: insErr.message });
+              else alertsCreated += alerts.length;
+            }
+          } catch (e) {
+            errors.push({ product_id: row.id, error: String((e as Error).message || e) });
+          }
+        }
+
+        if (batch.length < PAGE) break;
+        from += PAGE;
+      }
+
+      return ok({ ok: true, checked, alerts_created: alertsCreated, errors });
+    }
+
+    // ============ Single-product actions ============
+    if (!product_id) return ok({ error: 'product_id is required' });
+
     const { data: p, error: pErr } = await supabase
       .from('products_all')
-      .select(
-        'id, product_name, brand, category, supplier_cost, store_price_a, dtc_price_b, map_price, target_store_margin_pct, target_dtc_margin_pct, min_store_margin_pct, min_dtc_margin_pct',
-      )
+      .select(PRODUCT_COLS)
       .eq('id', product_id)
       .maybeSingle();
     if (pErr) return ok({ error: pErr.message });
     if (!p) return ok({ error: 'product not found' });
     const product = p as ProductRow;
 
-    // Market context
+    // Market context (for analyze/set_optimal)
     const { data: marketRows } = await supabase
       .from('dd_market_prices')
       .select('source, price')
@@ -183,30 +262,11 @@ Deno.serve(async (req) => {
       .limit(20);
     const samples = (marketRows || []).map((r: any) => ({ source: r.source, price: Number(r.price) }));
     const marketAvg = samples.length
-      ? samples.reduce((s, r) => s + r.price, 0) / samples.length
+      ? samples.reduce((s: number, r: any) => s + r.price, 0) / samples.length
       : null;
 
-    // ============ CHECK_ALERTS: deterministic, no AI ============
     if (action === 'check_alerts') {
-      const alerts: Array<Record<string, unknown>> = [];
-      const cost = Number(product.supplier_cost || 0);
-      const store = Number(product.store_price_a || 0);
-      const dtc = Number(product.dtc_price_b || 0);
-      const map = Number(product.map_price || 0);
-      const minStore = Number(product.min_store_margin_pct ?? 0);
-      const minDtc = Number(product.min_dtc_margin_pct ?? 0);
-
-      if (map > 0 && store > 0 && store < map)
-        alerts.push({ product_id, alert_type: 'map_violation', structure: 'store_price_a', current_price: store, recommended_price: map, message: `store_price_a $${store} below MAP $${map}` });
-      if (map > 0 && dtc > 0 && dtc < map)
-        alerts.push({ product_id, alert_type: 'map_violation', structure: 'dtc_price_b', current_price: dtc, recommended_price: map, message: `dtc_price_b $${dtc} below MAP $${map}` });
-      if (minStore > 0 && cost > 0 && store > 0 && marginPctFromPrice(store, cost) < minStore)
-        alerts.push({ product_id, alert_type: 'below_floor', structure: 'store_price_a', current_price: store, message: `store margin below floor ${minStore}%` });
-      if (minDtc > 0 && cost > 0 && dtc > 0 && marginPctFromPrice(dtc, cost) < minDtc)
-        alerts.push({ product_id, alert_type: 'below_floor', structure: 'dtc_price_b', current_price: dtc, message: `dtc margin below floor ${minDtc}%` });
-      if (marketAvg && store > 0 && store < marketAvg * 0.85)
-        alerts.push({ product_id, alert_type: 'undercut', structure: 'store_price_a', current_price: store, competitor_price: marketAvg, message: `store_price_a >15% below market avg $${marketAvg.toFixed(2)}` });
-
+      const alerts = await computeAlerts(supabase, product);
       if (alerts.length) {
         const { error: insErr } = await supabase.from('dd_price_alerts').insert(alerts);
         if (insErr) return ok({ error: insErr.message, alerts_detected: alerts.length });
@@ -231,7 +291,6 @@ Deno.serve(async (req) => {
 
     if (action === 'analyze') return ok({ success: true, analysis });
 
-    // SET_OPTIMAL: write ONLY store_price_a / dtc_price_b (never supplier_cost/category → keeps dd-auto-price silent)
     const patch = {
       store_price_a: analysis.recommended_store_price,
       dtc_price_b: analysis.recommended_dtc_price,
