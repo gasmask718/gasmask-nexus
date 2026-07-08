@@ -80489,6 +80489,7 @@ export type Database = {
           height_in: number | null
           id: string
           image_enhanced_at: string | null
+          image_urls: string[]
           images: Json | null
           inventory_qty: number | null
           is_age_restricted: boolean | null
@@ -80504,6 +80505,7 @@ export type Database = {
           min_order_qty: number | null
           min_store_margin_pct: number | null
           pricing_strategy: string | null
+          primary_image_url: string | null
           processing_time: string | null
           product_name: string
           requires_pact_act: boolean | null
@@ -80557,6 +80559,7 @@ export type Database = {
           height_in?: number | null
           id?: string
           image_enhanced_at?: string | null
+          image_urls?: string[]
           images?: Json | null
           inventory_qty?: number | null
           is_age_restricted?: boolean | null
@@ -80572,6 +80575,7 @@ export type Database = {
           min_order_qty?: number | null
           min_store_margin_pct?: number | null
           pricing_strategy?: string | null
+          primary_image_url?: string | null
           processing_time?: string | null
           product_name: string
           requires_pact_act?: boolean | null
@@ -80625,6 +80629,7 @@ export type Database = {
           height_in?: number | null
           id?: string
           image_enhanced_at?: string | null
+          image_urls?: string[]
           images?: Json | null
           inventory_qty?: number | null
           is_age_restricted?: boolean | null
@@ -80640,6 +80645,7 @@ export type Database = {
           min_order_qty?: number | null
           min_store_margin_pct?: number | null
           pricing_strategy?: string | null
+          primary_image_url?: string | null
           processing_time?: string | null
           product_name?: string
           requires_pact_act?: boolean | null
@@ -130255,6 +130261,7 @@ export type Database = {
           height_in: number | null
           id: string
           image_enhanced_at: string | null
+          image_urls: string[]
           images: Json | null
           inventory_qty: number | null
           is_age_restricted: boolean | null
@@ -130270,6 +130277,7 @@ export type Database = {
           min_order_qty: number | null
           min_store_margin_pct: number | null
           pricing_strategy: string | null
+          primary_image_url: string | null
           processing_time: string | null
           product_name: string
           requires_pact_act: boolean | null
