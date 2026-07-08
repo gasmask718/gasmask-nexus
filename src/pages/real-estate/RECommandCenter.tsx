@@ -147,7 +147,7 @@ export default function RECommandCenter() {
         {metricCards.map((m) => (
           <Card key={m.label}>
             <CardHeader className="flex flex-row items-center justify-between pb-1 pt-3 px-3">
-              <CardTitle className="text-[10px] font-medium text-muted-foreground uppercase">{m.label}</CardTitle>
+              <CardTitle className="text-xs sm:text-[10px] font-medium text-muted-foreground uppercase leading-tight">{m.label}</CardTitle>
               <m.icon className="h-3.5 w-3.5 text-muted-foreground" />
             </CardHeader>
             <CardContent className="pb-3 px-3">
