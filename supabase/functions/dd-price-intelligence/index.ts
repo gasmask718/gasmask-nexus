@@ -215,7 +215,7 @@ Deno.serve(async (req) => {
         const { data: batch, error: bErr } = await supabase
           .from('products_all')
           .select(PRODUCT_COLS)
-          .eq('is_active', true)
+          .neq('status', 'deleted')
           .range(from, from + PAGE - 1);
         if (bErr) return ok({ error: bErr.message, checked, alerts_created: alertsCreated });
         if (!batch || batch.length === 0) break;
