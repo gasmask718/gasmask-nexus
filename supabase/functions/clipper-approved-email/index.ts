@@ -16,7 +16,10 @@ const corsHeaders = {
 // real clippers are approved. See: docs/architecture/known-issues.md
 // TODO(email-domain): revert once dynastyclipper.io shows "verified" in Resend.
 const FROM = "Dynasty Clipper Nation <onboarding@resend.dev>";
-const ADMIN_EMAIL = "david@dynastyconnect.com";
+// 🚨 TEMPORARY — admin recipient overridden while onboarding@resend.dev is FROM;
+// Resend sandbox only delivers to the account owner. Swap back to
+// david@dynastyconnect.com when dynastyclipper.io is verified.
+const ADMIN_EMAIL = "gasmaskapprovedllc@gmail.com";
 const LOGIN_URL = "https://dynastyclipper.io/login";
 
 const escapeHtml = (s: string) =>
