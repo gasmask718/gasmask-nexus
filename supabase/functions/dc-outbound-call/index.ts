@@ -178,20 +178,52 @@ Deno.serve(async (req) => {
       if (envVal) { agentId = envVal; agentSource = "env"; }
     }
 
-    // --- FROM-NUMBER RESOLUTION ---
+    // --- FROM-NUMBER RESOLUTION (T7c-A Phase 2: pool-aware) ---
     let fromNumber = "+18484004179";
-    let phoneSource: "db" | "env" | "default" = "default";
+    let phoneSource: "pool" | "env" | "default" | "emergency_fallback" = "default";
+    let selectedPoolId: string | null = null;
 
-    const dbPhone = await dbFetchPhone(biz);
-    if (dbPhone) { fromNumber = dbPhone; phoneSource = "db"; }
-    else {
-      const envKey = ENV_PHONE_FALLBACK[biz];
-      const envVal = envKey ? Deno.env.get(envKey) : "";
-      if (envVal) { fromNumber = envVal; phoneSource = "env"; }
+    try {
+      const pooled = await dbSelectBestPhone(biz);
+      if (pooled) {
+        fromNumber = pooled.phone_number;
+        selectedPoolId = pooled.id;
+        phoneSource = "pool";
+        console.log(`[POOL SELECTED intended CID for Bland; may be substituted] number=${fromNumber} id=${selectedPoolId} business=${biz}`);
+      } else if (biz === "brandaro") {
+        // Brandaro is fully pool-managed; empty pool = hard stop, do not dial.
+        console.log(`[POOL EXHAUSTED] business=${biz} to=${to_number} campaign=${campaign_id || '-'}`);
+        return new Response(JSON.stringify({
+          success: false, pool_exhausted: true,
+          reason: "No eligible pool number available (all warming caps hit, throttled, or inactive).",
+          error: "Pool exhausted for brandaro; no dial performed.",
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } else {
+        // Non-Brandaro biz: preserve legacy env-var → hardcoded default fallback.
+        const envKey = ENV_PHONE_FALLBACK[biz];
+        const envVal = envKey ? Deno.env.get(envKey) : "";
+        if (envVal) { fromNumber = envVal; phoneSource = "env"; }
+      }
+    } catch (e) {
+      console.error(`[SELECTION ERROR] business=${biz} err=${e instanceof Error ? e.message : String(e)}`);
+      // Resilience: fall through to hardcoded default so the dial still happens.
+      fromNumber = "+18484004179";
+      phoneSource = "emergency_fallback";
+      selectedPoolId = null;
+      console.log(`[EMERGENCY FALLBACK] +18484004179 used due to selection error business=${biz}`);
     }
 
-    // Brandaro local-presence overlay (env-driven for now)
-    if (biz === "brandaro") fromNumber = getLocalNumber(to_number, fromNumber);
+    // Brandaro local-presence overlay (env-driven for now; T7c-A2 will consolidate onto state column).
+    if (biz === "brandaro") {
+      const localOverride = getLocalNumber(to_number, fromNumber);
+      if (localOverride !== fromNumber) {
+        // Env-based local-presence overrides the pool pick — bookkeeping no longer applies.
+        console.log(`[LOCAL PRESENCE OVERRIDE] pool=${fromNumber}(${selectedPoolId || 'n/a'}) → env=${localOverride} for to=${to_number}`);
+        fromNumber = localOverride;
+        selectedPoolId = null;
+        phoneSource = "env";
+      }
+    }
 
     console.log(`[dc-outbound-call] biz=${biz} agent_type=${agent_type || "—"} agent=${agentId || "MISSING"}(${agentSource}) from=${fromNumber}(${phoneSource})`);
 
