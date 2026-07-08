@@ -39504,6 +39504,71 @@ export type Database = {
           },
         ]
       }
+      dd_market_prices: {
+        Row: {
+          created_at: string
+          id: string
+          observed_at: string
+          price: number
+          price_type: string | null
+          product_id: string
+          source: string
+          source_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          observed_at?: string
+          price: number
+          price_type?: string | null
+          product_id: string
+          source: string
+          source_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          observed_at?: string
+          price?: number
+          price_type?: string | null
+          product_id?: string
+          source?: string
+          source_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_market_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dd_low_stock_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_market_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_market_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_market_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_partner_earnings: {
         Row: {
           ambassador_id: string | null
@@ -39963,6 +40028,80 @@ export type Database = {
           wholesaler_id?: string
         }
         Relationships: []
+      }
+      dd_price_alerts: {
+        Row: {
+          alert_type: string
+          competitor_price: number | null
+          created_at: string
+          current_price: number | null
+          id: string
+          is_resolved: boolean
+          message: string | null
+          product_id: string
+          recommended_price: number | null
+          resolved_at: string | null
+          structure: string | null
+          updated_at: string
+        }
+        Insert: {
+          alert_type: string
+          competitor_price?: number | null
+          created_at?: string
+          current_price?: number | null
+          id?: string
+          is_resolved?: boolean
+          message?: string | null
+          product_id: string
+          recommended_price?: number | null
+          resolved_at?: string | null
+          structure?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alert_type?: string
+          competitor_price?: number | null
+          created_at?: string
+          current_price?: number | null
+          id?: string
+          is_resolved?: boolean
+          message?: string | null
+          product_id?: string
+          recommended_price?: number | null
+          resolved_at?: string | null
+          structure?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_price_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dd_low_stock_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_price_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_price_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_price_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dd_pro_subscriptions: {
         Row: {
