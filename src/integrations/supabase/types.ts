@@ -56777,6 +56777,8 @@ export type Database = {
           cert_wbe_number: string | null
           collateral_available: boolean | null
           collateral_description: string | null
+          completeness_missing: string[] | null
+          completeness_pct: number | null
           completeness_score: number
           congressional_district: string | null
           created_at: string
@@ -56794,6 +56796,7 @@ export type Database = {
           doc_insurance: boolean
           doc_lease_or_deed: boolean
           doc_operating_agreement: boolean
+          doc_profit_loss: boolean | null
           doc_resumes: boolean
           doc_tax_returns_current: boolean
           doc_tax_returns_prior: boolean
@@ -56874,6 +56877,8 @@ export type Database = {
           cert_wbe_number?: string | null
           collateral_available?: boolean | null
           collateral_description?: string | null
+          completeness_missing?: string[] | null
+          completeness_pct?: number | null
           completeness_score?: number
           congressional_district?: string | null
           created_at?: string
@@ -56891,6 +56896,7 @@ export type Database = {
           doc_insurance?: boolean
           doc_lease_or_deed?: boolean
           doc_operating_agreement?: boolean
+          doc_profit_loss?: boolean | null
           doc_resumes?: boolean
           doc_tax_returns_current?: boolean
           doc_tax_returns_prior?: boolean
@@ -56971,6 +56977,8 @@ export type Database = {
           cert_wbe_number?: string | null
           collateral_available?: boolean | null
           collateral_description?: string | null
+          completeness_missing?: string[] | null
+          completeness_pct?: number | null
           completeness_score?: number
           congressional_district?: string | null
           created_at?: string
@@ -56988,6 +56996,7 @@ export type Database = {
           doc_insurance?: boolean
           doc_lease_or_deed?: boolean
           doc_operating_agreement?: boolean
+          doc_profit_loss?: boolean | null
           doc_resumes?: boolean
           doc_tax_returns_current?: boolean
           doc_tax_returns_prior?: boolean
