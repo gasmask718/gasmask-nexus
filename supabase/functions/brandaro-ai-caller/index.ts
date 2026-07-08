@@ -22,19 +22,16 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // T7c-B-b Phase 1: repointed to BRANDARO_TWILIO_* (tenant-explicit; aligns with T7h).
-    const TWILIO_ACCOUNT_SID = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID");
-    const TWILIO_AUTH_TOKEN = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN");
-    // DEPRECATED per T7c-B-b — env var references +19292623850 which is not owned by our
-    // Twilio account. T7c-A3 tracks env-var cleanup across all paths. From-number now comes
-    // from select_best_number_for_business('brandaro') pool cascade below.
-    const ELEVENLABS_AGENT_ID = Deno.env.get("ELEVENLABS_AGENT_ID");
-
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
-      throw new Error("Brandaro Twilio credentials not configured (BRANDARO_TWILIO_ACCOUNT_SID / BRANDARO_TWILIO_AUTH_TOKEN)");
+    // T7c-B-b Session 4: dispatch rewired from Twilio+TwiML to Bland /v1/calls.
+    // Session 3 from-number cascade (select_best_number_for_business + bookkeeping)
+    // preserved below unchanged; only the outbound-dial layer is replaced.
+    const BLAND_API_KEY = Deno.env.get("BLAND_API_KEY");
+    const BRANDARO_SALES_AGENT_ID = Deno.env.get("BRANDARO_SALES_AGENT_ID");
+    if (!BLAND_API_KEY) {
+      throw new Error("BLAND_API_KEY not configured");
     }
-    if (!TWILIO_ACCOUNT_SID.startsWith("AC")) {
-      throw new Error(`BRANDARO_TWILIO_ACCOUNT_SID must start with 'AC' (got prefix '${TWILIO_ACCOUNT_SID.slice(0,2)}')`);
+    if (!BRANDARO_SALES_AGENT_ID) {
+      throw new Error("BRANDARO_SALES_AGENT_ID not configured");
     }
 
     // Fetch leads that haven't been AI-called recently
