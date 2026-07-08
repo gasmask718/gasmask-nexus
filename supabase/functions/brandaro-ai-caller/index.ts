@@ -22,19 +22,16 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // T7c-B-b Phase 1: repointed to BRANDARO_TWILIO_* (tenant-explicit; aligns with T7h).
-    const TWILIO_ACCOUNT_SID = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID");
-    const TWILIO_AUTH_TOKEN = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN");
-    // DEPRECATED per T7c-B-b — env var references +19292623850 which is not owned by our
-    // Twilio account. T7c-A3 tracks env-var cleanup across all paths. From-number now comes
-    // from select_best_number_for_business('brandaro') pool cascade below.
-    const ELEVENLABS_AGENT_ID = Deno.env.get("ELEVENLABS_AGENT_ID");
-
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
-      throw new Error("Brandaro Twilio credentials not configured (BRANDARO_TWILIO_ACCOUNT_SID / BRANDARO_TWILIO_AUTH_TOKEN)");
+    // T7c-B-b Session 4: dispatch rewired from Twilio+TwiML to Bland /v1/calls.
+    // Session 3 from-number cascade (select_best_number_for_business + bookkeeping)
+    // preserved below unchanged; only the outbound-dial layer is replaced.
+    const BLAND_API_KEY = Deno.env.get("BLAND_API_KEY");
+    const BRANDARO_SALES_AGENT_ID = Deno.env.get("BRANDARO_SALES_AGENT_ID");
+    if (!BLAND_API_KEY) {
+      throw new Error("BLAND_API_KEY not configured");
     }
-    if (!TWILIO_ACCOUNT_SID.startsWith("AC")) {
-      throw new Error(`BRANDARO_TWILIO_ACCOUNT_SID must start with 'AC' (got prefix '${TWILIO_ACCOUNT_SID.slice(0,2)}')`);
+    if (!BRANDARO_SALES_AGENT_ID) {
+      throw new Error("BRANDARO_SALES_AGENT_ID not configured");
     }
 
     // Fetch leads that haven't been AI-called recently
@@ -132,10 +129,7 @@ serve(async (req) => {
           continue;
         }
 
-        // Build TwiML URL for ElevenLabs bridge
-        const twimlUrl = `${supabaseUrl}/functions/v1/brandaro-ai-caller-twiml?lead_id=${lead.id}&language=${lead.language || "spanish"}&call_record_id=${callRecord.id}`;
-
-        // === FROM-NUMBER CASCADE (T7c-B-b Phase 1) ===
+        // === FROM-NUMBER CASCADE (T7c-B-b Phase 1) — preserved from Session 3 ===
         // 1) select_best_number_for_business('brandaro')
         // 2) exhausted -> refuse (pool_exhausted=true)
         // 3) RPC throws -> emergency fallback to any active brandaro pool row (no bookkeeping)
@@ -184,39 +178,55 @@ serve(async (req) => {
           fromSource = "emergency";
         }
 
-        const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`;
-        const twilioResponse = await fetch(twilioUrl, {
+        // === BLAND DISPATCH (T7c-B-b Session 4) ===
+        // Bland agent handles opening + conversation; we only pass context via metadata.
+        const firstName = (lead.business_name || "").split(/\s+/)[0] || "there";
+        const blandPayload: Record<string, unknown> = {
+          phone_number: lead.phone,
+          from: fromNumber!,
+          agent_id: BRANDARO_SALES_AGENT_ID,
+          webhook: `${supabaseUrl}/functions/v1/bland-agent-webhook`,
+          metadata: {
+            lead_id: lead.id,
+            first_name: firstName,
+            business_name: lead.business_name || null,
+            campaign: "brandaro-ai-caller",
+            pool_row_id: poolRowId,
+            call_record_id: callRecord.id,
+          },
+        };
+
+        const blandRes = await fetch("https://api.bland.ai/v1/calls", {
           method: "POST",
           headers: {
-            Authorization: "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`),
-            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: BLAND_API_KEY,
+            "Content-Type": "application/json",
           },
-          body: new URLSearchParams({
-            To: lead.phone,
-            From: fromNumber!,
-            Url: twimlUrl,
-            StatusCallback: `${supabaseUrl}/functions/v1/brandaro-ai-call-status?call_record_id=${callRecord.id}`,
-            StatusCallbackEvent: "initiated ringing answered completed",
-          }),
+          body: JSON.stringify(blandPayload),
         });
 
-        const twilioData = await twilioResponse.json();
+        const blandData = await blandRes.json().catch(() => ({}));
 
-        if (!twilioResponse.ok) {
+        if (!blandRes.ok) {
+          console.error(`[brandaro-ai-caller] Bland dispatch failed lead=${lead.id} status=${blandRes.status}:`, blandData);
           const { error: failUpdErr } = await supabase
             .from("brandaro_ai_calls")
-            .update({ status: "failed", outcome: JSON.stringify(twilioData) })
+            .update({
+              status: "failed",
+              outcome: JSON.stringify({ bland_status: blandRes.status, bland_response: blandData }),
+            })
             .eq("id", callRecord.id);
           if (failUpdErr) {
             console.error(`[brandaro-ai-caller] failed-status UPDATE failed for ${callRecord.id}:`, failUpdErr);
           }
-          results.push({ lead_id: lead.id, status: "failed", error: twilioData.message });
+          results.push({ lead_id: lead.id, status: "failed", bland_status: blandRes.status, error: blandData });
           continue;
         }
 
+        const blandCallId = blandData.call_id || blandData.callId || null;
         const { error: successUpdErr } = await supabase
           .from("brandaro_ai_calls")
-          .update({ call_sid: twilioData.sid, status: "initiated" })
+          .update({ call_sid: blandCallId, status: "initiated" })
           .eq("id", callRecord.id);
         if (successUpdErr) {
           console.error(`[brandaro-ai-caller] success UPDATE (call_sid) failed for ${callRecord.id}:`, successUpdErr);
@@ -232,7 +242,7 @@ serve(async (req) => {
           }
         }
 
-        results.push({ lead_id: lead.id, status: "initiated", call_sid: twilioData.sid, from: fromNumber, from_source: fromSource });
+        results.push({ lead_id: lead.id, status: "initiated", call_id: blandCallId, from: fromNumber, from_source: fromSource });
 
         // 3s pacing between calls
         await new Promise((resolve) => setTimeout(resolve, 3000));
