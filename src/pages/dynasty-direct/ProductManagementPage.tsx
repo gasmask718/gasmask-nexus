@@ -404,7 +404,7 @@ export default function ProductManagementPage() {
               </TableHeader>
               <TableBody>
                 {filtered.slice(0, 200).map(p => (
-                  <TableRow key={p.id}>
+                  <TableRow key={p.id} className="cursor-pointer hover:bg-muted/40" onClick={() => setDetailId(p.id)}>
                     <TableCell className="font-medium">
                       {p.product_name}
                       {p.brand && <div className="text-xs text-muted-foreground">{p.brand}</div>}
