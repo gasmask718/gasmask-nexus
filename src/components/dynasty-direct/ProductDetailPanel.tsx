@@ -128,14 +128,58 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
 
   async function savePricing() {
     if (!productId) return;
+    const payload = Object.fromEntries(
+      Object.entries(pricing).map(([k, v]) => [k, v === '' || v == null ? null : Number(v)])
+    ) as Record<string, number | null>;
+
+    // Client-side floor check — mirrors dd_enforce_price_floor DB trigger.
+    const cost = (payload.supplier_cost ?? p?.supplier_cost) as number | null;
+    const minStore = p?.min_store_margin_pct ?? null;
+    const minDtc = p?.min_dtc_margin_pct ?? null;
+    const newStore = payload.store_price_a;
+    const newDtc = payload.dtc_price_b;
+    const breaches: string[] = [];
+    if (cost && cost > 0) {
+      if (newStore && minStore != null && newStore > 0) {
+        const m = ((newStore - cost) / newStore) * 100;
+        if (m < minStore) breaches.push(`Store margin ${m.toFixed(1)}% < floor ${minStore}% (price $${newStore}, cost $${cost})`);
+      }
+      if (newDtc && minDtc != null && newDtc > 0) {
+        const m = ((newDtc - cost) / newDtc) * 100;
+        if (m < minDtc) breaches.push(`DTC margin ${m.toFixed(1)}% < floor ${minDtc}% (price $${newDtc}, cost $${cost})`);
+      }
+    }
+    if (breaches.length > 0) {
+      const proceed = window.confirm(
+        `Price floor breach:\n\n${breaches.join('\n')}\n\nOverride and save anyway?`
+      );
+      if (!proceed) {
+        toast.error('Save blocked — price below margin floor');
+        return;
+      }
+    }
+
     setSaving(true);
     try {
-      const payload = Object.fromEntries(
-        Object.entries(pricing).map(([k, v]) => [k, v === '' || v == null ? null : Number(v)])
+      if (breaches.length > 0) {
+        const { error } = await supabase.rpc('dd_update_product_pricing', {
+          p_product_id: productId,
+          p_supplier_cost: payload.supplier_cost ?? null,
+          p_store_price_a: payload.store_price_a ?? null,
+          p_dtc_price_b: payload.dtc_price_b ?? null,
+          p_map_price: payload.map_price ?? null,
+          p_allow_override: true,
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('products_all').update(payload).eq('id', productId);
+        if (error) throw error;
+      }
+      toast.success(
+        breaches.length > 0
+          ? 'Pricing saved with override — margin floor bypassed'
+          : 'Pricing updated — auto-price trigger will re-fire if cost changed'
       );
-      const { error } = await supabase.from('products_all').update(payload).eq('id', productId);
-      if (error) throw error;
-      toast.success('Pricing updated — auto-price trigger will re-fire if cost changed');
       setEditingPricing(false);
       qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
       qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
