@@ -2203,6 +2203,7 @@ export default function AppRoutes() {
         <Route path="/os/special-needs" element={<SpecialNeedsDashboard />} />
         {/* /os/funding removed — orphan mock page, real system is /funding-machine */}
         <Route path="/os/grants" element={<GrantsDashboard />} />
+        <Route path="/os/grants/dashboard" element={<GrantsDashboard />} />
         <Route path="/os/grants/opportunities" element={<GrantOpportunities />} />
         <Route path="/os/grants/applications" element={<GrantsDashboard />} />
         <Route path="/os/grants/funder-crm" element={<GrantFunderCRMPage />} />
