@@ -992,6 +992,7 @@ const GrantApplicationDetail = lazy(() => import('@/pages/os/grants/GrantApplica
 const GrantBusinessProfiles = lazy(() => import('@/pages/os/grants/BusinessProfiles'));
 const GrantBusinessProfileDetail = lazy(() => import('@/pages/os/grants/BusinessProfileDetail'));
 const GrantEligibilityMatrix = lazy(() => import('@/pages/os/grants/EligibilityMatrix'));
+const GrantApplicationPackage = lazy(() => import('@/pages/os/grants/ApplicationPackage'));
 const GrantFunderCRMPage = lazy(() => import('@/pages/funding-machine/grants/GrantFunderCRMPage'));
 const WealthEngineDashboard = lazy(() => import('@/pages/os/wealth/WealthEngineDashboard'));
 // Funding Machine (Floor 10)
@@ -2209,6 +2210,7 @@ export default function AppRoutes() {
         <Route path="/os/grants/businesses/:id" element={<GrantBusinessProfileDetail />} />
         <Route path="/os/grants/eligibility" element={<GrantEligibilityMatrix />} />
         <Route path="/os/grants/eligibility-matrix" element={<GrantEligibilityMatrix />} />
+        <Route path="/os/grants/apply/:packageId" element={<GrantApplicationPackage />} />
         <Route path="/os/grants/:id" element={<GrantApplicationDetail />} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
         {/* Floor 10 — Dynasty Funding Machine */}
