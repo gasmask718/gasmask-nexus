@@ -18,30 +18,31 @@ Deno.serve(async (req) => {
   ];
 
   const target = "+12142394316";
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(target)}`;
-  const res = await fetch(url, {
-    headers: { Authorization: "Basic " + btoa(`${sid}:${token}`) },
-  });
-  const body = await res.text();
-  let parsed: any = null;
-  try { parsed = JSON.parse(body); } catch (_) {}
-  const numbers = (parsed?.incoming_phone_numbers || []).map((n: any) => ({
-    sid: n.sid,
-    phone_number: n.phone_number,
-    friendly_name: n.friendly_name,
-    account_sid: n.account_sid,
-    date_created: n.date_created,
-    voice_url: n.voice_url,
-  }));
+  const results: any[] = [];
+  for (const acct of accounts) {
+    if (!acct.sid || !acct.token) {
+      results.push({ account: acct.label, skipped: "creds missing", have_sid: !!acct.sid, have_token: !!acct.token });
+      continue;
+    }
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${acct.sid}/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(target)}`;
+    const res = await fetch(url, { headers: { Authorization: "Basic " + btoa(`${acct.sid}:${acct.token}`) } });
+    const body = await res.text();
+    let parsed: any = null;
+    try { parsed = JSON.parse(body); } catch (_) {}
+    const numbers = (parsed?.incoming_phone_numbers || []).map((n: any) => ({
+      sid: n.sid, phone_number: n.phone_number, friendly_name: n.friendly_name,
+      account_sid: n.account_sid, date_created: n.date_created, voice_url: n.voice_url,
+    }));
+    results.push({
+      account: acct.label,
+      account_sid_prefix: acct.sid.slice(0, 8),
+      http_status: res.status,
+      count: numbers.length,
+      numbers,
+    });
+  }
 
-  return new Response(JSON.stringify({
-    ok: res.ok,
-    status: res.status,
-    query: target,
-    count: numbers.length,
-    numbers,
-    raw_if_empty: numbers.length === 0 ? parsed : undefined,
-  }, null, 2), {
+  return new Response(JSON.stringify({ query: target, results }, null, 2), {
     status: 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
