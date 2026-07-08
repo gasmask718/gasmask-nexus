@@ -581,7 +581,7 @@ const DYNASTY_NAVIGATION = {
     items: [
       { path: '/os/grants', label: '📊 Dashboard', icon: LayoutDashboard },
       { path: '/os/grants/businesses', label: '🏢 Business Profiles', icon: Building2 },
-      { path: '/os/grants/eligibility-matrix', label: '🧮 Eligibility Matrix', icon: Grid3x3 },
+      { path: '/os/grants/eligibility', label: '🧮 Eligibility Matrix', icon: Grid3x3 },
       { path: '/os/grants/opportunities', label: '🗂️ Opportunities', icon: Database },
       { path: '/os/grants/applications', label: '📝 Applications', icon: FileText },
       { path: '/os/grants/funder-crm', label: '🤝 Funder CRM', icon: Handshake },
