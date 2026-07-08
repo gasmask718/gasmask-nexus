@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
       });
       // dc_phone_numbers uses webhook_url (legacy) + voice_webhook_url shim is in view only.
       // Patch source_table directly.
-      const allowed = ['dc_phone_numbers', 'brandaro_phone_numbers', 'dynasty_phone_numbers', 'business_phone_numbers'];
+      const allowed = ['dc_phone_numbers', 'brandaro_phone_numbers', 'business_phone_numbers'];
       if (allowed.includes(n.source_table)) {
         // dc_phone_numbers has `webhook_url` not `voice_webhook_url` — handle separately
         const body = n.source_table === 'dc_phone_numbers'
