@@ -167,9 +167,8 @@ serve(async (req) => {
           const { data: fallbackRows } = await supabase
             .from("dc_phone_numbers")
             .select("phone_number")
-            .eq("business_key", "brandaro")
+            .eq("business", "brandaro")
             .eq("status", "active")
-            .eq("can_dial", true)
             .order("daily_call_count", { ascending: true })
             .limit(1);
           const fb = fallbackRows?.[0]?.phone_number;
