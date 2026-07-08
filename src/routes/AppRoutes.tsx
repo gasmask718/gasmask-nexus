@@ -777,6 +777,7 @@ const DDLocalDelivery = lazy(() => import('@/pages/dynasty-direct/DDLocalDeliver
 const DDSupplierInstructions = lazy(() => import('@/pages/dynasty-direct/DDSupplierInstructions'));
 const DDShippingPage = lazy(() => import('@/pages/dynasty-direct/ShippingPage'));
 const DDProductManagementPage = lazy(() => import('@/pages/dynasty-direct/ProductManagementPage'));
+const DDPricingPage = lazy(() => import('@/pages/dynasty-direct/PricingPage'));
 const WholesalerMarketplaceInventory = lazy(() => import('@/pages/portal/wholesaler/WholesalerMarketplaceInventory'));
 const UniversalInviteAccept = lazy(() => import('@/pages/invite/UniversalInviteAccept'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
