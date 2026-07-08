@@ -80,18 +80,30 @@ async function dbFetchAgent(biz: string, agentType?: string): Promise<string | n
   return null;
 }
 
-async function dbFetchPhone(biz: string): Promise<string | null> {
+/**
+ * T7c-A Phase 2: pool-aware from-number selection.
+ * Returns { id, phone_number } on hit, null on empty pool, throws on RPC error.
+ * Uses select_best_number_for_business (warming-aware, risk-aware ranking).
+ */
+async function dbSelectBestPhone(biz: string): Promise<{ id: string; phone_number: string } | null> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return null;
-  try {
-    const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/dc_phone_numbers?business=eq.${biz}&is_active=eq.true&select=phone_number&order=created_at.asc&limit=1`,
-      { headers },
-    );
-    const rows = await r.json();
-    if (Array.isArray(rows) && rows[0]?.phone_number) return rows[0].phone_number;
-  } catch (e) { console.error("dbFetchPhone error:", e); }
+  const adminClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+  const { data, error } = await adminClient.rpc("select_best_number_for_business", { p_business: biz });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (row?.id && row?.phone_number) return { id: row.id, phone_number: row.phone_number };
   return null;
+}
+
+async function bumpPoolUsage(poolId: string): Promise<void> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+  try {
+    const adminClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { error } = await adminClient.rpc("bump_number_usage_v2", { p_id: poolId });
+    if (error) console.error("[dc-outbound-call] bump_number_usage_v2 error:", error);
+  } catch (e) {
+    console.error("[dc-outbound-call] bump_number_usage_v2 threw:", e);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -166,20 +178,52 @@ Deno.serve(async (req) => {
       if (envVal) { agentId = envVal; agentSource = "env"; }
     }
 
-    // --- FROM-NUMBER RESOLUTION ---
+    // --- FROM-NUMBER RESOLUTION (T7c-A Phase 2: pool-aware) ---
     let fromNumber = "+18484004179";
-    let phoneSource: "db" | "env" | "default" = "default";
+    let phoneSource: "pool" | "env" | "default" | "emergency_fallback" = "default";
+    let selectedPoolId: string | null = null;
 
-    const dbPhone = await dbFetchPhone(biz);
-    if (dbPhone) { fromNumber = dbPhone; phoneSource = "db"; }
-    else {
-      const envKey = ENV_PHONE_FALLBACK[biz];
-      const envVal = envKey ? Deno.env.get(envKey) : "";
-      if (envVal) { fromNumber = envVal; phoneSource = "env"; }
+    try {
+      const pooled = await dbSelectBestPhone(biz);
+      if (pooled) {
+        fromNumber = pooled.phone_number;
+        selectedPoolId = pooled.id;
+        phoneSource = "pool";
+        console.log(`[POOL SELECTED intended CID for Bland; may be substituted] number=${fromNumber} id=${selectedPoolId} business=${biz}`);
+      } else if (biz === "brandaro") {
+        // Brandaro is fully pool-managed; empty pool = hard stop, do not dial.
+        console.log(`[POOL EXHAUSTED] business=${biz} to=${to_number} campaign=${campaign_id || '-'}`);
+        return new Response(JSON.stringify({
+          success: false, pool_exhausted: true,
+          reason: "No eligible pool number available (all warming caps hit, throttled, or inactive).",
+          error: "Pool exhausted for brandaro; no dial performed.",
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } else {
+        // Non-Brandaro biz: preserve legacy env-var → hardcoded default fallback.
+        const envKey = ENV_PHONE_FALLBACK[biz];
+        const envVal = envKey ? Deno.env.get(envKey) : "";
+        if (envVal) { fromNumber = envVal; phoneSource = "env"; }
+      }
+    } catch (e) {
+      console.error(`[SELECTION ERROR] business=${biz} err=${e instanceof Error ? e.message : String(e)}`);
+      // Resilience: fall through to hardcoded default so the dial still happens.
+      fromNumber = "+18484004179";
+      phoneSource = "emergency_fallback";
+      selectedPoolId = null;
+      console.log(`[EMERGENCY FALLBACK] +18484004179 used due to selection error business=${biz}`);
     }
 
-    // Brandaro local-presence overlay (env-driven for now)
-    if (biz === "brandaro") fromNumber = getLocalNumber(to_number, fromNumber);
+    // Brandaro local-presence overlay (env-driven for now; T7c-A2 will consolidate onto state column).
+    if (biz === "brandaro") {
+      const localOverride = getLocalNumber(to_number, fromNumber);
+      if (localOverride !== fromNumber) {
+        // Env-based local-presence overrides the pool pick — bookkeeping no longer applies.
+        console.log(`[LOCAL PRESENCE OVERRIDE] pool=${fromNumber}(${selectedPoolId || 'n/a'}) → env=${localOverride} for to=${to_number}`);
+        fromNumber = localOverride;
+        selectedPoolId = null;
+        phoneSource = "env";
+      }
+    }
 
     console.log(`[dc-outbound-call] biz=${biz} agent_type=${agent_type || "—"} agent=${agentId || "MISSING"}(${agentSource}) from=${fromNumber}(${phoneSource})`);
 
@@ -245,6 +289,13 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: false, error: "Call failed", details: result.error }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    // T7c-A Phase 2: bump pool bookkeeping (only when the pool actually picked the number).
+    if (selectedPoolId) {
+      await bumpPoolUsage(selectedPoolId);
+    }
+
+
 
     if (SUPABASE_URL && SUPABASE_KEY) {
       const restHeaders = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" };
