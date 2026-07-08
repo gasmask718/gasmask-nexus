@@ -777,6 +777,7 @@ const DDLocalDelivery = lazy(() => import('@/pages/dynasty-direct/DDLocalDeliver
 const DDSupplierInstructions = lazy(() => import('@/pages/dynasty-direct/DDSupplierInstructions'));
 const DDShippingPage = lazy(() => import('@/pages/dynasty-direct/ShippingPage'));
 const DDProductManagementPage = lazy(() => import('@/pages/dynasty-direct/ProductManagementPage'));
+const DDPricingPage = lazy(() => import('@/pages/dynasty-direct/PricingPage'));
 const WholesalerMarketplaceInventory = lazy(() => import('@/pages/portal/wholesaler/WholesalerMarketplaceInventory'));
 const UniversalInviteAccept = lazy(() => import('@/pages/invite/UniversalInviteAccept'));
 const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
@@ -2056,6 +2057,7 @@ export default function AppRoutes() {
         <Route path="/dynasty-direct/fulfillment" element={<DynastyDirectFulfillmentConsole />} />
         <Route path="/dynasty-direct/shipping" element={<DDShippingPage />} />
         <Route path="/dynasty-direct/products" element={<DDProductManagementPage />} />
+        <Route path="/dynasty-direct/pricing" element={<DDPricingPage />} />
         <Route path="/dynasty-direct/delivery" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDLocalDelivery /></RequireRole>} />
         <Route path="/dynasty-direct/suppliers/instructions" element={<DDSupplierInstructions />} />
         <Route path="/dynasty-direct/splits" element={<DynastyDirectSplitConsole />} />
