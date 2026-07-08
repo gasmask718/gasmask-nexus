@@ -37708,6 +37708,8 @@ export type Database = {
           assigned_va_id: string | null
           business: string | null
           created_at: string | null
+          deactivated_at: string | null
+          deactivation_reason: string | null
           display_name: string | null
           elevenlabs_agent_name: string | null
           elevenlabs_phone_id: string | null
@@ -37725,6 +37727,10 @@ export type Database = {
           twilio_sid: string | null
           twilio_webhook_configured: boolean
           twilio_webhook_configured_at: string | null
+          updated_at: string
+          warming_daily_cap: number | null
+          warming_started_at: string | null
+          warming_until: string | null
           webhook_url: string | null
         }
         Insert: {
@@ -37733,6 +37739,8 @@ export type Database = {
           assigned_va_id?: string | null
           business?: string | null
           created_at?: string | null
+          deactivated_at?: string | null
+          deactivation_reason?: string | null
           display_name?: string | null
           elevenlabs_agent_name?: string | null
           elevenlabs_phone_id?: string | null
@@ -37750,6 +37758,10 @@ export type Database = {
           twilio_sid?: string | null
           twilio_webhook_configured?: boolean
           twilio_webhook_configured_at?: string | null
+          updated_at?: string
+          warming_daily_cap?: number | null
+          warming_started_at?: string | null
+          warming_until?: string | null
           webhook_url?: string | null
         }
         Update: {
@@ -37758,6 +37770,8 @@ export type Database = {
           assigned_va_id?: string | null
           business?: string | null
           created_at?: string | null
+          deactivated_at?: string | null
+          deactivation_reason?: string | null
           display_name?: string | null
           elevenlabs_agent_name?: string | null
           elevenlabs_phone_id?: string | null
@@ -37775,6 +37789,10 @@ export type Database = {
           twilio_sid?: string | null
           twilio_webhook_configured?: boolean
           twilio_webhook_configured_at?: string | null
+          updated_at?: string
+          warming_daily_cap?: number | null
+          warming_started_at?: string | null
+          warming_until?: string | null
           webhook_url?: string | null
         }
         Relationships: []
@@ -131860,6 +131878,10 @@ export type Database = {
         Returns: string
       }
       not_developer: { Args: { _user_id: string }; Returns: boolean }
+      number_can_dial_now: {
+        Args: { p_phone_number: string }
+        Returns: boolean
+      }
       override_intent_resolution: {
         Args: {
           p_amended_effect?: Json
