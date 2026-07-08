@@ -125,12 +125,12 @@ Deno.serve(async (req) => {
     if (product_id) {
       const { data, error } = await supabase
         .from('products_all')
-        .select('name, brand, category, supplier_cost, store_price_a')
+        .select('product_name, brand, category, supplier_cost, store_price_a')
         .eq('id', product_id)
         .maybeSingle();
       if (error) return ok({ error: error.message, product_id });
       if (!data) return ok({ error: 'product_not_found', product_id });
-      name = name ?? data.name;
+      name = name ?? data.product_name;
       brand = brand ?? data.brand;
       category = category ?? data.category;
       supplier_cost = supplier_cost ?? data.supplier_cost;
