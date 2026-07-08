@@ -2057,6 +2057,7 @@ export default function AppRoutes() {
         <Route path="/dynasty-direct/fulfillment" element={<DynastyDirectFulfillmentConsole />} />
         <Route path="/dynasty-direct/shipping" element={<DDShippingPage />} />
         <Route path="/dynasty-direct/products" element={<DDProductManagementPage />} />
+        <Route path="/dynasty-direct/pricing" element={<DDPricingPage />} />
         <Route path="/dynasty-direct/delivery" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDLocalDelivery /></RequireRole>} />
         <Route path="/dynasty-direct/suppliers/instructions" element={<DDSupplierInstructions />} />
         <Route path="/dynasty-direct/splits" element={<DynastyDirectSplitConsole />} />
