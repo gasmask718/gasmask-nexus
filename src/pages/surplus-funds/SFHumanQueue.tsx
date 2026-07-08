@@ -251,19 +251,19 @@ export function SFHumanQueue() {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <Button onClick={() => disposition('interested')} disabled={saving} className="bg-green-600 hover:bg-green-700">
+                  <Button onClick={() => disposition('interested')} disabled={saving} size="lg" className="bg-green-600 hover:bg-green-700 min-h-[44px]">
                     <CheckCircle2 className="h-4 w-4 mr-1" />Interested
                   </Button>
-                  <Button onClick={() => disposition('no_answer')} disabled={saving} variant="outline">
+                  <Button onClick={() => disposition('no_answer')} disabled={saving} size="lg" variant="outline" className="min-h-[44px]">
                     <Clock className="h-4 w-4 mr-1" />No Answer (4h)
                   </Button>
                   <div className="col-span-2 md:col-span-1 flex gap-1">
-                    <Input type="datetime-local" value={callbackAt} onChange={e => setCallbackAt(e.target.value)} className="text-xs" />
+                    <Input type="datetime-local" value={callbackAt} onChange={e => setCallbackAt(e.target.value)} className="text-xs min-h-[44px]" />
                   </div>
-                  <Button onClick={() => disposition('callback')} disabled={saving || !callbackAt} variant="outline">
+                  <Button onClick={() => disposition('callback')} disabled={saving || !callbackAt} size="lg" variant="outline" className="min-h-[44px]">
                     <RotateCw className="h-4 w-4 mr-1" />Schedule Callback
                   </Button>
-                  <Button onClick={() => disposition('not_interested')} disabled={saving} variant="outline" className="col-span-2 md:col-span-4 border-red-500/40 text-red-400 hover:bg-red-500/10">
+                  <Button onClick={() => disposition('not_interested')} disabled={saving} size="lg" variant="outline" className="col-span-2 md:col-span-4 border-red-500/40 text-red-400 hover:bg-red-500/10 min-h-[44px]">
                     <XCircle className="h-4 w-4 mr-1" />Not Interested — Mark Done
                   </Button>
                 </div>
