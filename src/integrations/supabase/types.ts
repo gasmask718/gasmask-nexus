@@ -37703,11 +37703,15 @@ export type Database = {
       }
       dc_phone_numbers: {
         Row: {
+          answer_rate: number | null
           assigned_agent_id: string | null
           assigned_agent_name: string | null
           assigned_va_id: string | null
           business: string | null
+          cooldown_seconds: number
           created_at: string | null
+          daily_call_cap: number | null
+          daily_call_count: number
           deactivated_at: string | null
           deactivation_reason: string | null
           display_name: string | null
@@ -37717,28 +37721,37 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_ai_number: boolean | null
+          last_called_at: string | null
           monthly_cost: number | null
           number_type: string | null
           phone_number: string
           purchased_at: string | null
+          risk_score: number
           sid: string | null
           sms_webhook_url: string | null
           status: string | null
+          total_answered: number
+          total_calls: number
           twilio_sid: string | null
           twilio_webhook_configured: boolean
           twilio_webhook_configured_at: string | null
           updated_at: string
           warming_daily_cap: number | null
+          warming_profile: string | null
           warming_started_at: string | null
           warming_until: string | null
           webhook_url: string | null
         }
         Insert: {
+          answer_rate?: number | null
           assigned_agent_id?: string | null
           assigned_agent_name?: string | null
           assigned_va_id?: string | null
           business?: string | null
+          cooldown_seconds?: number
           created_at?: string | null
+          daily_call_cap?: number | null
+          daily_call_count?: number
           deactivated_at?: string | null
           deactivation_reason?: string | null
           display_name?: string | null
@@ -37748,28 +37761,37 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_ai_number?: boolean | null
+          last_called_at?: string | null
           monthly_cost?: number | null
           number_type?: string | null
           phone_number: string
           purchased_at?: string | null
+          risk_score?: number
           sid?: string | null
           sms_webhook_url?: string | null
           status?: string | null
+          total_answered?: number
+          total_calls?: number
           twilio_sid?: string | null
           twilio_webhook_configured?: boolean
           twilio_webhook_configured_at?: string | null
           updated_at?: string
           warming_daily_cap?: number | null
+          warming_profile?: string | null
           warming_started_at?: string | null
           warming_until?: string | null
           webhook_url?: string | null
         }
         Update: {
+          answer_rate?: number | null
           assigned_agent_id?: string | null
           assigned_agent_name?: string | null
           assigned_va_id?: string | null
           business?: string | null
+          cooldown_seconds?: number
           created_at?: string | null
+          daily_call_cap?: number | null
+          daily_call_count?: number
           deactivated_at?: string | null
           deactivation_reason?: string | null
           display_name?: string | null
@@ -37779,18 +37801,23 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_ai_number?: boolean | null
+          last_called_at?: string | null
           monthly_cost?: number | null
           number_type?: string | null
           phone_number?: string
           purchased_at?: string | null
+          risk_score?: number
           sid?: string | null
           sms_webhook_url?: string | null
           status?: string | null
+          total_answered?: number
+          total_calls?: number
           twilio_sid?: string | null
           twilio_webhook_configured?: boolean
           twilio_webhook_configured_at?: string | null
           updated_at?: string
           warming_daily_cap?: number | null
+          warming_profile?: string | null
           warming_started_at?: string | null
           warming_until?: string | null
           webhook_url?: string | null
@@ -130246,7 +130273,9 @@ export type Database = {
         Returns: number
       }
       bulk_approve_enrichment: { Args: never; Returns: number }
+      bump_number_answered_v2: { Args: { p_id: string }; Returns: undefined }
       bump_number_usage: { Args: { p_number_id: string }; Returns: undefined }
+      bump_number_usage_v2: { Args: { p_id: string }; Returns: undefined }
       calculate_and_persist_drift_alerts: { Args: never; Returns: number }
       calculate_creator_score: {
         Args: { p_creator_id: string }
@@ -131139,6 +131168,7 @@ export type Database = {
         }
       }
       debug_auth: { Args: never; Returns: Json }
+      decay_risk_scores: { Args: never; Returns: undefined }
       default_cadence_days: { Args: { status: string }; Returns: number }
       detect_data_duplicates_in_group: {
         Args: { p_group_id: number }
@@ -131878,10 +131908,7 @@ export type Database = {
         Returns: string
       }
       not_developer: { Args: { _user_id: string }; Returns: boolean }
-      number_can_dial_now: {
-        Args: { p_phone_number: string }
-        Returns: boolean
-      }
+      number_can_dial_now: { Args: { p_number: string }; Returns: boolean }
       override_intent_resolution: {
         Args: {
           p_amended_effect?: Json
@@ -131992,6 +132019,7 @@ export type Database = {
         }
         Returns: Json
       }
+      recompute_answer_rates: { Args: never; Returns: undefined }
       recover_stale_calls: { Args: { p_business_id: string }; Returns: Json }
       redeem_portal_invite: {
         Args: { p_token_hash: string; p_user_id: string }
@@ -132053,6 +132081,7 @@ export type Database = {
         Returns: boolean
       }
       reset_daily_number_counts: { Args: never; Returns: undefined }
+      reset_daily_number_counts_v2: { Args: never; Returns: undefined }
       resolve_audience_count: {
         Args: { p_segment_id: string }
         Returns: number
@@ -132355,6 +132384,55 @@ export type Database = {
         Args: { p_business_id: string; p_mode?: string }
         Returns: Json
       }
+      select_best_number_for_business: {
+        Args: { p_business: string }
+        Returns: {
+          answer_rate: number | null
+          assigned_agent_id: string | null
+          assigned_agent_name: string | null
+          assigned_va_id: string | null
+          business: string | null
+          cooldown_seconds: number
+          created_at: string | null
+          daily_call_cap: number | null
+          daily_call_count: number
+          deactivated_at: string | null
+          deactivation_reason: string | null
+          display_name: string | null
+          elevenlabs_agent_name: string | null
+          elevenlabs_phone_id: string | null
+          friendly_name: string | null
+          id: string
+          is_active: boolean | null
+          is_ai_number: boolean | null
+          last_called_at: string | null
+          monthly_cost: number | null
+          number_type: string | null
+          phone_number: string
+          purchased_at: string | null
+          risk_score: number
+          sid: string | null
+          sms_webhook_url: string | null
+          status: string | null
+          total_answered: number
+          total_calls: number
+          twilio_sid: string | null
+          twilio_webhook_configured: boolean
+          twilio_webhook_configured_at: string | null
+          updated_at: string
+          warming_daily_cap: number | null
+          warming_profile: string | null
+          warming_started_at: string | null
+          warming_until: string | null
+          webhook_url: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "dc_phone_numbers"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       set_governance_bypass: {
         Args: { p_authorized: boolean }
         Returns: undefined
@@ -132614,6 +132692,10 @@ export type Database = {
           rating: number
           tier: string
         }[]
+      }
+      warming_current_cap: {
+        Args: { p_profile: string; p_started_at: string }
+        Returns: number
       }
     }
     Enums: {
