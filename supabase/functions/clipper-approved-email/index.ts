@@ -7,7 +7,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const FROM = "Dynasty Clipper Nation <noreply@dynastyclipper.io>";
+// 🚨 TEMPORARY — TESTING ONLY 🚨
+// FROM is swapped to Resend's onboarding sandbox address so we can verify
+// delivery while dynastyclipper.io finishes DNS verification in Resend.
+// LIMITATION: onboarding@resend.dev only delivers to the Resend account
+// owner's own verified email — other recipients get 403.
+// SWAP BACK to "Dynasty Clipper Nation <noreply@dynastyclipper.io>" before
+// real clippers are approved. See: docs/architecture/known-issues.md
+// TODO(email-domain): revert once dynastyclipper.io shows "verified" in Resend.
+const FROM = "Dynasty Clipper Nation <onboarding@resend.dev>";
 const ADMIN_EMAIL = "david@dynastyconnect.com";
 const LOGIN_URL = "https://dynastyclipper.io/login";
 
