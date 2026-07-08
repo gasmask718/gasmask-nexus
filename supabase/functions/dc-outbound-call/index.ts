@@ -80,18 +80,30 @@ async function dbFetchAgent(biz: string, agentType?: string): Promise<string | n
   return null;
 }
 
-async function dbFetchPhone(biz: string): Promise<string | null> {
+/**
+ * T7c-A Phase 2: pool-aware from-number selection.
+ * Returns { id, phone_number } on hit, null on empty pool, throws on RPC error.
+ * Uses select_best_number_for_business (warming-aware, risk-aware ranking).
+ */
+async function dbSelectBestPhone(biz: string): Promise<{ id: string; phone_number: string } | null> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return null;
-  try {
-    const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/dc_phone_numbers?business=eq.${biz}&is_active=eq.true&select=phone_number&order=created_at.asc&limit=1`,
-      { headers },
-    );
-    const rows = await r.json();
-    if (Array.isArray(rows) && rows[0]?.phone_number) return rows[0].phone_number;
-  } catch (e) { console.error("dbFetchPhone error:", e); }
+  const adminClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+  const { data, error } = await adminClient.rpc("select_best_number_for_business", { p_business: biz });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (row?.id && row?.phone_number) return { id: row.id, phone_number: row.phone_number };
   return null;
+}
+
+async function bumpPoolUsage(poolId: string): Promise<void> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+  try {
+    const adminClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { error } = await adminClient.rpc("bump_number_usage_v2", { p_id: poolId });
+    if (error) console.error("[dc-outbound-call] bump_number_usage_v2 error:", error);
+  } catch (e) {
+    console.error("[dc-outbound-call] bump_number_usage_v2 threw:", e);
+  }
 }
 
 Deno.serve(async (req) => {
