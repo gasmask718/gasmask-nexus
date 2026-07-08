@@ -989,6 +989,9 @@ const SpecialNeedsDashboard = lazy(() => import('@/pages/os/specialneeds/Special
 const GrantsDashboard = lazy(() => import('@/pages/os/grants/GrantsDashboard'));
 const GrantOpportunities = lazy(() => import('@/pages/os/grants/GrantOpportunities'));
 const GrantApplicationDetail = lazy(() => import('@/pages/os/grants/GrantApplicationDetail'));
+const GrantBusinessProfiles = lazy(() => import('@/pages/os/grants/BusinessProfiles'));
+const GrantBusinessProfileDetail = lazy(() => import('@/pages/os/grants/BusinessProfileDetail'));
+const GrantEligibilityMatrix = lazy(() => import('@/pages/os/grants/EligibilityMatrix'));
 const GrantFunderCRMPage = lazy(() => import('@/pages/funding-machine/grants/GrantFunderCRMPage'));
 const WealthEngineDashboard = lazy(() => import('@/pages/os/wealth/WealthEngineDashboard'));
 // Funding Machine (Floor 10)
