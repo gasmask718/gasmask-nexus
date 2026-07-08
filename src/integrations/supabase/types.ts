@@ -11131,6 +11131,42 @@ export type Database = {
         }
         Relationships: []
       }
+      bland_owned_numbers: {
+        Row: {
+          business: string
+          created_at: string
+          friendly_name: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          phone_number: string
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          business: string
+          created_at?: string
+          friendly_name?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          phone_number: string
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business?: string
+          created_at?: string
+          friendly_name?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          phone_number?: string
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bland_sms_log: {
         Row: {
           created_at: string
@@ -37707,6 +37743,7 @@ export type Database = {
           assigned_agent_id: string | null
           assigned_agent_name: string | null
           assigned_va_id: string | null
+          bland_registered: boolean
           business: string | null
           cooldown_seconds: number
           created_at: string | null
@@ -37729,6 +37766,7 @@ export type Database = {
           risk_score: number
           sid: string | null
           sms_webhook_url: string | null
+          state: string | null
           status: string | null
           total_answered: number
           total_calls: number
@@ -37747,6 +37785,7 @@ export type Database = {
           assigned_agent_id?: string | null
           assigned_agent_name?: string | null
           assigned_va_id?: string | null
+          bland_registered?: boolean
           business?: string | null
           cooldown_seconds?: number
           created_at?: string | null
@@ -37769,6 +37808,7 @@ export type Database = {
           risk_score?: number
           sid?: string | null
           sms_webhook_url?: string | null
+          state?: string | null
           status?: string | null
           total_answered?: number
           total_calls?: number
@@ -37787,6 +37827,7 @@ export type Database = {
           assigned_agent_id?: string | null
           assigned_agent_name?: string | null
           assigned_va_id?: string | null
+          bland_registered?: boolean
           business?: string | null
           cooldown_seconds?: number
           created_at?: string | null
@@ -37809,6 +37850,7 @@ export type Database = {
           risk_score?: number
           sid?: string | null
           sms_webhook_url?: string | null
+          state?: string | null
           status?: string | null
           total_answered?: number
           total_calls?: number
@@ -132391,6 +132433,7 @@ export type Database = {
           assigned_agent_id: string | null
           assigned_agent_name: string | null
           assigned_va_id: string | null
+          bland_registered: boolean
           business: string | null
           cooldown_seconds: number
           created_at: string | null
@@ -132413,6 +132456,7 @@ export type Database = {
           risk_score: number
           sid: string | null
           sms_webhook_url: string | null
+          state: string | null
           status: string | null
           total_answered: number
           total_calls: number
