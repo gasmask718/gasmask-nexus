@@ -56649,6 +56649,300 @@ export type Database = {
           },
         ]
       }
+      grant_business_profiles: {
+        Row: {
+          address_city: string | null
+          address_county: string | null
+          address_state: string | null
+          address_street: string | null
+          address_zip: string | null
+          annual_revenue_current: number | null
+          annual_revenue_prior: number | null
+          annual_revenue_two_years_ago: number | null
+          business_description: string | null
+          business_licenses: string[] | null
+          business_name: string
+          cash_on_hand: number | null
+          cert_8a: boolean
+          cert_8a_expiration: string | null
+          cert_8a_number: string | null
+          cert_dbe: boolean
+          cert_dbe_expiration: string | null
+          cert_dbe_number: string | null
+          cert_hubzone: boolean
+          cert_hubzone_expiration: string | null
+          cert_hubzone_number: string | null
+          cert_mbe: boolean
+          cert_mbe_expiration: string | null
+          cert_mbe_number: string | null
+          cert_sba_small: boolean
+          cert_sdvob: boolean
+          cert_sdvob_expiration: string | null
+          cert_sdvob_number: string | null
+          cert_veteran: boolean
+          cert_veteran_number: string | null
+          cert_wbe: boolean
+          cert_wbe_expiration: string | null
+          cert_wbe_number: string | null
+          collateral_available: boolean | null
+          collateral_description: string | null
+          completeness_score: number
+          congressional_district: string | null
+          created_at: string
+          credit_score_business: number | null
+          credit_score_personal: number | null
+          date_incorporated: string | null
+          dba_name: string | null
+          doc_articles_of_incorporation: boolean
+          doc_bank_statements: boolean
+          doc_business_license: boolean
+          doc_business_plan: boolean
+          doc_certifications: boolean
+          doc_ein_letter: boolean
+          doc_financial_statements: boolean
+          doc_insurance: boolean
+          doc_lease_or_deed: boolean
+          doc_operating_agreement: boolean
+          doc_resumes: boolean
+          doc_tax_returns_current: boolean
+          doc_tax_returns_prior: boolean
+          duns_number: string | null
+          ein: string | null
+          eligible_grant_count: number
+          employee_count_contract: number | null
+          employee_count_ft: number | null
+          employee_count_pt: number | null
+          entity_type: string | null
+          id: string
+          is_active: boolean
+          is_hud_zone: boolean | null
+          is_opportunity_zone: boolean | null
+          is_rural: boolean | null
+          is_urban: boolean | null
+          jobs_to_create: number
+          jobs_to_retain: number
+          last_eligibility_check_at: string | null
+          legal_name: string | null
+          logo_url: string | null
+          naics_primary: string | null
+          naics_secondary: string[] | null
+          net_income_current: number | null
+          outstanding_debt: number | null
+          owner_disabled: boolean
+          owner_email: string | null
+          owner_ethnicity: string | null
+          owner_gender: string | null
+          owner_name: string | null
+          owner_percentage: number | null
+          owner_phone: string | null
+          owner_race: string | null
+          owner_title: string | null
+          owner_veteran: boolean
+          sam_expiration_date: string | null
+          sam_registered: boolean
+          state_of_incorporation: string | null
+          state_registration_number: string | null
+          uei_number: string | null
+          updated_at: string
+          website: string | null
+          years_in_business: number | null
+        }
+        Insert: {
+          address_city?: string | null
+          address_county?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          annual_revenue_current?: number | null
+          annual_revenue_prior?: number | null
+          annual_revenue_two_years_ago?: number | null
+          business_description?: string | null
+          business_licenses?: string[] | null
+          business_name: string
+          cash_on_hand?: number | null
+          cert_8a?: boolean
+          cert_8a_expiration?: string | null
+          cert_8a_number?: string | null
+          cert_dbe?: boolean
+          cert_dbe_expiration?: string | null
+          cert_dbe_number?: string | null
+          cert_hubzone?: boolean
+          cert_hubzone_expiration?: string | null
+          cert_hubzone_number?: string | null
+          cert_mbe?: boolean
+          cert_mbe_expiration?: string | null
+          cert_mbe_number?: string | null
+          cert_sba_small?: boolean
+          cert_sdvob?: boolean
+          cert_sdvob_expiration?: string | null
+          cert_sdvob_number?: string | null
+          cert_veteran?: boolean
+          cert_veteran_number?: string | null
+          cert_wbe?: boolean
+          cert_wbe_expiration?: string | null
+          cert_wbe_number?: string | null
+          collateral_available?: boolean | null
+          collateral_description?: string | null
+          completeness_score?: number
+          congressional_district?: string | null
+          created_at?: string
+          credit_score_business?: number | null
+          credit_score_personal?: number | null
+          date_incorporated?: string | null
+          dba_name?: string | null
+          doc_articles_of_incorporation?: boolean
+          doc_bank_statements?: boolean
+          doc_business_license?: boolean
+          doc_business_plan?: boolean
+          doc_certifications?: boolean
+          doc_ein_letter?: boolean
+          doc_financial_statements?: boolean
+          doc_insurance?: boolean
+          doc_lease_or_deed?: boolean
+          doc_operating_agreement?: boolean
+          doc_resumes?: boolean
+          doc_tax_returns_current?: boolean
+          doc_tax_returns_prior?: boolean
+          duns_number?: string | null
+          ein?: string | null
+          eligible_grant_count?: number
+          employee_count_contract?: number | null
+          employee_count_ft?: number | null
+          employee_count_pt?: number | null
+          entity_type?: string | null
+          id?: string
+          is_active?: boolean
+          is_hud_zone?: boolean | null
+          is_opportunity_zone?: boolean | null
+          is_rural?: boolean | null
+          is_urban?: boolean | null
+          jobs_to_create?: number
+          jobs_to_retain?: number
+          last_eligibility_check_at?: string | null
+          legal_name?: string | null
+          logo_url?: string | null
+          naics_primary?: string | null
+          naics_secondary?: string[] | null
+          net_income_current?: number | null
+          outstanding_debt?: number | null
+          owner_disabled?: boolean
+          owner_email?: string | null
+          owner_ethnicity?: string | null
+          owner_gender?: string | null
+          owner_name?: string | null
+          owner_percentage?: number | null
+          owner_phone?: string | null
+          owner_race?: string | null
+          owner_title?: string | null
+          owner_veteran?: boolean
+          sam_expiration_date?: string | null
+          sam_registered?: boolean
+          state_of_incorporation?: string | null
+          state_registration_number?: string | null
+          uei_number?: string | null
+          updated_at?: string
+          website?: string | null
+          years_in_business?: number | null
+        }
+        Update: {
+          address_city?: string | null
+          address_county?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          annual_revenue_current?: number | null
+          annual_revenue_prior?: number | null
+          annual_revenue_two_years_ago?: number | null
+          business_description?: string | null
+          business_licenses?: string[] | null
+          business_name?: string
+          cash_on_hand?: number | null
+          cert_8a?: boolean
+          cert_8a_expiration?: string | null
+          cert_8a_number?: string | null
+          cert_dbe?: boolean
+          cert_dbe_expiration?: string | null
+          cert_dbe_number?: string | null
+          cert_hubzone?: boolean
+          cert_hubzone_expiration?: string | null
+          cert_hubzone_number?: string | null
+          cert_mbe?: boolean
+          cert_mbe_expiration?: string | null
+          cert_mbe_number?: string | null
+          cert_sba_small?: boolean
+          cert_sdvob?: boolean
+          cert_sdvob_expiration?: string | null
+          cert_sdvob_number?: string | null
+          cert_veteran?: boolean
+          cert_veteran_number?: string | null
+          cert_wbe?: boolean
+          cert_wbe_expiration?: string | null
+          cert_wbe_number?: string | null
+          collateral_available?: boolean | null
+          collateral_description?: string | null
+          completeness_score?: number
+          congressional_district?: string | null
+          created_at?: string
+          credit_score_business?: number | null
+          credit_score_personal?: number | null
+          date_incorporated?: string | null
+          dba_name?: string | null
+          doc_articles_of_incorporation?: boolean
+          doc_bank_statements?: boolean
+          doc_business_license?: boolean
+          doc_business_plan?: boolean
+          doc_certifications?: boolean
+          doc_ein_letter?: boolean
+          doc_financial_statements?: boolean
+          doc_insurance?: boolean
+          doc_lease_or_deed?: boolean
+          doc_operating_agreement?: boolean
+          doc_resumes?: boolean
+          doc_tax_returns_current?: boolean
+          doc_tax_returns_prior?: boolean
+          duns_number?: string | null
+          ein?: string | null
+          eligible_grant_count?: number
+          employee_count_contract?: number | null
+          employee_count_ft?: number | null
+          employee_count_pt?: number | null
+          entity_type?: string | null
+          id?: string
+          is_active?: boolean
+          is_hud_zone?: boolean | null
+          is_opportunity_zone?: boolean | null
+          is_rural?: boolean | null
+          is_urban?: boolean | null
+          jobs_to_create?: number
+          jobs_to_retain?: number
+          last_eligibility_check_at?: string | null
+          legal_name?: string | null
+          logo_url?: string | null
+          naics_primary?: string | null
+          naics_secondary?: string[] | null
+          net_income_current?: number | null
+          outstanding_debt?: number | null
+          owner_disabled?: boolean
+          owner_email?: string | null
+          owner_ethnicity?: string | null
+          owner_gender?: string | null
+          owner_name?: string | null
+          owner_percentage?: number | null
+          owner_phone?: string | null
+          owner_race?: string | null
+          owner_title?: string | null
+          owner_veteran?: boolean
+          sam_expiration_date?: string | null
+          sam_registered?: boolean
+          state_of_incorporation?: string | null
+          state_registration_number?: string | null
+          uei_number?: string | null
+          updated_at?: string
+          website?: string | null
+          years_in_business?: number | null
+        }
+        Relationships: []
+      }
       grant_documents: {
         Row: {
           application_id: string
@@ -56898,6 +57192,53 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      grant_requirements: {
+        Row: {
+          created_at: string
+          description: string
+          field_name: string
+          grant_opportunity_id: string
+          id: string
+          is_mandatory: boolean
+          operator: string
+          required_value: string | null
+          requirement_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          field_name: string
+          grant_opportunity_id: string
+          id?: string
+          is_mandatory?: boolean
+          operator: string
+          required_value?: string | null
+          requirement_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          field_name?: string
+          grant_opportunity_id?: string
+          id?: string
+          is_mandatory?: boolean
+          operator?: string
+          required_value?: string | null
+          requirement_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grant_requirements_grant_opportunity_id_fkey"
+            columns: ["grant_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "grant_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       grant_tasks: {
         Row: {
