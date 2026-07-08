@@ -57,8 +57,9 @@ export default function DCCallDispatch() {
     queryKey: ['dc-available-phone-numbers'],
     queryFn: async () => {
       const { data } = await (supabase as any)
-        .from('dynasty_phone_numbers')
+        .from('dc_phone_numbers')
         .select('*')
+        .eq('business', 'brandaro')
         .eq('is_active', true)
         .order('state', { ascending: true });
       return data || [];
