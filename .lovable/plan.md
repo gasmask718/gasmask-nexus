@@ -1,37 +1,128 @@
 
-# 📱 Mobile QA Report — 375px iPhone Safari
+# Pre-Phase Verification Plan — T7a
 
-Static analysis of the current codebase against Apple HIG (44×44 tap targets) and horizontal‑overflow rules. Sources: `SFCommandCenter.tsx`, `SFLeadPipeline.tsx`, `SFAutomation.tsx`, `SFHumanQueue.tsx`, `RECommandCenter.tsx`, `REVADesk.tsx`, `REAnalyzer.tsx`, `SFLayout.tsx`, `RELayout.tsx`, `Layout.tsx`, `components/ui/button.tsx`, `components/ui/input.tsx`.
+## Findings (from read-only inspection, no code changed)
 
-Key baseline pulled from the shared UI kit:
-- `Button` default = `h-10` (40px) → **fails 44px HIG** unless page passes `size="lg"` (h‑11 = 44px).
-- `Input` = `h-10` (40px), `text-base` on mobile (16px) → **prevents iOS auto‑zoom** ✅.
+### 1. Canonical inbound handler → **`dc-inbound-call`**
 
-## Report
+```sql
+SELECT webhook_url, count(*) FROM dc_phone_numbers
+WHERE status='active' AND is_active=true GROUP BY webhook_url;
+--  https://qalaaroashbggynpvqct.supabase.co/functions/v1/dc-inbound-call | 14
+```
 
-| # | Page | Test | Pass/Fail | Notes / Failure Reason |
-|---|---|---|---|---|
-| 1 | SF Penthouse | Stat cards stack 2×2 | PASS | `grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6` — 6 cards render 2‑wide at 375px (3 rows of 2). No overlap. |
-| 2 | SF Leads | Table scrolls horizontally | PASS | Table wrapped in `<div className="overflow-x-auto">` at line 357 of `SFLeadPipeline.tsx`; page container itself does not overflow. |
-| 3 | SF Automation | Campaign launcher usable | PASS (with caveat) | Uses shadcn `Input` (h‑10, 16px text — no iOS zoom), `Select` (h‑10), stacked in default flex; Launch button default h‑10 = 40px, technically below 44px HIG but still tappable. Recommend `size="lg"` on the primary Launch CTA. |
-| 4 | Human Queue | Call panel is full screen | FAIL | `SFHumanQueue.tsx` L189 uses `<DialogContent className="max-w-3xl max-h-[90vh]">`. shadcn Dialog default is a centered card with side gutters and `rounded-lg` — not `w-full`/edge‑to‑edge full‑screen on mobile. Needs `w-screen h-screen max-w-none rounded-none` (or a `Sheet side="bottom"`) at `<sm`. |
-| 5 | Human Queue | Disposition buttons ≥44px | FAIL | L254‑268: Interested / No Answer / Schedule Callback / Not Interested all use default `<Button>` (h‑10 = 40px). Below 44px HIG. Add `size="lg"` or `className="h-11"`. |
-| 6 | Human Queue | Phone number is `<a href="tel:...">` | PASS | L209 wraps the dial CTA in `<a href={\`tel:${active.phone}\`}>`. Native tap‑to‑call works. |
-| 7 | RE Penthouse | Stat cards readable | FAIL | `RECommandCenter.tsx` L146‑158: 7 metric cards use `grid-cols-2 md:grid-cols-4 lg:grid-cols-7` (OK) but labels use `text-[10px]` (10px) — below the ≥14px body‑text bar and hard to read on 375px. Values are `text-xl` (fine). Bump labels to `text-xs` (12px) minimum, ideally `text-sm`. |
-| 8 | RE VA Desk | Call panel full screen | PASS | L238: `<SheetContent className="w-full sm:max-w-xl">` — full width on mobile, capped only from `sm:` up. Sheet slides in edge‑to‑edge on 375px. |
-| 9 | RE VA Desk | All 6 disposition buttons tappable | FAIL | L260‑264 renders the 6 `DISPOSITIONS` buttons at default size (h‑10 = 40px). Below 44px HIG. Add `size="lg"` or `min-h-[44px]`. |
-| 10 | RE VA Desk | Escalate to David visible | PASS | L265: rendered inside the same `grid gap-2` in the Sheet body, immediately after the disposition list. Sheet is `overflow-y-auto`; button is never clipped or pushed off‑screen. (Same 40px height caveat as #9.) |
-| 11 | RE Analyzer | Form fields usable on mobile | PASS | Outer form is `grid lg:grid-cols-2` — collapses to a single column at 375px. `Input` uses `text-base` (16px) so iOS won't zoom on focus. Only sub‑caveat: the inner `grid-cols-3` for Beds/Baths/Sqft (L180) is cramped at 375px (~110px per input) but does not overflow. |
-| 12 | RE Analyzer | Grade badge readable | PASS | L240: `<Badge className="text-base px-4 py-1">{grade} — {gradeMeta.label}</Badge>` — 16px text, single line, centered in the calc card. No awkward wrap. |
-| 13 | Global sidebar | Collapses correctly on mobile | PASS (with caveat) | `Layout.tsx` L1451‑1468: header renders a `md:hidden` hamburger that opens a `Sheet side="left" w-72` with full nav. Content isn't obscured. **Caveat (not in the 13‑point scope, worth flagging):** the *inner* OS shells `SFLayout.tsx` L49 and `RELayout.tsx` L57 both use `hidden lg:block` on their secondary sidebar with **no** mobile trigger — on `/surplus-funds/*` and `/real-estate/*` at 375px users lose access to the OS‑local nav (Command Center / Leads / VA Desk / etc.) entirely. Recommend a Sheet‑backed trigger in the OS page headers. |
+All 14 already-configured active rows point at the same URL: **`dc-inbound-call`**. That URL is the source of truth for Phase 3.
 
-## Summary
-- **Pass:** 8 (1, 2, 3, 6, 8, 10, 11, 12, 13) — counted 13 as pass.
-- **Fail:** 4 (4, 5, 7, 9).
-- **Root causes are concentrated:**
-  1. Default shadcn `Button` size (h‑10) is used everywhere → drives fails 5 and 9, and lurks under 3, 10.
-  2. `DialogContent` used for the mobile call panel in Human Queue instead of `Sheet` / full‑screen dialog → fail 4.
-  3. `text-[10px]` labels on RE Penthouse metric cards → fail 7.
-  4. OS‑local sidebars (`SFLayout`, `RELayout`) have no mobile hamburger — a secondary but real UX gap.
+Handler triangulation:
+- `supabase/functions/dc-inbound-call/index.ts` (138 lines) — table-driven, looks up `v_phone_directory` → `assigned_agent_id` → per-business `*_BLAND_INBOUND_NUMBER` env fallback → global `BLAND_INBOUND_NUMBER`. Verifies Twilio signature.
+- `supabase/functions/twilio-inbound-call/index.ts` (138 lines) — **byte-identical duplicate** (same header comment "TWILIO INBOUND CALL HANDLER (also the dc-inbound-call handler)", same code). Not referenced by any active `dc_phone_numbers.webhook_url` row. Orphan / historical alias.
+- `supabase/functions/brandaro-handle-inbound/index.ts` (353 lines) — different function entirely, Brandaro-specific inbound logic. Not referenced by any of the 14 active rows.
 
-Awaiting your confirmation before switching to Build Mode to apply fixes.
+**Phase 3 canonical target: `dc-inbound-call`.** The `twilio-inbound-call` duplicate is out of scope for T7 but flagged as a cleanup candidate (once T7 lands and we're sure nothing external hits it).
+
+### 2. `dc_phone_numbers` column audit
+
+Existing columns (23): `id, phone_number, sid, friendly_name, webhook_url, status, is_ai_number, monthly_cost, purchased_at, created_at, business, twilio_sid, elevenlabs_phone_id, assigned_agent_id, assigned_agent_name, is_active, number_type, display_name, elevenlabs_agent_name, twilio_webhook_configured, twilio_webhook_configured_at, sms_webhook_url, assigned_va_id`.
+
+**Missing (confirmed):** `deactivated_at`, `deactivation_reason`, `updated_at`.
+
+→ Fold all three into the **Phase 1 migration** alongside the warming columns (single migration, not two).
+
+### 3. Dual active-state columns confirmed
+
+`status` and `is_active` are both present and (per T7 audit) disagreed on the 5 targets. **Phase 2 resurrection UPDATE must set both**: `status='active'` **AND** `is_active=true`. Logged for Phase 2 spec.
+
+### 4. Secret names present in Lovable Cloud
+
+- `TWILIO_ACCOUNT_SID` ✅
+- `TWILIO_AUTH_TOKEN` ✅ (parent set — the one production voice paths use)
+- `BRANDARO_TWILIO_*` also present but not used for this verify.
+
+I cannot read values from the secret store — the `AC` vs `US` prefix check has to happen at runtime inside `t7a-verify-numbers`. That check is built in as the first gate below.
+
+---
+
+## t7a-verify-numbers — spec
+
+**Path:** `supabase/functions/t7a-verify-numbers/index.ts`
+**Auth:** JWT off; requires `x-bootstrap-token: <T4_BOOTSTRAP_TOKEN>` header (same protocol as `t4-bootstrap-devtest` / `public-site-admin-bootstrap`). Non-matching token → 403.
+**Read-only:** only Twilio GETs. No writes anywhere, no DB mutations.
+
+### Input
+```json
+{ "phone_numbers": ["+1XXXXXXXXXX", ... 5 numbers] }
+```
+
+### Runtime gate (before any Twilio call)
+```
+sid = Deno.env.get("TWILIO_ACCOUNT_SID")
+if (!sid.startsWith("AC"))  → return 500 {
+  error: "TWILIO_ACCOUNT_SID_PREFIX_INVALID",
+  observed_prefix: sid.slice(0,2),
+  message: "Supabase secret is not an Account SID (starts with US, not AC). STOP — fix secret before any Twilio work."
+}
+```
+
+### Per number
+1. `GET https://api.twilio.com/2010-04-01/Accounts/{AC_SID}/IncomingPhoneNumbers.json?PhoneNumber={number}` (Basic auth: `AC_SID:AUTH_TOKEN`)
+   - Capture: `sid`, `account_sid` (ownership), `phone_number`, `friendly_name`, `voice_url`, `voice_method`, `voice_fallback_url`, `sms_url`, `sms_method`, `status_callback`, `capabilities` (voice/sms/mms), `date_created`, `date_updated`, `origin`, `emergency_status`.
+   - `ownership_ok = (account_sid === TWILIO_ACCOUNT_SID)`.
+   - If the query returns 0 rows → `owned: false, released_or_ported: true`.
+2. `GET .../Calls.json?To={number}&Status=failed&StartTime>={now-30d}&PageSize=50`
+   - Capture count, plus first 10 rows with `sid, from, status, to, start_time, duration, price, error_code`.
+   - Any repeated `error_code` (e.g. 30003 = unreachable, 30005 = unknown destination, 21610 = STOP received, 32017 = carrier reject) is surfaced as `carrier_flag_candidates`.
+
+### Output shape
+```json
+{
+  "twilio_account_sid_prefix": "AC",
+  "checked_at": "2026-07-08T…Z",
+  "numbers": [
+    {
+      "phone_number": "+1…",
+      "owned": true,
+      "twilio_sid": "PN…",
+      "friendly_name": "…",
+      "voice_url": "https://…/dc-inbound-call",
+      "voice_method": "POST",
+      "sms_url": "…",
+      "capabilities": { "voice": true, "sms": true, "mms": false },
+      "date_created": "…",
+      "failed_calls_30d": { "count": 0, "sample": [], "carrier_flag_candidates": [] }
+    }, …
+  ]
+}
+```
+
+### Gate summary the reply will state per number
+- `owned` (true/false — ownership_ok)
+- `voice_url` matches canonical `dc-inbound-call`? (info only, Phase 3 will fix)
+- Any carrier-reject pattern in last 30d? (yes/no)
+- Any number not returned by IncomingPhoneNumbers → **excluded from Phase 2** and documented.
+
+---
+
+## Execution sequence (once you paste the 5 numbers)
+
+1. Create `supabase/functions/t7a-verify-numbers/index.ts` (spec above).
+2. `deploy_edge_functions(["t7a-verify-numbers"])`.
+3. `curl_edge_functions POST /t7a-verify-numbers` with header `x-bootstrap-token: $T4_BOOTSTRAP_TOKEN` and body `{ "phone_numbers": [ … 5 … ] }`.
+4. Paste the full JSON report into the reply, plus a plain-English per-number summary:
+   - ownership OK / released
+   - webhook currently points at: `<url>`
+   - carrier-flag evidence: none / list
+5. `delete_edge_functions(["t7a-verify-numbers"])` **and** `rm -rf supabase/functions/t7a-verify-numbers/`.
+6. Confirm both deletions in the reply.
+
+## Then — and only then — proceed conditions for Phases 1–4
+Before Phase 1 runs, the reply must state:
+- All 5 numbers `owned=true`, else the released ones are excluded and named.
+- No carrier-flag pattern in last 30d (or list the flagged numbers and exclude).
+- Canonical inbound handler = `dc-inbound-call` (confirmed above).
+- `TWILIO_ACCOUNT_SID` starts with `AC` (verified live at runtime by the gate).
+
+If any of those four fails, I stop and surface — no Phase 1 migration.
+
+## Blocker before I can run this
+
+**You didn't include the 5 target phone numbers in this message.** Paste them in E.164 (e.g. `+13055551234`) and I'll create the function, deploy, invoke, report, and delete in one turn.
