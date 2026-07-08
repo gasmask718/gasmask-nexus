@@ -340,17 +340,24 @@ serve(async (req) => {
 
 
 
-      // Get state and matching caller ID
+      // Get state, then run unified pool cascade (T7c-A Phase 3)
       const prospectState = getStateFromPhone(phoneNumber);
-      const { data: phoneMatch } = await supabase
-        .from('dynasty_phone_numbers')
-        .select('phone_number')
-        .eq('state', prospectState)
-        .eq('is_active', true)
-        .limit(1)
-        .single();
-
-      const fromNumber = phoneMatch?.phone_number || '+12142394316';
+      const poolBusiness = BIZ_TYPE_TO_KEY[businessType] || businessType;
+      const poolPick = await selectFromNumberCascade(supabase, poolBusiness, prospectState);
+      if (!poolPick) {
+        if (queueId) {
+          await supabase.from('dynasty_call_queue').update({
+            status: 'failed',
+            error_message: 'All pools exhausted (dc_phone_numbers + bland_owned_numbers)',
+            completed_at: new Date().toISOString(),
+          }).eq('id', queueId);
+        }
+        return new Response(JSON.stringify({
+          success: false, pool_exhausted: true,
+          reason: 'All from-number pools exhausted; no dial performed.',
+        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const fromNumber = poolPick.phone_number;
 
       const personaMap: Record<string, string> = {
         brandaro: Deno.env.get('BRANDARO_PERSONA_ID') || '358e79c7-fc23-4494-8c89-21d489253bef',
