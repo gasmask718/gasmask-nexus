@@ -56559,6 +56559,97 @@ export type Database = {
         }
         Relationships: []
       }
+      grant_application_packages: {
+        Row: {
+          business_narrative: string | null
+          business_profile_id: string | null
+          community_impact_statement: string | null
+          cover_letter: string | null
+          created_at: string
+          documents_missing: string[] | null
+          documents_ready: string[] | null
+          documents_required: string[] | null
+          eligibility_result_id: string | null
+          executive_summary: string | null
+          fund_usage_plan: string | null
+          generated_at: string | null
+          generation_status: string | null
+          grant_opportunity_id: string | null
+          id: string
+          job_creation_plan: string | null
+          qa_answers: Json | null
+          submission_confirmation: string | null
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_narrative?: string | null
+          business_profile_id?: string | null
+          community_impact_statement?: string | null
+          cover_letter?: string | null
+          created_at?: string
+          documents_missing?: string[] | null
+          documents_ready?: string[] | null
+          documents_required?: string[] | null
+          eligibility_result_id?: string | null
+          executive_summary?: string | null
+          fund_usage_plan?: string | null
+          generated_at?: string | null
+          generation_status?: string | null
+          grant_opportunity_id?: string | null
+          id?: string
+          job_creation_plan?: string | null
+          qa_answers?: Json | null
+          submission_confirmation?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_narrative?: string | null
+          business_profile_id?: string | null
+          community_impact_statement?: string | null
+          cover_letter?: string | null
+          created_at?: string
+          documents_missing?: string[] | null
+          documents_ready?: string[] | null
+          documents_required?: string[] | null
+          eligibility_result_id?: string | null
+          executive_summary?: string | null
+          fund_usage_plan?: string | null
+          generated_at?: string | null
+          generation_status?: string | null
+          grant_opportunity_id?: string | null
+          id?: string
+          job_creation_plan?: string | null
+          qa_answers?: Json | null
+          submission_confirmation?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grant_application_packages_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "grant_business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grant_application_packages_eligibility_result_id_fkey"
+            columns: ["eligibility_result_id"]
+            isOneToOne: false
+            referencedRelation: "grant_eligibility_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grant_application_packages_grant_opportunity_id_fkey"
+            columns: ["grant_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "grant_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       grant_applications: {
         Row: {
           ai_draft: string | null
@@ -56983,6 +57074,84 @@ export type Database = {
             columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "grant_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grant_eligibility_results: {
+        Row: {
+          ai_action_plan: string | null
+          ai_recommendation: string | null
+          ai_success_probability: number | null
+          application_status: string | null
+          business_profile_id: string | null
+          created_at: string
+          david_approved_at: string | null
+          eligibility_score: number | null
+          eligibility_status: string
+          grant_opportunity_id: string | null
+          id: string
+          last_checked_at: string | null
+          next_check_at: string | null
+          requirements_failed: Json | null
+          requirements_met: Json | null
+          requirements_missing: Json | null
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_action_plan?: string | null
+          ai_recommendation?: string | null
+          ai_success_probability?: number | null
+          application_status?: string | null
+          business_profile_id?: string | null
+          created_at?: string
+          david_approved_at?: string | null
+          eligibility_score?: number | null
+          eligibility_status: string
+          grant_opportunity_id?: string | null
+          id?: string
+          last_checked_at?: string | null
+          next_check_at?: string | null
+          requirements_failed?: Json | null
+          requirements_met?: Json | null
+          requirements_missing?: Json | null
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_action_plan?: string | null
+          ai_recommendation?: string | null
+          ai_success_probability?: number | null
+          application_status?: string | null
+          business_profile_id?: string | null
+          created_at?: string
+          david_approved_at?: string | null
+          eligibility_score?: number | null
+          eligibility_status?: string
+          grant_opportunity_id?: string | null
+          id?: string
+          last_checked_at?: string | null
+          next_check_at?: string | null
+          requirements_failed?: Json | null
+          requirements_met?: Json | null
+          requirements_missing?: Json | null
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grant_eligibility_results_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "grant_business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grant_eligibility_results_grant_opportunity_id_fkey"
+            columns: ["grant_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "grant_opportunities"
             referencedColumns: ["id"]
           },
         ]
