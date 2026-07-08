@@ -562,6 +562,9 @@ serve(async (req) => {
 
           const blandData = await blandRes.json();
 
+          // T7c-A Phase 3: bump pool bookkeeping only when a Twilio pool row was picked.
+          if (blandRes.ok) await bumpPoolUsageIfApplicable(supabase, poolPick);
+
           await supabase.from('dynasty_call_queue').update({
             status: 'calling', bland_call_id: blandData.call_id, called_at: new Date().toISOString(),
           }).eq('id', lead.id);
