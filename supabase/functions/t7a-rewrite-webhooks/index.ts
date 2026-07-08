@@ -10,14 +10,16 @@ const CANONICAL_VOICE_URL =
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-  const token = req.headers.get('x-bootstrap-token');
-  const expected = Deno.env.get('T4_BOOTSTRAP_TOKEN');
-  if (!expected || token !== expected) {
+  // Ephemeral one-shot: authorized by TWILIO_AUTH_TOKEN echo (caller must know it).
+  const token = req.headers.get('x-twilio-auth');
+  if (!token || token !== Deno.env.get('TWILIO_AUTH_TOKEN')) {
     return new Response(JSON.stringify({ error: 'forbidden' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
+
+
 
   const sid = Deno.env.get('TWILIO_ACCOUNT_SID') ?? '';
   const auth = Deno.env.get('TWILIO_AUTH_TOKEN') ?? '';
