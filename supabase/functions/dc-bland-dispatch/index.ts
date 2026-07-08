@@ -64,6 +64,80 @@ function getStateFromPhone(phone: string): string {
   return AREA_CODE_TO_STATE[areaCode] || 'CA';
 }
 
+// ===== T7c-A Phase 3 (2026-07-08): unified pool cascade =====
+// dc-bland-dispatch sends `from` unconditionally to Bland via inline fetch.
+// Whether Bland honors `from` depends on whether the number is registered
+// as Bring-Your-Own-Number in the Bland dashboard:
+//   • bland_registered=true rows in dc_phone_numbers → Bland honors `from`.
+//   • bland_registered=false rows → Bland substitutes its own default outbound
+//     number regardless of what we send (pool pick is bookkeeping only).
+// Cascade order:
+//   1) dc_phone_numbers: business + state + is_active (prefer bland_registered)
+//   2) select_best_number_for_business RPC (any state, warming/risk-aware)
+//   3) bland_owned_numbers (permanent Bland-owned fallback, e.g. Dallas)
+//   4) [ALL POOLS EXHAUSTED] → refuse to dial
+// bump_number_usage_v2 is called ONLY when a dc_phone_numbers (Twilio pool)
+// row was selected — never for bland_owned_numbers picks.
+type PoolPick =
+  | { source: 'dc_phone_numbers'; id: string; phone_number: string; bland_registered: boolean }
+  | { source: 'bland_owned_numbers'; id: string; phone_number: string }
+  | null;
+
+async function selectFromNumberCascade(
+  supabase: any,
+  business: string,
+  prospectState: string,
+): Promise<PoolPick> {
+  // 1) State-matched pool row, prefer BYON-registered
+  const { data: stateMatch } = await supabase
+    .from('dc_phone_numbers')
+    .select('id, phone_number, bland_registered')
+    .eq('business', business)
+    .eq('state', prospectState)
+    .eq('is_active', true)
+    .order('bland_registered', { ascending: false })
+    .order('last_called_at', { ascending: true, nullsFirst: true })
+    .limit(1)
+    .maybeSingle();
+  if (stateMatch?.phone_number) {
+    console.log(`[POOL CASCADE 1/4 state-match] business=${business} state=${prospectState} number=${stateMatch.phone_number} bland_registered=${stateMatch.bland_registered}`);
+    return { source: 'dc_phone_numbers', id: stateMatch.id, phone_number: stateMatch.phone_number, bland_registered: !!stateMatch.bland_registered };
+  }
+
+  // 2) RPC fallback: warming/risk/rotation aware, any state
+  const { data: rpcRows } = await supabase.rpc('select_best_number_for_business', { p_business: business });
+  const rpcPick = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
+  if (rpcPick?.phone_number) {
+    console.log(`[POOL CASCADE 2/4 rpc-fallback] business=${business} number=${rpcPick.phone_number} bland_registered=${rpcPick.bland_registered}`);
+    return { source: 'dc_phone_numbers', id: rpcPick.id, phone_number: rpcPick.phone_number, bland_registered: !!rpcPick.bland_registered };
+  }
+
+  // 3) bland_owned_numbers (permanent Bland-side numbers, e.g. Dallas)
+  const { data: bown } = await supabase
+    .from('bland_owned_numbers')
+    .select('id, phone_number, state')
+    .eq('business', business)
+    .eq('is_active', true)
+    .order('state', { ascending: prospectState === 'TX' ? false : true })
+    .limit(5);
+  const preferred = (bown || []).find((r: any) => r.state === prospectState) || (bown || [])[0];
+  if (preferred?.phone_number) {
+    console.log(`[POOL CASCADE 3/4 bland-owned] business=${business} state=${preferred.state} number=${preferred.phone_number}`);
+    return { source: 'bland_owned_numbers', id: preferred.id, phone_number: preferred.phone_number };
+  }
+
+  // 4) Exhausted
+  console.error(`[ALL POOLS EXHAUSTED] business=${business} state=${prospectState} — refusing to dial`);
+  return null;
+}
+
+async function bumpPoolUsageIfApplicable(supabase: any, pick: PoolPick): Promise<void> {
+  if (pick?.source === 'dc_phone_numbers') {
+    const { error } = await supabase.rpc('bump_number_usage_v2', { p_id: pick.id });
+    if (error) console.error('[bump_number_usage_v2 failed]', pick.id, error.message);
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
