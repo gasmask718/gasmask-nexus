@@ -20,13 +20,13 @@ import {
 import {
   Package, Plus, Search, Upload, RefreshCw, Ruler, DollarSign, AlertTriangle,
 } from 'lucide-react';
+import ProductDetailPanel from '@/components/dynasty-direct/ProductDetailPanel';
 
 const GOLD = '#C9A84C';
 
 const CATEGORIES = [
-  'cigarettes', 'cigars', 'tobacco_grabba', 'hemp_wraps',
-  'disposable_vape', 'nicotine_pouch', 'lighters', 'glass',
-  'accessories', 'other',
+  'disposable_vape', 'nicotine_pouch', 'tobacco_grabba', 'rolling_papers',
+  'lighters', 'grinders', 'glass', 'vape_hardware', 'cbd_hemp', 'accessories',
 ] as const;
 
 type ProductRow = {
@@ -69,6 +69,7 @@ export default function ProductManagementPage() {
   const [submitting, setSubmitting] = useState(false);
   const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     product_name: '',
@@ -403,7 +404,7 @@ export default function ProductManagementPage() {
               </TableHeader>
               <TableBody>
                 {filtered.slice(0, 200).map(p => (
-                  <TableRow key={p.id}>
+                  <TableRow key={p.id} className="cursor-pointer hover:bg-muted/40" onClick={() => setDetailId(p.id)}>
                     <TableCell className="font-medium">
                       {p.product_name}
                       {p.brand && <div className="text-xs text-muted-foreground">{p.brand}</div>}
@@ -432,6 +433,12 @@ export default function ProductManagementPage() {
           )}
         </CardContent>
       </Card>
+
+      <ProductDetailPanel
+        productId={detailId}
+        open={!!detailId}
+        onOpenChange={(o) => { if (!o) setDetailId(null); }}
+      />
     </div>
   );
 }
