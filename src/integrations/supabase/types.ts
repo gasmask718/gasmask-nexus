@@ -48824,57 +48824,6 @@ export type Database = {
         }
         Relationships: []
       }
-      dynasty_phone_numbers: {
-        Row: {
-          assigned_agent_id: string | null
-          assigned_va_id: string | null
-          created_at: string | null
-          friendly_name: string | null
-          id: string
-          is_active: boolean | null
-          phone_number: string
-          sms_webhook_url: string | null
-          state: string
-          twilio_sid: string | null
-          twilio_webhook_configured: boolean | null
-          twilio_webhook_configured_at: string | null
-          updated_at: string | null
-          voice_webhook_url: string | null
-        }
-        Insert: {
-          assigned_agent_id?: string | null
-          assigned_va_id?: string | null
-          created_at?: string | null
-          friendly_name?: string | null
-          id?: string
-          is_active?: boolean | null
-          phone_number: string
-          sms_webhook_url?: string | null
-          state: string
-          twilio_sid?: string | null
-          twilio_webhook_configured?: boolean | null
-          twilio_webhook_configured_at?: string | null
-          updated_at?: string | null
-          voice_webhook_url?: string | null
-        }
-        Update: {
-          assigned_agent_id?: string | null
-          assigned_va_id?: string | null
-          created_at?: string | null
-          friendly_name?: string | null
-          id?: string
-          is_active?: boolean | null
-          phone_number?: string
-          sms_webhook_url?: string | null
-          state?: string
-          twilio_sid?: string | null
-          twilio_webhook_configured?: boolean | null
-          twilio_webhook_configured_at?: string | null
-          updated_at?: string | null
-          voice_webhook_url?: string | null
-        }
-        Relationships: []
-      }
       dynasty_subscriptions: {
         Row: {
           brand_id: string
@@ -123394,14 +123343,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -128008,25 +127957,6 @@ export type Database = {
           currency: string | null
           liability_amount: number | null
           pending_items: number | null
-        }
-        Relationships: []
-      }
-      v_phone_directory: {
-        Row: {
-          agent_provider: string | null
-          assigned_agent_id: string | null
-          assigned_va_id: string | null
-          business: string | null
-          id: string | null
-          is_active: boolean | null
-          phone_e164: string | null
-          provider: string | null
-          sms_webhook_url: string | null
-          source_table: string | null
-          twilio_sid: string | null
-          twilio_webhook_configured: boolean | null
-          twilio_webhook_configured_at: string | null
-          voice_webhook_url: string | null
         }
         Relationships: []
       }
