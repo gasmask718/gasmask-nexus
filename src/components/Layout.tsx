@@ -134,6 +134,7 @@ import {
   Anchor,
   Plane,
   BarChart,
+  Grid3x3,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
@@ -579,6 +580,8 @@ const DYNASTY_NAVIGATION = {
     name: '🏆 Grant OS',
     items: [
       { path: '/os/grants', label: '📊 Dashboard', icon: LayoutDashboard },
+      { path: '/os/grants/businesses', label: '🏢 Business Profiles', icon: Building2 },
+      { path: '/os/grants/eligibility-matrix', label: '🧮 Eligibility Matrix', icon: Grid3x3 },
       { path: '/os/grants/opportunities', label: '🗂️ Opportunities', icon: Database },
       { path: '/os/grants/applications', label: '📝 Applications', icon: FileText },
       { path: '/os/grants/funder-crm', label: '🤝 Funder CRM', icon: Handshake },
