@@ -51,14 +51,15 @@ Deno.serve(async (req) => {
   }>;
 
   // Exclude numbers that belong to the Brandaro Twilio account (different creds).
-  // Brandaro numbers live in dynasty_phone_numbers with friendly_name ILIKE 'Brandaro%'.
+  // Brandaro numbers now live in dc_phone_numbers (business='brandaro'). The legacy
+  // dynasty_phone_numbers table was dropped in T7c-A Session 2.
   const brandaroResp = await sbFetch(
-    `/rest/v1/dynasty_phone_numbers?friendly_name=ilike.Brandaro*&select=id`
+    `/rest/v1/dc_phone_numbers?business=eq.brandaro&select=id`
   );
   const brandaroRows = await brandaroResp.json() as Array<{ id: string }>;
   const brandaroIds = new Set(brandaroRows.map(r => r.id));
   const numbers = allNumbers.filter(
-    n => !(n.source_table === 'dynasty_phone_numbers' && brandaroIds.has(n.id))
+    n => !(n.source_table === 'dc_phone_numbers' && brandaroIds.has(n.id))
   );
   const excludedCount = allNumbers.length - numbers.length;
 
