@@ -22,13 +22,19 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const TWILIO_FROM_NUMBER = Deno.env.get("TWILIO_FROM_NUMBER");
+    // T7c-B-b Phase 1: repointed to BRANDARO_TWILIO_* (tenant-explicit; aligns with T7h).
+    const TWILIO_ACCOUNT_SID = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID");
+    const TWILIO_AUTH_TOKEN = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN");
+    // DEPRECATED per T7c-B-b — env var references +19292623850 which is not owned by our
+    // Twilio account. T7c-A3 tracks env-var cleanup across all paths. From-number now comes
+    // from select_best_number_for_business('brandaro') pool cascade below.
     const ELEVENLABS_AGENT_ID = Deno.env.get("ELEVENLABS_AGENT_ID");
 
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM_NUMBER) {
-      throw new Error("Twilio credentials not configured");
+    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
+      throw new Error("Brandaro Twilio credentials not configured (BRANDARO_TWILIO_ACCOUNT_SID / BRANDARO_TWILIO_AUTH_TOKEN)");
+    }
+    if (!TWILIO_ACCOUNT_SID.startsWith("AC")) {
+      throw new Error(`BRANDARO_TWILIO_ACCOUNT_SID must start with 'AC' (got prefix '${TWILIO_ACCOUNT_SID.slice(0,2)}')`);
     }
 
     // Fetch leads that haven't been AI-called recently
