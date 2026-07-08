@@ -57292,6 +57292,7 @@ export type Database = {
       }
       grant_opportunities: {
         Row: {
+          amount: number | null
           amount_max: number | null
           amount_min: number | null
           amount_typical: number | null
@@ -57299,10 +57300,13 @@ export type Database = {
           category: string | null
           contact_email: string | null
           created_at: string | null
+          deadline: string | null
           deadline_type: string | null
           description: string | null
+          eligibility_requirements: string | null
           eligible_industries: string[] | null
           eligible_states: string[] | null
+          funder: string | null
           funder_name: string
           funder_type: string | null
           grant_name: string
@@ -57315,9 +57319,12 @@ export type Database = {
           requires_nonprofit: boolean | null
           requires_veteran_owned: boolean | null
           requires_women_owned: boolean | null
+          status: string | null
+          title: string | null
           updated_at: string | null
         }
         Insert: {
+          amount?: number | null
           amount_max?: number | null
           amount_min?: number | null
           amount_typical?: number | null
@@ -57325,10 +57332,13 @@ export type Database = {
           category?: string | null
           contact_email?: string | null
           created_at?: string | null
+          deadline?: string | null
           deadline_type?: string | null
           description?: string | null
+          eligibility_requirements?: string | null
           eligible_industries?: string[] | null
           eligible_states?: string[] | null
+          funder?: string | null
           funder_name: string
           funder_type?: string | null
           grant_name: string
@@ -57341,9 +57351,12 @@ export type Database = {
           requires_nonprofit?: boolean | null
           requires_veteran_owned?: boolean | null
           requires_women_owned?: boolean | null
+          status?: string | null
+          title?: string | null
           updated_at?: string | null
         }
         Update: {
+          amount?: number | null
           amount_max?: number | null
           amount_min?: number | null
           amount_typical?: number | null
@@ -57351,10 +57364,13 @@ export type Database = {
           category?: string | null
           contact_email?: string | null
           created_at?: string | null
+          deadline?: string | null
           deadline_type?: string | null
           description?: string | null
+          eligibility_requirements?: string | null
           eligible_industries?: string[] | null
           eligible_states?: string[] | null
+          funder?: string | null
           funder_name?: string
           funder_type?: string | null
           grant_name?: string
@@ -57367,6 +57383,8 @@ export type Database = {
           requires_nonprofit?: boolean | null
           requires_veteran_owned?: boolean | null
           requires_women_owned?: boolean | null
+          status?: string | null
+          title?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -57383,6 +57401,7 @@ export type Database = {
           required_value: string | null
           requirement_type: string
           updated_at: string
+          weight: number | null
         }
         Insert: {
           created_at?: string
@@ -57395,6 +57414,7 @@ export type Database = {
           required_value?: string | null
           requirement_type: string
           updated_at?: string
+          weight?: number | null
         }
         Update: {
           created_at?: string
@@ -57407,6 +57427,7 @@ export type Database = {
           required_value?: string | null
           requirement_type?: string
           updated_at?: string
+          weight?: number | null
         }
         Relationships: [
           {
