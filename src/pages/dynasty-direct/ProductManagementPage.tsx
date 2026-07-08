@@ -24,9 +24,8 @@ import {
 const GOLD = '#C9A84C';
 
 const CATEGORIES = [
-  'cigarettes', 'cigars', 'tobacco_grabba', 'hemp_wraps',
-  'disposable_vape', 'nicotine_pouch', 'lighters', 'glass',
-  'accessories', 'other',
+  'disposable_vape', 'nicotine_pouch', 'tobacco_grabba', 'rolling_papers',
+  'lighters', 'grinders', 'glass', 'vape_hardware', 'cbd_hemp', 'accessories',
 ] as const;
 
 type ProductRow = {
