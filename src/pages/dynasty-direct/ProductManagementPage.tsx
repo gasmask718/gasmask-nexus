@@ -69,6 +69,7 @@ export default function ProductManagementPage() {
   const [submitting, setSubmitting] = useState(false);
   const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     product_name: '',
