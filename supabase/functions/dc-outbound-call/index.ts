@@ -179,6 +179,14 @@ Deno.serve(async (req) => {
     }
 
     // --- FROM-NUMBER RESOLUTION (T7c-A Phase 2: pool-aware) ---
+    // NOTE (T7c-A Step C, 2026-07-08): dc-outbound-call dispatches via placeBlandCall()
+    // in _shared/bland.ts, which only forwards `from` when the number is in the
+    // BLAND_OWNED_NUMBERS env allow-list. That env var is currently empty and no
+    // Brandaro pool numbers are registered as Bring-Your-Own-Number in Bland's
+    // dashboard, so Bland substitutes its own default outbound caller-ID on every
+    // dial from this path. Pool selection here is bookkeeping only (warming caps,
+    // risk score, throttling, last_called_at rotation) — it does NOT drive the CID
+    // the callee sees. See T7i to register these numbers as BYON in Bland.
     let fromNumber = "+18484004179";
     let phoneSource: "pool" | "env" | "default" | "emergency_fallback" = "default";
     let selectedPoolId: string | null = null;
@@ -189,7 +197,7 @@ Deno.serve(async (req) => {
         fromNumber = pooled.phone_number;
         selectedPoolId = pooled.id;
         phoneSource = "pool";
-        console.log(`[POOL SELECTED intended CID for Bland; may be substituted] number=${fromNumber} id=${selectedPoolId} business=${biz}`);
+        console.log(`[POOL SELECTED — Bland substitutes CID for this path] number=${fromNumber} id=${selectedPoolId} business=${biz}`);
       } else if (biz === "brandaro") {
         // Brandaro is fully pool-managed; empty pool = hard stop, do not dial.
         console.log(`[POOL EXHAUSTED] business=${biz} to=${to_number} campaign=${campaign_id || '-'}`);

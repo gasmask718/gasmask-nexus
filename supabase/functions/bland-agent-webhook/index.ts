@@ -414,6 +414,43 @@ Deno.serve(async (req) => {
         );
       if (dcErr) console.error("dynasty_ai_calls upsert error:", dcErr.message);
 
+      // ===== T7b.2 (2026-07-08): mirror terminal state into dc_call_logs =====
+      // dc-outbound-call seeds a dc_call_logs row with call_sid=Bland call_id and
+      // status='initiated'. Without this update the row stays 'initiated' forever
+      // (dc-bland-webhook only updates rows dispatched via dc-bland-dispatch's
+      // per-hub branches). Mirror dc-bland-webhook's shape: composite outcome,
+      // duration_seconds, answered_by, recording, transcript.
+      try {
+        const rawDisposition =
+          (payload?.analysis?.call_outcome
+            || payload?.extracted?.call_outcome
+            || payload?.metadata?.call_outcome
+            || payload?.disposition
+            || payload?.status
+            || '').toString().toLowerCase();
+        const outcome = rawDisposition || (transcript ? 'completed' : 'called');
+        const durationSeconds: number | null =
+          typeof payload.corrected_duration === 'number' ? payload.corrected_duration
+          : typeof payload.call_length === 'number' ? Math.round(payload.call_length * 60)
+          : typeof payload.duration === 'number' ? Math.round(payload.duration)
+          : null;
+        const { error: dclErr } = await supabase
+          .from('dc_call_logs')
+          .update({
+            status: 'completed',
+            outcome,
+            answered_by: payload.answered_by || null,
+            duration_seconds: durationSeconds,
+            recording_url: recording_url || null,
+            transcript: transcript || null,
+            agent_type: 'bland',
+          })
+          .eq('call_sid', call_id);
+        if (dclErr) console.error('[bland-agent-webhook dc_call_logs update failed]', call_id, dclErr.message);
+      } catch (e) {
+        console.error('[bland-agent-webhook dc_call_logs update threw]', call_id, (e as Error).message);
+      }
+
       // ===== POST-CALL WRITE-BACK to the originating hub row =====
       // (allow-listed, business-checked — see sync-call-to-source)
       if (source_table && source_id) {
