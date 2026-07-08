@@ -134,6 +134,7 @@ import {
   Anchor,
   Plane,
   BarChart,
+  Grid3x3,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
