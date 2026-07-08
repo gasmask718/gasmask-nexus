@@ -22,13 +22,19 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const TWILIO_FROM_NUMBER = Deno.env.get("TWILIO_FROM_NUMBER");
+    // T7c-B-b Phase 1: repointed to BRANDARO_TWILIO_* (tenant-explicit; aligns with T7h).
+    const TWILIO_ACCOUNT_SID = Deno.env.get("BRANDARO_TWILIO_ACCOUNT_SID");
+    const TWILIO_AUTH_TOKEN = Deno.env.get("BRANDARO_TWILIO_AUTH_TOKEN");
+    // DEPRECATED per T7c-B-b — env var references +19292623850 which is not owned by our
+    // Twilio account. T7c-A3 tracks env-var cleanup across all paths. From-number now comes
+    // from select_best_number_for_business('brandaro') pool cascade below.
     const ELEVENLABS_AGENT_ID = Deno.env.get("ELEVENLABS_AGENT_ID");
 
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM_NUMBER) {
-      throw new Error("Twilio credentials not configured");
+    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
+      throw new Error("Brandaro Twilio credentials not configured (BRANDARO_TWILIO_ACCOUNT_SID / BRANDARO_TWILIO_AUTH_TOKEN)");
+    }
+    if (!TWILIO_ACCOUNT_SID.startsWith("AC")) {
+      throw new Error(`BRANDARO_TWILIO_ACCOUNT_SID must start with 'AC' (got prefix '${TWILIO_ACCOUNT_SID.slice(0,2)}')`);
     }
 
     // Fetch leads that haven't been AI-called recently
@@ -129,6 +135,56 @@ serve(async (req) => {
         // Build TwiML URL for ElevenLabs bridge
         const twimlUrl = `${supabaseUrl}/functions/v1/brandaro-ai-caller-twiml?lead_id=${lead.id}&language=${lead.language || "spanish"}&call_record_id=${callRecord.id}`;
 
+        // === FROM-NUMBER CASCADE (T7c-B-b Phase 1) ===
+        // 1) select_best_number_for_business('brandaro')
+        // 2) exhausted -> refuse (pool_exhausted=true)
+        // 3) RPC throws -> emergency fallback to any active brandaro pool row (no bookkeeping)
+        let fromNumber: string | null = null;
+        let poolRowId: string | null = null;
+        let fromSource: "pool" | "emergency" = "pool";
+
+        try {
+          const { data: sel, error: selErr } = await supabase.rpc(
+            "select_best_number_for_business",
+            { p_business_key: "brandaro" }
+          );
+          if (selErr) throw selErr;
+          const row = Array.isArray(sel) ? sel[0] : sel;
+          if (row && row.phone_number) {
+            fromNumber = row.phone_number;
+            poolRowId = row.id ?? row.number_id ?? null;
+          } else {
+            console.log(`[brandaro-ai-caller] [POOL EXHAUSTED] lead=${lead.id} — refusing to dial`);
+            await supabase
+              .from("brandaro_ai_calls")
+              .update({ status: "failed", outcome: JSON.stringify({ pool_exhausted: true }) })
+              .eq("id", callRecord.id);
+            results.push({ lead_id: lead.id, status: "failed", pool_exhausted: true });
+            continue;
+          }
+        } catch (rpcErr) {
+          console.error(`[brandaro-ai-caller] [SELECTION ERROR] lead=${lead.id}:`, rpcErr);
+          const { data: fallbackRows } = await supabase
+            .from("dc_phone_numbers")
+            .select("phone_number")
+            .eq("business_key", "brandaro")
+            .eq("status", "active")
+            .eq("can_dial", true)
+            .order("daily_call_count", { ascending: true })
+            .limit(1);
+          const fb = fallbackRows?.[0]?.phone_number;
+          if (!fb) {
+            await supabase
+              .from("brandaro_ai_calls")
+              .update({ status: "failed", outcome: JSON.stringify({ selection_error: String(rpcErr), no_fallback: true }) })
+              .eq("id", callRecord.id);
+            results.push({ lead_id: lead.id, status: "failed", selection_error: true });
+            continue;
+          }
+          fromNumber = fb;
+          fromSource = "emergency";
+        }
+
         const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`;
         const twilioResponse = await fetch(twilioUrl, {
           method: "POST",
@@ -138,7 +194,7 @@ serve(async (req) => {
           },
           body: new URLSearchParams({
             To: lead.phone,
-            From: TWILIO_FROM_NUMBER,
+            From: fromNumber!,
             Url: twimlUrl,
             StatusCallback: `${supabaseUrl}/functions/v1/brandaro-ai-call-status?call_record_id=${callRecord.id}`,
             StatusCallbackEvent: "initiated ringing answered completed",
@@ -167,7 +223,17 @@ serve(async (req) => {
           console.error(`[brandaro-ai-caller] success UPDATE (call_sid) failed for ${callRecord.id}:`, successUpdErr);
         }
 
-        results.push({ lead_id: lead.id, status: "initiated", call_sid: twilioData.sid });
+        // Bookkeeping: only when the pool cascade (not emergency fallback) supplied the number.
+        if (fromSource === "pool" && poolRowId) {
+          const { error: bumpErr } = await supabase.rpc("bump_number_usage_v2", {
+            p_number_id: poolRowId,
+          });
+          if (bumpErr) {
+            console.error(`[brandaro-ai-caller] bump_number_usage_v2 failed for ${poolRowId}:`, bumpErr);
+          }
+        }
+
+        results.push({ lead_id: lead.id, status: "initiated", call_sid: twilioData.sid, from: fromNumber, from_source: fromSource });
 
         // 3s pacing between calls
         await new Promise((resolve) => setTimeout(resolve, 3000));
