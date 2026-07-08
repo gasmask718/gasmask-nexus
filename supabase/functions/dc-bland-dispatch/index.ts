@@ -504,25 +504,27 @@ serve(async (req) => {
           }
 
           let fromNumber: string;
+          let poolPick: PoolPick = null;
           const prospectState = getStateFromPhone(lead.phone_number);
-
 
           if (manualNumberOverride) {
             fromNumber = manualNumberOverride;
             console.log(`[NUMBER SELECTION] Manual override: ${fromNumber}`);
-          } else if (autoMatch) {
-            const { data: phoneMatch } = await supabase
-              .from('dynasty_phone_numbers')
-              .select('phone_number')
-              .eq('state', prospectState)
-              .eq('is_active', true)
-              .limit(1)
-              .single();
-            fromNumber = phoneMatch?.phone_number || '+12142394316';
-            console.log(`[NUMBER SELECTION] Auto-matched ${prospectState} → ${fromNumber}`);
           } else {
-            fromNumber = '+12142394316';
-            console.log(`[NUMBER SELECTION] Fallback: ${fromNumber}`);
+            // T7c-A Phase 3: unified pool cascade (state-match → RPC → bland_owned_numbers → exhausted)
+            const poolBusiness = BIZ_TYPE_TO_KEY[lead.business_type] || lead.business_type;
+            poolPick = await selectFromNumberCascade(supabase, poolBusiness, prospectState);
+            if (!poolPick) {
+              await supabase.from('dynasty_call_queue').update({
+                status: 'failed',
+                error_message: 'All pools exhausted (dc_phone_numbers + bland_owned_numbers)',
+                completed_at: new Date().toISOString(),
+              }).eq('id', lead.id);
+              results.push({ id: lead.id, status: 'pool_exhausted' });
+              continue;
+            }
+            fromNumber = poolPick.phone_number;
+            console.log(`[NUMBER SELECTION] Cascade pick ${prospectState}/${poolBusiness} → ${fromNumber} (source=${poolPick.source})`);
           }
 
           const personaMap: Record<string, string> = {
