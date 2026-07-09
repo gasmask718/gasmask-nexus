@@ -109,13 +109,48 @@ export default function ClipperPayouts() {
   }, [pending, payouts]);
 
   const handlePay = async (row: PendingRow) => {
+    if (!row.stripe_connect_onboarded) {
+      toast.error("Clipper hasn't completed Stripe Connect onboarding yet");
+      return;
+    }
+    const amount_cents = Math.round(row.pending_amount * 100);
     setPaying(row.clipper_id);
-    await new Promise((r) => setTimeout(r, 500));
-    toast.success(`Payout initiated for ${row.full_name} — ${fmtMoney(row.pending_amount)}`, {
-      description: "Stripe Connect payout is not wired yet. This is a placeholder action.",
-    });
-    setPaying(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("clipper-payout", {
+        body: { clipper_id: row.clipper_id, amount_cents },
+      });
+      if (error) {
+        // Try to surface the function's returned body error message
+        const ctx: any = (error as any).context;
+        let msg = error.message || "Payout failed";
+        try {
+          const bodyText = ctx && typeof ctx.text === "function" ? await ctx.text() : null;
+          if (bodyText) {
+            const parsed = JSON.parse(bodyText);
+            if (parsed?.error) msg = parsed.error;
+          }
+        } catch { /* noop */ }
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Paid ${row.full_name} — ${fmtMoney(row.pending_amount)}`, {
+        description: data?.transfer_id ? `Transfer: ${data.transfer_id}` : undefined,
+      });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["clipper-payouts-earnings"] }),
+        qc.invalidateQueries({ queryKey: ["clipper-payouts-history"] }),
+      ]);
+    } catch (e: any) {
+      toast.error("Payout failed", { description: e?.message || String(e) });
+    } finally {
+      setPaying(null);
+    }
   };
+
+  const filteredPayouts = useMemo(() => {
+    if (statusFilter === "all") return payouts || [];
+    return (payouts || []).filter((p: any) => p.status === statusFilter);
+  }, [payouts, statusFilter]);
 
   return (
     <div className="p-6 space-y-6">
