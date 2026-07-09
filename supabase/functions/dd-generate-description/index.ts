@@ -140,6 +140,7 @@ Deno.serve(async (req) => {
     if (!name) return ok({ error: 'name_required' });
 
     const apiKey = Deno.env.get('DD_ANTHROPIC_API_KEY');
+    console.log('[dd-generate-description] DD_ANTHROPIC_API_KEY:', apiKey ? 'present' : 'MISSING', 'shared ANTHROPIC_API_KEY:', Deno.env.get('ANTHROPIC_API_KEY') ? 'present' : 'MISSING');
     let result: GenResult;
     let usedPlaceholder = false;
     let genError: string | null = null;
