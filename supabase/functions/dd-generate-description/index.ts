@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
 
     if (!name) return ok({ error: 'name_required' });
 
-    const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    const apiKey = Deno.env.get('DD_ANTHROPIC_API_KEY');
     let result: GenResult;
     let usedPlaceholder = false;
     let genError: string | null = null;
