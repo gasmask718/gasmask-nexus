@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Plus, Send, CheckCircle2, Truck, Eye } from "lucide-react";
+import { FileText, Plus, Send, CheckCircle2, Truck, Eye, Printer } from "lucide-react";
 import { toast } from "sonner";
+import { printShippingLabel } from "@/lib/shipping/printLabel";
 
 type PO = {
   id: string;
