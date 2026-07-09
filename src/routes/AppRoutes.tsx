@@ -2241,7 +2241,7 @@ export default function AppRoutes() {
         <Route path="/funding-machine/lenders" element={<FundingMachineFundingMatrix />} />
         <Route path="/funding-machine/tradelines" element={<Navigate to="/funding-machine/tradeline-vault" replace />} />
         <Route path="/funding-machine/credit-unions" element={<Navigate to="/funding-machine/credit-union-intel" replace />} />
-        <Route path="/funding-machine/briefing" element={<Navigate to="/funding-machine/morning-briefing" replace />} />
+        <Route path="/funding-machine/briefing" element={<FundingMachineMorningBriefing />} />
         <Route path="/funding-machine/grants" element={<GrantFunderCRMPage />} />
         <Route path="/funding-machine/clients" element={<FundingMachineClientsList />} />
         <Route path="/funding-machine/credit-stacking" element={<FundingModuleStub title="Credit Stacking" description="Sequenced multi-lender credit stacking playbook" />} />
