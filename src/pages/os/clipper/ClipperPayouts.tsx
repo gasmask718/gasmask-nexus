@@ -1,13 +1,16 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { DollarSign, Users, Clock, CheckCircle2, Send, AlertTriangle } from "lucide-react";
+import { DollarSign, Users, Clock, CheckCircle2, Send, AlertTriangle, Loader2 } from "lucide-react";
+
+type PayoutStatus = "all" | "pending" | "processing" | "paid" | "failed";
 
 const GOLD = "#C9A84C";
 
@@ -35,6 +38,8 @@ type PendingRow = {
 
 export default function ClipperPayouts() {
   const [paying, setPaying] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<PayoutStatus>("all");
+  const qc = useQueryClient();
 
   const { data: earnings, isLoading: eLoad, error: eErr } = useQuery({
     queryKey: ["clipper-payouts-earnings"],
@@ -104,13 +109,48 @@ export default function ClipperPayouts() {
   }, [pending, payouts]);
 
   const handlePay = async (row: PendingRow) => {
+    if (!row.stripe_connect_onboarded) {
+      toast.error("Clipper hasn't completed Stripe Connect onboarding yet");
+      return;
+    }
+    const amount_cents = Math.round(row.pending_amount * 100);
     setPaying(row.clipper_id);
-    await new Promise((r) => setTimeout(r, 500));
-    toast.success(`Payout initiated for ${row.full_name} — ${fmtMoney(row.pending_amount)}`, {
-      description: "Stripe Connect payout is not wired yet. This is a placeholder action.",
-    });
-    setPaying(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("clipper-payout", {
+        body: { clipper_id: row.clipper_id, amount_cents },
+      });
+      if (error) {
+        // Try to surface the function's returned body error message
+        const ctx: any = (error as any).context;
+        let msg = error.message || "Payout failed";
+        try {
+          const bodyText = ctx && typeof ctx.text === "function" ? await ctx.text() : null;
+          if (bodyText) {
+            const parsed = JSON.parse(bodyText);
+            if (parsed?.error) msg = parsed.error;
+          }
+        } catch { /* noop */ }
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Paid ${row.full_name} — ${fmtMoney(row.pending_amount)}`, {
+        description: data?.transfer_id ? `Transfer: ${data.transfer_id}` : undefined,
+      });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["clipper-payouts-earnings"] }),
+        qc.invalidateQueries({ queryKey: ["clipper-payouts-history"] }),
+      ]);
+    } catch (e: any) {
+      toast.error("Payout failed", { description: e?.message || String(e) });
+    } finally {
+      setPaying(null);
+    }
   };
+
+  const filteredPayouts = useMemo(() => {
+    if (statusFilter === "all") return payouts || [];
+    return (payouts || []).filter((p: any) => p.status === statusFilter);
+  }, [payouts, statusFilter]);
 
   return (
     <div className="p-6 space-y-6">
@@ -187,10 +227,15 @@ export default function ClipperPayouts() {
                         size="sm"
                         disabled={!ready || paying === r.clipper_id}
                         onClick={() => handlePay(r)}
+                        title={!ready ? "Clipper hasn't completed Stripe Connect onboarding yet" : undefined}
                         style={ready ? { backgroundColor: GOLD, color: "#000" } : undefined}
                       >
-                        <Send className="h-3 w-3 mr-1" />
-                        {paying === r.clipper_id ? "Sending..." : "Pay Now"}
+                        {paying === r.clipper_id ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : (
+                          <Send className="h-3 w-3 mr-1" />
+                        )}
+                        {paying === r.clipper_id ? "Sending..." : ready ? "Pay Now" : "Not Onboarded"}
                       </Button>
                     </div>
                   </div>
@@ -202,15 +247,26 @@ export default function ClipperPayouts() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap">
           <CardTitle className="text-base" style={{ color: GOLD }}>Payout History</CardTitle>
+          <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as PayoutStatus)}>
+            <TabsList>
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="processing">Processing</TabsTrigger>
+              <TabsTrigger value="paid">Paid</TabsTrigger>
+              <TabsTrigger value="failed">Failed</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </CardHeader>
         <CardContent>
           {pLoad ? (
             <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
-          ) : (payouts || []).length === 0 ? (
+          ) : filteredPayouts.length === 0 ? (
             <div className="text-sm text-muted-foreground py-12 text-center">
-              No payouts yet. Payouts will appear here once initiated.
+              {statusFilter === "all"
+                ? "No payouts yet. Payouts will appear here once initiated."
+                : `No ${statusFilter} payouts.`}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -227,7 +283,7 @@ export default function ClipperPayouts() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(payouts || []).map((p: any) => (
+                  {filteredPayouts.map((p: any) => (
                     <tr key={p.id} className="border-b border-border/30 hover:bg-muted/20">
                       <td className="py-2 px-2 whitespace-nowrap">{fmtDate(p.paid_at || p.created_at)}</td>
                       <td className="py-2 px-2">{p.clipper_accounts?.full_name || "—"}</td>
