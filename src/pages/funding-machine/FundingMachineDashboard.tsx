@@ -8,8 +8,87 @@ import { SurplusVisibilityPanel, RealEstateVisibilityPanel } from "@/components/
 import {
   Users, TrendingUp, CreditCard, Building2, FileText,
   Shield, Landmark, Clock, AlertTriangle, Plus, RefreshCw,
-  Bell, GitBranch, Trophy, Zap
+  Bell, GitBranch, Trophy, Zap, Sunrise
 } from "lucide-react";
+
+// ============ Morning Briefing Summary Widget ============
+function MorningBriefingSummary() {
+  const navigate = useNavigate();
+  const { data: briefing, isLoading } = useQuery({
+    queryKey: ['dashboard-morning-briefing-summary'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await supabase
+        .from('funding_morning_briefings')
+        .select('*')
+        .eq('briefing_date', today)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  return (
+    <Card className="border-[#C9A84C]/40 bg-gradient-to-br from-background to-[#C9A84C]/5">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Sunrise className="h-4 w-4 text-[#C9A84C]" />
+          Morning Briefing
+          {briefing?.briefing_date && (
+            <Badge variant="outline" className="ml-auto text-[10px] border-[#C9A84C]/40">
+              {new Date(briefing.briefing_date).toLocaleDateString()}
+            </Badge>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent
+        className="space-y-3 cursor-pointer"
+        onClick={() => navigate('/funding-machine/briefing')}
+      >
+        {isLoading ? (
+          <>
+            <div className="h-4 rounded bg-muted/40 animate-pulse" />
+            <div className="h-4 rounded bg-muted/40 animate-pulse w-3/4" />
+            <div className="h-4 rounded bg-muted/40 animate-pulse w-1/2" />
+          </>
+        ) : !briefing ? (
+          <div className="text-center py-6">
+            <Sunrise className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">No Morning Briefing Available</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Generate one from the Briefing page</p>
+          </div>
+        ) : (
+          <>
+            {briefing.ai_summary && (
+              <p className="text-xs leading-relaxed text-muted-foreground line-clamp-5 whitespace-pre-wrap">
+                {briefing.ai_summary}
+              </p>
+            )}
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/50">
+              <div className="text-center">
+                <div className="text-lg font-bold text-[#C9A84C]">
+                  {briefing.total_clients ?? briefing.active_clients ?? '—'}
+                </div>
+                <div className="text-[10px] text-muted-foreground">Clients</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-amber-500">
+                  {Array.isArray(briefing.alerts) ? briefing.alerts.length : (briefing.alerts_count ?? 0)}
+                </div>
+                <div className="text-[10px] text-muted-foreground">Alerts</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-emerald-500">
+                  {Array.isArray(briefing.operator_actions) ? briefing.operator_actions.length : (briefing.actions_count ?? 0)}
+                </div>
+                <div className="text-[10px] text-muted-foreground">Actions</div>
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 
 // ============ Dashboard Widgets ============
