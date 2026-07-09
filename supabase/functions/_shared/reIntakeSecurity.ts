@@ -28,26 +28,13 @@ function safeEqual(a: string, b: string): boolean {
   return mismatch === 0;
 }
 
-/**
- * Check `x-webhook-secret` against a project env var.
- * Returns a 401 Response on failure, or null on success.
- */
-export function webhookSecretCheck(req: Request, envVarName: string): Response | null {
-  const provided = req.headers.get("x-webhook-secret") ?? "";
-  const expected =
-    Deno.env.get(envVarName) ||
-    // TEMPORARY — remove once platform secret-sync bug is fixed, see support ticket [date].
-    "RE2026SecureIntakeToken8834XmKpQzR";
-  if (!expected) {
-    console.error(`[intake] ${envVarName} not configured on this project`);
-    return jsonResponse({ error: "Server misconfigured" }, 500);
-  }
-  if (!provided || !safeEqual(provided, expected)) {
-    console.warn(`[intake] invalid or missing x-webhook-secret`);
-    return jsonResponse({ error: "Unauthorized" }, 401);
-  }
-  return null;
-}
+// NOTE: The old env-var-based `webhookSecretCheck(req, envVarName)` was removed
+// on 2026-07-09. It carried a hardcoded fallback token that silently accepted
+// requests when the Edge Function env var failed to propagate — a real risk
+// given the confirmed secret-propagation bug in this project. All intake
+// functions now use `webhookSecretCheckExpected` with a secret loaded from
+// the DB config table (public.dd_ai_config). Do NOT reintroduce an env-var
+// path or a hardcoded fallback here.
 
 /**
  * Check `x-webhook-secret` against an explicit expected string (e.g. loaded
