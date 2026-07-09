@@ -136,8 +136,8 @@ export default function ClipperSubmissions() {
 
   const approveMut = useMutation({
     mutationFn: async (row: Row) => approveOne(row),
-    onSuccess: (amount) => {
-      toast.success(`Approved — ${fmtMoney(amount)} in earnings`);
+    onSuccess: () => {
+      toast.success("Approved — earnings calculated");
       qc.invalidateQueries({ queryKey: ["clipper-submissions"] });
     },
     onError: (e: any) => toast.error(e.message || "Approve failed"),
