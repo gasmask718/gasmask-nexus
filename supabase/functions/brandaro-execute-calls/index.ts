@@ -21,7 +21,9 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
-    const TWILIO_FROM = Deno.env.get("TWILIO_PHONE_NUMBER") || Deno.env.get("TWILIO_FROM_NUMBER");
+    // DEPRECATED: TWILIO_PHONE_NUMBER / TWILIO_FROM_NUMBER env vars — replaced by
+    // select_best_number_for_business cascade per T7c-A3. Env vars may still be
+    // read by legacy paths; removal is tracked by env-var cleanup task.
     const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
     const twilioAuth = Deno.env.get("TWILIO_AUTH_TOKEN");
 
@@ -30,9 +32,6 @@ serve(async (req) => {
 
     if (!useGateway && !useDirect) {
       throw new Error("No Twilio credentials available");
-    }
-    if (!TWILIO_FROM) {
-      throw new Error("No Twilio FROM number configured");
     }
 
     const bodyText = await req.text();
