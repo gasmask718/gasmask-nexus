@@ -149,6 +149,22 @@ Rules: prices must charm-round to .49 or .99. Never go below MAP if MAP > 0. Nev
   return { ...parsed, source: 'ai' } as Analysis;
 }
 
+async function getDdAnthropicApiKey(supabase: ReturnType<typeof createClient>): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('dd_ai_config')
+    .select('anthropic_api_key')
+    .eq('id', 1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`dd_ai_config_read_failed: ${error.message}`);
+  }
+
+  return typeof data?.anthropic_api_key === 'string' && data.anthropic_api_key.length > 0
+    ? data.anthropic_api_key
+    : null;
+}
+
 async function computeAlerts(
   supabase: any,
   product: ProductRow,
@@ -275,7 +291,7 @@ Deno.serve(async (req) => {
     }
 
     // ============ ANALYZE / SET_OPTIMAL ============
-    const apiKey = Deno.env.get('DD_ANTHROPIC_API_KEY');
+    const apiKey = await getDdAnthropicApiKey(supabase);
     let analysis: Analysis;
     if (!apiKey) {
       analysis = placeholderAnalysis(product, marketAvg);
