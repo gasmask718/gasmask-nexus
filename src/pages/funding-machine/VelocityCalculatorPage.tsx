@@ -4,9 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { TrendingUp, Loader2, ArrowRight, CheckCircle2, Building2, Link2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { TrendingUp, Loader2, ArrowRight, CheckCircle2, Building2, Link2, RefreshCw, AlertTriangle, Calculator } from 'lucide-react';
+import FundingQualificationCalculator from './FundingQualificationCalculator';
 
 interface FundingClient {
   id: string;
