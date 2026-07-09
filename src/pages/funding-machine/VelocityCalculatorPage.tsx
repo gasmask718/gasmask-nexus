@@ -285,15 +285,35 @@ export default function VelocityCalculatorPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black text-amber-400 flex items-center gap-2"><TrendingUp className="h-8 w-8" /> Velocity Calculator</h1>
-          <p className="text-muted-foreground">Banking activity requirements for funding qualification</p>
+          <p className="text-muted-foreground">Banking activity requirements & funding qualification</p>
         </div>
-        <Select value={selectedClient} onValueChange={setSelectedClient}>
-          <SelectTrigger className="w-64"><SelectValue placeholder="Select client…" /></SelectTrigger>
-          <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.first_name} {c.last_name}</SelectItem>)}</SelectContent>
-        </Select>
       </div>
 
+      <Tabs defaultValue="banking" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="banking" className="gap-2">
+            <TrendingUp className="h-4 w-4" /> Banking Velocity
+          </TabsTrigger>
+          <TabsTrigger value="qualification" className="gap-2">
+            <Calculator className="h-4 w-4" /> Funding Qualification
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="qualification">
+          <FundingQualificationCalculator />
+        </TabsContent>
+
+        <TabsContent value="banking" className="space-y-6">
+          <div className="flex items-center justify-end">
+            <Select value={selectedClient} onValueChange={setSelectedClient}>
+              <SelectTrigger className="w-64"><SelectValue placeholder="Select client…" /></SelectTrigger>
+              <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.first_name} {c.last_name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+
       {!selectedClient ? (
+        <Card className="border-dashed"><CardContent className="py-16 text-center text-muted-foreground">Select a client to calculate velocity requirements</CardContent></Card>
+      ) : (
         <Card className="border-dashed"><CardContent className="py-16 text-center text-muted-foreground">Select a client to calculate velocity requirements</CardContent></Card>
       ) : (
         <>
