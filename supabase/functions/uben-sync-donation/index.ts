@@ -33,7 +33,11 @@ Deno.serve(async (req) => {
   // --- Auth ---
   const apiKey = req.headers.get('Authorization')?.replace('Bearer ', '')
   const expected = Deno.env.get('UBEN_SYNC_API_KEY')
-  if (!expected) return bad(500, 'UBEN_SYNC_API_KEY not configured')
+  if (!expected) {
+    const visibleUbenKeys = Object.keys(Deno.env.toObject()).filter(k => k.includes('UBEN') || k.includes('DYNASTY'))
+    console.error('[uben-sync-donation] UBEN_SYNC_API_KEY missing. Visible related env keys:', visibleUbenKeys)
+    return bad(500, 'UBEN_SYNC_API_KEY not configured')
+  }
   if (apiKey !== expected) return bad(401, 'Unauthorized')
 
   // --- Parse ---
