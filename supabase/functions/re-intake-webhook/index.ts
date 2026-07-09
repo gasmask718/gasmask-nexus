@@ -115,8 +115,9 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
-  // 1) Auth
-  const authFail = webhookSecretCheck(req, SECRET_ENV);
+  // 1) Auth — expected secret loaded from DB config, not env
+  const expectedSecret = await loadWebhookSecret();
+  const authFail = webhookSecretCheckExpected(req, expectedSecret);
   if (authFail) return authFail;
 
   // 2) Parse & size-limit body
