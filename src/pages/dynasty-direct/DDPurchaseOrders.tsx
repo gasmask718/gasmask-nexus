@@ -71,6 +71,36 @@ export default function DDPurchaseOrders() {
     },
   });
 
+  // Every PO that came from a marketplace order can have one or more
+  // outbound shipments in dd_shipments. Join by marketplace_order_id.
+  const marketplaceOrderIds = useMemo(
+    () => pos.map((p) => p.marketplace_order_id).filter(Boolean) as string[],
+    [pos],
+  );
+
+  const { data: shipmentsByOrderId = {} } = useQuery({
+    queryKey: ["dd-po-shipments", marketplaceOrderIds.sort().join(",")],
+    enabled: marketplaceOrderIds.length > 0,
+    queryFn: async (): Promise<Record<string, POShipment[]>> => {
+      const { data, error } = await supabase
+        .from("dd_shipments")
+        .select("id, order_id, carrier, tracking_number, label_url, status, created_at")
+        .in("order_id", marketplaceOrderIds);
+      if (error) throw error;
+      const grouped: Record<string, POShipment[]> = {};
+      for (const s of (data ?? []) as POShipment[]) {
+        if (!s.order_id) continue;
+        (grouped[s.order_id] ??= []).push(s);
+      }
+      return grouped;
+    },
+  });
+
+  const shipmentsFor = (po: PO): POShipment[] =>
+    po.marketplace_order_id ? (shipmentsByOrderId[po.marketplace_order_id] ?? []) : [];
+  const primaryLabelShipment = (po: PO): POShipment | undefined =>
+    shipmentsFor(po).find((s) => !!s.label_url);
+
   const stats = useMemo(() => {
     const now = new Date();
     const month = now.getMonth();
