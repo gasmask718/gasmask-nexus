@@ -43,6 +43,16 @@ type PO = {
   wholesalers?: { name: string | null; email: string | null } | null;
 };
 
+type POShipment = {
+  id: string;
+  order_id: string | null;
+  carrier: string | null;
+  tracking_number: string | null;
+  label_url: string | null;
+  status: string | null;
+  created_at: string;
+};
+
 const statusColor: Record<string, string> = {
   draft: "bg-zinc-500/15 text-zinc-700 border-zinc-500/30",
   sent: "bg-blue-500/15 text-blue-700 border-blue-500/30",
