@@ -30,6 +30,7 @@ import {
   useAssignNumber,
   useLogCallOutcome,
 } from "@/hooks/useBrandaroNumberPool";
+import { BrandaroAiCallHistoryTable } from "@/components/brandaro/BrandaroAiCallHistoryTable";
 
 const EXCLUDED_STATUSES = ["sold", "wrong_number", "not_interested", "do_not_call"];
 
@@ -106,21 +107,36 @@ export default function CallingOpsPage() {
     },
   });
 
+  // Today's stats — SOURCE OF TRUTH: brandaro_ai_calls
   const { data: todayStats } = useQuery({
-    queryKey: ["brandaro-call-stats-today"],
+    queryKey: ["brandaro-ai-calls-stats-today"],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
-        .from("brandaro_call_logs")
-        .select("call_outcome")
-        .gte("call_timestamp", today);
+        .from("brandaro_ai_calls")
+        .select("status, outcome, interest_level, duration_seconds")
+        .gte("created_at", today);
       if (error) throw error;
-      const total = data?.length || 0;
-      const interested = data?.filter(d => d.call_outcome === "interested" || d.call_outcome === "hot_lead").length || 0;
-      const conversations = data?.filter(d => !["no_answer", "wrong_number"].includes(d.call_outcome)).length || 0;
-      return { total, interested, conversations };
+      const rows = data || [];
+      const total = rows.length;
+      const answered = rows.filter((r: any) =>
+        ["completed", "connected", "answered", "in-progress"].includes(String(r.status || "").toLowerCase())
+      ).length;
+      const interested = rows.filter((r: any) => {
+        const o = String(r.outcome || "").toLowerCase();
+        const i = String(r.interest_level || "").toLowerCase();
+        return ["interested", "hot", "hot_lead", "booked", "callback"].includes(o) || ["hot", "warm", "high"].includes(i);
+      }).length;
+      const demoTriggered = rows.filter((r: any) => {
+        const o = String(r.outcome || "").toLowerCase();
+        return o.includes("demo");
+      }).length;
+      const conversations = rows.filter((r: any) => (r.duration_seconds || 0) > 20).length;
+      return { total, answered, interested, demoTriggered, conversations };
     },
+    refetchInterval: 30000,
   });
+
 
   // Auto-Striker metrics
   const { data: autoStrikerStats } = useQuery({
@@ -318,7 +334,7 @@ export default function CallingOpsPage() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
@@ -333,14 +349,26 @@ export default function CallingOpsPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-green-500" />
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
               <div>
-                <p className="text-2xl font-bold">{todayStats?.conversations || 0}</p>
-                <p className="text-xs text-muted-foreground">Conversations</p>
+                <p className="text-2xl font-bold">{todayStats?.answered || 0}</p>
+                <p className="text-xs text-muted-foreground">Answered</p>
               </div>
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <Flame className="h-5 w-5 text-orange-500" />
+              <div>
+                <p className="text-2xl font-bold">{todayStats?.demoTriggered || 0}</p>
+                <p className="text-xs text-muted-foreground">Demo Triggered</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
@@ -413,12 +441,14 @@ export default function CallingOpsPage() {
       <Tabs defaultValue="execution" className="space-y-4">
         <TabsList>
           <TabsTrigger value="execution">⚔️ Execution</TabsTrigger>
+          <TabsTrigger value="history">📜 Call History</TabsTrigger>
           <TabsTrigger value="desk">VA Calling Desk</TabsTrigger>
           <TabsTrigger value="predictive">🔮 Predictive</TabsTrigger>
           <TabsTrigger value="intelligence">🧠 Intelligence</TabsTrigger>
           <TabsTrigger value="numbers">Number Pool</TabsTrigger>
           <TabsTrigger value="analytics">Number Analytics</TabsTrigger>
         </TabsList>
+
 
         {/* ── AUTO EXECUTION ENGINE ── */}
         <TabsContent value="execution" className="space-y-4">
@@ -551,6 +581,11 @@ export default function CallingOpsPage() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ── CALL HISTORY (brandaro_ai_calls SOURCE OF TRUTH) ── */}
+        <TabsContent value="history" className="space-y-4">
+          <BrandaroAiCallHistoryTable />
         </TabsContent>
 
         {/* ── VA CALLING DESK ── */}
