@@ -38145,6 +38145,9 @@ export type Database = {
       dd_ai_config: {
         Row: {
           anthropic_api_key: string
+          cloudinary_api_key: string | null
+          cloudinary_api_secret: string | null
+          cloudinary_cloud_name: string | null
           easypost_api_key: string | null
           easypost_mode: string | null
           id: number
@@ -38152,6 +38155,9 @@ export type Database = {
         }
         Insert: {
           anthropic_api_key: string
+          cloudinary_api_key?: string | null
+          cloudinary_api_secret?: string | null
+          cloudinary_cloud_name?: string | null
           easypost_api_key?: string | null
           easypost_mode?: string | null
           id?: number
@@ -38159,6 +38165,9 @@ export type Database = {
         }
         Update: {
           anthropic_api_key?: string
+          cloudinary_api_key?: string | null
+          cloudinary_api_secret?: string | null
+          cloudinary_cloud_name?: string | null
           easypost_api_key?: string | null
           easypost_mode?: string | null
           id?: number
