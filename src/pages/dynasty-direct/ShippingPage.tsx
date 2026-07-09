@@ -37,6 +37,8 @@ type ShipmentRow = {
   tracking_number: string | null;
   created_at: string;
   rate_selected: number | null;
+  label_url: string | null;
+  order_id: string | null;
 };
 
 type PackedBox = {
