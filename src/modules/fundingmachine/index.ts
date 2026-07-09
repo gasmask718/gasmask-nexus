@@ -19,7 +19,7 @@ import ApplicationsPage from '@/pages/funding-machine/ApplicationsPage';
 import RevenueDashboardPage from '@/pages/funding-machine/RevenueDashboardPage';
 
 const sidebarItems: SidebarItem[] = [
-  { path: '/funding-machine/morning-briefing', label: 'Morning Briefing', icon: Sunrise },
+  { path: '/funding-machine/briefing', label: 'Morning Briefing', icon: Sunrise },
   { path: '/funding-machine/revenue', label: '💰 Revenue', icon: DollarSign },
   { path: '/funding-machine', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/funding-machine/intake', label: 'New Client', icon: Plus },
