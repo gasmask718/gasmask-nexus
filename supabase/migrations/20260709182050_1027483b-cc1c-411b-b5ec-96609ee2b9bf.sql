@@ -1,0 +1,1 @@
+ALTER TABLE public.shipping_label_events ALTER COLUMN fulfillment_id DROP NOT NULL;
