@@ -39,7 +39,7 @@ function placeholderFor(input: { name?: string; brand?: string; category?: strin
   return {
     ai_description:
       `${brand}${name} is a quality ${cat.replace(/_/g, ' ')} available through Dynasty Direct. ` +
-      `Full AI-generated copy will appear once DD_ANTHROPIC_API_KEY is configured. ` +
+      `Full AI-generated copy will appear once the Dynasty Direct AI key is configured. ` +
       `This placeholder ensures the product remains listable without blocking the catalog pipeline.`,
     ai_description_short: `${brand}${name} — quality ${cat.replace(/_/g, ' ')} from Dynasty Direct.`,
     seo_title: `${brand}${name} | Dynasty Direct`.slice(0, 60),
@@ -96,6 +96,22 @@ Return ONLY valid JSON (no markdown fences, no prose) with these exact keys:
   return parsed;
 }
 
+async function getDdAnthropicApiKey(supabase: ReturnType<typeof createClient>): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('dd_ai_config')
+    .select('anthropic_api_key')
+    .eq('id', 1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`dd_ai_config_read_failed: ${error.message}`);
+  }
+
+  return typeof data?.anthropic_api_key === 'string' && data.anthropic_api_key.length > 0
+    ? data.anthropic_api_key
+    : null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -139,8 +155,7 @@ Deno.serve(async (req) => {
 
     if (!name) return ok({ error: 'name_required' });
 
-    const apiKey = Deno.env.get('DD_ANTHROPIC_API_KEY');
-    console.log('[dd-generate-description] DD_ANTHROPIC_API_KEY:', apiKey ? 'present' : 'MISSING', 'shared ANTHROPIC_API_KEY:', Deno.env.get('ANTHROPIC_API_KEY') ? 'present' : 'MISSING');
+    const apiKey = await getDdAnthropicApiKey(supabase);
     let result: GenResult;
     let usedPlaceholder = false;
     let genError: string | null = null;
