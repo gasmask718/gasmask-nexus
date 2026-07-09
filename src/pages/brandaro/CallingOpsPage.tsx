@@ -333,7 +333,7 @@ export default function CallingOpsPage() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
@@ -348,14 +348,26 @@ export default function CallingOpsPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-green-500" />
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
               <div>
-                <p className="text-2xl font-bold">{todayStats?.conversations || 0}</p>
-                <p className="text-xs text-muted-foreground">Conversations</p>
+                <p className="text-2xl font-bold">{todayStats?.answered || 0}</p>
+                <p className="text-xs text-muted-foreground">Answered</p>
               </div>
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <Flame className="h-5 w-5 text-orange-500" />
+              <div>
+                <p className="text-2xl font-bold">{todayStats?.demoTriggered || 0}</p>
+                <p className="text-xs text-muted-foreground">Demo Triggered</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
