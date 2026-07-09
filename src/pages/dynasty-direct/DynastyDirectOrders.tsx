@@ -390,24 +390,51 @@ export default function DynastyDirectOrders() {
                     <td className="p-3">
                       <Badge variant="outline">{r.fulfillment_status || 'pending'}</Badge>
                     </td>
-                    <td className="p-3">
-                      {tNum ? (
-                        tUrl ? (
-                          <a
-                            href={tUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1 text-primary hover:underline"
-                          >
-                            {tNum} <ExternalLink className="h-3 w-3" />
-                          </a>
+                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-2">
+                        {tNum ? (
+                          tUrl ? (
+                            <a
+                              href={tUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                            >
+                              {tNum} <ExternalLink className="h-3 w-3" />
+                            </a>
+                          ) : (
+                            <span className="font-mono text-xs">{tNum}</span>
+                          )
                         ) : (
-                          <span className="font-mono text-xs">{tNum}</span>
-                        )
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                        {(() => {
+                          const printable = r.labels.find((l) => l.label_url);
+                          if (!printable) return null;
+                          return (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2"
+                              title="Print shipping label"
+                              onClick={() =>
+                                printShippingLabel({
+                                  labelUrl: printable.label_url,
+                                  recordId: printable.id,
+                                  entityType: 'shipping_labels',
+                                  meta: {
+                                    order_id: r.id,
+                                    carrier: printable.carrier,
+                                    tracking: printable.tracking_number,
+                                  },
+                                })
+                              }
+                            >
+                              <Printer className="h-3.5 w-3.5 text-emerald-600" />
+                            </Button>
+                          );
+                        })()}
+                      </div>
                     </td>
                     <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">
                       {format(new Date(r.created_at), 'MMM d, yyyy')}
