@@ -166,8 +166,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 3) Rate + label
-    const easypostKey = Deno.env.get('EASYPOST_API_KEY');
+    // 3) Rate + label — EasyPost key loaded from dd_ai_config (env-var propagation workaround)
+    const { data: epCfg } = await supabase
+      .from('dd_ai_config')
+      .select('easypost_api_key, easypost_mode')
+      .eq('id', 1)
+      .maybeSingle();
+    const easypostKey = epCfg?.easypost_api_key ?? null;
+    const easypostMode = epCfg?.easypost_mode ?? 'test';
     const primaryBox = packing.boxes[0];
 
     // Sum billable weight across all boxes for a quick shipment-level number stored on row
