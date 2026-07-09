@@ -1017,6 +1017,8 @@ const FundingMachineCreditUnionIntel = lazy(() => import('@/pages/funding-machin
 const FundingMachineAutoFinancing = lazy(() => import('@/pages/funding-machine/AutoFinancingPage'));
 const FundingMachineShelfCorp = lazy(() => import('@/pages/funding-machine/ShelfCorpPage'));
 const FundingMachineRevenue = lazy(() => import('@/pages/funding-machine/RevenueDashboardPage'));
+const FundingMachineClientsList = lazy(() => import('@/pages/funding-machine/ClientsListPage'));
+const FundingModuleStub = lazy(() => import('@/pages/funding-machine/FundingModuleStub'));
 const UbenHQ = lazy(() => import('@/pages/os/uben/UbenHQ'));
 const UbenGrantTracker = lazy(() => import('@/pages/os/uben/UbenGrantTracker'));
 const UbenApplications = lazy(() => import('@/pages/os/uben/UbenApplications'));
