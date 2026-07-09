@@ -159,6 +159,62 @@ export default function BrandaroWarRoom() {
     refetchInterval: 60000,
   });
 
+  // FIX A — 4 missing wires: revenue total, today's calls, pending messages, pipeline funnel
+  const { data: revenueTotal = 0 } = useQuery({
+    queryKey: ["brandaro-war-revenue-total"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("brandaro_revenue_tracking")
+        .select("revenue_amount");
+      return (data || []).reduce((s: number, r: any) => s + Number(r.revenue_amount || 0), 0);
+    },
+    refetchInterval: 60000,
+  });
+
+  const { data: callsToday = 0 } = useQuery({
+    queryKey: ["brandaro-war-calls-today"],
+    queryFn: async () => {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const { count } = await (supabase as any)
+        .from("brandaro_ai_calls")
+        .select("id", { count: "exact", head: true })
+        .gte("called_at", startOfDay.toISOString());
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
+  const { data: pendingMessages = 0 } = useQuery({
+    queryKey: ["brandaro-war-pending-messages"],
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from("brandaro_pending_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+      return count || 0;
+    },
+    refetchInterval: 15000,
+  });
+
+  const { data: pipelineFunnel = [] } = useQuery({
+    queryKey: ["brandaro-war-pipeline-funnel"],
+    queryFn: async () => {
+      const stages = ["prospect", "contacted", "interested", "demo_sent", "proposal", "won"];
+      const results = await Promise.all(
+        stages.map(async (stage) => {
+          const { count } = await (supabase as any)
+            .from("brandaro_qualified_leads")
+            .select("id", { count: "exact", head: true })
+            .eq("pipeline_stage", stage);
+          return { stage, count: count || 0 };
+        })
+      );
+      return results;
+    },
+    refetchInterval: 60000,
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -173,12 +229,31 @@ export default function BrandaroWarRoom() {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard label="Revenue" value={`$${(kpis?.totalRevenue || 0).toLocaleString()}`} icon={DollarSign} color="text-green-600" to="/brandaro/revenue" />
+        <KPICard label="Revenue" value={`$${revenueTotal.toLocaleString()}`} icon={DollarSign} color="text-green-600" subtitle="All tracked" to="/brandaro/revenue" />
         <KPICard label="Active Calls" value={activeCalls} icon={Phone} color="text-blue-500" subtitle="Live now" to="/brandaro/calling" />
         <KPICard label="Hot Leads" value={hotLeads} icon={Flame} color="text-orange-500" subtitle="Score ≥ 70" to="/brandaro/leads" />
         <KPICard label="Close Rate" value={`${kpis?.closeRate || 0}%`} icon={TrendingUp} color="text-emerald-500" to="/brandaro/closer-ai" />
         <KPICard label="Pending Tasks" value={pendingTasks} icon={ListTodo} color="text-amber-500" to="/brandaro/follow-ups" />
         <KPICard label="AI Personas" value={activePersonalities} icon={Theater} color="text-purple-500" to="/brandaro/personalities" />
+      </div>
+
+      {/* FIX A additions — Today's Calls, Pending Messages, Pipeline Funnel */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <KPICard label="Calls Today" value={callsToday} icon={Phone} color="text-cyan-500" subtitle="AI + human, since midnight" to="/brandaro/calling" />
+        <KPICard label="Pending Messages" value={pendingMessages.toLocaleString()} icon={MailCheck} color="text-indigo-500" subtitle="Awaiting approval" to="/brandaro/inbox" />
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Pipeline Funnel</p>
+            <div className="space-y-1">
+              {pipelineFunnel.map((s: any) => (
+                <div key={s.stage} className="flex items-center justify-between text-xs">
+                  <span className="capitalize text-muted-foreground">{s.stage.replace(/_/g, " ")}</span>
+                  <span className="font-semibold tabular-nums">{s.count.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Live Snapshot — confirmed source-of-truth tables */}
