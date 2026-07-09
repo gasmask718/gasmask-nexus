@@ -91,18 +91,17 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // Read Remove.bg key from DB (workaround for Edge Function secret propagation issue)
+    // Read Remove.bg + Cloudinary keys from DB (workaround for Edge Function secret propagation issue)
     const { data: cfg, error: cfgErr } = await supabase
       .from('dd_ai_config')
-      .select('remove_bg_api_key')
+      .select('remove_bg_api_key, cloudinary_cloud_name, cloudinary_api_key, cloudinary_api_secret')
       .eq('id', 1)
       .maybeSingle();
     if (cfgErr) return ok({ error: `config_lookup: ${cfgErr.message}`, success: false });
     const REMOVE_BG = cfg?.remove_bg_api_key ?? null;
-
-    const CLOUD = Deno.env.get('CLOUDINARY_CLOUD_NAME');
-    const CLOUD_KEY = Deno.env.get('CLOUDINARY_API_KEY');
-    const CLOUD_SECRET = Deno.env.get('CLOUDINARY_API_SECRET');
+    const CLOUD = cfg?.cloudinary_cloud_name ?? null;
+    const CLOUD_KEY = cfg?.cloudinary_api_key ?? null;
+    const CLOUD_SECRET = cfg?.cloudinary_api_secret ?? null;
 
     if (!REMOVE_BG || !CLOUD || !CLOUD_KEY || !CLOUD_SECRET) {
       return ok({
