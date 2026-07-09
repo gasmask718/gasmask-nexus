@@ -69,7 +69,7 @@ export default function ClientIntakePage() {
           funding_goal: form.funding_goal || null,
           target_funding_amount: form.target_funding_amount ? parseFloat(form.target_funding_amount) : 0,
           notes: form.notes || null,
-          status: 'intake',
+          status: 'new',
         })
         .select()
         .single();
