@@ -91,7 +91,7 @@ export default function ShippingPage() {
     queryFn: async (): Promise<ShipmentRow[]> => {
       const { data, error } = await supabase
         .from('dd_shipments')
-        .select('id, status, carrier, tracking_number, created_at, rate_selected')
+        .select('id, status, carrier, tracking_number, created_at, rate_selected, label_url, order_id')
         .order('created_at', { ascending: false })
         .limit(25);
       if (error) throw error;
