@@ -106,21 +106,36 @@ export default function CallingOpsPage() {
     },
   });
 
+  // Today's stats — SOURCE OF TRUTH: brandaro_ai_calls
   const { data: todayStats } = useQuery({
-    queryKey: ["brandaro-call-stats-today"],
+    queryKey: ["brandaro-ai-calls-stats-today"],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
-        .from("brandaro_call_logs")
-        .select("call_outcome")
-        .gte("call_timestamp", today);
+        .from("brandaro_ai_calls")
+        .select("status, outcome, interest_level, duration_seconds")
+        .gte("created_at", today);
       if (error) throw error;
-      const total = data?.length || 0;
-      const interested = data?.filter(d => d.call_outcome === "interested" || d.call_outcome === "hot_lead").length || 0;
-      const conversations = data?.filter(d => !["no_answer", "wrong_number"].includes(d.call_outcome)).length || 0;
-      return { total, interested, conversations };
+      const rows = data || [];
+      const total = rows.length;
+      const answered = rows.filter((r: any) =>
+        ["completed", "connected", "answered", "in-progress"].includes(String(r.status || "").toLowerCase())
+      ).length;
+      const interested = rows.filter((r: any) => {
+        const o = String(r.outcome || "").toLowerCase();
+        const i = String(r.interest_level || "").toLowerCase();
+        return ["interested", "hot", "hot_lead", "booked", "callback"].includes(o) || ["hot", "warm", "high"].includes(i);
+      }).length;
+      const demoTriggered = rows.filter((r: any) => {
+        const o = String(r.outcome || "").toLowerCase();
+        return o.includes("demo");
+      }).length;
+      const conversations = rows.filter((r: any) => (r.duration_seconds || 0) > 20).length;
+      return { total, answered, interested, demoTriggered, conversations };
     },
+    refetchInterval: 30000,
   });
+
 
   // Auto-Striker metrics
   const { data: autoStrikerStats } = useQuery({
