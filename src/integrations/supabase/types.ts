@@ -54879,6 +54879,45 @@ export type Database = {
           },
         ]
       }
+      funding_daily_briefings: {
+        Row: {
+          ai_commentary: string | null
+          briefing_date: string
+          briefing_type: string
+          content: Json
+          created_at: string
+          generated_by: string | null
+          id: string
+          metrics: Json
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_commentary?: string | null
+          briefing_date?: string
+          briefing_type?: string
+          content?: Json
+          created_at?: string
+          generated_by?: string | null
+          id?: string
+          metrics?: Json
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_commentary?: string | null
+          briefing_date?: string
+          briefing_type?: string
+          content?: Json
+          created_at?: string
+          generated_by?: string | null
+          id?: string
+          metrics?: Json
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       funding_dfs_scores: {
         Row: {
           banking_history: number | null
@@ -55612,6 +55651,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "funding_task_cards_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_tasks: {
+        Row: {
+          assigned_to: string | null
+          client_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          metadata: Json
+          priority: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          metadata?: Json
+          priority?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          metadata?: Json
+          priority?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_tasks_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "funding_clients"
