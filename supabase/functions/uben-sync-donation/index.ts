@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
           donor_email: email,
           donor_type: 'individual',
           total_donated: 0,
-          is_recurring: body.donation_type === 'recurring',
+          is_recurring: body.donation_type === 'monthly' || body.donation_type === 'annual',
         })
         .select('id')
         .single()
