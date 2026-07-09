@@ -105384,9 +105384,13 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          message: string | null
           notes: string | null
           phone: string | null
+          program_interest: string | null
           referred_by: string | null
+          source: string | null
+          status: string | null
         }
         Insert: {
           application_status?: string
@@ -105397,9 +105401,13 @@ export type Database = {
           first_name: string
           id?: string
           last_name: string
+          message?: string | null
           notes?: string | null
           phone?: string | null
+          program_interest?: string | null
           referred_by?: string | null
+          source?: string | null
+          status?: string | null
         }
         Update: {
           application_status?: string
@@ -105410,9 +105418,13 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          message?: string | null
           notes?: string | null
           phone?: string | null
+          program_interest?: string | null
           referred_by?: string | null
+          source?: string | null
+          status?: string | null
         }
         Relationships: [
           {
