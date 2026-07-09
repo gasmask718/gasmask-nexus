@@ -1017,6 +1017,8 @@ const FundingMachineCreditUnionIntel = lazy(() => import('@/pages/funding-machin
 const FundingMachineAutoFinancing = lazy(() => import('@/pages/funding-machine/AutoFinancingPage'));
 const FundingMachineShelfCorp = lazy(() => import('@/pages/funding-machine/ShelfCorpPage'));
 const FundingMachineRevenue = lazy(() => import('@/pages/funding-machine/RevenueDashboardPage'));
+const FundingMachineClientsList = lazy(() => import('@/pages/funding-machine/ClientsListPage'));
+const FundingModuleStub = lazy(() => import('@/pages/funding-machine/FundingModuleStub'));
 const UbenHQ = lazy(() => import('@/pages/os/uben/UbenHQ'));
 const UbenGrantTracker = lazy(() => import('@/pages/os/uben/UbenGrantTracker'));
 const UbenApplications = lazy(() => import('@/pages/os/uben/UbenApplications'));
@@ -2235,6 +2237,21 @@ export default function AppRoutes() {
         <Route path="/funding-machine/shelf-corp" element={<FundingMachineShelfCorp />} />
         <Route path="/funding-machine/settings" element={<FundingMachineSettings />} />
         <Route path="/funding-machine/revenue" element={<FundingMachineRevenue />} />
+        {/* Validation-aligned route aliases + new module registrations */}
+        <Route path="/funding-machine/lenders" element={<FundingMachineFundingMatrix />} />
+        <Route path="/funding-machine/tradelines" element={<Navigate to="/funding-machine/tradeline-vault" replace />} />
+        <Route path="/funding-machine/credit-unions" element={<Navigate to="/funding-machine/credit-union-intel" replace />} />
+        <Route path="/funding-machine/briefing" element={<Navigate to="/funding-machine/morning-briefing" replace />} />
+        <Route path="/funding-machine/grants" element={<GrantFunderCRMPage />} />
+        <Route path="/funding-machine/clients" element={<FundingMachineClientsList />} />
+        <Route path="/funding-machine/credit-stacking" element={<FundingModuleStub title="Credit Stacking" description="Sequenced multi-lender credit stacking playbook" />} />
+        <Route path="/funding-machine/sba" element={<FundingModuleStub title="SBA Loans" description="SBA 7(a), 504, and microloan pipeline" />} />
+        <Route path="/funding-machine/cdfi" element={<FundingModuleStub title="CDFI Network" description="Community Development Financial Institution partners" />} />
+        <Route path="/funding-machine/playbook" element={<FundingModuleStub title="Funding Playbook" description="Full Dynasty funding strategy playbook" />} />
+        <Route path="/funding-machine/pg-rotation" element={<FundingModuleStub title="PG Rotation" description="Personal guarantor rotation and utilization tracking" />} />
+        <Route path="/funding-machine/entities" element={<FundingModuleStub title="Entities" description="Business entity registry and structure" />} />
+        <Route path="/funding-machine/analytics" element={<FundingModuleStub title="Funding Analytics" description="Approval rates, velocity, and funnel analytics" />} />
+        <Route path="/funding-machine/compliance" element={<FundingModuleStub title="Compliance" description="Funding Machine compliance and audit trail" />} />
         {/* UBEN HQ — Non-Profit Operations Tracker */}
         <Route path="/os/uben" element={<UbenHQ />} />
         <Route path="/os/uben/grants" element={<UbenGrantTracker />} />
