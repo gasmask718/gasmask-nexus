@@ -2,7 +2,7 @@
 // after Stripe confirms payment, and syncs them into Dynasty OS
 // (uben_donors + uben_donations).
 //
-// Auth: shared secret DYNASTY_OS_API_KEY sent as `Authorization: Bearer <key>`.
+// Auth: UBEN-specific secret UBEN_SYNC_API_KEY sent as `Authorization: Bearer <key>`.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
@@ -32,8 +32,8 @@ Deno.serve(async (req) => {
 
   // --- Auth ---
   const apiKey = req.headers.get('Authorization')?.replace('Bearer ', '')
-  const expected = Deno.env.get('DYNASTY_OS_API_KEY')
-  if (!expected) return bad(500, 'DYNASTY_OS_API_KEY not configured')
+  const expected = Deno.env.get('UBEN_SYNC_API_KEY')
+  if (!expected) return bad(500, 'UBEN_SYNC_API_KEY not configured')
   if (apiKey !== expected) return bad(401, 'Unauthorized')
 
   // --- Parse ---
