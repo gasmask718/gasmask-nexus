@@ -39,7 +39,7 @@ function placeholderFor(input: { name?: string; brand?: string; category?: strin
   return {
     ai_description:
       `${brand}${name} is a quality ${cat.replace(/_/g, ' ')} available through Dynasty Direct. ` +
-      `Full AI-generated copy will appear once ANTHROPIC_API_KEY is configured. ` +
+      `Full AI-generated copy will appear once DD_ANTHROPIC_API_KEY is configured. ` +
       `This placeholder ensures the product remains listable without blocking the catalog pipeline.`,
     ai_description_short: `${brand}${name} — quality ${cat.replace(/_/g, ' ')} from Dynasty Direct.`,
     seo_title: `${brand}${name} | Dynasty Direct`.slice(0, 60),
@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
 
     if (!name) return ok({ error: 'name_required' });
 
-    const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    const apiKey = Deno.env.get('DD_ANTHROPIC_API_KEY');
     let result: GenResult;
     let usedPlaceholder = false;
     let genError: string | null = null;
