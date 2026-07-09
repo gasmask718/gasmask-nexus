@@ -474,6 +474,8 @@ export default function VelocityCalculatorPage() {
           </Card>
         </>
       )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
