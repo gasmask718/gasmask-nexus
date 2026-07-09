@@ -21,7 +21,9 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
-    const TWILIO_FROM = Deno.env.get("TWILIO_PHONE_NUMBER") || Deno.env.get("TWILIO_FROM_NUMBER");
+    // DEPRECATED: TWILIO_PHONE_NUMBER / TWILIO_FROM_NUMBER env vars — replaced by
+    // select_best_number_for_business cascade per T7c-A3. Env vars may still be
+    // read by legacy paths; removal is tracked by env-var cleanup task.
     const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
     const twilioAuth = Deno.env.get("TWILIO_AUTH_TOKEN");
 
@@ -30,9 +32,6 @@ serve(async (req) => {
 
     if (!useGateway && !useDirect) {
       throw new Error("No Twilio credentials available");
-    }
-    if (!TWILIO_FROM) {
-      throw new Error("No Twilio FROM number configured");
     }
 
     const bodyText = await req.text();
@@ -193,6 +192,49 @@ serve(async (req) => {
         continue;
       }
 
+      // === FROM-NUMBER CASCADE (T7c-A3) — mirrors brandaro-ai-caller ===
+      // 1) select_best_number_for_business('brandaro')
+      // 2) exhausted -> refuse
+      // 3) RPC throws -> emergency fallback to any active brandaro pool row (no bookkeeping)
+      let fromNumber: string | null = null;
+      let poolRowId: string | null = null;
+      let fromSource: "pool" | "emergency" = "pool";
+
+      try {
+        const { data: sel, error: selErr } = await supabase.rpc(
+          "select_best_number_for_business",
+          { p_business: BUSINESS_UNIT_KEY }
+        );
+        if (selErr) throw selErr;
+        const row = Array.isArray(sel) ? sel[0] : sel;
+        if (row && row.phone_number) {
+          fromNumber = row.phone_number;
+          poolRowId = row.id ?? row.number_id ?? null;
+        } else {
+          console.log(`[brandaro-execute-calls] [POOL EXHAUSTED] queue=${item.queue_id} lead=${item.lead_id} — refusing to dial`);
+          results.push({ queue_id: item.queue_id, status: "failed", error: "pool_exhausted" });
+          failed++;
+          continue;
+        }
+      } catch (rpcErr) {
+        console.error(`[brandaro-execute-calls] [SELECTION ERROR] queue=${item.queue_id} lead=${item.lead_id}:`, rpcErr);
+        const { data: fallbackRows } = await supabase
+          .from("dc_phone_numbers")
+          .select("phone_number")
+          .eq("business", BUSINESS_UNIT_KEY)
+          .eq("status", "active")
+          .order("daily_call_count", { ascending: true })
+          .limit(1);
+        const fb = fallbackRows?.[0]?.phone_number;
+        if (!fb) {
+          results.push({ queue_id: item.queue_id, status: "failed", error: "no_fallback_number" });
+          failed++;
+          continue;
+        }
+        fromNumber = fb;
+        fromSource = "emergency";
+      }
+
       try {
         // Initiate call via Twilio
         const twimlUrl = `${supabaseUrl}/functions/v1/brandaro-call-twiml?lead_id=${item.lead_id}`;
@@ -208,7 +250,7 @@ serve(async (req) => {
             },
             body: new URLSearchParams({
               To: item.phone,
-              From: TWILIO_FROM,
+              From: fromNumber!,
               Url: twimlUrl,
               StatusCallback: `${supabaseUrl}/functions/v1/brandaro-call-status`,
               Timeout: "30",
@@ -224,7 +266,7 @@ serve(async (req) => {
             },
             body: new URLSearchParams({
               To: item.phone,
-              From: TWILIO_FROM,
+              From: fromNumber!,
               Url: twimlUrl,
               StatusCallback: `${supabaseUrl}/functions/v1/brandaro-call-status`,
               Timeout: "30",
@@ -242,7 +284,7 @@ serve(async (req) => {
             call_attempt_number: (item.retry_count || 0) + 1,
             call_timestamp: new Date().toISOString(),
             call_outcome: "initiated",
-            phone_used: TWILIO_FROM,
+            phone_used: fromNumber,
           });
           if (logErr) {
             console.error(`[brandaro-execute-calls] call_logs insert failed for lead ${item.lead_id}:`, logErr);
@@ -265,6 +307,16 @@ serve(async (req) => {
           }).eq("id", item.lead_id);
           if (leadUpdErr) {
             console.error(`[brandaro-execute-calls] qualified_leads update (post-success) failed for ${item.lead_id}:`, leadUpdErr);
+          }
+
+          // Bookkeeping: only when the pool cascade (not emergency fallback) supplied the number.
+          if (fromSource === "pool" && poolRowId) {
+            const { error: bumpErr } = await supabase.rpc("bump_number_usage_v2", {
+              p_id: poolRowId,
+            });
+            if (bumpErr) {
+              console.error(`[brandaro-execute-calls] bump_number_usage_v2 failed for ${poolRowId}:`, bumpErr);
+            }
           }
 
           results.push({ queue_id: item.queue_id, status: "initiated" });
