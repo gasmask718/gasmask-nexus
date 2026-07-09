@@ -7,22 +7,41 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   intakeCorsHeaders,
-  webhookSecretCheck,
+  webhookSecretCheckExpected,
   jsonResponse,
   getClientIp,
 } from "../_shared/reIntakeSecurity.ts";
 
 const FUNCTION_NAME = "re-intake-webhook";
 const FUNCTION_VERSION = "v1";
-const SECRET_ENV = "RE_REAL_ESTATE_WEBHOOK_SECRET";
 const MAX_BODY_BYTES = 64 * 1024;
 
-// Boot-time readability probe (logs presence + length + last-4 chars only — never the full value).
-{
-  const v = Deno.env.get(SECRET_ENV) ?? "";
-  console.log(
-    `[intake:boot] ${SECRET_ENV} present=${v.length > 0} length=${v.length} tail=${v ? v.slice(-4) : "n/a"}`,
-  );
+// Secret is loaded from public.dd_ai_config.re_intake_webhook_secret
+// (Edge Function env-var propagation bug workaround — see session notes).
+async function loadWebhookSecret(): Promise<string | null> {
+  try {
+    const url = Deno.env.get("SUPABASE_URL");
+    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !key) return null;
+    const admin = createClient(url, key);
+    const { data, error } = await admin
+      .from("dd_ai_config")
+      .select("re_intake_webhook_secret")
+      .eq("id", 1)
+      .maybeSingle();
+    if (error) {
+      console.error("[intake:boot] failed to load webhook secret from dd_ai_config:", error.message);
+      return null;
+    }
+    const v = (data?.re_intake_webhook_secret as string | null) ?? null;
+    console.log(
+      `[intake:boot] re_intake_webhook_secret (DB) present=${!!v} length=${v?.length ?? 0} tail=${v ? v.slice(-4) : "n/a"}`,
+    );
+    return v;
+  } catch (e) {
+    console.error("[intake:boot] webhook secret lookup threw:", (e as Error).message);
+    return null;
+  }
 }
 
 // ---------- helpers ----------
