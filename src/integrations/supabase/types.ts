@@ -38151,6 +38151,7 @@ export type Database = {
           easypost_api_key: string | null
           easypost_mode: string | null
           id: number
+          re_intake_webhook_secret: string | null
           remove_bg_api_key: string | null
         }
         Insert: {
@@ -38161,6 +38162,7 @@ export type Database = {
           easypost_api_key?: string | null
           easypost_mode?: string | null
           id?: number
+          re_intake_webhook_secret?: string | null
           remove_bg_api_key?: string | null
         }
         Update: {
@@ -38171,6 +38173,7 @@ export type Database = {
           easypost_api_key?: string | null
           easypost_mode?: string | null
           id?: number
+          re_intake_webhook_secret?: string | null
           remove_bg_api_key?: string | null
         }
         Relationships: []
