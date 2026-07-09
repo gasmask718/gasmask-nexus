@@ -92597,7 +92597,7 @@ export type Database = {
           actor_user_id: string | null
           created_at: string
           event_type: string
-          fulfillment_id: string
+          fulfillment_id: string | null
           id: string
           label_id: string
           meta_json: Json | null
@@ -92606,7 +92606,7 @@ export type Database = {
           actor_user_id?: string | null
           created_at?: string
           event_type: string
-          fulfillment_id: string
+          fulfillment_id?: string | null
           id?: string
           label_id: string
           meta_json?: Json | null
@@ -92615,7 +92615,7 @@ export type Database = {
           actor_user_id?: string | null
           created_at?: string
           event_type?: string
-          fulfillment_id?: string
+          fulfillment_id?: string | null
           id?: string
           label_id?: string
           meta_json?: Json | null
