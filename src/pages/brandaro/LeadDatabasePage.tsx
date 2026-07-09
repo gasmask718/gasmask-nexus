@@ -453,6 +453,31 @@ export default function LeadDatabasePage() {
     }
   };
 
+  const handleSendDemo = async (lead: Lead) => {
+    setLoadingAction(`demo-${lead.id}`);
+    try {
+      const { data, error } = await supabase.functions.invoke("brandaro-generate-demo", {
+        body: {
+          lead_id: lead.id,
+          engine: "native",
+          business_name: lead.business_name,
+          city: lead.city,
+          phone_number: lead.phone_number,
+          google_place_id: lead.google_place_id ?? null,
+        },
+      });
+      if (error) throw error;
+      const url = (data as any)?.demo_url;
+      toast.success(url ? `Demo generated for ${lead.business_name}` : `Demo queued for ${lead.business_name}`);
+      addLog(`Demo generated for ${lead.business_name}${url ? ` → ${url}` : ""}`);
+      queryClient.invalidateQueries({ queryKey: ["brandaro-leads-table"] });
+    } catch (err: any) {
+      toast.error(`Demo generation failed: ${err.message}`);
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
   // ── Bulk Actions ──
   const selectedLeads = useMemo(() => leads.filter((l) => selectedIds.has(l.id)), [leads, selectedIds]);
 
