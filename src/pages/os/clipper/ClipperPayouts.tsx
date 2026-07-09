@@ -227,10 +227,15 @@ export default function ClipperPayouts() {
                         size="sm"
                         disabled={!ready || paying === r.clipper_id}
                         onClick={() => handlePay(r)}
+                        title={!ready ? "Clipper hasn't completed Stripe Connect onboarding yet" : undefined}
                         style={ready ? { backgroundColor: GOLD, color: "#000" } : undefined}
                       >
-                        <Send className="h-3 w-3 mr-1" />
-                        {paying === r.clipper_id ? "Sending..." : "Pay Now"}
+                        {paying === r.clipper_id ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : (
+                          <Send className="h-3 w-3 mr-1" />
+                        )}
+                        {paying === r.clipper_id ? "Sending..." : ready ? "Pay Now" : "Not Onboarded"}
                       </Button>
                     </div>
                   </div>
