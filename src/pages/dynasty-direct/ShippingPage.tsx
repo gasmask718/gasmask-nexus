@@ -460,6 +460,7 @@ export default function ShippingPage() {
                   <TableHead>Tracking</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Rate</TableHead>
+                  <TableHead className="text-right">Label</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -472,6 +473,30 @@ export default function ShippingPage() {
                     <TableCell className="font-mono text-xs">{s.tracking_number ?? '—'}</TableCell>
                     <TableCell><Badge variant="outline">{s.status}</Badge></TableCell>
                     <TableCell>{s.rate_selected != null ? `$${Number(s.rate_selected).toFixed(2)}` : '—'}</TableCell>
+                    <TableCell className="text-right">
+                      {s.label_url ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            printShippingLabel({
+                              labelUrl: s.label_url,
+                              recordId: s.id,
+                              entityType: 'dd_shipments',
+                              meta: {
+                                carrier: s.carrier,
+                                tracking: s.tracking_number,
+                                order_id: s.order_id,
+                              },
+                            })
+                          }
+                        >
+                          <Printer className="w-3 h-3 mr-1" /> Print Label
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
