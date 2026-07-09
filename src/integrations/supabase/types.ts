@@ -106028,6 +106028,24 @@ export type Database = {
         }
         Relationships: []
       }
+      uben_sync_config: {
+        Row: {
+          api_key: string
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          api_key: string
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       unforgettable_ambassadors: {
         Row: {
           active_referral_link: string | null
