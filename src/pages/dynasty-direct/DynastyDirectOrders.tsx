@@ -19,7 +19,8 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { format } from 'date-fns';
-import { ExternalLink, RefreshCw, Search } from 'lucide-react';
+import { ExternalLink, RefreshCw, Search, Printer } from 'lucide-react';
+import { printShippingLabel } from '@/lib/shipping/printLabel';
 import { InviteButton } from '@/components/invites/InviteButton';
 import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
 import { DDDrillMenu, ddDrill } from '@/components/dynasty-direct/DDDrillMenu';
