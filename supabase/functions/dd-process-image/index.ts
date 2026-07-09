@@ -86,7 +86,20 @@ Deno.serve(async (req) => {
       return ok({ error: 'invalid_image_type', success: false });
     }
 
-    const REMOVE_BG = Deno.env.get('REMOVE_BG_API_KEY');
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
+
+    // Read Remove.bg key from DB (workaround for Edge Function secret propagation issue)
+    const { data: cfg, error: cfgErr } = await supabase
+      .from('dd_ai_config')
+      .select('remove_bg_api_key')
+      .eq('id', 1)
+      .maybeSingle();
+    if (cfgErr) return ok({ error: `config_lookup: ${cfgErr.message}`, success: false });
+    const REMOVE_BG = cfg?.remove_bg_api_key ?? null;
+
     const CLOUD = Deno.env.get('CLOUDINARY_CLOUD_NAME');
     const CLOUD_KEY = Deno.env.get('CLOUDINARY_API_KEY');
     const CLOUD_SECRET = Deno.env.get('CLOUDINARY_API_SECRET');
@@ -101,11 +114,6 @@ Deno.serve(async (req) => {
         },
       });
     }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    );
 
     const raw = decodeBase64(image_base64);
     const stamp = Date.now();

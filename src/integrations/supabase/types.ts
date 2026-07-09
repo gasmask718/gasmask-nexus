@@ -38146,14 +38146,17 @@ export type Database = {
         Row: {
           anthropic_api_key: string
           id: number
+          remove_bg_api_key: string | null
         }
         Insert: {
           anthropic_api_key: string
           id?: number
+          remove_bg_api_key?: string | null
         }
         Update: {
           anthropic_api_key?: string
           id?: number
+          remove_bg_api_key?: string | null
         }
         Relationships: []
       }
