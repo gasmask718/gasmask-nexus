@@ -12,8 +12,9 @@ import {
 } from '@/components/ui/table';
 import {
   Truck, Package, Ruler, PackageCheck, Clock, AlertTriangle, Info,
-  RefreshCw, Boxes,
+  RefreshCw, Boxes, Printer,
 } from 'lucide-react';
+import { printShippingLabel } from '@/lib/shipping/printLabel';
 import { validateProductsForShipping } from '@/components/products/ProductDimensionsPanel';
 
 const GOLD = '#C9A84C';
