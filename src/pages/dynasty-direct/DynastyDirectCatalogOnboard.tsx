@@ -79,7 +79,11 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
 
   const selectedSupplierName = suppliers.find((s) => s.id === supplierId)?.company_name || lockedSupplierName || '';
   // Supplier is REQUIRED — attribution drives routing, splits, and the review queue.
-  const canStartB = productName.trim().length > 1 && photos.length > 0 && !!supplierId;
+  // Cost is REQUIRED — dd-auto-price needs a real supplier cost to compute store/retail margins.
+  // Falling back to 0 would silently produce nonsense pricing.
+  const costNum = Number(cost);
+  const costValid = cost.trim().length > 0 && Number.isFinite(costNum) && costNum > 0;
+  const canStartB = productName.trim().length > 1 && photos.length > 0 && !!supplierId && costValid;
   const allGalleryImages: { url: string; label: string }[] = [
     ...photos.map((url) => ({ url, label: 'original' })),
     ...candidates.map((c) => ({ url: c.url, label: `found · ${c.source}` })),
