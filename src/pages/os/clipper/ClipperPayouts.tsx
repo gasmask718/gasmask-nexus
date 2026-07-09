@@ -247,15 +247,26 @@ export default function ClipperPayouts() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap">
           <CardTitle className="text-base" style={{ color: GOLD }}>Payout History</CardTitle>
+          <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as PayoutStatus)}>
+            <TabsList>
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="processing">Processing</TabsTrigger>
+              <TabsTrigger value="paid">Paid</TabsTrigger>
+              <TabsTrigger value="failed">Failed</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </CardHeader>
         <CardContent>
           {pLoad ? (
             <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
-          ) : (payouts || []).length === 0 ? (
+          ) : filteredPayouts.length === 0 ? (
             <div className="text-sm text-muted-foreground py-12 text-center">
-              No payouts yet. Payouts will appear here once initiated.
+              {statusFilter === "all"
+                ? "No payouts yet. Payouts will appear here once initiated."
+                : `No ${statusFilter} payouts.`}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -272,7 +283,7 @@ export default function ClipperPayouts() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(payouts || []).map((p: any) => (
+                  {filteredPayouts.map((p: any) => (
                     <tr key={p.id} className="border-b border-border/30 hover:bg-muted/20">
                       <td className="py-2 px-2 whitespace-nowrap">{fmtDate(p.paid_at || p.created_at)}</td>
                       <td className="py-2 px-2">{p.clipper_accounts?.full_name || "—"}</td>
