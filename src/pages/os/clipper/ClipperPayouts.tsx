@@ -1,13 +1,16 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { DollarSign, Users, Clock, CheckCircle2, Send, AlertTriangle } from "lucide-react";
+import { DollarSign, Users, Clock, CheckCircle2, Send, AlertTriangle, Loader2 } from "lucide-react";
+
+type PayoutStatus = "all" | "pending" | "processing" | "paid" | "failed";
 
 const GOLD = "#C9A84C";
 
