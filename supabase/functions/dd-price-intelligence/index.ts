@@ -275,7 +275,7 @@ Deno.serve(async (req) => {
     }
 
     // ============ ANALYZE / SET_OPTIMAL ============
-    const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    const apiKey = Deno.env.get('DD_ANTHROPIC_API_KEY');
     let analysis: Analysis;
     if (!apiKey) {
       analysis = placeholderAnalysis(product, marketAvg);
