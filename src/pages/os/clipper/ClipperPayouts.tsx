@@ -38,6 +38,8 @@ type PendingRow = {
 
 export default function ClipperPayouts() {
   const [paying, setPaying] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<PayoutStatus>("all");
+  const qc = useQueryClient();
 
   const { data: earnings, isLoading: eLoad, error: eErr } = useQuery({
     queryKey: ["clipper-payouts-earnings"],
