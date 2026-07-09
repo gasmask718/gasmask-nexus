@@ -77,34 +77,18 @@ type Row = {
 };
 
 async function approveOne(row: Row) {
-  const views = Number(row.views || 0);
-  const rate = Number(row.clipper_campaigns?.base_rate_per_1k || 0);
-  const baseEarnings = Number(((views / 1000) * rate).toFixed(2));
-
-  const { error: e1 } = await supabase
+  // Earnings are now computed and inserted by the DB trigger
+  // trg_clipper_submission_on_approve. The UI only flips status →
+  // 'approved'; the trigger fills in base_earnings, total_earnings,
+  // approved_at, and the matching clipper_earnings row
+  // (earning_type='base_views'), so any code path that approves a
+  // submission — UI, direct SQL, future integrations — creates
+  // earnings correctly and matches sync-clipper-metrics' upsert key.
+  const { error } = await supabase
     .from("clipper_submissions")
-    .update({ status: "approved", approved_at: new Date().toISOString() })
+    .update({ status: "approved" })
     .eq("id", row.id);
-  if (e1) throw e1;
-
-  const { error: e2 } = await supabase
-    .from("clipper_submissions")
-    .update({ base_earnings: baseEarnings, total_earnings: baseEarnings })
-    .eq("id", row.id);
-  if (e2) throw e2;
-
-  const { error: e3 } = await supabase.from("clipper_earnings").insert({
-    clipper_id: row.clipper_id,
-    submission_id: row.id,
-    campaign_id: row.campaign_id,
-    earning_type: "base_views",
-    amount: baseEarnings,
-    views_at_calculation: views,
-    status: "pending",
-  });
-  if (e3) throw e3;
-
-  return baseEarnings;
+  if (error) throw error;
 }
 
 export default function ClipperSubmissions() {
