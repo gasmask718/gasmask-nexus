@@ -79,11 +79,7 @@ Deno.serve(async (req) => {
 
   const email = body.donor_email.trim().toLowerCase()
 
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    { auth: { persistSession: false } },
-  )
+
 
   try {
     // --- Idempotency: skip if this Stripe PI already synced ---
