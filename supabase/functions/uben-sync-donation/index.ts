@@ -24,26 +24,33 @@ function bad(status: number, message: string) {
 }
 
 Deno.serve(async (req) => {
-  console.log('[uben-sync-donation] boot; secret status', {
-    UBEN_SYNC_API_KEY: Deno.env.get('UBEN_SYNC_API_KEY') ? 'present' : 'MISSING',
-    DYNASTY_UBEN_SYNC_KEY: Deno.env.get('DYNASTY_UBEN_SYNC_KEY') ? 'present' : 'MISSING',
-  })
-
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   if (req.method !== 'POST') return bad(405, 'Method not allowed')
 
-  // --- Auth ---
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    { auth: { persistSession: false } },
+  )
+
+  // --- Auth: pull expected key from DB (workaround for broken secret injection) ---
   const apiKey = req.headers.get('Authorization')?.replace('Bearer ', '')
-  const expected = Deno.env.get('UBEN_SYNC_API_KEY')
-  if (!expected) {
-    const visibleUbenKeys = Object.keys(Deno.env.toObject()).filter(k => k.includes('UBEN') || k.includes('DYNASTY'))
-    console.error('[uben-sync-donation] UBEN_SYNC_API_KEY missing. Visible related env keys:', visibleUbenKeys)
-    return bad(500, 'UBEN_SYNC_API_KEY not configured')
-  }
-  if (apiKey !== expected) return bad(401, 'Unauthorized')
+  const { data: cfg, error: cfgErr } = await supabase
+    .from('uben_sync_config')
+    .select('api_key')
+    .eq('id', 1)
+    .maybeSingle()
+  console.log('[uben-sync-donation] db key lookup', {
+    found: cfg?.api_key ? 'present' : 'MISSING',
+    error: cfgErr?.message ?? null,
+  })
+  if (cfgErr) return bad(500, `Config lookup failed: ${cfgErr.message}`)
+  if (!cfg?.api_key) return bad(500, 'UBEN sync api_key not configured in uben_sync_config')
+  if (!apiKey || apiKey !== cfg.api_key) return bad(401, 'Unauthorized')
+
 
   // --- Parse ---
   let body: DonationPayload
@@ -72,11 +79,7 @@ Deno.serve(async (req) => {
 
   const email = body.donor_email.trim().toLowerCase()
 
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    { auth: { persistSession: false } },
-  )
+
 
   try {
     // --- Idempotency: skip if this Stripe PI already synced ---
