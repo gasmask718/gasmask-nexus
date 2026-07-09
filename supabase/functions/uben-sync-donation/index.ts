@@ -24,7 +24,10 @@ function bad(status: number, message: string) {
 }
 
 Deno.serve(async (req) => {
-  console.log('[uben-sync-donation] boot; UBEN_SYNC_API_KEY=', Deno.env.get('UBEN_SYNC_API_KEY') ? 'present' : 'MISSING')
+  console.log('[uben-sync-donation] boot; secret status', {
+    UBEN_SYNC_API_KEY: Deno.env.get('UBEN_SYNC_API_KEY') ? 'present' : 'MISSING',
+    DYNASTY_UBEN_SYNC_KEY: Deno.env.get('DYNASTY_UBEN_SYNC_KEY') ? 'present' : 'MISSING',
+  })
 
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
