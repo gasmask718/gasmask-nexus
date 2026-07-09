@@ -68,6 +68,7 @@ type Lead = {
   source_file: string | null;
   category: string | null;
   postal_code: string | null;
+  google_place_id?: string | null;
 };
 
 const STAGE_COLORS: Record<string, string> = {
@@ -447,6 +448,31 @@ export default function LeadDatabasePage() {
       addLog(`Booking link sent to ${lead.business_name}`);
     } catch (err: any) {
       toast.error(err.message);
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const handleSendDemo = async (lead: Lead) => {
+    setLoadingAction(`demo-${lead.id}`);
+    try {
+      const { data, error } = await supabase.functions.invoke("brandaro-generate-demo", {
+        body: {
+          lead_id: lead.id,
+          engine: "native",
+          business_name: lead.business_name,
+          city: lead.city,
+          phone_number: lead.phone_number,
+          google_place_id: lead.google_place_id ?? null,
+        },
+      });
+      if (error) throw error;
+      const url = (data as any)?.demo_url;
+      toast.success(url ? `Demo generated for ${lead.business_name}` : `Demo queued for ${lead.business_name}`);
+      addLog(`Demo generated for ${lead.business_name}${url ? ` → ${url}` : ""}`);
+      queryClient.invalidateQueries({ queryKey: ["brandaro-leads-table"] });
+    } catch (err: any) {
+      toast.error(`Demo generation failed: ${err.message}`);
     } finally {
       setLoadingAction(null);
     }
@@ -1046,6 +1072,10 @@ export default function LeadDatabasePage() {
                                         <Phone className="h-3 w-3 mr-2" /> Manual Call
                                       </DropdownMenuItem>
                                     )}
+                                    <DropdownMenuItem onClick={() => handleSendDemo(lead)} disabled={loadingAction === `demo-${lead.id}`}>
+                                      {loadingAction === `demo-${lead.id}` ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : <Zap className="h-3 w-3 mr-2" />}
+                                      Send Demo (Auto-Generate)
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleBookingLink(lead)} disabled={!lead.phone_number}>
                                       <Calendar className="h-3 w-3 mr-2" /> Send Booking Link
                                     </DropdownMenuItem>
