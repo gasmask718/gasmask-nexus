@@ -48,3 +48,20 @@ export function webhookSecretCheck(req: Request, envVarName: string): Response |
   }
   return null;
 }
+
+/**
+ * Check `x-webhook-secret` against an explicit expected string (e.g. loaded
+ * from the DB config table when Edge Function env vars don't propagate).
+ */
+export function webhookSecretCheckExpected(req: Request, expected: string | null): Response | null {
+  if (!expected) {
+    console.error("[intake] expected webhook secret not configured (DB lookup returned empty)");
+    return jsonResponse({ error: "Server misconfigured" }, 500);
+  }
+  const provided = req.headers.get("x-webhook-secret") ?? "";
+  if (!provided || !safeEqual(provided, expected)) {
+    console.warn("[intake] invalid or missing x-webhook-secret");
+    return jsonResponse({ error: "Unauthorized" }, 401);
+  }
+  return null;
+}
