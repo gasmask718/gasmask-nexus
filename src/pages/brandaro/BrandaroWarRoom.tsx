@@ -159,6 +159,62 @@ export default function BrandaroWarRoom() {
     refetchInterval: 60000,
   });
 
+  // FIX A — 4 missing wires: revenue total, today's calls, pending messages, pipeline funnel
+  const { data: revenueTotal = 0 } = useQuery({
+    queryKey: ["brandaro-war-revenue-total"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("brandaro_revenue_tracking")
+        .select("revenue_amount");
+      return (data || []).reduce((s: number, r: any) => s + Number(r.revenue_amount || 0), 0);
+    },
+    refetchInterval: 60000,
+  });
+
+  const { data: callsToday = 0 } = useQuery({
+    queryKey: ["brandaro-war-calls-today"],
+    queryFn: async () => {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const { count } = await (supabase as any)
+        .from("brandaro_ai_calls")
+        .select("id", { count: "exact", head: true })
+        .gte("called_at", startOfDay.toISOString());
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
+  const { data: pendingMessages = 0 } = useQuery({
+    queryKey: ["brandaro-war-pending-messages"],
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from("brandaro_pending_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+      return count || 0;
+    },
+    refetchInterval: 15000,
+  });
+
+  const { data: pipelineFunnel = [] } = useQuery({
+    queryKey: ["brandaro-war-pipeline-funnel"],
+    queryFn: async () => {
+      const stages = ["prospect", "contacted", "interested", "demo_sent", "proposal", "won"];
+      const results = await Promise.all(
+        stages.map(async (stage) => {
+          const { count } = await (supabase as any)
+            .from("brandaro_qualified_leads")
+            .select("id", { count: "exact", head: true })
+            .eq("pipeline_stage", stage);
+          return { stage, count: count || 0 };
+        })
+      );
+      return results;
+    },
+    refetchInterval: 60000,
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
