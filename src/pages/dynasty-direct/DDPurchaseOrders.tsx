@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Plus, Send, CheckCircle2, Truck, Eye } from "lucide-react";
+import { FileText, Plus, Send, CheckCircle2, Truck, Eye, Printer } from "lucide-react";
 import { toast } from "sonner";
+import { printShippingLabel } from "@/lib/shipping/printLabel";
 
 type PO = {
   id: string;
@@ -42,6 +43,16 @@ type PO = {
   wholesalers?: { name: string | null; email: string | null } | null;
 };
 
+type POShipment = {
+  id: string;
+  order_id: string | null;
+  carrier: string | null;
+  tracking_number: string | null;
+  label_url: string | null;
+  status: string | null;
+  created_at: string;
+};
+
 const statusColor: Record<string, string> = {
   draft: "bg-zinc-500/15 text-zinc-700 border-zinc-500/30",
   sent: "bg-blue-500/15 text-blue-700 border-blue-500/30",
@@ -69,6 +80,36 @@ export default function DDPurchaseOrders() {
       return (data as any) ?? [];
     },
   });
+
+  // Every PO that came from a marketplace order can have one or more
+  // outbound shipments in dd_shipments. Join by marketplace_order_id.
+  const marketplaceOrderIds = useMemo(
+    () => pos.map((p) => p.marketplace_order_id).filter(Boolean) as string[],
+    [pos],
+  );
+
+  const { data: shipmentsByOrderId = {} } = useQuery({
+    queryKey: ["dd-po-shipments", marketplaceOrderIds.sort().join(",")],
+    enabled: marketplaceOrderIds.length > 0,
+    queryFn: async (): Promise<Record<string, POShipment[]>> => {
+      const { data, error } = await supabase
+        .from("dd_shipments")
+        .select("id, order_id, carrier, tracking_number, label_url, status, created_at")
+        .in("order_id", marketplaceOrderIds);
+      if (error) throw error;
+      const grouped: Record<string, POShipment[]> = {};
+      for (const s of (data ?? []) as POShipment[]) {
+        if (!s.order_id) continue;
+        (grouped[s.order_id] ??= []).push(s);
+      }
+      return grouped;
+    },
+  });
+
+  const shipmentsFor = (po: PO): POShipment[] =>
+    po.marketplace_order_id ? (shipmentsByOrderId[po.marketplace_order_id] ?? []) : [];
+  const primaryLabelShipment = (po: PO): POShipment | undefined =>
+    shipmentsFor(po).find((s) => !!s.label_url);
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -251,6 +292,34 @@ export default function DDPurchaseOrders() {
                             <Truck className="w-3 h-3 text-teal-600" />
                           </Button>
                         )}
+                        {(() => {
+                          const shp = primaryLabelShipment(po);
+                          if (!shp) return null;
+                          return (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                printShippingLabel({
+                                  labelUrl: shp.label_url,
+                                  recordId: shp.id,
+                                  entityType: "dd_shipments",
+                                  meta: {
+                                    po_id: po.id,
+                                    po_number: po.po_number,
+                                    wholesaler_id: po.wholesaler_id,
+                                    carrier: shp.carrier,
+                                    tracking: shp.tracking_number,
+                                    order_id: shp.order_id,
+                                  },
+                                })
+                              }
+                              title="Print shipping label"
+                            >
+                              <Printer className="w-3 h-3 text-emerald-600" />
+                            </Button>
+                          );
+                        })()}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -261,7 +330,11 @@ export default function DDPurchaseOrders() {
         </CardContent>
       </Card>
 
-      <ViewPODialog po={viewing} onClose={() => setViewing(null)} />
+      <ViewPODialog
+        po={viewing}
+        shipments={viewing ? shipmentsFor(viewing) : []}
+        onClose={() => setViewing(null)}
+      />
       <CreateManualPODialog open={creating} onClose={() => setCreating(false)} />
       <TrackingDialog po={trackingFor} onClose={() => setTrackingFor(null)} />
     </div>
@@ -279,8 +352,17 @@ function StatCard({ label, value }: { label: string; value: number }) {
   );
 }
 
-function ViewPODialog({ po, onClose }: { po: PO | null; onClose: () => void }) {
+function ViewPODialog({
+  po,
+  shipments = [],
+  onClose,
+}: {
+  po: PO | null;
+  shipments?: POShipment[];
+  onClose: () => void;
+}) {
   if (!po) return null;
+  const labelShipments = shipments.filter((s) => s.label_url);
   return (
     <Dialog open={!!po} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
@@ -312,6 +394,53 @@ function ViewPODialog({ po, onClose }: { po: PO | null; onClose: () => void }) {
             {po.carrier && <Kv k="Carrier" v={po.carrier} />}
             {po.actual_ship_date && <Kv k="Shipped" v={po.actual_ship_date} />}
           </div>
+
+          {labelShipments.length > 0 && (
+            <div>
+              <div className="text-xs uppercase text-muted-foreground mb-2">
+                Shipping Labels ({labelShipments.length})
+              </div>
+              <div className="space-y-2">
+                {labelShipments.map((s) => (
+                  <div
+                    key={s.id}
+                    className="border rounded p-2 flex items-center justify-between text-xs"
+                  >
+                    <div>
+                      <div className="font-medium">
+                        {s.carrier ?? "carrier?"} · {s.tracking_number ?? "no tracking"}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {s.status ?? "—"} · {new Date(s.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        printShippingLabel({
+                          labelUrl: s.label_url,
+                          recordId: s.id,
+                          entityType: "dd_shipments",
+                          meta: {
+                            po_id: po.id,
+                            po_number: po.po_number,
+                            wholesaler_id: po.wholesaler_id,
+                            carrier: s.carrier,
+                            tracking: s.tracking_number,
+                            order_id: s.order_id,
+                          },
+                        })
+                      }
+                    >
+                      <Printer className="w-3 h-3 mr-1" /> Print Label
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
 
           <div>
             <div className="text-xs uppercase text-muted-foreground mb-2">Items</div>

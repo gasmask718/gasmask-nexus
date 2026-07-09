@@ -12,8 +12,9 @@ import {
 } from '@/components/ui/table';
 import {
   Truck, Package, Ruler, PackageCheck, Clock, AlertTriangle, Info,
-  RefreshCw, Boxes,
+  RefreshCw, Boxes, Printer,
 } from 'lucide-react';
+import { printShippingLabel } from '@/lib/shipping/printLabel';
 import { validateProductsForShipping } from '@/components/products/ProductDimensionsPanel';
 
 const GOLD = '#C9A84C';
@@ -36,6 +37,8 @@ type ShipmentRow = {
   tracking_number: string | null;
   created_at: string;
   rate_selected: number | null;
+  label_url: string | null;
+  order_id: string | null;
 };
 
 type PackedBox = {
@@ -88,7 +91,7 @@ export default function ShippingPage() {
     queryFn: async (): Promise<ShipmentRow[]> => {
       const { data, error } = await supabase
         .from('dd_shipments')
-        .select('id, status, carrier, tracking_number, created_at, rate_selected')
+        .select('id, status, carrier, tracking_number, created_at, rate_selected, label_url, order_id')
         .order('created_at', { ascending: false })
         .limit(25);
       if (error) throw error;
@@ -457,6 +460,7 @@ export default function ShippingPage() {
                   <TableHead>Tracking</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Rate</TableHead>
+                  <TableHead className="text-right">Label</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -469,6 +473,30 @@ export default function ShippingPage() {
                     <TableCell className="font-mono text-xs">{s.tracking_number ?? '—'}</TableCell>
                     <TableCell><Badge variant="outline">{s.status}</Badge></TableCell>
                     <TableCell>{s.rate_selected != null ? `$${Number(s.rate_selected).toFixed(2)}` : '—'}</TableCell>
+                    <TableCell className="text-right">
+                      {s.label_url ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            printShippingLabel({
+                              labelUrl: s.label_url,
+                              recordId: s.id,
+                              entityType: 'dd_shipments',
+                              meta: {
+                                carrier: s.carrier,
+                                tracking: s.tracking_number,
+                                order_id: s.order_id,
+                              },
+                            })
+                          }
+                        >
+                          <Printer className="w-3 h-3 mr-1" /> Print Label
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
