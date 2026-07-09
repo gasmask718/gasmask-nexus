@@ -92,8 +92,8 @@ export default function RevenueDashboardPage() {
       const totalAwards = (awardsRes.data || []).reduce(
         (s, g: any) => s + Number(g.amount_awarded || 0), 0);
       // MTD funding = sum of funding_received on clients updated this calendar month
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const _now = new Date();
+      const monthStart = new Date(_now.getFullYear(), _now.getMonth(), 1);
       const mtdFunding = (trendRes.data || []).reduce((s, r: any) => {
         const d = new Date(r.updated_at);
         return d >= monthStart ? s + Number(r.funding_received || 0) : s;
