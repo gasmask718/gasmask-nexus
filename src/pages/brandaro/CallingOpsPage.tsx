@@ -583,6 +583,11 @@ export default function CallingOpsPage() {
           </Card>
         </TabsContent>
 
+        {/* ── CALL HISTORY (brandaro_ai_calls SOURCE OF TRUTH) ── */}
+        <TabsContent value="history" className="space-y-4">
+          <BrandaroAiCallHistoryTable />
+        </TabsContent>
+
         {/* ── VA CALLING DESK ── */}
         <TabsContent value="desk" className="space-y-4">
           {/* Callbacks */}
