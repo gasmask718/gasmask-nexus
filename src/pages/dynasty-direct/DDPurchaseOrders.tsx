@@ -352,8 +352,17 @@ function StatCard({ label, value }: { label: string; value: number }) {
   );
 }
 
-function ViewPODialog({ po, onClose }: { po: PO | null; onClose: () => void }) {
+function ViewPODialog({
+  po,
+  shipments = [],
+  onClose,
+}: {
+  po: PO | null;
+  shipments?: POShipment[];
+  onClose: () => void;
+}) {
   if (!po) return null;
+  const labelShipments = shipments.filter((s) => s.label_url);
   return (
     <Dialog open={!!po} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
@@ -385,6 +394,53 @@ function ViewPODialog({ po, onClose }: { po: PO | null; onClose: () => void }) {
             {po.carrier && <Kv k="Carrier" v={po.carrier} />}
             {po.actual_ship_date && <Kv k="Shipped" v={po.actual_ship_date} />}
           </div>
+
+          {labelShipments.length > 0 && (
+            <div>
+              <div className="text-xs uppercase text-muted-foreground mb-2">
+                Shipping Labels ({labelShipments.length})
+              </div>
+              <div className="space-y-2">
+                {labelShipments.map((s) => (
+                  <div
+                    key={s.id}
+                    className="border rounded p-2 flex items-center justify-between text-xs"
+                  >
+                    <div>
+                      <div className="font-medium">
+                        {s.carrier ?? "carrier?"} · {s.tracking_number ?? "no tracking"}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {s.status ?? "—"} · {new Date(s.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        printShippingLabel({
+                          labelUrl: s.label_url,
+                          recordId: s.id,
+                          entityType: "dd_shipments",
+                          meta: {
+                            po_id: po.id,
+                            po_number: po.po_number,
+                            wholesaler_id: po.wholesaler_id,
+                            carrier: s.carrier,
+                            tracking: s.tracking_number,
+                            order_id: s.order_id,
+                          },
+                        })
+                      }
+                    >
+                      <Printer className="w-3 h-3 mr-1" /> Print Label
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
 
           <div>
             <div className="text-xs uppercase text-muted-foreground mb-2">Items</div>
