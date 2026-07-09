@@ -66,19 +66,19 @@ function MorningBriefingSummary() {
             <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/50">
               <div className="text-center">
                 <div className="text-lg font-bold text-[#C9A84C]">
-                  {briefing.total_clients ?? briefing.active_clients ?? '—'}
+                  {briefing.clients_total ?? briefing.clients_active ?? '—'}
                 </div>
                 <div className="text-[10px] text-muted-foreground">Clients</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold text-amber-500">
-                  {Array.isArray(briefing.alerts) ? briefing.alerts.length : (briefing.alerts_count ?? 0)}
+                  {Array.isArray(briefing.alerts) ? briefing.alerts.length : 0}
                 </div>
                 <div className="text-[10px] text-muted-foreground">Alerts</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold text-emerald-500">
-                  {Array.isArray(briefing.operator_actions) ? briefing.operator_actions.length : (briefing.actions_count ?? 0)}
+                  {Array.isArray(briefing.operator_actions) ? briefing.operator_actions.length : 0}
                 </div>
                 <div className="text-[10px] text-muted-foreground">Actions</div>
               </div>
