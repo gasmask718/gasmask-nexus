@@ -21,6 +21,7 @@ import { useRevenueAutopilotDashboard, useRunAutopilotCycle } from "@/hooks/useB
 import { useGlobalScalingDashboard, useRunGlobalCycle } from "@/hooks/useBrandaroGlobalScaling";
 import { useCompetitorDashboard, useRunCompetitorCycle } from "@/hooks/useBrandaroCompetitorTakeover";
 import { Repeat, Rocket, PiggyBank, BarChart3, Globe, MapPinPlus, Building2 } from "lucide-react";
+import { WarRoomLiveSnapshot } from "@/components/brandaro/WarRoomLiveSnapshot";
 
 function KPICard({ label, value, icon: Icon, color, subtitle, to }: {
   label: string; value: string | number; icon: any; color: string; subtitle?: string; to?: string;
@@ -179,6 +180,9 @@ export default function BrandaroWarRoom() {
         <KPICard label="Pending Tasks" value={pendingTasks} icon={ListTodo} color="text-amber-500" to="/brandaro/follow-ups" />
         <KPICard label="AI Personas" value={activePersonalities} icon={Theater} color="text-purple-500" to="/brandaro/personalities" />
       </div>
+
+      {/* Live Snapshot — confirmed source-of-truth tables */}
+      <WarRoomLiveSnapshot />
 
       {/* Scout Agent Card */}
       <Card className="border-primary/20">
