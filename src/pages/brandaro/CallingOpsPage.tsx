@@ -30,6 +30,7 @@ import {
   useAssignNumber,
   useLogCallOutcome,
 } from "@/hooks/useBrandaroNumberPool";
+import { BrandaroAiCallHistoryTable } from "@/components/brandaro/BrandaroAiCallHistoryTable";
 
 const EXCLUDED_STATUSES = ["sold", "wrong_number", "not_interested", "do_not_call"];
 
