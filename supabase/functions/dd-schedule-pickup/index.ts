@@ -131,7 +131,14 @@ Deno.serve(async (req) => {
     const windowStart = body.window_start ?? '10:00';
     const windowEnd = body.window_end ?? '16:00';
 
-    const easypostKey = Deno.env.get('EASYPOST_API_KEY');
+    // EasyPost key loaded from dd_ai_config (env-var propagation workaround)
+    const { data: epCfg } = await supabase
+      .from('dd_ai_config')
+      .select('easypost_api_key, easypost_mode')
+      .eq('id', 1)
+      .maybeSingle();
+    const easypostKey = epCfg?.easypost_api_key ?? null;
+    const easypostMode = epCfg?.easypost_mode ?? 'test';
 
     if (!easypostKey) {
       // DEMO MODE
