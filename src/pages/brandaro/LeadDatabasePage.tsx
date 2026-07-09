@@ -68,6 +68,7 @@ type Lead = {
   source_file: string | null;
   category: string | null;
   postal_code: string | null;
+  google_place_id?: string | null;
 };
 
 const STAGE_COLORS: Record<string, string> = {
