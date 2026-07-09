@@ -38145,16 +38145,22 @@ export type Database = {
       dd_ai_config: {
         Row: {
           anthropic_api_key: string
+          easypost_api_key: string | null
+          easypost_mode: string | null
           id: number
           remove_bg_api_key: string | null
         }
         Insert: {
           anthropic_api_key: string
+          easypost_api_key?: string | null
+          easypost_mode?: string | null
           id?: number
           remove_bg_api_key?: string | null
         }
         Update: {
           anthropic_api_key?: string
+          easypost_api_key?: string | null
+          easypost_mode?: string | null
           id?: number
           remove_bg_api_key?: string | null
         }
