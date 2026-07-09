@@ -1,0 +1,1 @@
+DELETE FROM grant_applications WHERE id = 'f0439afc-1106-4165-8389-284b1804e1ff'; DELETE FROM grant_opportunities WHERE grant_name LIKE 'QA-TEST-GRANT-%';
