@@ -91058,6 +91058,69 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_telegram_posts: {
+        Row: {
+          capper_name: string | null
+          channel_id: string
+          channel_name: string | null
+          channel_username: string | null
+          deleted: boolean
+          dispatch_error: string | null
+          dispatched_to: string | null
+          edited: boolean
+          has_media: boolean
+          id: string
+          image_url: string | null
+          message_id: string
+          message_text: string | null
+          posted_at: string | null
+          processing_status: string
+          raw_payload: Json | null
+          received_at: string
+          updated_at: string
+        }
+        Insert: {
+          capper_name?: string | null
+          channel_id: string
+          channel_name?: string | null
+          channel_username?: string | null
+          deleted?: boolean
+          dispatch_error?: string | null
+          dispatched_to?: string | null
+          edited?: boolean
+          has_media?: boolean
+          id?: string
+          image_url?: string | null
+          message_id: string
+          message_text?: string | null
+          posted_at?: string | null
+          processing_status?: string
+          raw_payload?: Json | null
+          received_at?: string
+          updated_at?: string
+        }
+        Update: {
+          capper_name?: string | null
+          channel_id?: string
+          channel_name?: string | null
+          channel_username?: string | null
+          deleted?: boolean
+          dispatch_error?: string | null
+          dispatched_to?: string | null
+          edited?: boolean
+          has_media?: boolean
+          id?: string
+          image_url?: string | null
+          message_id?: string
+          message_text?: string | null
+          posted_at?: string | null
+          processing_status?: string
+          raw_payload?: Json | null
+          received_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sbo_top_plays: {
         Row: {
           confidence: number | null
