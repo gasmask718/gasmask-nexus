@@ -38142,6 +38142,21 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_ai_config: {
+        Row: {
+          anthropic_api_key: string
+          id: number
+        }
+        Insert: {
+          anthropic_api_key: string
+          id?: number
+        }
+        Update: {
+          anthropic_api_key?: string
+          id?: number
+        }
+        Relationships: []
+      }
       dd_anomaly_findings: {
         Row: {
           ai_generated: boolean
