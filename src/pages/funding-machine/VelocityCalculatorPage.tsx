@@ -314,8 +314,6 @@ export default function VelocityCalculatorPage() {
       {!selectedClient ? (
         <Card className="border-dashed"><CardContent className="py-16 text-center text-muted-foreground">Select a client to calculate velocity requirements</CardContent></Card>
       ) : (
-        <Card className="border-dashed"><CardContent className="py-16 text-center text-muted-foreground">Select a client to calculate velocity requirements</CardContent></Card>
-      ) : (
         <>
           {/* Plaid Banking Connection */}
           <PlaidConnectionSection clientId={selectedClient} />
