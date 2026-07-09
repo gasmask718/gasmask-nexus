@@ -2,7 +2,7 @@
 // after Stripe confirms payment, and syncs them into Dynasty OS
 // (uben_donors + uben_donations).
 //
-// Auth: shared secret DYNASTY_OS_API_KEY sent as `Authorization: Bearer <key>`.
+// Auth: UBEN-specific secret UBEN_SYNC_API_KEY sent as `Authorization: Bearer <key>`.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
