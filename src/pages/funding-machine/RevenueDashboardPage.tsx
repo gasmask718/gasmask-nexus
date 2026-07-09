@@ -161,7 +161,8 @@ export default function RevenueDashboardPage() {
         </header>
 
         {/* SECTION A — Headline Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <StatCard label="Revenue This Month (MTD)" value={fmtUsd(stats.mtdFunding)} icon={DollarSign} accent={GOLD} loading={loading} />
           <StatCard label="Total Funding Received" value={fmtUsd(stats.totalFunding)} icon={DollarSign} accent={GOLD} loading={loading} />
           <StatCard label="Active Clients" value={fmtNum(stats.activeClients)} icon={Users} accent="#3B82F6" loading={loading} />
           <StatCard label="Total Grant Awards" value={fmtUsd(stats.totalAwards)} icon={Award} accent="#22C55E" loading={loading} />
