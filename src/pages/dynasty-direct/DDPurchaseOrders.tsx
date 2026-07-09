@@ -292,6 +292,34 @@ export default function DDPurchaseOrders() {
                             <Truck className="w-3 h-3 text-teal-600" />
                           </Button>
                         )}
+                        {(() => {
+                          const shp = primaryLabelShipment(po);
+                          if (!shp) return null;
+                          return (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                printShippingLabel({
+                                  labelUrl: shp.label_url,
+                                  recordId: shp.id,
+                                  entityType: "dd_shipments",
+                                  meta: {
+                                    po_id: po.id,
+                                    po_number: po.po_number,
+                                    wholesaler_id: po.wholesaler_id,
+                                    carrier: shp.carrier,
+                                    tracking: shp.tracking_number,
+                                    order_id: shp.order_id,
+                                  },
+                                })
+                              }
+                              title="Print shipping label"
+                            >
+                              <Printer className="w-3 h-3 text-emerald-600" />
+                            </Button>
+                          );
+                        })()}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -302,7 +330,11 @@ export default function DDPurchaseOrders() {
         </CardContent>
       </Card>
 
-      <ViewPODialog po={viewing} onClose={() => setViewing(null)} />
+      <ViewPODialog
+        po={viewing}
+        shipments={viewing ? shipmentsFor(viewing) : []}
+        onClose={() => setViewing(null)}
+      />
       <CreateManualPODialog open={creating} onClose={() => setCreating(false)} />
       <TrackingDialog po={trackingFor} onClose={() => setTrackingFor(null)} />
     </div>
