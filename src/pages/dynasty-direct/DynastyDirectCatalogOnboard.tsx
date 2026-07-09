@@ -79,7 +79,11 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
 
   const selectedSupplierName = suppliers.find((s) => s.id === supplierId)?.company_name || lockedSupplierName || '';
   // Supplier is REQUIRED — attribution drives routing, splits, and the review queue.
-  const canStartB = productName.trim().length > 1 && photos.length > 0 && !!supplierId;
+  // Cost is REQUIRED — dd-auto-price needs a real supplier cost to compute store/retail margins.
+  // Falling back to 0 would silently produce nonsense pricing.
+  const costNum = Number(cost);
+  const costValid = cost.trim().length > 0 && Number.isFinite(costNum) && costNum > 0;
+  const canStartB = productName.trim().length > 1 && photos.length > 0 && !!supplierId && costValid;
   const allGalleryImages: { url: string; label: string }[] = [
     ...photos.map((url) => ({ url, label: 'original' })),
     ...candidates.map((c) => ({ url: c.url, label: `found · ${c.source}` })),
@@ -305,7 +309,23 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2"><Label>Product name *</Label><Input value={productName} onChange={(e) => setProductName(e.target.value)} /></div>
               <div className="space-y-2"><Label>Brand hint</Label><Input value={brandHint} onChange={(e) => setBrandHint(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Cost (USD)</Label><Input type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} /></div>
+              <div className="space-y-2">
+                <Label>Cost (USD) *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={cost}
+                  onChange={(e) => setCost(e.target.value)}
+                  className={!costValid && cost.length > 0 ? 'border-destructive' : ''}
+                  placeholder="What you paid per unit"
+                />
+                {!costValid && (
+                  <p className="text-xs text-destructive">
+                    Required — dd-auto-price needs your real cost to calculate store &amp; retail pricing.
+                  </p>
+                )}
+              </div>
               {lockedSupplierId ? (
                 <div className="space-y-2"><Label>Wholesaler (auto-bound to you)</Label>
                   <div className="flex h-10 items-center rounded-md border border-input bg-muted/40 px-3 text-sm">
