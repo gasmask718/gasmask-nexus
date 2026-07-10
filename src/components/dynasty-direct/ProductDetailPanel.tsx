@@ -35,6 +35,7 @@ type ProductDetail = {
   brand: string | null;
   supplier_id: string | null;
   status: string | null;
+  inventory_qty: number | null;
   supplier_cost: number | null;
   store_price_a: number | null;
   dtc_price_b: number | null;
