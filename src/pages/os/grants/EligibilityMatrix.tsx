@@ -30,12 +30,20 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-type Business = { id: string; business_name: string };
+type Business = {
+  id: string;
+  business_name: string;
+  completeness_pct?: number | null;
+};
 type Opportunity = {
   id: string;
   title: string | null;
   grant_name: string;
   funder_name: string;
+  amount_typical?: number | null;
+  amount_max?: number | null;
+  deadline?: string | null;
+  description?: string | null;
 };
 type Result = {
   id: string;
@@ -50,7 +58,9 @@ type Result = {
   requirements_met: any;
   requirements_missing: any;
   requirements_failed: any;
+  last_checked_at?: string | null;
 };
+
 
 type StatusFilter = "all" | "eligible" | "partially_eligible" | "needs_review" | "not_eligible";
 
