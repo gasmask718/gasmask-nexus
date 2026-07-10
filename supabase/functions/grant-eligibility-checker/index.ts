@@ -167,25 +167,65 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Preload opportunity metadata so AI prompts have context
+    const oppMetaById: Record<string, any> = {};
+    if (oppIds.length > 0) {
+      const { data: oppMeta } = await sb
+        .from("grant_opportunities")
+        .select("id, grant_name, title, funder_name, funder, amount, amount_typical, deadline, category, description")
+        .in("id", oppIds);
+      for (const o of (oppMeta ?? []) as any[]) oppMetaById[o.id] = o;
+    }
+
     // Evaluate cross product
     const rows: any[] = [];
     const summary = { eligible: 0, partially_eligible: 0, needs_review: 0, not_eligible: 0 };
     const nowIso = new Date().toISOString();
     const nextIso = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
+    // GR-37: only run AI for single-pair or single-business calls (cost / rate control).
+    // Nightly cross-product runs skip AI to protect credits and latency.
+    const aiEnabled =
+      !!Deno.env.get("ANTHROPIC_API_KEY") &&
+      (!!business_profile_id || !!grant_opportunity_id);
+    const aiCache = new Map<string, { rec: string | null; plan: string | null; prob: number | null }>();
+
     for (const biz of (businesses ?? []) as Record<string, unknown>[]) {
       for (const opp of (opps ?? []) as any[]) {
         const reqs = reqsByOpp[opp.id] ?? [];
         const { status, score, met, missing, failed } = computeResult(reqs, biz);
         summary[status]++;
+
+        let ai_recommendation: string | null = null;
+        let ai_action_plan: string | null = null;
+        let ai_success_probability: number | null = null;
+        if (aiEnabled) {
+          const key = `${(biz as any).id}::${opp.id}`;
+          let cached = aiCache.get(key);
+          if (!cached) {
+            cached = await generateAiRecommendation({
+              biz, opp: oppMetaById[opp.id] ?? { id: opp.id }, status, score, met, missing, failed,
+            });
+            aiCache.set(key, cached);
+          }
+          ai_recommendation = cached.rec;
+          ai_action_plan = cached.plan;
+          ai_success_probability = cached.prob;
+        } else if (!Deno.env.get("ANTHROPIC_API_KEY")) {
+          ai_recommendation = "AI recommendations unavailable";
+        }
+
         rows.push({
-          business_profile_id: biz.id,
+          business_profile_id: (biz as any).id,
           grant_opportunity_id: opp.id,
           eligibility_status: status,
           eligibility_score: score,
           requirements_met: met,
           requirements_missing: missing,
           requirements_failed: failed,
+          ai_recommendation,
+          ai_action_plan,
+          ai_success_probability,
           last_checked_at: nowIso,
           next_check_at: nextIso,
         });
@@ -194,7 +234,6 @@ Deno.serve(async (req) => {
 
     let upserted = 0;
     if (rows.length > 0) {
-      // Chunk to keep payloads reasonable
       const CHUNK = 500;
       for (let i = 0; i < rows.length; i += CHUNK) {
         const slice = rows.slice(i, i + CHUNK);
@@ -206,6 +245,23 @@ Deno.serve(async (req) => {
       }
     }
 
+    // GR-36 / Section 4: refresh business profile counters + last check timestamp
+    const bizIdsChecked = Array.from(new Set((businesses ?? []).map((b: any) => b.id)));
+    for (const bId of bizIdsChecked) {
+      const { count } = await sb
+        .from("grant_eligibility_results")
+        .select("id", { count: "exact", head: true })
+        .eq("business_profile_id", bId)
+        .in("eligibility_status", ["eligible", "partially_eligible"]);
+      await sb
+        .from("grant_business_profiles")
+        .update({
+          eligible_grant_count: count ?? 0,
+          last_eligibility_check_at: nowIso,
+        })
+        .eq("id", bId);
+    }
+
     return new Response(
       JSON.stringify({
         businesses_checked: businesses?.length ?? 0,
@@ -213,6 +269,7 @@ Deno.serve(async (req) => {
         pairs_evaluated: rows.length,
         upserted,
         results_summary: summary,
+        ai_enabled: aiEnabled,
       }),
       { status: 200, headers: jsonHeaders },
     );
