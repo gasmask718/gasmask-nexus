@@ -14,7 +14,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Package, DollarSign, Image as ImageIcon, Sparkles, Upload, Save, X, Star, AlertTriangle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  Package, DollarSign, Image as ImageIcon, Sparkles, Upload, Save, X, Star, AlertTriangle, Trash2,
 } from 'lucide-react';
 
 const GOLD = '#C9A84C';
@@ -31,6 +35,7 @@ type ProductDetail = {
   brand: string | null;
   supplier_id: string | null;
   status: string | null;
+  inventory_qty: number | null;
   supplier_cost: number | null;
   store_price_a: number | null;
   dtc_price_b: number | null;
@@ -69,6 +74,8 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const detailQ = useQuery({
@@ -78,7 +85,7 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
       if (!productId) return null;
       const { data, error } = await supabase
         .from('products_all')
-        .select('id, product_name, category, brand, supplier_id, status, supplier_cost, store_price_a, dtc_price_b, map_price, store_margin_pct, dtc_margin_pct, min_store_margin_pct, target_store_margin_pct, min_dtc_margin_pct, target_dtc_margin_pct, description, ai_description, ai_description_short, description_generated_at, primary_image_url, image_urls, image_enhanced_at')
+        .select('id, product_name, category, brand, supplier_id, status, inventory_qty, supplier_cost, store_price_a, dtc_price_b, map_price, store_margin_pct, dtc_margin_pct, min_store_margin_pct, target_store_margin_pct, min_dtc_margin_pct, target_dtc_margin_pct, description, ai_description, ai_description_short, description_generated_at, primary_image_url, image_urls, image_enhanced_at')
         .eq('id', productId)
         .maybeSingle();
       if (error) throw error;
@@ -101,7 +108,7 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
   useEffect(() => {
     if (p && !editingCore) setCore({
       product_name: p.product_name, category: p.category, brand: p.brand,
-      supplier_id: p.supplier_id, status: p.status,
+      supplier_id: p.supplier_id, status: p.status, inventory_qty: p.inventory_qty,
     });
   }, [p, editingCore]);
 
@@ -116,7 +123,10 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
     if (!productId) return;
     setSaving(true);
     try {
-      const { error } = await supabase.from('products_all').update(core).eq('id', productId);
+      const payload: any = { ...core };
+      if (payload.inventory_qty === '' || payload.inventory_qty == null) payload.inventory_qty = null;
+      else payload.inventory_qty = Number(payload.inventory_qty);
+      const { error } = await supabase.from('products_all').update(payload).eq('id', productId);
       if (error) throw error;
       toast.success('Product updated');
       setEditingCore(false);
@@ -124,6 +134,25 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
       qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
     } catch (e: any) { toast.error(e.message ?? 'Save failed'); }
     finally { setSaving(false); }
+  }
+
+  async function softDelete() {
+    if (!productId) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('products_all')
+        .update({ status: 'deleted' })
+        .eq('id', productId);
+      if (error) throw error;
+      toast.success('Product deleted — hidden from storefront');
+      setDeleteOpen(false);
+      onOpenChange(false);
+      qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
+      qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
+    } catch (e: any) {
+      toast.error(e.message ?? 'Delete failed');
+    } finally { setDeleting(false); }
   }
 
   async function savePricing() {
@@ -262,9 +291,38 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle style={{ color: GOLD }} className="flex items-center gap-2">
-            <Package className="h-5 w-5" /> Product Details
-          </SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle style={{ color: GOLD }} className="flex items-center gap-2">
+              <Package className="h-5 w-5" /> Product Details
+            </SheetTitle>
+            {p && p.status !== 'deleted' && (
+              <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-4 w-4 mr-1" /> Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this product?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      <strong>{p.product_name}</strong> will be soft-deleted (status set to <code>deleted</code>) and immediately hidden from the storefront. Order history is preserved and this can be reversed by an admin.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={(e) => { e.preventDefault(); softDelete(); }}
+                      disabled={deleting}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {deleting ? 'Deleting…' : 'Delete Product'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </SheetHeader>
 
         {detailQ.isLoading || !p ? (
@@ -309,6 +367,12 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
                         </SelectContent>
                       </Select>
                     </div>
+                    <div>
+                      <Label>Inventory Qty</Label>
+                      <Input type="number" min="0" step="1" value={(core.inventory_qty as any) ?? ''}
+                        onChange={e => setCore({ ...core, inventory_qty: e.target.value === '' ? null : Number(e.target.value) })} />
+                      <p className="text-xs text-muted-foreground mt-1">Units on hand. Storefront shows "Sold Out" when 0 or null.</p>
+                    </div>
                     <Button style={{ background: GOLD, color: '#000' }} disabled={saving} onClick={saveCore}>
                       <Save className="h-4 w-4 mr-1" /> {saving ? 'Saving…' : 'Save'}
                     </Button>
@@ -319,6 +383,12 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
                     <div><div className="text-muted-foreground text-xs">Brand</div><div>{p.brand ?? '—'}</div></div>
                     <div><div className="text-muted-foreground text-xs">Category</div><Badge variant="outline">{p.category ?? '—'}</Badge></div>
                     <div><div className="text-muted-foreground text-xs">Status</div><Badge>{p.status}</Badge></div>
+                    <div><div className="text-muted-foreground text-xs">Inventory Qty</div>
+                      <div className={p.inventory_qty == null || p.inventory_qty <= 0 ? 'text-destructive font-medium' : 'font-medium'}>
+                        {p.inventory_qty == null ? '—' : p.inventory_qty}
+                        {(p.inventory_qty == null || p.inventory_qty <= 0) && <span className="text-xs ml-2">(Sold Out)</span>}
+                      </div>
+                    </div>
                   </div>
                 )}
               </CardContent>

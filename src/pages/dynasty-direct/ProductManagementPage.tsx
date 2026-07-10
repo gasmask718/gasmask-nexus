@@ -76,6 +76,7 @@ export default function ProductManagementPage() {
     category: '',
     supplier_id: '',
     supplier_cost: '',
+    inventory_qty: '',
   });
 
   const productsQ = useQuery({
@@ -171,6 +172,7 @@ export default function ProductManagementPage() {
         category: form.category,
         supplier_id: form.supplier_id || null,
         supplier_cost: form.supplier_cost ? Number(form.supplier_cost) : null,
+        inventory_qty: form.inventory_qty !== '' ? Number(form.inventory_qty) : null,
         status: requestedStatus,
       };
       const { data, error } = await supabase
@@ -182,7 +184,7 @@ export default function ProductManagementPage() {
 
       toast.success('Product created — pricing running via trigger');
       setAddOpen(false);
-      setForm({ product_name: '', category: '', supplier_id: '', supplier_cost: '' });
+      setForm({ product_name: '', category: '', supplier_id: '', supplier_cost: '', inventory_qty: '' });
       qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
 
       // Gate immediate feedback (in case dd_enforce_catalog_confirm_gate downgraded status)
@@ -321,6 +323,12 @@ export default function ProductManagementPage() {
                   <Input type="number" step="0.01" value={form.supplier_cost}
                     onChange={e => setForm({ ...form, supplier_cost: e.target.value })} />
                   <p className="text-xs text-muted-foreground mt-1">Setting a cost triggers automatic price computation via <code>dd-auto-price</code>.</p>
+                </div>
+                <div>
+                  <Label>Inventory Qty</Label>
+                  <Input type="number" min="0" step="1" placeholder="0" value={form.inventory_qty}
+                    onChange={e => setForm({ ...form, inventory_qty: e.target.value })} />
+                  <p className="text-xs text-muted-foreground mt-1">Units on hand. Leave blank if unknown — storefront will show "Sold Out" until set.</p>
                 </div>
               </div>
               <DialogFooter>
