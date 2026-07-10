@@ -407,9 +407,10 @@ function LogInteractionModal({
       last_contact_date: date,
       updated_at: new Date().toISOString(),
     };
-    if (['email','call','meeting','follow_up'].includes(type) && funder?.relationship_status === 'prospect') {
+    if (['email','call','phone','meeting','site_visit','follow_up'].includes(type) && funder?.relationship_status === 'prospect') {
       updates.relationship_status = 'contacted';
     }
+
     if (type === 'application_submitted') {
       updates.total_applications = (funder?.total_applications || 0) + 1;
     }
