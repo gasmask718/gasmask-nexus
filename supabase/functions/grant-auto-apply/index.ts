@@ -105,6 +105,31 @@ Deno.serve(async (req) => {
       });
     }
 
+    // STEP 2a — reuse existing package if present (prevent duplicates)
+    const { data: existing } = await supabase
+      .from("grant_application_packages")
+      .select("id, documents_ready, documents_missing, cover_letter")
+      .eq("eligibility_result_id", eligibility_result_id)
+      .maybeSingle();
+
+    if (existing?.id) {
+      await supabase
+        .from("grant_eligibility_results")
+        .update({ application_status: "package_ready" })
+        .eq("id", eligibility_result_id);
+      return new Response(
+        JSON.stringify({
+          package_id: existing.id,
+          reused: true,
+          cover_letter_preview: String(existing.cover_letter ?? "").slice(0, 200),
+          documents_ready: existing.documents_ready ?? [],
+          documents_missing: existing.documents_missing ?? [],
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+
     // STEP 2 — document checklist
     const documents_required = Object.values(DOC_FIELDS);
     const documents_ready: string[] = [];
