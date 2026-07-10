@@ -418,20 +418,55 @@ export default function EligibilityMatrix() {
                     </Badge>
                   </div>
 
-                  {openCell.r.ai_recommendation && (
-                    <div className="border-l-4 border-amber-400 bg-amber-400/5 pl-4 py-3 rounded-r">
-                      <div className="flex items-center gap-2 mb-1 text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="rounded-md border p-2">
+                      <div className="text-muted-foreground">Business Readiness</div>
+                      <div className="font-semibold text-sm mt-0.5">
+                        {openCell.b.completeness_pct ?? 0}% complete
+                      </div>
+                    </div>
+                    <div className="rounded-md border p-2">
+                      <div className="text-muted-foreground">Funding Readiness</div>
+                      <div className="font-semibold text-sm mt-0.5 capitalize">
+                        {(openCell.r.eligibility_status ?? "unknown").replace(/_/g, " ")}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-l-4 border-amber-400 bg-amber-400/5 pl-4 py-3 rounded-r">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
                         <Sparkles className="h-3 w-3" /> AI Recommendation
                       </div>
-                      <p className="text-sm">{openCell.r.ai_recommendation}</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 text-[10px]"
+                        onClick={regenerateAi}
+                        disabled={regenAi}
+                      >
+                        {regenAi ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                        )}
+                        {openCell.r.ai_recommendation ? "Regenerate" : "Generate"}
+                      </Button>
                     </div>
-                  )}
+                    <p className="text-sm">
+                      {openCell.r.ai_recommendation || (
+                        <span className="text-muted-foreground italic">
+                          No AI recommendation available.
+                        </span>
+                      )}
+                    </p>
+                  </div>
 
-                  {openCell.r.ai_action_plan && (
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                        Action Plan
-                      </div>
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                      Action Plan
+                    </div>
+                    {openCell.r.ai_action_plan ? (
                       <ol className="list-decimal list-inside space-y-1 text-sm">
                         {openCell.r.ai_action_plan
                           .split(/\n+/)
@@ -441,14 +476,18 @@ export default function EligibilityMatrix() {
                             <li key={i}>{step}</li>
                           ))}
                       </ol>
-                    </div>
-                  )}
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">
+                        No action plan available.
+                      </p>
+                    )}
+                  </div>
 
-                  {asArray(openCell.r.requirements_met).length > 0 && (
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400 mb-2">
-                        Requirements Met
-                      </div>
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400 mb-2">
+                      Requirements Met ({asArray(openCell.r.requirements_met).length})
+                    </div>
+                    {asArray(openCell.r.requirements_met).length > 0 ? (
                       <ul className="space-y-1.5">
                         {asArray(openCell.r.requirements_met).map((req: any, i: number) => (
                           <li key={i} className="flex items-start gap-2 text-sm">
@@ -457,14 +496,16 @@ export default function EligibilityMatrix() {
                           </li>
                         ))}
                       </ul>
-                    </div>
-                  )}
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">None recorded.</p>
+                    )}
+                  </div>
 
-                  {asArray(openCell.r.requirements_missing).length > 0 && (
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-2">
-                        Requirements Missing
-                      </div>
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-2">
+                      Requirements Missing ({asArray(openCell.r.requirements_missing).length})
+                    </div>
+                    {asArray(openCell.r.requirements_missing).length > 0 ? (
                       <ul className="space-y-1.5">
                         {asArray(openCell.r.requirements_missing).map((req: any, i: number) => (
                           <li key={i} className="flex items-start gap-2 text-sm">
@@ -484,14 +525,16 @@ export default function EligibilityMatrix() {
                           </li>
                         ))}
                       </ul>
-                    </div>
-                  )}
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">None recorded.</p>
+                    )}
+                  </div>
 
-                  {asArray(openCell.r.requirements_failed).length > 0 && (
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-wide text-red-600 dark:text-red-400 mb-2">
-                        Requirements Failed
-                      </div>
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-red-600 dark:text-red-400 mb-2">
+                      Requirements Failed ({asArray(openCell.r.requirements_failed).length})
+                    </div>
+                    {asArray(openCell.r.requirements_failed).length > 0 ? (
                       <ul className="space-y-1.5">
                         {asArray(openCell.r.requirements_failed).map((req: any, i: number) => (
                           <li key={i} className="flex items-start gap-2 text-sm">
@@ -511,8 +554,31 @@ export default function EligibilityMatrix() {
                           </li>
                         ))}
                       </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">None recorded.</p>
+                    )}
+                  </div>
+
+                  <div className="rounded-md border p-3 text-xs space-y-1">
+                    <div className="font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                      Grant Details
                     </div>
-                  )}
+                    <div>Funder: {openCell.o.funder_name}</div>
+                    {openCell.o.amount_typical != null && (
+                      <div>Typical Amount: ${openCell.o.amount_typical.toLocaleString()}</div>
+                    )}
+                    {openCell.o.amount_max != null && (
+                      <div>Max Amount: ${openCell.o.amount_max.toLocaleString()}</div>
+                    )}
+                    {openCell.o.deadline && <div>Deadline: {openCell.o.deadline}</div>}
+                    <div className="pt-1 text-muted-foreground">
+                      Last checked:{" "}
+                      {openCell.r.last_checked_at
+                        ? new Date(openCell.r.last_checked_at).toLocaleString()
+                        : "—"}
+                    </div>
+                  </div>
+
 
                   <div className="flex flex-col gap-2 pt-4 border-t sticky bottom-0 bg-background pb-2">
                     {(openCell.r.eligibility_status === "eligible" ||
