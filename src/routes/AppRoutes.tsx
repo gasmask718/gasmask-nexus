@@ -2208,7 +2208,7 @@ export default function AppRoutes() {
         <Route path="/os/grants" element={<GrantsDashboard />} />
         <Route path="/os/grants/dashboard" element={<GrantsDashboard />} />
         <Route path="/os/grants/opportunities" element={<GrantOpportunities />} />
-        <Route path="/os/grants/applications" element={<GrantsDashboard />} />
+        <Route path="/os/grants/applications" element={<GrantApplicationsPage />} />
         <Route path="/os/grants/funder-crm" element={<GrantFunderCRMPage />} />
         <Route path="/os/grants/businesses" element={<GrantBusinessProfiles />} />
         <Route path="/os/grants/businesses/:id" element={<GrantBusinessProfileDetail />} />
