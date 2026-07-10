@@ -281,3 +281,88 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// -------- GR-37: AI recommendation (Anthropic Claude) with graceful fallback --------
+async function generateAiRecommendation(args: {
+  biz: Record<string, unknown>;
+  opp: Record<string, unknown>;
+  status: string;
+  score: number;
+  met: any[];
+  missing: any[];
+  failed: any[];
+}): Promise<{ rec: string | null; plan: string | null; prob: number | null }> {
+  const key = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!key) return { rec: "AI recommendations unavailable", plan: null, prob: null };
+
+  const biz = args.biz as any;
+  const opp = args.opp as any;
+  const missingList = args.missing.slice(0, 12).map((m: any) => `- ${m.description || m.field_name}${m.is_mandatory ? " (mandatory)" : ""}`).join("\n") || "(none)";
+  const failedList = args.failed.slice(0, 12).map((m: any) => `- ${m.description || m.field_name}`).join("\n") || "(none)";
+
+  const prompt = `You are a grant eligibility strategist. Evaluate this match and respond with STRICT JSON only:
+{"recommendation":"...","action_plan":"...","success_probability":<0-100 integer>}
+
+Business:
+- Name: ${biz.business_name ?? "Unknown"}
+- Entity: ${biz.entity_type ?? "?"}, NAICS: ${biz.naics_primary ?? "?"}
+- Revenue: ${biz.annual_revenue_current ?? "?"}, Employees FT: ${biz.employee_count_ft ?? "?"}
+- State: ${biz.address_state ?? "?"}, Years in business: ${biz.years_in_business ?? "?"}
+- Profile completeness: ${biz.completeness_pct ?? 0}%
+
+Grant:
+- Name: ${opp.grant_name ?? opp.title ?? "Unknown"}
+- Funder: ${opp.funder_name ?? opp.funder ?? "?"}
+- Amount: ${opp.amount ?? opp.amount_typical ?? "?"}, Category: ${opp.category ?? "?"}
+
+Evaluation:
+- Status: ${args.status}, Score: ${args.score}
+- Missing requirements:
+${missingList}
+- Failed requirements:
+${failedList}
+
+The "recommendation" is a professional, action-oriented summary (max 250 words) covering: eligibility summary, strengths, weaknesses, missing requirements, recommended next steps, suggested documents, timeline, and funding strategy.
+The "action_plan" is 3-6 short bullet steps (single string with newlines).
+"success_probability" is a realistic integer 0-100.`;
+
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 25_000);
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      signal: ctrl.signal,
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5",
+        max_tokens: 900,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    }).finally(() => clearTimeout(timer));
+
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      console.error("[eligibility-ai] anthropic non-200", resp.status, body.slice(0, 300));
+      return { rec: "AI recommendations unavailable", plan: null, prob: null };
+    }
+    const data = await resp.json();
+    const text: string = data?.content?.[0]?.text ?? "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return { rec: text.slice(0, 2000) || "AI recommendations unavailable", plan: null, prob: null };
+    const parsed = JSON.parse(jsonMatch[0]);
+    const probRaw = Number(parsed.success_probability);
+    const prob = Number.isFinite(probRaw) ? Math.max(0, Math.min(100, Math.round(probRaw))) : null;
+    return {
+      rec: typeof parsed.recommendation === "string" ? parsed.recommendation.slice(0, 4000) : null,
+      plan: typeof parsed.action_plan === "string" ? parsed.action_plan.slice(0, 2000) : null,
+      prob,
+    };
+  } catch (e) {
+    console.error("[eligibility-ai] failure", (e as any)?.message ?? e);
+    return { rec: "AI recommendations unavailable", plan: null, prob: null };
+  }
+}
