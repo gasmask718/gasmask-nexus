@@ -475,12 +475,17 @@ export default function SFLeadPipeline() {
             </PopoverContent>
           </Popover>
 
-          {/* Amount bucket filter */}
+          {/* Amount bucket filter — counts recompute based on currently selected state(s) */}
           <Select value={amountBucket} onValueChange={(v) => setAmountBucket(v as AmountBucket)}>
-            <SelectTrigger className="w-[160px] h-8 text-xs"><SelectValue placeholder="Surplus amount" /></SelectTrigger>
+            <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue placeholder="Surplus amount" /></SelectTrigger>
             <SelectContent>
               {AMOUNT_BUCKETS.map(b => (
-                <SelectItem key={b.key} value={b.key}>{b.label}</SelectItem>
+                <SelectItem key={b.key} value={b.key}>
+                  {b.label}
+                  {b.key !== 'custom' && (
+                    <span className="ml-2 opacity-60">({amountBucketCounts[b.key].toLocaleString()})</span>
+                  )}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
