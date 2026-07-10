@@ -610,7 +610,7 @@ function CampaignsTab() {
                 <Label>Full catalog</Label>
                 <div className="flex gap-2 mt-1">
                   <Input readOnly value={campaignLink(showLinks)} />
-                  <Button onClick={() => { navigator.clipboard.writeText(campaignLink(showLinks)); toast.success("Copied"); }}>
+                  <Button onClick={() => copyToClipboard(campaignLink(showLinks), "Link copied")}>
                     <Copy className="w-4 h-4" />
                   </Button>
                 </div>
