@@ -140,6 +140,8 @@ const TABS: { id: string; label: string; fields: FieldDef[] }[] = [
       { key: "outstanding_debt", label: "Outstanding Debt", type: "number" },
       { key: "credit_score_business", label: "Business Credit Score", type: "number" },
       { key: "credit_score_personal", label: "Personal Credit Score", type: "number" },
+      { key: "bank_account_exists", label: "Business Bank Account", type: "bool" },
+      { key: "bank_name", label: "Bank Name", type: "text" },
       { key: "collateral_available", label: "Collateral Available", type: "bool" },
       { key: "collateral_description", label: "Collateral Description", type: "textarea", span: 2 },
     ],
