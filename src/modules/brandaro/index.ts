@@ -29,6 +29,9 @@ import BrandaroVACenter from '@/pages/brandaro/BrandaroVACenter';
 import BrandaroAICalling from '@/pages/brandaro/BrandaroAICalling';
 import BrandaroDistribution from '@/pages/brandaro/BrandaroDistribution';
 import BrandaroConversations from '@/pages/brandaro/BrandaroConversations';
+import BrandaroReceptionistHub from '@/pages/brandaro/BrandaroReceptionistHub';
+import BrandaroReceptionistClientDetail from '@/pages/brandaro/BrandaroReceptionistClientDetail';
+import BrandaroReceptionistCalls from '@/pages/brandaro/BrandaroReceptionistCalls';
 
 const sidebarItems: SidebarItem[] = [
   // ── Core ──
