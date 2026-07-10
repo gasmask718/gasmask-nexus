@@ -74,6 +74,8 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const detailQ = useQuery({
@@ -83,7 +85,7 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
       if (!productId) return null;
       const { data, error } = await supabase
         .from('products_all')
-        .select('id, product_name, category, brand, supplier_id, status, supplier_cost, store_price_a, dtc_price_b, map_price, store_margin_pct, dtc_margin_pct, min_store_margin_pct, target_store_margin_pct, min_dtc_margin_pct, target_dtc_margin_pct, description, ai_description, ai_description_short, description_generated_at, primary_image_url, image_urls, image_enhanced_at')
+        .select('id, product_name, category, brand, supplier_id, status, inventory_qty, supplier_cost, store_price_a, dtc_price_b, map_price, store_margin_pct, dtc_margin_pct, min_store_margin_pct, target_store_margin_pct, min_dtc_margin_pct, target_dtc_margin_pct, description, ai_description, ai_description_short, description_generated_at, primary_image_url, image_urls, image_enhanced_at')
         .eq('id', productId)
         .maybeSingle();
       if (error) throw error;
