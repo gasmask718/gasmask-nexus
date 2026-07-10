@@ -13,9 +13,31 @@ Deno.serve(async (req) => {
   // --- 1. Authenticate the caller -----------------------------------------
   const providedSecret = req.headers.get("x-scraper-secret");
   const expectedSecret = Deno.env.get("SCRAPER_INGEST_SECRET");
+  const env = Deno.env.toObject();
   console.log("[scraper-ingest] ping test:", Deno.env.get("PING_TEST_ONLY"));
-  console.log("[scraper-ingest] all env keys:", Object.keys(Deno.env.toObject()));
+  console.log("[scraper-ingest] all env keys:", Object.keys(env));
   console.log("[scraper-ingest] literal lookup name:", JSON.stringify("SCRAPER_INGEST_SECRET"));
+  console.log("[scraper-ingest] env propagation probe", {
+    envKeyCount: Object.keys(env).length,
+    deploymentIdPresent: !!env.DENO_DEPLOYMENT_ID,
+    executionIdPresent: !!env.SB_EXECUTION_ID,
+    regionPresent: !!env.DENO_REGION,
+    defaultBackendSecretsPresent: {
+      SUPABASE_URL: !!env.SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: !!env.SUPABASE_SERVICE_ROLE_KEY,
+      SUPABASE_ANON_KEY: !!env.SUPABASE_ANON_KEY,
+    },
+    existingUserSecretPresent: {
+      PUBLIC_SITE_WEBHOOK_SECRET: !!env.PUBLIC_SITE_WEBHOOK_SECRET,
+      PUBLIC_SITE_WEBHOOK_SECRET_length: env.PUBLIC_SITE_WEBHOOK_SECRET?.length ?? 0,
+    },
+    newlyCreatedSecretsPresent: {
+      SCRAPER_INGEST_SECRET: !!env.SCRAPER_INGEST_SECRET,
+      SCRAPER_INGEST_SECRET_length: env.SCRAPER_INGEST_SECRET?.length ?? 0,
+      PING_TEST_ONLY: !!env.PING_TEST_ONLY,
+      PING_TEST_ONLY_length: env.PING_TEST_ONLY?.length ?? 0,
+    },
+  });
   console.log("[scraper-ingest] auth debug", {
     expectedSecretPresent: !!expectedSecret,
     expectedSecretLength: expectedSecret?.length ?? 0,
