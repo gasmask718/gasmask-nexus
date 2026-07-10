@@ -307,6 +307,29 @@ export default function SFLeadPipeline() {
         <Input placeholder="Search by name, county, state, or case number..." className="pl-10 h-11" value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
+      {/* Skip-trace tabs — every scraped lead is in the DB immediately; these tabs pivot on skip-trace readiness */}
+      <div className="flex gap-2 flex-wrap items-center border-b border-border pb-3">
+        {([
+          { key: 'all',     label: `All Leads`,           count: stats.total,       color: '#9ca3af' },
+          { key: 'pending', label: `🟡 Pending Skip Trace`, count: stats.skipPending, color: '#eab308' },
+          { key: 'traced',  label: `🟢 Skip Traced`,        count: stats.skipTraced,  color: '#10b981' },
+          { key: 'failed',  label: `🔴 Failed`,             count: stats.skipFailed,  color: '#ef4444' },
+        ] as const).map(t => (
+          <button
+            key={t.key}
+            onClick={() => setSkipTab(t.key as any)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
+              skipTab === t.key
+                ? 'text-white border-transparent shadow-sm'
+                : 'text-muted-foreground border-border hover:border-muted-foreground/50 bg-transparent'
+            }`}
+            style={skipTab === t.key ? { backgroundColor: t.color } : undefined}
+          >
+            {t.label} <span className="ml-1 opacity-70">({t.count})</span>
+          </button>
+        ))}
+      </div>
+
       {/* Filter pills */}
       <div className="space-y-3">
         <div className="flex gap-1.5 flex-wrap">
