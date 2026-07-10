@@ -222,6 +222,33 @@ ${profileFacts}`,
       aiError = e instanceof Error ? e.message : String(e);
     }
 
+    // Guarantee EXACTLY 7 Q&A entries (GR-43)
+    const STANDARD_QUESTIONS = [
+      "Describe your business and its mission.",
+      "How will you use these grant funds?",
+      "How many jobs will this grant help create?",
+      "How does your business serve the community?",
+      "What makes your business unique?",
+      "Describe the challenges this grant will help overcome.",
+      "What are your 3-year growth goals?",
+    ];
+    qa_answers = qa_answers.slice(0, 7);
+    for (let i = qa_answers.length; i < 7; i++) {
+      qa_answers.push({
+        question: STANDARD_QUESTIONS[i],
+        answer:
+          "Draft response unavailable — please complete this answer before submitting.",
+      });
+    }
+    // Ensure each entry has a non-empty question/answer
+    qa_answers = qa_answers.map((x, i) => ({
+      question: (x.question ?? "").toString().trim() || STANDARD_QUESTIONS[i],
+      answer:
+        (x.answer ?? "").toString().trim() ||
+        "Draft response unavailable — please complete this answer before submitting.",
+    }));
+
+
     if (aiError && !cover_letter) {
       return new Response(
         JSON.stringify({ error: "AI Gateway unavailable", detail: aiError, package_id: null }),
