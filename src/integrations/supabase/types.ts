@@ -56917,6 +56917,8 @@ export type Database = {
           annual_revenue_current: number | null
           annual_revenue_prior: number | null
           annual_revenue_two_years_ago: number | null
+          bank_account_exists: boolean | null
+          bank_name: string | null
           business_description: string | null
           business_licenses: string[] | null
           business_name: string
@@ -57017,6 +57019,8 @@ export type Database = {
           annual_revenue_current?: number | null
           annual_revenue_prior?: number | null
           annual_revenue_two_years_ago?: number | null
+          bank_account_exists?: boolean | null
+          bank_name?: string | null
           business_description?: string | null
           business_licenses?: string[] | null
           business_name: string
@@ -57117,6 +57121,8 @@ export type Database = {
           annual_revenue_current?: number | null
           annual_revenue_prior?: number | null
           annual_revenue_two_years_ago?: number | null
+          bank_account_exists?: boolean | null
+          bank_name?: string | null
           business_description?: string | null
           business_licenses?: string[] | null
           business_name?: string
