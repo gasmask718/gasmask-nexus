@@ -17,8 +17,9 @@ import { toast } from 'sonner';
 import {
   Search, Upload, Download, Plus, List, Phone, Clock, Flame,
   FileSignature, DollarSign, Check, X, ChevronUp, ChevronDown,
-  MoreHorizontal, Scale, Eye
+  MoreHorizontal, Scale, Eye, MapPin, TrendingUp, Filter
 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
