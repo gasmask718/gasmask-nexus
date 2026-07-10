@@ -1126,7 +1126,9 @@ const Layout = ({ children }: LayoutProps) => {
         {renderSection(
           DYNASTY_NAVIGATION.brandaroHub.id,
           DYNASTY_NAVIGATION.brandaroHub.name,
-          DYNASTY_NAVIGATION.brandaroHub.items
+          DYNASTY_NAVIGATION.brandaroHub.items.map(item =>
+            item.path === '/brandaro/inbox' ? { ...item, badge: brandaroPendingCount } : item
+          )
         )}
       </div>
 
