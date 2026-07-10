@@ -259,10 +259,12 @@ export default function BusinessProfileDetail() {
     if (same) return;
 
     setSavingKey(field.key);
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("grant_business_profiles")
       .update({ [field.key]: nextValue })
-      .eq("id", id);
+      .eq("id", id)
+      .select("*")
+      .maybeSingle();
     setSavingKey(null);
 
     if (error) {
@@ -273,6 +275,11 @@ export default function BusinessProfileDetail() {
     }
 
     initialValuesRef.current[field.key] = nextValue;
+    // Merge fresh completeness from trigger recompute
+    if (updated) {
+      setProfile((p) => (p ? { ...p, ...updated } : updated));
+      initialValuesRef.current = { ...initialValuesRef.current, ...updated };
+    }
     setSavedKey(field.key);
     setTimeout(() => {
       setSavedKey((k) => (k === field.key ? null : k));
