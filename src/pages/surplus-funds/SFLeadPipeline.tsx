@@ -486,6 +486,7 @@ export default function SFLeadPipeline() {
                 {detailLead.surplus_amount && <p className="text-2xl font-bold mt-2" style={{ color: AMBER }}>${Number(detailLead.surplus_amount).toLocaleString()}</p>}
                 <div className="flex gap-2 mt-3">
                   <Badge variant="outline" className={statusColor[detailLead.status] || ''}>{(detailLead.status || 'new').replace(/_/g, ' ')}</Badge>
+                  {(() => { const st = deriveSkipStatus(detailLead); return <Badge variant="outline" className={skipBadgeStyle[st]}>{skipBadgeLabel[st]}</Badge>; })()}
                 </div>
               </div>
               <Tabs value={drawerTab} onValueChange={setDrawerTab} className="px-6 pt-4">
