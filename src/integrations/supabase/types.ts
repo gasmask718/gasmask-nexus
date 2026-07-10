@@ -57611,6 +57611,7 @@ export type Database = {
           application_id: string
           assigned_to: string | null
           created_at: string | null
+          created_by: string | null
           description: string | null
           due_date: string | null
           id: string
@@ -57623,6 +57624,7 @@ export type Database = {
           application_id: string
           assigned_to?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
@@ -57635,6 +57637,7 @@ export type Database = {
           application_id?: string
           assigned_to?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
