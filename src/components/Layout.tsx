@@ -915,6 +915,21 @@ const Layout = ({ children }: LayoutProps) => {
     }
   }, [role]);
 
+  // Brandaro Inbox — pending message live count (30s refresh)
+  useEffect(() => {
+    let cancelled = false;
+    const fetchPending = async () => {
+      const { count } = await (supabase as any)
+        .from('brandaro_pending_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      if (!cancelled) setBrandaroPendingCount(count || 0);
+    };
+    fetchPending();
+    const interval = window.setInterval(fetchPending, 30_000);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, []);
+
   if (businessLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
