@@ -712,12 +712,14 @@ const DYNASTY_NAVIGATION = {
       { path: '/brandaro/ceo', label: 'CEO Dashboard', icon: Crown },
       { path: '/brandaro/leads', label: 'Lead Database', icon: Target },
       { path: '/brandaro/calling', label: 'Calling Ops', icon: PhoneCall },
+      { path: '/brandaro/demo-engine', label: 'Demo Engine', icon: Zap },
       { path: '/brandaro/closer-ai', label: 'Closer AI', icon: Brain },
       { path: '/brandaro/revenue', label: 'Revenue Analytics', icon: TrendingUp },
       { path: '/brandaro/competitors', label: 'Competitor Takeover', icon: Swords },
       { path: '/brandaro/proposals', label: 'Proposal Builder', icon: FileText },
       { path: '/brandaro/campaigns', label: 'Campaign Manager', icon: Target },
       { path: '/brandaro/clients', label: 'Client Portal', icon: Users },
+      { path: '/brandaro/inbox', label: 'Inbox', icon: Mail },
       { path: '/brandaro/canva-assets', label: 'Design Assets', icon: Palette },
       { path: '/brandaro/canva-templates', label: 'Canva Templates', icon: Settings },
     ],
@@ -832,6 +834,7 @@ const Layout = ({ children }: LayoutProps) => {
   const { currentBusiness, loading: businessLoading } = useBusiness();
   const location = useLocation();
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
+  const [brandaroPendingCount, setBrandaroPendingCount] = useState(0);
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
@@ -912,6 +915,21 @@ const Layout = ({ children }: LayoutProps) => {
     }
   }, [role]);
 
+  // Brandaro Inbox — pending message live count (30s refresh)
+  useEffect(() => {
+    let cancelled = false;
+    const fetchPending = async () => {
+      const { count } = await (supabase as any)
+        .from('brandaro_pending_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      if (!cancelled) setBrandaroPendingCount(count || 0);
+    };
+    fetchPending();
+    const interval = window.setInterval(fetchPending, 30_000);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, []);
+
   if (businessLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
@@ -923,7 +941,7 @@ const Layout = ({ children }: LayoutProps) => {
     );
   }
 
-  const renderSection = (id: string, name: string, items: Array<{ path: string; label: string; icon: any; testId?: string }>) => {
+  const renderSection = (id: string, name: string, items: Array<{ path: string; label: string; icon: any; testId?: string; badge?: number }>) => {
     const isOpen = openSections.includes(id);
     const sectionWired = sectionHasDispatch(items.map(i => i.path));
 
@@ -962,6 +980,11 @@ const Layout = ({ children }: LayoutProps) => {
                 >
                   <item.icon className="h-3 w-3 shrink-0" />
                   <span className="truncate flex-1">{item.label}</span>
+                  {typeof item.badge === 'number' && item.badge > 0 && (
+                    <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[16px] px-1 rounded-full bg-orange-500/90 text-[10px] font-semibold text-white shrink-0">
+                      {item.badge > 999 ? '999+' : item.badge}
+                    </span>
+                  )}
                   {wired && (
                     <span
                       title={DISPATCH_TOOLTIP}
@@ -1103,7 +1126,9 @@ const Layout = ({ children }: LayoutProps) => {
         {renderSection(
           DYNASTY_NAVIGATION.brandaroHub.id,
           DYNASTY_NAVIGATION.brandaroHub.name,
-          DYNASTY_NAVIGATION.brandaroHub.items
+          DYNASTY_NAVIGATION.brandaroHub.items.map(item =>
+            item.path === '/brandaro/inbox' ? { ...item, badge: brandaroPendingCount } : item
+          )
         )}
       </div>
 
