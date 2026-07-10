@@ -95,11 +95,19 @@ export default function RevenueDashboardPage() {
       // MTD funding = sum of funding_received on clients updated this calendar month
       const _now = new Date();
       const monthStart = new Date(_now.getFullYear(), _now.getMonth(), 1);
-      const mtdFunding = (trendRes.data || []).reduce((s, r: any) => {
-        const d = new Date(r.updated_at);
-        return d >= monthStart ? s + Number(r.funding_received || 0) : s;
-      }, 0);
-      setStats({ totalFunding, activeClients, totalAwards, clientsFunded, mtdFunding });
+      const prevMonthStart = new Date(_now.getFullYear(), _now.getMonth() - 1, 1);
+      let mtdFunding = 0;
+      let prevMonthFunding = 0;
+      for (const r of trendRes.data || []) {
+        const d = new Date((r as any).updated_at);
+        const amt = Number((r as any).funding_received || 0);
+        if (d >= monthStart) mtdFunding += amt;
+        else if (d >= prevMonthStart && d < monthStart) prevMonthFunding += amt;
+      }
+      const growthPct = prevMonthFunding > 0
+        ? Math.round(((mtdFunding - prevMonthFunding) / prevMonthFunding) * 100)
+        : (mtdFunding > 0 ? 100 : 0);
+      setStats({ totalFunding, activeClients, totalAwards, clientsFunded, mtdFunding, prevMonthFunding, growthPct });
 
       // Trend (last 6 months)
       const monthMap = new Map<string, number>();
