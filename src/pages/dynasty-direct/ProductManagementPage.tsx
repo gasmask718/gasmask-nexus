@@ -324,6 +324,12 @@ export default function ProductManagementPage() {
                     onChange={e => setForm({ ...form, supplier_cost: e.target.value })} />
                   <p className="text-xs text-muted-foreground mt-1">Setting a cost triggers automatic price computation via <code>dd-auto-price</code>.</p>
                 </div>
+                <div>
+                  <Label>Inventory Qty</Label>
+                  <Input type="number" min="0" step="1" placeholder="0" value={form.inventory_qty}
+                    onChange={e => setForm({ ...form, inventory_qty: e.target.value })} />
+                  <p className="text-xs text-muted-foreground mt-1">Units on hand. Leave blank if unknown — storefront will show "Sold Out" until set.</p>
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setAddOpen(false)}>Cancel</Button>
