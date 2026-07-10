@@ -76,6 +76,7 @@ export default function ProductManagementPage() {
     category: '',
     supplier_id: '',
     supplier_cost: '',
+    inventory_qty: '',
   });
 
   const productsQ = useQuery({
