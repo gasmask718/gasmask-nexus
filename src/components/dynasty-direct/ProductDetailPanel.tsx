@@ -291,9 +291,38 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle style={{ color: GOLD }} className="flex items-center gap-2">
-            <Package className="h-5 w-5" /> Product Details
-          </SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle style={{ color: GOLD }} className="flex items-center gap-2">
+              <Package className="h-5 w-5" /> Product Details
+            </SheetTitle>
+            {p && p.status !== 'deleted' && (
+              <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-4 w-4 mr-1" /> Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this product?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      <strong>{p.product_name}</strong> will be soft-deleted (status set to <code>deleted</code>) and immediately hidden from the storefront. Order history is preserved and this can be reversed by an admin.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={(e) => { e.preventDefault(); softDelete(); }}
+                      disabled={deleting}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {deleting ? 'Deleting…' : 'Delete Product'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </SheetHeader>
 
         {detailQ.isLoading || !p ? (
