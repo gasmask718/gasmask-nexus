@@ -181,23 +181,59 @@ export default function EligibilityMatrix() {
   };
 
   const approveAndApply = async (r: Result) => {
+    if (applying) return;
     setApplying(true);
     try {
       const { data, error } = await supabase.functions.invoke("grant-auto-apply", {
         body: { eligibility_result_id: r.id },
       });
       if (error) throw error;
-      const packageId = (data as any)?.package_id;
-      toast.success("Package ready!");
-      if (packageId) {
-        navigate(`/os/grants/apply/${packageId}`);
-      }
+      const payload = (data ?? {}) as any;
+      if (payload?.error) throw new Error(payload.error);
+      const packageId = payload?.package_id;
+      if (!packageId) throw new Error("No package returned");
+      toast.success(payload?.reused ? "Existing package opened" : "Package ready!");
+      await load();
+      navigate(`/os/grants/apply/${packageId}`);
     } catch (e: any) {
       toast.error(`Auto-apply failed: ${e.message || "unknown error"}`);
     } finally {
       setApplying(false);
     }
   };
+
+  const regenerateAi = async () => {
+    if (!openCell) return;
+    setRegenAi(true);
+    try {
+      const { error } = await supabase.functions.invoke("grant-eligibility-checker", {
+        body: {
+          business_profile_id: openCell.b.id,
+          grant_opportunity_id: openCell.o.id,
+        },
+      });
+      if (error) throw error;
+      const { data: fresh } = await supabase
+        .from("grant_eligibility_results")
+        .select(
+          "id, business_profile_id, grant_opportunity_id, eligibility_status, eligibility_score, ai_recommendation, ai_action_plan, ai_success_probability, application_status, requirements_met, requirements_missing, requirements_failed, last_checked_at",
+        )
+        .eq("business_profile_id", openCell.b.id)
+        .eq("grant_opportunity_id", openCell.o.id)
+        .maybeSingle();
+      if (fresh) {
+        const key = `${openCell.b.id}::${openCell.o.id}`;
+        setResults((prev) => ({ ...prev, [key]: fresh as Result }));
+        setOpenCell({ ...openCell, r: fresh as Result });
+      }
+      toast.success("AI recommendation refreshed");
+    } catch (e: any) {
+      toast.error(`Generation failed: ${e.message || "unknown error"}`);
+    } finally {
+      setRegenAi(false);
+    }
+  };
+
 
   const cellPassesFilter = (r: Result | undefined) => {
     if (statusFilter === "all") return true;
