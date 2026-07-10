@@ -569,8 +569,36 @@ export default function ClientProfilePage() {
           <Button variant="outline" size="sm" onClick={sendPortalInvite} className="border-amber-500/30 text-amber-400">
             <Send className="h-3 w-3 mr-1" /> Send Portal Invite
           </Button>
+          <select
+            value={client.status || 'new'}
+            onChange={async (e) => {
+              const newStatus = e.target.value;
+              const { error } = await supabase
+                .from('funding_clients')
+                .update({ status: newStatus })
+                .eq('id', clientId);
+              if (error) {
+                toast.error(`Failed to update status: ${error.message}`);
+              } else {
+                toast.success(`Status updated to ${newStatus}`);
+                queryClient.invalidateQueries({ queryKey: ['funding-client', clientId] });
+              }
+            }}
+            className="rounded-md border border-amber-500/30 bg-background text-amber-400 text-sm px-3 py-1.5 font-semibold cursor-pointer hover:border-amber-500/60 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+          >
+            <option value="new">New</option>
+            <option value="intake">Intake</option>
+            <option value="in_review">In Review</option>
+            <option value="active">Active</option>
+            <option value="approved">Approved</option>
+            <option value="funded">Funded</option>
+            <option value="rejected">Rejected</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
           <Badge variant="outline" className={
-            client.status === 'active' ? 'border-emerald-500/30 text-emerald-500 text-lg px-4 py-1' :
+            client.status === 'active' || client.status === 'approved' || client.status === 'funded' ? 'border-emerald-500/30 text-emerald-500 text-lg px-4 py-1' :
+            client.status === 'rejected' || client.status === 'cancelled' ? 'border-red-500/30 text-red-500 text-lg px-4 py-1' :
             'border-amber-500/30 text-amber-500 text-lg px-4 py-1'
           }>
             {client.status}

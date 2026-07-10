@@ -295,7 +295,7 @@ export default function VelocityCalculatorPage() {
             <TrendingUp className="h-4 w-4" /> Banking Velocity
           </TabsTrigger>
           <TabsTrigger value="qualification" className="gap-2">
-            <Calculator className="h-4 w-4" /> Funding Qualification
+            <Calculator className="h-4 w-4" /> Funding Estimator
           </TabsTrigger>
         </TabsList>
 

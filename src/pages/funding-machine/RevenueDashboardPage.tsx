@@ -48,7 +48,8 @@ type GrantRow = { status: string; count: number; total_awarded: number };
 export default function RevenueDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    totalFunding: 0, activeClients: 0, totalAwards: 0, clientsFunded: 0, mtdFunding: 0,
+    totalFunding: 0, activeClients: 0, totalAwards: 0, clientsFunded: 0,
+    mtdFunding: 0, prevMonthFunding: 0, growthPct: 0,
   });
   const [trend, setTrend] = useState<{ month: string; funding: number }[]>([]);
   const [pipelineValue, setPipelineValue] = useState({ target: 0, received: 0 });
@@ -94,11 +95,19 @@ export default function RevenueDashboardPage() {
       // MTD funding = sum of funding_received on clients updated this calendar month
       const _now = new Date();
       const monthStart = new Date(_now.getFullYear(), _now.getMonth(), 1);
-      const mtdFunding = (trendRes.data || []).reduce((s, r: any) => {
-        const d = new Date(r.updated_at);
-        return d >= monthStart ? s + Number(r.funding_received || 0) : s;
-      }, 0);
-      setStats({ totalFunding, activeClients, totalAwards, clientsFunded, mtdFunding });
+      const prevMonthStart = new Date(_now.getFullYear(), _now.getMonth() - 1, 1);
+      let mtdFunding = 0;
+      let prevMonthFunding = 0;
+      for (const r of trendRes.data || []) {
+        const d = new Date((r as any).updated_at);
+        const amt = Number((r as any).funding_received || 0);
+        if (d >= monthStart) mtdFunding += amt;
+        else if (d >= prevMonthStart && d < monthStart) prevMonthFunding += amt;
+      }
+      const growthPct = prevMonthFunding > 0
+        ? Math.round(((mtdFunding - prevMonthFunding) / prevMonthFunding) * 100)
+        : (mtdFunding > 0 ? 100 : 0);
+      setStats({ totalFunding, activeClients, totalAwards, clientsFunded, mtdFunding, prevMonthFunding, growthPct });
 
       // Trend (last 6 months)
       const monthMap = new Map<string, number>();
@@ -161,8 +170,16 @@ export default function RevenueDashboardPage() {
         </header>
 
         {/* SECTION A — Headline Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <StatCard label="Revenue This Month (MTD)" value={fmtUsd(stats.mtdFunding)} icon={DollarSign} accent={GOLD} loading={loading} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard label="Revenue MTD" value={fmtUsd(stats.mtdFunding)} icon={DollarSign} accent={GOLD} loading={loading} />
+          <StatCard label="Previous Month" value={fmtUsd(stats.prevMonthFunding)} icon={DollarSign} accent="#8a7332" loading={loading} />
+          <StatCard
+            label="Growth %"
+            value={`${stats.growthPct >= 0 ? '+' : ''}${stats.growthPct}%`}
+            icon={TrendingUp}
+            accent={stats.growthPct >= 0 ? '#22C55E' : '#EF4444'}
+            loading={loading}
+          />
           <StatCard label="Total Funding Received" value={fmtUsd(stats.totalFunding)} icon={DollarSign} accent={GOLD} loading={loading} />
           <StatCard label="Active Clients" value={fmtNum(stats.activeClients)} icon={Users} accent="#3B82F6" loading={loading} />
           <StatCard label="Total Grant Awards" value={fmtUsd(stats.totalAwards)} icon={Award} accent="#22C55E" loading={loading} />
