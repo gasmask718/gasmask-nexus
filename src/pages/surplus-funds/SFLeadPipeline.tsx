@@ -530,16 +530,28 @@ export default function SFLeadPipeline() {
           {isLoading ? (
             <div className="p-4 space-y-3">{[...Array(8)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
           ) : filtered.length === 0 ? (
-            <div className="py-16 text-center">
-              <Scale className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
-              <p className="text-lg font-medium">No surplus leads yet — upload county records or add manually</p>
-              <p className="text-sm text-muted-foreground mt-1 mb-6">Start finding unclaimed funds to recover</p>
-              <div className="flex gap-3 justify-center">
-                <Button variant="outline" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4 mr-2" />Upload CSV</Button>
-                <Button style={{ backgroundColor: AMBER }} onClick={() => setAddOpen(true)}><Plus className="h-4 w-4 mr-2" />Add Lead Manually</Button>
+            hasActiveFilters ? (
+              <div className="py-16 text-center">
+                <Filter className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
+                <p className="text-lg font-medium">No leads match these filters</p>
+                <p className="text-sm text-muted-foreground mt-1 mb-6">
+                  Try widening the state, amount range, or skip-trace filter.
+                </p>
+                <Button variant="outline" onClick={clearAllFilters}>
+                  <X className="h-4 w-4 mr-2" />Clear all filters
+                </Button>
               </div>
-            </div>
-          ) : (
+            ) : (
+              <div className="py-16 text-center">
+                <Scale className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
+                <p className="text-lg font-medium">No surplus leads yet — upload county records or add manually</p>
+                <p className="text-sm text-muted-foreground mt-1 mb-6">Start finding unclaimed funds to recover</p>
+                <div className="flex gap-3 justify-center">
+                  <Button variant="outline" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4 mr-2" />Upload CSV</Button>
+                  <Button style={{ backgroundColor: AMBER }} onClick={() => setAddOpen(true)}><Plus className="h-4 w-4 mr-2" />Add Lead Manually</Button>
+                </div>
+              </div>
+            )
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
