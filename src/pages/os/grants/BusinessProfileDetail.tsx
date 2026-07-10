@@ -466,6 +466,47 @@ export default function BusinessProfileDetail() {
           </div>
         </CardHeader>
         <CardContent>
+          {(() => {
+            const missing: string[] = Array.isArray(profile.completeness_missing)
+              ? profile.completeness_missing
+              : [];
+            const pct = Number(completeness) || 0;
+            const badge =
+              pct >= 90
+                ? { label: "Excellent", cls: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" }
+                : pct >= 70
+                ? { label: "Good", cls: "bg-sky-500/15 text-sky-600 border-sky-500/30" }
+                : pct >= 40
+                ? { label: "Needs Information", cls: "bg-amber-500/15 text-amber-600 border-amber-500/30" }
+                : { label: "Incomplete", cls: "bg-red-500/15 text-red-600 border-red-500/30" };
+            return (
+              <div className="mb-6 rounded-lg border border-border/60 bg-muted/30 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-semibold">Eligibility Readiness</div>
+                  <Badge variant="outline" className={badge.cls}>{badge.label}</Badge>
+                </div>
+                <div className="text-xs text-muted-foreground mb-3">
+                  Profile {pct}% complete · {missing.length} missing {missing.length === 1 ? "requirement" : "requirements"}
+                </div>
+                {missing.length === 0 ? (
+                  <div className="flex items-center gap-2 text-xs text-emerald-600">
+                    <Check className="h-3 w-3" /> All required fields complete. Ready for grant matching.
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {missing.slice(0, 12).map((m) => (
+                      <Badge key={m} variant="outline" className="text-[10px] font-normal">
+                        {m}
+                      </Badge>
+                    ))}
+                    {missing.length > 12 && (
+                      <Badge variant="outline" className="text-[10px]">+{missing.length - 12} more</Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           <Tabs defaultValue={TABS[0].id} className="w-full">
             <TabsList className="w-full flex-wrap h-auto justify-start">
               {TABS.map((t) => (
