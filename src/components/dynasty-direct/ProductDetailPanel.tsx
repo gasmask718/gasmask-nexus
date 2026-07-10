@@ -108,7 +108,7 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
   useEffect(() => {
     if (p && !editingCore) setCore({
       product_name: p.product_name, category: p.category, brand: p.brand,
-      supplier_id: p.supplier_id, status: p.status,
+      supplier_id: p.supplier_id, status: p.status, inventory_qty: p.inventory_qty,
     });
   }, [p, editingCore]);
 
@@ -123,7 +123,10 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
     if (!productId) return;
     setSaving(true);
     try {
-      const { error } = await supabase.from('products_all').update(core).eq('id', productId);
+      const payload: any = { ...core };
+      if (payload.inventory_qty === '' || payload.inventory_qty == null) payload.inventory_qty = null;
+      else payload.inventory_qty = Number(payload.inventory_qty);
+      const { error } = await supabase.from('products_all').update(payload).eq('id', productId);
       if (error) throw error;
       toast.success('Product updated');
       setEditingCore(false);
@@ -131,6 +134,25 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
       qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
     } catch (e: any) { toast.error(e.message ?? 'Save failed'); }
     finally { setSaving(false); }
+  }
+
+  async function softDelete() {
+    if (!productId) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('products_all')
+        .update({ status: 'deleted' })
+        .eq('id', productId);
+      if (error) throw error;
+      toast.success('Product deleted — hidden from storefront');
+      setDeleteOpen(false);
+      onOpenChange(false);
+      qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
+      qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
+    } catch (e: any) {
+      toast.error(e.message ?? 'Delete failed');
+    } finally { setDeleting(false); }
   }
 
   async function savePricing() {
