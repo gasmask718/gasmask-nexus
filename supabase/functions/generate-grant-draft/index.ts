@@ -1,28 +1,61 @@
+// generate-grant-draft
+// POST { application_id } → generates 5-section grant draft (<=600 words),
+// stores in grant_applications.ai_draft, returns { draft, word_count,
+// application_id, generation_time_ms }.
+// Falls back gracefully when ANTHROPIC_API_KEY is missing (deterministic
+// template) so the function never returns 5xx for missing config.
+
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+function isUuid(v: unknown): v is string {
+  return typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+}
+
+function wordCount(s: string): number {
+  return (s.trim().match(/\S+/g) ?? []).length;
+}
+
+function buildFallbackDraft(app: any, applicant: string): string {
+  const amt = app.amount_requested ? `$${Number(app.amount_requested).toLocaleString()}` : 'the requested amount';
+  const grant = app.grant_name ?? 'this grant';
+  const funder = app.funder_name ?? 'the funding organization';
+  return [
+    `# Executive Summary`,
+    `${applicant} respectfully submits this application for ${grant} offered by ${funder}, requesting ${amt}. Funds will strengthen operations, expand community impact, and advance measurable outcomes aligned with the funder's stated mission.`,
+    ``,
+    `# Organization Description`,
+    `${applicant} is an established organization committed to community impact, operational excellence, and measurable results. Leadership brings sector experience, financial discipline, and a proven track record of stewardship, positioning the organization to deploy grant capital responsibly.`,
+    ``,
+    `# Project Description`,
+    `The proposed project directly advances the priorities of ${funder} by delivering targeted programming, capacity building, and community services. Activities are scoped, resourced, and scheduled to produce clear deliverables within the grant period, with defined milestones and accountable owners.`,
+    ``,
+    `# Goals and Measurable Outcomes`,
+    `Primary goals include expanded service delivery, improved beneficiary outcomes, and durable capacity gains. Outcomes will be tracked through KPIs, program dashboards, and quarterly reports shared with ${funder} to demonstrate transparent, evidence-based progress.`,
+    ``,
+    `# Budget Justification`,
+    `The ${amt} budget covers personnel, program delivery, and reasonable administrative costs directly tied to the funded activities. Every line item ties to a milestone or deliverable; matched and in-kind resources reduce net cost per outcome and maximize funder ROI.`,
+  ].join('\n');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const jsonHeaders = { ...corsHeaders, 'Content-Type': 'application/json' };
+  const started = Date.now();
 
   try {
-    const { application_id } = await req.json();
-    if (!application_id) {
-      return new Response(JSON.stringify({ error: 'application_id required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    const body = await req.json().catch(() => ({}));
+    const application_id = body?.application_id;
+    if (!isUuid(application_id)) {
+      return new Response(JSON.stringify({ error: 'application_id (uuid) required' }), {
+        status: 400, headers: jsonHeaders,
       });
     }
 
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!ANTHROPIC_API_KEY) {
-      return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
+    const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
     const { data: app, error: loadErr } = await supabase
       .from('grant_applications')
@@ -32,7 +65,7 @@ Deno.serve(async (req) => {
 
     if (loadErr || !app) {
       return new Response(JSON.stringify({ error: loadErr?.message || 'Application not found' }), {
-        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 404, headers: jsonHeaders,
       });
     }
 
@@ -46,7 +79,13 @@ Deno.serve(async (req) => {
         ? 'UBEN Network (501c3 nonprofit)'
         : 'Dynasty Connect LLC';
 
-    const prompt = `You are an expert grant writer. Write a complete grant application for:
+    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+    let draft = '';
+    let ai_source: 'anthropic' | 'fallback' = 'fallback';
+    let ai_error: string | null = null;
+
+    if (ANTHROPIC_API_KEY) {
+      const prompt = `You are an expert grant writer. Write a complete grant application for:
 
 Grant: ${app.grant_name}
 Funder: ${app.funder_name}
@@ -54,47 +93,75 @@ Applicant: ${applicant}
 Amount Requested: $${app.amount_requested?.toLocaleString() ?? 'varies'}
 ${creditScore ? 'Credit Score: ' + creditScore : ''}
 
-Write these 5 sections:
+Write these 5 sections using markdown H1 headers (# Section Name):
 1. Executive Summary (100 words)
 2. Organization Description (100 words)
 3. Project Description (150 words)
 4. Goals and Measurable Outcomes (100 words)
 5. Budget Justification (100 words)
 
-Total under 600 words.
-Professional tone.
-Compelling and specific.
-Focus on impact and outcomes.`;
+Total UNDER 600 words. Professional, compelling, specific. Reference the business name, grant name, funder, and requested amount.`;
 
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 25_000);
+        const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          signal: ctrl.signal,
+          headers: {
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5',
+            max_tokens: 1400,
+            messages: [{ role: 'user', content: prompt }],
+          }),
+        }).finally(() => clearTimeout(timer));
 
-    if (!anthropicRes.ok) {
-      const body = await anthropicRes.text();
-      console.error(`Anthropic error [${anthropicRes.status}]:`, body);
-      return new Response(JSON.stringify({ error: 'Anthropic API failed', status: anthropicRes.status, details: body }), {
-        status: anthropicRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+        if (anthropicRes.ok) {
+          const data = await anthropicRes.json();
+          const text = data?.content?.[0]?.text ?? '';
+          if (text.trim()) {
+            draft = text;
+            ai_source = 'anthropic';
+          } else {
+            ai_error = 'empty_ai_response';
+          }
+        } else {
+          ai_error = `anthropic_${anthropicRes.status}`;
+          console.error('[generate-grant-draft] anthropic error', anthropicRes.status, (await anthropicRes.text()).slice(0, 300));
+        }
+      } catch (e: any) {
+        ai_error = e?.name === 'AbortError' ? 'anthropic_timeout' : 'anthropic_failure';
+        console.error('[generate-grant-draft] anthropic exception', e?.message ?? e);
+      }
+    } else {
+      ai_error = 'missing_api_key';
     }
 
-    const data = await anthropicRes.json();
-    const draft = data?.content?.[0]?.text ?? '';
     if (!draft) {
-      return new Response(JSON.stringify({ error: 'Empty response from Anthropic', raw: data }), {
-        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      draft = buildFallbackDraft(app, applicant);
     }
+
+    // Enforce max 600 words softly by trimming trailing words if over
+    const wc = wordCount(draft);
+    if (wc > 600) {
+      const words = draft.split(/(\s+)/);
+      let count = 0;
+      const kept: string[] = [];
+      for (const tok of words) {
+        if (/\S/.test(tok)) {
+          if (count >= 600) break;
+          count++;
+        }
+        kept.push(tok);
+      }
+      draft = kept.join('').trimEnd();
+    }
+
+    const finalWordCount = wordCount(draft);
 
     const { error: updateErr } = await supabase
       .from('grant_applications')
@@ -103,13 +170,25 @@ Focus on impact and outcomes.`;
 
     if (updateErr) {
       return new Response(JSON.stringify({ error: updateErr.message }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500, headers: jsonHeaders,
       });
     }
 
-    return new Response(JSON.stringify({ ok: true, draft }), {
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    const generation_time_ms = Date.now() - started;
+    console.log('[generate-grant-draft] ok', {
+      application_id, ai_source, ai_error, word_count: finalWordCount, generation_time_ms,
     });
+
+    return new Response(JSON.stringify({
+      ok: true,
+      application_id,
+      draft,
+      word_count: finalWordCount,
+      generation_time: generation_time_ms,
+      generation_time_ms,
+      ai_source,
+      ai_error,
+    }), { status: 200, headers: jsonHeaders });
   } catch (err) {
     console.error('generate-grant-draft error:', err);
     return new Response(JSON.stringify({ error: (err as Error).message }), {

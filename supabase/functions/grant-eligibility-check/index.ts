@@ -227,6 +227,9 @@ Deno.serve(async (req) => {
       total_applications: total_applications ?? 0,
       total_opportunities_checked: opportunities?.length ?? 0,
       eligible_count: eligible.length,
+      // Spec-required alias (Section 4 / EF-05). Represents the number of
+      // client_grant_matches rows created/refreshed by this run.
+      matches_created: eligible.length,
       ineligible_count: scored.length - eligible.length,
       total_available,
       top_grant: eligible[0]
