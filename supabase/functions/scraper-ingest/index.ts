@@ -13,6 +13,13 @@ Deno.serve(async (req) => {
   // --- 1. Authenticate the caller -----------------------------------------
   const providedSecret = req.headers.get("x-scraper-secret");
   const expectedSecret = Deno.env.get("SCRAPER_INGEST_SECRET");
+  console.log("[scraper-ingest] auth debug", {
+    expectedSecretPresent: !!expectedSecret,
+    expectedSecretLength: expectedSecret?.length ?? 0,
+    providedSecretPresent: !!providedSecret,
+    providedSecretLength: providedSecret?.length ?? 0,
+    match: !!expectedSecret && providedSecret === expectedSecret,
+  });
   if (!expectedSecret || providedSecret !== expectedSecret) {
     return json({ error: "Unauthorized" }, 401);
   }
