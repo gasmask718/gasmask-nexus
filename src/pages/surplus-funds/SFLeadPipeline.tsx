@@ -441,8 +441,11 @@ export default function SFLeadPipeline() {
                         <td className="p-3">
                           <Badge variant="outline" className={`text-[10px] ${statusColor[l.status] || ''}`}>{(l.status || 'new').replace(/_/g, ' ')}</Badge>
                         </td>
-                        <td className="p-3 text-center">
-                          {l.skip_traced ? <Check className="h-4 w-4 text-amber-500 mx-auto" /> : <X className="h-4 w-4 text-muted-foreground/30 mx-auto" />}
+                        <td className="p-3">
+                          {(() => {
+                            const st = deriveSkipStatus(l);
+                            return <Badge variant="outline" className={`text-[10px] whitespace-nowrap ${skipBadgeStyle[st]}`}>{skipBadgeLabel[st]}</Badge>;
+                          })()}
                         </td>
                         <td className="p-3">
                           <div className="text-xs">{relativeDate(l.last_called_at)}</div>
