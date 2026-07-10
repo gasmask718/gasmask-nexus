@@ -287,6 +287,25 @@ export default function SFLeadPipeline() {
 
   const states = useMemo(() => [...new Set(leads.map((l: any) => l.state).filter(Boolean))].sort(), [leads]);
 
+  // Dependent amount bucket counts — recompute whenever the selected state(s) change,
+  // so the Amount filter always reflects the currently-scoped state slice.
+  // (Reverse dependency intentionally not applied — amount doesn't rescope state.)
+  const amountBucketCounts = useMemo(() => {
+    const scoped = stateFilters.length > 0
+      ? leads.filter((l: any) => stateFilters.includes(l.state))
+      : leads;
+    const counts: Record<AmountBucket, number> = {
+      'all': scoped.length, '0-10k': 0, '10k-50k': 0, '50k-plus': 0, 'custom': 0,
+    };
+    for (const l of scoped) {
+      const amt = Number(l.surplus_amount || 0);
+      if (amt < 10000) counts['0-10k']++;
+      else if (amt < 50000) counts['10k-50k']++;
+      else counts['50k-plus']++;
+    }
+    return counts;
+  }, [leads, stateFilters]);
+
   const StatCard = ({ label, value, icon: Icon, color, sub }: any) => (
     <Card className="border-border/50 bg-card/50">
       <CardContent className="p-4">
@@ -456,12 +475,17 @@ export default function SFLeadPipeline() {
             </PopoverContent>
           </Popover>
 
-          {/* Amount bucket filter */}
+          {/* Amount bucket filter — counts recompute based on currently selected state(s) */}
           <Select value={amountBucket} onValueChange={(v) => setAmountBucket(v as AmountBucket)}>
-            <SelectTrigger className="w-[160px] h-8 text-xs"><SelectValue placeholder="Surplus amount" /></SelectTrigger>
+            <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue placeholder="Surplus amount" /></SelectTrigger>
             <SelectContent>
               {AMOUNT_BUCKETS.map(b => (
-                <SelectItem key={b.key} value={b.key}>{b.label}</SelectItem>
+                <SelectItem key={b.key} value={b.key}>
+                  {b.label}
+                  {b.key !== 'custom' && (
+                    <span className="ml-2 opacity-60">({amountBucketCounts[b.key].toLocaleString()})</span>
+                  )}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
