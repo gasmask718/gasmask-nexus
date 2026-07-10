@@ -123753,14 +123753,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -125365,6 +125365,8 @@ export type Database = {
       products_all_public: {
         Row: {
           avg_rating: number | null
+          case_price_store: number | null
+          case_qty: number | null
           category: string | null
           created_at: string | null
           description: string | null
@@ -125375,6 +125377,7 @@ export type Database = {
           image_urls: string[] | null
           images: Json | null
           inventory_qty: number | null
+          min_order_qty: number | null
           primary_image_url: string | null
           processing_time: string | null
           product_name: string | null
@@ -125395,6 +125398,8 @@ export type Database = {
         }
         Insert: {
           avg_rating?: number | null
+          case_price_store?: number | null
+          case_qty?: number | null
           category?: string | null
           created_at?: string | null
           description?: string | null
@@ -125405,6 +125410,7 @@ export type Database = {
           image_urls?: string[] | null
           images?: Json | null
           inventory_qty?: number | null
+          min_order_qty?: number | null
           primary_image_url?: string | null
           processing_time?: string | null
           product_name?: string | null
@@ -125425,6 +125431,8 @@ export type Database = {
         }
         Update: {
           avg_rating?: number | null
+          case_price_store?: number | null
+          case_qty?: number | null
           category?: string | null
           created_at?: string | null
           description?: string | null
@@ -125435,6 +125443,7 @@ export type Database = {
           image_urls?: string[] | null
           images?: Json | null
           inventory_qty?: number | null
+          min_order_qty?: number | null
           primary_image_url?: string | null
           processing_time?: string | null
           product_name?: string | null
