@@ -420,10 +420,69 @@ export default function SFLeadPipeline() {
           ))}
         </div>
         <div className="flex gap-2 flex-wrap items-center">
-          <Select value={stateFilter} onValueChange={setStateFilter}>
-            <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue placeholder="State" /></SelectTrigger>
-            <SelectContent>{[{ v: 'all', l: 'All States' }, ...states.map(s => ({ v: s, l: s }))].map(o => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}</SelectContent>
+          {/* Multi-select state filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 text-xs">
+                <MapPin className="h-3 w-3 mr-1" />
+                {stateFilters.length === 0 ? 'All States' : `${stateFilters.length} state${stateFilters.length === 1 ? '' : 's'}`}
+                <ChevronDown className="h-3 w-3 ml-1 opacity-60" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2" align="start">
+              <div className="flex items-center justify-between px-1 pb-2 mb-1 border-b">
+                <span className="text-xs font-semibold uppercase text-muted-foreground">States</span>
+                {stateFilters.length > 0 && (
+                  <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setStateFilters([])}>Clear</button>
+                )}
+              </div>
+              <div className="max-h-64 overflow-auto space-y-1">
+                {states.length === 0 && <p className="text-xs text-muted-foreground px-1 py-2">No states in data yet</p>}
+                {states.map(s => {
+                  const checked = stateFilters.includes(s);
+                  return (
+                    <label key={s} className="flex items-center gap-2 px-1 py-1 rounded hover:bg-muted/50 cursor-pointer text-sm">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) => {
+                          setStateFilters(prev => v ? [...prev, s] : prev.filter(x => x !== s));
+                        }}
+                      />
+                      <span>{s}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Amount bucket filter */}
+          <Select value={amountBucket} onValueChange={(v) => setAmountBucket(v as AmountBucket)}>
+            <SelectTrigger className="w-[160px] h-8 text-xs"><SelectValue placeholder="Surplus amount" /></SelectTrigger>
+            <SelectContent>
+              {AMOUNT_BUCKETS.map(b => (
+                <SelectItem key={b.key} value={b.key}>{b.label}</SelectItem>
+              ))}
+            </SelectContent>
           </Select>
+          {amountBucket === 'custom' && (
+            <>
+              <Input
+                type="number"
+                placeholder="Min $"
+                className="h-8 w-24 text-xs"
+                value={amountMinInput}
+                onChange={e => setAmountMinInput(e.target.value)}
+              />
+              <Input
+                type="number"
+                placeholder="Max $"
+                className="h-8 w-24 text-xs"
+                value={amountMaxInput}
+                onChange={e => setAmountMaxInput(e.target.value)}
+              />
+            </>
+          )}
           <Select value={sourceFilter} onValueChange={setSourceFilter}>
             <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue placeholder="Source" /></SelectTrigger>
             <SelectContent>
