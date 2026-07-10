@@ -124,13 +124,21 @@ export default function BrandaroReceptionistHub() {
   const sendPaymentLink = useMutation({
     mutationFn: async () => {
       const lead = leads.find((l: any) => l.id === selectedLeadId);
+      const leadOwner = lead?.full_name || [lead?.first_name, lead?.last_name].filter(Boolean).join(" ") || null;
       const payload = {
         lead_id: selectedLeadId ?? null,
         plan,
         customer_email: lead?.email ?? manual.email,
-        customer_name: lead?.owner_name ?? manual.owner_name,
+        customer_name: leadOwner ?? manual.owner_name,
         business_name: lead?.business_name ?? manual.business_name,
       };
+      const { data, error } = await supabase.functions.invoke("brandaro-receptionist-checkout", {
+        body: payload,
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return data as { checkout_url: string; sms_sent: boolean };
+    },
       const { data, error } = await supabase.functions.invoke("brandaro-receptionist-checkout", {
         body: payload,
       });
