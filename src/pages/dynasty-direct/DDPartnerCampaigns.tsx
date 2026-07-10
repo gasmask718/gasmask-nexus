@@ -563,7 +563,20 @@ function CampaignsTab() {
                   {campaigns.map((c) => (
                     <tr key={c.id} className="border-t">
                       <td className="py-2">{c.name}</td>
-                      <td><code>{c.campaign_code}</code></td>
+                      <td>
+                        <div className="flex items-center gap-1">
+                          <code>{c.campaign_code}</code>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6"
+                            title="Copy campaign code"
+                            onClick={() => copyToClipboard(c.campaign_code, `Copied code ${c.campaign_code}`)}
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </td>
                       <td>{ambName(c.ambassador_id)}</td>
                       <td>{whName(c.preferred_wholesaler_id)}</td>
                       <td>{c.total_clicks ?? 0}</td>
