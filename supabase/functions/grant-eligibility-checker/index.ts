@@ -108,7 +108,13 @@ function computeResult(reqs: Requirement[], profile: Record<string, unknown>) {
     }
   }
 
-  const score = totalWeight > 0 ? Math.round((earnedWeight / totalWeight) * 100) : 0;
+  // GR-36 fix: if there are NO requirements at all, we cannot claim eligibility.
+  // Route to needs_review with score = 0 rather than defaulting to eligible/100.
+  if (reqs.length === 0 || totalWeight === 0) {
+    return { status: "needs_review" as const, score: 0, met, missing, failed };
+  }
+
+  const score = Math.round((earnedWeight / totalWeight) * 100);
   let status: "eligible" | "partially_eligible" | "needs_review" | "not_eligible";
   if (mandatoryFailed > 0) status = "not_eligible";
   else if (mandatoryMissing > 0) status = "needs_review";
