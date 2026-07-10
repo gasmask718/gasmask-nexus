@@ -177,7 +177,26 @@ export default function ApplicationPackage() {
     );
   }
   if (!pkg) {
-    return <div className="p-6 text-muted-foreground">Package not found.</div>;
+    return (
+      <div className="p-6 max-w-2xl mx-auto">
+        <Link to="/os/grants/eligibility" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
+          <ArrowLeft className="h-4 w-4" /> Back to Eligibility Matrix
+        </Link>
+        <Card>
+          <CardHeader>
+            <CardTitle>Package not found</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              This application package doesn't exist yet. Generate one from a matching grant in the Eligibility Matrix.
+            </p>
+            <Button asChild style={{ backgroundColor: "#C9A84C", color: "#000" }}>
+              <Link to="/os/grants/eligibility">Generate a Package</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
