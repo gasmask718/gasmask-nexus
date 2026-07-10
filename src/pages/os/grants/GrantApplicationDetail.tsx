@@ -120,17 +120,21 @@ export default function GrantApplicationDetail() {
 
   const addTask = async () => {
     if (!id || !newTaskTitle.trim()) return;
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData?.user?.id ?? null;
     const { error } = await supabase.from("grant_tasks").insert({
       application_id: id,
       title: newTaskTitle.trim(),
       description: null,
       due_date: newTaskDue || null,
       status: "pending",
-      assigned_to: "David",
+      assigned_to: uid,
+      created_by: uid,
     });
     if (error) { toast.error(error.message); return; }
     setNewTaskTitle("");
     setNewTaskDue("");
+    toast.success("Task added");
     fetchTasks();
   };
 
@@ -138,6 +142,8 @@ export default function GrantApplicationDetail() {
     const file = e.target.files?.[0];
     if (!file || !id) return;
     setUploading(true);
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData?.user?.id ?? null;
     const path = `${id}/${Date.now()}-${file.name}`;
     const { error: upErr } = await supabase.storage
       .from("grant-documents")
@@ -150,22 +156,34 @@ export default function GrantApplicationDetail() {
       storage_path: path,
       mime_type: file.type,
       size_bytes: file.size,
-      uploaded_by: "David",
+      uploaded_by: uid,
     });
+    if (insErr) {
+      // Rollback: delete the orphaned storage object so the bucket stays clean.
+      await supabase.storage.from("grant-documents").remove([path]);
+      setUploading(false);
+      if (e.target) e.target.value = "";
+      toast.error(`Upload failed: ${insErr.message}`);
+      return;
+    }
     setUploading(false);
     if (e.target) e.target.value = "";
-    if (insErr) { toast.error(insErr.message); return; }
     toast.success("Document uploaded");
     fetchDocs();
   };
 
   const downloadDoc = async (doc: any) => {
+    if (!doc?.storage_path) { toast.error("File path missing"); return; }
     const { data, error } = await supabase.storage
       .from("grant-documents")
       .createSignedUrl(doc.storage_path, 60);
-    if (error || !data) { toast.error(error?.message || "Download failed"); return; }
-    window.open(data.signedUrl, "_blank");
+    if (error || !data?.signedUrl) {
+      toast.error(error?.message || "File is missing or the link has expired.");
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
+
 
   const deleteDoc = async (doc: any) => {
     await supabase.storage.from("grant-documents").remove([doc.storage_path]);
