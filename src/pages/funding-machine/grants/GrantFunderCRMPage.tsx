@@ -730,12 +730,23 @@ export default function GrantFunderCRMPage() {
               className="bg-background border border-border rounded-lg px-2 py-1.5 text-sm"
             >
               <option value="all">All Types</option>
+              {/* "Federal" is a display alias for the DB value "government" (GR-26). */}
+              <option value="government">Federal / Government</option>
               <option value="foundation">Foundation</option>
-              <option value="government">Government</option>
               <option value="corporate">Corporate</option>
               <option value="community">Community</option>
               <option value="faith_based">Faith Based</option>
+              <option value="other">Other</option>
             </select>
+            {typeFilter !== 'all' && (
+              <button
+                onClick={() => setTypeFilter('all')}
+                className="text-xs px-3 py-1.5 rounded-lg border border-border text-muted-foreground hover:bg-muted"
+              >
+                Show All
+              </button>
+            )}
+
           </div>
         </div>
 
