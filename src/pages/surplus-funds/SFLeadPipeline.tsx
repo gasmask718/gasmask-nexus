@@ -28,10 +28,31 @@ import { formatDistanceToNow } from 'date-fns';
 const AMBER = '#BA7517';
 
 const STATUS_PILLS = [
-  'all','new','phone_found','queued','called','interested',
+  'all','new','skip_trace_pending','phone_found','queued','called','interested',
   'consultation_booked','agreement_signed','referred_to_attorney',
   'case_filed','funds_released','closed','do_not_contact'
 ];
+
+// Derived skip-trace status from existing fields (no schema change required).
+// - traced: skip_traced flag set true
+// - failed: status='skip_trace_failed' OR skip_trace_attempted && !skip_traced
+// - pending: everything else that hasn't been traced yet
+type SkipStatus = 'pending' | 'traced' | 'failed';
+function deriveSkipStatus(l: any): SkipStatus {
+  if (l?.skip_traced === true) return 'traced';
+  if (l?.status === 'skip_trace_failed' || l?.skip_trace_failed === true) return 'failed';
+  return 'pending';
+}
+const skipBadgeStyle: Record<SkipStatus, string> = {
+  pending: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/40',
+  traced:  'bg-emerald-500/15 text-emerald-400 border-emerald-500/40',
+  failed:  'bg-red-500/15 text-red-400 border-red-500/40',
+};
+const skipBadgeLabel: Record<SkipStatus, string> = {
+  pending: '🟡 Pending Skip Trace',
+  traced:  '🟢 Skip Traced',
+  failed:  '🔴 Failed',
+};
 
 const statusColor: Record<string, string> = {
   new: 'bg-gray-600/20 text-gray-400 border-gray-600',
@@ -72,6 +93,7 @@ export default function SFLeadPipeline() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [stateFilter, setStateFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
+  const [skipTab, setSkipTab] = useState<'all' | SkipStatus>('all');
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -82,7 +104,7 @@ export default function SFLeadPipeline() {
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ['sf-leads'],
     queryFn: async () => {
-      const { data } = await supabase.from('surplus_funds_leads').select('*').order('created_at', { ascending: false }).limit(500);
+      const { data } = await supabase.from('surplus_funds_leads').select('*').order('created_at', { ascending: false }).limit(5000);
       return data ?? [];
     },
     refetchInterval: 30000,
@@ -99,7 +121,9 @@ export default function SFLeadPipeline() {
 
   const stats = useMemo(() => {
     const total = leads.length;
-    const skipTraced = leads.filter((l: any) => l.skip_traced).length;
+    const skipTraced = leads.filter((l: any) => deriveSkipStatus(l) === 'traced').length;
+    const skipPending = leads.filter((l: any) => deriveSkipStatus(l) === 'pending').length;
+    const skipFailed = leads.filter((l: any) => deriveSkipStatus(l) === 'failed').length;
     const queued = leads.filter((l: any) => l.status === 'queued').length;
     const interested = leads.filter((l: any) => l.status === 'interested').length;
     const agreement = leads.filter((l: any) => l.status === 'agreement_signed').length;
@@ -109,11 +133,12 @@ export default function SFLeadPipeline() {
       l.lead_source === 'dynasty_recovery_website' &&
       l.created_at && new Date(l.created_at) >= todayStart
     ).length;
-    return { total, skipTraced, queued, interested, agreement, totalSurplus, websiteToday };
+    return { total, skipTraced, skipPending, skipFailed, queued, interested, agreement, totalSurplus, websiteToday };
   }, [leads]);
 
   const filtered = useMemo(() => {
     let result = leads;
+    if (skipTab !== 'all') result = result.filter((l: any) => deriveSkipStatus(l) === skipTab);
     if (statusFilter !== 'all') result = result.filter((l: any) => l.status === statusFilter);
     if (stateFilter !== 'all') result = result.filter((l: any) => l.state === stateFilter);
     if (sourceFilter !== 'all') result = result.filter((l: any) => (l.lead_source || 'manual_upload') === sourceFilter);
@@ -131,7 +156,7 @@ export default function SFLeadPipeline() {
       return sortDir === 'asc' ? av - bv : bv - av;
     });
     return result;
-  }, [leads, statusFilter, stateFilter, sourceFilter, search, sortKey, sortDir]);
+  }, [leads, skipTab, statusFilter, stateFilter, sourceFilter, search, sortKey, sortDir]);
 
   const toggleSelect = (id: string) => { const s = new Set(selected); s.has(id) ? s.delete(id) : s.add(id); setSelected(s); };
   const toggleAll = () => setSelected(selected.size === filtered.length ? new Set() : new Set(filtered.map((l: any) => l.id)));
@@ -282,6 +307,29 @@ export default function SFLeadPipeline() {
         <Input placeholder="Search by name, county, state, or case number..." className="pl-10 h-11" value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
+      {/* Skip-trace tabs — every scraped lead is in the DB immediately; these tabs pivot on skip-trace readiness */}
+      <div className="flex gap-2 flex-wrap items-center border-b border-border pb-3">
+        {([
+          { key: 'all',     label: `All Leads`,           count: stats.total,       color: '#9ca3af' },
+          { key: 'pending', label: `🟡 Pending Skip Trace`, count: stats.skipPending, color: '#eab308' },
+          { key: 'traced',  label: `🟢 Skip Traced`,        count: stats.skipTraced,  color: '#10b981' },
+          { key: 'failed',  label: `🔴 Failed`,             count: stats.skipFailed,  color: '#ef4444' },
+        ] as const).map(t => (
+          <button
+            key={t.key}
+            onClick={() => setSkipTab(t.key as any)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
+              skipTab === t.key
+                ? 'text-white border-transparent shadow-sm'
+                : 'text-muted-foreground border-border hover:border-muted-foreground/50 bg-transparent'
+            }`}
+            style={skipTab === t.key ? { backgroundColor: t.color } : undefined}
+          >
+            {t.label} <span className="ml-1 opacity-70">({t.count})</span>
+          </button>
+        ))}
+      </div>
+
       {/* Filter pills */}
       <div className="space-y-3">
         <div className="flex gap-1.5 flex-wrap">
@@ -393,8 +441,11 @@ export default function SFLeadPipeline() {
                         <td className="p-3">
                           <Badge variant="outline" className={`text-[10px] ${statusColor[l.status] || ''}`}>{(l.status || 'new').replace(/_/g, ' ')}</Badge>
                         </td>
-                        <td className="p-3 text-center">
-                          {l.skip_traced ? <Check className="h-4 w-4 text-amber-500 mx-auto" /> : <X className="h-4 w-4 text-muted-foreground/30 mx-auto" />}
+                        <td className="p-3">
+                          {(() => {
+                            const st = deriveSkipStatus(l);
+                            return <Badge variant="outline" className={`text-[10px] whitespace-nowrap ${skipBadgeStyle[st]}`}>{skipBadgeLabel[st]}</Badge>;
+                          })()}
                         </td>
                         <td className="p-3">
                           <div className="text-xs">{relativeDate(l.last_called_at)}</div>
@@ -435,6 +486,7 @@ export default function SFLeadPipeline() {
                 {detailLead.surplus_amount && <p className="text-2xl font-bold mt-2" style={{ color: AMBER }}>${Number(detailLead.surplus_amount).toLocaleString()}</p>}
                 <div className="flex gap-2 mt-3">
                   <Badge variant="outline" className={statusColor[detailLead.status] || ''}>{(detailLead.status || 'new').replace(/_/g, ' ')}</Badge>
+                  {(() => { const st = deriveSkipStatus(detailLead); return <Badge variant="outline" className={skipBadgeStyle[st]}>{skipBadgeLabel[st]}</Badge>; })()}
                 </div>
               </div>
               <Tabs value={drawerTab} onValueChange={setDrawerTab} className="px-6 pt-4">
