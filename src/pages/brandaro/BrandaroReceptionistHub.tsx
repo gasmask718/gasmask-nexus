@@ -113,12 +113,13 @@ export default function BrandaroReceptionistHub() {
     queryFn: async () => {
       const { data } = await supabase
         .from("brandaro_qualified_leads")
-        .select("id, business_name, phone_number, phone, city, state, email, owner_name")
+        .select("id, business_name, phone_number, city, state, email, first_name, last_name, full_name")
         .order("created_at", { ascending: false })
         .limit(200);
       return data ?? [];
     },
   });
+
 
   const sendPaymentLink = useMutation({
     mutationFn: async () => {
