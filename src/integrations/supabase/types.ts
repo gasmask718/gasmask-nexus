@@ -125364,6 +125364,8 @@ export type Database = {
       }
       products_all_public: {
         Row: {
+          ai_description: string | null
+          ai_description_short: string | null
           avg_rating: number | null
           case_price_store: number | null
           case_qty: number | null
@@ -125397,6 +125399,8 @@ export type Database = {
           wholesaler_id: string | null
         }
         Insert: {
+          ai_description?: string | null
+          ai_description_short?: string | null
           avg_rating?: number | null
           case_price_store?: number | null
           case_qty?: number | null
@@ -125430,6 +125434,8 @@ export type Database = {
           wholesaler_id?: string | null
         }
         Update: {
+          ai_description?: string | null
+          ai_description_short?: string | null
           avg_rating?: number | null
           case_price_store?: number | null
           case_qty?: number | null
