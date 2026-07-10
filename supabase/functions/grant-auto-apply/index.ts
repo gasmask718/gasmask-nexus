@@ -222,12 +222,44 @@ ${profileFacts}`,
       aiError = e instanceof Error ? e.message : String(e);
     }
 
-    if (aiError && !cover_letter) {
-      return new Response(
-        JSON.stringify({ error: "AI Gateway unavailable", detail: aiError, package_id: null }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    // Guarantee EXACTLY 7 Q&A entries (GR-43)
+    const STANDARD_QUESTIONS = [
+      "Describe your business and its mission.",
+      "How will you use these grant funds?",
+      "How many jobs will this grant help create?",
+      "How does your business serve the community?",
+      "What makes your business unique?",
+      "Describe the challenges this grant will help overcome.",
+      "What are your 3-year growth goals?",
+    ];
+    qa_answers = qa_answers.slice(0, 7);
+    for (let i = qa_answers.length; i < 7; i++) {
+      qa_answers.push({
+        question: STANDARD_QUESTIONS[i],
+        answer:
+          "Draft response unavailable — please complete this answer before submitting.",
+      });
     }
+    // Ensure each entry has a non-empty question/answer
+    qa_answers = qa_answers.map((x, i) => ({
+      question: (x.question ?? "").toString().trim() || STANDARD_QUESTIONS[i],
+      answer:
+        (x.answer ?? "").toString().trim() ||
+        "Draft response unavailable — please complete this answer before submitting.",
+    }));
+
+
+    // Guarantee non-empty content for Sections A/B/C even when AI failed
+    if (!cover_letter) {
+      cover_letter = `Dear ${funderContact},\n\nWe are writing to apply for the ${grantTitle} from ${funderName}. AI-generated draft is unavailable; please review our business profile and complete this letter before submission.\n\nSincerely,\n${biz.business_name ?? "Applicant"}`;
+    }
+    if (!business_narrative) {
+      business_narrative = `AI-generated narrative unavailable. Please describe ${biz.business_name ?? "the business"}, its mission, growth trajectory, community impact, and future plans before submitting.`;
+    }
+    if (!fund_usage_plan) {
+      fund_usage_plan = `AI-generated fund usage plan unavailable. Please itemize how the requested $${grantAmount ?? "grant"} will be allocated by category and percentage totalling 100%.`;
+    }
+
 
     // STEP 7 — insert package
     const { data: pkg, error: insErr } = await supabase

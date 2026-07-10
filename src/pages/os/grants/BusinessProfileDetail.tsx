@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -221,6 +221,10 @@ function fromInputValue(type: FieldType, v: any): any {
 export default function BusinessProfileDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab = TABS.some((t) => t.id === tabParam) ? (tabParam as string) : TABS[0].id;
+
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [savingKey, setSavingKey] = useState<string | null>(null);
@@ -507,7 +511,16 @@ export default function BusinessProfileDetail() {
               </div>
             );
           })()}
-          <Tabs defaultValue={TABS[0].id} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => {
+              const next = new URLSearchParams(searchParams);
+              next.set("tab", v);
+              setSearchParams(next, { replace: true });
+            }}
+            className="w-full"
+          >
+
             <TabsList className="w-full flex-wrap h-auto justify-start">
               {TABS.map((t) => (
                 <TabsTrigger key={t.id} value={t.id} className="text-xs">
