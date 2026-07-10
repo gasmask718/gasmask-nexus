@@ -552,6 +552,7 @@ export default function SFLeadPipeline() {
                 </div>
               </div>
             )
+          ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
