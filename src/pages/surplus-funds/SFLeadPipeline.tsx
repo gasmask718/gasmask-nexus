@@ -363,15 +363,22 @@ export default function SFLeadPipeline() {
         </CardContent>
       </Card>
 
-      {/* Stats */}
+      {/* Summary cards — recompute in SQL against whatever filters are currently active */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="Total Leads" value={stats.total} icon={List} color="#9ca3af" />
-        <StatCard label="Skip Traced" value={stats.skipTraced} icon={Phone} color={AMBER} sub={stats.total > 0 ? `${Math.round(stats.skipTraced / stats.total * 100)}%` : undefined} />
-        <StatCard label="Queued for DC" value={stats.queued} icon={Clock} color="#7c3aed" />
-        <StatCard label="Interested" value={stats.interested} icon={Flame} color="#ea580c" />
-        <StatCard label="Agreements" value={stats.agreement} icon={FileSignature} color="#0d9488" />
-        <StatCard label="Total Surplus" value={fmt$(stats.totalSurplus)} icon={DollarSign} color={AMBER} />
+        <StatCard label="States"           value={summary?.distinct_states ?? 0}                                     icon={MapPin}         color="#60a5fa" />
+        <StatCard label="Total Leads"      value={summary?.total_leads ?? 0}                                         icon={List}           color="#9ca3af" />
+        <StatCard label="Total Surplus"    value={fmt$(summary?.total_surplus ?? 0)}                                 icon={DollarSign}     color={AMBER} />
+        <StatCard label="Average Surplus"  value={fmt$(summary?.avg_surplus ?? 0)}                                   icon={TrendingUp}     color={AMBER} />
+        <StatCard label="Pending Skip"     value={summary?.skip_pending_count ?? 0}                                  icon={Clock}          color="#eab308" />
+        <StatCard label="Skip Traced"      value={summary?.skip_traced_count ?? 0}                                   icon={Phone}          color="#10b981" />
       </div>
+      {hasActiveFilters && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground -mt-3">
+          <Filter className="h-3 w-3" />
+          <span>Cards reflect current filters</span>
+          <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={clearAllFilters}>Clear all filters</Button>
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative">
@@ -379,13 +386,13 @@ export default function SFLeadPipeline() {
         <Input placeholder="Search by name, county, state, or case number..." className="pl-10 h-11" value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
-      {/* Skip-trace tabs — every scraped lead is in the DB immediately; these tabs pivot on skip-trace readiness */}
+      {/* Skip-trace tabs */}
       <div className="flex gap-2 flex-wrap items-center border-b border-border pb-3">
         {([
-          { key: 'all',     label: `All Leads`,           count: stats.total,       color: '#9ca3af' },
-          { key: 'pending', label: `🟡 Pending Skip Trace`, count: stats.skipPending, color: '#eab308' },
-          { key: 'traced',  label: `🟢 Skip Traced`,        count: stats.skipTraced,  color: '#10b981' },
-          { key: 'failed',  label: `🔴 Failed`,             count: stats.skipFailed,  color: '#ef4444' },
+          { key: 'all',     label: `All Leads`,             count: (summary?.skip_pending_count ?? 0) + (summary?.skip_traced_count ?? 0) + (summary?.skip_failed_count ?? 0), color: '#9ca3af' },
+          { key: 'pending', label: `🟡 Pending Skip Trace`, count: summary?.skip_pending_count ?? 0, color: '#eab308' },
+          { key: 'traced',  label: `🟢 Skip Traced`,        count: summary?.skip_traced_count ?? 0,  color: '#10b981' },
+          { key: 'failed',  label: `🔴 Failed`,             count: summary?.skip_failed_count ?? 0,  color: '#ef4444' },
         ] as const).map(t => (
           <button
             key={t.key}
