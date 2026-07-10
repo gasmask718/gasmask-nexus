@@ -125365,15 +125365,17 @@ export type Database = {
       products_all_public: {
         Row: {
           avg_rating: number | null
-          brand_id: string | null
           category: string | null
           created_at: string | null
           description: string | null
           dimensions: Json | null
+          dtc_price_b: number | null
           has_variants: boolean | null
           id: string | null
+          image_urls: string[] | null
           images: Json | null
           inventory_qty: number | null
+          primary_image_url: string | null
           processing_time: string | null
           product_name: string | null
           retail_price: number | null
@@ -125382,6 +125384,7 @@ export type Database = {
           shipping_from_state: string | null
           status: string | null
           store_price: number | null
+          store_price_a: number | null
           street_price: number | null
           unit_type: string | null
           updated_at: string | null
@@ -125392,15 +125395,17 @@ export type Database = {
         }
         Insert: {
           avg_rating?: number | null
-          brand_id?: string | null
           category?: string | null
           created_at?: string | null
           description?: string | null
           dimensions?: Json | null
+          dtc_price_b?: number | null
           has_variants?: boolean | null
           id?: string | null
+          image_urls?: string[] | null
           images?: Json | null
           inventory_qty?: number | null
+          primary_image_url?: string | null
           processing_time?: string | null
           product_name?: string | null
           retail_price?: number | null
@@ -125409,6 +125414,7 @@ export type Database = {
           shipping_from_state?: string | null
           status?: string | null
           store_price?: never
+          store_price_a?: number | null
           street_price?: number | null
           unit_type?: string | null
           updated_at?: string | null
@@ -125419,15 +125425,17 @@ export type Database = {
         }
         Update: {
           avg_rating?: number | null
-          brand_id?: string | null
           category?: string | null
           created_at?: string | null
           description?: string | null
           dimensions?: Json | null
+          dtc_price_b?: number | null
           has_variants?: boolean | null
           id?: string | null
+          image_urls?: string[] | null
           images?: Json | null
           inventory_qty?: number | null
+          primary_image_url?: string | null
           processing_time?: string | null
           product_name?: string | null
           retail_price?: number | null
@@ -125436,6 +125444,7 @@ export type Database = {
           shipping_from_state?: string | null
           status?: string | null
           store_price?: never
+          store_price_a?: number | null
           street_price?: number | null
           unit_type?: string | null
           updated_at?: string | null
@@ -125445,13 +125454,6 @@ export type Database = {
           wholesaler_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "products_all_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "products_all_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
