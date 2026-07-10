@@ -19,6 +19,45 @@ const PUBLIC_ORIGIN = (typeof window !== "undefined" && window.location.origin.i
   ? window.location.origin
   : "https://dynastydirect.com";
 
+// Robust clipboard copy — works even when the page runs in an iframe without
+// `clipboard-write` permissions-policy (Lovable preview, some embeds), where
+// `navigator.clipboard.writeText()` rejects with NotAllowedError silently.
+async function copyToClipboard(text: string, label = "Copied"): Promise<boolean> {
+  try {
+    if (navigator?.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      toast.success(label);
+      return true;
+    }
+  } catch (err) {
+    console.warn("[copy] navigator.clipboard failed, falling back", err);
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-1000px";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    if (ok) {
+      toast.success(label);
+      return true;
+    }
+    throw new Error("execCommand copy returned false");
+  } catch (err) {
+    console.error("[copy] fallback failed", err);
+    toast.error("Copy failed — select the text and press ⌘/Ctrl+C", {
+      description: text.length > 80 ? text.slice(0, 77) + "…" : text,
+    });
+    return false;
+  }
+}
+
 type Ambassador = { id: string; name: string | null; email: string | null };
 type Wholesaler = { id: string; name: string | null };
 type PartnerLink = {
@@ -524,7 +563,20 @@ function CampaignsTab() {
                   {campaigns.map((c) => (
                     <tr key={c.id} className="border-t">
                       <td className="py-2">{c.name}</td>
-                      <td><code>{c.campaign_code}</code></td>
+                      <td>
+                        <div className="flex items-center gap-1">
+                          <code>{c.campaign_code}</code>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6"
+                            title="Copy campaign code"
+                            onClick={() => copyToClipboard(c.campaign_code, `Copied code ${c.campaign_code}`)}
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </td>
                       <td>{ambName(c.ambassador_id)}</td>
                       <td>{whName(c.preferred_wholesaler_id)}</td>
                       <td>{c.total_clicks ?? 0}</td>
@@ -558,7 +610,7 @@ function CampaignsTab() {
                 <Label>Full catalog</Label>
                 <div className="flex gap-2 mt-1">
                   <Input readOnly value={campaignLink(showLinks)} />
-                  <Button onClick={() => { navigator.clipboard.writeText(campaignLink(showLinks)); toast.success("Copied"); }}>
+                  <Button onClick={() => copyToClipboard(campaignLink(showLinks), "Link copied")}>
                     <Copy className="w-4 h-4" />
                   </Button>
                 </div>
