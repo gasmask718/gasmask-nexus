@@ -249,12 +249,17 @@ ${profileFacts}`,
     }));
 
 
-    if (aiError && !cover_letter) {
-      return new Response(
-        JSON.stringify({ error: "AI Gateway unavailable", detail: aiError, package_id: null }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    // Guarantee non-empty content for Sections A/B/C even when AI failed
+    if (!cover_letter) {
+      cover_letter = `Dear ${funderContact},\n\nWe are writing to apply for the ${grantTitle} from ${funderName}. AI-generated draft is unavailable; please review our business profile and complete this letter before submission.\n\nSincerely,\n${biz.business_name ?? "Applicant"}`;
     }
+    if (!business_narrative) {
+      business_narrative = `AI-generated narrative unavailable. Please describe ${biz.business_name ?? "the business"}, its mission, growth trajectory, community impact, and future plans before submitting.`;
+    }
+    if (!fund_usage_plan) {
+      fund_usage_plan = `AI-generated fund usage plan unavailable. Please itemize how the requested $${grantAmount ?? "grant"} will be allocated by category and percentage totalling 100%.`;
+    }
+
 
     // STEP 7 — insert package
     const { data: pkg, error: insErr } = await supabase
