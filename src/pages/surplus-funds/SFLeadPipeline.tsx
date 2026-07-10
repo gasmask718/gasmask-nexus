@@ -17,8 +17,9 @@ import { toast } from 'sonner';
 import {
   Search, Upload, Download, Plus, List, Phone, Clock, Flame,
   FileSignature, DollarSign, Check, X, ChevronUp, ChevronDown,
-  MoreHorizontal, Scale, Eye
+  MoreHorizontal, Scale, Eye, MapPin, TrendingUp, Filter
 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -86,20 +87,46 @@ function fmt$(v: number | null | undefined): string {
 
 type SortKey = 'created_at' | 'surplus_amount' | 'last_called_at' | 'call_count';
 
+type AmountBucket = 'all' | '0-10k' | '10k-50k' | '50k-plus' | 'custom';
+const AMOUNT_BUCKETS: { key: AmountBucket; label: string; min: number | null; max: number | null }[] = [
+  { key: 'all',      label: 'Any amount',   min: null,   max: null },
+  { key: '0-10k',    label: '$0 – $10k',    min: 0,      max: 10000 },
+  { key: '10k-50k',  label: '$10k – $50k',  min: 10000,  max: 50000 },
+  { key: '50k-plus', label: '$50k+',        min: 50000,  max: null },
+  { key: 'custom',   label: 'Custom range', min: null,   max: null },
+];
+
 export default function SFLeadPipeline() {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [stateFilter, setStateFilter] = useState('all');
+  const [stateFilters, setStateFilters] = useState<string[]>([]); // multi-select; empty = all
   const [sourceFilter, setSourceFilter] = useState('all');
   const [skipTab, setSkipTab] = useState<'all' | SkipStatus>('all');
+  const [amountBucket, setAmountBucket] = useState<AmountBucket>('all');
+  const [amountMinInput, setAmountMinInput] = useState<string>('');
+  const [amountMaxInput, setAmountMaxInput] = useState<string>('');
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detailLead, setDetailLead] = useState<any>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState('overview');
+
+  // Resolve active amount range from bucket + custom inputs
+  const { activeAmountMin, activeAmountMax } = useMemo(() => {
+    if (amountBucket === 'custom') {
+      const min = amountMinInput === '' ? null : Number(amountMinInput);
+      const max = amountMaxInput === '' ? null : Number(amountMaxInput);
+      return {
+        activeAmountMin: Number.isFinite(min as number) ? (min as number) : null,
+        activeAmountMax: Number.isFinite(max as number) ? (max as number) : null,
+      };
+    }
+    const b = AMOUNT_BUCKETS.find(x => x.key === amountBucket)!;
+    return { activeAmountMin: b.min, activeAmountMax: b.max };
+  }, [amountBucket, amountMinInput, amountMaxInput]);
 
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ['sf-leads'],
@@ -115,33 +142,69 @@ export default function SFLeadPipeline() {
       const { error } = await supabase.from('surplus_funds_leads').insert(lead);
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sf-leads'] }); toast.success('Lead added'); setAddOpen(false); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sf-leads'] }); qc.invalidateQueries({ queryKey: ['sf-lead-summary'] }); toast.success('Lead added'); setAddOpen(false); },
     onError: (e: any) => toast.error(e.message),
   });
 
-  const stats = useMemo(() => {
-    const total = leads.length;
-    const skipTraced = leads.filter((l: any) => deriveSkipStatus(l) === 'traced').length;
-    const skipPending = leads.filter((l: any) => deriveSkipStatus(l) === 'pending').length;
-    const skipFailed = leads.filter((l: any) => deriveSkipStatus(l) === 'failed').length;
-    const queued = leads.filter((l: any) => l.status === 'queued').length;
-    const interested = leads.filter((l: any) => l.status === 'interested').length;
-    const agreement = leads.filter((l: any) => l.status === 'agreement_signed').length;
-    const totalSurplus = leads.reduce((sum: number, l: any) => sum + (l.surplus_amount || 0), 0);
+  // Filter payload — shared between the summary RPC and the client-side list filter
+  // so both always describe the same "what am I looking at" slice.
+  const filterPayload = useMemo(() => ({
+    states: stateFilters,
+    amountMin: activeAmountMin,
+    amountMax: activeAmountMax,
+    skipStatus: skipTab === 'all' ? null : skipTab,
+    status: statusFilter === 'all' ? null : statusFilter,
+    source: sourceFilter === 'all' ? null : sourceFilter,
+    search: search.trim() || null,
+  }), [stateFilters, activeAmountMin, activeAmountMax, skipTab, statusFilter, sourceFilter, search]);
+
+  // SQL-side aggregation — count/sum/avg computed in Postgres, not JS.
+  // Stays fast at 5,000+ rows.
+  const { data: summary } = useQuery({
+    queryKey: ['sf-lead-summary', filterPayload],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc('sf_lead_summary', {
+        _states: filterPayload.states.length ? filterPayload.states : null,
+        _amount_min: filterPayload.amountMin,
+        _amount_max: filterPayload.amountMax,
+        _skip_status: filterPayload.skipStatus,
+        _status: filterPayload.status,
+        _source: filterPayload.source,
+        _search: filterPayload.search,
+      });
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      return {
+        total_leads:        Number(row?.total_leads ?? 0),
+        distinct_states:    Number(row?.distinct_states ?? 0),
+        total_surplus:      Number(row?.total_surplus ?? 0),
+        avg_surplus:        Number(row?.avg_surplus ?? 0),
+        skip_pending_count: Number(row?.skip_pending_count ?? 0),
+        skip_traced_count:  Number(row?.skip_traced_count ?? 0),
+        skip_failed_count:  Number(row?.skip_failed_count ?? 0),
+      };
+    },
+    refetchInterval: 30000,
+    placeholderData: (prev) => prev,
+  });
+
+  // Website-today spotlight remains client-side (small, always-visible metric)
+  const websiteToday = useMemo(() => {
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-    const websiteToday = leads.filter((l: any) =>
+    return leads.filter((l: any) =>
       l.lead_source === 'dynasty_recovery_website' &&
       l.created_at && new Date(l.created_at) >= todayStart
     ).length;
-    return { total, skipTraced, skipPending, skipFailed, queued, interested, agreement, totalSurplus, websiteToday };
   }, [leads]);
 
   const filtered = useMemo(() => {
     let result = leads;
     if (skipTab !== 'all') result = result.filter((l: any) => deriveSkipStatus(l) === skipTab);
     if (statusFilter !== 'all') result = result.filter((l: any) => l.status === statusFilter);
-    if (stateFilter !== 'all') result = result.filter((l: any) => l.state === stateFilter);
+    if (stateFilters.length > 0) result = result.filter((l: any) => stateFilters.includes(l.state));
     if (sourceFilter !== 'all') result = result.filter((l: any) => (l.lead_source || 'manual_upload') === sourceFilter);
+    if (activeAmountMin != null) result = result.filter((l: any) => Number(l.surplus_amount || 0) >= activeAmountMin);
+    if (activeAmountMax != null) result = result.filter((l: any) => Number(l.surplus_amount || 0) <= activeAmountMax);
     if (search) {
       const s = search.toLowerCase();
       result = result.filter((l: any) =>
@@ -156,7 +219,16 @@ export default function SFLeadPipeline() {
       return sortDir === 'asc' ? av - bv : bv - av;
     });
     return result;
-  }, [leads, skipTab, statusFilter, stateFilter, sourceFilter, search, sortKey, sortDir]);
+  }, [leads, skipTab, statusFilter, stateFilters, sourceFilter, activeAmountMin, activeAmountMax, search, sortKey, sortDir]);
+
+  const hasActiveFilters =
+    stateFilters.length > 0 || amountBucket !== 'all' || skipTab !== 'all' ||
+    statusFilter !== 'all' || sourceFilter !== 'all' || search.trim() !== '';
+
+  const clearAllFilters = () => {
+    setStateFilters([]); setAmountBucket('all'); setAmountMinInput(''); setAmountMaxInput('');
+    setSkipTab('all'); setStatusFilter('all'); setSourceFilter('all'); setSearch('');
+  };
 
   const toggleSelect = (id: string) => { const s = new Set(selected); s.has(id) ? s.delete(id) : s.add(id); setSelected(s); };
   const toggleAll = () => setSelected(selected.size === filtered.length ? new Set() : new Set(filtered.map((l: any) => l.id)));
@@ -281,7 +353,7 @@ export default function SFLeadPipeline() {
             </div>
             <div>
               <p className="text-xs uppercase tracking-wider text-muted-foreground">Today's Website Leads</p>
-              <p className="text-3xl font-bold" style={{ color: '#0F6E56' }}>{stats.websiteToday}</p>
+              <p className="text-3xl font-bold" style={{ color: '#0F6E56' }}>{websiteToday}</p>
               <p className="text-xs text-muted-foreground">dynastyrecoverygroup.com — live intake</p>
             </div>
           </div>
@@ -291,15 +363,22 @@ export default function SFLeadPipeline() {
         </CardContent>
       </Card>
 
-      {/* Stats */}
+      {/* Summary cards — recompute in SQL against whatever filters are currently active */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="Total Leads" value={stats.total} icon={List} color="#9ca3af" />
-        <StatCard label="Skip Traced" value={stats.skipTraced} icon={Phone} color={AMBER} sub={stats.total > 0 ? `${Math.round(stats.skipTraced / stats.total * 100)}%` : undefined} />
-        <StatCard label="Queued for DC" value={stats.queued} icon={Clock} color="#7c3aed" />
-        <StatCard label="Interested" value={stats.interested} icon={Flame} color="#ea580c" />
-        <StatCard label="Agreements" value={stats.agreement} icon={FileSignature} color="#0d9488" />
-        <StatCard label="Total Surplus" value={fmt$(stats.totalSurplus)} icon={DollarSign} color={AMBER} />
+        <StatCard label="States"           value={summary?.distinct_states ?? 0}                                     icon={MapPin}         color="#60a5fa" />
+        <StatCard label="Total Leads"      value={summary?.total_leads ?? 0}                                         icon={List}           color="#9ca3af" />
+        <StatCard label="Total Surplus"    value={fmt$(summary?.total_surplus ?? 0)}                                 icon={DollarSign}     color={AMBER} />
+        <StatCard label="Average Surplus"  value={fmt$(summary?.avg_surplus ?? 0)}                                   icon={TrendingUp}     color={AMBER} />
+        <StatCard label="Pending Skip"     value={summary?.skip_pending_count ?? 0}                                  icon={Clock}          color="#eab308" />
+        <StatCard label="Skip Traced"      value={summary?.skip_traced_count ?? 0}                                   icon={Phone}          color="#10b981" />
       </div>
+      {hasActiveFilters && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground -mt-3">
+          <Filter className="h-3 w-3" />
+          <span>Cards reflect current filters</span>
+          <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={clearAllFilters}>Clear all filters</Button>
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative">
@@ -307,13 +386,13 @@ export default function SFLeadPipeline() {
         <Input placeholder="Search by name, county, state, or case number..." className="pl-10 h-11" value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
-      {/* Skip-trace tabs — every scraped lead is in the DB immediately; these tabs pivot on skip-trace readiness */}
+      {/* Skip-trace tabs */}
       <div className="flex gap-2 flex-wrap items-center border-b border-border pb-3">
         {([
-          { key: 'all',     label: `All Leads`,           count: stats.total,       color: '#9ca3af' },
-          { key: 'pending', label: `🟡 Pending Skip Trace`, count: stats.skipPending, color: '#eab308' },
-          { key: 'traced',  label: `🟢 Skip Traced`,        count: stats.skipTraced,  color: '#10b981' },
-          { key: 'failed',  label: `🔴 Failed`,             count: stats.skipFailed,  color: '#ef4444' },
+          { key: 'all',     label: `All Leads`,             count: (summary?.skip_pending_count ?? 0) + (summary?.skip_traced_count ?? 0) + (summary?.skip_failed_count ?? 0), color: '#9ca3af' },
+          { key: 'pending', label: `🟡 Pending Skip Trace`, count: summary?.skip_pending_count ?? 0, color: '#eab308' },
+          { key: 'traced',  label: `🟢 Skip Traced`,        count: summary?.skip_traced_count ?? 0,  color: '#10b981' },
+          { key: 'failed',  label: `🔴 Failed`,             count: summary?.skip_failed_count ?? 0,  color: '#ef4444' },
         ] as const).map(t => (
           <button
             key={t.key}
@@ -341,10 +420,69 @@ export default function SFLeadPipeline() {
           ))}
         </div>
         <div className="flex gap-2 flex-wrap items-center">
-          <Select value={stateFilter} onValueChange={setStateFilter}>
-            <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue placeholder="State" /></SelectTrigger>
-            <SelectContent>{[{ v: 'all', l: 'All States' }, ...states.map(s => ({ v: s, l: s }))].map(o => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}</SelectContent>
+          {/* Multi-select state filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 text-xs">
+                <MapPin className="h-3 w-3 mr-1" />
+                {stateFilters.length === 0 ? 'All States' : `${stateFilters.length} state${stateFilters.length === 1 ? '' : 's'}`}
+                <ChevronDown className="h-3 w-3 ml-1 opacity-60" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2" align="start">
+              <div className="flex items-center justify-between px-1 pb-2 mb-1 border-b">
+                <span className="text-xs font-semibold uppercase text-muted-foreground">States</span>
+                {stateFilters.length > 0 && (
+                  <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setStateFilters([])}>Clear</button>
+                )}
+              </div>
+              <div className="max-h-64 overflow-auto space-y-1">
+                {states.length === 0 && <p className="text-xs text-muted-foreground px-1 py-2">No states in data yet</p>}
+                {states.map(s => {
+                  const checked = stateFilters.includes(s);
+                  return (
+                    <label key={s} className="flex items-center gap-2 px-1 py-1 rounded hover:bg-muted/50 cursor-pointer text-sm">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) => {
+                          setStateFilters(prev => v ? [...prev, s] : prev.filter(x => x !== s));
+                        }}
+                      />
+                      <span>{s}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Amount bucket filter */}
+          <Select value={amountBucket} onValueChange={(v) => setAmountBucket(v as AmountBucket)}>
+            <SelectTrigger className="w-[160px] h-8 text-xs"><SelectValue placeholder="Surplus amount" /></SelectTrigger>
+            <SelectContent>
+              {AMOUNT_BUCKETS.map(b => (
+                <SelectItem key={b.key} value={b.key}>{b.label}</SelectItem>
+              ))}
+            </SelectContent>
           </Select>
+          {amountBucket === 'custom' && (
+            <>
+              <Input
+                type="number"
+                placeholder="Min $"
+                className="h-8 w-24 text-xs"
+                value={amountMinInput}
+                onChange={e => setAmountMinInput(e.target.value)}
+              />
+              <Input
+                type="number"
+                placeholder="Max $"
+                className="h-8 w-24 text-xs"
+                value={amountMaxInput}
+                onChange={e => setAmountMaxInput(e.target.value)}
+              />
+            </>
+          )}
           <Select value={sourceFilter} onValueChange={setSourceFilter}>
             <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue placeholder="Source" /></SelectTrigger>
             <SelectContent>
@@ -392,15 +530,28 @@ export default function SFLeadPipeline() {
           {isLoading ? (
             <div className="p-4 space-y-3">{[...Array(8)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
           ) : filtered.length === 0 ? (
-            <div className="py-16 text-center">
-              <Scale className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
-              <p className="text-lg font-medium">No surplus leads yet — upload county records or add manually</p>
-              <p className="text-sm text-muted-foreground mt-1 mb-6">Start finding unclaimed funds to recover</p>
-              <div className="flex gap-3 justify-center">
-                <Button variant="outline" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4 mr-2" />Upload CSV</Button>
-                <Button style={{ backgroundColor: AMBER }} onClick={() => setAddOpen(true)}><Plus className="h-4 w-4 mr-2" />Add Lead Manually</Button>
+            hasActiveFilters ? (
+              <div className="py-16 text-center">
+                <Filter className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
+                <p className="text-lg font-medium">No leads match these filters</p>
+                <p className="text-sm text-muted-foreground mt-1 mb-6">
+                  Try widening the state, amount range, or skip-trace filter.
+                </p>
+                <Button variant="outline" onClick={clearAllFilters}>
+                  <X className="h-4 w-4 mr-2" />Clear all filters
+                </Button>
               </div>
-            </div>
+            ) : (
+              <div className="py-16 text-center">
+                <Scale className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
+                <p className="text-lg font-medium">No surplus leads yet — upload county records or add manually</p>
+                <p className="text-sm text-muted-foreground mt-1 mb-6">Start finding unclaimed funds to recover</p>
+                <div className="flex gap-3 justify-center">
+                  <Button variant="outline" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4 mr-2" />Upload CSV</Button>
+                  <Button style={{ backgroundColor: AMBER }} onClick={() => setAddOpen(true)}><Plus className="h-4 w-4 mr-2" />Add Lead Manually</Button>
+                </div>
+              </div>
+            )
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

@@ -132903,6 +132903,26 @@ export type Database = {
         Args: { p_batch_id: string; p_url: string }
         Returns: undefined
       }
+      sf_lead_summary: {
+        Args: {
+          _amount_max?: number
+          _amount_min?: number
+          _search?: string
+          _skip_status?: string
+          _source?: string
+          _states?: string[]
+          _status?: string
+        }
+        Returns: {
+          avg_surplus: number
+          distinct_states: number
+          skip_failed_count: number
+          skip_pending_count: number
+          skip_traced_count: number
+          total_leads: number
+          total_surplus: number
+        }[]
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       skip_payout_item: {
