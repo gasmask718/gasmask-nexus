@@ -121,7 +121,9 @@ export default function SFLeadPipeline() {
 
   const stats = useMemo(() => {
     const total = leads.length;
-    const skipTraced = leads.filter((l: any) => l.skip_traced).length;
+    const skipTraced = leads.filter((l: any) => deriveSkipStatus(l) === 'traced').length;
+    const skipPending = leads.filter((l: any) => deriveSkipStatus(l) === 'pending').length;
+    const skipFailed = leads.filter((l: any) => deriveSkipStatus(l) === 'failed').length;
     const queued = leads.filter((l: any) => l.status === 'queued').length;
     const interested = leads.filter((l: any) => l.status === 'interested').length;
     const agreement = leads.filter((l: any) => l.status === 'agreement_signed').length;
@@ -131,11 +133,12 @@ export default function SFLeadPipeline() {
       l.lead_source === 'dynasty_recovery_website' &&
       l.created_at && new Date(l.created_at) >= todayStart
     ).length;
-    return { total, skipTraced, queued, interested, agreement, totalSurplus, websiteToday };
+    return { total, skipTraced, skipPending, skipFailed, queued, interested, agreement, totalSurplus, websiteToday };
   }, [leads]);
 
   const filtered = useMemo(() => {
     let result = leads;
+    if (skipTab !== 'all') result = result.filter((l: any) => deriveSkipStatus(l) === skipTab);
     if (statusFilter !== 'all') result = result.filter((l: any) => l.status === statusFilter);
     if (stateFilter !== 'all') result = result.filter((l: any) => l.state === stateFilter);
     if (sourceFilter !== 'all') result = result.filter((l: any) => (l.lead_source || 'manual_upload') === sourceFilter);
@@ -153,7 +156,7 @@ export default function SFLeadPipeline() {
       return sortDir === 'asc' ? av - bv : bv - av;
     });
     return result;
-  }, [leads, statusFilter, stateFilter, sourceFilter, search, sortKey, sortDir]);
+  }, [leads, skipTab, statusFilter, stateFilter, sourceFilter, search, sortKey, sortDir]);
 
   const toggleSelect = (id: string) => { const s = new Set(selected); s.has(id) ? s.delete(id) : s.add(id); setSelected(s); };
   const toggleAll = () => setSelected(selected.size === filtered.length ? new Set() : new Set(filtered.map((l: any) => l.id)));
