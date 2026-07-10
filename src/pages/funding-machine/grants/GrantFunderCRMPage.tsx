@@ -434,17 +434,21 @@ function LogInteractionModal({
           </select>
         </Labeled>
         <Labeled label="Type">
+          {/* Display labels per QA spec (GR-25); DB values stay the historical enum. */}
           <select value={type} onChange={(e) => setType(e.target.value)} className={inputCls}>
-            <option value="email">Email</option>
-            <option value="call">Call</option>
+            <option value="email">Email Sent</option>
+            <option value="phone">Phone Call</option>
             <option value="meeting">Meeting</option>
+            <option value="site_visit">Site Visit</option>
             <option value="application_submitted">Application Submitted</option>
             <option value="award_received">Award Received</option>
             <option value="rejection_received">Rejection Received</option>
             <option value="follow_up">Follow Up</option>
             <option value="note">Note</option>
+            <option value="other">Other</option>
           </select>
         </Labeled>
+
         <Labeled label="Subject *">
           <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject or topic" className={inputCls} />
         </Labeled>
