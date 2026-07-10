@@ -1,0 +1,4 @@
+DROP TRIGGER IF EXISTS trg_grant_application_packages_updated_at ON public.grant_application_packages;
+CREATE TRIGGER trg_grant_application_packages_updated_at
+BEFORE UPDATE ON public.grant_application_packages
+FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
