@@ -65,13 +65,33 @@ const STATUS_BADGE: Record<string, string> = {
 const INTERACTION_BADGE: Record<string, string> = {
   email: 'bg-blue-500/15 text-blue-300',
   call: 'bg-green-500/15 text-green-300',
+  phone: 'bg-green-500/15 text-green-300',
   meeting: 'bg-purple-500/15 text-purple-300',
+  site_visit: 'bg-indigo-500/15 text-indigo-300',
   application_submitted: 'bg-amber-500/15 text-amber-300',
   award_received: 'bg-yellow-500/15 text-yellow-300',
   rejection_received: 'bg-red-500/15 text-red-300',
   follow_up: 'bg-teal-500/15 text-teal-300',
   note: 'bg-gray-500/15 text-gray-300',
+  other: 'bg-gray-500/15 text-gray-300',
 };
+
+// UI label ↔ DB value map (GR-25). DB constraint keeps historical values;
+// the UI now surfaces the QA-spec labels but stores the correct enum.
+const INTERACTION_LABEL: Record<string, string> = {
+  email: 'Email Sent',
+  call: 'Phone Call',
+  phone: 'Phone Call',
+  meeting: 'Meeting',
+  site_visit: 'Site Visit',
+  application_submitted: 'Application Submitted',
+  award_received: 'Award Received',
+  rejection_received: 'Rejection Received',
+  follow_up: 'Follow Up',
+  note: 'Note',
+  other: 'Other',
+};
+
 
 const money = (n: number | null | undefined) =>
   `$${Number(n || 0).toLocaleString()}`;
@@ -338,7 +358,7 @@ function FunderDetail({
                   <li key={it.id} className="rounded-lg border border-border p-2 space-y-1">
                     <div className="flex items-center gap-2">
                       <span className={`text-[10px] px-2 py-0.5 rounded-full ${INTERACTION_BADGE[it.interaction_type] || INTERACTION_BADGE.note}`}>
-                        {it.interaction_type.replace('_', ' ')}
+                        {INTERACTION_LABEL[it.interaction_type] ?? it.interaction_type.replace('_', ' ')}
                       </span>
                       <span className="text-[10px] text-muted-foreground ml-auto">{fmtDate(it.interaction_date)}</span>
                     </div>
@@ -407,9 +427,10 @@ function LogInteractionModal({
       last_contact_date: date,
       updated_at: new Date().toISOString(),
     };
-    if (['email','call','meeting','follow_up'].includes(type) && funder?.relationship_status === 'prospect') {
+    if (['email','call','phone','meeting','site_visit','follow_up'].includes(type) && funder?.relationship_status === 'prospect') {
       updates.relationship_status = 'contacted';
     }
+
     if (type === 'application_submitted') {
       updates.total_applications = (funder?.total_applications || 0) + 1;
     }
@@ -434,17 +455,21 @@ function LogInteractionModal({
           </select>
         </Labeled>
         <Labeled label="Type">
+          {/* Display labels per QA spec (GR-25); DB values stay the historical enum. */}
           <select value={type} onChange={(e) => setType(e.target.value)} className={inputCls}>
-            <option value="email">Email</option>
-            <option value="call">Call</option>
+            <option value="email">Email Sent</option>
+            <option value="phone">Phone Call</option>
             <option value="meeting">Meeting</option>
+            <option value="site_visit">Site Visit</option>
             <option value="application_submitted">Application Submitted</option>
             <option value="award_received">Award Received</option>
             <option value="rejection_received">Rejection Received</option>
             <option value="follow_up">Follow Up</option>
             <option value="note">Note</option>
+            <option value="other">Other</option>
           </select>
         </Labeled>
+
         <Labeled label="Subject *">
           <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject or topic" className={inputCls} />
         </Labeled>
@@ -705,12 +730,23 @@ export default function GrantFunderCRMPage() {
               className="bg-background border border-border rounded-lg px-2 py-1.5 text-sm"
             >
               <option value="all">All Types</option>
+              {/* "Federal" is a display alias for the DB value "government" (GR-26). */}
+              <option value="government">Federal / Government</option>
               <option value="foundation">Foundation</option>
-              <option value="government">Government</option>
               <option value="corporate">Corporate</option>
               <option value="community">Community</option>
               <option value="faith_based">Faith Based</option>
+              <option value="other">Other</option>
             </select>
+            {typeFilter !== 'all' && (
+              <button
+                onClick={() => setTypeFilter('all')}
+                className="text-xs px-3 py-1.5 rounded-lg border border-border text-muted-foreground hover:bg-muted"
+              >
+                Show All
+              </button>
+            )}
+
           </div>
         </div>
 
