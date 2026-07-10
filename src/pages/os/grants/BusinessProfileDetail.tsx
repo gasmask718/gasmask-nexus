@@ -221,6 +221,10 @@ function fromInputValue(type: FieldType, v: any): any {
 export default function BusinessProfileDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab = TABS.some((t) => t.id === tabParam) ? (tabParam as string) : TABS[0].id;
+
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [savingKey, setSavingKey] = useState<string | null>(null);
