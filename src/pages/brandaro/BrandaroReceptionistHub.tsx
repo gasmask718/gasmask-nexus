@@ -139,13 +139,6 @@ export default function BrandaroReceptionistHub() {
       if ((data as any)?.error) throw new Error((data as any).error);
       return data as { checkout_url: string; sms_sent: boolean };
     },
-      const { data, error } = await supabase.functions.invoke("brandaro-receptionist-checkout", {
-        body: payload,
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      return data as { checkout_url: string; sms_sent: boolean };
-    },
     onSuccess: (data) => {
       setCheckoutUrl(data.checkout_url);
       setStep(4);
