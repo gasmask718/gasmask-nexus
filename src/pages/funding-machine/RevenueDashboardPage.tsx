@@ -48,7 +48,8 @@ type GrantRow = { status: string; count: number; total_awarded: number };
 export default function RevenueDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    totalFunding: 0, activeClients: 0, totalAwards: 0, clientsFunded: 0, mtdFunding: 0,
+    totalFunding: 0, activeClients: 0, totalAwards: 0, clientsFunded: 0,
+    mtdFunding: 0, prevMonthFunding: 0, growthPct: 0,
   });
   const [trend, setTrend] = useState<{ month: string; funding: number }[]>([]);
   const [pipelineValue, setPipelineValue] = useState({ target: 0, received: 0 });
