@@ -104,7 +104,7 @@ export default function SFLeadPipeline() {
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ['sf-leads'],
     queryFn: async () => {
-      const { data } = await supabase.from('surplus_funds_leads').select('*').order('created_at', { ascending: false }).limit(500);
+      const { data } = await supabase.from('surplus_funds_leads').select('*').order('created_at', { ascending: false }).limit(5000);
       return data ?? [];
     },
     refetchInterval: 30000,
