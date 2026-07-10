@@ -13,6 +13,9 @@ Deno.serve(async (req) => {
   // --- 1. Authenticate the caller -----------------------------------------
   const providedSecret = req.headers.get("x-scraper-secret");
   const expectedSecret = Deno.env.get("SCRAPER_INGEST_SECRET");
+  console.log("[scraper-ingest] ping test:", Deno.env.get("PING_TEST_ONLY"));
+  console.log("[scraper-ingest] all env keys:", Object.keys(Deno.env.toObject()));
+  console.log("[scraper-ingest] literal lookup name:", JSON.stringify("SCRAPER_INGEST_SECRET"));
   console.log("[scraper-ingest] auth debug", {
     expectedSecretPresent: !!expectedSecret,
     expectedSecretLength: expectedSecret?.length ?? 0,
