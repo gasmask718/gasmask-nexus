@@ -183,12 +183,32 @@ Deno.serve(async (req) => {
     const nowIso = new Date().toISOString();
     const nextIso = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-    // GR-37: only run AI for single-pair or single-business calls (cost / rate control).
-    // Nightly cross-product runs skip AI to protect credits and latency.
-    const aiEnabled =
-      !!Deno.env.get("ANTHROPIC_API_KEY") &&
-      (!!business_profile_id || !!grant_opportunity_id);
-    const aiCache = new Map<string, { rec: string | null; plan: string | null; prob: number | null }>();
+    // Section 5-7 (EF-02): AI must ALWAYS populate ai_recommendation,
+    // ai_action_plan, ai_success_probability. When Anthropic is unavailable,
+    // fall back to deterministic values with the required fallback message.
+    // For nightly cross-product runs, skip live AI calls (cost) but still
+    // write deterministic values instead of leaving NULL.
+    const hasKey = !!Deno.env.get("ANTHROPIC_API_KEY");
+    const aiLive = hasKey && (!!business_profile_id || !!grant_opportunity_id);
+    const aiCache = new Map<string, { rec: string; plan: string; prob: number }>();
+    const FALLBACK_MSG = hasKey
+      ? "AI unavailable — heuristic score only."
+      : "AI unavailable — heuristic score only. Add ANTHROPIC_API_KEY to Supabase Secrets to enable AI recommendations.";
+
+    function deterministicFallback(status: string, score: number, missingLen: number, failedLen: number) {
+      const plan = [
+        missingLen > 0 ? `Complete ${missingLen} missing requirement(s).` : "All requirements captured.",
+        failedLen > 0 ? `Resolve ${failedLen} failed requirement(s).` : "No failed requirements.",
+        "Verify business profile completeness before submission.",
+        "Gather supporting documents and financial statements.",
+        "Draft narrative and submit before deadline.",
+      ].join("\n");
+      const prob = status === "eligible" ? Math.max(60, score)
+        : status === "partially_eligible" ? Math.min(60, Math.max(30, score))
+        : status === "needs_review" ? Math.min(45, Math.max(20, score))
+        : Math.min(20, score);
+      return { rec: `${FALLBACK_MSG} Status: ${status}, heuristic score: ${score}.`, plan, prob };
+    }
 
     for (const biz of (businesses ?? []) as Record<string, unknown>[]) {
       for (const opp of (opps ?? []) as any[]) {
@@ -196,23 +216,32 @@ Deno.serve(async (req) => {
         const { status, score, met, missing, failed } = computeResult(reqs, biz);
         summary[status]++;
 
-        let ai_recommendation: string | null = null;
-        let ai_action_plan: string | null = null;
-        let ai_success_probability: number | null = null;
-        if (aiEnabled) {
+        let ai_recommendation: string;
+        let ai_action_plan: string;
+        let ai_success_probability: number;
+        const fb = deterministicFallback(status, score, missing.length, failed.length);
+
+        if (aiLive) {
           const key = `${(biz as any).id}::${opp.id}`;
           let cached = aiCache.get(key);
           if (!cached) {
-            cached = await generateAiRecommendation({
+            const out = await generateAiRecommendation({
               biz, opp: oppMetaById[opp.id] ?? { id: opp.id }, status, score, met, missing, failed,
             });
+            cached = {
+              rec: out.rec ?? fb.rec,
+              plan: out.plan ?? fb.plan,
+              prob: out.prob ?? fb.prob,
+            };
             aiCache.set(key, cached);
           }
           ai_recommendation = cached.rec;
           ai_action_plan = cached.plan;
           ai_success_probability = cached.prob;
-        } else if (!Deno.env.get("ANTHROPIC_API_KEY")) {
-          ai_recommendation = "AI recommendations unavailable";
+        } else {
+          ai_recommendation = fb.rec;
+          ai_action_plan = fb.plan;
+          ai_success_probability = fb.prob;
         }
 
         rows.push({
