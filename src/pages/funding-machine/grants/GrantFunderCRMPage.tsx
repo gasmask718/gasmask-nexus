@@ -65,13 +65,33 @@ const STATUS_BADGE: Record<string, string> = {
 const INTERACTION_BADGE: Record<string, string> = {
   email: 'bg-blue-500/15 text-blue-300',
   call: 'bg-green-500/15 text-green-300',
+  phone: 'bg-green-500/15 text-green-300',
   meeting: 'bg-purple-500/15 text-purple-300',
+  site_visit: 'bg-indigo-500/15 text-indigo-300',
   application_submitted: 'bg-amber-500/15 text-amber-300',
   award_received: 'bg-yellow-500/15 text-yellow-300',
   rejection_received: 'bg-red-500/15 text-red-300',
   follow_up: 'bg-teal-500/15 text-teal-300',
   note: 'bg-gray-500/15 text-gray-300',
+  other: 'bg-gray-500/15 text-gray-300',
 };
+
+// UI label ↔ DB value map (GR-25). DB constraint keeps historical values;
+// the UI now surfaces the QA-spec labels but stores the correct enum.
+const INTERACTION_LABEL: Record<string, string> = {
+  email: 'Email Sent',
+  call: 'Phone Call',
+  phone: 'Phone Call',
+  meeting: 'Meeting',
+  site_visit: 'Site Visit',
+  application_submitted: 'Application Submitted',
+  award_received: 'Award Received',
+  rejection_received: 'Rejection Received',
+  follow_up: 'Follow Up',
+  note: 'Note',
+  other: 'Other',
+};
+
 
 const money = (n: number | null | undefined) =>
   `$${Number(n || 0).toLocaleString()}`;
