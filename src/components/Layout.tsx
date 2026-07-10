@@ -508,7 +508,8 @@ const DYNASTY_NAVIGATION = {
     name: '🏦 Dynasty Funding Hub',
     items: [
       { path: '/funding-machine', label: '🏦 Penthouse — Command Center', icon: Landmark },
-      { path: '/funding-machine/morning-briefing', label: '🌅 Floor 1 — Morning Briefing', icon: Sunrise },
+      { path: '/funding-machine/briefing', label: '🌅 Floor 1 — Morning Briefing', icon: Sunrise },
+      { path: '/funding-machine/clients', label: '👥 Clients', icon: UserPlus },
       { path: '/funding-machine/intake', label: '➕ Floor 2 — Client Intake', icon: UserPlus },
       { path: '/funding-machine/credit-repair', label: '🛡️ Floor 3 — Credit Repair', icon: Shield },
       { path: '/funding-machine/business-builder', label: '🏗️ Floor 4 — Business Builder', icon: Building2 },
