@@ -116,36 +116,69 @@ Deno.serve(async (req) => {
     }
   }
 
-  // --- 4. Insert leads, ignoring anything already seen (dedupe_key) ------
+  // --- 4. Insert leads in chunks; on batch failure, retry per-row and
+  //         route individual failures to raw_scraper_leads_rejects so one
+  //         bad row can't kill the whole batch.
   const rows = leads.map((lead: Record<string, unknown>) => ({
     source_id, county, state, source_url,
     ...lead,
   }));
 
-  const { data: inserted, error: insertError } = await supabase
-    .from("raw_scraper_leads")
-    .upsert(rows, { onConflict: "dedupe_key", ignoreDuplicates: true })
-    .select("id");
+  const CHUNK_SIZE = 50;
+  let newCount = 0;
+  let rejectedCount = 0;
+  const rejectSamples: Array<{ index: number; error: string }> = [];
 
-  if (insertError) {
-    await supabase.from("scraper_runs").insert({
-      source_id,
-      status: "failure",
-      error_message: insertError.message,
-      finished_at: new Date().toISOString(),
-    });
-    await supabase.from("scraper_state").upsert({
-      source_id, county, state, monitor_type: "hash",
-      last_run_at: new Date().toISOString(),
-      consecutive_failures: 1,
-      last_error: insertError.message,
-    });
-    return json({ error: insertError.message }, 500);
+  async function insertOne(row: Record<string, unknown>, index: number) {
+    const { data, error } = await supabase
+      .from("raw_scraper_leads")
+      .upsert([row], { onConflict: "dedupe_key", ignoreDuplicates: true })
+      .select("id");
+    if (error) {
+      rejectedCount++;
+      if (rejectSamples.length < 5) {
+        rejectSamples.push({ index, error: error.message });
+      }
+      await supabase.from("raw_scraper_leads_rejects").insert({
+        source_id,
+        county,
+        state,
+        source_url,
+        pdf_hash: pdf_hash ?? null,
+        row_index: index,
+        row_payload: row,
+        error_message: error.message,
+        error_code: (error as { code?: string }).code ?? null,
+      });
+      return 0;
+    }
+    return data?.length ?? 0;
   }
 
-  const newCount = inserted?.length ?? 0;
+  for (let offset = 0; offset < rows.length; offset += CHUNK_SIZE) {
+    const chunk = rows.slice(offset, offset + CHUNK_SIZE);
+    const { data, error } = await supabase
+      .from("raw_scraper_leads")
+      .upsert(chunk, { onConflict: "dedupe_key", ignoreDuplicates: true })
+      .select("id");
+
+    if (error) {
+      // Batch failed — retry each row individually so good rows still land.
+      console.warn(`[scraper-ingest] chunk ${offset}-${offset + chunk.length} failed, retrying per-row:`, error.message);
+      for (let i = 0; i < chunk.length; i++) {
+        newCount += await insertOne(chunk[i], offset + i);
+      }
+    } else {
+      newCount += data?.length ?? 0;
+    }
+  }
 
   // --- 5. Record state + run log ------------------------------------------
+  const runStatus = rejectedCount === 0 ? "success" : "partial";
+  const runError = rejectedCount === 0
+    ? null
+    : `${rejectedCount} row(s) rejected; samples: ${JSON.stringify(rejectSamples)}`;
+
   await supabase.from("scraper_state").upsert({
     source_id, county, state, monitor_type: "hash",
     last_value: pdf_hash ?? null,
@@ -153,17 +186,24 @@ Deno.serve(async (req) => {
     last_success_at: new Date().toISOString(),
     last_new_records: newCount,
     consecutive_failures: 0,
-    last_error: null,
+    last_error: runError,
   });
 
   await supabase.from("scraper_runs").insert({
     source_id,
-    status: "success",
+    status: runStatus,
     new_records: newCount,
+    error_message: runError,
     finished_at: new Date().toISOString(),
   });
 
-  return json({ status: "success", new_records: newCount, total_sent: rows.length }, 200);
+  return json({
+    status: runStatus,
+    new_records: newCount,
+    total_sent: rows.length,
+    rejected: rejectedCount,
+    reject_samples: rejectSamples,
+  }, 200);
 });
 
 function json(body: unknown, status: number): Response {
