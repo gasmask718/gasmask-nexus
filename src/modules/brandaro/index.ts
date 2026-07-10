@@ -71,6 +71,8 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/results', label: 'Result Engine', icon: TrendingUp },
   { path: '/os/brandaro/review-queue', label: 'Quality Review', icon: ShieldCheck },
   { path: '/os/brandaro/clients', label: 'Client Portal', icon: Users },
+  { path: '/os/brandaro/receptionist', label: 'AI Receptionist', icon: PhoneCall },
+  { path: '/os/brandaro/receptionist/calls', label: 'All Receptionist Calls', icon: PhoneIncoming },
   { path: '/os/brandaro/revenue', label: 'Revenue Analytics', icon: TrendingUp },
 
   // ── System ──
