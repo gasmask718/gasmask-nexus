@@ -511,7 +511,16 @@ export default function BusinessProfileDetail() {
               </div>
             );
           })()}
-          <Tabs defaultValue={TABS[0].id} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => {
+              const next = new URLSearchParams(searchParams);
+              next.set("tab", v);
+              setSearchParams(next, { replace: true });
+            }}
+            className="w-full"
+          >
+
             <TabsList className="w-full flex-wrap h-auto justify-start">
               {TABS.map((t) => (
                 <TabsTrigger key={t.id} value={t.id} className="text-xs">
