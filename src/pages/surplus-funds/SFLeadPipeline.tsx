@@ -353,7 +353,7 @@ export default function SFLeadPipeline() {
             </div>
             <div>
               <p className="text-xs uppercase tracking-wider text-muted-foreground">Today's Website Leads</p>
-              <p className="text-3xl font-bold" style={{ color: '#0F6E56' }}>{stats.websiteToday}</p>
+              <p className="text-3xl font-bold" style={{ color: '#0F6E56' }}>{websiteToday}</p>
               <p className="text-xs text-muted-foreground">dynastyrecoverygroup.com — live intake</p>
             </div>
           </div>
