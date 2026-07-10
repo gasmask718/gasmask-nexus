@@ -524,7 +524,7 @@ export default function AppSidebar() {
               </div>
               {renderSection('funding-hub', 'Dynasty Funding Machine', '🏦', [
                 { path: '/funding-machine', label: 'Penthouse — Command Center', emoji: '🏦' },
-                { path: '/funding-machine/morning-briefing', label: 'Floor 1 — Morning Briefing', emoji: '🌅' },
+                { path: '/funding-machine/briefing', label: 'Floor 1 — Morning Briefing', emoji: '🌅' },
                 { path: '/funding-machine/intake', label: 'Floor 2 — Client Intake', emoji: '➕' },
                 { path: '/funding-machine/credit-repair', label: 'Floor 3 — Credit Repair', emoji: '🛡️' },
                 { path: '/funding-machine/business-builder', label: 'Floor 4 — Business Builder', emoji: '🏗️' },
