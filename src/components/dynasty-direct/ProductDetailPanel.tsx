@@ -367,6 +367,12 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
                         </SelectContent>
                       </Select>
                     </div>
+                    <div>
+                      <Label>Inventory Qty</Label>
+                      <Input type="number" min="0" step="1" value={(core.inventory_qty as any) ?? ''}
+                        onChange={e => setCore({ ...core, inventory_qty: e.target.value === '' ? null : Number(e.target.value) })} />
+                      <p className="text-xs text-muted-foreground mt-1">Units on hand. Storefront shows "Sold Out" when 0 or null.</p>
+                    </div>
                     <Button style={{ background: GOLD, color: '#000' }} disabled={saving} onClick={saveCore}>
                       <Save className="h-4 w-4 mr-1" /> {saving ? 'Saving…' : 'Save'}
                     </Button>
@@ -377,6 +383,12 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
                     <div><div className="text-muted-foreground text-xs">Brand</div><div>{p.brand ?? '—'}</div></div>
                     <div><div className="text-muted-foreground text-xs">Category</div><Badge variant="outline">{p.category ?? '—'}</Badge></div>
                     <div><div className="text-muted-foreground text-xs">Status</div><Badge>{p.status}</Badge></div>
+                    <div><div className="text-muted-foreground text-xs">Inventory Qty</div>
+                      <div className={p.inventory_qty == null || p.inventory_qty <= 0 ? 'text-destructive font-medium' : 'font-medium'}>
+                        {p.inventory_qty == null ? '—' : p.inventory_qty}
+                        {(p.inventory_qty == null || p.inventory_qty <= 0) && <span className="text-xs ml-2">(Sold Out)</span>}
+                      </div>
+                    </div>
                   </div>
                 )}
               </CardContent>
