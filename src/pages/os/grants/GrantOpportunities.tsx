@@ -82,9 +82,20 @@ export default function GrantOpportunities() {
       .from("grant_opportunities")
       .select("*")
       .eq("is_active", true)
+      .not("grant_name", "is", null)
       .order("amount_typical", { ascending: false, nullsFirst: false });
     if (error) { toast.error(error.message); setOpps([]); }
-    else setOpps((data as Opportunity[]) ?? []);
+    else {
+      // UI protection: never render blank cards even if a bad row slips past the DB trigger.
+      const rows = (data as Opportunity[]) ?? [];
+      const clean = rows.filter(
+        (o) =>
+          !!o.grant_name &&
+          o.grant_name.trim() !== "" &&
+          (o.amount_typical != null || o.amount_max != null || o.amount_min != null)
+      );
+      setOpps(clean);
+    }
     setLoading(false);
   };
 
