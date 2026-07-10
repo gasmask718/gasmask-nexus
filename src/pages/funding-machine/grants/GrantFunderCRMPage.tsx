@@ -358,7 +358,7 @@ function FunderDetail({
                   <li key={it.id} className="rounded-lg border border-border p-2 space-y-1">
                     <div className="flex items-center gap-2">
                       <span className={`text-[10px] px-2 py-0.5 rounded-full ${INTERACTION_BADGE[it.interaction_type] || INTERACTION_BADGE.note}`}>
-                        {it.interaction_type.replace('_', ' ')}
+                        {INTERACTION_LABEL[it.interaction_type] ?? it.interaction_type.replace('_', ' ')}
                       </span>
                       <span className="text-[10px] text-muted-foreground ml-auto">{fmtDate(it.interaction_date)}</span>
                     </div>
