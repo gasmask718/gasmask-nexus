@@ -137,6 +137,11 @@ export const BrandaroModule: DynastyModule = {
     { path: '/clients', component: ClientPortalPage, label: 'Client Portal', icon: Users, requiresAuth: true },
     { path: '/revenue', component: RevenueAnalyticsPage, label: 'Revenue Analytics', icon: TrendingUp, requiresAuth: true },
 
+    // AI Receptionist product
+    { path: '/receptionist', component: BrandaroReceptionistHub, label: 'AI Receptionist', icon: PhoneCall, requiresAuth: true },
+    { path: '/receptionist/calls', component: BrandaroReceptionistCalls, label: 'All Receptionist Calls', icon: PhoneIncoming, requiresAuth: true },
+    { path: '/receptionist/:id', component: BrandaroReceptionistClientDetail, label: 'Receptionist Client', icon: PhoneCall, requiresAuth: true },
+
     // System
     { path: '/system-status', component: SystemStatusPage, label: 'System Status', icon: Activity, requiresAuth: true },
   ],
