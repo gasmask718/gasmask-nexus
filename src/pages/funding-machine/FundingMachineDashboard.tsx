@@ -17,11 +17,11 @@ function MorningBriefingSummary() {
   const { data: briefing, isLoading } = useQuery({
     queryKey: ['dashboard-morning-briefing-summary'],
     queryFn: async () => {
-      const today = new Date().toISOString().split('T')[0];
       const { data } = await supabase
         .from('funding_morning_briefings')
         .select('*')
-        .eq('briefing_date', today)
+        .order('briefing_date', { ascending: false })
+        .limit(1)
         .maybeSingle();
       return data;
     },
