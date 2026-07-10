@@ -87,20 +87,46 @@ function fmt$(v: number | null | undefined): string {
 
 type SortKey = 'created_at' | 'surplus_amount' | 'last_called_at' | 'call_count';
 
+type AmountBucket = 'all' | '0-10k' | '10k-50k' | '50k-plus' | 'custom';
+const AMOUNT_BUCKETS: { key: AmountBucket; label: string; min: number | null; max: number | null }[] = [
+  { key: 'all',      label: 'Any amount',   min: null,   max: null },
+  { key: '0-10k',    label: '$0 – $10k',    min: 0,      max: 10000 },
+  { key: '10k-50k',  label: '$10k – $50k',  min: 10000,  max: 50000 },
+  { key: '50k-plus', label: '$50k+',        min: 50000,  max: null },
+  { key: 'custom',   label: 'Custom range', min: null,   max: null },
+];
+
 export default function SFLeadPipeline() {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [stateFilter, setStateFilter] = useState('all');
+  const [stateFilters, setStateFilters] = useState<string[]>([]); // multi-select; empty = all
   const [sourceFilter, setSourceFilter] = useState('all');
   const [skipTab, setSkipTab] = useState<'all' | SkipStatus>('all');
+  const [amountBucket, setAmountBucket] = useState<AmountBucket>('all');
+  const [amountMinInput, setAmountMinInput] = useState<string>('');
+  const [amountMaxInput, setAmountMaxInput] = useState<string>('');
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detailLead, setDetailLead] = useState<any>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState('overview');
+
+  // Resolve active amount range from bucket + custom inputs
+  const { activeAmountMin, activeAmountMax } = useMemo(() => {
+    if (amountBucket === 'custom') {
+      const min = amountMinInput === '' ? null : Number(amountMinInput);
+      const max = amountMaxInput === '' ? null : Number(amountMaxInput);
+      return {
+        activeAmountMin: Number.isFinite(min as number) ? (min as number) : null,
+        activeAmountMax: Number.isFinite(max as number) ? (max as number) : null,
+      };
+    }
+    const b = AMOUNT_BUCKETS.find(x => x.key === amountBucket)!;
+    return { activeAmountMin: b.min, activeAmountMax: b.max };
+  }, [amountBucket, amountMinInput, amountMaxInput]);
 
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ['sf-leads'],
@@ -116,33 +142,69 @@ export default function SFLeadPipeline() {
       const { error } = await supabase.from('surplus_funds_leads').insert(lead);
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sf-leads'] }); toast.success('Lead added'); setAddOpen(false); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sf-leads'] }); qc.invalidateQueries({ queryKey: ['sf-lead-summary'] }); toast.success('Lead added'); setAddOpen(false); },
     onError: (e: any) => toast.error(e.message),
   });
 
-  const stats = useMemo(() => {
-    const total = leads.length;
-    const skipTraced = leads.filter((l: any) => deriveSkipStatus(l) === 'traced').length;
-    const skipPending = leads.filter((l: any) => deriveSkipStatus(l) === 'pending').length;
-    const skipFailed = leads.filter((l: any) => deriveSkipStatus(l) === 'failed').length;
-    const queued = leads.filter((l: any) => l.status === 'queued').length;
-    const interested = leads.filter((l: any) => l.status === 'interested').length;
-    const agreement = leads.filter((l: any) => l.status === 'agreement_signed').length;
-    const totalSurplus = leads.reduce((sum: number, l: any) => sum + (l.surplus_amount || 0), 0);
+  // Filter payload — shared between the summary RPC and the client-side list filter
+  // so both always describe the same "what am I looking at" slice.
+  const filterPayload = useMemo(() => ({
+    states: stateFilters,
+    amountMin: activeAmountMin,
+    amountMax: activeAmountMax,
+    skipStatus: skipTab === 'all' ? null : skipTab,
+    status: statusFilter === 'all' ? null : statusFilter,
+    source: sourceFilter === 'all' ? null : sourceFilter,
+    search: search.trim() || null,
+  }), [stateFilters, activeAmountMin, activeAmountMax, skipTab, statusFilter, sourceFilter, search]);
+
+  // SQL-side aggregation — count/sum/avg computed in Postgres, not JS.
+  // Stays fast at 5,000+ rows.
+  const { data: summary } = useQuery({
+    queryKey: ['sf-lead-summary', filterPayload],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc('sf_lead_summary', {
+        _states: filterPayload.states.length ? filterPayload.states : null,
+        _amount_min: filterPayload.amountMin,
+        _amount_max: filterPayload.amountMax,
+        _skip_status: filterPayload.skipStatus,
+        _status: filterPayload.status,
+        _source: filterPayload.source,
+        _search: filterPayload.search,
+      });
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      return {
+        total_leads:        Number(row?.total_leads ?? 0),
+        distinct_states:    Number(row?.distinct_states ?? 0),
+        total_surplus:      Number(row?.total_surplus ?? 0),
+        avg_surplus:        Number(row?.avg_surplus ?? 0),
+        skip_pending_count: Number(row?.skip_pending_count ?? 0),
+        skip_traced_count:  Number(row?.skip_traced_count ?? 0),
+        skip_failed_count:  Number(row?.skip_failed_count ?? 0),
+      };
+    },
+    refetchInterval: 30000,
+    placeholderData: (prev) => prev,
+  });
+
+  // Website-today spotlight remains client-side (small, always-visible metric)
+  const websiteToday = useMemo(() => {
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-    const websiteToday = leads.filter((l: any) =>
+    return leads.filter((l: any) =>
       l.lead_source === 'dynasty_recovery_website' &&
       l.created_at && new Date(l.created_at) >= todayStart
     ).length;
-    return { total, skipTraced, skipPending, skipFailed, queued, interested, agreement, totalSurplus, websiteToday };
   }, [leads]);
 
   const filtered = useMemo(() => {
     let result = leads;
     if (skipTab !== 'all') result = result.filter((l: any) => deriveSkipStatus(l) === skipTab);
     if (statusFilter !== 'all') result = result.filter((l: any) => l.status === statusFilter);
-    if (stateFilter !== 'all') result = result.filter((l: any) => l.state === stateFilter);
+    if (stateFilters.length > 0) result = result.filter((l: any) => stateFilters.includes(l.state));
     if (sourceFilter !== 'all') result = result.filter((l: any) => (l.lead_source || 'manual_upload') === sourceFilter);
+    if (activeAmountMin != null) result = result.filter((l: any) => Number(l.surplus_amount || 0) >= activeAmountMin);
+    if (activeAmountMax != null) result = result.filter((l: any) => Number(l.surplus_amount || 0) <= activeAmountMax);
     if (search) {
       const s = search.toLowerCase();
       result = result.filter((l: any) =>
@@ -157,7 +219,16 @@ export default function SFLeadPipeline() {
       return sortDir === 'asc' ? av - bv : bv - av;
     });
     return result;
-  }, [leads, skipTab, statusFilter, stateFilter, sourceFilter, search, sortKey, sortDir]);
+  }, [leads, skipTab, statusFilter, stateFilters, sourceFilter, activeAmountMin, activeAmountMax, search, sortKey, sortDir]);
+
+  const hasActiveFilters =
+    stateFilters.length > 0 || amountBucket !== 'all' || skipTab !== 'all' ||
+    statusFilter !== 'all' || sourceFilter !== 'all' || search.trim() !== '';
+
+  const clearAllFilters = () => {
+    setStateFilters([]); setAmountBucket('all'); setAmountMinInput(''); setAmountMaxInput('');
+    setSkipTab('all'); setStatusFilter('all'); setSourceFilter('all'); setSearch('');
+  };
 
   const toggleSelect = (id: string) => { const s = new Set(selected); s.has(id) ? s.delete(id) : s.add(id); setSelected(s); };
   const toggleAll = () => setSelected(selected.size === filtered.length ? new Set() : new Set(filtered.map((l: any) => l.id)));
