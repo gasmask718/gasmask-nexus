@@ -28,10 +28,31 @@ import { formatDistanceToNow } from 'date-fns';
 const AMBER = '#BA7517';
 
 const STATUS_PILLS = [
-  'all','new','phone_found','queued','called','interested',
+  'all','new','skip_trace_pending','phone_found','queued','called','interested',
   'consultation_booked','agreement_signed','referred_to_attorney',
   'case_filed','funds_released','closed','do_not_contact'
 ];
+
+// Derived skip-trace status from existing fields (no schema change required).
+// - traced: skip_traced flag set true
+// - failed: status='skip_trace_failed' OR skip_trace_attempted && !skip_traced
+// - pending: everything else that hasn't been traced yet
+type SkipStatus = 'pending' | 'traced' | 'failed';
+function deriveSkipStatus(l: any): SkipStatus {
+  if (l?.skip_traced === true) return 'traced';
+  if (l?.status === 'skip_trace_failed' || l?.skip_trace_failed === true) return 'failed';
+  return 'pending';
+}
+const skipBadgeStyle: Record<SkipStatus, string> = {
+  pending: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/40',
+  traced:  'bg-emerald-500/15 text-emerald-400 border-emerald-500/40',
+  failed:  'bg-red-500/15 text-red-400 border-red-500/40',
+};
+const skipBadgeLabel: Record<SkipStatus, string> = {
+  pending: '🟡 Pending Skip Trace',
+  traced:  '🟢 Skip Traced',
+  failed:  '🔴 Failed',
+};
 
 const statusColor: Record<string, string> = {
   new: 'bg-gray-600/20 text-gray-400 border-gray-600',
