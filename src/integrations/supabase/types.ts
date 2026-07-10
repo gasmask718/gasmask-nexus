@@ -54915,7 +54915,7 @@ export type Database = {
           },
         ]
       }
-      funding_daily_briefings: {
+      funding_daily_briefings_legacy: {
         Row: {
           ai_commentary: string | null
           briefing_date: string
@@ -82761,6 +82761,69 @@ export type Database = {
           },
         ]
       }
+      raw_scraper_leads: {
+        Row: {
+          balance_date: string | null
+          case_number: string | null
+          claim_deadline: string | null
+          claimant_name: string | null
+          county: string
+          dedupe_key: string | null
+          id: number
+          parcel_id: string | null
+          promoted_at: string | null
+          promoted_to_lead_id: string | null
+          property_address: string | null
+          raw_row: Json | null
+          sale_date: string | null
+          scraped_at: string
+          source_id: string
+          source_url: string
+          state: string
+          surplus_amount: number | null
+        }
+        Insert: {
+          balance_date?: string | null
+          case_number?: string | null
+          claim_deadline?: string | null
+          claimant_name?: string | null
+          county: string
+          dedupe_key?: string | null
+          id?: never
+          parcel_id?: string | null
+          promoted_at?: string | null
+          promoted_to_lead_id?: string | null
+          property_address?: string | null
+          raw_row?: Json | null
+          sale_date?: string | null
+          scraped_at?: string
+          source_id: string
+          source_url: string
+          state: string
+          surplus_amount?: number | null
+        }
+        Update: {
+          balance_date?: string | null
+          case_number?: string | null
+          claim_deadline?: string | null
+          claimant_name?: string | null
+          county?: string
+          dedupe_key?: string | null
+          id?: never
+          parcel_id?: string | null
+          promoted_at?: string | null
+          promoted_to_lead_id?: string | null
+          property_address?: string | null
+          raw_row?: Json | null
+          sale_date?: string | null
+          scraped_at?: string
+          source_id?: string
+          source_url?: string
+          state?: string
+          surplus_amount?: number | null
+        }
+        Relationships: []
+      }
       re_automation_log: {
         Row: {
           automation_type: string
@@ -91680,6 +91743,78 @@ export type Database = {
           sql_executed?: string | null
           table_name?: string
           version_number?: number
+        }
+        Relationships: []
+      }
+      scraper_runs: {
+        Row: {
+          error_message: string | null
+          finished_at: string | null
+          id: number
+          new_records: number | null
+          source_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          error_message?: string | null
+          finished_at?: string | null
+          id?: never
+          new_records?: number | null
+          source_id: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          error_message?: string | null
+          finished_at?: string | null
+          id?: never
+          new_records?: number | null
+          source_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      scraper_state: {
+        Row: {
+          consecutive_failures: number
+          county: string | null
+          last_error: string | null
+          last_new_records: number | null
+          last_run_at: string | null
+          last_success_at: string | null
+          last_value: string | null
+          monitor_type: string
+          source_id: string
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          consecutive_failures?: number
+          county?: string | null
+          last_error?: string | null
+          last_new_records?: number | null
+          last_run_at?: string | null
+          last_success_at?: string | null
+          last_value?: string | null
+          monitor_type: string
+          source_id: string
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          consecutive_failures?: number
+          county?: string | null
+          last_error?: string | null
+          last_new_records?: number | null
+          last_run_at?: string | null
+          last_success_at?: string | null
+          last_value?: string | null
+          monitor_type?: string
+          source_id?: string
+          state?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -123567,14 +123702,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -124883,6 +125018,63 @@ export type Database = {
           utm_content?: string | null
           utm_medium?: string | null
           utm_source?: string | null
+        }
+        Relationships: []
+      }
+      funding_daily_briefings: {
+        Row: {
+          ai_summary: string | null
+          alerts: Json | null
+          briefing_content: string | null
+          briefing_date: string | null
+          clients_active: number | null
+          clients_summary: Json | null
+          clients_total: number | null
+          created_at: string | null
+          funding_received_mtd: number | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string | null
+          operator_actions: Json | null
+          raw_data: Json | null
+          reminders_due_today: number | null
+          total_active_clients: number | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          alerts?: Json | null
+          briefing_content?: string | null
+          briefing_date?: string | null
+          clients_active?: number | null
+          clients_summary?: Json | null
+          clients_total?: number | null
+          created_at?: string | null
+          funding_received_mtd?: number | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string | null
+          operator_actions?: Json | null
+          raw_data?: Json | null
+          reminders_due_today?: number | null
+          total_active_clients?: number | null
+        }
+        Update: {
+          ai_summary?: string | null
+          alerts?: Json | null
+          briefing_content?: string | null
+          briefing_date?: string | null
+          clients_active?: number | null
+          clients_summary?: Json | null
+          clients_total?: number | null
+          created_at?: string | null
+          funding_received_mtd?: number | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string | null
+          operator_actions?: Json | null
+          raw_data?: Json | null
+          reminders_due_today?: number | null
+          total_active_clients?: number | null
         }
         Relationships: []
       }
