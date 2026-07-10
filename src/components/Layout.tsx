@@ -834,6 +834,7 @@ const Layout = ({ children }: LayoutProps) => {
   const { currentBusiness, loading: businessLoading } = useBusiness();
   const location = useLocation();
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
+  const [brandaroPendingCount, setBrandaroPendingCount] = useState(0);
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
