@@ -298,7 +298,8 @@ Deno.serve(async (req) => {
         pairs_evaluated: rows.length,
         upserted,
         results_summary: summary,
-        ai_enabled: aiEnabled,
+        ai_enabled: aiLive,
+        ai_available: hasKey,
       }),
       { status: 200, headers: jsonHeaders },
     );
