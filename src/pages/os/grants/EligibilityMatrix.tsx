@@ -121,23 +121,24 @@ export default function EligibilityMatrix() {
   );
   const [runningAll, setRunningAll] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [regenAi, setRegenAi] = useState(false);
 
   const load = async () => {
     setLoading(true);
     const [{ data: b }, { data: o }, { data: r }] = await Promise.all([
       supabase
         .from("grant_business_profiles")
-        .select("id, business_name")
+        .select("id, business_name, completeness_pct")
         .order("business_name"),
       supabase
         .from("grant_opportunities")
-        .select("id, title, grant_name, funder_name")
+        .select("id, title, grant_name, funder_name, amount_typical, amount_max, deadline, description")
         .eq("status", "open")
         .order("grant_name"),
       supabase
         .from("grant_eligibility_results")
         .select(
-          "id, business_profile_id, grant_opportunity_id, eligibility_status, eligibility_score, ai_recommendation, ai_action_plan, ai_success_probability, application_status, requirements_met, requirements_missing, requirements_failed",
+          "id, business_profile_id, grant_opportunity_id, eligibility_status, eligibility_score, ai_recommendation, ai_action_plan, ai_success_probability, application_status, requirements_met, requirements_missing, requirements_failed, last_checked_at",
         ),
     ]);
     setBusinesses((b as any) ?? []);
@@ -149,6 +150,7 @@ export default function EligibilityMatrix() {
     setResults(map);
     setLoading(false);
   };
+
 
   useEffect(() => {
     load();
