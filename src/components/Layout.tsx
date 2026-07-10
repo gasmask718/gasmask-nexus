@@ -941,7 +941,7 @@ const Layout = ({ children }: LayoutProps) => {
     );
   }
 
-  const renderSection = (id: string, name: string, items: Array<{ path: string; label: string; icon: any; testId?: string }>) => {
+  const renderSection = (id: string, name: string, items: Array<{ path: string; label: string; icon: any; testId?: string; badge?: number }>) => {
     const isOpen = openSections.includes(id);
     const sectionWired = sectionHasDispatch(items.map(i => i.path));
 
@@ -980,6 +980,11 @@ const Layout = ({ children }: LayoutProps) => {
                 >
                   <item.icon className="h-3 w-3 shrink-0" />
                   <span className="truncate flex-1">{item.label}</span>
+                  {typeof item.badge === 'number' && item.badge > 0 && (
+                    <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[16px] px-1 rounded-full bg-orange-500/90 text-[10px] font-semibold text-white shrink-0">
+                      {item.badge > 999 ? '999+' : item.badge}
+                    </span>
+                  )}
                   {wired && (
                     <span
                       title={DISPATCH_TOOLTIP}
