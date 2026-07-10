@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory, ShieldCheck, Brain, Megaphone, Crown, Cpu, Activity, Smartphone, Zap, Bot, MessageSquare } from 'lucide-react';
+import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory, ShieldCheck, Brain, Megaphone, Crown, Cpu, Activity, Smartphone, Zap, Bot, MessageSquare, PhoneCall, PhoneIncoming } from 'lucide-react';
 import BrandaroDashboard from '@/pages/brandaro/BrandaroDashboard';
 import LeadDiscoveryPage from '@/pages/brandaro/LeadDiscoveryPage';
 import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
@@ -29,6 +29,9 @@ import BrandaroVACenter from '@/pages/brandaro/BrandaroVACenter';
 import BrandaroAICalling from '@/pages/brandaro/BrandaroAICalling';
 import BrandaroDistribution from '@/pages/brandaro/BrandaroDistribution';
 import BrandaroConversations from '@/pages/brandaro/BrandaroConversations';
+import BrandaroReceptionistHub from '@/pages/brandaro/BrandaroReceptionistHub';
+import BrandaroReceptionistClientDetail from '@/pages/brandaro/BrandaroReceptionistClientDetail';
+import BrandaroReceptionistCalls from '@/pages/brandaro/BrandaroReceptionistCalls';
 
 const sidebarItems: SidebarItem[] = [
   // ── Core ──
@@ -68,6 +71,8 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/results', label: 'Result Engine', icon: TrendingUp },
   { path: '/os/brandaro/review-queue', label: 'Quality Review', icon: ShieldCheck },
   { path: '/os/brandaro/clients', label: 'Client Portal', icon: Users },
+  { path: '/os/brandaro/receptionist', label: 'AI Receptionist', icon: PhoneCall },
+  { path: '/os/brandaro/receptionist/calls', label: 'All Receptionist Calls', icon: PhoneIncoming },
   { path: '/os/brandaro/revenue', label: 'Revenue Analytics', icon: TrendingUp },
 
   // ── System ──
@@ -131,6 +136,11 @@ export const BrandaroModule: DynastyModule = {
     { path: '/review-queue', component: ReviewQueuePage, label: 'Quality Review', icon: ShieldCheck, requiresAuth: true },
     { path: '/clients', component: ClientPortalPage, label: 'Client Portal', icon: Users, requiresAuth: true },
     { path: '/revenue', component: RevenueAnalyticsPage, label: 'Revenue Analytics', icon: TrendingUp, requiresAuth: true },
+
+    // AI Receptionist product
+    { path: '/receptionist', component: BrandaroReceptionistHub, label: 'AI Receptionist', icon: PhoneCall, requiresAuth: true },
+    { path: '/receptionist/calls', component: BrandaroReceptionistCalls, label: 'All Receptionist Calls', icon: PhoneIncoming, requiresAuth: true },
+    { path: '/receptionist/:id', component: BrandaroReceptionistClientDetail, label: 'Receptionist Client', icon: PhoneCall, requiresAuth: true },
 
     // System
     { path: '/system-status', component: SystemStatusPage, label: 'System Status', icon: Activity, requiresAuth: true },
