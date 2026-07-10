@@ -318,14 +318,15 @@ export default function ApplicationPackage() {
                   <XCircle className="h-4 w-4 text-red-600" />
                   <span>{d}</span>
                   <span className="text-xs text-muted-foreground">
-                    — Upload this in Tab 8 of{" "}
+                    —{" "}
                     <Link
-                      to={`/os/grants/businesses/${pkg.business_profile_id}`}
+                      to={`/os/grants/businesses/${pkg.business_profile_id}?tab=documents`}
                       className="underline text-primary"
                     >
-                      your business profile
+                      Upload in Documents
                     </Link>
                   </span>
+
                 </li>
               ))}
               {(pkg.documents_missing?.length ?? 0) === 0 && (
