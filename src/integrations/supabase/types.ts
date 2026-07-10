@@ -82833,6 +82833,48 @@ export type Database = {
         }
         Relationships: []
       }
+      raw_scraper_leads_rejects: {
+        Row: {
+          county: string | null
+          error_code: string | null
+          error_message: string
+          id: number
+          pdf_hash: string | null
+          rejected_at: string
+          row_index: number | null
+          row_payload: Json
+          source_id: string
+          source_url: string | null
+          state: string | null
+        }
+        Insert: {
+          county?: string | null
+          error_code?: string | null
+          error_message: string
+          id?: never
+          pdf_hash?: string | null
+          rejected_at?: string
+          row_index?: number | null
+          row_payload: Json
+          source_id: string
+          source_url?: string | null
+          state?: string | null
+        }
+        Update: {
+          county?: string | null
+          error_code?: string | null
+          error_message?: string
+          id?: never
+          pdf_hash?: string | null
+          rejected_at?: string
+          row_index?: number | null
+          row_payload?: Json
+          source_id?: string
+          source_url?: string | null
+          state?: string | null
+        }
+        Relationships: []
+      }
       re_automation_log: {
         Row: {
           automation_type: string
