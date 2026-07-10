@@ -19335,6 +19335,281 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_receptionist_calls: {
+        Row: {
+          appointment_booked: boolean
+          appointment_datetime: string | null
+          appointment_service: string | null
+          call_direction: string
+          call_duration_seconds: number
+          call_outcome: string | null
+          call_status: string
+          callback_datetime: string | null
+          callback_requested: boolean
+          caller_name: string | null
+          caller_phone: string | null
+          caller_sentiment: string | null
+          client_id: string
+          created_at: string
+          id: string
+          key_info_extracted: Json | null
+          recording_url: string | null
+          retell_call_id: string | null
+          sms_followup_content: string | null
+          sms_followup_sent: boolean
+          sms_followup_sent_at: string | null
+          summary: string | null
+          transcript: string | null
+        }
+        Insert: {
+          appointment_booked?: boolean
+          appointment_datetime?: string | null
+          appointment_service?: string | null
+          call_direction?: string
+          call_duration_seconds?: number
+          call_outcome?: string | null
+          call_status?: string
+          callback_datetime?: string | null
+          callback_requested?: boolean
+          caller_name?: string | null
+          caller_phone?: string | null
+          caller_sentiment?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          key_info_extracted?: Json | null
+          recording_url?: string | null
+          retell_call_id?: string | null
+          sms_followup_content?: string | null
+          sms_followup_sent?: boolean
+          sms_followup_sent_at?: string | null
+          summary?: string | null
+          transcript?: string | null
+        }
+        Update: {
+          appointment_booked?: boolean
+          appointment_datetime?: string | null
+          appointment_service?: string | null
+          call_direction?: string
+          call_duration_seconds?: number
+          call_outcome?: string | null
+          call_status?: string
+          callback_datetime?: string | null
+          callback_requested?: boolean
+          caller_name?: string | null
+          caller_phone?: string | null
+          caller_sentiment?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          key_info_extracted?: Json | null
+          recording_url?: string | null
+          retell_call_id?: string | null
+          sms_followup_content?: string | null
+          sms_followup_sent?: boolean
+          sms_followup_sent_at?: string | null
+          summary?: string | null
+          transcript?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_receptionist_calls_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_receptionist_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_receptionist_clients: {
+        Row: {
+          activated_at: string | null
+          agent_provisioned: boolean
+          agent_provisioned_at: string | null
+          appointment_booking_enabled: boolean
+          appointment_calendar_url: string | null
+          appointments_booked_this_month: number
+          appointments_booked_total: number
+          avg_call_duration_seconds: number
+          brandaro_client_id: string | null
+          business_address: string | null
+          business_description: string | null
+          business_hours: Json | null
+          business_name: string
+          business_website: string | null
+          call_script: string | null
+          calls_this_month: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          city: string | null
+          created_at: string
+          email: string
+          escalation_phone: string | null
+          faqs: Json | null
+          id: string
+          industry: string | null
+          last_call_at: string | null
+          monthly_amount: number
+          next_billing_date: string | null
+          number_provisioned: boolean
+          number_provisioned_at: string | null
+          onboarded_at: string | null
+          owner_name: string | null
+          phone: string
+          plan: string
+          qualified_lead_id: string | null
+          receptionist_name: string
+          retell_agent_id: string | null
+          retell_agent_name: string | null
+          retell_voice_id: string | null
+          services_offered: string[] | null
+          setup_fee_amount: number
+          setup_fee_paid: boolean
+          setup_fee_paid_at: string | null
+          sms_followup_enabled: boolean
+          state: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_setup_intent_id: string | null
+          stripe_subscription_id: string | null
+          timezone: string
+          total_calls_handled: number
+          trial_ends_at: string | null
+          twilio_number_sid: string | null
+          twilio_phone_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          agent_provisioned?: boolean
+          agent_provisioned_at?: string | null
+          appointment_booking_enabled?: boolean
+          appointment_calendar_url?: string | null
+          appointments_booked_this_month?: number
+          appointments_booked_total?: number
+          avg_call_duration_seconds?: number
+          brandaro_client_id?: string | null
+          business_address?: string | null
+          business_description?: string | null
+          business_hours?: Json | null
+          business_name: string
+          business_website?: string | null
+          call_script?: string | null
+          calls_this_month?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          city?: string | null
+          created_at?: string
+          email: string
+          escalation_phone?: string | null
+          faqs?: Json | null
+          id?: string
+          industry?: string | null
+          last_call_at?: string | null
+          monthly_amount?: number
+          next_billing_date?: string | null
+          number_provisioned?: boolean
+          number_provisioned_at?: string | null
+          onboarded_at?: string | null
+          owner_name?: string | null
+          phone: string
+          plan?: string
+          qualified_lead_id?: string | null
+          receptionist_name?: string
+          retell_agent_id?: string | null
+          retell_agent_name?: string | null
+          retell_voice_id?: string | null
+          services_offered?: string[] | null
+          setup_fee_amount?: number
+          setup_fee_paid?: boolean
+          setup_fee_paid_at?: string | null
+          sms_followup_enabled?: boolean
+          state?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_setup_intent_id?: string | null
+          stripe_subscription_id?: string | null
+          timezone?: string
+          total_calls_handled?: number
+          trial_ends_at?: string | null
+          twilio_number_sid?: string | null
+          twilio_phone_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          agent_provisioned?: boolean
+          agent_provisioned_at?: string | null
+          appointment_booking_enabled?: boolean
+          appointment_calendar_url?: string | null
+          appointments_booked_this_month?: number
+          appointments_booked_total?: number
+          avg_call_duration_seconds?: number
+          brandaro_client_id?: string | null
+          business_address?: string | null
+          business_description?: string | null
+          business_hours?: Json | null
+          business_name?: string
+          business_website?: string | null
+          call_script?: string | null
+          calls_this_month?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string
+          escalation_phone?: string | null
+          faqs?: Json | null
+          id?: string
+          industry?: string | null
+          last_call_at?: string | null
+          monthly_amount?: number
+          next_billing_date?: string | null
+          number_provisioned?: boolean
+          number_provisioned_at?: string | null
+          onboarded_at?: string | null
+          owner_name?: string | null
+          phone?: string
+          plan?: string
+          qualified_lead_id?: string | null
+          receptionist_name?: string
+          retell_agent_id?: string | null
+          retell_agent_name?: string | null
+          retell_voice_id?: string | null
+          services_offered?: string[] | null
+          setup_fee_amount?: number
+          setup_fee_paid?: boolean
+          setup_fee_paid_at?: string | null
+          sms_followup_enabled?: boolean
+          state?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_setup_intent_id?: string | null
+          stripe_subscription_id?: string | null
+          timezone?: string
+          total_calls_handled?: number
+          trial_ends_at?: string | null
+          twilio_number_sid?: string | null
+          twilio_phone_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_receptionist_clients_brandaro_client_id_fkey"
+            columns: ["brandaro_client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_receptionist_clients_qualified_lead_id_fkey"
+            columns: ["qualified_lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_reinvestment_cycles: {
         Row: {
           allocations: Json | null
