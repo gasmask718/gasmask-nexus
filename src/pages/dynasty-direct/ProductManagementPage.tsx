@@ -172,6 +172,7 @@ export default function ProductManagementPage() {
         category: form.category,
         supplier_id: form.supplier_id || null,
         supplier_cost: form.supplier_cost ? Number(form.supplier_cost) : null,
+        inventory_qty: form.inventory_qty !== '' ? Number(form.inventory_qty) : null,
         status: requestedStatus,
       };
       const { data, error } = await supabase
@@ -183,7 +184,7 @@ export default function ProductManagementPage() {
 
       toast.success('Product created — pricing running via trigger');
       setAddOpen(false);
-      setForm({ product_name: '', category: '', supplier_id: '', supplier_cost: '' });
+      setForm({ product_name: '', category: '', supplier_id: '', supplier_cost: '', inventory_qty: '' });
       qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
 
       // Gate immediate feedback (in case dd_enforce_catalog_confirm_gate downgraded status)
