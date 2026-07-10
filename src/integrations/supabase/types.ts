@@ -54915,7 +54915,7 @@ export type Database = {
           },
         ]
       }
-      funding_daily_briefings: {
+      funding_daily_briefings_legacy: {
         Row: {
           ai_commentary: string | null
           briefing_date: string
@@ -123702,14 +123702,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -125018,6 +125018,63 @@ export type Database = {
           utm_content?: string | null
           utm_medium?: string | null
           utm_source?: string | null
+        }
+        Relationships: []
+      }
+      funding_daily_briefings: {
+        Row: {
+          ai_summary: string | null
+          alerts: Json | null
+          briefing_content: string | null
+          briefing_date: string | null
+          clients_active: number | null
+          clients_summary: Json | null
+          clients_total: number | null
+          created_at: string | null
+          funding_received_mtd: number | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string | null
+          operator_actions: Json | null
+          raw_data: Json | null
+          reminders_due_today: number | null
+          total_active_clients: number | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          alerts?: Json | null
+          briefing_content?: string | null
+          briefing_date?: string | null
+          clients_active?: number | null
+          clients_summary?: Json | null
+          clients_total?: number | null
+          created_at?: string | null
+          funding_received_mtd?: number | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string | null
+          operator_actions?: Json | null
+          raw_data?: Json | null
+          reminders_due_today?: number | null
+          total_active_clients?: number | null
+        }
+        Update: {
+          ai_summary?: string | null
+          alerts?: Json | null
+          briefing_content?: string | null
+          briefing_date?: string | null
+          clients_active?: number | null
+          clients_summary?: Json | null
+          clients_total?: number | null
+          created_at?: string | null
+          funding_received_mtd?: number | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string | null
+          operator_actions?: Json | null
+          raw_data?: Json | null
+          reminders_due_today?: number | null
+          total_active_clients?: number | null
         }
         Relationships: []
       }
