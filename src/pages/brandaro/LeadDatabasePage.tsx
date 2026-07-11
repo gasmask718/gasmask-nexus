@@ -1225,6 +1225,13 @@ export default function LeadDatabasePage() {
           </SheetContent>
         </Sheet>
       </div>
+        </Sheet>
+        <SendReceptionistLinkModal
+          lead={receptionistLead}
+          open={!!receptionistLead}
+          onOpenChange={(o) => { if (!o) setReceptionistLead(null); }}
+        />
+      </div>
     </TooltipProvider>
   );
 }
