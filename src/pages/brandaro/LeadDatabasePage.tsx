@@ -20,6 +20,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { CsvLeadImporter } from "@/components/brandaro/CsvLeadImporter";
+import { SendReceptionistLinkModal } from "@/components/brandaro/SendReceptionistLinkModal";
 import { BuildDemoModal } from "@/components/brandaro/BuildDemoModal";
 import { BrandaroLeadAssignmentButtons } from "@/components/brandaro/BrandaroLeadAssignmentButtons";
 import { VAReassignControl } from "@/components/brandaro/VAReassignControl";
@@ -135,6 +136,7 @@ export default function LeadDatabasePage() {
   const [colDropdownOpen, setColDropdownOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
+  const [receptionistLead, setReceptionistLead] = useState<Lead | null>(null);
   const lastShiftIdx = useRef<number | null>(null);
 
   // Debounced search
@@ -1076,6 +1078,9 @@ export default function LeadDatabasePage() {
                                       {loadingAction === `demo-${lead.id}` ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : <Zap className="h-3 w-3 mr-2" />}
                                       Send Demo (Auto-Generate)
                                     </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setReceptionistLead(lead)}>
+                                      <DollarSign className="h-3 w-3 mr-2" /> Send Receptionist Link
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleBookingLink(lead)} disabled={!lead.phone_number}>
                                       <Calendar className="h-3 w-3 mr-2" /> Send Booking Link
                                     </DropdownMenuItem>
@@ -1219,6 +1224,11 @@ export default function LeadDatabasePage() {
             )}
           </SheetContent>
         </Sheet>
+        <SendReceptionistLinkModal
+          lead={receptionistLead}
+          open={!!receptionistLead}
+          onOpenChange={(o) => { if (!o) setReceptionistLead(null); }}
+        />
       </div>
     </TooltipProvider>
   );
