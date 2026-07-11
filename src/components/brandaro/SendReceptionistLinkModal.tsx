@@ -56,15 +56,13 @@ export function SendReceptionistLinkModal({
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [smsSent, setSmsSent] = useState<boolean | null>(null);
 
-  // Sync when lead changes
-  const leadKey = lead?.id ?? null;
-  useState(() => leadKey);
+  useEffect(() => {
+    if (open && lead) {
+      setBusinessName(lead.business_name ?? "");
+      setPhone(lead.phone_number ?? "");
+    }
+  }, [open, lead?.id]);
 
-  // reset on open
-  if (open && lead && businessName === "" && lead.business_name) {
-    setBusinessName(lead.business_name);
-    setPhone(lead.phone_number ?? "");
-  }
 
   const pricing = PLANS[plan];
   const total = pricing.setup + pricing.monthly;
