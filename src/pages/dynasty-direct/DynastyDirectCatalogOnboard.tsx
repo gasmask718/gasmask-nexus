@@ -405,24 +405,69 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
               </div>
             )}
             {candidates.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {candidates.map((c, i) => (
-                  <div key={i} className="border rounded-lg overflow-hidden bg-card">
-                    <div className="aspect-square bg-muted">
-                      <img src={c.thumb || c.url} alt="" className="w-full h-full object-contain" loading="lazy" referrerPolicy="no-referrer"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0.2'; }} />
-                    </div>
-                    <div className="p-2 text-[11px] flex items-center justify-between">
-                      <Badge variant="secondary" className="text-[10px]">{c.source}</Badge>
-                      <span className="text-muted-foreground">{Math.round(c.confidence * 100)}%</span>
-                    </div>
+              <>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">
+                    Tap to select the real photos you want to keep (front, back, side, etc.). Only selected shots flow to the live product.
+                  </span>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="ghost" onClick={async () => {
+                      const all = candidates.map((c) => c.url);
+                      setSelectedCandidateUrls(all);
+                      if (draftId) await supabase.from('dd_catalog_drafts').update({ selected_candidate_urls: all }).eq('id', draftId);
+                    }}>Select all</Button>
+                    <Button size="sm" variant="ghost" onClick={async () => {
+                      setSelectedCandidateUrls([]);
+                      if (draftId) await supabase.from('dd_catalog_drafts').update({ selected_candidate_urls: [] }).eq('id', draftId);
+                    }}>Clear</Button>
                   </div>
-                ))}
-              </div>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {candidates.map((c, i) => {
+                    const picked = selectedCandidateUrls.includes(c.url);
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => toggleCandidate(c.url)}
+                        className={`text-left border-2 rounded-lg overflow-hidden bg-card transition ${picked ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-muted-foreground/50'}`}
+                      >
+                        <div className="aspect-square bg-muted relative">
+                          <img src={c.thumb || c.url} alt="" className="w-full h-full object-contain" loading="lazy" referrerPolicy="no-referrer"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0.2'; }} />
+                          {picked && (
+                            <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
+                              <CheckCircle2 className="h-4 w-4" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-2 text-[11px] flex items-center justify-between">
+                          <Badge variant="secondary" className="text-[10px]">{c.source}</Badge>
+                          <span className="text-muted-foreground">{Math.round(c.confidence * 100)}%</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
             )}
             <div className="flex items-center justify-between border-t pt-4">
-              <div className="text-xs text-muted-foreground">Draft <code>{draftId?.slice(0, 8)}</code></div>
-              <Button onClick={() => setStep('B2')} disabled={streaming}><Wand2 className="h-4 w-4 mr-2" /> Next: Enhance</Button>
+              <div className="text-xs text-muted-foreground">
+                Draft <code>{draftId?.slice(0, 8)}</code>
+                {candidates.length > 0 && (
+                  <span className="ml-3">
+                    {selectedCandidateUrls.length === 0
+                      ? <span className="text-destructive">Pick at least 1 photo to continue</span>
+                      : <span>{selectedCandidateUrls.length} of {candidates.length} selected</span>}
+                  </span>
+                )}
+              </div>
+              <Button
+                onClick={() => setStep('B2')}
+                disabled={streaming || (candidates.length > 0 && selectedCandidateUrls.length === 0)}
+              >
+                <Wand2 className="h-4 w-4 mr-2" /> Next: Enhance
+              </Button>
             </div>
           </CardContent>
         </Card>
