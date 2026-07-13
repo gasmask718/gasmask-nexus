@@ -85,15 +85,29 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
   const costNum = Number(cost);
   const costValid = cost.trim().length > 0 && Number.isFinite(costNum) && costNum > 0;
   const canStartB = productName.trim().length > 1 && photos.length > 0 && !!supplierId && costValid;
+  // Only the wholesaler-curated candidate photos flow downstream (never the raw candidate firehose).
+  const curatedCandidates: Candidate[] = candidates.filter((c) => selectedCandidateUrls.includes(c.url));
   const allGalleryImages: { url: string; label: string }[] = [
     ...photos.map((url) => ({ url, label: 'original' })),
-    ...candidates.map((c) => ({ url: c.url, label: `found · ${c.source}` })),
+    ...curatedCandidates.map((c) => ({ url: c.url, label: `found · ${c.source}` })),
     ...enhancedUrls.map((url) => ({ url, label: 'enhanced' })),
     ...staged.map((s) => ({ url: s.url, label: `staged · ${s.title}` })),
   ];
 
   function toggleSelect(url: string) {
     setSelectedImages((s) => s.includes(url) ? s.filter((u) => u !== url) : [...s, url]);
+  }
+
+  async function toggleCandidate(url: string) {
+    const next = selectedCandidateUrls.includes(url)
+      ? selectedCandidateUrls.filter((u) => u !== url)
+      : [...selectedCandidateUrls, url];
+    setSelectedCandidateUrls(next);
+    if (draftId) {
+      await supabase.from('dd_catalog_drafts')
+        .update({ selected_candidate_urls: next })
+        .eq('id', draftId);
+    }
   }
 
   async function startStepB() {
