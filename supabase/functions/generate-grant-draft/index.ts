@@ -79,12 +79,12 @@ Deno.serve(async (req) => {
         ? 'UBEN Network (501c3 nonprofit)'
         : 'Dynasty Connect LLC';
 
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     let draft = '';
-    let ai_source: 'anthropic' | 'fallback' = 'fallback';
+    let ai_source: 'lovable_ai' | 'fallback' = 'fallback';
     let ai_error: string | null = null;
 
-    if (ANTHROPIC_API_KEY) {
+    if (LOVABLE_API_KEY) {
       const prompt = `You are an expert grant writer. Write a complete grant application for:
 
 Grant: ${app.grant_name}
@@ -93,49 +93,51 @@ Applicant: ${applicant}
 Amount Requested: $${app.amount_requested?.toLocaleString() ?? 'varies'}
 ${creditScore ? 'Credit Score: ' + creditScore : ''}
 
-Write these 5 sections using markdown H1 headers (# Section Name):
-1. Executive Summary (100 words)
-2. Organization Description (100 words)
-3. Project Description (150 words)
-4. Goals and Measurable Outcomes (100 words)
-5. Budget Justification (100 words)
+Write EXACTLY these 5 sections using markdown H1 headers (# Section Name), in this order and no others:
+1. Executive Summary (~100 words)
+2. Organization Description (~100 words)
+3. Project Description (~150 words)
+4. Goals and Measurable Outcomes (~100 words)
+5. Budget Justification (~100 words)
 
 Total UNDER 600 words. Professional, compelling, specific. Reference the business name, grant name, funder, and requested amount.`;
 
       try {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 25_000);
-        const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
           signal: ctrl.signal,
           headers: {
-            'x-api-key': ANTHROPIC_API_KEY,
-            'anthropic-version': '2023-06-01',
+            'Lovable-API-Key': LOVABLE_API_KEY,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'claude-haiku-4-5',
-            max_tokens: 1400,
-            messages: [{ role: 'user', content: prompt }],
+            model: 'google/gemini-3-flash-preview',
+            messages: [
+              { role: 'system', content: 'You are an expert grant writer producing polished, funder-ready narratives.' },
+              { role: 'user', content: prompt },
+            ],
           }),
         }).finally(() => clearTimeout(timer));
 
-        if (anthropicRes.ok) {
-          const data = await anthropicRes.json();
-          const text = data?.content?.[0]?.text ?? '';
+        if (aiRes.ok) {
+          const data = await aiRes.json();
+          const text = data?.choices?.[0]?.message?.content ?? '';
           if (text.trim()) {
             draft = text;
-            ai_source = 'anthropic';
+            ai_source = 'lovable_ai';
           } else {
             ai_error = 'empty_ai_response';
           }
         } else {
-          ai_error = `anthropic_${anthropicRes.status}`;
-          console.error('[generate-grant-draft] anthropic error', anthropicRes.status, (await anthropicRes.text()).slice(0, 300));
+          const bodyText = (await aiRes.text()).slice(0, 300);
+          ai_error = `lovable_ai_${aiRes.status}`;
+          console.error('[generate-grant-draft] lovable ai error', aiRes.status, bodyText);
         }
       } catch (e: any) {
-        ai_error = e?.name === 'AbortError' ? 'anthropic_timeout' : 'anthropic_failure';
-        console.error('[generate-grant-draft] anthropic exception', e?.message ?? e);
+        ai_error = e?.name === 'AbortError' ? 'lovable_ai_timeout' : 'lovable_ai_failure';
+        console.error('[generate-grant-draft] lovable ai exception', e?.message ?? e);
       }
     } else {
       ai_error = 'missing_api_key';
