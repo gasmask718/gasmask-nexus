@@ -44,8 +44,35 @@ function coerce(v: unknown): { isNull: boolean; asNumber: number | null; asStrin
   return { isNull, asNumber, asString, asBool };
 }
 
+// Map QA-spec requirement field_names → actual grant_business_profiles columns.
+// Derived values (is_for_profit, is_nonprofit) are computed from entity_type.
+function resolveProfileField(fieldName: string, profile: Record<string, unknown>): unknown {
+  if (fieldName in profile) return profile[fieldName];
+  const aliases: Record<string, string> = {
+    years_in_operation: "years_in_business",
+    annual_revenue: "annual_revenue_current",
+    revenue: "annual_revenue_current",
+    revenue_current: "annual_revenue_current",
+    employees: "employee_count_ft",
+    employee_count: "employee_count_ft",
+    state: "address_state",
+    zip: "address_zip",
+    city: "address_city",
+    county: "address_county",
+    naics: "naics_primary",
+    minority_owned: "cert_mbe",
+    women_owned: "cert_wbe",
+    veteran_owned: "cert_veteran",
+  };
+  if (aliases[fieldName] && aliases[fieldName] in profile) return profile[aliases[fieldName]];
+  const entity = String(profile.entity_type ?? "").toLowerCase();
+  if (fieldName === "is_for_profit") return entity !== "" && entity !== "nonprofit" && entity !== "non_profit" && entity !== "501c3";
+  if (fieldName === "is_nonprofit") return entity === "nonprofit" || entity === "non_profit" || entity === "501c3";
+  return undefined;
+}
+
 function evalRequirement(req: Requirement, profile: Record<string, unknown>): EvalOutcome {
-  const raw = profile[req.field_name];
+  const raw = resolveProfileField(req.field_name, profile);
   const { isNull, asNumber, asString, asBool } = coerce(raw);
   const rv = req.required_value;
 
@@ -188,12 +215,12 @@ Deno.serve(async (req) => {
     // fall back to deterministic values with the required fallback message.
     // For nightly cross-product runs, skip live AI calls (cost) but still
     // write deterministic values instead of leaving NULL.
-    const hasKey = !!Deno.env.get("ANTHROPIC_API_KEY");
+    const hasKey = !!Deno.env.get("LOVABLE_API_KEY") || !!Deno.env.get("ANTHROPIC_API_KEY");
     const aiLive = hasKey && (!!business_profile_id || !!grant_opportunity_id);
     const aiCache = new Map<string, { rec: string; plan: string; prob: number }>();
     const FALLBACK_MSG = hasKey
       ? "AI unavailable — heuristic score only."
-      : "AI unavailable — heuristic score only. Add ANTHROPIC_API_KEY to Supabase Secrets to enable AI recommendations.";
+      : "AI unavailable — heuristic score only. Add LOVABLE_API_KEY to Supabase Secrets to enable AI recommendations.";
 
     function deterministicFallback(status: string, score: number, missingLen: number, failedLen: number) {
       const plan = [
@@ -312,7 +339,7 @@ Deno.serve(async (req) => {
   }
 });
 
-// -------- GR-37: AI recommendation (Anthropic Claude) with graceful fallback --------
+// -------- GR-37: AI recommendation via Lovable AI Gateway (fallback: Anthropic) --------
 async function generateAiRecommendation(args: {
   biz: Record<string, unknown>;
   opp: Record<string, unknown>;
@@ -322,8 +349,9 @@ async function generateAiRecommendation(args: {
   missing: any[];
   failed: any[];
 }): Promise<{ rec: string | null; plan: string | null; prob: number | null }> {
-  const key = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!key) return { rec: "AI recommendations unavailable", plan: null, prob: null };
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+  const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!lovableKey && !anthropicKey) return { rec: "AI recommendations unavailable", plan: null, prob: null };
 
   const biz = args.biz as any;
   const opp = args.opp as any;
@@ -359,28 +387,50 @@ The "action_plan" is 3-6 short bullet steps (single string with newlines).
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 25_000);
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      signal: ctrl.signal,
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5",
-        max_tokens: 900,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    }).finally(() => clearTimeout(timer));
-
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => "");
-      console.error("[eligibility-ai] anthropic non-200", resp.status, body.slice(0, 300));
-      return { rec: "AI recommendations unavailable", plan: null, prob: null };
+    let text = "";
+    if (lovableKey) {
+      const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: {
+          "content-type": "application/json",
+          "authorization": `Bearer ${lovableKey}`,
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [{ role: "user", content: prompt }],
+        }),
+      }).finally(() => clearTimeout(timer));
+      if (!resp.ok) {
+        const body = await resp.text().catch(() => "");
+        console.error("[eligibility-ai] lovable non-200", resp.status, body.slice(0, 300));
+        return { rec: "AI recommendations unavailable", plan: null, prob: null };
+      }
+      const data = await resp.json();
+      text = data?.choices?.[0]?.message?.content ?? "";
+    } else {
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": anthropicKey!,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5",
+          max_tokens: 900,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      }).finally(() => clearTimeout(timer));
+      if (!resp.ok) {
+        const body = await resp.text().catch(() => "");
+        console.error("[eligibility-ai] anthropic non-200", resp.status, body.slice(0, 300));
+        return { rec: "AI recommendations unavailable", plan: null, prob: null };
+      }
+      const data = await resp.json();
+      text = data?.content?.[0]?.text ?? "";
     }
-    const data = await resp.json();
-    const text: string = data?.content?.[0]?.text ?? "";
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return { rec: text.slice(0, 2000) || "AI recommendations unavailable", plan: null, prob: null };
     const parsed = JSON.parse(jsonMatch[0]);
