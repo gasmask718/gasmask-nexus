@@ -7,7 +7,7 @@ Fixes applied July 2026 for the Pre-Flight QA checklist.
 | QA ID | Previous | New | Files Modified | DB Changes | Notes |
 |---|---|---|---|---|---|
 | 4.1 Tables | PASS | PASS | — | none | No schema changes required. |
-| 4.2 Business Profiles | PARTIAL | **PASS** | migration | `grant_business_profiles_calc_completeness()` trigger + seed data | 10 active businesses now 95–100%; Playboxxx remains inactive at 10%. |
+| 4.2 Business Profiles | PARTIAL | **PASS** | migration | `grant_business_profiles_calc_completeness()` trigger + seed data | 10 active businesses now 84–88% (trigger-computed, weighted across 20 fields); Playboxxx remains inactive at 8%. |
 | 4.3 Grant Opportunities | PARTIAL | **PASS** | `src/pages/os/grants/GrantOpportunities.tsx`, migration | `grant_opportunities_validate()` trigger + column-mirror backfill | All 11 opportunities now have `title`, `amount`, `funder`. UI double-filters incomplete rows. |
 | 4.5 Cron Naming | NAMING MISMATCH | **PASS (Option B, alias)** | this doc | best-effort `cron.schedule` alias `funding-morning-briefing` | The canonical daily job is still `funding-morning-briefing-daily`; spec name works as an alias when `pg_cron` is reachable. Documented here so QA specs match reality. |
 
