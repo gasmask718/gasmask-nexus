@@ -116,9 +116,9 @@ export default function ClientProfilePage() {
       if (!clientId) return [];
       const { data, error } = await supabase
         .from('funding_credit_items' as any)
-        .select('id')
+        .select('id, current_status, is_resolved')
         .eq('client_id', clientId as any)
-        .eq('status', 'negative' as any);
+        .eq('is_resolved', false as any);
       if (error) throw error;
       return (data as any[]) ?? [];
     },
