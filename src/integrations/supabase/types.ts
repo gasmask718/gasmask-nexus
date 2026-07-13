@@ -83111,6 +83111,39 @@ export type Database = {
         }
         Relationships: []
       }
+      raw_scraper_leads_flagged: {
+        Row: {
+          flagged_at: string
+          id: number
+          raw_scraper_lead_id: number
+          reasons: string
+          reviewed_at: string | null
+          reviewer_decision: string | null
+          snapshot: Json
+          source_id: string
+        }
+        Insert: {
+          flagged_at?: string
+          id?: never
+          raw_scraper_lead_id: number
+          reasons: string
+          reviewed_at?: string | null
+          reviewer_decision?: string | null
+          snapshot: Json
+          source_id: string
+        }
+        Update: {
+          flagged_at?: string
+          id?: never
+          raw_scraper_lead_id?: number
+          reasons?: string
+          reviewed_at?: string | null
+          reviewer_decision?: string | null
+          snapshot?: Json
+          source_id?: string
+        }
+        Relationships: []
+      }
       raw_scraper_leads_rejects: {
         Row: {
           county: string | null
