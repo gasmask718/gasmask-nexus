@@ -38788,6 +38788,7 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           selected: Json
+          selected_candidate_urls: string[]
           staged: Json
           status: string
           submitted_at: string | null
@@ -38826,6 +38827,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           selected?: Json
+          selected_candidate_urls?: string[]
           staged?: Json
           status?: string
           submitted_at?: string | null
@@ -38864,6 +38866,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           selected?: Json
+          selected_candidate_urls?: string[]
           staged?: Json
           status?: string
           submitted_at?: string | null
