@@ -215,12 +215,12 @@ Deno.serve(async (req) => {
     // fall back to deterministic values with the required fallback message.
     // For nightly cross-product runs, skip live AI calls (cost) but still
     // write deterministic values instead of leaving NULL.
-    const hasKey = !!Deno.env.get("ANTHROPIC_API_KEY");
+    const hasKey = !!Deno.env.get("LOVABLE_API_KEY") || !!Deno.env.get("ANTHROPIC_API_KEY");
     const aiLive = hasKey && (!!business_profile_id || !!grant_opportunity_id);
     const aiCache = new Map<string, { rec: string; plan: string; prob: number }>();
     const FALLBACK_MSG = hasKey
       ? "AI unavailable — heuristic score only."
-      : "AI unavailable — heuristic score only. Add ANTHROPIC_API_KEY to Supabase Secrets to enable AI recommendations.";
+      : "AI unavailable — heuristic score only. Add LOVABLE_API_KEY to Supabase Secrets to enable AI recommendations.";
 
     function deterministicFallback(status: string, score: number, missingLen: number, failedLen: number) {
       const plan = [
