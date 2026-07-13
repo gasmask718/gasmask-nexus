@@ -44,6 +44,7 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
   const [streaming, setStreaming] = useState(false);
   const [progressLog, setProgressLog] = useState<string[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [selectedCandidateUrls, setSelectedCandidateUrls] = useState<string[]>([]);
   const [chainMeta, setChainMeta] = useState<{ adapters: string[]; primary: string; serpapi_available: boolean } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
