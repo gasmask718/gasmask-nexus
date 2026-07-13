@@ -1,7 +1,7 @@
 // Dedicated Grant Applications page — /os/grants/applications
 // Row-click navigates to /os/grants/:id (GrantApplicationDetail)
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -69,14 +69,23 @@ const fmtMoney = (n: number | null) =>
 
 export default function GrantApplicationsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const initialTab = location.pathname.endsWith("/approved")
+    ? "awarded"
+    : location.pathname.endsWith("/pending")
+    ? "submitted"
+    : "all";
   const [loading, setLoading] = useState(true);
   const [apps, setApps] = useState<App[]>([]);
   const [clients, setClients] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
-  const [statusTab, setStatusTab] = useState("all");
+  const [statusTab, setStatusTab] = useState(initialTab);
   const [applicantFilter, setApplicantFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+
+  // Keep status tab in sync when navigating between /applications, /approved, /pending
+  useEffect(() => { setStatusTab(initialTab); }, [initialTab]);
 
   async function load() {
     setLoading(true);

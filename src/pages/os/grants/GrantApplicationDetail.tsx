@@ -122,16 +122,31 @@ export default function GrantApplicationDetail() {
     if (!id || !newTaskTitle.trim()) return;
     const { data: userData } = await supabase.auth.getUser();
     const uid = userData?.user?.id ?? null;
+    // grant_tasks has UNIQUE (application_id, title) — dedupe by appending
+    // a short suffix if the exact title already exists on this application.
+    let title = newTaskTitle.trim();
+    const existing = new Set(tasks.map((t: any) => (t.title ?? '').toLowerCase()));
+    if (existing.has(title.toLowerCase())) {
+      const stamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      title = `${title} (${stamp})`;
+    }
     const { error } = await supabase.from("grant_tasks").insert({
       application_id: id,
-      title: newTaskTitle.trim(),
+      title,
       description: null,
       due_date: newTaskDue || null,
       status: "pending",
       assigned_to: uid,
       created_by: uid,
     });
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(
+        error.code === '23505'
+          ? 'A task with that title already exists on this application.'
+          : error.message
+      );
+      return;
+    }
     setNewTaskTitle("");
     setNewTaskDue("");
     toast.success("Task added");
