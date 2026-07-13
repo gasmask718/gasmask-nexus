@@ -183,7 +183,7 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
   }
 
   async function runStage() {
-    const hero = enhancedUrls[0] || candidates[0]?.url || photos[0];
+    const hero = selectedCandidateUrls[0] || enhancedUrls[0] || candidates[0]?.url || photos[0];
     if (!draftId || !hero) return;
     setBusy('stage');
     try {
