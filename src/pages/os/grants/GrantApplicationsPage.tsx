@@ -1,7 +1,7 @@
 // Dedicated Grant Applications page — /os/grants/applications
 // Row-click navigates to /os/grants/:id (GrantApplicationDetail)
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
