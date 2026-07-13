@@ -44,8 +44,35 @@ function coerce(v: unknown): { isNull: boolean; asNumber: number | null; asStrin
   return { isNull, asNumber, asString, asBool };
 }
 
+// Map QA-spec requirement field_names → actual grant_business_profiles columns.
+// Derived values (is_for_profit, is_nonprofit) are computed from entity_type.
+function resolveProfileField(fieldName: string, profile: Record<string, unknown>): unknown {
+  if (fieldName in profile) return profile[fieldName];
+  const aliases: Record<string, string> = {
+    years_in_operation: "years_in_business",
+    annual_revenue: "annual_revenue_current",
+    revenue: "annual_revenue_current",
+    revenue_current: "annual_revenue_current",
+    employees: "employee_count_ft",
+    employee_count: "employee_count_ft",
+    state: "address_state",
+    zip: "address_zip",
+    city: "address_city",
+    county: "address_county",
+    naics: "naics_primary",
+    minority_owned: "cert_mbe",
+    women_owned: "cert_wbe",
+    veteran_owned: "cert_veteran",
+  };
+  if (aliases[fieldName] && aliases[fieldName] in profile) return profile[aliases[fieldName]];
+  const entity = String(profile.entity_type ?? "").toLowerCase();
+  if (fieldName === "is_for_profit") return entity !== "" && entity !== "nonprofit" && entity !== "non_profit" && entity !== "501c3";
+  if (fieldName === "is_nonprofit") return entity === "nonprofit" || entity === "non_profit" || entity === "501c3";
+  return undefined;
+}
+
 function evalRequirement(req: Requirement, profile: Record<string, unknown>): EvalOutcome {
-  const raw = profile[req.field_name];
+  const raw = resolveProfileField(req.field_name, profile);
   const { isNull, asNumber, asString, asBool } = coerce(raw);
   const rv = req.required_value;
 
