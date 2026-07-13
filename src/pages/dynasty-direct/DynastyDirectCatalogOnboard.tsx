@@ -113,7 +113,7 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
   async function startStepB() {
     if (!canStartB) return;
     setStreaming(true);
-    setCandidates([]); setProgressLog([]); setChainMeta(null);
+    setCandidates([]); setSelectedCandidateUrls([]); setProgressLog([]); setChainMeta(null);
 
     const { data: userRes } = await supabase.auth.getUser();
     const { data: draft, error: draftErr } = await supabase.from('dd_catalog_drafts').insert({
