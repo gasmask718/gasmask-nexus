@@ -339,7 +339,7 @@ Deno.serve(async (req) => {
   }
 });
 
-// -------- GR-37: AI recommendation (Anthropic Claude) with graceful fallback --------
+// -------- GR-37: AI recommendation via Lovable AI Gateway (fallback: Anthropic) --------
 async function generateAiRecommendation(args: {
   biz: Record<string, unknown>;
   opp: Record<string, unknown>;
@@ -349,8 +349,9 @@ async function generateAiRecommendation(args: {
   missing: any[];
   failed: any[];
 }): Promise<{ rec: string | null; plan: string | null; prob: number | null }> {
-  const key = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!key) return { rec: "AI recommendations unavailable", plan: null, prob: null };
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+  const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!lovableKey && !anthropicKey) return { rec: "AI recommendations unavailable", plan: null, prob: null };
 
   const biz = args.biz as any;
   const opp = args.opp as any;
@@ -386,28 +387,50 @@ The "action_plan" is 3-6 short bullet steps (single string with newlines).
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 25_000);
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      signal: ctrl.signal,
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5",
-        max_tokens: 900,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    }).finally(() => clearTimeout(timer));
-
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => "");
-      console.error("[eligibility-ai] anthropic non-200", resp.status, body.slice(0, 300));
-      return { rec: "AI recommendations unavailable", plan: null, prob: null };
+    let text = "";
+    if (lovableKey) {
+      const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: {
+          "content-type": "application/json",
+          "authorization": `Bearer ${lovableKey}`,
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [{ role: "user", content: prompt }],
+        }),
+      }).finally(() => clearTimeout(timer));
+      if (!resp.ok) {
+        const body = await resp.text().catch(() => "");
+        console.error("[eligibility-ai] lovable non-200", resp.status, body.slice(0, 300));
+        return { rec: "AI recommendations unavailable", plan: null, prob: null };
+      }
+      const data = await resp.json();
+      text = data?.choices?.[0]?.message?.content ?? "";
+    } else {
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": anthropicKey!,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5",
+          max_tokens: 900,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      }).finally(() => clearTimeout(timer));
+      if (!resp.ok) {
+        const body = await resp.text().catch(() => "");
+        console.error("[eligibility-ai] anthropic non-200", resp.status, body.slice(0, 300));
+        return { rec: "AI recommendations unavailable", plan: null, prob: null };
+      }
+      const data = await resp.json();
+      text = data?.content?.[0]?.text ?? "";
     }
-    const data = await resp.json();
-    const text: string = data?.content?.[0]?.text ?? "";
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return { rec: text.slice(0, 2000) || "AI recommendations unavailable", plan: null, prob: null };
     const parsed = JSON.parse(jsonMatch[0]);
