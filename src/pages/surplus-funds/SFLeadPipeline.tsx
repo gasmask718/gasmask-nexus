@@ -495,6 +495,20 @@ export default function SFLeadPipeline() {
             </PopoverContent>
           </Popover>
 
+          {/* County filter — scoped by selected state(s) */}
+          <Select value={countyFilter} onValueChange={setCountyFilter}>
+            <SelectTrigger className="w-[180px] h-8 text-xs">
+              <SelectValue placeholder="All Counties" />
+            </SelectTrigger>
+            <SelectContent className="max-h-72">
+              <SelectItem value="all">All Counties</SelectItem>
+              {counties.map(c => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+
           {/* Amount bucket filter — counts recompute based on currently selected state(s) */}
           <Select value={amountBucket} onValueChange={(v) => setAmountBucket(v as AmountBucket)}>
             <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue placeholder="Surplus amount" /></SelectTrigger>
