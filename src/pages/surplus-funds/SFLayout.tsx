@@ -85,7 +85,7 @@ export default function SFLayout() {
         </ScrollArea>
       </aside>
 
-      <main className="flex-1 p-6 overflow-auto">
+      <main className="flex-1 px-6 pb-6 pt-4 overflow-auto">
         <Outlet />
       </main>
     </div>
