@@ -1,0 +1,187 @@
+import { createClient } from 'npm:@supabase/supabase-js@2';
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+interface CapperRow {
+  id: string;
+  name: string | null;
+  win_rate: number | null;
+  capper_weight: number | null;
+  hot_streak: number | null;
+  picks_by_sport: Record<string, any> | null;
+}
+
+interface PickRow {
+  id: string;
+  capper_id: string | null;
+  sport: string | null;
+  game_date: string | null;
+  bet_type: string | null;
+  direction: string | null;
+  stake: number | null;
+}
+
+interface SignalRow {
+  id: string;
+  sport: string | null;
+  game_date: string | null;
+  pick_type: string | null;
+  side: string | null;
+  internal_confidence: number | null;
+}
+
+function gradeFor(c: number): string {
+  if (c >= 90) return 'LOCK';
+  if (c >= 75) return 'BEST_BET';
+  if (c >= 60) return 'PLAY';
+  if (c >= 45) return 'LEAN';
+  return 'NO_PLAY';
+}
+
+function sportWinRate(capper: CapperRow, sport: string | null): number {
+  const fallback = Number(capper.win_rate ?? 0);
+  if (!sport || !capper.picks_by_sport || typeof capper.picks_by_sport !== 'object') return fallback;
+  const entry = (capper.picks_by_sport as any)[sport];
+  const wr = entry && typeof entry === 'object' ? Number(entry.win_rate) : NaN;
+  return Number.isFinite(wr) ? wr : fallback;
+}
+
+async function combineSignal(supabase: any, signal: SignalRow) {
+  const { data: picks, error: picksErr } = await supabase
+    .from('sbo_capper_picks')
+    .select('id, capper_id, sport, game_date, bet_type, direction, stake')
+    .eq('sport', signal.sport)
+    .eq('game_date', signal.game_date)
+    .eq('bet_type', signal.pick_type);
+  if (picksErr) throw picksErr;
+
+  const capperIds = Array.from(new Set((picks ?? []).map((p: PickRow) => p.capper_id).filter(Boolean)));
+  let cappers: CapperRow[] = [];
+  if (capperIds.length > 0) {
+    const { data: cData, error: cErr } = await supabase
+      .from('sbo_cappers')
+      .select('id, name, win_rate, capper_weight, hot_streak, picks_by_sport')
+      .in('id', capperIds);
+    if (cErr) throw cErr;
+    cappers = cData ?? [];
+  }
+  const capperById = new Map(cappers.map((c) => [c.id, c]));
+
+  let combined = Number(signal.internal_confidence ?? 0);
+  const confirming: any[] = [];
+  const fading: any[] = [];
+
+  for (const pick of (picks ?? []) as PickRow[]) {
+    if (!pick.capper_id || !pick.direction || !signal.side) continue;
+    const capper = capperById.get(pick.capper_id);
+    if (!capper) continue;
+    const sportWr = sportWinRate(capper, signal.sport);
+    const weight = Number(capper.capper_weight ?? 100);
+
+    const sameSide = pick.direction.toLowerCase() === (signal.side ?? '').toLowerCase();
+    if (sameSide) {
+      let bonus = 0;
+      if (sportWr >= 65) bonus += 15;
+      else if (sportWr >= 58) bonus += 8;
+      else if (sportWr >= 52) bonus += 4;
+      if (Number(capper.hot_streak ?? 0) >= 5) bonus += 8;
+      if (Number(pick.stake ?? 0) >= 2) bonus += 3;
+      const applied = (bonus * weight) / 100;
+      combined += applied;
+      confirming.push({
+        capper_id: capper.id,
+        capper_name: capper.name,
+        sport_wr: sportWr,
+        bonus_applied: Number(applied.toFixed(2)),
+      });
+    } else {
+      let deduction = 3;
+      if (sportWr >= 62) deduction = 12;
+      else if (sportWr >= 55) deduction = 7;
+      combined -= deduction;
+      fading.push({
+        capper_id: capper.id,
+        capper_name: capper.name,
+        sport_wr: sportWr,
+        deduction_applied: deduction,
+      });
+    }
+  }
+
+  combined = Math.max(0, Math.min(100, Math.round(combined)));
+  const grade = gradeFor(combined);
+
+  const { error: updErr } = await supabase
+    .from('sbo_signals')
+    .update({
+      combined_confidence: combined,
+      signal_grade: grade,
+      confirming_cappers: confirming,
+      fading_cappers: fading,
+    })
+    .eq('id', signal.id);
+  if (updErr) throw updErr;
+
+  return {
+    signal_id: signal.id,
+    combined_confidence: combined,
+    signal_grade: grade,
+    confirming_count: confirming.length,
+    fading_count: fading.length,
+  };
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+    const { signal_id, sport, game_date, pick_type, reprocess_all } = body ?? {};
+
+    let signals: SignalRow[] = [];
+    const base = () => supabase
+      .from('sbo_signals')
+      .select('id, sport, game_date, pick_type, side, internal_confidence');
+
+    if (signal_id) {
+      const { data, error } = await base().eq('id', signal_id);
+      if (error) throw error;
+      signals = data ?? [];
+    } else if (sport && game_date && pick_type) {
+      const { data, error } = await base()
+        .eq('sport', sport)
+        .eq('game_date', game_date)
+        .eq('pick_type', pick_type);
+      if (error) throw error;
+      signals = data ?? [];
+    } else if (reprocess_all) {
+      const { data, error } = await base().eq('result', 'pending').limit(500);
+      if (error) throw error;
+      signals = data ?? [];
+    } else {
+      return new Response(
+        JSON.stringify({ error: 'Provide signal_id, or (sport+game_date+pick_type), or reprocess_all=true' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    const results = [];
+    for (const s of signals) results.push(await combineSignal(supabase, s));
+
+    return new Response(JSON.stringify({ processed: results.length, results }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: (e as Error).message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
