@@ -571,6 +571,13 @@ export default function ClientProfilePage() {
           <Button variant="outline" size="sm" onClick={sendPortalInvite} className="border-amber-500/30 text-amber-400">
             <Send className="h-3 w-3 mr-1" /> Send Portal Invite
           </Button>
+          <Button
+            size="sm"
+            onClick={() => setAutofillOpen(true)}
+            style={{ backgroundColor: "#C9A84C", color: "#000" }}
+          >
+            <Sparkles className="h-3 w-3 mr-1" /> Auto-Fill Application
+          </Button>
           <select
             value={client.status || 'new'}
             onChange={async (e) => {
