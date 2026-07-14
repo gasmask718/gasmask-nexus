@@ -57,6 +57,7 @@ export default function ApplicationPackage() {
   const [submitOpen, setSubmitOpen] = useState(false);
   const [confirmationCode, setConfirmationCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [autofillOpen, setAutofillOpen] = useState(false);
 
   const [coverLetter, setCoverLetter] = useState("");
   const [narrative, setNarrative] = useState("");
