@@ -300,6 +300,14 @@ export default function SFLeadPipeline() {
 
   const states = useMemo(() => [...new Set(leads.map((l: any) => l.state).filter(Boolean))].sort(), [leads]);
 
+  // Counties scoped to the currently selected state(s) so the list stays relevant.
+  const counties = useMemo(() => {
+    const scoped = stateFilters.length > 0
+      ? leads.filter((l: any) => stateFilters.includes(l.state))
+      : leads;
+    return [...new Set(scoped.map((l: any) => l.county).filter(Boolean))].sort() as string[];
+  }, [leads, stateFilters]);
+
   // Dependent amount bucket counts — recompute whenever the selected state(s) change,
   // so the Amount filter always reflects the currently-scoped state slice.
   // (Reverse dependency intentionally not applied — amount doesn't rescope state.)
