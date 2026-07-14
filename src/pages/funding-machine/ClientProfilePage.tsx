@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import {
   User, Building2, Target, Shield, CreditCard, TrendingUp,
   CheckCircle, Clock, AlertTriangle, ArrowLeft, RefreshCw,
-  ExternalLink, FileText, Send, Award, Search, Loader2
+  ExternalLink, FileText, Send, Award, Search, Loader2, Sparkles
 } from "lucide-react";
 import DocumentVault from "@/components/funding-machine/DocumentVault";
 import ScoreSimulator from "@/components/funding-machine/ScoreSimulator";
