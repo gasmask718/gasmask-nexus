@@ -102,6 +102,7 @@ export default function SFLeadPipeline() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [stateFilters, setStateFilters] = useState<string[]>([]); // multi-select; empty = all
+  const [countyFilter, setCountyFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [skipTab, setSkipTab] = useState<'all' | SkipStatus>('all');
   const [amountBucket, setAmountBucket] = useState<AmountBucket>('all');
@@ -113,6 +114,8 @@ export default function SFLeadPipeline() {
   const [detailLead, setDetailLead] = useState<any>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState('overview');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 100;
 
   // Resolve active amount range from bucket + custom inputs
   const { activeAmountMin, activeAmountMax } = useMemo(() => {
