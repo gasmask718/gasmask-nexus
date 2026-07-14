@@ -54535,6 +54535,174 @@ export type Database = {
           },
         ]
       }
+      funding_application_profile: {
+        Row: {
+          annual_revenue: number | null
+          average_bank_balance: number | null
+          bank_account_last4: string | null
+          bank_name: string | null
+          bank_routing_last4: string | null
+          business_address_line1: string | null
+          business_address_line2: string | null
+          business_city: string | null
+          business_email: string | null
+          business_narrative: string | null
+          business_phone: string | null
+          business_state: string | null
+          business_website: string | null
+          business_zip: string | null
+          client_id: string
+          created_at: string
+          dba: string | null
+          disabled_owned: boolean | null
+          duns_number: string | null
+          ein: string | null
+          entity_type: string | null
+          extra_fields: Json | null
+          formation_date: string | null
+          formation_state: string | null
+          id: string
+          industry: string | null
+          last_autofilled_at: string | null
+          legal_business_name: string | null
+          lgbtq_owned: boolean | null
+          minority_owned: boolean | null
+          mission_statement: string | null
+          monthly_revenue: number | null
+          naics_code: string | null
+          number_of_employees: number | null
+          owner_dob: string | null
+          owner_email: string | null
+          owner_first_name: string | null
+          owner_home_address: string | null
+          owner_home_city: string | null
+          owner_home_state: string | null
+          owner_home_zip: string | null
+          owner_last_name: string | null
+          owner_phone: string | null
+          owner_ssn_last4: string | null
+          owner_title: string | null
+          ownership_percent: number | null
+          requested_amount: number | null
+          sic_code: string | null
+          updated_at: string
+          use_of_funds: string | null
+          veteran_owned: boolean | null
+          women_owned: boolean | null
+          years_in_business: number | null
+        }
+        Insert: {
+          annual_revenue?: number | null
+          average_bank_balance?: number | null
+          bank_account_last4?: string | null
+          bank_name?: string | null
+          bank_routing_last4?: string | null
+          business_address_line1?: string | null
+          business_address_line2?: string | null
+          business_city?: string | null
+          business_email?: string | null
+          business_narrative?: string | null
+          business_phone?: string | null
+          business_state?: string | null
+          business_website?: string | null
+          business_zip?: string | null
+          client_id: string
+          created_at?: string
+          dba?: string | null
+          disabled_owned?: boolean | null
+          duns_number?: string | null
+          ein?: string | null
+          entity_type?: string | null
+          extra_fields?: Json | null
+          formation_date?: string | null
+          formation_state?: string | null
+          id?: string
+          industry?: string | null
+          last_autofilled_at?: string | null
+          legal_business_name?: string | null
+          lgbtq_owned?: boolean | null
+          minority_owned?: boolean | null
+          mission_statement?: string | null
+          monthly_revenue?: number | null
+          naics_code?: string | null
+          number_of_employees?: number | null
+          owner_dob?: string | null
+          owner_email?: string | null
+          owner_first_name?: string | null
+          owner_home_address?: string | null
+          owner_home_city?: string | null
+          owner_home_state?: string | null
+          owner_home_zip?: string | null
+          owner_last_name?: string | null
+          owner_phone?: string | null
+          owner_ssn_last4?: string | null
+          owner_title?: string | null
+          ownership_percent?: number | null
+          requested_amount?: number | null
+          sic_code?: string | null
+          updated_at?: string
+          use_of_funds?: string | null
+          veteran_owned?: boolean | null
+          women_owned?: boolean | null
+          years_in_business?: number | null
+        }
+        Update: {
+          annual_revenue?: number | null
+          average_bank_balance?: number | null
+          bank_account_last4?: string | null
+          bank_name?: string | null
+          bank_routing_last4?: string | null
+          business_address_line1?: string | null
+          business_address_line2?: string | null
+          business_city?: string | null
+          business_email?: string | null
+          business_narrative?: string | null
+          business_phone?: string | null
+          business_state?: string | null
+          business_website?: string | null
+          business_zip?: string | null
+          client_id?: string
+          created_at?: string
+          dba?: string | null
+          disabled_owned?: boolean | null
+          duns_number?: string | null
+          ein?: string | null
+          entity_type?: string | null
+          extra_fields?: Json | null
+          formation_date?: string | null
+          formation_state?: string | null
+          id?: string
+          industry?: string | null
+          last_autofilled_at?: string | null
+          legal_business_name?: string | null
+          lgbtq_owned?: boolean | null
+          minority_owned?: boolean | null
+          mission_statement?: string | null
+          monthly_revenue?: number | null
+          naics_code?: string | null
+          number_of_employees?: number | null
+          owner_dob?: string | null
+          owner_email?: string | null
+          owner_first_name?: string | null
+          owner_home_address?: string | null
+          owner_home_city?: string | null
+          owner_home_state?: string | null
+          owner_home_zip?: string | null
+          owner_last_name?: string | null
+          owner_phone?: string | null
+          owner_ssn_last4?: string | null
+          owner_title?: string | null
+          ownership_percent?: number | null
+          requested_amount?: number | null
+          sic_code?: string | null
+          updated_at?: string
+          use_of_funds?: string | null
+          veteran_owned?: boolean | null
+          women_owned?: boolean | null
+          years_in_business?: number | null
+        }
+        Relationships: []
+      }
       funding_applications: {
         Row: {
           application_date: string
@@ -54602,6 +54770,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      funding_autofill_runs: {
+        Row: {
+          business_profile_id: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          error: string | null
+          filled_package: Json | null
+          funder_id: string | null
+          funder_name: string | null
+          funder_type: string
+          id: string
+          missing_fields: string[] | null
+          narratives: Json | null
+          status: string
+          submission_confirmation: string | null
+          submission_method: string | null
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_profile_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          filled_package?: Json | null
+          funder_id?: string | null
+          funder_name?: string | null
+          funder_type: string
+          id?: string
+          missing_fields?: string[] | null
+          narratives?: Json | null
+          status?: string
+          submission_confirmation?: string | null
+          submission_method?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_profile_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          filled_package?: Json | null
+          funder_id?: string | null
+          funder_name?: string | null
+          funder_type?: string
+          id?: string
+          missing_fields?: string[] | null
+          narratives?: Json | null
+          status?: string
+          submission_confirmation?: string | null
+          submission_method?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       funding_banking_velocity: {
         Row: {
