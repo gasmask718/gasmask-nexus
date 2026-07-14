@@ -48,7 +48,7 @@ export default function SFLayout() {
     <div className="flex h-full min-h-screen">
       <aside className="w-64 border-r border-border bg-card/50 flex-shrink-0 hidden lg:block">
         <ScrollArea className="h-full">
-          <div className="p-4">
+          <div className="px-4 pb-4 pt-3">
             <div className="flex items-center gap-2 mb-6">
               <DollarSign className="h-6 w-6 text-amber-500" />
               <div>
@@ -85,7 +85,7 @@ export default function SFLayout() {
         </ScrollArea>
       </aside>
 
-      <main className="flex-1 px-6 pb-6 pt-4 overflow-auto">
+      <main className="flex-1 px-6 pb-6 pt-3 overflow-auto">
         <Outlet />
       </main>
     </div>
