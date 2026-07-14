@@ -54,14 +54,14 @@ export default function BusinessProfiles() {
         .order("business_name", { ascending: true }),
       supabase
         .from("grant_eligibility_results")
-        .select("business_profile_id, status"),
+        .select("business_profile_id, eligibility_status"),
     ]);
     if (pErr) toast.error(`Load profiles: ${pErr.message}`);
     if (eErr) toast.error(`Load eligibility: ${eErr.message}`);
 
     const partial: CountMap = {};
     (elig ?? []).forEach((r: any) => {
-      if (r.status === "partially_eligible" && r.business_profile_id) {
+      if (r.eligibility_status === "partially_eligible" && r.business_profile_id) {
         partial[r.business_profile_id] = (partial[r.business_profile_id] ?? 0) + 1;
       }
     });
