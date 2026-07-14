@@ -226,7 +226,7 @@ export default function SFLeadPipeline() {
   }, [leads, skipTab, statusFilter, stateFilters, countyFilter, sourceFilter, activeAmountMin, activeAmountMax, search, sortKey, sortDir]);
 
   // Reset to page 1 whenever the filter slice changes
-  useMemo(() => { setPage(1); }, [skipTab, statusFilter, stateFilters, countyFilter, sourceFilter, activeAmountMin, activeAmountMax, search]);
+  useEffect(() => { setPage(1); }, [skipTab, statusFilter, stateFilters, countyFilter, sourceFilter, activeAmountMin, activeAmountMax, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
