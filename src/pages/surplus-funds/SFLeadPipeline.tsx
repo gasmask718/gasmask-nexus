@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -102,6 +102,7 @@ export default function SFLeadPipeline() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [stateFilters, setStateFilters] = useState<string[]>([]); // multi-select; empty = all
+  const [countyFilter, setCountyFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [skipTab, setSkipTab] = useState<'all' | SkipStatus>('all');
   const [amountBucket, setAmountBucket] = useState<AmountBucket>('all');
@@ -113,6 +114,8 @@ export default function SFLeadPipeline() {
   const [detailLead, setDetailLead] = useState<any>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState('overview');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 100;
 
   // Resolve active amount range from bucket + custom inputs
   const { activeAmountMin, activeAmountMax } = useMemo(() => {
@@ -202,6 +205,7 @@ export default function SFLeadPipeline() {
     if (skipTab !== 'all') result = result.filter((l: any) => deriveSkipStatus(l) === skipTab);
     if (statusFilter !== 'all') result = result.filter((l: any) => l.status === statusFilter);
     if (stateFilters.length > 0) result = result.filter((l: any) => stateFilters.includes(l.state));
+    if (countyFilter !== 'all') result = result.filter((l: any) => l.county === countyFilter);
     if (sourceFilter !== 'all') result = result.filter((l: any) => (l.lead_source || 'manual_upload') === sourceFilter);
     if (activeAmountMin != null) result = result.filter((l: any) => Number(l.surplus_amount || 0) >= activeAmountMin);
     if (activeAmountMax != null) result = result.filter((l: any) => Number(l.surplus_amount || 0) <= activeAmountMax);
@@ -219,14 +223,23 @@ export default function SFLeadPipeline() {
       return sortDir === 'asc' ? av - bv : bv - av;
     });
     return result;
-  }, [leads, skipTab, statusFilter, stateFilters, sourceFilter, activeAmountMin, activeAmountMax, search, sortKey, sortDir]);
+  }, [leads, skipTab, statusFilter, stateFilters, countyFilter, sourceFilter, activeAmountMin, activeAmountMax, search, sortKey, sortDir]);
+
+  // Reset to page 1 whenever the filter slice changes
+  useEffect(() => { setPage(1); }, [skipTab, statusFilter, stateFilters, countyFilter, sourceFilter, activeAmountMin, activeAmountMax, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + PAGE_SIZE, filtered.length);
+  const paginated = filtered.slice(pageStart, pageEnd);
 
   const hasActiveFilters =
-    stateFilters.length > 0 || amountBucket !== 'all' || skipTab !== 'all' ||
+    stateFilters.length > 0 || countyFilter !== 'all' || amountBucket !== 'all' || skipTab !== 'all' ||
     statusFilter !== 'all' || sourceFilter !== 'all' || search.trim() !== '';
 
   const clearAllFilters = () => {
-    setStateFilters([]); setAmountBucket('all'); setAmountMinInput(''); setAmountMaxInput('');
+    setStateFilters([]); setCountyFilter('all'); setAmountBucket('all'); setAmountMinInput(''); setAmountMaxInput('');
     setSkipTab('all'); setStatusFilter('all'); setSourceFilter('all'); setSearch('');
   };
 
@@ -286,6 +299,14 @@ export default function SFLeadPipeline() {
   };
 
   const states = useMemo(() => [...new Set(leads.map((l: any) => l.state).filter(Boolean))].sort(), [leads]);
+
+  // Counties scoped to the currently selected state(s) so the list stays relevant.
+  const counties = useMemo(() => {
+    const scoped = stateFilters.length > 0
+      ? leads.filter((l: any) => stateFilters.includes(l.state))
+      : leads;
+    return [...new Set(scoped.map((l: any) => l.county).filter(Boolean))].sort() as string[];
+  }, [leads, stateFilters]);
 
   // Dependent amount bucket counts — recompute whenever the selected state(s) change,
   // so the Amount filter always reflects the currently-scoped state slice.
@@ -363,24 +384,21 @@ export default function SFLeadPipeline() {
         </div>
       </div>
 
-      {/* Today's Website Leads spotlight */}
-      <Card className="border-2" style={{ borderColor: '#0F6E56', background: 'linear-gradient(90deg, hsl(var(--card)), hsl(var(--card)/0.6))' }}>
-        <CardContent className="p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg p-3" style={{ backgroundColor: '#0F6E56' + '20' }}>
-              <Flame className="h-6 w-6" style={{ color: '#0F6E56' }} />
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Today's Website Leads</p>
-              <p className="text-3xl font-bold" style={{ color: '#0F6E56' }}>{websiteToday}</p>
-              <p className="text-xs text-muted-foreground">dynastyrecoverygroup.com — live intake</p>
-            </div>
-          </div>
-          <Button size="sm" variant="outline" onClick={() => setSourceFilter('dynasty_recovery_website')}>
-            View Website Leads
-          </Button>
-        </CardContent>
-      </Card>
+      {/* Today's Website Leads spotlight — compact strip */}
+      <div
+        className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border"
+        style={{ borderColor: '#0F6E56', background: 'linear-gradient(90deg, hsl(var(--card)), hsl(var(--card)/0.6))' }}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Flame className="h-4 w-4 shrink-0" style={{ color: '#0F6E56' }} />
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">Today's Website Leads</span>
+          <span className="text-lg font-bold leading-none" style={{ color: '#0F6E56' }}>{websiteToday}</span>
+          <span className="text-xs text-muted-foreground truncate hidden sm:inline">· dynastyrecoverygroup.com live intake</span>
+        </div>
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setSourceFilter('dynasty_recovery_website')}>
+          View
+        </Button>
+      </div>
 
       {/* Summary cards — recompute in SQL against whatever filters are currently active */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -428,17 +446,19 @@ export default function SFLeadPipeline() {
         ))}
       </div>
 
-      {/* Filter pills */}
+      {/* Filter row */}
       <div className="space-y-3">
-        <div className="flex gap-1.5 flex-wrap">
-          {STATUS_PILLS.map(s => (
-            <button key={s} onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${statusFilter === s ? 'text-white border-transparent' : 'text-muted-foreground border-border hover:border-muted-foreground/50'}`}
-              style={statusFilter === s ? { backgroundColor: AMBER } : undefined}
-            >{s === 'all' ? 'All' : s.replace(/_/g, ' ')}</button>
-          ))}
-        </div>
         <div className="flex gap-2 flex-wrap items-center">
+          {/* Status filter (was: redundant pill row) */}
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px] h-8 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent className="max-h-72">
+              {STATUS_PILLS.map(s => (
+                <SelectItem key={s} value={s}>{s === 'all' ? 'All statuses' : s.replace(/_/g, ' ')}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           {/* Multi-select state filter */}
           <Popover>
             <PopoverTrigger asChild>
@@ -474,6 +494,20 @@ export default function SFLeadPipeline() {
               </div>
             </PopoverContent>
           </Popover>
+
+          {/* County filter — scoped by selected state(s) */}
+          <Select value={countyFilter} onValueChange={setCountyFilter}>
+            <SelectTrigger className="w-[180px] h-8 text-xs">
+              <SelectValue placeholder="All Counties" />
+            </SelectTrigger>
+            <SelectContent className="max-h-72">
+              <SelectItem value="all">All Counties</SelectItem>
+              {counties.map(c => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
 
           {/* Amount bucket filter — counts recompute based on currently selected state(s) */}
           <Select value={amountBucket} onValueChange={(v) => setAmountBucket(v as AmountBucket)}>
@@ -594,7 +628,7 @@ export default function SFLeadPipeline() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((l: any) => {
+                  {paginated.map((l: any) => {
                     const isHot = l.status === 'interested' || l.status === 'agreement_signed';
                     return (
                       <tr key={l.id}
@@ -647,6 +681,42 @@ export default function SFLeadPipeline() {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {filtered.length > 0 && (
+        <div className="flex items-center justify-between flex-wrap gap-3 px-1">
+          <span className="text-xs text-muted-foreground">
+            Showing <span className="font-medium text-foreground">{pageStart + 1}</span>–
+            <span className="font-medium text-foreground">{pageEnd}</span> of{' '}
+            <span className="font-medium text-foreground">{filtered.length.toLocaleString()}</span> leads
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs"
+              disabled={currentPage <= 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Page <span className="font-medium text-foreground">{currentPage}</span> of {totalPages}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs"
+              disabled={currentPage >= totalPages}
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+
+
 
       {/* Detail Drawer */}
       <Sheet open={!!detailLead} onOpenChange={() => setDetailLead(null)}>
