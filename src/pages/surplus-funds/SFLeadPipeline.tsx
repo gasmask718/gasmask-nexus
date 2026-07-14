@@ -134,8 +134,21 @@ export default function SFLeadPipeline() {
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ['sf-leads'],
     queryFn: async () => {
-      const { data } = await supabase.from('surplus_funds_leads').select('*').order('created_at', { ascending: false }).limit(5000);
-      return data ?? [];
+      // Supabase caps a single request at 1000 rows — page through until we've got everything.
+      const PAGE = 1000;
+      const all: any[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from('surplus_funds_leads')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < PAGE) break;
+      }
+      return all;
     },
     refetchInterval: 30000,
   });
