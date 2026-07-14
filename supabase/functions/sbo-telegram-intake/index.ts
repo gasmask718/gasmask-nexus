@@ -40,6 +40,7 @@ async function fetchImageAsDataUrl(url: string): Promise<string | null> {
 }
 
 serve(async (req) => {
+  try {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
@@ -171,4 +172,12 @@ serve(async (req) => {
   })();
 
   return json(200, { ok: true, id: post.id, stored: true });
+  } catch (error) {
+    const err = error as Error;
+    console.error("sbo-telegram-intake unhandled error:", err.message, err.stack);
+    return new Response(
+      JSON.stringify({ error: err.message, stack: err.stack }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
 });
