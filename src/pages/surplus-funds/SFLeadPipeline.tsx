@@ -205,6 +205,7 @@ export default function SFLeadPipeline() {
     if (skipTab !== 'all') result = result.filter((l: any) => deriveSkipStatus(l) === skipTab);
     if (statusFilter !== 'all') result = result.filter((l: any) => l.status === statusFilter);
     if (stateFilters.length > 0) result = result.filter((l: any) => stateFilters.includes(l.state));
+    if (countyFilter !== 'all') result = result.filter((l: any) => l.county === countyFilter);
     if (sourceFilter !== 'all') result = result.filter((l: any) => (l.lead_source || 'manual_upload') === sourceFilter);
     if (activeAmountMin != null) result = result.filter((l: any) => Number(l.surplus_amount || 0) >= activeAmountMin);
     if (activeAmountMax != null) result = result.filter((l: any) => Number(l.surplus_amount || 0) <= activeAmountMax);
@@ -222,14 +223,23 @@ export default function SFLeadPipeline() {
       return sortDir === 'asc' ? av - bv : bv - av;
     });
     return result;
-  }, [leads, skipTab, statusFilter, stateFilters, sourceFilter, activeAmountMin, activeAmountMax, search, sortKey, sortDir]);
+  }, [leads, skipTab, statusFilter, stateFilters, countyFilter, sourceFilter, activeAmountMin, activeAmountMax, search, sortKey, sortDir]);
+
+  // Reset to page 1 whenever the filter slice changes
+  useMemo(() => { setPage(1); }, [skipTab, statusFilter, stateFilters, countyFilter, sourceFilter, activeAmountMin, activeAmountMax, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + PAGE_SIZE, filtered.length);
+  const paginated = filtered.slice(pageStart, pageEnd);
 
   const hasActiveFilters =
-    stateFilters.length > 0 || amountBucket !== 'all' || skipTab !== 'all' ||
+    stateFilters.length > 0 || countyFilter !== 'all' || amountBucket !== 'all' || skipTab !== 'all' ||
     statusFilter !== 'all' || sourceFilter !== 'all' || search.trim() !== '';
 
   const clearAllFilters = () => {
-    setStateFilters([]); setAmountBucket('all'); setAmountMinInput(''); setAmountMaxInput('');
+    setStateFilters([]); setCountyFilter('all'); setAmountBucket('all'); setAmountMinInput(''); setAmountMaxInput('');
     setSkipTab('all'); setStatusFilter('all'); setSourceFilter('all'); setSearch('');
   };
 
