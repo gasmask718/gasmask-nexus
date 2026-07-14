@@ -628,7 +628,7 @@ export default function SFLeadPipeline() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((l: any) => {
+                  {paginated.map((l: any) => {
                     const isHot = l.status === 'interested' || l.status === 'agreement_signed';
                     return (
                       <tr key={l.id}
