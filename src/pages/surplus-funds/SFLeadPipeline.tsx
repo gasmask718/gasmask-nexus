@@ -446,17 +446,19 @@ export default function SFLeadPipeline() {
         ))}
       </div>
 
-      {/* Filter pills */}
+      {/* Filter row */}
       <div className="space-y-3">
-        <div className="flex gap-1.5 flex-wrap">
-          {STATUS_PILLS.map(s => (
-            <button key={s} onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${statusFilter === s ? 'text-white border-transparent' : 'text-muted-foreground border-border hover:border-muted-foreground/50'}`}
-              style={statusFilter === s ? { backgroundColor: AMBER } : undefined}
-            >{s === 'all' ? 'All' : s.replace(/_/g, ' ')}</button>
-          ))}
-        </div>
         <div className="flex gap-2 flex-wrap items-center">
+          {/* Status filter (was: redundant pill row) */}
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px] h-8 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent className="max-h-72">
+              {STATUS_PILLS.map(s => (
+                <SelectItem key={s} value={s}>{s === 'all' ? 'All statuses' : s.replace(/_/g, ' ')}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           {/* Multi-select state filter */}
           <Popover>
             <PopoverTrigger asChild>
