@@ -90856,6 +90856,93 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_prop_picks: {
+        Row: {
+          actual_value: number | null
+          capper_confirmation: boolean | null
+          combined_confidence: number | null
+          confirming_cappers: string[] | null
+          created_at: string | null
+          game: string | null
+          game_date: string | null
+          id: string
+          injury_flag: boolean | null
+          injury_notes: string | null
+          internal_confidence: number | null
+          line: number | null
+          matchup_advantage: string | null
+          odds: number | null
+          player_last_5_avg: number | null
+          player_name: string | null
+          player_season_avg: number | null
+          player_vs_opponent_avg: number | null
+          pnl_units: number | null
+          prop_stat: string | null
+          resolved_at: string | null
+          result: string | null
+          side: string | null
+          source: string | null
+          sport: string | null
+          team: string | null
+        }
+        Insert: {
+          actual_value?: number | null
+          capper_confirmation?: boolean | null
+          combined_confidence?: number | null
+          confirming_cappers?: string[] | null
+          created_at?: string | null
+          game?: string | null
+          game_date?: string | null
+          id?: string
+          injury_flag?: boolean | null
+          injury_notes?: string | null
+          internal_confidence?: number | null
+          line?: number | null
+          matchup_advantage?: string | null
+          odds?: number | null
+          player_last_5_avg?: number | null
+          player_name?: string | null
+          player_season_avg?: number | null
+          player_vs_opponent_avg?: number | null
+          pnl_units?: number | null
+          prop_stat?: string | null
+          resolved_at?: string | null
+          result?: string | null
+          side?: string | null
+          source?: string | null
+          sport?: string | null
+          team?: string | null
+        }
+        Update: {
+          actual_value?: number | null
+          capper_confirmation?: boolean | null
+          combined_confidence?: number | null
+          confirming_cappers?: string[] | null
+          created_at?: string | null
+          game?: string | null
+          game_date?: string | null
+          id?: string
+          injury_flag?: boolean | null
+          injury_notes?: string | null
+          internal_confidence?: number | null
+          line?: number | null
+          matchup_advantage?: string | null
+          odds?: number | null
+          player_last_5_avg?: number | null
+          player_name?: string | null
+          player_season_avg?: number | null
+          player_vs_opponent_avg?: number | null
+          pnl_units?: number | null
+          prop_stat?: string | null
+          resolved_at?: string | null
+          result?: string | null
+          side?: string | null
+          source?: string | null
+          sport?: string | null
+          team?: string | null
+        }
+        Relationships: []
+      }
       sbo_prop_predictions: {
         Row: {
           confidence: number | null
@@ -91328,6 +91415,78 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_signals: {
+        Row: {
+          away_team: string | null
+          combined_confidence: number | null
+          confirming_cappers: Json | null
+          created_at: string | null
+          fading_cappers: Json | null
+          game: string | null
+          game_date: string | null
+          game_time: string | null
+          home_team: string | null
+          id: string
+          internal_confidence: number | null
+          line: number | null
+          odds: number | null
+          pick_detail: string | null
+          pick_type: string | null
+          pnl_units: number | null
+          resolved_at: string | null
+          result: string | null
+          side: string | null
+          signal_grade: string | null
+          sport: string | null
+        }
+        Insert: {
+          away_team?: string | null
+          combined_confidence?: number | null
+          confirming_cappers?: Json | null
+          created_at?: string | null
+          fading_cappers?: Json | null
+          game?: string | null
+          game_date?: string | null
+          game_time?: string | null
+          home_team?: string | null
+          id?: string
+          internal_confidence?: number | null
+          line?: number | null
+          odds?: number | null
+          pick_detail?: string | null
+          pick_type?: string | null
+          pnl_units?: number | null
+          resolved_at?: string | null
+          result?: string | null
+          side?: string | null
+          signal_grade?: string | null
+          sport?: string | null
+        }
+        Update: {
+          away_team?: string | null
+          combined_confidence?: number | null
+          confirming_cappers?: Json | null
+          created_at?: string | null
+          fading_cappers?: Json | null
+          game?: string | null
+          game_date?: string | null
+          game_time?: string | null
+          home_team?: string | null
+          id?: string
+          internal_confidence?: number | null
+          line?: number | null
+          odds?: number | null
+          pick_detail?: string | null
+          pick_type?: string | null
+          pnl_units?: number | null
+          resolved_at?: string | null
+          result?: string | null
+          side?: string | null
+          signal_grade?: string | null
+          sport?: string | null
+        }
+        Relationships: []
+      }
       sbo_simulations: {
         Row: {
           created_at: string | null
@@ -91504,6 +91663,99 @@ export type Database = {
           send_type?: string | null
           sent_at?: string | null
           status?: string | null
+        }
+        Relationships: []
+      }
+      sbo_sport_performance: {
+        Row: {
+          ai_notes: string | null
+          created_at: string | null
+          id: string
+          min_confidence_threshold: number | null
+          ml_losses: number | null
+          ml_picks: number | null
+          ml_units_pnl: number | null
+          ml_wins: number | null
+          overall_units_pnl: number | null
+          overall_win_rate: number | null
+          prop_losses: number | null
+          prop_picks: number | null
+          prop_units_pnl: number | null
+          prop_win_rate: number | null
+          prop_wins: number | null
+          sport: string
+          spread_losses: number | null
+          spread_picks: number | null
+          spread_pushes: number | null
+          spread_units_pnl: number | null
+          spread_win_rate: number | null
+          spread_wins: number | null
+          total_losses: number | null
+          total_picks: number | null
+          total_units_pnl: number | null
+          total_win_rate: number | null
+          total_wins: number | null
+          week_start: string
+        }
+        Insert: {
+          ai_notes?: string | null
+          created_at?: string | null
+          id?: string
+          min_confidence_threshold?: number | null
+          ml_losses?: number | null
+          ml_picks?: number | null
+          ml_units_pnl?: number | null
+          ml_wins?: number | null
+          overall_units_pnl?: number | null
+          overall_win_rate?: number | null
+          prop_losses?: number | null
+          prop_picks?: number | null
+          prop_units_pnl?: number | null
+          prop_win_rate?: number | null
+          prop_wins?: number | null
+          sport: string
+          spread_losses?: number | null
+          spread_picks?: number | null
+          spread_pushes?: number | null
+          spread_units_pnl?: number | null
+          spread_win_rate?: number | null
+          spread_wins?: number | null
+          total_losses?: number | null
+          total_picks?: number | null
+          total_units_pnl?: number | null
+          total_win_rate?: number | null
+          total_wins?: number | null
+          week_start: string
+        }
+        Update: {
+          ai_notes?: string | null
+          created_at?: string | null
+          id?: string
+          min_confidence_threshold?: number | null
+          ml_losses?: number | null
+          ml_picks?: number | null
+          ml_units_pnl?: number | null
+          ml_wins?: number | null
+          overall_units_pnl?: number | null
+          overall_win_rate?: number | null
+          prop_losses?: number | null
+          prop_picks?: number | null
+          prop_units_pnl?: number | null
+          prop_win_rate?: number | null
+          prop_wins?: number | null
+          sport?: string
+          spread_losses?: number | null
+          spread_picks?: number | null
+          spread_pushes?: number | null
+          spread_units_pnl?: number | null
+          spread_win_rate?: number | null
+          spread_wins?: number | null
+          total_losses?: number | null
+          total_picks?: number | null
+          total_units_pnl?: number | null
+          total_win_rate?: number | null
+          total_wins?: number | null
+          week_start?: string
         }
         Relationships: []
       }
@@ -92142,6 +92394,69 @@ export type Database = {
           synced_to_wealth_engine?: boolean | null
           units_won?: number | null
           worst_pick?: string | null
+        }
+        Relationships: []
+      }
+      sbo_weekly_reports: {
+        Row: {
+          ai_narrative: string | null
+          best_capper: string | null
+          best_sport: string | null
+          capper_breakdown: Json | null
+          capper_weight_changes: Json | null
+          created_at: string | null
+          id: string
+          overall_units_pnl: number | null
+          overall_win_rate: number | null
+          prop_performance: Json | null
+          recommendations: Json | null
+          report_date: string | null
+          sport_breakdown: Json | null
+          total_picks: number | null
+          total_wins: number | null
+          week_end: string | null
+          week_start: string | null
+          worst_sport: string | null
+        }
+        Insert: {
+          ai_narrative?: string | null
+          best_capper?: string | null
+          best_sport?: string | null
+          capper_breakdown?: Json | null
+          capper_weight_changes?: Json | null
+          created_at?: string | null
+          id?: string
+          overall_units_pnl?: number | null
+          overall_win_rate?: number | null
+          prop_performance?: Json | null
+          recommendations?: Json | null
+          report_date?: string | null
+          sport_breakdown?: Json | null
+          total_picks?: number | null
+          total_wins?: number | null
+          week_end?: string | null
+          week_start?: string | null
+          worst_sport?: string | null
+        }
+        Update: {
+          ai_narrative?: string | null
+          best_capper?: string | null
+          best_sport?: string | null
+          capper_breakdown?: Json | null
+          capper_weight_changes?: Json | null
+          created_at?: string | null
+          id?: string
+          overall_units_pnl?: number | null
+          overall_win_rate?: number | null
+          prop_performance?: Json | null
+          recommendations?: Json | null
+          report_date?: string | null
+          sport_breakdown?: Json | null
+          total_picks?: number | null
+          total_wins?: number | null
+          week_end?: string | null
+          week_start?: string | null
+          worst_sport?: string | null
         }
         Relationships: []
       }
