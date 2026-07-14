@@ -408,6 +408,13 @@ export default function ApplicationPackage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AutoFillApplicationDialog
+        open={autofillOpen}
+        onOpenChange={setAutofillOpen}
+        businessProfileId={pkg.business_profile_id}
+        funderType="grant"
+      />
     </div>
   );
 }
