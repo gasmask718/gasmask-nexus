@@ -220,7 +220,16 @@ export default function ApplicationPackage() {
               {" · "}Deadline: <span className="font-medium text-foreground">{header?.deadline ?? "—"}</span>
             </p>
           </div>
-          {statusBadge}
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setAutofillOpen(true)}
+              style={{ backgroundColor: "#C9A84C", color: "#000" }}
+            >
+              <Sparkles className="h-4 w-4 mr-1" /> Auto-Fill Application
+            </Button>
+            {statusBadge}
+          </div>
         </div>
       </div>
 
