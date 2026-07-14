@@ -172,4 +172,12 @@ serve(async (req) => {
   })();
 
   return json(200, { ok: true, id: post.id, stored: true });
+  } catch (error) {
+    const err = error as Error;
+    console.error("sbo-telegram-intake unhandled error:", err.message, err.stack);
+    return new Response(
+      JSON.stringify({ error: err.message, stack: err.stack }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
 });
