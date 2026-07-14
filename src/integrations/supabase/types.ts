@@ -88053,10 +88053,12 @@ export type Database = {
           parsed_by_ai: boolean | null
           pick_text: string
           player_name: string | null
+          pnl_units: number | null
           posted_by: string | null
           profit_loss: number | null
           prop_type: string | null
           raw_message: string | null
+          resolved_at: string | null
           result: string | null
           review_status: string | null
           sharp_flag: boolean | null
@@ -88091,10 +88093,12 @@ export type Database = {
           parsed_by_ai?: boolean | null
           pick_text: string
           player_name?: string | null
+          pnl_units?: number | null
           posted_by?: string | null
           profit_loss?: number | null
           prop_type?: string | null
           raw_message?: string | null
+          resolved_at?: string | null
           result?: string | null
           review_status?: string | null
           sharp_flag?: boolean | null
@@ -88129,10 +88133,12 @@ export type Database = {
           parsed_by_ai?: boolean | null
           pick_text?: string
           player_name?: string | null
+          pnl_units?: number | null
           posted_by?: string | null
           profit_loss?: number | null
           prop_type?: string | null
           raw_message?: string | null
+          resolved_at?: string | null
           result?: string | null
           review_status?: string | null
           sharp_flag?: boolean | null
@@ -88247,7 +88253,10 @@ export type Database = {
           telegram_user_id: string | null
           telegram_username: string | null
           tier: string
+          total_losses: number
           total_picks: number | null
+          total_pushes: number
+          total_wins: number
           updated_at: string
           win_rate: number | null
         }
@@ -88275,7 +88284,10 @@ export type Database = {
           telegram_user_id?: string | null
           telegram_username?: string | null
           tier?: string
+          total_losses?: number
           total_picks?: number | null
+          total_pushes?: number
+          total_wins?: number
           updated_at?: string
           win_rate?: number | null
         }
@@ -88303,7 +88315,10 @@ export type Database = {
           telegram_user_id?: string | null
           telegram_username?: string | null
           tier?: string
+          total_losses?: number
           total_picks?: number | null
+          total_pushes?: number
+          total_wins?: number
           updated_at?: string
           win_rate?: number | null
         }
