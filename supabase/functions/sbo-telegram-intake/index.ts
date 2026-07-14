@@ -40,6 +40,7 @@ async function fetchImageAsDataUrl(url: string): Promise<string | null> {
 }
 
 serve(async (req) => {
+  try {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
