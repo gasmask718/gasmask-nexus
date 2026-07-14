@@ -682,6 +682,42 @@ export default function SFLeadPipeline() {
         </CardContent>
       </Card>
 
+      {/* Pagination */}
+      {filtered.length > 0 && (
+        <div className="flex items-center justify-between flex-wrap gap-3 px-1">
+          <span className="text-xs text-muted-foreground">
+            Showing <span className="font-medium text-foreground">{pageStart + 1}</span>–
+            <span className="font-medium text-foreground">{pageEnd}</span> of{' '}
+            <span className="font-medium text-foreground">{filtered.length.toLocaleString()}</span> leads
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs"
+              disabled={currentPage <= 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Page <span className="font-medium text-foreground">{currentPage}</span> of {totalPages}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs"
+              disabled={currentPage >= totalPages}
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+
+
+
       {/* Detail Drawer */}
       <Sheet open={!!detailLead} onOpenChange={() => setDetailLead(null)}>
         <SheetContent className="w-[420px] overflow-auto p-0">
