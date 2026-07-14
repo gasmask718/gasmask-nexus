@@ -12,7 +12,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Copy, CheckCircle2, XCircle, Loader2, Save, RefreshCw, Send, ArrowLeft } from "lucide-react";
+import { Copy, CheckCircle2, XCircle, Loader2, Save, RefreshCw, Send, ArrowLeft, Sparkles } from "lucide-react";
+import AutoFillApplicationDialog from "@/components/funding-machine/AutoFillApplicationDialog";
 
 type QA = { question: string; answer: string };
 
