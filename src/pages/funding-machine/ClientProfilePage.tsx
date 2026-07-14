@@ -1586,6 +1586,12 @@ export default function ClientProfilePage() {
           </Card>
         </TabsContent>
       </Tabs>
+      <AutoFillApplicationDialog
+        open={autofillOpen}
+        onOpenChange={setAutofillOpen}
+        clientId={clientId}
+        funderType="lender"
+      />
     </div>
   );
 }
