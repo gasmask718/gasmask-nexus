@@ -1601,7 +1601,7 @@ const Layout = ({ children }: LayoutProps) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto relative">
+        <main className="flex-1 px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6 pt-0 overflow-auto relative">
           <SimulationWatermark />
           {children}
         </main>
