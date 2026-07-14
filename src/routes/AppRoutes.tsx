@@ -1086,6 +1086,7 @@ const SBOSMSPage = lazy(() => import('@/pages/sports-betting/pages/SMSPage'));
 const SBOHistoryPage = lazy(() => import('@/pages/sports-betting/pages/HistoryPage'));
 const SBOHealthPage = lazy(() => import('@/pages/sports-betting/pages/HealthPage'));
 const SBOSyncPage = lazy(() => import('@/pages/sports-betting/pages/SyncPage'));
+const SBODashboard = lazy(() => import('@/pages/os/sbo/SBODashboard'));
 const BikerDashboard = lazy(() => import('@/pages/os/biker/BikerDashboard'));
 const BikerTodaysRoutesPage = lazy(() => import('@/pages/delivery/biker/TodaysRoutesPage'));
 const ModuleDiagnosticsPage = lazy(() => import('@/pages/ModuleDiagnosticsPage'));
@@ -2324,6 +2325,7 @@ export default function AppRoutes() {
         <Route path="/sbo-ai-engine/history" element={<SBOHistoryPage />} />
         <Route path="/sbo-ai-engine/health" element={<SBOHealthPage />} />
         <Route path="/sbo-ai-engine/sync" element={<SBOSyncPage />} />
+        <Route path="/os/sbo" element={<SBODashboard />} />
         <Route path="/admin/system-integrity" element={<SystemIntegrity />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
         <Route path="/biker/route" element={<BikerTodaysRoutesPage />} />
