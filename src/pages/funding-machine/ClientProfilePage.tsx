@@ -11,11 +11,12 @@ import { toast } from "sonner";
 import {
   User, Building2, Target, Shield, CreditCard, TrendingUp,
   CheckCircle, Clock, AlertTriangle, ArrowLeft, RefreshCw,
-  ExternalLink, FileText, Send, Award, Search, Loader2
+  ExternalLink, FileText, Send, Award, Search, Loader2, Sparkles
 } from "lucide-react";
 import DocumentVault from "@/components/funding-machine/DocumentVault";
 import ScoreSimulator from "@/components/funding-machine/ScoreSimulator";
 import LenderRelationships from "@/components/funding-machine/LenderRelationships";
+import AutoFillApplicationDialog from "@/components/funding-machine/AutoFillApplicationDialog";
 
 const GOLD = "#C9A84C";
 
@@ -148,6 +149,7 @@ export default function ClientProfilePage() {
   const [running, setRunning] = useState<string | null>(null);
   const [lastAnalysis, setLastAnalysis] = useState<string | null>(null);
   const [scoreLoading, setScoreLoading] = useState(true);
+  const [autofillOpen, setAutofillOpen] = useState(false);
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [scoreTU, setScoreTU] = useState('');
   const [scoreEQ, setScoreEQ] = useState('');
@@ -568,6 +570,13 @@ export default function ClientProfilePage() {
           )}
           <Button variant="outline" size="sm" onClick={sendPortalInvite} className="border-amber-500/30 text-amber-400">
             <Send className="h-3 w-3 mr-1" /> Send Portal Invite
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => setAutofillOpen(true)}
+            style={{ backgroundColor: "#C9A84C", color: "#000" }}
+          >
+            <Sparkles className="h-3 w-3 mr-1" /> Auto-Fill Application
           </Button>
           <select
             value={client.status || 'new'}
@@ -1577,6 +1586,12 @@ export default function ClientProfilePage() {
           </Card>
         </TabsContent>
       </Tabs>
+      <AutoFillApplicationDialog
+        open={autofillOpen}
+        onOpenChange={setAutofillOpen}
+        clientId={clientId}
+        funderType="lender"
+      />
     </div>
   );
 }

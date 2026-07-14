@@ -12,7 +12,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Copy, CheckCircle2, XCircle, Loader2, Save, RefreshCw, Send, ArrowLeft } from "lucide-react";
+import { Copy, CheckCircle2, XCircle, Loader2, Save, RefreshCw, Send, ArrowLeft, Sparkles } from "lucide-react";
+import AutoFillApplicationDialog from "@/components/funding-machine/AutoFillApplicationDialog";
 
 type QA = { question: string; answer: string };
 
@@ -56,6 +57,7 @@ export default function ApplicationPackage() {
   const [submitOpen, setSubmitOpen] = useState(false);
   const [confirmationCode, setConfirmationCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [autofillOpen, setAutofillOpen] = useState(false);
 
   const [coverLetter, setCoverLetter] = useState("");
   const [narrative, setNarrative] = useState("");
@@ -218,7 +220,16 @@ export default function ApplicationPackage() {
               {" · "}Deadline: <span className="font-medium text-foreground">{header?.deadline ?? "—"}</span>
             </p>
           </div>
-          {statusBadge}
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setAutofillOpen(true)}
+              style={{ backgroundColor: "#C9A84C", color: "#000" }}
+            >
+              <Sparkles className="h-4 w-4 mr-1" /> Auto-Fill Application
+            </Button>
+            {statusBadge}
+          </div>
         </div>
       </div>
 
@@ -397,6 +408,13 @@ export default function ApplicationPackage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AutoFillApplicationDialog
+        open={autofillOpen}
+        onOpenChange={setAutofillOpen}
+        businessProfileId={pkg.business_profile_id}
+        funderType="grant"
+      />
     </div>
   );
 }
