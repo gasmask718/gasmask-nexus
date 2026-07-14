@@ -149,6 +149,7 @@ export default function ClientProfilePage() {
   const [running, setRunning] = useState<string | null>(null);
   const [lastAnalysis, setLastAnalysis] = useState<string | null>(null);
   const [scoreLoading, setScoreLoading] = useState(true);
+  const [autofillOpen, setAutofillOpen] = useState(false);
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [scoreTU, setScoreTU] = useState('');
   const [scoreEQ, setScoreEQ] = useState('');
