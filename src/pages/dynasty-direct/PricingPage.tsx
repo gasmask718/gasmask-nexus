@@ -377,8 +377,11 @@ export default function PricingPage() {
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end">
                             <Button size="sm" variant="outline" onClick={() => setEditRow(r)}>Edit</Button>
-                            <Button size="sm" variant="outline" disabled={analyzing===r.id} onClick={() => runAnalysis(r.id)}>
+                            <Button size="sm" variant="outline" disabled={analyzing===r.id} onClick={() => runAnalysis(r.id)} title="AI analysis">
                               {analyzing===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                            </Button>
+                            <Button size="sm" variant="outline" disabled={refreshingMarket===r.id} onClick={() => checkMarketPrice(r.id)} title="Check market price (SerpAPI)">
+                              {refreshingMarket===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <LineChart className="h-3 w-3" />}
                             </Button>
                             <Button size="sm" variant="ghost" onClick={() => setHistoryId(r.id)}>
                               <History className="h-3 w-3" />
