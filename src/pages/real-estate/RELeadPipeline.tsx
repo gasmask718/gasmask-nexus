@@ -87,6 +87,7 @@ export default function RELeadPipeline() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [activeCard, setActiveCard] = useState<string | null>(null);
   const [stateFilter, setStateFilter] = useState('all');
   const [scoreFilter, setScoreFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
