@@ -399,6 +399,8 @@ async function runPublish(body: any) {
     confirmed_by: confirmed_by || null,
   }).eq('id', draft_id);
 
+  const recognition = (draft.recognition || {}) as any;
+
   const { data: prod, error: insErr } = await sb.from('products_all').insert({
     wholesaler_id: draft.supplier_id,
     product_name: copy.title || draft.product_name,
@@ -412,6 +414,13 @@ async function runPublish(body: any) {
     inventory_qty: typeof draft.inventory_qty === 'number' ? draft.inventory_qty : 0,
     weight_oz: draft.weight_oz ?? null,
     dimensions: draft.dimensions ?? null,
+    key_features: Array.isArray(recognition.key_features) && recognition.key_features.length ? recognition.key_features : null,
+    item_type: recognition.item_type || null,
+    package_text: recognition.package_text || null,
+    flavor_or_variant: recognition.flavor_or_variant || null,
+    size_or_count: recognition.size_or_count || null,
+    brand_visible: recognition.brand_visible || null,
+    recognition: Object.keys(recognition).length ? recognition : null,
     status: 'active',
   }).select().single();
   if (insErr) throw new Error(`publish insert: ${insErr.message}`);
