@@ -102580,11 +102580,13 @@ export type Database = {
           connected_group_id: string | null
           created_at: string | null
           created_by: string | null
+          created_by_run_id: string | null
           created_by_user_id: string | null
           deleted_at: string | null
           deleted_reason: string | null
           email: string | null
           geo_id: string | null
+          geocode_confidence: string | null
           health_score: number | null
           id: string
           ingestion_source: string | null
@@ -102673,11 +102675,13 @@ export type Database = {
           connected_group_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          created_by_run_id?: string | null
           created_by_user_id?: string | null
           deleted_at?: string | null
           deleted_reason?: string | null
           email?: string | null
           geo_id?: string | null
+          geocode_confidence?: string | null
           health_score?: number | null
           id?: string
           ingestion_source?: string | null
@@ -102766,11 +102770,13 @@ export type Database = {
           connected_group_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          created_by_run_id?: string | null
           created_by_user_id?: string | null
           deleted_at?: string | null
           deleted_reason?: string | null
           email?: string | null
           geo_id?: string | null
+          geocode_confidence?: string | null
           health_score?: number | null
           id?: string
           ingestion_source?: string | null
