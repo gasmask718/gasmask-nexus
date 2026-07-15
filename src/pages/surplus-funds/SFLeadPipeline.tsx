@@ -34,23 +34,16 @@ const STATUS_PILLS = [
   'case_filed','funds_released','closed','do_not_contact'
 ];
 
-// Derived skip-trace status from existing fields (no schema change required).
-// - traced: skip_traced flag set true OR status advanced past skip-trace
-//           OR phone/email populated (scrapers write status='phone_found'
-//           without flipping the skip_traced boolean).
-// - failed: status='skip_trace_failed' OR skip_trace_failed flag true
+// Derived skip-trace status — narrow definition that matches DB semantics:
+// - traced: status='phone_found' OR skip_traced flag=true
+//           (downstream statuses like queued/called/interested are pipeline
+//            progress, not skip-trace signals, and would inflate the count)
+// - failed: status='skip_trace_failed' OR skip_trace_failed flag=true
 // - pending: everything else
 type SkipStatus = 'pending' | 'traced' | 'failed';
-const TRACED_STATUSES = new Set([
-  'phone_found','queued','called','interested','consultation_booked',
-  'agreement_signed','referred_to_attorney','case_filed','hearing_scheduled',
-  'approved','funds_released','closed',
-]);
 function deriveSkipStatus(l: any): SkipStatus {
   if (l?.status === 'skip_trace_failed' || l?.skip_trace_failed === true) return 'failed';
-  if (l?.skip_traced === true) return 'traced';
-  if (l?.status && TRACED_STATUSES.has(l.status)) return 'traced';
-  if (l?.phone || l?.email) return 'traced';
+  if (l?.status === 'phone_found' || l?.skip_traced === true) return 'traced';
   return 'pending';
 }
 const skipBadgeStyle: Record<SkipStatus, string> = {
