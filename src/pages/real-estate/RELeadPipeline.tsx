@@ -252,7 +252,11 @@ export default function RELeadPipeline() {
         mailing_zip: pick(r, 'Mail Zip', 'mailing_zip') || null,
         estimated_value: parseFloat(pick(r, 'estimated_value', 'Value', 'Estimated Value')) || null,
         lead_type: pick(r, 'lead_type', 'Type'),
-        status: pick(r, 'status', 'Status') || 'new',
+        status: (() => {
+          const allowed = ['new','skip_trace_pending','phone_found','queued','called','interested','appointment_set','analyzed','offer_made','countering','under_contract','buyer_found','assigned','closed','dead','dnc','cancelled'];
+          const raw = (pick(r, 'status', 'Status') || '').toString().trim().toLowerCase().replace(/\s+/g, '_');
+          return allowed.includes(raw) ? raw : 'new';
+        })(),
         skip_traced: phones_detail.length > 0,
         lead_source: 'csv_upload',
         raw_payload: r,
