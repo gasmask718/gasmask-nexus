@@ -168,11 +168,12 @@ Deno.serve(async (req) => {
     let category = categoryIn;
     let supplier_cost = costIn;
     let store_price_a = priceIn;
+    let recognition: RecognitionFacts | undefined = body?.recognition;
 
     if (product_id) {
       const { data, error } = await supabase
         .from('products_all')
-        .select('product_name, brand, category, supplier_cost, store_price_a')
+        .select('product_name, brand, category, supplier_cost, store_price_a, key_features, item_type, package_text, flavor_or_variant, size_or_count, brand_visible')
         .eq('id', product_id)
         .maybeSingle();
       if (error) return ok({ error: error.message, product_id });
@@ -182,6 +183,16 @@ Deno.serve(async (req) => {
       category = category ?? data.category;
       supplier_cost = supplier_cost ?? data.supplier_cost;
       store_price_a = store_price_a ?? data.store_price_a;
+      if (!recognition) {
+        recognition = {
+          key_features: (data as any).key_features ?? null,
+          item_type: (data as any).item_type ?? null,
+          package_text: (data as any).package_text ?? null,
+          flavor_or_variant: (data as any).flavor_or_variant ?? null,
+          size_or_count: (data as any).size_or_count ?? null,
+          brand_visible: (data as any).brand_visible ?? null,
+        };
+      }
     }
 
     if (!name) return ok({ error: 'name_required' });
@@ -197,7 +208,7 @@ Deno.serve(async (req) => {
       genError = 'anthropic_api_key_missing';
     } else {
       try {
-        result = await callClaude(apiKey, { name, brand, category, supplier_cost, store_price_a });
+        result = await callClaude(apiKey, { name, brand, category, supplier_cost, store_price_a, recognition });
       } catch (e) {
         result = placeholderFor({ name, brand, category });
         usedPlaceholder = true;
