@@ -2831,6 +2831,57 @@ export function AccuracyTab() {
         </Card>
       </div>
 
+      {/* Accuracy by Sport */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-foreground">Accuracy by Sport</p>
+            {emptySportKeys.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowAllSports(v => !v)}
+                className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+              >
+                {showAllSports ? 'Hide empty' : `Show all (${emptySportKeys.length})`}
+              </button>
+            )}
+          </div>
+          {bySport.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No verified predictions yet.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {bySport.map(s => {
+                const isEmpty = s.total === 0;
+                const acc = s.accuracy === 'N/A' ? 0 : parseFloat(s.accuracy);
+                const color = isEmpty
+                  ? 'text-muted-foreground'
+                  : acc >= 55 ? 'text-emerald-500' : 'text-amber-500';
+                return (
+                  <div
+                    key={s.key}
+                    className={`rounded-md border border-border p-2 text-center ${isEmpty ? 'opacity-50' : ''}`}
+                  >
+                    <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                      <span>{s.emoji}</span>
+                      <span>{s.label}</span>
+                    </div>
+                    <p className={`text-lg font-bold ${color}`}>
+                      {s.accuracy === 'N/A' ? '—' : `${s.accuracy}%`}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {s.correct}W-{s.incorrect}L
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {s.total} pick{s.total === 1 ? '' : 's'}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Accuracy by confidence tier */}
       <Card>
         <CardContent className="p-4 space-y-3">
