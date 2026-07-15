@@ -1,0 +1,2 @@
+GRANT ALL ON public._jobA_plan_manifest, public._jobA_plan_scalar, public._jobA_plan_notes, public._jobA_plan_invoices, public._jobA_plan_conflicts, public._jobA_snap_stores TO sandbox_exec;
+GRANT USAGE, SELECT ON SEQUENCE public._joba_plan_scalar_id_seq, public._joba_plan_notes_id_seq, public._joba_plan_invoices_id_seq, public._joba_plan_conflicts_id_seq TO sandbox_exec;
