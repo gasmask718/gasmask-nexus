@@ -25,6 +25,15 @@ type GenResult = {
   seo_keywords: string[];
 };
 
+type RecognitionFacts = {
+  key_features?: string[] | null;
+  item_type?: string | null;
+  package_text?: string | null;
+  flavor_or_variant?: string | null;
+  size_or_count?: string | null;
+  brand_visible?: string | null;
+};
+
 function ok(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -47,10 +56,32 @@ function placeholderFor(input: { name?: string; brand?: string; category?: strin
   };
 }
 
+function buildVisibleFactsBlock(r: RecognitionFacts): string {
+  const lines: string[] = [];
+  if (r.brand_visible) lines.push(`- Brand on package: ${r.brand_visible}`);
+  if (r.package_text) lines.push(`- Text/tagline printed on package: "${r.package_text}"`);
+  if (r.flavor_or_variant) lines.push(`- Flavor / variant: ${r.flavor_or_variant}`);
+  if (r.size_or_count) lines.push(`- Size / count: ${r.size_or_count}`);
+  if (r.item_type) lines.push(`- Item type: ${r.item_type}`);
+  if (Array.isArray(r.key_features) && r.key_features.length) {
+    lines.push(`- Visible features: ${r.key_features.filter(Boolean).join('; ')}`);
+  }
+  return lines.join('\n');
+}
+
 async function callClaude(
   apiKey: string,
-  p: { name: string; brand?: string; category?: string; supplier_cost?: number; store_price_a?: number },
+  p: {
+    name: string; brand?: string; category?: string;
+    supplier_cost?: number; store_price_a?: number;
+    recognition?: RecognitionFacts;
+  },
 ): Promise<GenResult> {
+  const factsBlock = p.recognition ? buildVisibleFactsBlock(p.recognition) : '';
+  const factsSection = factsBlock
+    ? `\n\nVisible on package (AI vision extracted these directly from the product photo — treat as ground truth and PREFER these concrete details over generic category language):\n${factsBlock}\n\nWrite copy that references these specific visible details (flavor, size, package text, brand) so the description clearly describes THIS product, not a generic category placeholder.`
+    : '';
+
   const prompt = `You are writing product copy for a smoke shop / convenience wholesale catalog (Dynasty Direct).
 
 Product:
@@ -58,11 +89,11 @@ Product:
 - Brand: ${p.brand ?? 'unbranded'}
 - Category: ${p.category ?? 'accessories'}
 ${p.supplier_cost ? `- Cost: $${p.supplier_cost}` : ''}
-${p.store_price_a ? `- Store price: $${p.store_price_a}` : ''}
+${p.store_price_a ? `- Store price: $${p.store_price_a}` : ''}${factsSection}
 
 Return ONLY valid JSON (no markdown fences, no prose) with these exact keys:
 {
-  "ai_description": "<150-250 words, benefit-led, retailer-focused, factual, no health claims>",
+  "ai_description": "<150-250 words, benefit-led, retailer-focused, factual, no health claims — must reference the visible package details above when provided>",
   "ai_description_short": "<25-40 words>",
   "seo_title": "<50-60 chars, include product + brand>",
   "seo_keywords": ["<8-12 lowercase keywords/phrases>"]
@@ -137,11 +168,12 @@ Deno.serve(async (req) => {
     let category = categoryIn;
     let supplier_cost = costIn;
     let store_price_a = priceIn;
+    let recognition: RecognitionFacts | undefined = body?.recognition;
 
     if (product_id) {
       const { data, error } = await supabase
         .from('products_all')
-        .select('product_name, brand, category, supplier_cost, store_price_a')
+        .select('product_name, brand, category, supplier_cost, store_price_a, key_features, item_type, package_text, flavor_or_variant, size_or_count, brand_visible')
         .eq('id', product_id)
         .maybeSingle();
       if (error) return ok({ error: error.message, product_id });
@@ -151,6 +183,16 @@ Deno.serve(async (req) => {
       category = category ?? data.category;
       supplier_cost = supplier_cost ?? data.supplier_cost;
       store_price_a = store_price_a ?? data.store_price_a;
+      if (!recognition) {
+        recognition = {
+          key_features: (data as any).key_features ?? null,
+          item_type: (data as any).item_type ?? null,
+          package_text: (data as any).package_text ?? null,
+          flavor_or_variant: (data as any).flavor_or_variant ?? null,
+          size_or_count: (data as any).size_or_count ?? null,
+          brand_visible: (data as any).brand_visible ?? null,
+        };
+      }
     }
 
     if (!name) return ok({ error: 'name_required' });
@@ -166,7 +208,7 @@ Deno.serve(async (req) => {
       genError = 'anthropic_api_key_missing';
     } else {
       try {
-        result = await callClaude(apiKey, { name, brand, category, supplier_cost, store_price_a });
+        result = await callClaude(apiKey, { name, brand, category, supplier_cost, store_price_a, recognition });
       } catch (e) {
         result = placeholderFor({ name, brand, category });
         usedPlaceholder = true;

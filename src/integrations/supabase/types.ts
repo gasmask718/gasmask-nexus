@@ -81832,6 +81832,7 @@ export type Database = {
           avg_rating: number | null
           brand: string | null
           brand_id: string | null
+          brand_visible: string | null
           case_height_in: number | null
           case_length_in: number | null
           case_price_store: number | null
@@ -81845,6 +81846,7 @@ export type Database = {
           dimensions: Json | null
           dtc_margin_pct: number | null
           dtc_price_b: number | null
+          flavor_or_variant: string | null
           geo_blocked_states: string[] | null
           has_variants: boolean
           height_in: number | null
@@ -81855,6 +81857,8 @@ export type Database = {
           inventory_qty: number | null
           is_age_restricted: boolean | null
           is_fragile: boolean | null
+          item_type: string | null
+          key_features: string[] | null
           length_in: number | null
           low_stock_threshold: number | null
           map_price: number | null
@@ -81865,10 +81869,12 @@ export type Database = {
           min_dtc_margin_pct: number | null
           min_order_qty: number | null
           min_store_margin_pct: number | null
+          package_text: string | null
           pricing_strategy: string | null
           primary_image_url: string | null
           processing_time: string | null
           product_name: string
+          recognition: Json | null
           requires_pact_act: boolean | null
           retail_price: number | null
           review_count: number | null
@@ -81876,6 +81882,7 @@ export type Database = {
           seo_title: string | null
           shipping_from_city: string | null
           shipping_from_state: string | null
+          size_or_count: string | null
           stackable: boolean | null
           status: string | null
           store_margin_pct: number | null
@@ -81902,6 +81909,7 @@ export type Database = {
           avg_rating?: number | null
           brand?: string | null
           brand_id?: string | null
+          brand_visible?: string | null
           case_height_in?: number | null
           case_length_in?: number | null
           case_price_store?: number | null
@@ -81915,6 +81923,7 @@ export type Database = {
           dimensions?: Json | null
           dtc_margin_pct?: number | null
           dtc_price_b?: number | null
+          flavor_or_variant?: string | null
           geo_blocked_states?: string[] | null
           has_variants?: boolean
           height_in?: number | null
@@ -81925,6 +81934,8 @@ export type Database = {
           inventory_qty?: number | null
           is_age_restricted?: boolean | null
           is_fragile?: boolean | null
+          item_type?: string | null
+          key_features?: string[] | null
           length_in?: number | null
           low_stock_threshold?: number | null
           map_price?: number | null
@@ -81935,10 +81946,12 @@ export type Database = {
           min_dtc_margin_pct?: number | null
           min_order_qty?: number | null
           min_store_margin_pct?: number | null
+          package_text?: string | null
           pricing_strategy?: string | null
           primary_image_url?: string | null
           processing_time?: string | null
           product_name: string
+          recognition?: Json | null
           requires_pact_act?: boolean | null
           retail_price?: number | null
           review_count?: number | null
@@ -81946,6 +81959,7 @@ export type Database = {
           seo_title?: string | null
           shipping_from_city?: string | null
           shipping_from_state?: string | null
+          size_or_count?: string | null
           stackable?: boolean | null
           status?: string | null
           store_margin_pct?: number | null
@@ -81972,6 +81986,7 @@ export type Database = {
           avg_rating?: number | null
           brand?: string | null
           brand_id?: string | null
+          brand_visible?: string | null
           case_height_in?: number | null
           case_length_in?: number | null
           case_price_store?: number | null
@@ -81985,6 +82000,7 @@ export type Database = {
           dimensions?: Json | null
           dtc_margin_pct?: number | null
           dtc_price_b?: number | null
+          flavor_or_variant?: string | null
           geo_blocked_states?: string[] | null
           has_variants?: boolean
           height_in?: number | null
@@ -81995,6 +82011,8 @@ export type Database = {
           inventory_qty?: number | null
           is_age_restricted?: boolean | null
           is_fragile?: boolean | null
+          item_type?: string | null
+          key_features?: string[] | null
           length_in?: number | null
           low_stock_threshold?: number | null
           map_price?: number | null
@@ -82005,10 +82023,12 @@ export type Database = {
           min_dtc_margin_pct?: number | null
           min_order_qty?: number | null
           min_store_margin_pct?: number | null
+          package_text?: string | null
           pricing_strategy?: string | null
           primary_image_url?: string | null
           processing_time?: string | null
           product_name?: string
+          recognition?: Json | null
           requires_pact_act?: boolean | null
           retail_price?: number | null
           review_count?: number | null
@@ -82016,6 +82036,7 @@ export type Database = {
           seo_title?: string | null
           shipping_from_city?: string | null
           shipping_from_state?: string | null
+          size_or_count?: string | null
           stackable?: boolean | null
           status?: string | null
           store_margin_pct?: number | null
@@ -132294,6 +132315,7 @@ export type Database = {
           avg_rating: number | null
           brand: string | null
           brand_id: string | null
+          brand_visible: string | null
           case_height_in: number | null
           case_length_in: number | null
           case_price_store: number | null
@@ -132307,6 +132329,7 @@ export type Database = {
           dimensions: Json | null
           dtc_margin_pct: number | null
           dtc_price_b: number | null
+          flavor_or_variant: string | null
           geo_blocked_states: string[] | null
           has_variants: boolean
           height_in: number | null
@@ -132317,6 +132340,8 @@ export type Database = {
           inventory_qty: number | null
           is_age_restricted: boolean | null
           is_fragile: boolean | null
+          item_type: string | null
+          key_features: string[] | null
           length_in: number | null
           low_stock_threshold: number | null
           map_price: number | null
@@ -132327,10 +132352,12 @@ export type Database = {
           min_dtc_margin_pct: number | null
           min_order_qty: number | null
           min_store_margin_pct: number | null
+          package_text: string | null
           pricing_strategy: string | null
           primary_image_url: string | null
           processing_time: string | null
           product_name: string
+          recognition: Json | null
           requires_pact_act: boolean | null
           retail_price: number | null
           review_count: number | null
@@ -132338,6 +132365,7 @@ export type Database = {
           seo_title: string | null
           shipping_from_city: string | null
           shipping_from_state: string | null
+          size_or_count: string | null
           stackable: boolean | null
           status: string | null
           store_margin_pct: number | null
@@ -132421,6 +132449,7 @@ export type Database = {
           avg_rating: number | null
           brand: string | null
           brand_id: string | null
+          brand_visible: string | null
           case_height_in: number | null
           case_length_in: number | null
           case_price_store: number | null
@@ -132434,6 +132463,7 @@ export type Database = {
           dimensions: Json | null
           dtc_margin_pct: number | null
           dtc_price_b: number | null
+          flavor_or_variant: string | null
           geo_blocked_states: string[] | null
           has_variants: boolean
           height_in: number | null
@@ -132444,6 +132474,8 @@ export type Database = {
           inventory_qty: number | null
           is_age_restricted: boolean | null
           is_fragile: boolean | null
+          item_type: string | null
+          key_features: string[] | null
           length_in: number | null
           low_stock_threshold: number | null
           map_price: number | null
@@ -132454,10 +132486,12 @@ export type Database = {
           min_dtc_margin_pct: number | null
           min_order_qty: number | null
           min_store_margin_pct: number | null
+          package_text: string | null
           pricing_strategy: string | null
           primary_image_url: string | null
           processing_time: string | null
           product_name: string
+          recognition: Json | null
           requires_pact_act: boolean | null
           retail_price: number | null
           review_count: number | null
@@ -132465,6 +132499,7 @@ export type Database = {
           seo_title: string | null
           shipping_from_city: string | null
           shipping_from_state: string | null
+          size_or_count: string | null
           stackable: boolean | null
           status: string | null
           store_margin_pct: number | null
