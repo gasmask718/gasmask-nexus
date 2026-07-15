@@ -1,0 +1,1 @@
+DELETE FROM public._stage_invoices WHERE run_id = '0f376081-3d58-4d09-9a1a-055561d0035a'::uuid;
