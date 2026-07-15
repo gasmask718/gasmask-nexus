@@ -83848,6 +83848,7 @@ export type Database = {
           call_recording_url: string | null
           call_transcript: string | null
           city: string | null
+          company_name: string | null
           condition: string | null
           contract_sent_at: string | null
           contract_signed_at: string | null
@@ -83859,6 +83860,7 @@ export type Database = {
           docusign_envelope_id: string | null
           email: string | null
           emails_all: string[] | null
+          emails_detail: Json
           equity_percentage: number | null
           estimated_repairs: number | null
           estimated_value: number | null
@@ -83874,6 +83876,7 @@ export type Database = {
           lead_score: number | null
           lead_source: string | null
           lead_type: string | null
+          litigator: boolean
           lot_size: string | null
           mailing_address: string | null
           mailing_city: string | null
@@ -83885,6 +83888,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           phones_all: string[] | null
+          phones_detail: Json
           property_address: string
           property_type: string | null
           raw_payload: Json | null
@@ -83915,6 +83919,7 @@ export type Database = {
           call_recording_url?: string | null
           call_transcript?: string | null
           city?: string | null
+          company_name?: string | null
           condition?: string | null
           contract_sent_at?: string | null
           contract_signed_at?: string | null
@@ -83926,6 +83931,7 @@ export type Database = {
           docusign_envelope_id?: string | null
           email?: string | null
           emails_all?: string[] | null
+          emails_detail?: Json
           equity_percentage?: number | null
           estimated_repairs?: number | null
           estimated_value?: number | null
@@ -83941,6 +83947,7 @@ export type Database = {
           lead_score?: number | null
           lead_source?: string | null
           lead_type?: string | null
+          litigator?: boolean
           lot_size?: string | null
           mailing_address?: string | null
           mailing_city?: string | null
@@ -83952,6 +83959,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           phones_all?: string[] | null
+          phones_detail?: Json
           property_address: string
           property_type?: string | null
           raw_payload?: Json | null
@@ -83982,6 +83990,7 @@ export type Database = {
           call_recording_url?: string | null
           call_transcript?: string | null
           city?: string | null
+          company_name?: string | null
           condition?: string | null
           contract_sent_at?: string | null
           contract_signed_at?: string | null
@@ -83993,6 +84002,7 @@ export type Database = {
           docusign_envelope_id?: string | null
           email?: string | null
           emails_all?: string[] | null
+          emails_detail?: Json
           equity_percentage?: number | null
           estimated_repairs?: number | null
           estimated_value?: number | null
@@ -84008,6 +84018,7 @@ export type Database = {
           lead_score?: number | null
           lead_source?: string | null
           lead_type?: string | null
+          litigator?: boolean
           lot_size?: string | null
           mailing_address?: string | null
           mailing_city?: string | null
@@ -84019,6 +84030,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           phones_all?: string[] | null
+          phones_detail?: Json
           property_address?: string
           property_type?: string | null
           raw_payload?: Json | null
