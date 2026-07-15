@@ -87,6 +87,7 @@ export default function RELeadPipeline() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [activeCard, setActiveCard] = useState<string | null>(null);
   const [stateFilter, setStateFilter] = useState('all');
   const [scoreFilter, setScoreFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -130,6 +131,11 @@ export default function RELeadPipeline() {
   // Filtering
   const filtered = useMemo(() => {
     let result = leads;
+    if (activeCard === 'skipTraced') result = result.filter((l: any) => l.skip_traced);
+    if (activeCard === 'aDeal') result = result.filter((l: any) => l.deal_score === 'A');
+    if (activeCard === 'queued') result = result.filter((l: any) => l.status === 'queued');
+    if (activeCard === 'interested') result = result.filter((l: any) => l.status === 'interested');
+    if (activeCard === 'underContract') result = result.filter((l: any) => l.status === 'under_contract');
     if (statusFilter !== 'all') result = result.filter((l: any) => l.status === statusFilter);
     if (stateFilter !== 'all') result = result.filter((l: any) => l.state === stateFilter);
     if (scoreFilter !== 'all') result = result.filter((l: any) => l.deal_score === scoreFilter);
@@ -153,7 +159,22 @@ export default function RELeadPipeline() {
       return sortDir === 'asc' ? av - bv : bv - av;
     });
     return result;
-  }, [leads, statusFilter, stateFilter, scoreFilter, typeFilter, search, sortKey, sortDir]);
+  }, [leads, activeCard, statusFilter, stateFilter, scoreFilter, typeFilter, search, sortKey, sortDir]);
+
+  const handleCardClick = (card: string) => {
+    if (card === 'total') {
+      setActiveCard(null);
+      setStatusFilter('all');
+      return;
+    }
+    if (activeCard === card) {
+      setActiveCard(null);
+      return;
+    }
+    setActiveCard(card);
+    setStatusFilter('all');
+  };
+
 
   const toggleSelect = (id: string) => {
     const s = new Set(selected);
@@ -324,8 +345,12 @@ export default function RELeadPipeline() {
 
   const states = useMemo(() => [...new Set(leads.map((l: any) => l.state).filter(Boolean))].sort(), [leads]);
 
-  const StatCard = ({ label, value, icon: Icon, color, sub }: any) => (
-    <Card className="border-border/50 bg-card/50">
+  const StatCard = ({ label, value, icon: Icon, color, sub, cardKey, active }: any) => (
+    <Card
+      onClick={() => cardKey && handleCardClick(cardKey)}
+      className={`border-border/50 bg-card/50 transition-all ${cardKey ? 'cursor-pointer hover:border-border hover:shadow-md' : ''} ${active ? 'ring-2 ring-offset-2 ring-offset-background' : ''}`}
+      style={active ? { boxShadow: `0 0 0 2px ${color}` } : undefined}
+    >
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div>
@@ -338,6 +363,7 @@ export default function RELeadPipeline() {
       </CardContent>
     </Card>
   );
+
 
   return (
     <div className="space-y-6">
@@ -406,12 +432,13 @@ export default function RELeadPipeline() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="Total Leads" value={stats.total} icon={List} color="#9ca3af" />
-        <StatCard label="Skip Traced" value={stats.skipTraced} icon={Phone} color={GREEN} sub={stats.total > 0 ? `${Math.round(stats.skipTraced / stats.total * 100)}% of total` : undefined} />
-        <StatCard label="Queued for DC" value={stats.queued} icon={Clock} color="#d97706" />
-        <StatCard label="Interested" value={stats.interested} icon={Flame} color="#ea580c" />
-        <StatCard label="Under Contract" value={stats.underContract} icon={FileSignature} color="#0d9488" />
-        <StatCard label="A-Rated Deals" value={stats.aDeal} icon={Star} color={GOLD} />
+        <StatCard cardKey="total" active={activeCard === null && statusFilter === 'all'} label="Total Leads" value={stats.total} icon={List} color="#9ca3af" />
+        <StatCard cardKey="skipTraced" active={activeCard === 'skipTraced'} label="Skip Traced" value={stats.skipTraced} icon={Phone} color={GREEN} sub={stats.total > 0 ? `${Math.round(stats.skipTraced / stats.total * 100)}% of total` : undefined} />
+        <StatCard cardKey="queued" active={activeCard === 'queued'} label="Queued for DC" value={stats.queued} icon={Clock} color="#d97706" />
+        <StatCard cardKey="interested" active={activeCard === 'interested'} label="Interested" value={stats.interested} icon={Flame} color="#ea580c" />
+        <StatCard cardKey="underContract" active={activeCard === 'underContract'} label="Under Contract" value={stats.underContract} icon={FileSignature} color="#0d9488" />
+        <StatCard cardKey="aDeal" active={activeCard === 'aDeal'} label="A-Rated Deals" value={stats.aDeal} icon={Star} color={GOLD} />
+
       </div>
 
       {/* Search */}
@@ -424,7 +451,7 @@ export default function RELeadPipeline() {
       <div className="space-y-3">
         <div className="flex gap-1.5 flex-wrap">
           {STATUS_PILLS.map(s => (
-            <button key={s} onClick={() => setStatusFilter(s)}
+            <button key={s} onClick={() => { setActiveCard(null); setStatusFilter(s); }}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${statusFilter === s ? 'text-white border-transparent' : 'text-muted-foreground border-border hover:border-muted-foreground/50'}`}
               style={statusFilter === s ? { backgroundColor: GREEN } : undefined}
             >
