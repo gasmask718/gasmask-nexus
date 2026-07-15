@@ -18,12 +18,16 @@
 // making the next timeout more likely. A smaller batch limit was tried as
 // a band-aid but doesn't fix the underlying issue, just delays it.
 //
-// THE REAL FIX: batch everything into a small, fixed number of DB calls
-// regardless of row count - validate all rows in memory first (fast, no
-// DB calls), then do ONE bulk insert for all valid leads, ONE bulk update
-// for all their promoted_at/promoted_to_lead_id values, and ONE bulk
-// insert for all flagged rows. 4 total DB calls whether there are 10 rows
-// or 1000.
+// THE REAL FIX: batch everything into a small, fixed number of sequential
+// DB round-trips regardless of row count - validate all rows in memory
+// first (fast, no DB calls), then do ONE bulk insert for all valid leads,
+// then N concurrent (not sequential) UPDATE calls for their
+// promoted_at/promoted_to_lead_id values (concurrent rather than one bulk
+// call because raw_scraper_leads.id is GENERATED ALWAYS AS IDENTITY,
+// which rejects the upsert-based bulk approach - see note below), and
+// ONE bulk insert for all flagged rows. Regardless of row count, this is
+// 3 sequential waits (fetch, insert, flag-insert) plus one concurrent
+// batch of updates that all fire in parallel rather than one-at-a-time.
 //
 // VALIDATION RULES — each one traces back to a real bad row we actually
 // found and removed by hand earlier in this project. Not speculative:
@@ -119,18 +123,32 @@ Deno.serve(async (req) => {
       // A single INSERT ... RETURNING preserves input order in Postgres,
       // so insertedLeads[i] corresponds to toPromote[i].
       const now = new Date().toISOString();
-      const rawUpdates = toPromote.map((row, i) => ({
-        id: row.id,
-        promoted_at: now,
-        promoted_to_lead_id: insertedLeads[i]?.id ?? null,
-      }));
 
-      const { error: updateError } = await supabase
-        .from("raw_scraper_leads")
-        .upsert(rawUpdates, { onConflict: "id" });
+      // NOTE: upsert() was tried here first, but it internally issues an
+      // INSERT ... ON CONFLICT statement, which fails with "cannot insert
+      // a non-DEFAULT value into column 'id'" because raw_scraper_leads.id
+      // is GENERATED ALWAYS AS IDENTITY (strict auto-increment - doesn't
+      // allow explicit id values even on the insert-side of an upsert).
+      // Fix: real per-row UPDATE calls (no id insertion at all), fired
+      // CONCURRENTLY via Promise.all rather than sequentially - keeps the
+      // "fast regardless of row count" property without hitting the
+      // identity-column restriction.
+      const updateResults = await Promise.all(
+        toPromote.map((row, i) =>
+          supabase
+            .from("raw_scraper_leads")
+            .update({
+              promoted_at: now,
+              promoted_to_lead_id: insertedLeads[i]?.id ?? null,
+            })
+            .eq("id", row.id)
+        )
+      );
+      const updateErrors = updateResults.filter((r) => r.error);
 
-      if (updateError) {
-        errors.push(`bulk status update failed: ${updateError.message}`);
+      if (updateErrors.length > 0) {
+        errors.push(`${updateErrors.length} status update(s) failed: ${updateErrors[0].error?.message}`);
+        promoted = toPromote.length - updateErrors.length;
       } else {
         promoted = toPromote.length;
       }
