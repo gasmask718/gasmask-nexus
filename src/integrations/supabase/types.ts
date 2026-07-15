@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      _batch_run_results: {
+        Row: {
+          batch_num: number
+          id: number
+          offset_start: number
+          plan_conflicts: number | null
+          plan_contact: number | null
+          plan_invoices: number | null
+          plan_notes: number | null
+          plan_owner: number | null
+          plan_phone: number | null
+          ran_at: string
+          run_id: string
+          store_ids: string
+          wr_contact: number | null
+          wr_invoices: number | null
+          wr_notes: number | null
+          wr_owner: number | null
+          wr_phone: number | null
+        }
+        Insert: {
+          batch_num: number
+          id?: number
+          offset_start: number
+          plan_conflicts?: number | null
+          plan_contact?: number | null
+          plan_invoices?: number | null
+          plan_notes?: number | null
+          plan_owner?: number | null
+          plan_phone?: number | null
+          ran_at?: string
+          run_id: string
+          store_ids: string
+          wr_contact?: number | null
+          wr_invoices?: number | null
+          wr_notes?: number | null
+          wr_owner?: number | null
+          wr_phone?: number | null
+        }
+        Update: {
+          batch_num?: number
+          id?: number
+          offset_start?: number
+          plan_conflicts?: number | null
+          plan_contact?: number | null
+          plan_invoices?: number | null
+          plan_notes?: number | null
+          plan_owner?: number | null
+          plan_phone?: number | null
+          ran_at?: string
+          run_id?: string
+          store_ids?: string
+          wr_contact?: number | null
+          wr_invoices?: number | null
+          wr_notes?: number | null
+          wr_owner?: number | null
+          wr_phone?: number | null
+        }
+        Relationships: []
+      }
       _merge_matrix_results: {
         Row: {
           actual: string | null
