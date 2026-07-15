@@ -195,6 +195,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/sbo-ai-engine/sync', label: '⚙️ Sync', icon: Settings },
       { path: '/sbo-ai-engine/va-entry', label: '📋 VA Entry', icon: ClipboardList },
       { path: '/os/sbo', label: '🧭 SBO Dashboard', icon: LayoutDashboard },
+      { path: '/os/sbo/picks', label: '🎯 All Picks', icon: ListFilter },
     ],
   },
   securityGovernance: {
