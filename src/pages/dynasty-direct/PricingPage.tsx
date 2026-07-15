@@ -245,6 +245,23 @@ export default function PricingPage() {
     } finally { setAnalyzing(null); }
   }
 
+  async function checkMarketPrice(id: string) {
+    setRefreshingMarket(id);
+    try {
+      const { data, error } = await supabase.functions.invoke('dd-price-intelligence', {
+        body: { action: 'refresh_market', product_id: id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (!data?.samples) toast.info(`No competitor prices found for "${data?.query ?? 'query'}"`);
+      else toast.success(`Market: avg $${data.avg} · low $${data.low} · high $${data.high} (${data.samples} sources)`);
+      qc.invalidateQueries({ queryKey: ['dd-pricing-rows'] });
+      qc.invalidateQueries({ queryKey: ['dd-price-alerts-open'] });
+    } catch (e: any) {
+      toast.error(e.message ?? 'Market check failed');
+    } finally { setRefreshingMarket(null); }
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
