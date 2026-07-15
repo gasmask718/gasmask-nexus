@@ -451,7 +451,7 @@ export default function RELeadPipeline() {
       <div className="space-y-3">
         <div className="flex gap-1.5 flex-wrap">
           {STATUS_PILLS.map(s => (
-            <button key={s} onClick={() => setStatusFilter(s)}
+            <button key={s} onClick={() => { setActiveCard(null); setStatusFilter(s); }}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${statusFilter === s ? 'text-white border-transparent' : 'text-muted-foreground border-border hover:border-muted-foreground/50'}`}
               style={statusFilter === s ? { backgroundColor: GREEN } : undefined}
             >
