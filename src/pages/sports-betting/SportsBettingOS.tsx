@@ -2549,7 +2549,32 @@ export function AccuracyHistoryWidget() {
 export function AccuracyTab() {
   const [verifying, setVerifying] = useState(false);
   const [verifyProgress, setVerifyProgress] = useState('');
+  const [showAllSports, setShowAllSports] = useState(false);
   const queryClient = useQueryClient();
+
+  // Inline helper: sport_key -> { emoji, label }
+  const SPORT_META: Record<string, { emoji: string; label: string }> = {
+    nba: { emoji: '🏀', label: 'NBA' },
+    wnba: { emoji: '🏀', label: 'WNBA' },
+    ncaab: { emoji: '🏀', label: 'NCAAB' },
+    nfl: { emoji: '🏈', label: 'NFL' },
+    ncaaf: { emoji: '🏈', label: 'NCAAF' },
+    mlb: { emoji: '⚾', label: 'MLB' },
+    nhl: { emoji: '🏒', label: 'NHL' },
+    mls: { emoji: '⚽', label: 'MLS' },
+    epl: { emoji: '⚽', label: 'EPL' },
+    soccer: { emoji: '⚽', label: 'Soccer' },
+    ufc: { emoji: '🥊', label: 'UFC' },
+    mma: { emoji: '🥊', label: 'MMA' },
+    boxing: { emoji: '🥊', label: 'Boxing' },
+    tennis: { emoji: '🎾', label: 'Tennis' },
+    golf: { emoji: '⛳', label: 'Golf' },
+  };
+  const ALL_SPORT_KEYS = Object.keys(SPORT_META);
+  const getSportMeta = (key: string | null | undefined) => {
+    const k = (key || '').toLowerCase();
+    return SPORT_META[k] || { emoji: '🎯', label: (key || 'Unknown').toUpperCase() };
+  };
 
   const { data: allPreds, refetch: refetchAll } = useQuery({
     queryKey: ['all-predictions-accuracy-full'],
