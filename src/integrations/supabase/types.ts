@@ -296,6 +296,63 @@ export type Database = {
         }
         Relationships: []
       }
+      _mfix_snap_d4ef96f9: {
+        Row: {
+          address_city: string | null
+          address_street: string | null
+          address_zip: string | null
+          id: string
+          neighborhood: string | null
+          phone: string | null
+          snapshotted_at: string
+        }
+        Insert: {
+          address_city?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          id: string
+          neighborhood?: string | null
+          phone?: string | null
+          snapshotted_at?: string
+        }
+        Update: {
+          address_city?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          id?: string
+          neighborhood?: string | null
+          phone?: string | null
+          snapshotted_at?: string
+        }
+        Relationships: []
+      }
+      _mfix_stage_d4ef96f9: {
+        Row: {
+          address_street: string | null
+          city: string | null
+          neighborhood: string | null
+          phone: string | null
+          store_id: string
+          zip: string | null
+        }
+        Insert: {
+          address_street?: string | null
+          city?: string | null
+          neighborhood?: string | null
+          phone?: string | null
+          store_id: string
+          zip?: string | null
+        }
+        Update: {
+          address_street?: string | null
+          city?: string | null
+          neighborhood?: string | null
+          phone?: string | null
+          store_id?: string
+          zip?: string | null
+        }
+        Relationships: []
+      }
       _pass2_batch_run_results: {
         Row: {
           batch_num: number
@@ -102596,6 +102653,7 @@ export type Database = {
           last_classified_at: string | null
           last_performance_update: string | null
           last_reactivation_attempt_at: string | null
+          last_update_run_id: string | null
           last_visit_date: string | null
           last_visit_driver_id: string | null
           lat: number | null
@@ -102691,6 +102749,7 @@ export type Database = {
           last_classified_at?: string | null
           last_performance_update?: string | null
           last_reactivation_attempt_at?: string | null
+          last_update_run_id?: string | null
           last_visit_date?: string | null
           last_visit_driver_id?: string | null
           lat?: number | null
@@ -102786,6 +102845,7 @@ export type Database = {
           last_classified_at?: string | null
           last_performance_update?: string | null
           last_reactivation_attempt_at?: string | null
+          last_update_run_id?: string | null
           last_visit_date?: string | null
           last_visit_driver_id?: string | null
           lat?: number | null
