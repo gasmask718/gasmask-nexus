@@ -39583,6 +39583,7 @@ export type Database = {
           id: number
           re_intake_webhook_secret: string | null
           remove_bg_api_key: string | null
+          serpapi_key: string | null
         }
         Insert: {
           anthropic_api_key: string
@@ -39594,6 +39595,7 @@ export type Database = {
           id?: number
           re_intake_webhook_secret?: string | null
           remove_bg_api_key?: string | null
+          serpapi_key?: string | null
         }
         Update: {
           anthropic_api_key?: string
@@ -39605,6 +39607,7 @@ export type Database = {
           id?: number
           re_intake_webhook_secret?: string | null
           remove_bg_api_key?: string | null
+          serpapi_key?: string | null
         }
         Relationships: []
       }
