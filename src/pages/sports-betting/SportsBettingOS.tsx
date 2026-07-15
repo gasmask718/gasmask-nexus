@@ -2556,7 +2556,7 @@ export function AccuracyTab() {
     queryFn: async () => {
       const { data } = await supabase
         .from('sbo_predictions')
-        .select('id, prediction_type, predicted_outcome, final_confidence, confidence_tier, verdict, verified, was_correct, created_at')
+        .select('id, prediction_type, predicted_outcome, final_confidence, confidence_tier, verdict, verified, was_correct, created_at, sport_key')
         .not('verdict', 'is', null)
         .order('created_at', { ascending: false });
       return (data as any[]) || [];
