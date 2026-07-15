@@ -989,6 +989,33 @@ export type Database = {
         }
         Relationships: []
       }
+      _overlap_pairs: {
+        Row: {
+          action: string | null
+          address: string | null
+          existing_customer_id: string | null
+          lead_store_id: string | null
+          loaded_at: string
+          name: string | null
+        }
+        Insert: {
+          action?: string | null
+          address?: string | null
+          existing_customer_id?: string | null
+          lead_store_id?: string | null
+          loaded_at?: string
+          name?: string | null
+        }
+        Update: {
+          action?: string | null
+          address?: string | null
+          existing_customer_id?: string | null
+          lead_store_id?: string | null
+          loaded_at?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
       _pass2_batch_run_results: {
         Row: {
           batch_num: number
