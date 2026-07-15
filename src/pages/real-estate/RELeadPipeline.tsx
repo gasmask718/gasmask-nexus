@@ -29,9 +29,14 @@ const GREEN = '#3B6D11';
 const GOLD = '#BA7517';
 
 const STATUS_PILLS = [
-  'all','new','skip_trace_pending','queued','called','interested',
+  'all','new','skip_trace_pending','phone_found','queued','called','interested',
   'offer_made','under_contract','dead','dnc'
 ];
+
+const STATUS_LABELS: Record<string, string> = {
+  all: 'All',
+  phone_found: 'Skip Traced',
+};
 
 const statusColor: Record<string, string> = {
   new: 'bg-gray-600/20 text-gray-400 border-gray-600',
@@ -428,7 +433,7 @@ export default function RELeadPipeline() {
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${statusFilter === s ? 'text-white border-transparent' : 'text-muted-foreground border-border hover:border-muted-foreground/50'}`}
               style={statusFilter === s ? { backgroundColor: GREEN } : undefined}
             >
-              {s === 'all' ? 'All' : s.replace(/_/g, ' ')}
+              {STATUS_LABELS[s] || s.replace(/_/g, ' ')}
             </button>
           ))}
         </div>
