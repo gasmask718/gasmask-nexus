@@ -281,6 +281,177 @@ export type Database = {
         }
         Relationships: []
       }
+      _pass3_match_manifest: {
+        Row: {
+          address: string | null
+          prod_store_id: string
+          store_name: string | null
+          tier: string | null
+          v7_key: string | null
+        }
+        Insert: {
+          address?: string | null
+          prod_store_id: string
+          store_name?: string | null
+          tier?: string | null
+          v7_key?: string | null
+        }
+        Update: {
+          address?: string | null
+          prod_store_id?: string
+          store_name?: string | null
+          tier?: string | null
+          v7_key?: string | null
+        }
+        Relationships: []
+      }
+      _pass3_plan_conflicts: {
+        Row: {
+          current_value: string | null
+          field: string
+          id: number
+          store_id: string
+          v7_value: string | null
+        }
+        Insert: {
+          current_value?: string | null
+          field: string
+          id?: number
+          store_id: string
+          v7_value?: string | null
+        }
+        Update: {
+          current_value?: string | null
+          field?: string
+          id?: number
+          store_id?: string
+          v7_value?: string | null
+        }
+        Relationships: []
+      }
+      _pass3_plan_invoices_final: {
+        Row: {
+          amount: number | null
+          description: string | null
+          invoice_date: string | null
+          row_no: number
+          source: string | null
+          store_id: string
+        }
+        Insert: {
+          amount?: number | null
+          description?: string | null
+          invoice_date?: string | null
+          row_no?: number
+          source?: string | null
+          store_id: string
+        }
+        Update: {
+          amount?: number | null
+          description?: string | null
+          invoice_date?: string | null
+          row_no?: number
+          source?: string | null
+          store_id?: string
+        }
+        Relationships: []
+      }
+      _pass3_plan_notes: {
+        Row: {
+          id: number
+          note: string
+          note_date: string | null
+          source: string | null
+          store_id: string
+        }
+        Insert: {
+          id?: number
+          note: string
+          note_date?: string | null
+          source?: string | null
+          store_id: string
+        }
+        Update: {
+          id?: number
+          note?: string
+          note_date?: string | null
+          source?: string | null
+          store_id?: string
+        }
+        Relationships: []
+      }
+      _pass3_plan_scalars: {
+        Row: {
+          current_value: string | null
+          field: string
+          id: number
+          store_id: string
+          v7_value: string | null
+        }
+        Insert: {
+          current_value?: string | null
+          field: string
+          id?: number
+          store_id: string
+          v7_value?: string | null
+        }
+        Update: {
+          current_value?: string | null
+          field?: string
+          id?: number
+          store_id?: string
+          v7_value?: string | null
+        }
+        Relationships: []
+      }
+      _pass3_snap_stores: {
+        Row: {
+          address: string | null
+          city: string | null
+          contact_name: string | null
+          notes: string | null
+          owner_name: string | null
+          phone: string | null
+          run_id: string
+          snapshot_at: string
+          state: string | null
+          status: string | null
+          store_id: string
+          store_name: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          contact_name?: string | null
+          notes?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          run_id: string
+          snapshot_at?: string
+          state?: string | null
+          status?: string | null
+          store_id: string
+          store_name?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          contact_name?: string | null
+          notes?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          run_id?: string
+          snapshot_at?: string
+          state?: string | null
+          status?: string | null
+          store_id?: string
+          store_name?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
       _phase_match_manifest: {
         Row: {
           address: string | null

@@ -1,0 +1,93 @@
+
+CREATE TABLE public._pass3_match_manifest (
+  prod_store_id uuid PRIMARY KEY,
+  store_name text,
+  address text,
+  v7_key text,
+  tier text
+);
+GRANT ALL ON public._pass3_match_manifest TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public._pass3_match_manifest TO authenticated;
+ALTER TABLE public._pass3_match_manifest ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "_pass3_match_manifest admin only" ON public._pass3_match_manifest
+  USING (has_role(auth.uid(),'admin'::app_role)) WITH CHECK (has_role(auth.uid(),'admin'::app_role));
+
+CREATE TABLE public._pass3_plan_scalars (
+  id bigserial PRIMARY KEY,
+  store_id uuid NOT NULL,
+  field text NOT NULL,
+  current_value text,
+  v7_value text
+);
+CREATE INDEX ix_pass3_plan_scalars_store ON public._pass3_plan_scalars(store_id);
+GRANT ALL ON public._pass3_plan_scalars TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public._pass3_plan_scalars TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE public._pass3_plan_scalars_id_seq TO authenticated, service_role;
+ALTER TABLE public._pass3_plan_scalars ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "admin_all" ON public._pass3_plan_scalars TO authenticated
+  USING (has_role(auth.uid(),'admin'::app_role)) WITH CHECK (has_role(auth.uid(),'admin'::app_role));
+
+CREATE TABLE public._pass3_plan_notes (
+  id bigserial PRIMARY KEY,
+  store_id uuid NOT NULL,
+  note text NOT NULL,
+  note_date text,
+  source text
+);
+CREATE INDEX ix_pass3_plan_notes_store ON public._pass3_plan_notes(store_id);
+GRANT ALL ON public._pass3_plan_notes TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public._pass3_plan_notes TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE public._pass3_plan_notes_id_seq TO authenticated, service_role;
+ALTER TABLE public._pass3_plan_notes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "admin_all" ON public._pass3_plan_notes TO authenticated
+  USING (has_role(auth.uid(),'admin'::app_role)) WITH CHECK (has_role(auth.uid(),'admin'::app_role));
+
+CREATE TABLE public._pass3_plan_invoices_final (
+  row_no bigserial PRIMARY KEY,
+  store_id uuid NOT NULL,
+  invoice_date text,
+  amount numeric(14,2),
+  description text,
+  source text
+);
+CREATE INDEX ix_pass3_plan_invoices_store ON public._pass3_plan_invoices_final(store_id);
+GRANT ALL ON public._pass3_plan_invoices_final TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE public._pass3_plan_invoices_final_row_no_seq TO service_role;
+ALTER TABLE public._pass3_plan_invoices_final ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "no client access" ON public._pass3_plan_invoices_final
+  USING (false) WITH CHECK (false);
+
+CREATE TABLE public._pass3_plan_conflicts (
+  id bigserial PRIMARY KEY,
+  store_id uuid NOT NULL,
+  field text NOT NULL,
+  current_value text,
+  v7_value text
+);
+GRANT ALL ON public._pass3_plan_conflicts TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public._pass3_plan_conflicts TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE public._pass3_plan_conflicts_id_seq TO authenticated, service_role;
+ALTER TABLE public._pass3_plan_conflicts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "admin_all" ON public._pass3_plan_conflicts TO authenticated
+  USING (has_role(auth.uid(),'admin'::app_role)) WITH CHECK (has_role(auth.uid(),'admin'::app_role));
+
+CREATE TABLE public._pass3_snap_stores (
+  run_id text NOT NULL,
+  store_id uuid NOT NULL,
+  snapshot_at timestamptz NOT NULL DEFAULT now(),
+  store_name text,
+  address text,
+  city text,
+  state text,
+  zip text,
+  phone text,
+  owner_name text,
+  contact_name text,
+  notes text,
+  status text,
+  PRIMARY KEY (run_id, store_id)
+);
+GRANT ALL ON public._pass3_snap_stores TO service_role;
+ALTER TABLE public._pass3_snap_stores ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "no client access" ON public._pass3_snap_stores
+  USING (false) WITH CHECK (false);
