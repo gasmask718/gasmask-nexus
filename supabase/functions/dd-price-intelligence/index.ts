@@ -165,6 +165,119 @@ async function getDdAnthropicApiKey(supabase: ReturnType<typeof createClient>): 
     : null;
 }
 
+async function getDdSerpApiKey(supabase: ReturnType<typeof createClient>): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('dd_ai_config')
+    .select('serpapi_key')
+    .eq('id', 1)
+    .maybeSingle();
+  if (error) throw new Error(`dd_ai_config_read_failed: ${error.message}`);
+  return typeof (data as any)?.serpapi_key === 'string' && (data as any).serpapi_key.length > 0
+    ? (data as any).serpapi_key
+    : null;
+}
+
+function parsePrice(raw: unknown): number | null {
+  if (raw == null) return null;
+  const s = String(raw).replace(/[^0-9.,]/g, '').replace(/,/g, '');
+  const n = Number(s);
+  return isFinite(n) && n > 0 ? n : null;
+}
+
+// Robust IQR-based outlier trim so a single $1 sticker or $999 bundle can't skew the avg.
+function trimOutliers(prices: number[]): number[] {
+  if (prices.length < 4) return prices.slice();
+  const s = prices.slice().sort((a, b) => a - b);
+  const q1 = s[Math.floor(s.length * 0.25)];
+  const q3 = s[Math.floor(s.length * 0.75)];
+  const iqr = q3 - q1;
+  const lo = q1 - 1.5 * iqr;
+  const hi = q3 + 1.5 * iqr;
+  return s.filter((p) => p >= lo && p <= hi);
+}
+
+interface SerpResult { source: string; price: number; url: string | null; title: string }
+
+async function serpApiShoppingSearch(apiKey: string, query: string): Promise<SerpResult[]> {
+  const url = new URL('https://serpapi.com/search.json');
+  url.searchParams.set('engine', 'google_shopping');
+  url.searchParams.set('q', query);
+  url.searchParams.set('gl', 'us');
+  url.searchParams.set('hl', 'en');
+  url.searchParams.set('api_key', apiKey);
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error(`serpapi_http_${res.status}`);
+  const j = await res.json();
+  const rows = Array.isArray(j?.shopping_results) ? j.shopping_results : [];
+  const out: SerpResult[] = [];
+  for (const r of rows) {
+    const price = parsePrice(r?.extracted_price ?? r?.price);
+    if (price == null) continue;
+    out.push({
+      source: String(r?.source || r?.seller || 'google_shopping').slice(0, 120),
+      price,
+      url: r?.product_link || r?.link || null,
+      title: String(r?.title || '').slice(0, 300),
+    });
+  }
+  return out;
+}
+
+async function refreshMarketForProduct(
+  supabase: any,
+  product: { id: string; product_name: string | null; brand: string | null },
+  serpKey: string,
+  queryOverride?: string,
+): Promise<{ product_id: string; samples: number; avg: number | null; low: number | null; high: number | null; query: string; results: SerpResult[] }> {
+  const query = (queryOverride && queryOverride.trim())
+    || [product.brand, product.product_name].filter(Boolean).join(' ').trim()
+    || (product.product_name ?? '');
+  if (!query) return { product_id: product.id, samples: 0, avg: null, low: null, high: null, query: '', results: [] };
+
+  const results = await serpApiShoppingSearch(serpKey, query);
+  if (results.length === 0) {
+    await supabase
+      .from('products_all')
+      .update({ market_updated_at: new Date().toISOString() })
+      .eq('id', product.id);
+    return { product_id: product.id, samples: 0, avg: null, low: null, high: null, query, results };
+  }
+
+  const rows = results.slice(0, 25).map((r) => ({
+    product_id: product.id,
+    source: r.source,
+    source_url: r.url,
+    price: r.price,
+    price_type: 'retail',
+  }));
+  await supabase.from('dd_market_prices').insert(rows);
+
+  const prices = trimOutliers(results.map((r) => r.price));
+  const avg = prices.reduce((s, p) => s + p, 0) / prices.length;
+  const low = Math.min(...prices);
+  const high = Math.max(...prices);
+
+  await supabase
+    .from('products_all')
+    .update({
+      market_avg_retail: Number(avg.toFixed(2)),
+      market_low_retail: Number(low.toFixed(2)),
+      market_high_retail: Number(high.toFixed(2)),
+      market_updated_at: new Date().toISOString(),
+    })
+    .eq('id', product.id);
+
+  return {
+    product_id: product.id,
+    samples: prices.length,
+    avg: Number(avg.toFixed(2)),
+    low: Number(low.toFixed(2)),
+    high: Number(high.toFixed(2)),
+    query,
+    results,
+  };
+}
+
 async function computeAlerts(
   supabase: any,
   product: ProductRow,
@@ -205,13 +318,16 @@ async function computeAlerts(
 const PRODUCT_COLS =
   'id, product_name, brand, category, supplier_cost, store_price_a, dtc_price_b, map_price, target_store_margin_pct, target_dtc_margin_pct, min_store_margin_pct, min_dtc_margin_pct';
 
+const MARKET_STALE_DAYS = 7;
+const MARKET_REFRESH_CAP_PER_RUN = 40; // hard cap so a single cron run can't burn the SerpAPI budget
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { product_id, action } = await req.json().catch(() => ({}));
+    const { product_id, action, query } = await req.json().catch(() => ({}));
     if (!action) return ok({ error: 'action is required' });
-    if (!['analyze', 'set_optimal', 'check_alerts', 'check_all_alerts'].includes(action))
+    if (!['analyze', 'set_optimal', 'check_alerts', 'check_all_alerts', 'refresh_market'].includes(action))
       return ok({ error: `unknown action: ${action}` });
 
     const supabase = createClient(
@@ -219,13 +335,51 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
+    // ============ REFRESH_MARKET (single product, on-demand) ============
+    if (action === 'refresh_market') {
+      if (!product_id) return ok({ error: 'product_id is required' });
+      const serpKey = await getDdSerpApiKey(supabase);
+      if (!serpKey) return ok({ error: 'serpapi_key not configured in dd_ai_config' });
+      const { data: p, error: pErr } = await supabase
+        .from('products_all')
+        .select('id, product_name, brand')
+        .eq('id', product_id)
+        .maybeSingle();
+      if (pErr) return ok({ error: pErr.message });
+      if (!p) return ok({ error: 'product not found' });
+      const result = await refreshMarketForProduct(supabase, p as any, serpKey, query);
+      return ok({ success: true, ...result });
+    }
+
     // ============ CHECK_ALL_ALERTS: batch across active products ============
     if (action === 'check_all_alerts') {
       let checked = 0;
       let alertsCreated = 0;
+      let marketRefreshed = 0;
       const errors: Array<{ product_id: string; error: string }> = [];
       const PAGE = 1000;
       let from = 0;
+
+      // Market-refresh phase (SerpAPI): only stale/null, hard-capped per run
+      const serpKey = await getDdSerpApiKey(supabase);
+      if (serpKey) {
+        const cutoff = new Date(Date.now() - MARKET_STALE_DAYS * 86400_000).toISOString();
+        const { data: stale } = await supabase
+          .from('products_all')
+          .select('id, product_name, brand, market_updated_at')
+          .neq('status', 'deleted')
+          .or(`market_updated_at.is.null,market_updated_at.lt.${cutoff}`)
+          .order('market_updated_at', { ascending: true, nullsFirst: true })
+          .limit(MARKET_REFRESH_CAP_PER_RUN);
+        for (const row of stale || []) {
+          try {
+            await refreshMarketForProduct(supabase, row as any, serpKey);
+            marketRefreshed++;
+          } catch (e) {
+            errors.push({ product_id: (row as any).id, error: `market_refresh: ${String((e as Error).message || e)}` });
+          }
+        }
+      }
 
       while (true) {
         const { data: batch, error: bErr } = await supabase
@@ -254,8 +408,9 @@ Deno.serve(async (req) => {
         from += PAGE;
       }
 
-      return ok({ ok: true, checked, alerts_created: alertsCreated, errors });
+      return ok({ ok: true, checked, alerts_created: alertsCreated, market_refreshed: marketRefreshed, errors });
     }
+
 
     // ============ Single-product actions ============
     if (!product_id) return ok({ error: 'product_id is required' });

@@ -24,7 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner';
 import {
   AlertTriangle, DollarSign, Sparkles, History, Download,
-  RefreshCw, TrendingUp, Loader2, Search,
+  RefreshCw, TrendingUp, Loader2, Search, LineChart,
 } from 'lucide-react';
 
 const GOLD = '#C9A84C';
@@ -95,6 +95,7 @@ export default function PricingPage() {
   const [editRow, setEditRow] = useState<PricingRow | null>(null);
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState<string | null>(null);
+  const [refreshingMarket, setRefreshingMarket] = useState<string | null>(null);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['dd-pricing-rows', category],
@@ -244,6 +245,23 @@ export default function PricingPage() {
     } finally { setAnalyzing(null); }
   }
 
+  async function checkMarketPrice(id: string) {
+    setRefreshingMarket(id);
+    try {
+      const { data, error } = await supabase.functions.invoke('dd-price-intelligence', {
+        body: { action: 'refresh_market', product_id: id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (!data?.samples) toast.info(`No competitor prices found for "${data?.query ?? 'query'}"`);
+      else toast.success(`Market: avg $${data.avg} · low $${data.low} · high $${data.high} (${data.samples} sources)`);
+      qc.invalidateQueries({ queryKey: ['dd-pricing-rows'] });
+      qc.invalidateQueries({ queryKey: ['dd-price-alerts-open'] });
+    } catch (e: any) {
+      toast.error(e.message ?? 'Market check failed');
+    } finally { setRefreshingMarket(null); }
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -359,8 +377,11 @@ export default function PricingPage() {
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end">
                             <Button size="sm" variant="outline" onClick={() => setEditRow(r)}>Edit</Button>
-                            <Button size="sm" variant="outline" disabled={analyzing===r.id} onClick={() => runAnalysis(r.id)}>
+                            <Button size="sm" variant="outline" disabled={analyzing===r.id} onClick={() => runAnalysis(r.id)} title="AI analysis">
                               {analyzing===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                            </Button>
+                            <Button size="sm" variant="outline" disabled={refreshingMarket===r.id} onClick={() => checkMarketPrice(r.id)} title="Check market price (SerpAPI)">
+                              {refreshingMarket===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <LineChart className="h-3 w-3" />}
                             </Button>
                             <Button size="sm" variant="ghost" onClick={() => setHistoryId(r.id)}>
                               <History className="h-3 w-3" />
