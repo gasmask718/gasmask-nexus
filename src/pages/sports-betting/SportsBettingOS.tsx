@@ -2549,14 +2549,39 @@ export function AccuracyHistoryWidget() {
 export function AccuracyTab() {
   const [verifying, setVerifying] = useState(false);
   const [verifyProgress, setVerifyProgress] = useState('');
+  const [showAllSports, setShowAllSports] = useState(false);
   const queryClient = useQueryClient();
+
+  // Inline helper: sport_key -> { emoji, label }
+  const SPORT_META: Record<string, { emoji: string; label: string }> = {
+    nba: { emoji: '🏀', label: 'NBA' },
+    wnba: { emoji: '🏀', label: 'WNBA' },
+    ncaab: { emoji: '🏀', label: 'NCAAB' },
+    nfl: { emoji: '🏈', label: 'NFL' },
+    ncaaf: { emoji: '🏈', label: 'NCAAF' },
+    mlb: { emoji: '⚾', label: 'MLB' },
+    nhl: { emoji: '🏒', label: 'NHL' },
+    mls: { emoji: '⚽', label: 'MLS' },
+    epl: { emoji: '⚽', label: 'EPL' },
+    soccer: { emoji: '⚽', label: 'Soccer' },
+    ufc: { emoji: '🥊', label: 'UFC' },
+    mma: { emoji: '🥊', label: 'MMA' },
+    boxing: { emoji: '🥊', label: 'Boxing' },
+    tennis: { emoji: '🎾', label: 'Tennis' },
+    golf: { emoji: '⛳', label: 'Golf' },
+  };
+  const ALL_SPORT_KEYS = Object.keys(SPORT_META);
+  const getSportMeta = (key: string | null | undefined) => {
+    const k = (key || '').toLowerCase();
+    return SPORT_META[k] || { emoji: '🎯', label: (key || 'Unknown').toUpperCase() };
+  };
 
   const { data: allPreds, refetch: refetchAll } = useQuery({
     queryKey: ['all-predictions-accuracy-full'],
     queryFn: async () => {
       const { data } = await supabase
         .from('sbo_predictions')
-        .select('id, prediction_type, predicted_outcome, final_confidence, confidence_tier, verdict, verified, was_correct, created_at')
+        .select('id, prediction_type, predicted_outcome, final_confidence, confidence_tier, verdict, verified, was_correct, created_at, sport_key')
         .not('verdict', 'is', null)
         .order('created_at', { ascending: false });
       return (data as any[]) || [];
@@ -2665,6 +2690,35 @@ export function AccuracyTab() {
       accuracy: inBand.length > 0 ? ((wins / inBand.length) * 100).toFixed(1) : 'N/A',
     };
   });
+
+  // Accuracy by Sport — grouped from allPreds.sport_key
+  const sportGroups = (allPreds || []).reduce((acc: Record<string, { correct: number; incorrect: number }>, p: any) => {
+    const k = (p.sport_key || 'unknown').toLowerCase();
+    if (!acc[k]) acc[k] = { correct: 0, incorrect: 0 };
+    if (p.verdict === 'correct' || p.was_correct === true) acc[k].correct++;
+    else if (p.verdict === 'incorrect' || p.was_correct === false) acc[k].incorrect++;
+    return acc;
+  }, {});
+  const activeSportKeys = Object.keys(sportGroups);
+  const emptySportKeys = ALL_SPORT_KEYS.filter(k => !sportGroups[k]);
+  const visibleSportKeys = showAllSports
+    ? Array.from(new Set([...activeSportKeys, ...ALL_SPORT_KEYS]))
+    : activeSportKeys;
+  const bySport = visibleSportKeys.map(k => {
+    const g = sportGroups[k] || { correct: 0, incorrect: 0 };
+    const total = g.correct + g.incorrect;
+    const meta = getSportMeta(k);
+    return {
+      key: k,
+      emoji: meta.emoji,
+      label: meta.label,
+      correct: g.correct,
+      incorrect: g.incorrect,
+      total,
+      accuracy: total > 0 ? ((g.correct / total) * 100).toFixed(1) : 'N/A',
+    };
+  }).sort((a, b) => b.total - a.total);
+
 
   const markResult = async (predId: string, wasCorrect: boolean) => {
     await supabase
@@ -2776,6 +2830,57 @@ export function AccuracyTab() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Accuracy by Sport */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-foreground">Accuracy by Sport</p>
+            {emptySportKeys.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowAllSports(v => !v)}
+                className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+              >
+                {showAllSports ? 'Hide empty' : `Show all (${emptySportKeys.length})`}
+              </button>
+            )}
+          </div>
+          {bySport.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No verified predictions yet.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {bySport.map(s => {
+                const isEmpty = s.total === 0;
+                const acc = s.accuracy === 'N/A' ? 0 : parseFloat(s.accuracy);
+                const color = isEmpty
+                  ? 'text-muted-foreground'
+                  : acc >= 55 ? 'text-emerald-500' : 'text-amber-500';
+                return (
+                  <div
+                    key={s.key}
+                    className={`rounded-md border border-border p-2 text-center ${isEmpty ? 'opacity-50' : ''}`}
+                  >
+                    <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                      <span>{s.emoji}</span>
+                      <span>{s.label}</span>
+                    </div>
+                    <p className={`text-lg font-bold ${color}`}>
+                      {s.accuracy === 'N/A' ? '—' : `${s.accuracy}%`}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {s.correct}W-{s.incorrect}L
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {s.total} pick{s.total === 1 ? '' : 's'}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Accuracy by confidence tier */}
       <Card>
