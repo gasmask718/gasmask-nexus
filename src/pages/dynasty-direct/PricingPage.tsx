@@ -24,7 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner';
 import {
   AlertTriangle, DollarSign, Sparkles, History, Download,
-  RefreshCw, TrendingUp, Loader2, Search,
+  RefreshCw, TrendingUp, Loader2, Search, LineChart,
 } from 'lucide-react';
 
 const GOLD = '#C9A84C';
