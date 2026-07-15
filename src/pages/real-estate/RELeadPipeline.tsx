@@ -223,7 +223,10 @@ export default function RELeadPipeline() {
         skipped.noContact++; continue;
       }
 
-      const primaryPhone = phones_detail[0]?.number || '';
+      // Promote first non-DNC phone to primary so the dialer never calls a
+      // DNC-flagged number when a clean sibling exists on the same lead.
+      const firstClean = phones_detail.find(p => !p.dnc);
+      const primaryPhone = (firstClean ?? phones_detail[0])?.number || '';
       const allDnc = phones_detail.length > 0 && phones_detail.every(p => p.dnc);
 
       mapped.push({
