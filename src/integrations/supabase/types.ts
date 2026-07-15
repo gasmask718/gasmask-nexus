@@ -86,36 +86,30 @@ export type Database = {
         }
         Relationships: []
       }
-      _phase_plan_invoices: {
+      _phase_plan_invoices_final: {
         Row: {
-          id: number
-          order_hist: string | null
-          owed: number | null
-          paid: number | null
+          amount: number | null
+          description: string | null
+          invoice_date: string | null
+          row_no: number
           source: string | null
-          status: string | null
           store_id: string
-          store_name: string | null
         }
         Insert: {
-          id?: number
-          order_hist?: string | null
-          owed?: number | null
-          paid?: number | null
+          amount?: number | null
+          description?: string | null
+          invoice_date?: string | null
+          row_no?: number
           source?: string | null
-          status?: string | null
           store_id: string
-          store_name?: string | null
         }
         Update: {
-          id?: number
-          order_hist?: string | null
-          owed?: number | null
-          paid?: number | null
+          amount?: number | null
+          description?: string | null
+          invoice_date?: string | null
+          row_no?: number
           source?: string | null
-          status?: string | null
           store_id?: string
-          store_name?: string | null
         }
         Relationships: []
       }
