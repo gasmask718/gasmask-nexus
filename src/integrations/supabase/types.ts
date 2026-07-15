@@ -131,6 +131,147 @@ export type Database = {
         }
         Relationships: []
       }
+      _joba_plan_conflicts: {
+        Row: {
+          current: string | null
+          field: string | null
+          id: number
+          store_id: string | null
+          v7_value: string | null
+        }
+        Insert: {
+          current?: string | null
+          field?: string | null
+          id?: number
+          store_id?: string | null
+          v7_value?: string | null
+        }
+        Update: {
+          current?: string | null
+          field?: string | null
+          id?: number
+          store_id?: string | null
+          v7_value?: string | null
+        }
+        Relationships: []
+      }
+      _joba_plan_invoices: {
+        Row: {
+          amount: number | null
+          description: string | null
+          id: number
+          invoice_date: string | null
+          source: string | null
+          store_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          description?: string | null
+          id?: number
+          invoice_date?: string | null
+          source?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          description?: string | null
+          id?: number
+          invoice_date?: string | null
+          source?: string | null
+          store_id?: string | null
+        }
+        Relationships: []
+      }
+      _joba_plan_manifest: {
+        Row: {
+          google_address: string | null
+          prod_store_id: string
+          store_name: string | null
+          v7_key: string | null
+        }
+        Insert: {
+          google_address?: string | null
+          prod_store_id: string
+          store_name?: string | null
+          v7_key?: string | null
+        }
+        Update: {
+          google_address?: string | null
+          prod_store_id?: string
+          store_name?: string | null
+          v7_key?: string | null
+        }
+        Relationships: []
+      }
+      _joba_plan_notes: {
+        Row: {
+          id: number
+          note: string | null
+          note_date: string | null
+          source: string | null
+          store_id: string | null
+        }
+        Insert: {
+          id?: number
+          note?: string | null
+          note_date?: string | null
+          source?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          id?: number
+          note?: string | null
+          note_date?: string | null
+          source?: string | null
+          store_id?: string | null
+        }
+        Relationships: []
+      }
+      _joba_plan_scalar: {
+        Row: {
+          current: string | null
+          field: string | null
+          id: number
+          store_id: string | null
+          v7_value: string | null
+        }
+        Insert: {
+          current?: string | null
+          field?: string | null
+          id?: number
+          store_id?: string | null
+          v7_value?: string | null
+        }
+        Update: {
+          current?: string | null
+          field?: string | null
+          id?: number
+          store_id?: string | null
+          v7_value?: string | null
+        }
+        Relationships: []
+      }
+      _joba_snap_stores: {
+        Row: {
+          run_id: string
+          snap: Json
+          snapped_at: string
+          store_id: string
+        }
+        Insert: {
+          run_id: string
+          snap: Json
+          snapped_at?: string
+          store_id: string
+        }
+        Update: {
+          run_id?: string
+          snap?: Json
+          snapped_at?: string
+          store_id?: string
+        }
+        Relationships: []
+      }
       _merge_matrix_results: {
         Row: {
           actual: string | null
