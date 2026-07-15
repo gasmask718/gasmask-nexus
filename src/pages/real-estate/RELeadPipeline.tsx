@@ -432,12 +432,13 @@ export default function RELeadPipeline() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="Total Leads" value={stats.total} icon={List} color="#9ca3af" />
-        <StatCard label="Skip Traced" value={stats.skipTraced} icon={Phone} color={GREEN} sub={stats.total > 0 ? `${Math.round(stats.skipTraced / stats.total * 100)}% of total` : undefined} />
-        <StatCard label="Queued for DC" value={stats.queued} icon={Clock} color="#d97706" />
-        <StatCard label="Interested" value={stats.interested} icon={Flame} color="#ea580c" />
-        <StatCard label="Under Contract" value={stats.underContract} icon={FileSignature} color="#0d9488" />
-        <StatCard label="A-Rated Deals" value={stats.aDeal} icon={Star} color={GOLD} />
+        <StatCard cardKey="total" active={activeCard === null && statusFilter === 'all'} label="Total Leads" value={stats.total} icon={List} color="#9ca3af" />
+        <StatCard cardKey="skipTraced" active={activeCard === 'skipTraced'} label="Skip Traced" value={stats.skipTraced} icon={Phone} color={GREEN} sub={stats.total > 0 ? `${Math.round(stats.skipTraced / stats.total * 100)}% of total` : undefined} />
+        <StatCard cardKey="queued" active={activeCard === 'queued'} label="Queued for DC" value={stats.queued} icon={Clock} color="#d97706" />
+        <StatCard cardKey="interested" active={activeCard === 'interested'} label="Interested" value={stats.interested} icon={Flame} color="#ea580c" />
+        <StatCard cardKey="underContract" active={activeCard === 'underContract'} label="Under Contract" value={stats.underContract} icon={FileSignature} color="#0d9488" />
+        <StatCard cardKey="aDeal" active={activeCard === 'aDeal'} label="A-Rated Deals" value={stats.aDeal} icon={Star} color={GOLD} />
+
       </div>
 
       {/* Search */}
