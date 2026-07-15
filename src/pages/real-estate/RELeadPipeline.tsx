@@ -433,7 +433,7 @@ export default function RELeadPipeline() {
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${statusFilter === s ? 'text-white border-transparent' : 'text-muted-foreground border-border hover:border-muted-foreground/50'}`}
               style={statusFilter === s ? { backgroundColor: GREEN } : undefined}
             >
-              {s === 'all' ? 'All' : s.replace(/_/g, ' ')}
+              {STATUS_LABELS[s] || s.replace(/_/g, ' ')}
             </button>
           ))}
         </div>
