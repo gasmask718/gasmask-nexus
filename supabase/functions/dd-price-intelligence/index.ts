@@ -165,6 +165,119 @@ async function getDdAnthropicApiKey(supabase: ReturnType<typeof createClient>): 
     : null;
 }
 
+async function getDdSerpApiKey(supabase: ReturnType<typeof createClient>): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('dd_ai_config')
+    .select('serpapi_key')
+    .eq('id', 1)
+    .maybeSingle();
+  if (error) throw new Error(`dd_ai_config_read_failed: ${error.message}`);
+  return typeof (data as any)?.serpapi_key === 'string' && (data as any).serpapi_key.length > 0
+    ? (data as any).serpapi_key
+    : null;
+}
+
+function parsePrice(raw: unknown): number | null {
+  if (raw == null) return null;
+  const s = String(raw).replace(/[^0-9.,]/g, '').replace(/,/g, '');
+  const n = Number(s);
+  return isFinite(n) && n > 0 ? n : null;
+}
+
+// Robust IQR-based outlier trim so a single $1 sticker or $999 bundle can't skew the avg.
+function trimOutliers(prices: number[]): number[] {
+  if (prices.length < 4) return prices.slice();
+  const s = prices.slice().sort((a, b) => a - b);
+  const q1 = s[Math.floor(s.length * 0.25)];
+  const q3 = s[Math.floor(s.length * 0.75)];
+  const iqr = q3 - q1;
+  const lo = q1 - 1.5 * iqr;
+  const hi = q3 + 1.5 * iqr;
+  return s.filter((p) => p >= lo && p <= hi);
+}
+
+interface SerpResult { source: string; price: number; url: string | null; title: string }
+
+async function serpApiShoppingSearch(apiKey: string, query: string): Promise<SerpResult[]> {
+  const url = new URL('https://serpapi.com/search.json');
+  url.searchParams.set('engine', 'google_shopping');
+  url.searchParams.set('q', query);
+  url.searchParams.set('gl', 'us');
+  url.searchParams.set('hl', 'en');
+  url.searchParams.set('api_key', apiKey);
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error(`serpapi_http_${res.status}`);
+  const j = await res.json();
+  const rows = Array.isArray(j?.shopping_results) ? j.shopping_results : [];
+  const out: SerpResult[] = [];
+  for (const r of rows) {
+    const price = parsePrice(r?.extracted_price ?? r?.price);
+    if (price == null) continue;
+    out.push({
+      source: String(r?.source || r?.seller || 'google_shopping').slice(0, 120),
+      price,
+      url: r?.product_link || r?.link || null,
+      title: String(r?.title || '').slice(0, 300),
+    });
+  }
+  return out;
+}
+
+async function refreshMarketForProduct(
+  supabase: any,
+  product: { id: string; product_name: string | null; brand: string | null },
+  serpKey: string,
+  queryOverride?: string,
+): Promise<{ product_id: string; samples: number; avg: number | null; low: number | null; high: number | null; query: string; results: SerpResult[] }> {
+  const query = (queryOverride && queryOverride.trim())
+    || [product.brand, product.product_name].filter(Boolean).join(' ').trim()
+    || (product.product_name ?? '');
+  if (!query) return { product_id: product.id, samples: 0, avg: null, low: null, high: null, query: '', results: [] };
+
+  const results = await serpApiShoppingSearch(serpKey, query);
+  if (results.length === 0) {
+    await supabase
+      .from('products_all')
+      .update({ market_updated_at: new Date().toISOString() })
+      .eq('id', product.id);
+    return { product_id: product.id, samples: 0, avg: null, low: null, high: null, query, results };
+  }
+
+  const rows = results.slice(0, 25).map((r) => ({
+    product_id: product.id,
+    source: r.source,
+    source_url: r.url,
+    price: r.price,
+    price_type: 'retail',
+  }));
+  await supabase.from('dd_market_prices').insert(rows);
+
+  const prices = trimOutliers(results.map((r) => r.price));
+  const avg = prices.reduce((s, p) => s + p, 0) / prices.length;
+  const low = Math.min(...prices);
+  const high = Math.max(...prices);
+
+  await supabase
+    .from('products_all')
+    .update({
+      market_avg_retail: Number(avg.toFixed(2)),
+      market_low_retail: Number(low.toFixed(2)),
+      market_high_retail: Number(high.toFixed(2)),
+      market_updated_at: new Date().toISOString(),
+    })
+    .eq('id', product.id);
+
+  return {
+    product_id: product.id,
+    samples: prices.length,
+    avg: Number(avg.toFixed(2)),
+    low: Number(low.toFixed(2)),
+    high: Number(high.toFixed(2)),
+    query,
+    results,
+  };
+}
+
 async function computeAlerts(
   supabase: any,
   product: ProductRow,
