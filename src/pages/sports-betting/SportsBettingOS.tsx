@@ -2579,12 +2579,24 @@ export function AccuracyTab() {
   const { data: allPreds, refetch: refetchAll } = useQuery({
     queryKey: ['all-predictions-accuracy-full'],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('sbo_predictions')
-        .select('id, prediction_type, predicted_outcome, final_confidence, confidence_tier, verdict, verified, was_correct, created_at, sport_key')
-        .not('verdict', 'is', null)
-        .order('created_at', { ascending: false });
-      return (data as any[]) || [];
+      // Paginate to bypass PostgREST's default 1000-row cap
+      const PAGE = 1000;
+      let from = 0;
+      const all: any[] = [];
+      for (let i = 0; i < 50; i++) {
+        const { data, error } = await supabase
+          .from('sbo_predictions')
+          .select('id, prediction_type, predicted_outcome, final_confidence, confidence_tier, verdict, verified, was_correct, created_at, sport_key')
+          .not('verdict', 'is', null)
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const batch = (data as any[]) || [];
+        all.push(...batch);
+        if (batch.length < PAGE) break;
+        from += PAGE;
+      }
+      return all;
     },
   });
 
