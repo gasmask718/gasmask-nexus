@@ -168,30 +168,121 @@ export default function RELeadPipeline() {
     const data = await file.arrayBuffer();
     const wb = XLSX.read(data);
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]) as any[];
-    const mapped = rows.map(r => ({
-      first_name: r.first_name || r.FirstName || r['First Name'] || '',
-      last_name: r.last_name || r.LastName || r['Last Name'] || '',
-      phone: r.phone || r.Phone || '',
-      property_address: r.property_address || r.Address || r.address || '',
-      city: r.city || r.City || '',
-      state: r.state || r.State || '',
-      zip: r.zip || r.Zip || '',
-      county: r.county || r.County || '',
-      estimated_value: parseFloat(r.estimated_value || r.Value || '0') || null,
-      lead_type: r.lead_type || '',
-      lead_source: 'csv_upload',
-    })).filter(r => r.property_address);
+
+    // Case/space/punctuation-insensitive header lookup
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const pick = (row: any, ...keys: string[]): string => {
+      const map: Record<string, any> = {};
+      for (const k of Object.keys(row)) map[norm(k)] = row[k];
+      for (const k of keys) {
+        const v = map[norm(k)];
+        if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+      }
+      return '';
+    };
+    const truthy = (v: string) => /^(y|yes|true|1|dnc)$/i.test(v.trim());
+    const digits = (v: string) => v.replace(/\D/g, '');
+
+    const skipped = { noAddress: 0, noContact: 0 };
+    const mapped: any[] = [];
+
+    for (const r of rows) {
+      const property_address = pick(r, 'property_address', 'Address', 'Street Address', 'Property Address', 'Site Address');
+      if (!property_address) { skipped.noAddress++; continue; }
+
+      // Collect phones 1-5 with type + DNC
+      const phones_detail: { number: string; type?: string; dnc: boolean }[] = [];
+      for (let i = 1; i <= 5; i++) {
+        const num = pick(r, `Phone ${i}`, `Phone${i}`, `phone_${i}`, i === 1 ? 'Phone' : '');
+        if (!num) continue;
+        const d = digits(num);
+        if (d.length < 7) continue;
+        phones_detail.push({
+          number: d,
+          type: pick(r, `Phone ${i} Type`, `Phone${i}Type`, `phone_${i}_type`) || undefined,
+          dnc: truthy(pick(r, `Phone ${i} DNC`, `Phone${i}DNC`, `phone_${i}_dnc`)),
+        });
+      }
+      // Fallback single phone
+      if (phones_detail.length === 0) {
+        const p = pick(r, 'phone', 'Phone');
+        if (p) {
+          const d = digits(p);
+          if (d.length >= 7) phones_detail.push({ number: d, dnc: truthy(pick(r, 'DNC', 'Do Not Call')) });
+        }
+      }
+
+      // Emails 1-4
+      const emails_detail: string[] = [];
+      for (let i = 1; i <= 4; i++) {
+        const em = pick(r, `Email ${i}`, `Email${i}`, `email_${i}`, i === 1 ? 'Email' : '');
+        if (em && /@/.test(em)) emails_detail.push(em.toLowerCase());
+      }
+
+      if (phones_detail.length === 0 && emails_detail.length === 0) {
+        skipped.noContact++; continue;
+      }
+
+      const primaryPhone = phones_detail[0]?.number || '';
+      const allDnc = phones_detail.length > 0 && phones_detail.every(p => p.dnc);
+
+      mapped.push({
+        first_name: pick(r, 'first_name', 'FirstName', 'First Name', 'Owner First'),
+        last_name: pick(r, 'last_name', 'LastName', 'Last Name', 'Owner Last'),
+        company_name: pick(r, 'Company Name', 'company_name', 'Company', 'LLC') || null,
+        litigator: truthy(pick(r, 'Litigator', 'litigator')),
+        phone: primaryPhone,
+        email: emails_detail[0] || null,
+        phones_all: phones_detail.map(p => p.number),
+        emails_all: emails_detail,
+        phones_detail,
+        emails_detail,
+        dnc: allDnc,
+        property_address,
+        city: pick(r, 'city', 'City'),
+        state: pick(r, 'state', 'State'),
+        zip: pick(r, 'zip', 'Zip', 'Zipcode', 'Postal Code'),
+        county: pick(r, 'county', 'County'),
+        mailing_address: pick(r, 'Mail Street Address', 'Mailing Address', 'mailing_address', 'Mail Address') || null,
+        mailing_city: pick(r, 'Mail City', 'mailing_city') || null,
+        mailing_state: pick(r, 'Mail State', 'mailing_state') || null,
+        mailing_zip: pick(r, 'Mail Zip', 'mailing_zip') || null,
+        estimated_value: parseFloat(pick(r, 'estimated_value', 'Value', 'Estimated Value')) || null,
+        lead_type: pick(r, 'lead_type', 'Type'),
+        status: pick(r, 'status', 'Status') || 'new',
+        skip_traced: phones_detail.length > 0,
+        lead_source: 'csv_upload',
+        raw_payload: r,
+      });
+    }
+
+    const totalSkipped = skipped.noAddress + skipped.noContact;
+    if (mapped.length === 0) {
+      const reasons: string[] = [];
+      if (skipped.noAddress) reasons.push(`${skipped.noAddress} missing address`);
+      if (skipped.noContact) reasons.push(`${skipped.noContact} no phone/email`);
+      toast.error(`0 imported from ${rows.length} rows — ${reasons.join(', ') || 'no valid rows'}`, { duration: 10000 });
+      e.target.value = ''; setCsvOpen(false); return;
+    }
+
     const { data: inserted, error } = await supabase.from('re_leads').insert(mapped).select('id');
-    if (error) { toast.error('Upload failed: ' + error.message); e.target.value = ''; setCsvOpen(false); return; }
-    toast.success(`${mapped.length} leads imported`);
+    if (error) {
+      toast.error('Upload failed: ' + error.message, { duration: 10000 });
+      e.target.value = ''; setCsvOpen(false); return;
+    }
+
+    const reasons: string[] = [];
+    if (skipped.noAddress) reasons.push(`${skipped.noAddress} missing address`);
+    if (skipped.noContact) reasons.push(`${skipped.noContact} no phone/email`);
+    const summary = totalSkipped > 0
+      ? `${mapped.length} imported, ${totalSkipped} skipped — ${reasons.join(', ')}`
+      : `${mapped.length} leads imported`;
+    toast.success(summary, { duration: 8000 });
     qc.invalidateQueries({ queryKey: ['re-leads'] });
 
     const insertedIds = (inserted || []).map((l: any) => l.id);
     if (insertedIds.length > 0) {
       try {
-        // VM drop not supported on CSV auto-launch (no pre-launch config surface).
-        // To add VM drop for RE, build a pre-upload config modal and pass
-        // voicemail_drop_template_id in the invoke body.
         const { data: campaignResult, error: campErr } = await supabase.functions.invoke('re-trigger-bland-campaign', {
           body: {
             lead_ids: insertedIds,
