@@ -2691,6 +2691,35 @@ export function AccuracyTab() {
     };
   });
 
+  // Accuracy by Sport — grouped from allPreds.sport_key
+  const sportGroups = (allPreds || []).reduce((acc: Record<string, { correct: number; incorrect: number }>, p: any) => {
+    const k = (p.sport_key || 'unknown').toLowerCase();
+    if (!acc[k]) acc[k] = { correct: 0, incorrect: 0 };
+    if (p.verdict === 'correct' || p.was_correct === true) acc[k].correct++;
+    else if (p.verdict === 'incorrect' || p.was_correct === false) acc[k].incorrect++;
+    return acc;
+  }, {});
+  const activeSportKeys = Object.keys(sportGroups);
+  const emptySportKeys = ALL_SPORT_KEYS.filter(k => !sportGroups[k]);
+  const visibleSportKeys = showAllSports
+    ? Array.from(new Set([...activeSportKeys, ...ALL_SPORT_KEYS]))
+    : activeSportKeys;
+  const bySport = visibleSportKeys.map(k => {
+    const g = sportGroups[k] || { correct: 0, incorrect: 0 };
+    const total = g.correct + g.incorrect;
+    const meta = getSportMeta(k);
+    return {
+      key: k,
+      emoji: meta.emoji,
+      label: meta.label,
+      correct: g.correct,
+      incorrect: g.incorrect,
+      total,
+      accuracy: total > 0 ? ((g.correct / total) * 100).toFixed(1) : 'N/A',
+    };
+  }).sort((a, b) => b.total - a.total);
+
+
   const markResult = async (predId: string, wasCorrect: boolean) => {
     await supabase
       .from('sbo_predictions')
