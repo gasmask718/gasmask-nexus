@@ -272,6 +272,11 @@ export default function RELeadPipeline() {
       e.target.value = ''; setCsvOpen(false); return;
     }
 
+    console.log('[RE CSV upload] normalized statuses before re_leads insert', mapped.map((lead, index) => ({
+      row: index + 1,
+      status: lead.status,
+    })));
+
     const { data: inserted, error } = await supabase.from('re_leads').insert(mapped).select('id');
     if (error) {
       toast.error('Upload failed: ' + error.message, { duration: 10000 });
