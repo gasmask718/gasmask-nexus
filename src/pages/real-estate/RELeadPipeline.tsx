@@ -345,8 +345,12 @@ export default function RELeadPipeline() {
 
   const states = useMemo(() => [...new Set(leads.map((l: any) => l.state).filter(Boolean))].sort(), [leads]);
 
-  const StatCard = ({ label, value, icon: Icon, color, sub }: any) => (
-    <Card className="border-border/50 bg-card/50">
+  const StatCard = ({ label, value, icon: Icon, color, sub, cardKey, active }: any) => (
+    <Card
+      onClick={() => cardKey && handleCardClick(cardKey)}
+      className={`border-border/50 bg-card/50 transition-all ${cardKey ? 'cursor-pointer hover:border-border hover:shadow-md' : ''} ${active ? 'ring-2 ring-offset-2 ring-offset-background' : ''}`}
+      style={active ? { boxShadow: `0 0 0 2px ${color}` } : undefined}
+    >
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div>
@@ -359,6 +363,7 @@ export default function RELeadPipeline() {
       </CardContent>
     </Card>
   );
+
 
   return (
     <div className="space-y-6">
