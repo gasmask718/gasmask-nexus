@@ -2327,6 +2327,7 @@ export default function AppRoutes() {
         <Route path="/sbo-ai-engine/health" element={<SBOHealthPage />} />
         <Route path="/sbo-ai-engine/sync" element={<SBOSyncPage />} />
         <Route path="/os/sbo" element={<SBODashboard />} />
+        <Route path="/os/sbo/picks" element={<SBOAllPicks />} />
         <Route path="/admin/system-integrity" element={<SystemIntegrity />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
         <Route path="/biker/route" element={<BikerTodaysRoutesPage />} />
