@@ -318,13 +318,16 @@ async function computeAlerts(
 const PRODUCT_COLS =
   'id, product_name, brand, category, supplier_cost, store_price_a, dtc_price_b, map_price, target_store_margin_pct, target_dtc_margin_pct, min_store_margin_pct, min_dtc_margin_pct';
 
+const MARKET_STALE_DAYS = 7;
+const MARKET_REFRESH_CAP_PER_RUN = 40; // hard cap so a single cron run can't burn the SerpAPI budget
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { product_id, action } = await req.json().catch(() => ({}));
+    const { product_id, action, query } = await req.json().catch(() => ({}));
     if (!action) return ok({ error: 'action is required' });
-    if (!['analyze', 'set_optimal', 'check_alerts', 'check_all_alerts'].includes(action))
+    if (!['analyze', 'set_optimal', 'check_alerts', 'check_all_alerts', 'refresh_market'].includes(action))
       return ok({ error: `unknown action: ${action}` });
 
     const supabase = createClient(
@@ -332,13 +335,51 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
+    // ============ REFRESH_MARKET (single product, on-demand) ============
+    if (action === 'refresh_market') {
+      if (!product_id) return ok({ error: 'product_id is required' });
+      const serpKey = await getDdSerpApiKey(supabase);
+      if (!serpKey) return ok({ error: 'serpapi_key not configured in dd_ai_config' });
+      const { data: p, error: pErr } = await supabase
+        .from('products_all')
+        .select('id, product_name, brand')
+        .eq('id', product_id)
+        .maybeSingle();
+      if (pErr) return ok({ error: pErr.message });
+      if (!p) return ok({ error: 'product not found' });
+      const result = await refreshMarketForProduct(supabase, p as any, serpKey, query);
+      return ok({ success: true, ...result });
+    }
+
     // ============ CHECK_ALL_ALERTS: batch across active products ============
     if (action === 'check_all_alerts') {
       let checked = 0;
       let alertsCreated = 0;
+      let marketRefreshed = 0;
       const errors: Array<{ product_id: string; error: string }> = [];
       const PAGE = 1000;
       let from = 0;
+
+      // Market-refresh phase (SerpAPI): only stale/null, hard-capped per run
+      const serpKey = await getDdSerpApiKey(supabase);
+      if (serpKey) {
+        const cutoff = new Date(Date.now() - MARKET_STALE_DAYS * 86400_000).toISOString();
+        const { data: stale } = await supabase
+          .from('products_all')
+          .select('id, product_name, brand, market_updated_at')
+          .neq('status', 'deleted')
+          .or(`market_updated_at.is.null,market_updated_at.lt.${cutoff}`)
+          .order('market_updated_at', { ascending: true, nullsFirst: true })
+          .limit(MARKET_REFRESH_CAP_PER_RUN);
+        for (const row of stale || []) {
+          try {
+            await refreshMarketForProduct(supabase, row as any, serpKey);
+            marketRefreshed++;
+          } catch (e) {
+            errors.push({ product_id: (row as any).id, error: `market_refresh: ${String((e as Error).message || e)}` });
+          }
+        }
+      }
 
       while (true) {
         const { data: batch, error: bErr } = await supabase
@@ -367,8 +408,9 @@ Deno.serve(async (req) => {
         from += PAGE;
       }
 
-      return ok({ ok: true, checked, alerts_created: alertsCreated, errors });
+      return ok({ ok: true, checked, alerts_created: alertsCreated, market_refreshed: marketRefreshed, errors });
     }
+
 
     // ============ Single-product actions ============
     if (!product_id) return ok({ error: 'product_id is required' });
