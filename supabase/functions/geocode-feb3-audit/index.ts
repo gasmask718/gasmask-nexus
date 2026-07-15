@@ -18,10 +18,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const sampleSize = body.sampleSize ?? 100;
 
-  // Deterministic-ish sample: mix templated + specific names
-  const { data: stores, error } = await supabase.rpc("execute_sql" as any, {}).then(() => null as any, () => null);
-
-  // Fallback: query directly
+  // Query Feb-3 batch
   const { data: sample, error: sErr } = await supabase
     .from("stores")
     .select("id,name,address_street,address_city,address_state,address_zip,phone,created_at")
