@@ -131,6 +131,11 @@ export default function RELeadPipeline() {
   // Filtering
   const filtered = useMemo(() => {
     let result = leads;
+    if (activeCard === 'skipTraced') result = result.filter((l: any) => l.skip_traced);
+    if (activeCard === 'aDeal') result = result.filter((l: any) => l.deal_score === 'A');
+    if (activeCard === 'queued') result = result.filter((l: any) => l.status === 'queued');
+    if (activeCard === 'interested') result = result.filter((l: any) => l.status === 'interested');
+    if (activeCard === 'underContract') result = result.filter((l: any) => l.status === 'under_contract');
     if (statusFilter !== 'all') result = result.filter((l: any) => l.status === statusFilter);
     if (stateFilter !== 'all') result = result.filter((l: any) => l.state === stateFilter);
     if (scoreFilter !== 'all') result = result.filter((l: any) => l.deal_score === scoreFilter);
@@ -154,7 +159,22 @@ export default function RELeadPipeline() {
       return sortDir === 'asc' ? av - bv : bv - av;
     });
     return result;
-  }, [leads, statusFilter, stateFilter, scoreFilter, typeFilter, search, sortKey, sortDir]);
+  }, [leads, activeCard, statusFilter, stateFilter, scoreFilter, typeFilter, search, sortKey, sortDir]);
+
+  const handleCardClick = (card: string) => {
+    if (card === 'total') {
+      setActiveCard(null);
+      setStatusFilter('all');
+      return;
+    }
+    if (activeCard === card) {
+      setActiveCard(null);
+      return;
+    }
+    setActiveCard(card);
+    setStatusFilter('all');
+  };
+
 
   const toggleSelect = (id: string) => {
     const s = new Set(selected);
