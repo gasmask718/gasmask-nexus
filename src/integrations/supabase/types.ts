@@ -131,6 +131,42 @@ export type Database = {
         }
         Relationships: []
       }
+      _geo_snap_b7e21a4c: {
+        Row: {
+          address_city: string | null
+          address_street: string | null
+          address_zip: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          neighborhood: string | null
+          reconstructed: boolean
+          snapped_at: string
+        }
+        Insert: {
+          address_city?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          id: string
+          lat?: number | null
+          lng?: number | null
+          neighborhood?: string | null
+          reconstructed?: boolean
+          snapped_at?: string
+        }
+        Update: {
+          address_city?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          neighborhood?: string | null
+          reconstructed?: boolean
+          snapped_at?: string
+        }
+        Relationships: []
+      }
       _joba_plan_conflicts: {
         Row: {
           current: string | null
