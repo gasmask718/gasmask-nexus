@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      _altphone_plan: {
+        Row: {
+          created_at: string
+          formatted: string | null
+          from_pass: string | null
+          primary_phone_keep: string | null
+          secondary_phone_add: string | null
+          store_id: string
+          store_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          formatted?: string | null
+          from_pass?: string | null
+          primary_phone_keep?: string | null
+          secondary_phone_add?: string | null
+          store_id: string
+          store_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          formatted?: string | null
+          from_pass?: string | null
+          primary_phone_keep?: string | null
+          secondary_phone_add?: string | null
+          store_id?: string
+          store_name?: string | null
+        }
+        Relationships: []
+      }
+      _altphone_snap_stores: {
+        Row: {
+          alt_phone: string | null
+          name: string | null
+          phone: string | null
+          run_id: string
+          snapped_at: string
+          store_id: string
+        }
+        Insert: {
+          alt_phone?: string | null
+          name?: string | null
+          phone?: string | null
+          run_id: string
+          snapped_at?: string
+          store_id: string
+        }
+        Update: {
+          alt_phone?: string | null
+          name?: string | null
+          phone?: string | null
+          run_id?: string
+          snapped_at?: string
+          store_id?: string
+        }
+        Relationships: []
+      }
       _batch_run_results: {
         Row: {
           batch_num: number
