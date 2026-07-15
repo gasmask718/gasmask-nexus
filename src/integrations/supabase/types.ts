@@ -59,6 +59,120 @@ export type Database = {
         }
         Relationships: []
       }
+      _phase_plan_conflicts: {
+        Row: {
+          current_value: string | null
+          field: string
+          id: number
+          store_id: string
+          store_name: string | null
+          v7_value: string | null
+        }
+        Insert: {
+          current_value?: string | null
+          field: string
+          id?: number
+          store_id: string
+          store_name?: string | null
+          v7_value?: string | null
+        }
+        Update: {
+          current_value?: string | null
+          field?: string
+          id?: number
+          store_id?: string
+          store_name?: string | null
+          v7_value?: string | null
+        }
+        Relationships: []
+      }
+      _phase_plan_invoices: {
+        Row: {
+          id: number
+          order_hist: string | null
+          owed: number | null
+          paid: number | null
+          source: string | null
+          status: string | null
+          store_id: string
+          store_name: string | null
+        }
+        Insert: {
+          id?: number
+          order_hist?: string | null
+          owed?: number | null
+          paid?: number | null
+          source?: string | null
+          status?: string | null
+          store_id: string
+          store_name?: string | null
+        }
+        Update: {
+          id?: number
+          order_hist?: string | null
+          owed?: number | null
+          paid?: number | null
+          source?: string | null
+          status?: string | null
+          store_id?: string
+          store_name?: string | null
+        }
+        Relationships: []
+      }
+      _phase_plan_notes: {
+        Row: {
+          date_status: string | null
+          id: number
+          note: string
+          note_date: string | null
+          source: string | null
+          store_id: string
+        }
+        Insert: {
+          date_status?: string | null
+          id?: number
+          note: string
+          note_date?: string | null
+          source?: string | null
+          store_id: string
+        }
+        Update: {
+          date_status?: string | null
+          id?: number
+          note?: string
+          note_date?: string | null
+          source?: string | null
+          store_id?: string
+        }
+        Relationships: []
+      }
+      _phase_plan_scalars: {
+        Row: {
+          current_value: string | null
+          field: string
+          id: number
+          store_id: string
+          store_name: string | null
+          v7_value: string | null
+        }
+        Insert: {
+          current_value?: string | null
+          field: string
+          id?: number
+          store_id: string
+          store_name?: string | null
+          v7_value?: string | null
+        }
+        Update: {
+          current_value?: string | null
+          field?: string
+          id?: number
+          store_id?: string
+          store_name?: string | null
+          v7_value?: string | null
+        }
+        Relationships: []
+      }
       _quarantine_misclassified_stores: {
         Row: {
           address: string | null
@@ -782,6 +896,492 @@ export type Database = {
           cleaning_status?: string | null
           created_at?: string
           created_by?: string | null
+          id?: string
+          is_legacy?: boolean | null
+          needs_cleaning?: boolean | null
+          note_date?: string | null
+          note_text?: string
+          original_note?: string | null
+          run_id?: string
+          source?: string | null
+          store_id?: string | null
+        }
+        Relationships: []
+      }
+      _stage_invoices: {
+        Row: {
+          amount_paid: number
+          brand: string | null
+          business_date: string
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          customer_type: string | null
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          delivery_photos: string[] | null
+          due_date: string | null
+          enrichment_run_id: string | null
+          entity_id: string | null
+          entity_type: string | null
+          entry_mode: string | null
+          finalized_at: string | null
+          finalized_by: string | null
+          id: string
+          invoice_number: string
+          invoice_pdf_url: string | null
+          is_historical: boolean
+          notes: string | null
+          order_id: string | null
+          paid_at: string | null
+          partial_amount: number | null
+          payment_method: string | null
+          payment_status: string
+          pricing_mode: string | null
+          receipt_delivered_at: string | null
+          receipt_failure_reason: string | null
+          receipt_message_sid: string | null
+          receipt_phone_used: string | null
+          receipt_sent_at: string | null
+          receipt_status: string | null
+          received_by: string | null
+          repair_notes: string | null
+          repair_status: string
+          repaired_at: string | null
+          repaired_by: string | null
+          run_id: string
+          status: string
+          store_id: string | null
+          subtotal: number | null
+          tax: number | null
+          total: number | null
+          total_amount: number | null
+          total_boxes_sold: number
+          total_tubes_sold: number
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Insert: {
+          amount_paid?: number
+          brand?: string | null
+          business_date?: string
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_type?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          delivery_photos?: string[] | null
+          due_date?: string | null
+          enrichment_run_id?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          entry_mode?: string | null
+          finalized_at?: string | null
+          finalized_by?: string | null
+          id?: string
+          invoice_number: string
+          invoice_pdf_url?: string | null
+          is_historical?: boolean
+          notes?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          partial_amount?: number | null
+          payment_method?: string | null
+          payment_status?: string
+          pricing_mode?: string | null
+          receipt_delivered_at?: string | null
+          receipt_failure_reason?: string | null
+          receipt_message_sid?: string | null
+          receipt_phone_used?: string | null
+          receipt_sent_at?: string | null
+          receipt_status?: string | null
+          received_by?: string | null
+          repair_notes?: string | null
+          repair_status?: string
+          repaired_at?: string | null
+          repaired_by?: string | null
+          run_id: string
+          status?: string
+          store_id?: string | null
+          subtotal?: number | null
+          tax?: number | null
+          total?: number | null
+          total_amount?: number | null
+          total_boxes_sold?: number
+          total_tubes_sold?: number
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          amount_paid?: number
+          brand?: string | null
+          business_date?: string
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_type?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          delivery_photos?: string[] | null
+          due_date?: string | null
+          enrichment_run_id?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          entry_mode?: string | null
+          finalized_at?: string | null
+          finalized_by?: string | null
+          id?: string
+          invoice_number?: string
+          invoice_pdf_url?: string | null
+          is_historical?: boolean
+          notes?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          partial_amount?: number | null
+          payment_method?: string | null
+          payment_status?: string
+          pricing_mode?: string | null
+          receipt_delivered_at?: string | null
+          receipt_failure_reason?: string | null
+          receipt_message_sid?: string | null
+          receipt_phone_used?: string | null
+          receipt_sent_at?: string | null
+          receipt_status?: string | null
+          received_by?: string | null
+          repair_notes?: string | null
+          repair_status?: string
+          repaired_at?: string | null
+          repaired_by?: string | null
+          run_id?: string
+          status?: string
+          store_id?: string | null
+          subtotal?: number | null
+          tax?: number | null
+          total?: number | null
+          total_amount?: number | null
+          total_boxes_sold?: number
+          total_tubes_sold?: number
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: []
+      }
+      _stage_store_master: {
+        Row: {
+          address: string
+          assigned_ambassador_id: string | null
+          borough_id: string | null
+          brand_id: string | null
+          city: string
+          communication_preference: string | null
+          connected_group_id: string | null
+          consent_source: string | null
+          consent_timestamp: string | null
+          contact_name: string | null
+          country: string | null
+          country_of_origin: string | null
+          created_at: string | null
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_reason: string | null
+          dialect_preference: string | null
+          do_not_call: boolean | null
+          do_not_call_reason: string | null
+          email: string | null
+          expansion_notes: string | null
+          expected_open_dates: string[] | null
+          formality_level: string | null
+          frustration_triggers: string[] | null
+          gasmask_call_status: string | null
+          has_expansion: boolean | null
+          health_status: string | null
+          id: string
+          influence_level: string | null
+          invoice_amount: number | null
+          invoice_amount_paid: number | null
+          invoice_brand: string | null
+          invoice_date: string | null
+          invoice_due_date: string | null
+          invoice_notes: string | null
+          invoice_paid_at: string | null
+          invoice_payment_method: string | null
+          invoice_payment_status: string | null
+          invoice_received_by: string | null
+          is_historical: boolean
+          is_simulation: boolean | null
+          language_preference: string | null
+          languages: string[] | null
+          last_contacted_at: string | null
+          last_opt_out_timestamp: string | null
+          last_order_at: string | null
+          last_order_date: string | null
+          last_visit_at: string | null
+          loyalty_triggers: string[] | null
+          mode: string | null
+          new_store_addresses: string[] | null
+          nickname: string | null
+          notes: string | null
+          notes_for_tone: string | null
+          opt_out_method: string | null
+          owed_amount: number | null
+          owner_name: string | null
+          owner_name_arabic: string | null
+          personality_notes: string | null
+          personality_profile_id: string | null
+          phone: string | null
+          phone_type: string | null
+          phone_verified_at: string | null
+          photo_url: string | null
+          preferred_channel: string | null
+          relationship_status: string
+          risk_score: string | null
+          run_id: string
+          show_on_public_site: boolean
+          sms_capable: boolean | null
+          sourced_at: string | null
+          sourced_by_ambassador_id: string | null
+          state: string
+          status: string | null
+          sticker_in_store: boolean | null
+          sticker_notes: string | null
+          sticker_on_door: boolean | null
+          sticker_with_phone: boolean | null
+          store_name: string
+          store_type: string | null
+          total_answers: number | null
+          total_attempts: number | null
+          updated_at: string | null
+          zip: string
+        }
+        Insert: {
+          address: string
+          assigned_ambassador_id?: string | null
+          borough_id?: string | null
+          brand_id?: string | null
+          city: string
+          communication_preference?: string | null
+          connected_group_id?: string | null
+          consent_source?: string | null
+          consent_timestamp?: string | null
+          contact_name?: string | null
+          country?: string | null
+          country_of_origin?: string | null
+          created_at?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_reason?: string | null
+          dialect_preference?: string | null
+          do_not_call?: boolean | null
+          do_not_call_reason?: string | null
+          email?: string | null
+          expansion_notes?: string | null
+          expected_open_dates?: string[] | null
+          formality_level?: string | null
+          frustration_triggers?: string[] | null
+          gasmask_call_status?: string | null
+          has_expansion?: boolean | null
+          health_status?: string | null
+          id?: string
+          influence_level?: string | null
+          invoice_amount?: number | null
+          invoice_amount_paid?: number | null
+          invoice_brand?: string | null
+          invoice_date?: string | null
+          invoice_due_date?: string | null
+          invoice_notes?: string | null
+          invoice_paid_at?: string | null
+          invoice_payment_method?: string | null
+          invoice_payment_status?: string | null
+          invoice_received_by?: string | null
+          is_historical?: boolean
+          is_simulation?: boolean | null
+          language_preference?: string | null
+          languages?: string[] | null
+          last_contacted_at?: string | null
+          last_opt_out_timestamp?: string | null
+          last_order_at?: string | null
+          last_order_date?: string | null
+          last_visit_at?: string | null
+          loyalty_triggers?: string[] | null
+          mode?: string | null
+          new_store_addresses?: string[] | null
+          nickname?: string | null
+          notes?: string | null
+          notes_for_tone?: string | null
+          opt_out_method?: string | null
+          owed_amount?: number | null
+          owner_name?: string | null
+          owner_name_arabic?: string | null
+          personality_notes?: string | null
+          personality_profile_id?: string | null
+          phone?: string | null
+          phone_type?: string | null
+          phone_verified_at?: string | null
+          photo_url?: string | null
+          preferred_channel?: string | null
+          relationship_status?: string
+          risk_score?: string | null
+          run_id: string
+          show_on_public_site?: boolean
+          sms_capable?: boolean | null
+          sourced_at?: string | null
+          sourced_by_ambassador_id?: string | null
+          state: string
+          status?: string | null
+          sticker_in_store?: boolean | null
+          sticker_notes?: string | null
+          sticker_on_door?: boolean | null
+          sticker_with_phone?: boolean | null
+          store_name: string
+          store_type?: string | null
+          total_answers?: number | null
+          total_attempts?: number | null
+          updated_at?: string | null
+          zip: string
+        }
+        Update: {
+          address?: string
+          assigned_ambassador_id?: string | null
+          borough_id?: string | null
+          brand_id?: string | null
+          city?: string
+          communication_preference?: string | null
+          connected_group_id?: string | null
+          consent_source?: string | null
+          consent_timestamp?: string | null
+          contact_name?: string | null
+          country?: string | null
+          country_of_origin?: string | null
+          created_at?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_reason?: string | null
+          dialect_preference?: string | null
+          do_not_call?: boolean | null
+          do_not_call_reason?: string | null
+          email?: string | null
+          expansion_notes?: string | null
+          expected_open_dates?: string[] | null
+          formality_level?: string | null
+          frustration_triggers?: string[] | null
+          gasmask_call_status?: string | null
+          has_expansion?: boolean | null
+          health_status?: string | null
+          id?: string
+          influence_level?: string | null
+          invoice_amount?: number | null
+          invoice_amount_paid?: number | null
+          invoice_brand?: string | null
+          invoice_date?: string | null
+          invoice_due_date?: string | null
+          invoice_notes?: string | null
+          invoice_paid_at?: string | null
+          invoice_payment_method?: string | null
+          invoice_payment_status?: string | null
+          invoice_received_by?: string | null
+          is_historical?: boolean
+          is_simulation?: boolean | null
+          language_preference?: string | null
+          languages?: string[] | null
+          last_contacted_at?: string | null
+          last_opt_out_timestamp?: string | null
+          last_order_at?: string | null
+          last_order_date?: string | null
+          last_visit_at?: string | null
+          loyalty_triggers?: string[] | null
+          mode?: string | null
+          new_store_addresses?: string[] | null
+          nickname?: string | null
+          notes?: string | null
+          notes_for_tone?: string | null
+          opt_out_method?: string | null
+          owed_amount?: number | null
+          owner_name?: string | null
+          owner_name_arabic?: string | null
+          personality_notes?: string | null
+          personality_profile_id?: string | null
+          phone?: string | null
+          phone_type?: string | null
+          phone_verified_at?: string | null
+          photo_url?: string | null
+          preferred_channel?: string | null
+          relationship_status?: string
+          risk_score?: string | null
+          run_id?: string
+          show_on_public_site?: boolean
+          sms_capable?: boolean | null
+          sourced_at?: string | null
+          sourced_by_ambassador_id?: string | null
+          state?: string
+          status?: string | null
+          sticker_in_store?: boolean | null
+          sticker_notes?: string | null
+          sticker_on_door?: boolean | null
+          sticker_with_phone?: boolean | null
+          store_name?: string
+          store_type?: string | null
+          total_answers?: number | null
+          total_attempts?: number | null
+          updated_at?: string | null
+          zip?: string
+        }
+        Relationships: []
+      }
+      _stage_store_notes: {
+        Row: {
+          ambassador_id: string | null
+          brand_scope: string | null
+          cleaned_at: string | null
+          cleaning_status: string | null
+          created_at: string
+          created_by: string | null
+          enrichment_run_id: string | null
+          id: string
+          is_legacy: boolean | null
+          needs_cleaning: boolean | null
+          note_date: string | null
+          note_text: string
+          original_note: string | null
+          run_id: string
+          source: string | null
+          store_id: string | null
+        }
+        Insert: {
+          ambassador_id?: string | null
+          brand_scope?: string | null
+          cleaned_at?: string | null
+          cleaning_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          enrichment_run_id?: string | null
+          id?: string
+          is_legacy?: boolean | null
+          needs_cleaning?: boolean | null
+          note_date?: string | null
+          note_text: string
+          original_note?: string | null
+          run_id: string
+          source?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          ambassador_id?: string | null
+          brand_scope?: string | null
+          cleaned_at?: string | null
+          cleaning_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          enrichment_run_id?: string | null
           id?: string
           is_legacy?: boolean | null
           needs_cleaning?: boolean | null
