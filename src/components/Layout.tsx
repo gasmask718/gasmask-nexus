@@ -135,6 +135,7 @@ import {
   Plane,
   BarChart,
   Grid3x3,
+  ListFilter,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
