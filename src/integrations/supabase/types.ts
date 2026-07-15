@@ -1016,6 +1016,30 @@ export type Database = {
         }
         Relationships: []
       }
+      _overlap_safe: {
+        Row: {
+          cust_name: string | null
+          existing_customer_id: string | null
+          lead_name: string | null
+          lead_store_id: string | null
+          loaded_at: string
+        }
+        Insert: {
+          cust_name?: string | null
+          existing_customer_id?: string | null
+          lead_name?: string | null
+          lead_store_id?: string | null
+          loaded_at?: string
+        }
+        Update: {
+          cust_name?: string | null
+          existing_customer_id?: string | null
+          lead_name?: string | null
+          lead_store_id?: string | null
+          loaded_at?: string
+        }
+        Relationships: []
+      }
       _pass2_batch_run_results: {
         Row: {
           batch_num: number
