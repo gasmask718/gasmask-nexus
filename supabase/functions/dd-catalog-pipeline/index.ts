@@ -559,18 +559,18 @@ async function runRecognizeProduct(body: any) {
   const { draft_id, photo_url } = body;
   if (!photo_url) throw new Error('photo_url required');
   const dataUrl = await fetchAsDataUrl(photo_url);
-  const visionPrompt = `Look at this product image and identify:
-1. What is this product called?
-2. What category does it belong to?
-3. What are 3 key features visible?
-4. Is this a wholesale/bulk item or a single retail item?
+  const visionPrompt = `Look CLOSELY at this product image. Extract concrete, visible details — read text on the package, note flavor/variant, size/count, and brand marks. Do NOT invent details you can't see.
 
 Return ONLY this JSON:
 {
-  "product_name": "string",
+  "product_name": "string — the specific product name as it reads on the package",
   "category": "string",
   "key_features": ["string","string","string"],
-  "item_type": "bulk",
+  "item_type": "bulk|single",
+  "package_text": "string — any distinctive text/tagline/branding visible on packaging (empty string if none)",
+  "flavor_or_variant": "string — the specific flavor, scent, color, style or variant if visible (empty string if none)",
+  "size_or_count": "string — visible size, weight, count, volume, or pack quantity (e.g. '5-pack', '12 oz', '100 ct') (empty string if none)",
+  "brand_visible": "string — brand name exactly as printed (empty string if none)",
   "confidence": "low|medium|high"
 }`;
   const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -593,8 +593,12 @@ Return ONLY this JSON:
   const payload = {
     product_name: String(parsed.product_name || ''),
     category: String(parsed.category || ''),
-    key_features: Array.isArray(parsed.key_features) ? parsed.key_features.slice(0, 3) : [],
+    key_features: Array.isArray(parsed.key_features) ? parsed.key_features.slice(0, 5) : [],
     item_type: parsed.item_type === 'single' ? 'single' : 'bulk',
+    package_text: String(parsed.package_text || ''),
+    flavor_or_variant: String(parsed.flavor_or_variant || ''),
+    size_or_count: String(parsed.size_or_count || ''),
+    brand_visible: String(parsed.brand_visible || ''),
     confidence: parsed.confidence || 'medium',
     recognized_at: new Date().toISOString(),
   };
