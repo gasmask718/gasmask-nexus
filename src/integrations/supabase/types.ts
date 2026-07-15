@@ -16228,11 +16228,15 @@ export type Database = {
           cta_present: boolean | null
           demo_id: string | null
           design_score: number | null
+          dimension_scores: Json | null
+          fixes_applied: Json | null
           flagged: boolean | null
           id: string
+          issues: Json | null
           lead_id: string | null
           mobile_friendly: boolean | null
           overall_score: number | null
+          pass_number: number
           review_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -16244,11 +16248,15 @@ export type Database = {
           cta_present?: boolean | null
           demo_id?: string | null
           design_score?: number | null
+          dimension_scores?: Json | null
+          fixes_applied?: Json | null
           flagged?: boolean | null
           id?: string
+          issues?: Json | null
           lead_id?: string | null
           mobile_friendly?: boolean | null
           overall_score?: number | null
+          pass_number?: number
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -16260,11 +16268,15 @@ export type Database = {
           cta_present?: boolean | null
           demo_id?: string | null
           design_score?: number | null
+          dimension_scores?: Json | null
+          fixes_applied?: Json | null
           flagged?: boolean | null
           id?: string
+          issues?: Json | null
           lead_id?: string | null
           mobile_friendly?: boolean | null
           overall_score?: number | null
+          pass_number?: number
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -16282,10 +16294,17 @@ export type Database = {
       }
       brandaro_demo_sites: {
         Row: {
+          about_variant: string | null
+          address: string | null
+          audit_breakdown: Json | null
+          audit_passed: boolean | null
+          audit_score: number | null
+          auto_fix_attempts: number
           business_name: string
           city: string | null
           content_blocks: Json | null
           created_at: string
+          cta_variant: string | null
           delivery_method: string | null
           demo_ready_for_conversion: boolean | null
           demo_url: string | null
@@ -16295,35 +16314,59 @@ export type Database = {
           durable_screenshot_url: string | null
           durable_site_id: string | null
           engine_status: string
+          error_message: string | null
           extracted_structure: Json | null
+          generated_colors: Json | null
           generated_html: string | null
           generation_engine: string
           generation_status: string
+          google_data: Json | null
+          google_place_id: string | null
+          hero_variant: string | null
           hosting_path: string | null
           id: string
           industry: string | null
+          industry_confidence: number | null
           last_viewed_at: string | null
           lead_id: string
+          logo_url: string | null
+          paid_at: string | null
+          phone_e164: string | null
           preview_image: string | null
           production_build_ready: boolean | null
           public_status: string | null
           published_at: string | null
           published_version: number | null
+          reviews: Json | null
+          reviews_variant: string | null
           screenshot_url: string | null
           sent_at: string | null
           seo_text: string | null
           services_inferred: string[] | null
+          services_variant: string | null
           slug: string | null
+          sms_sent_at: string | null
           state: string | null
+          stripe_session_id: string | null
           template_used: string | null
           updated_at: string
+          vercel_deployment_id: string | null
+          vercel_project_id: string | null
           view_count: number
+          zip: string | null
         }
         Insert: {
+          about_variant?: string | null
+          address?: string | null
+          audit_breakdown?: Json | null
+          audit_passed?: boolean | null
+          audit_score?: number | null
+          auto_fix_attempts?: number
           business_name: string
           city?: string | null
           content_blocks?: Json | null
           created_at?: string
+          cta_variant?: string | null
           delivery_method?: string | null
           demo_ready_for_conversion?: boolean | null
           demo_url?: string | null
@@ -16333,35 +16376,59 @@ export type Database = {
           durable_screenshot_url?: string | null
           durable_site_id?: string | null
           engine_status?: string
+          error_message?: string | null
           extracted_structure?: Json | null
+          generated_colors?: Json | null
           generated_html?: string | null
           generation_engine?: string
           generation_status?: string
+          google_data?: Json | null
+          google_place_id?: string | null
+          hero_variant?: string | null
           hosting_path?: string | null
           id?: string
           industry?: string | null
+          industry_confidence?: number | null
           last_viewed_at?: string | null
           lead_id: string
+          logo_url?: string | null
+          paid_at?: string | null
+          phone_e164?: string | null
           preview_image?: string | null
           production_build_ready?: boolean | null
           public_status?: string | null
           published_at?: string | null
           published_version?: number | null
+          reviews?: Json | null
+          reviews_variant?: string | null
           screenshot_url?: string | null
           sent_at?: string | null
           seo_text?: string | null
           services_inferred?: string[] | null
+          services_variant?: string | null
           slug?: string | null
+          sms_sent_at?: string | null
           state?: string | null
+          stripe_session_id?: string | null
           template_used?: string | null
           updated_at?: string
+          vercel_deployment_id?: string | null
+          vercel_project_id?: string | null
           view_count?: number
+          zip?: string | null
         }
         Update: {
+          about_variant?: string | null
+          address?: string | null
+          audit_breakdown?: Json | null
+          audit_passed?: boolean | null
+          audit_score?: number | null
+          auto_fix_attempts?: number
           business_name?: string
           city?: string | null
           content_blocks?: Json | null
           created_at?: string
+          cta_variant?: string | null
           delivery_method?: string | null
           demo_ready_for_conversion?: boolean | null
           demo_url?: string | null
@@ -16371,29 +16438,46 @@ export type Database = {
           durable_screenshot_url?: string | null
           durable_site_id?: string | null
           engine_status?: string
+          error_message?: string | null
           extracted_structure?: Json | null
+          generated_colors?: Json | null
           generated_html?: string | null
           generation_engine?: string
           generation_status?: string
+          google_data?: Json | null
+          google_place_id?: string | null
+          hero_variant?: string | null
           hosting_path?: string | null
           id?: string
           industry?: string | null
+          industry_confidence?: number | null
           last_viewed_at?: string | null
           lead_id?: string
+          logo_url?: string | null
+          paid_at?: string | null
+          phone_e164?: string | null
           preview_image?: string | null
           production_build_ready?: boolean | null
           public_status?: string | null
           published_at?: string | null
           published_version?: number | null
+          reviews?: Json | null
+          reviews_variant?: string | null
           screenshot_url?: string | null
           sent_at?: string | null
           seo_text?: string | null
           services_inferred?: string[] | null
+          services_variant?: string | null
           slug?: string | null
+          sms_sent_at?: string | null
           state?: string | null
+          stripe_session_id?: string | null
           template_used?: string | null
           updated_at?: string
+          vercel_deployment_id?: string | null
+          vercel_project_id?: string | null
           view_count?: number
+          zip?: string | null
         }
         Relationships: [
           {
@@ -16407,43 +16491,58 @@ export type Database = {
       }
       brandaro_demo_templates: {
         Row: {
+          brand_colors: Json | null
           color_scheme: Json | null
           created_at: string | null
           cta_text: string | null
+          design_md_path: string | null
           hero_headline: string
           hero_subheadline: string
           id: string
           industry: string
+          industry_keywords: string[] | null
           is_active: boolean | null
           sections: Json | null
           template_name: string
           updated_at: string | null
+          vercel_deploy_hook_url: string | null
+          vercel_template_repo: string | null
         }
         Insert: {
+          brand_colors?: Json | null
           color_scheme?: Json | null
           created_at?: string | null
           cta_text?: string | null
+          design_md_path?: string | null
           hero_headline: string
           hero_subheadline: string
           id?: string
           industry: string
+          industry_keywords?: string[] | null
           is_active?: boolean | null
           sections?: Json | null
           template_name: string
           updated_at?: string | null
+          vercel_deploy_hook_url?: string | null
+          vercel_template_repo?: string | null
         }
         Update: {
+          brand_colors?: Json | null
           color_scheme?: Json | null
           created_at?: string | null
           cta_text?: string | null
+          design_md_path?: string | null
           hero_headline?: string
           hero_subheadline?: string
           id?: string
           industry?: string
+          industry_keywords?: string[] | null
           is_active?: boolean | null
           sections?: Json | null
           template_name?: string
           updated_at?: string | null
+          vercel_deploy_hook_url?: string | null
+          vercel_template_repo?: string | null
         }
         Relationships: []
       }
