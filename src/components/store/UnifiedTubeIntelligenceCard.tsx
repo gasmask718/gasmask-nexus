@@ -31,6 +31,7 @@ import { UnifiedTubeSoldTable } from '@/components/store/UnifiedTubeSoldTable';
 import { CardHelper } from '@/components/portal/guidance';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { UpdateMethod } from '@/services/fieldGovernance/types';
+import { unitLabelForBrandId } from '@/lib/inventory/unitLabel';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // UNIFIED TUBE INTELLIGENCE CARD
