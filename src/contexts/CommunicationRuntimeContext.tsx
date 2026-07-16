@@ -136,18 +136,36 @@ export function CommunicationRuntimeProvider({ children }: { children: ReactNode
     staleTime: 3000,
   });
 
-  // ── Twilio readiness from CallProvider ──
-  // We infer from whether activeCall exists or call modal is accessible
+  // ── Twilio voice token readiness (real check) ──
+  const { data: twilioTokenHealth } = useQuery({
+    queryKey: ["runtime-twilio-voice-health"],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("twilio-voice-token", { body: {} });
+        if (error) return { ready: false };
+        const health = (data as any)?.health ?? {};
+        const hasToken = !!(data as any)?.token;
+        const allSecrets = Object.values(health).every((v) => v === true);
+        return { ready: hasToken && allSecrets, health };
+      } catch {
+        return { ready: false };
+      }
+    },
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+    retry: 1,
+  });
 
   const queueStats: QueueStats = queueData || { queued: 0, dialing: 0, live: 0 };
   const agentStats: AgentStats = agentData || { available: 0, total: 0, myStatus: "unknown" };
 
   const systemHealth: SystemHealth = useMemo(() => ({
-    twilioReady: true, // CallProvider handles init; assume ready if mounted
+    twilioReady: twilioTokenHealth?.ready ?? false,
     agentOnline: agentStats.available > 0,
     queueHasItems: queueStats.queued > 0,
     withinBusinessHours: true, // TODO: wire to business_hours table
-  }), [agentStats.available, queueStats.queued]);
+  }), [agentStats.available, queueStats.queued, twilioTokenHealth?.ready]);
+
 
   // ── Unified call entry point ──
   const startCall = useCallback((params: StartCallParams) => {
