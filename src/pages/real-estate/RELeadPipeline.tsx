@@ -85,6 +85,7 @@ type SortKey = 'created_at' | 'deal_score' | 'estimated_value' | 'last_called_at
 export default function RELeadPipeline() {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
+  const backfillRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeCard, setActiveCard] = useState<string | null>(null);
@@ -183,14 +184,12 @@ export default function RELeadPipeline() {
   };
   const toggleAll = () => setSelected(selected.size === filtered.length ? new Set() : new Set(filtered.map((l: any) => l.id)));
 
-  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Shared row parser — used by both fresh upload and backfill so DNC/company
+  // logic is guaranteed identical between the two paths.
+  const parseCSVFile = async (file: File) => {
     const data = await file.arrayBuffer();
     const wb = XLSX.read(data);
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]) as any[];
-
-    // Case/space/punctuation-insensitive header lookup
     const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
     const pick = (row: any, ...keys: string[]): string => {
       const map: Record<string, any> = {};
@@ -202,11 +201,6 @@ export default function RELeadPipeline() {
       return '';
     };
     const truthy = (v: string) => /^(y|yes|true|1|dnc)$/i.test(v.trim());
-    // DNC-specific: TCPA legal risk. Treat ANY non-empty value as DNC=true
-    // unless it's an explicit falsy token. Source data uses strings like
-    // "Public DNC", "Federal DNC", "Internal DNC", etc. — the old truthy()
-    // matched only literal "true"/"y"/"dnc" and silently dropped these,
-    // causing flagged numbers to be dialed.
     const dncTruthy = (v: string) => {
       const t = (v ?? '').toString().trim().toLowerCase();
       if (!t) return false;
@@ -217,12 +211,9 @@ export default function RELeadPipeline() {
 
     const skipped = { noAddress: 0, noContact: 0 };
     const mapped: any[] = [];
-
     for (const r of rows) {
       const property_address = pick(r, 'property_address', 'Address', 'Street Address', 'Property Address', 'Site Address');
       if (!property_address) { skipped.noAddress++; continue; }
-
-      // Collect phones 1-5 with type + DNC
       const phones_detail: { number: string; type?: string; dnc: boolean }[] = [];
       for (let i = 1; i <= 5; i++) {
         const num = pick(r, `Phone ${i}`, `Phone${i}`, `phone_${i}`, i === 1 ? 'Phone' : '');
@@ -235,7 +226,6 @@ export default function RELeadPipeline() {
           dnc: dncTruthy(pick(r, `Phone ${i} DNC`, `Phone${i}DNC`, `phone_${i}_dnc`)),
         });
       }
-      // Fallback single phone
       if (phones_detail.length === 0) {
         const p = pick(r, 'phone', 'Phone');
         if (p) {
@@ -243,24 +233,15 @@ export default function RELeadPipeline() {
           if (d.length >= 7) phones_detail.push({ number: d, dnc: dncTruthy(pick(r, 'DNC', 'Do Not Call')) });
         }
       }
-
-      // Emails 1-4
       const emails_detail: string[] = [];
       for (let i = 1; i <= 4; i++) {
         const em = pick(r, `Email ${i}`, `Email${i}`, `email_${i}`, i === 1 ? 'Email' : '');
         if (em && /@/.test(em)) emails_detail.push(em.toLowerCase());
       }
-
-      if (phones_detail.length === 0 && emails_detail.length === 0) {
-        skipped.noContact++; continue;
-      }
-
-      // Promote first non-DNC phone to primary so the dialer never calls a
-      // DNC-flagged number when a clean sibling exists on the same lead.
+      if (phones_detail.length === 0 && emails_detail.length === 0) { skipped.noContact++; continue; }
       const firstClean = phones_detail.find(p => !p.dnc);
       const primaryPhone = (firstClean ?? phones_detail[0])?.number || '';
       const allDnc = phones_detail.length > 0 && phones_detail.every(p => p.dnc);
-
       mapped.push({
         first_name: pick(r, 'first_name', 'FirstName', 'First Name', 'Owner First'),
         last_name: pick(r, 'last_name', 'LastName', 'Last Name', 'Owner Last'),
@@ -294,6 +275,64 @@ export default function RELeadPipeline() {
         raw_payload: r,
       });
     }
+    return { rows, mapped, skipped };
+  };
+
+  // Backfill mode: re-parse the SAME csv and UPDATE existing rows in place
+  // (matched by property_address + zip). Never inserts, never triggers Bland.
+  // Only overwrites fields the parser derives — status/notes/etc. are untouched.
+  const handleBackfillUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const toastId = toast.loading('Parsing CSV for backfill…');
+    try {
+      const { mapped } = await parseCSVFile(file);
+      if (mapped.length === 0) {
+        toast.error('No parseable rows in file', { id: toastId });
+        e.target.value = ''; return;
+      }
+      let updated = 0, notFound = 0, failed = 0;
+      const missing: string[] = [];
+      toast.loading(`Backfilling ${mapped.length} rows…`, { id: toastId });
+      for (const row of mapped) {
+        const patch = {
+          phone: row.phone,
+          phones_all: row.phones_all,
+          phones_detail: row.phones_detail,
+          dnc: row.dnc,
+          email: row.email,
+          emails_all: row.emails_all,
+          emails_detail: row.emails_detail,
+          company_name: row.company_name,
+          litigator: row.litigator,
+        };
+        // Match by exact address + zip; ilike w/ no wildcards = case-insensitive equality.
+        const q = supabase.from('re_leads').update(patch).eq('zip', row.zip || '');
+        const { data, error } = await q.ilike('property_address', row.property_address).select('id');
+        if (error) { failed++; console.error('[RE backfill] update failed', row.property_address, error.message); continue; }
+        if (!data || data.length === 0) {
+          notFound++;
+          if (missing.length < 10) missing.push(`${row.property_address}${row.zip ? ' ' + row.zip : ''}`);
+        } else {
+          updated += data.length;
+        }
+      }
+      qc.invalidateQueries({ queryKey: ['re-leads'] });
+      const summary = `Backfill complete — ${updated} rows updated, ${notFound} not found, ${failed} failed`;
+      console.log('[RE backfill]', { updated, notFound, failed, sampleMissing: missing });
+      if (failed > 0) toast.error(summary, { id: toastId, duration: 12000 });
+      else toast.success(summary, { id: toastId, duration: 10000 });
+    } catch (err: any) {
+      toast.error('Backfill failed: ' + (err?.message || String(err)), { id: toastId });
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const { rows, mapped, skipped } = await parseCSVFile(file);
 
     const totalSkipped = skipped.noAddress + skipped.noContact;
     if (mapped.length === 0) {
@@ -304,11 +343,8 @@ export default function RELeadPipeline() {
       e.target.value = ''; setCsvOpen(false); return;
     }
 
-    console.log('[RE CSV upload] statuses before re_leads insert', mapped.map((lead, index) => ({
-      mappedRow: index + 1,
-      rawStatus: pick(lead.raw_payload, 'status', 'Status'),
-      insertedStatus: lead.status,
-    })));
+    console.log('[RE CSV upload] statuses before re_leads insert', mapped.length, 'rows');
+
 
     const { data: inserted, error } = await supabase.from('re_leads').insert(mapped).select('id');
     if (error) {
@@ -437,6 +473,20 @@ export default function RELeadPipeline() {
           </Dialog>
           <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4 mr-1" />Upload CSV</Button>
           <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleCSVUpload} />
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
+            onClick={() => {
+              if (confirm('Backfill mode: re-parse this CSV and UPDATE existing leads in place (matched by property_address + zip). No new rows will be created and no campaign will be triggered. Use this to repair the DNC/company_name fields on already-imported data.')) {
+                backfillRef.current?.click();
+              }
+            }}
+            title="Repair DNC / company_name on already-imported rows"
+          >
+            <Upload className="h-4 w-4 mr-1" />Backfill from CSV
+          </Button>
+          <input ref={backfillRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleBackfillUpload} />
           <Button size="sm" variant="outline" onClick={handleExport}><Download className="h-4 w-4 mr-1" />Export</Button>
         </div>
       </div>
