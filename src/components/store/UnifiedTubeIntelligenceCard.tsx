@@ -600,9 +600,9 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                       {/* Tube count input */}
                       <div className="flex items-center gap-2">
                         {(() => {
-                          // R4 — unit label follows product: GasMask Bags → "bags", all others → "tubes".
-                          // Mirrors the order-create unit label rule (products.track_by / unit_type).
-                          const unitLabel = brand.id === 'gasmask' ? 'bags' : t('card.tube_intel.tubes');
+                          // R4/R8 — unit label follows product via shared helper.
+                          const rawUnit = unitLabelForBrandId(brand.id);
+                          const unitLabel = rawUnit === 'bags' ? 'bags' : t('card.tube_intel.tubes');
                           return canEditCounts ? (
                             <>
                               <Input
