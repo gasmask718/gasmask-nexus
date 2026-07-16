@@ -53,6 +53,7 @@ export interface UseStoresServerDataArgs {
   pageSize: number;
   activeStoreIds: Set<string>;
   storeIdsWithNotes: Set<string>;
+  reviewFilter?: 'all' | 'admin_yes' | 'admin_no' | 'va_yes' | 'va_no' | 'needs_review';
 }
 
 export function useStoresServerData(args: UseStoresServerDataArgs) {
