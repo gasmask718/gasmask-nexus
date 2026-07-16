@@ -96,6 +96,7 @@ export default function PricingPage() {
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState<string | null>(null);
   const [refreshingMarket, setRefreshingMarket] = useState<string | null>(null);
+  const [applyingSweet, setApplyingSweet] = useState<string | null>(null);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['dd-pricing-rows', category],
