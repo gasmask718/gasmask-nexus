@@ -197,6 +197,8 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
       <StoreQuickNotes storeId={storeId} compact />
       <QuickOrderSection storeId={storeId} storeName={storeName} />
       <PaymentSection storeId={storeId} storeName={storeName} />
+      <SamplesGivenSection storeId={storeId} variant="compact" />
+
 
 
 
