@@ -382,6 +382,15 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
             </CardContent>
           </Card>
 
+          {/* Samples Given — physical samples handed to this store */}
+          <Card>
+            <CardContent className="pt-6">
+              <SamplesGivenSection storeId={id} variant="full" />
+            </CardContent>
+          </Card>
+
+
+
 
           {/* Role Tabs — Ambassadors / Drivers / Bikers / Production */}
           <Card>
