@@ -26,6 +26,8 @@ import { Activity, Headphones, Flame } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
+import { StoreStreetView } from "@/components/store/StoreStreetView";
+
 import { StoreReconCard } from "@/components/store/StoreReconCard";
 import { StoreCommunicationPreferences } from "@/components/store/StoreCommunicationPreferences";
 import { useUserRole } from "@/hooks/useUserRole";
