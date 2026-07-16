@@ -563,13 +563,102 @@ function StoreFlagsSection({ storeId }: { storeId: string }) {
 }
 
 // ────────────────────────────────────────────────────────────────
+// Shared: resolve textable recipient for a store.
+// Priority: primary store_contacts.phone (unless opted out / sms_opt_in=false)
+// → store_master.phone → store_master.alt_phone.
+// ────────────────────────────────────────────────────────────────
+function useTextableRecipient(storeId: string) {
+  return useQuery({
+    queryKey: ['textable-recipient', storeId],
+    staleTime: 60_000,
+    queryFn: async (): Promise<{ phone: string | null; source: string; blocked: boolean; reason: string | null }> => {
+      const { data: contact } = await supabase
+        .from('store_contacts')
+        .select('phone, opted_out, sms_opt_in, name')
+        .eq('store_id', storeId)
+        .eq('is_primary', true)
+        .maybeSingle();
+      if (contact) {
+        if (contact.opted_out) return { phone: null, source: 'contact', blocked: true, reason: 'Primary contact opted out' };
+        if (contact.sms_opt_in === false) return { phone: null, source: 'contact', blocked: true, reason: 'Primary contact SMS off' };
+        if (contact.phone) return { phone: contact.phone, source: `contact:${contact.name || 'primary'}`, blocked: false, reason: null };
+      }
+      const { data: store } = await supabase
+        .from('store_master')
+        .select('phone, alt_phone')
+        .eq('id', storeId)
+        .maybeSingle();
+      const fallback = store?.phone || (store as any)?.alt_phone || null;
+      if (fallback) return { phone: fallback, source: 'store_master', blocked: false, reason: null };
+      return { phone: null, source: 'none', blocked: false, reason: 'No phone on file' };
+    },
+  });
+}
+
+function TextReceiptButton({
+  storeId,
+  storeName,
+  invoiceId,
+  invoiceNumber,
+  totalAmount,
+  label = 'Text receipt',
+}: {
+  storeId: string;
+  storeName: string;
+  invoiceId: string;
+  invoiceNumber: string | null;
+  totalAmount: number;
+  label?: string;
+}) {
+  const { data: recipient, isLoading } = useTextableRecipient(storeId);
+  const send = useMutation({
+    mutationFn: async () => {
+      if (!recipient?.phone) throw new Error(recipient?.reason || 'No textable number');
+      const { data, error } = await supabase.functions.invoke('send-invoice-receipt', {
+        body: {
+          invoice_id: invoiceId,
+          store_id: storeId,
+          invoice_number: invoiceNumber || invoiceId.slice(0, 8),
+          total_amount: totalAmount,
+          store_name: storeName,
+          recipient_phone: recipient.phone,
+          manual_resend: true,
+        },
+      });
+      if (error) throw error;
+      if (data && (data as any).sent === false) throw new Error((data as any).reason || 'Send skipped');
+      return data;
+    },
+    onSuccess: () => toast.success('Receipt texted'),
+    onError: (e: any) => toast.error(e?.message || 'Failed to text receipt'),
+  });
+  const disabled = isLoading || send.isPending || !recipient?.phone || recipient?.blocked;
+  const title = recipient?.blocked
+    ? recipient.reason || 'Opted out'
+    : !recipient?.phone
+    ? 'No textable number'
+    : `Text to ${recipient.phone}`;
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      disabled={disabled}
+      onClick={() => send.mutate()}
+      className="h-7 px-2 text-[11px] gap-1"
+      title={title}
+    >
+      {send.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3 w-3" />}
+      {label}
+    </Button>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────
 // PHASE 2D-1: Quick create order (pure reuse — mirrors
 // CreateStoreInvoiceModal insert shape: invoices + invoice_line_items).
-// Minimal single-line form: pick SKU from the store's canonical
-// tube SKU list (same source as InventorySection), enter tubes qty
-// and unit price per tube (prefilled from products.price_per_tube).
-// No SMS in this phase.
 // ────────────────────────────────────────────────────────────────
+
 function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName: string }) {
   const { user } = useAuth();
   const qc = useQueryClient();
