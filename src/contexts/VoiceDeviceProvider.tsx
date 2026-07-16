@@ -353,11 +353,27 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       });
 
       setDeviceState("registering");
-      await device.register();
+      try {
+        await device.register();
+      } catch (regErr: any) {
+        console.error("[VoiceDevice][register.catch]", {
+          code: regErr?.code,
+          name: regErr?.name,
+          message: regErr?.message,
+          twilioError: regErr?.twilioError,
+          originalError: regErr?.originalError?.message ?? regErr?.originalError,
+        });
+        throw regErr;
+      }
       deviceRef.current = device;
-    } catch (err) {
+    } catch (err: any) {
       const msg = getErrorMessage(err, lastErrorRef.current || deviceError || "Voice device failed to initialize");
-      console.warn("[VoiceDevice] Device init error:", msg);
+      console.error("[VoiceDevice][init.catch]", {
+        code: err?.code,
+        name: err?.name,
+        message: msg,
+        twilioError: err?.twilioError,
+      });
       setDeviceError(msg);
       lastErrorRef.current = msg;
       setDeviceState("error");
