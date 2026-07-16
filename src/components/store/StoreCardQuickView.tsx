@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ChevronDown, ChevronUp, Loader2, Route as RouteIcon, CalendarClock, Package, PackagePlus, Sparkles, Save } from 'lucide-react';
+import { ChevronDown, ChevronUp, Loader2, Route as RouteIcon, CalendarClock, Package, PackagePlus, Sparkles, Save, Receipt, DollarSign, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
 import { getSkuStatusIcon } from '@/lib/inventory/skuDisplay';
 import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
+import { useStoreRecentInvoices } from '@/hooks/useStoreRecentInvoices';
 
 interface StoreCardQuickViewProps {
   storeId: string;
