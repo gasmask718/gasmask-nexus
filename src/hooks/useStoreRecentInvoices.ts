@@ -28,7 +28,7 @@ export function useStoreRecentInvoices(
 
       const { data: invoices, error } = await supabase
         .from('invoices')
-        .select('id, invoice_number, total, created_at')
+        .select('id, invoice_number, total, created_at, payment_status, paid_at, partial_amount')
         .eq('store_id', storeId)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
