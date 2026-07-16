@@ -570,7 +570,7 @@ function StoreFlagsSection({ storeId }: { storeId: string }) {
 // and unit price per tube (prefilled from products.price_per_tube).
 // No SMS in this phase.
 // ────────────────────────────────────────────────────────────────
-function QuickOrderSection({ storeId }: { storeId: string }) {
+function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName: string }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: skus = [] } = useStoreInventoryBySku(storeId);
@@ -776,7 +776,7 @@ function QuickOrderSection({ storeId }: { storeId: string }) {
 // from useStoreRecentInvoices and marks paid using the same shape
 // as InvoiceHistoryCard's togglePaymentStatusMutation.
 // ────────────────────────────────────────────────────────────────
-function PaymentSection({ storeId }: { storeId: string }) {
+function PaymentSection({ storeId, storeName }: { storeId: string; storeName: string }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: recent = [], isLoading } = useStoreRecentInvoices(storeId, 10);
