@@ -43,6 +43,15 @@ import {
 } from '@/config/storeRelationshipStatus';
 import { RelationshipStatusSelect } from '@/components/store/RelationshipStatusSelect';
 import { format } from 'date-fns';
+import { useStoresServerData } from '@/pages/stores/useStoresServerData';
+
+// Phase 2A Win 2: DUAL PATH.  When true, the grid uses server-side
+// pagination/search/filtering (via useStoresServerData).  The legacy
+// full-in-memory fetch below stays intact as a fallback — flip this
+// back to false to restore it verbatim.
+const USE_SERVER_PATH = true;
+
+
 
 interface StoreContact {
   id: string;
@@ -265,10 +274,13 @@ const Stores = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch stores from database - RLS automatically filters by simulation mode
-  const { data: stores = [], isLoading } = useQuery({
+  // Fetch stores from database - RLS automatically filters by simulation mode.
+  // Under USE_SERVER_PATH this fetch is disabled and kept as a fallback only.
+  const { data: legacyStores = [], isLoading: legacyIsLoading } = useQuery({
     queryKey: ['stores-with-contacts', simulationMode],
+    enabled: !USE_SERVER_PATH,
     queryFn: async () => {
+
       // Fetch from store_master - explicitly filter by simulation mode
       let storesData: any[] = [];
       let page = 0;
@@ -522,6 +534,46 @@ const Stores = () => {
     },
   });
 
+  // ── Phase 2A Win 2 — server-side dual path ─────────────────────────
+  const server = useStoresServerData({
+    enabled: USE_SERVER_PATH,
+    simulationMode,
+    searchQuery,
+    activeFilter,
+    relationshipFilter,
+    tagFilter,
+    stickerFilter,
+    paymentTypeFilter,
+    noNameFilter,
+    newStoresOnly,
+    monthFilter,
+    customDateFrom,
+    customDateTo,
+    currentPage,
+    pageSize,
+    activeStoreIds,
+    storeIdsWithNotes,
+  });
+
+  // Under server path, `stores` is the lean list (all live stores, count-source
+  // columns only) and hydrated page rows come from `server.pageRows`.
+  const stores: any[] = USE_SERVER_PATH ? server.leanStores : legacyStores;
+  const isLoading = USE_SERVER_PATH ? server.isLoading : legacyIsLoading;
+
+  // Owner-name → connected-store counts, computed from the lean list under
+  // server path so the page rows can display connectedStoresCount.
+  const ownerNameCountsMap = useMemo(() => {
+    const m = new Map<string, number>();
+    if (!USE_SERVER_PATH) return m;
+    for (const s of stores) {
+      const on = (s as any).owner_name;
+      if (!on) continue;
+      m.set(on, (m.get(on) ?? 0) + 1);
+    }
+    return m;
+  }, [stores]);
+
+
   // Use global tags for the filter dropdown - combines tags from stores AND all global tags
   const availableStoreTags = useMemo(() => {
     const storeTagsSet = new Set(
@@ -667,11 +719,28 @@ const Stores = () => {
   // ═══════════════════════════════════════════════════════════════════════════════
   // PAGINATION
   // ═══════════════════════════════════════════════════════════════════════════════
-  const totalPages = Math.ceil(filteredStores.length / pageSize);
-  const paginatedStores = useMemo(() => {
+  // Legacy in-memory path (kept intact as fallback under !USE_SERVER_PATH).
+  const legacyTotalPages = Math.ceil(filteredStores.length / pageSize);
+  const legacyPaginatedStores = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredStores.slice(start, start + pageSize);
   }, [filteredStores, currentPage, pageSize]);
+
+  // Server-side page rows already come pre-filtered/paginated; patch
+  // connectedStoresCount from the lean owner-name map.
+  const serverPaginatedStores = useMemo(() => {
+    if (!USE_SERVER_PATH) return [] as any[];
+    return server.pageRows.map((s: any) => ({
+      ...s,
+      connectedStoresCount: s.owner_name
+        ? Math.max(0, (ownerNameCountsMap.get(s.owner_name) ?? 0) - 1)
+        : 0,
+    }));
+  }, [server.pageRows, ownerNameCountsMap]);
+
+  const paginatedStores: Store[] = (USE_SERVER_PATH ? serverPaginatedStores : legacyPaginatedStores) as Store[];
+  const filteredStoresCount = USE_SERVER_PATH ? server.pageTotal : filteredStores.length;
+  const totalPages = USE_SERVER_PATH ? Math.max(1, Math.ceil(server.pageTotal / pageSize)) : legacyTotalPages;
 
   // Reset to page 1 when filters change
   const handleFilterChange = () => setCurrentPage(1);
@@ -799,7 +868,7 @@ const Stores = () => {
             {simulationMode && <SimulationBadge />}
           </div>
           <p className="text-muted-foreground">
-            {simulationMode ? t('page.stores.demo_preview') || 'Demo stores preview' : t('page.stores.subtitle') || 'Manage your distribution network'} • {filteredStores.length} stores
+            {simulationMode ? t('page.stores.demo_preview') || 'Demo stores preview' : t('page.stores.subtitle') || 'Manage your distribution network'} • {filteredStoresCount} stores
           </p>
         </div>
         <div className="flex gap-2">
@@ -916,9 +985,11 @@ const Stores = () => {
                     <span className="text-xs text-muted-foreground">
                       (
                       {
-                        stores.filter(store =>
-                          store.tags?.some(tag => tag.toLowerCase() === tagValue.toLowerCase())
-                        ).length
+                        USE_SERVER_PATH
+                          ? (server.tagCounts.get(tagValue.toLowerCase()) ?? 0)
+                          : stores.filter(store =>
+                              store.tags?.some(tag => tag.toLowerCase() === tagValue.toLowerCase())
+                            ).length
                       }
                       )
                     </span>
@@ -1033,12 +1104,12 @@ const Stores = () => {
       </div>
 
       {/* Pagination - Top */}
-      {!isLoading && filteredStores.length > 0 && (
+      {!isLoading && filteredStoresCount > 0 && (
         <DataTablePagination
           currentPage={currentPage}
           totalPages={totalPages}
           pageSize={pageSize}
-          totalItems={filteredStores.length}
+          totalItems={filteredStoresCount}
           onPageChange={setCurrentPage}
           onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
           pageSizeOptions={[25, 50, 100, 250]}
@@ -1400,7 +1471,7 @@ const Stores = () => {
         </>
       )}
 
-      {!isLoading && filteredStores.length === 0 && (
+      {!isLoading && filteredStoresCount === 0 && (
         <div className="text-center py-12">
           <p className="text-muted-foreground">{t('page.stores.no_results') || 'No stores found matching your filters'}</p>
         </div>
