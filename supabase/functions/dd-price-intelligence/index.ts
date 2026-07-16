@@ -420,7 +420,28 @@ Deno.serve(async (req) => {
       let checked = 0;
       let alertsCreated = 0;
       let marketRefreshed = 0;
+      let alertsAutoResolved = 0;
       const errors: Array<{ product_id: string; error: string }> = [];
+
+      // Auto-resolve open alerts tied to soft-deleted products
+      {
+        const { data: deletedProds } = await supabase
+          .from('products_all')
+          .select('id')
+          .eq('status', 'deleted');
+        const deletedIds = (deletedProds || []).map((p: any) => p.id);
+        if (deletedIds.length) {
+          const { data: resolved, error: resErr } = await supabase
+            .from('dd_price_alerts')
+            .update({ is_resolved: true, resolved_at: new Date().toISOString(), resolution_notes: 'Auto-resolved: product soft-deleted' })
+            .in('product_id', deletedIds)
+            .eq('is_resolved', false)
+            .select('id');
+          if (resErr) errors.push({ product_id: 'bulk', error: `auto_resolve_deleted: ${resErr.message}` });
+          else alertsAutoResolved = (resolved || []).length;
+        }
+      }
+
       const PAGE = 1000;
       let from = 0;
 
