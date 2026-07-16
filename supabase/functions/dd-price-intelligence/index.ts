@@ -509,6 +509,23 @@ Deno.serve(async (req) => {
       return ok({ success: true, alerts_created: alerts.length, alerts });
     }
 
+    // ============ APPLY_SWEET_SPOT (floor-guarded competitive price) ============
+    if (action === 'apply_sweet_spot') {
+      const sweet = computeSweetSpot(product, marketAvg);
+      if (!sweet) return ok({ error: 'no_market_data', message: 'Run refresh_market first — sweet-spot needs market_avg_retail.' });
+      const { error: rpcErr } = await (supabase as any).rpc('dd_update_product_pricing', {
+        p_product_id: product_id,
+        p_supplier_cost: product.supplier_cost,
+        p_store_price_a: sweet.store_price,
+        p_dtc_price_b: sweet.dtc_price,
+        p_map_price: product.map_price,
+        p_allow_override: false,
+      });
+      if (rpcErr) return ok({ error: rpcErr.message, sweet_spot: sweet });
+      return ok({ success: true, applied: { store_price_a: sweet.store_price, dtc_price_b: sweet.dtc_price }, sweet_spot: sweet });
+    }
+
+
     // ============ ANALYZE / SET_OPTIMAL ============
     const apiKey = await getDdAnthropicApiKey(supabase);
     let analysis: Analysis;
