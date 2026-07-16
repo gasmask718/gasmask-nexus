@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Target, Plus, Clock, CheckCircle2, Circle, Sparkles, User } from 'lucide-react';
+import { Target, Plus, Clock, CheckCircle2, Circle, Sparkles, User, CalendarClock, Route as RouteIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { dynastyDate } from '@/lib/dates';
 import { AddOpportunityModal } from './AddOpportunityModal';
@@ -18,13 +18,17 @@ interface StoreOpportunity {
   store_id: string;
   opportunity_text: string;
   is_completed: boolean;
-  source: 'manual' | 'ai_extracted';
+  source: 'manual' | 'ai_extracted' | 'follow_up';
   detected_from_note_id: string | null;
   detected_from_interaction_id: string | null;
   completed_at: string | null;
   completed_by: string | null;
   created_at: string;
   updated_at: string;
+  due_date: string | null;
+  assignee: string | null;
+  priority: string | null;
+  route_flag: boolean | null;
 }
 
 interface OpportunitiesSectionProps {
