@@ -298,7 +298,18 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       device.on("error", async (err: any) => {
         const code: number | undefined = err?.code;
         const message = getErrorMessage(err, "Voice device error");
-        console.warn("[VoiceDevice] Device error:", code, message);
+        // Full diagnostic dump for debugging TwiML App / token / transport failures
+        console.error("[VoiceDevice][device.error]", {
+          code,
+          message,
+          name: err?.name,
+          causes: err?.causes,
+          solutions: err?.solutions,
+          description: err?.description,
+          explanation: err?.explanation,
+          twilioError: err?.twilioError,
+          originalError: err?.originalError?.message ?? err?.originalError,
+        });
 
         // 53000 = signaling ConnectionError. Auto-retry once with token refresh
         // before surfacing to the VA.
