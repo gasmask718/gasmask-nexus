@@ -599,7 +599,11 @@ Deno.serve(async (req) => {
     if (!p) return ok({ error: 'product not found' });
     const product = p as ProductRow;
 
-    // Market context (for analyze/set_optimal)
+    // Market context (for analyze/set_optimal/apply_sweet_spot).
+    // Prefer the trimmed, stored market_avg_retail (already filtered for
+    // bundles / low-relevance titles / price outliers by refresh_market).
+    // Fall back to an untrimmed average of recent samples ONLY if the stored
+    // value is missing.
     const { data: marketRows } = await supabase
       .from('dd_market_prices')
       .select('source, price')
@@ -607,9 +611,12 @@ Deno.serve(async (req) => {
       .order('observed_at', { ascending: false })
       .limit(20);
     const samples = (marketRows || []).map((r: any) => ({ source: r.source, price: Number(r.price) }));
-    const marketAvg = samples.length
-      ? samples.reduce((s: number, r: any) => s + r.price, 0) / samples.length
-      : null;
+    const storedAvg = Number((product as any).market_avg_retail || 0);
+    const marketAvg = storedAvg > 0
+      ? storedAvg
+      : (samples.length
+          ? samples.reduce((s: number, r: any) => s + r.price, 0) / samples.length
+          : null);
 
     if (action === 'check_alerts') {
       const alerts = await computeAlerts(supabase, product);
