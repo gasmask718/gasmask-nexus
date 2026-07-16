@@ -267,6 +267,11 @@ export default function SFLeadPipeline() {
     const data = await file.arrayBuffer();
     const wb = XLSX.read(data);
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]) as any[];
+
+    const norm = (v: any) => String(v ?? '').trim().toLowerCase();
+    const normPhone = (v: any) => String(v ?? '').replace(/\D/g, '');
+    const dedupKey = (fn: any, ln: any, ph: any) => `${norm(fn)}|${norm(ln)}|${normPhone(ph)}`;
+
     const mapped = rows.map(r => ({
       first_name: r.first_name || r.FirstName || r['First Name'] || '',
       last_name: r.last_name || r.LastName || r['Last Name'] || '',
@@ -279,9 +284,51 @@ export default function SFLeadPipeline() {
       foreclosure_date: r.foreclosure_date || r['Foreclosure Date'] || null,
       lead_source: 'csv_upload',
     }));
-    const { data: inserted, error } = await supabase.from('surplus_funds_leads').insert(mapped).select('id, state');
+
+    // In-file dedupe (first_name + last_name + phone)
+    const seen = new Set<string>();
+    const inFileUnique = mapped.filter(m => {
+      const k = dedupKey(m.first_name, m.last_name, m.phone);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    const inFileDupes = mapped.length - inFileUnique.length;
+
+    // DB dedupe: fetch existing candidates matching any first_name in this batch
+    const firstNames = Array.from(new Set(inFileUnique.map(m => m.first_name).filter(Boolean)));
+    let existingKeys = new Set<string>();
+    if (firstNames.length > 0) {
+      const { data: existing, error: exErr } = await supabase
+        .from('surplus_funds_leads')
+        .select('first_name, last_name, phone')
+        .in('first_name', firstNames)
+        .limit(5000);
+      if (exErr) {
+        toast.error('Dedupe lookup failed: ' + exErr.message);
+        e.target.value = '';
+        return;
+      }
+      existingKeys = new Set((existing || []).map((r: any) => dedupKey(r.first_name, r.last_name, r.phone)));
+    }
+
+    const toInsert = inFileUnique.filter(m => !existingKeys.has(dedupKey(m.first_name, m.last_name, m.phone)));
+    const dbDupes = inFileUnique.length - toInsert.length;
+
+    if (toInsert.length === 0) {
+      toast.info(`No new leads — ${inFileDupes} in-file duplicates and ${dbDupes} already in database`);
+      e.target.value = '';
+      return;
+    }
+
+    const { data: inserted, error } = await supabase.from('surplus_funds_leads').insert(toInsert).select('id, state');
     if (error) { toast.error('Upload failed: ' + error.message); e.target.value = ''; return; }
-    toast.success(`${mapped.length} leads imported`);
+    const skipped = inFileDupes + dbDupes;
+    toast.success(
+      skipped > 0
+        ? `${toInsert.length} imported — skipped ${skipped} duplicate${skipped === 1 ? '' : 's'}`
+        : `${toInsert.length} leads imported`
+    );
     qc.invalidateQueries({ queryKey: ['sf-leads'] });
 
     const insertedIds = (inserted || []).map((l: any) => l.id);
@@ -305,6 +352,7 @@ export default function SFLeadPipeline() {
     }
     e.target.value = '';
   };
+
 
   const handleExport = () => {
     const ws = XLSX.utils.json_to_sheet(filtered);
