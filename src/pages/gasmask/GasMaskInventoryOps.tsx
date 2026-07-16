@@ -14,8 +14,8 @@ import { toast } from 'sonner';
 
 // Outbound caller-ID options. Numbers are placeholders — update in one place.
 const CALLER_IDS = [
-  { id: 'biztext', label: 'BizText Line', number: '+10000000001' },
-  { id: 'ooma', label: 'Ooma Line', number: '+10000000002' },
+  { id: 'biztext', label: 'BizText Line', number: '+19298225712' },
+  { id: 'ooma', label: 'Ooma Line', number: '+19293891587' },
 ];
 
 type Lead = {
