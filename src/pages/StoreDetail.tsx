@@ -791,6 +791,14 @@ const StoreDetail = () => {
           <StoreContactsSection storeId={id || ""} storeName={store.name} />
           <Card className="glass-card border-border/50">
             <CardContent className="pt-6">
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Review / Sign-Off
+              </div>
+              <StoreReviewControls storeId={id || ""} />
+            </CardContent>
+          </Card>
+          <Card className="glass-card border-border/50">
+            <CardContent className="pt-6">
               <StoreQuickNotes storeId={id || ""} />
             </CardContent>
           </Card>
