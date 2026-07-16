@@ -229,7 +229,7 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="font-medium text-foreground">{t.title}</span>
+                    <span className="font-medium text-foreground">{t.opportunity_text}</span>
                     {t.route_flag && (
                       <Badge variant="outline" className="h-4 gap-0.5 px-1 text-[9px]">
                         <RouteIcon className="h-2.5 w-2.5" /> route
@@ -248,9 +248,9 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
                       </Badge>
                     )}
                   </div>
-                  {t.due_at && (
+                  {t.due_date && (
                     <p className="text-[10px] text-muted-foreground">
-                      Due {format(new Date(t.due_at), 'MMM d, yyyy')}
+                      Due {format(new Date(t.due_date), 'MMM d, yyyy')}
                     </p>
                   )}
                 </div>
