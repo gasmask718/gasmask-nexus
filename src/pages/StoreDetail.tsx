@@ -27,6 +27,7 @@ import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreQuickNotes } from "@/components/store/StoreQuickNotes";
 import { SamplesGivenSection } from "@/components/store/SamplesGivenSection";
+import { StoreReviewControls } from "@/components/store/StoreReviewControls";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
 import { StoreStreetView } from "@/components/store/StoreStreetView";
 
