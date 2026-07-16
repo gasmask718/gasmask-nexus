@@ -433,7 +433,7 @@ Deno.serve(async (req) => {
         if (deletedIds.length) {
           const { data: resolved, error: resErr } = await supabase
             .from('dd_price_alerts')
-            .update({ is_resolved: true, resolved_at: new Date().toISOString(), resolution_notes: 'Auto-resolved: product soft-deleted' })
+            .update({ is_resolved: true, resolved_at: new Date().toISOString() })
             .in('product_id', deletedIds)
             .eq('is_resolved', false)
             .select('id');
