@@ -1480,6 +1480,7 @@ export default function AppRoutes() {
         <Route path="/gasmask/store-intelligence" element={<StoreIntelligencePage />} />
         <Route path="/gasmask/products" element={<Products />} />
         <Route path="/gasmask/inventory" element={<Products />} />
+        <Route path="/gasmask/inventory-ops" element={<GasMaskInventoryOps />} />
         <Route path="/gasmask/map" element={<MapPage />} />
         <Route path="/gasmask/live-map" element={<LiveMap />} />
         <Route path="/gasmask/ambassadors" element={<Ambassadors />} />
