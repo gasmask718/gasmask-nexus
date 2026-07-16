@@ -558,3 +558,7 @@ verify_jwt = false
 [functions.dd-whatsapp-webhook]
 verify_jwt = false
 
+
+[functions.street-view-image]
+verify_jwt = false
+
