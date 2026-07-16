@@ -568,7 +568,7 @@ export default function RELeadPipeline() {
                           <div className="text-xs text-muted-foreground">{[l.city, l.state, l.zip].filter(Boolean).join(', ')}</div>
                         </td>
                         <td className="p-3">
-                          <div>{[l.first_name, l.last_name].filter(Boolean).join(' ') || '—'}</div>
+                          <div>{[l.first_name, l.last_name].filter(Boolean).join(' ') || l.company_name || '—'}</div>
                           {l.phone && <div className="text-xs text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" />{l.phone}</div>}
                         </td>
                         <td className="p-3">
