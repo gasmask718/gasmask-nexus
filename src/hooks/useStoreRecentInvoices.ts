@@ -73,6 +73,9 @@ export function useStoreRecentInvoices(
           tubes,
           boxes: Math.round(tubes / 100),
           created_at: i.created_at,
+          payment_status: (i as any).payment_status ?? null,
+          paid_at: (i as any).paid_at ?? null,
+          partial_amount: (i as any).partial_amount != null ? Number((i as any).partial_amount) : null,
         };
       });
     },
