@@ -720,7 +720,7 @@ const Stores = () => {
   // PAGINATION
   // ═══════════════════════════════════════════════════════════════════════════════
   // Legacy in-memory path (kept intact as fallback under !USE_SERVER_PATH).
-  const legacyTotalPages = Math.ceil(filteredStores.length / pageSize);
+  const legacyTotalPages = Math.ceil(filteredStoresCount / pageSize);
   const legacyPaginatedStores = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredStores.slice(start, start + pageSize);
@@ -739,7 +739,7 @@ const Stores = () => {
   }, [server.pageRows, ownerNameCountsMap]);
 
   const paginatedStores: Store[] = (USE_SERVER_PATH ? serverPaginatedStores : legacyPaginatedStores) as Store[];
-  const filteredStoresCount = USE_SERVER_PATH ? server.pageTotal : filteredStores.length;
+  const filteredStoresCount = USE_SERVER_PATH ? server.pageTotal : filteredStoresCount;
   const totalPages = USE_SERVER_PATH ? Math.max(1, Math.ceil(server.pageTotal / pageSize)) : legacyTotalPages;
 
   // Reset to page 1 when filters change
@@ -868,7 +868,7 @@ const Stores = () => {
             {simulationMode && <SimulationBadge />}
           </div>
           <p className="text-muted-foreground">
-            {simulationMode ? t('page.stores.demo_preview') || 'Demo stores preview' : t('page.stores.subtitle') || 'Manage your distribution network'} • {filteredStores.length} stores
+            {simulationMode ? t('page.stores.demo_preview') || 'Demo stores preview' : t('page.stores.subtitle') || 'Manage your distribution network'} • {filteredStoresCount} stores
           </p>
         </div>
         <div className="flex gap-2">
@@ -1102,12 +1102,12 @@ const Stores = () => {
       </div>
 
       {/* Pagination - Top */}
-      {!isLoading && filteredStores.length > 0 && (
+      {!isLoading && filteredStoresCount > 0 && (
         <DataTablePagination
           currentPage={currentPage}
           totalPages={totalPages}
           pageSize={pageSize}
-          totalItems={filteredStores.length}
+          totalItems={filteredStoresCount}
           onPageChange={setCurrentPage}
           onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
           pageSizeOptions={[25, 50, 100, 250]}
@@ -1469,7 +1469,7 @@ const Stores = () => {
         </>
       )}
 
-      {!isLoading && filteredStores.length === 0 && (
+      {!isLoading && filteredStoresCount === 0 && (
         <div className="text-center py-12">
           <p className="text-muted-foreground">{t('page.stores.no_results') || 'No stores found matching your filters'}</p>
         </div>
