@@ -248,24 +248,18 @@ const Stores = () => {
     select: (data) => data,
   });
 
-  // Active store IDs = any store that has at least one invoice ever (source of truth)
+  // Active store IDs = any store that has at least one invoice ever (source of truth).
+  // Reads from the store_invoice_activity materialized view (refreshed every 5 min via pg_cron)
+  // instead of scanning invoices_unified. ~2.3k row cap regardless of invoice volume.
   const { data: activeStoreIds = new Set<string>() } = useQuery({
     queryKey: ['stores-active-ids-invoiced'],
     queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('store_invoice_activity')
+        .select('store_id');
+      if (error) throw error;
       const ids = new Set<string>();
-      let page = 0;
-      const pageSize = 1000;
-      while (true) {
-        const { data, error } = await supabase
-          .from('invoices_unified')
-          .select('store_id')
-          .not('store_id', 'is', null)
-          .range(page * pageSize, (page + 1) * pageSize - 1);
-        if (error) throw error;
-        (data || []).forEach((r: any) => r.store_id && ids.add(r.store_id));
-        if (!data || data.length < pageSize) break;
-        page++;
-      }
+      (data || []).forEach((r: any) => r.store_id && ids.add(r.store_id));
       return ids;
     },
     staleTime: 5 * 60 * 1000,
