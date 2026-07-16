@@ -97601,6 +97601,50 @@ export type Database = {
           },
         ]
       }
+      sf_callback_tasks: {
+        Row: {
+          created_at: string
+          due_at: string | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          priority: string | null
+          script: string | null
+          status: string
+          task_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          priority?: string | null
+          script?: string | null
+          status?: string
+          task_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          priority?: string | null
+          script?: string | null
+          status?: string
+          task_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sf_callback_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "surplus_funds_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shelf_corp_tracker: {
         Row: {
           activation_step_current: number | null
