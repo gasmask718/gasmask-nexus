@@ -694,9 +694,35 @@ function TextReceiptButton({
 }
 
 // ────────────────────────────────────────────────────────────────
-// PHASE 2D-1: Quick create order (pure reuse — mirrors
-// CreateStoreInvoiceModal insert shape: invoices + invoice_line_items).
+// PHASE 2E QuickOrderSection — Unit picker (Box / Half-box / Loose),
+// price derives from product + unit, unit label follows the product
+// (bags for GasMask Bags, tubes for the rest via track_by/unit_type),
+// paid/unpaid toggle at creation, optional "text receipt on create".
 // ────────────────────────────────────────────────────────────────
+
+type UnitMode = 'box' | 'half' | 'loose';
+
+const BOX_UNITS = 100;
+const HALF_UNITS = 50;
+
+interface ProductRow {
+  id: string;
+  name: string;
+  brand_id: string | null;
+  track_by: string | null;
+  unit_type: string | null;
+  units_per_box: number | null;
+  price_per_unit: number | null;
+  price_per_tube: number | null;
+  price_per_box: number | null;
+  store_price: number | null;
+}
+
+function productUnitLabel(p: ProductRow | null | undefined): 'bags' | 'tubes' {
+  if (!p) return 'tubes';
+  const t = (p.track_by || p.unit_type || '').toLowerCase();
+  return t.startsWith('bag') ? 'bags' : 'tubes';
+}
 
 function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName: string }) {
   const { user } = useAuth();
@@ -704,12 +730,15 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
   const { data: skus = [] } = useStoreInventoryBySku(storeId);
 
   const [productId, setProductId] = useState<string>('');
-  const [tubes, setTubes] = useState<string>('');
-  const [unitPrice, setUnitPrice] = useState<string>('');
+  const [unitMode, setUnitMode] = useState<UnitMode>('box');
+  const [looseQty, setLooseQty] = useState<string>('');
   const [markPaid, setMarkPaid] = useState<boolean>(false);
+  const [textOnCreate, setTextOnCreate] = useState<boolean>(false);
   const [lastCreated, setLastCreated] = useState<{ id: string; number: string; total: number } | null>(null);
 
-  // Lazy: fetch price + name for the selected product
+  // Textable recipient — used to gate the "text on create" checkbox
+  const { data: recipient } = useTextableRecipient(storeId);
+
   const { data: product } = useQuery({
     queryKey: ['quickorder-product', productId],
     enabled: !!productId,
@@ -717,22 +746,49 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, brand_id, price_per_tube, store_price, units_per_box')
+        .select('id, name, brand_id, track_by, unit_type, units_per_box, price_per_unit, price_per_tube, price_per_box, store_price')
         .eq('id', productId)
         .maybeSingle();
       if (error) throw error;
-      return data as any;
+      return data as ProductRow | null;
     },
   });
 
-  // Prefill unit price when product loads
-  useMemo(() => {
-    if (product && !unitPrice) {
-      const p = product.price_per_tube ?? product.store_price ?? null;
-      if (p != null) setUnitPrice(String(p));
+  const unitLabel = productUnitLabel(product);
+  const unitSingular = unitLabel === 'bags' ? 'bag' : 'tube';
+
+  // Derive units + unit price + total live from product + unit mode
+  const derived = (() => {
+    if (!product) return { units: 0, unitPrice: 0, total: 0, lineDescriptor: '' };
+    const pricePerUnit = Number(
+      product.store_price ?? product.price_per_unit ?? product.price_per_tube ?? 0
+    );
+    const pricePerBox = Number(product.price_per_box ?? pricePerUnit * BOX_UNITS);
+    if (unitMode === 'box') {
+      return {
+        units: BOX_UNITS,
+        unitPrice: pricePerUnit,
+        total: pricePerBox,
+        lineDescriptor: `1 box (${BOX_UNITS} ${unitLabel})`,
+      };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product?.id]);
+    if (unitMode === 'half') {
+      return {
+        units: HALF_UNITS,
+        unitPrice: pricePerUnit,
+        total: pricePerUnit * HALF_UNITS,
+        lineDescriptor: `Half box (${HALF_UNITS} ${unitLabel})`,
+      };
+    }
+    const n = parseInt(looseQty, 10);
+    const qty = isNaN(n) || n < 0 ? 0 : n;
+    return {
+      units: qty,
+      unitPrice: pricePerUnit,
+      total: pricePerUnit * qty,
+      lineDescriptor: `${qty} ${qty === 1 ? unitSingular : unitLabel} loose`,
+    };
+  })();
 
   const generateInvoiceNumber = () => {
     const date = new Date();
@@ -744,17 +800,18 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
 
   const create = useMutation({
     mutationFn: async () => {
-      const qty = parseInt(tubes, 10);
-      const price = parseFloat(unitPrice);
-      if (!productId) throw new Error('Pick a SKU');
-      if (!qty || qty <= 0) throw new Error('Enter tube quantity');
-      if (isNaN(price) || price < 0) throw new Error('Enter unit price');
+      if (!productId) throw new Error('Pick a product');
+      if (!product) throw new Error('Product not loaded yet');
+      const qty = derived.units;
+      const price = derived.unitPrice;
+      if (!qty || qty <= 0) throw new Error('Enter a quantity');
+      if (isNaN(price) || price < 0) throw new Error('No valid unit price');
 
-      const sku = skus.find((s) => s.product_id === productId);
-      const productName = product?.name || sku?.display || 'Tube';
-      const total = qty * price;
+      const productName = product.name || 'Product';
+      const total = Number(derived.total.toFixed(2));
       const nowIso = new Date().toISOString();
       const invoiceNumber = generateInvoiceNumber();
+      const sku = skus.find((s) => s.product_id === productId);
 
       const { data: invoice, error: invErr } = await supabase
         .from('invoices')
@@ -780,9 +837,11 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
         .single();
       if (invErr) throw invErr;
 
+      // For bag products, computed_tubes_total still tracks "units" for downstream
+      // aggregate logic (its column is unit-agnostic despite the name).
       const { error: liErr } = await supabase.from('invoice_line_items').insert({
         invoice_id: invoice!.id,
-        brand_id: product?.brand_id ?? null,
+        brand_id: product.brand_id ?? null,
         product_id: productId,
         product_name: productName,
         product_name_snapshot: productName,
@@ -790,7 +849,7 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
         unit_price: price,
         total,
         sale_channel: 'retail',
-        sale_unit: 'unit',
+        sale_unit: unitLabel === 'bags' ? 'bag' : 'unit',
         quantity_tubes: qty,
         computed_tubes_total: qty,
         list_unit_price: price,
@@ -805,36 +864,55 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
         .update({ updated_at: nowIso, updated_by: user?.id ?? null } as any)
         .eq('id', storeId);
 
-      return { id: invoice!.id, number: invoiceNumber, total };
+      // Optional: text receipt on create (respects phone/opt-out gate)
+      let textSent = false;
+      if (textOnCreate && recipient?.phone && !recipient.blocked) {
+        try {
+          const { data, error } = await supabase.functions.invoke('send-invoice-receipt', {
+            body: {
+              invoice_id: invoice!.id,
+              store_id: storeId,
+              invoice_number: invoiceNumber,
+              total_amount: total,
+              store_name: storeName,
+              recipient_phone: recipient.phone,
+              manual_resend: false,
+            },
+          });
+          if (!error && !(data && (data as any).sent === false)) textSent = true;
+        } catch {
+          textSent = false;
+        }
+      }
+
+      return { id: invoice!.id, number: invoiceNumber, total, textSent };
     },
     onSuccess: (result) => {
-      toast.success('Order created');
-      setTubes('');
-      setUnitPrice('');
+      toast.success(result.textSent ? 'Order created · receipt texted' : 'Order created');
+      setLooseQty('');
       setMarkPaid(false);
-      setLastCreated(result);
+      setTextOnCreate(false);
+      setLastCreated({ id: result.id, number: result.number, total: result.total });
       qc.invalidateQueries({ queryKey: ['store-recent-invoices-sku', storeId] });
       qc.invalidateQueries({ queryKey: ['store-invoices', 'store', storeId] });
       qc.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
+      qc.invalidateQueries({ queryKey: ['store-last-order-line-items', storeId] });
     },
     onError: (e: any) => toast.error(e?.message || 'Failed to create order'),
   });
 
-  const totalPreview = (() => {
-    const q = parseFloat(tubes);
-    const p = parseFloat(unitPrice);
-    if (!q || !p || isNaN(q) || isNaN(p)) return null;
-    return q * p;
-  })();
+  const canCreate = !!productId && !!product && derived.units > 0 && !create.isPending;
+  const textOnCreateBlocked = !recipient?.phone || !!recipient?.blocked;
 
   return (
     <div className="space-y-1.5 border-t border-border/50 pt-2">
       <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         <Receipt className="h-3 w-3" /> Quick order
       </p>
-      <Select value={productId} onValueChange={setProductId}>
+
+      <Select value={productId} onValueChange={(v) => { setProductId(v); setLooseQty(''); }}>
         <SelectTrigger className="h-8 text-xs">
-          <SelectValue placeholder="Pick SKU" />
+          <SelectValue placeholder="Pick product" />
         </SelectTrigger>
         <SelectContent className="max-h-64">
           {skus.map((s) => (
@@ -844,30 +922,61 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
           ))}
         </SelectContent>
       </Select>
-      <div className="grid grid-cols-2 gap-2">
+
+      {/* Unit picker */}
+      <div className="grid grid-cols-3 gap-1">
+        {(['box', 'half', 'loose'] as UnitMode[]).map((mode) => {
+          const active = unitMode === mode;
+          const label = mode === 'box' ? 'Box' : mode === 'half' ? 'Half-box' : 'Loose';
+          return (
+            <Button
+              key={mode}
+              type="button"
+              size="sm"
+              variant={active ? 'default' : 'outline'}
+              className="h-7 text-[11px]"
+              onClick={() => setUnitMode(mode)}
+              disabled={!productId}
+            >
+              {label}
+            </Button>
+          );
+        })}
+      </div>
+
+      {unitMode === 'loose' && (
         <div className="space-y-1">
-          <Label className="text-[10px]">Tubes</Label>
+          <Label className="text-[10px]">Loose {unitLabel}</Label>
           <Input
             type="number"
             min={1}
-            value={tubes}
-            onChange={(e) => setTubes(e.target.value)}
+            value={looseQty}
+            onChange={(e) => setLooseQty(e.target.value)}
+            placeholder={`e.g. 25`}
             className="h-8 text-xs"
           />
         </div>
-        <div className="space-y-1">
-          <Label className="text-[10px]">$/tube</Label>
-          <Input
-            type="number"
-            step="0.01"
-            min={0}
-            value={unitPrice}
-            onChange={(e) => setUnitPrice(e.target.value)}
-            className="h-8 text-xs"
-          />
+      )}
+
+      {/* Live totals */}
+      <div className="flex items-center justify-between rounded border border-border/40 bg-background/40 px-2 py-1.5 text-xs">
+        <span className="text-muted-foreground">
+          {productId ? derived.lineDescriptor || `— ${unitLabel}` : 'Select a product'}
+        </span>
+        <div className="text-right">
+          <div className="font-mono font-semibold text-foreground">
+            ${derived.total.toFixed(2)}
+          </div>
+          {derived.units > 0 && (
+            <div className="text-[10px] text-muted-foreground">
+              ${derived.unitPrice.toFixed(2)}/{unitSingular}
+            </div>
+          )}
         </div>
       </div>
-      <div className="flex items-center justify-between gap-2">
+
+      {/* Options */}
+      <div className="space-y-1">
         <label className="flex items-center gap-1.5 text-xs cursor-pointer select-none">
           <Checkbox
             checked={markPaid}
@@ -876,17 +985,36 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
           />
           Mark paid on create
         </label>
-        {totalPreview != null && (
-          <span className="text-xs font-mono text-foreground">
-            ${totalPreview.toFixed(2)}
-          </span>
-        )}
+        <label
+          className={cn(
+            'flex items-center gap-1.5 text-xs select-none',
+            textOnCreateBlocked ? 'text-muted-foreground cursor-not-allowed' : 'cursor-pointer'
+          )}
+          title={
+            textOnCreateBlocked
+              ? recipient?.reason || 'No textable number on file'
+              : `Will text ${recipient?.phone}`
+          }
+        >
+          <Checkbox
+            checked={textOnCreate}
+            onCheckedChange={(v) => setTextOnCreate(v === true)}
+            disabled={textOnCreateBlocked}
+            className="h-3.5 w-3.5"
+          />
+          <MessageSquare className="h-3 w-3" />
+          Text receipt on create
+          {recipient?.phone && !recipient.blocked && (
+            <span className="text-[10px] text-muted-foreground truncate">→ {recipient.phone}</span>
+          )}
+        </label>
       </div>
+
       <Button
         type="button"
         size="sm"
         className="w-full h-8 text-xs"
-        disabled={create.isPending || !productId || !tubes || !unitPrice}
+        disabled={!canCreate}
         onClick={() => create.mutate()}
       >
         {create.isPending ? (
@@ -897,6 +1025,7 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
           'Create order'
         )}
       </Button>
+
       {lastCreated && (
         <div className="flex items-center justify-between gap-2 rounded border border-emerald-500/30 bg-emerald-500/5 px-2 py-1">
           <span className="text-[11px] text-emerald-700 truncate">
@@ -908,6 +1037,7 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
             invoiceId={lastCreated.id}
             invoiceNumber={lastCreated.number}
             totalAmount={lastCreated.total}
+            label="Resend"
           />
         </div>
       )}
@@ -923,11 +1053,10 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
 function PaymentSection({ storeId, storeName }: { storeId: string; storeName: string }) {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const { data: recent = [], isLoading } = useStoreRecentInvoices(storeId, 10);
+  // Server-side open-only filter (payment_status IN ('unpaid','partial')).
+  // Nulls are excluded — treated as legacy/unknown, not "open".
+  const { data: open = [], isLoading } = useStoreRecentInvoices(storeId, 100, { openOnly: true });
 
-  const open = recent.filter(
-    (r) => r.payment_status && r.payment_status !== 'paid' && r.payment_status !== 'voided'
-  );
 
   const markPaid = useMutation({
     mutationFn: async (invoiceId: string) => {
