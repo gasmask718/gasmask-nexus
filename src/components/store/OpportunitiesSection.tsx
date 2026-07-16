@@ -52,10 +52,12 @@ export function OpportunitiesSection({ storeId, storeName }: OpportunitiesSectio
         .from('store_opportunities')
         .select('*')
         .eq('store_id', storeMasterId)
+        .order('is_completed', { ascending: true })
+        .order('due_date', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as StoreOpportunity[];
+      return data as unknown as StoreOpportunity[];
     },
     enabled: !!storeMasterId,
   });
