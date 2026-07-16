@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getTubeBrandColor } from '@/constants/tubeColors';
 import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
 import { getSkuStatusIcon, getSkuStatusLabel } from '@/lib/inventory/skuDisplay';
+import { unitLabelForProductId } from '@/lib/inventory/unitLabel';
 
 interface StoreTubeInventoryCardProps {
   storeId: string;
@@ -123,7 +124,7 @@ export function StoreTubeInventoryCard({ storeId, onAddCount }: StoreTubeInvento
                       }
                       className="font-mono text-sm"
                     >
-                      {getSkuStatusLabel(sku.status, sku.tubes_remaining)}
+                      {getSkuStatusLabel(sku.status, sku.tubes_remaining, unitLabelForProductId(sku.product_id))}
                     </Badge>
                   </div>
                 );

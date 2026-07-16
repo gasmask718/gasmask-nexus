@@ -2,17 +2,11 @@ import { useStoreLifetimeByBrand } from '@/hooks/useStoreLifetimeByBrand';
 import { useStoreSoldByBrandWindow } from '@/hooks/useStoreSoldByBrandWindow';
 import { CANONICAL_TUBE_SKUS } from '@/lib/inventory/skuDisplay';
 import { Skeleton } from '@/components/ui/skeleton';
+import { unitLabelForProductId } from '@/lib/inventory/unitLabel';
 
 interface Props { storeId: string }
 
 const TUBES_PER_BOX = 100;
-
-// Products sold in bags (only GasMask Bags today) — resolved by product_id.
-const BAG_PRODUCT_IDS = new Set<string>(['170adb8f-ac4e-40f4-a283-38730d30c5de']);
-
-function unitLabelFor(productId: string): 'bags' | 'tubes' {
-  return BAG_PRODUCT_IDS.has(productId) ? 'bags' : 'tubes';
-}
 
 function fmtBoxesLoose(units: number, unit: 'bags' | 'tubes'): string {
   if (!units) return '—';
@@ -33,7 +27,7 @@ export function UnifiedTubeSoldTable({ storeId }: Props) {
   const rows = CANONICAL_TUBE_SKUS.map((sku) => {
     const lt = lifetime.data?.find((l) => l.product_id === sku.product_id);
     const l30 = last30.data?.find((w) => w.product_id === sku.product_id);
-    const unit = unitLabelFor(sku.product_id);
+    const unit = unitLabelForProductId(sku.product_id);
     return {
       product_id: sku.product_id,
       display: sku.display,

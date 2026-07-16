@@ -4,6 +4,7 @@ import { Package, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
 import { getSkuStatusIcon, getSkuStatusLabel } from '@/lib/inventory/skuDisplay';
+import { unitLabelForProductId } from '@/lib/inventory/unitLabel';
 import { getTubeBrandColor } from '@/constants/tubeColors';
 
 interface StoreTubeIntelCardProps {
@@ -74,7 +75,7 @@ export function StoreTubeIntelCard({ storeId }: StoreTubeIntelCardProps) {
                       }
                       className="font-mono text-xs"
                     >
-                      {getSkuStatusLabel(sku.status, sku.tubes_remaining)}
+                      {getSkuStatusLabel(sku.status, sku.tubes_remaining, unitLabelForProductId(sku.product_id))}
                     </Badge>
                   </div>
                 );

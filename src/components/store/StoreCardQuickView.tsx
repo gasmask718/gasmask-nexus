@@ -733,7 +733,8 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
   const [productId, setProductId] = useState<string>('');
   const [unitMode, setUnitMode] = useState<UnitMode>('box');
   const [looseQty, setLooseQty] = useState<string>('');
-  const [markPaid, setMarkPaid] = useState<boolean>(false);
+  // R7 — explicit Paid/Unpaid choice at creation (default Unpaid).
+  const [paymentChoice, setPaymentChoice] = useState<'unpaid' | 'paid'>('unpaid');
   const [textOnCreate, setTextOnCreate] = useState<boolean>(false);
   const [lastCreated, setLastCreated] = useState<{ id: string; number: string; total: number } | null>(null);
 
@@ -814,6 +815,9 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
       const invoiceNumber = generateInvoiceNumber();
       const sku = skus.find((s) => s.product_id === productId);
 
+      // R6 — always insert the invoice as a DRAFT/UNPAID shell first so the
+      // finalize-on-paid trigger cannot fire before line items exist.
+      // Sequence: (1) draft invoice, (2) line items, (3) flip payment_status to paid.
       const { data: invoice, error: invErr } = await supabase
         .from('invoices')
         .insert({
@@ -826,8 +830,8 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
           tax: 0,
           total,
           total_amount: total,
-          payment_status: markPaid ? 'paid' : 'unpaid',
-          paid_at: markPaid ? nowIso : null,
+          payment_status: 'unpaid',
+          paid_at: null,
           brand: sku?.parent_brand || null,
           created_by: user?.id || 'quickview',
           created_at: nowIso,
@@ -860,6 +864,16 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
       } as any);
       if (liErr) throw liErr;
 
+      // R6/R7 — only NOW mark paid, after line items exist.
+      if (paymentChoice === 'paid') {
+        const { error: payErr } = await supabase
+          .from('invoices')
+          .update({ payment_status: 'paid', paid_at: nowIso } as any)
+          .eq('id', invoice!.id);
+        if (payErr) throw payErr;
+      }
+
+
       await supabase
         .from('store_master')
         .update({ updated_at: nowIso, updated_by: user?.id ?? null } as any)
@@ -891,7 +905,7 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
     onSuccess: (result) => {
       toast.success(result.textSent ? 'Order created · receipt texted' : 'Order created');
       setLooseQty('');
-      setMarkPaid(false);
+      setPaymentChoice('unpaid');
       setTextOnCreate(false);
       setLastCreated({ id: result.id, number: result.number, total: result.total });
       qc.invalidateQueries({ queryKey: ['store-recent-invoices-sku', storeId] });
@@ -976,16 +990,36 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
         </div>
       </div>
 
-      {/* Options */}
+      {/* R7 — explicit Paid / Unpaid choice at create (default Unpaid) */}
       <div className="space-y-1">
-        <label className="flex items-center gap-1.5 text-xs cursor-pointer select-none">
-          <Checkbox
-            checked={markPaid}
-            onCheckedChange={(v) => setMarkPaid(v === true)}
-            className="h-3.5 w-3.5"
-          />
-          Mark paid on create
-        </label>
+        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          Payment status
+        </Label>
+        <div className="grid grid-cols-2 gap-1">
+          {(['unpaid', 'paid'] as const).map((choice) => {
+            const active = paymentChoice === choice;
+            const label = choice === 'unpaid' ? 'Unpaid' : 'Paid';
+            return (
+              <Button
+                key={choice}
+                type="button"
+                size="sm"
+                variant={active ? 'default' : 'outline'}
+                className={cn(
+                  'h-7 text-[11px]',
+                  active && choice === 'paid' && 'bg-emerald-600 hover:bg-emerald-700 text-white',
+                  active && choice === 'unpaid' && 'bg-amber-600 hover:bg-amber-700 text-white',
+                )}
+                onClick={() => setPaymentChoice(choice)}
+              >
+                {label}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-1">
         <label
           className={cn(
             'flex items-center gap-1.5 text-xs select-none',
