@@ -858,6 +858,20 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
           'Create order'
         )}
       </Button>
+      {lastCreated && (
+        <div className="flex items-center justify-between gap-2 rounded border border-emerald-500/30 bg-emerald-500/5 px-2 py-1">
+          <span className="text-[11px] text-emerald-700 truncate">
+            Created {lastCreated.number} · ${lastCreated.total.toFixed(2)}
+          </span>
+          <TextReceiptButton
+            storeId={storeId}
+            storeName={storeName}
+            invoiceId={lastCreated.id}
+            invoiceNumber={lastCreated.number}
+            totalAmount={lastCreated.total}
+          />
+        </div>
+      )}
     </div>
   );
 }
