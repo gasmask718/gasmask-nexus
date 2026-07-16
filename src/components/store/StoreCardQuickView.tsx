@@ -574,21 +574,21 @@ function useTextableRecipient(storeId: string) {
     queryFn: async (): Promise<{ phone: string | null; source: string; blocked: boolean; reason: string | null }> => {
       const { data: contact } = await supabase
         .from('store_contacts')
-        .select('phone, opted_out, sms_opt_in, name')
+        .select('phone, opted_out, can_receive_sms, name')
         .eq('store_id', storeId)
         .eq('is_primary', true)
         .maybeSingle();
       if (contact) {
         if (contact.opted_out) return { phone: null, source: 'contact', blocked: true, reason: 'Primary contact opted out' };
-        if (contact.sms_opt_in === false) return { phone: null, source: 'contact', blocked: true, reason: 'Primary contact SMS off' };
+        if (contact.can_receive_sms === false) return { phone: null, source: 'contact', blocked: true, reason: 'Primary contact SMS off' };
         if (contact.phone) return { phone: contact.phone, source: `contact:${contact.name || 'primary'}`, blocked: false, reason: null };
       }
       const { data: store } = await supabase
         .from('store_master')
-        .select('phone, alt_phone')
+        .select('phone')
         .eq('id', storeId)
         .maybeSingle();
-      const fallback = store?.phone || (store as any)?.alt_phone || null;
+      const fallback = store?.phone || null;
       if (fallback) return { phone: fallback, source: 'store_master', blocked: false, reason: null };
       return { phone: null, source: 'none', blocked: false, reason: 'No phone on file' };
     },
