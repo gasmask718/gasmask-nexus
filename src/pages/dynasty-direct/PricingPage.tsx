@@ -40,7 +40,6 @@ type StatusKind = 'on_target' | 'below_target' | 'below_floor' | 'alert';
 
 interface PricingRow {
   id: string;
-  sku: string | null;
   product_name: string;
   category: string | null;
   supplier_cost: number | null;
@@ -104,13 +103,14 @@ export default function PricingPage() {
       let q = supabase
         .from('products_all')
         .select(`
-          id, sku, product_name, category,
+          id, product_name, category,
           supplier_cost, store_price_a, dtc_price_b,
           store_margin_pct, dtc_margin_pct,
           min_store_margin_pct, target_store_margin_pct,
           min_dtc_margin_pct, target_dtc_margin_pct,
           market_avg_retail
         `)
+        .neq('status', 'deleted')
         .order('product_name');
       if (category !== 'all') q = q.eq('category', category);
       const { data, error } = await q;
@@ -174,7 +174,7 @@ export default function PricingPage() {
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     return enriched.filter(r => {
-      if (term && !`${r.product_name} ${r.sku ?? ''}`.toLowerCase().includes(term)) return false;
+      if (term && !r.product_name.toLowerCase().includes(term)) return false;
       if (alertFilter === 'above_ceiling') {
         return aboveCeilingIds.has(r.id);
       }
@@ -215,9 +215,9 @@ export default function PricingPage() {
   });
 
   function exportCsv() {
-    const header = ['sku','product_name','category','cost','store_price','dtc_price','store_margin_pct','dtc_margin_pct','market_avg_retail','ceiling','status'];
+    const header = ['product_name','category','cost','store_price','dtc_price','store_margin_pct','dtc_margin_pct','market_avg_retail','ceiling','status'];
     const rows = filtered.map(r => [
-      r.sku ?? '', r.product_name, r.category ?? '',
+      r.product_name, r.category ?? '',
       r.supplier_cost ?? '', r.store_price_a ?? '', r.dtc_price_b ?? '',
       r.store_margin_pct ?? '', r.dtc_margin_pct ?? '',
       r.market_avg_retail ?? '', ceilingOf(r) ?? '',
@@ -400,7 +400,7 @@ export default function PricingPage() {
                       <TableRow key={r.id}>
                         <TableCell>
                           <div className="font-medium">{r.product_name}</div>
-                          <div className="text-[10px] font-mono text-muted-foreground">{r.sku ?? '—'}</div>
+                          <div className="text-[10px] font-mono text-muted-foreground">{r.category ?? '—'}</div>
                         </TableCell>
                         <TableCell className="text-right">{money(r.supplier_cost)}</TableCell>
                         <TableCell className="text-right">{money(r.store_price_a)}</TableCell>
