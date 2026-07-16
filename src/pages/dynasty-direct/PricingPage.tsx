@@ -420,26 +420,54 @@ export default function PricingPage() {
                         <TableCell><StatusBadge s={status} /></TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end">
-                            <Button size="sm" variant="outline" onClick={() => setEditRow(r)}>Edit</Button>
-                            <Button size="sm" variant="outline" disabled={analyzing===r.id} onClick={() => runAnalysis(r.id)} title="AI analysis">
-                              {analyzing===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                            </Button>
-                            <Button size="sm" variant="outline" disabled={refreshingMarket===r.id} onClick={() => checkMarketPrice(r.id)} title="Check market price (SerpAPI)">
-                              {refreshingMarket===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <LineChart className="h-3 w-3" />}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={applyingSweet===r.id || r.market_avg_retail == null}
-                              onClick={() => applySweetSpot(r)}
-                              title={r.market_avg_retail == null ? 'Run Check Market Price first' : 'Apply competitive sweet-spot price'}
-                              style={r.market_avg_retail != null ? { borderColor: GOLD, color: GOLD } : undefined}
-                            >
-                              {applyingSweet===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Target className="h-3 w-3" />}
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => setHistoryId(r.id)}>
-                              <History className="h-3 w-3" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="outline" onClick={() => setEditRow(r)}>Edit</Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit price (floor-guarded)</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="outline" disabled={analyzing===r.id} onClick={() => runAnalysis(r.id)}>
+                                  {analyzing===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>AI pricing analysis</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="outline" disabled={refreshingMarket===r.id} onClick={() => checkMarketPrice(r.id)}>
+                                  {refreshingMarket===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <LineChart className="h-3 w-3" />}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Check market price (SerpAPI)</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={applyingSweet===r.id || r.market_avg_retail == null}
+                                  onClick={() => applySweetSpot(r)}
+                                  style={r.market_avg_retail != null ? { borderColor: GOLD, color: GOLD } : undefined}
+                                >
+                                  {applyingSweet===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Target className="h-3 w-3" />}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {r.market_avg_retail == null
+                                  ? 'Apply sweet-spot price — run Check Market Price first'
+                                  : 'Apply competitive sweet-spot price (gold = market data available)'}
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="ghost" onClick={() => setHistoryId(r.id)}>
+                                  <History className="h-3 w-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Price change history</TooltipContent>
+                            </Tooltip>
                           </div>
                         </TableCell>
                       </TableRow>
