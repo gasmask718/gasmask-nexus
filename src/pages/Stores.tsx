@@ -861,6 +861,10 @@ const Stores = () => {
                     <Badge className={getStatusColor(store.status)}>
                       {store.status === 'needsFollowUp' ? 'Follow-up' : store.status}
                     </Badge>
+                    <StoreReviewBadge
+                      reviewedByAdmin={(store as any).reviewed_by_admin}
+                      reviewedByVa={(store as any).reviewed_by_va}
+                    />
                     <Button
                       type="button"
                       variant="ghost"
