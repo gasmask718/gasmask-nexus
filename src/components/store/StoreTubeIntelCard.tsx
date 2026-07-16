@@ -75,7 +75,7 @@ export function StoreTubeIntelCard({ storeId }: StoreTubeIntelCardProps) {
                       }
                       className="font-mono text-xs"
                     >
-                      {getSkuStatusLabel(sku.status, sku.tubes_remaining)}
+                      {getSkuStatusLabel(sku.status, sku.tubes_remaining, unitLabelForProductId(sku.product_id))}
                     </Badge>
                   </div>
                 );
