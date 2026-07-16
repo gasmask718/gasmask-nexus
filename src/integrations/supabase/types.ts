@@ -88736,13 +88736,17 @@ export type Database = {
           ai_suggested_message: string | null
           assigned_to: string | null
           completed_at: string | null
+          completed_by: string | null
           contact_id: string | null
           created_at: string | null
+          created_by: string | null
           description: string | null
           due_at: string | null
           id: string
           priority: string | null
+          route_flag: boolean | null
           status: string | null
+          store_id: string | null
           task_type: string
           title: string
         }
@@ -88751,13 +88755,17 @@ export type Database = {
           ai_suggested_message?: string | null
           assigned_to?: string | null
           completed_at?: string | null
+          completed_by?: string | null
           contact_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           due_at?: string | null
           id?: string
           priority?: string | null
+          route_flag?: boolean | null
           status?: string | null
+          store_id?: string | null
           task_type?: string
           title: string
         }
@@ -88766,13 +88774,17 @@ export type Database = {
           ai_suggested_message?: string | null
           assigned_to?: string | null
           completed_at?: string | null
+          completed_by?: string | null
           contact_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           due_at?: string | null
           id?: string
           priority?: string | null
+          route_flag?: boolean | null
           status?: string | null
+          store_id?: string | null
           task_type?: string
           title?: string
         }
