@@ -150,6 +150,7 @@ const Stores = () => {
   const [customDateFrom, setCustomDateFrom] = useState<string>('');
   const [customDateTo, setCustomDateTo] = useState<string>('');
   const [showCustomDate, setShowCustomDate] = useState(false);
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'admin_yes' | 'admin_no' | 'va_yes' | 'va_no' | 'needs_review'>('all');
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [newStoreName, setNewStoreName] = useState('');
   
