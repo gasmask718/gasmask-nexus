@@ -33,11 +33,10 @@ interface StoreCardQuickViewProps {
 
 interface TaskRow {
   id: string;
-  title: string;
-  description: string | null;
-  due_at: string | null;
+  opportunity_text: string;
+  due_date: string | null;
   priority: string | null;
-  status: string | null;
+  is_completed: boolean;
   route_flag: boolean | null;
   store_id: string | null;
   created_at: string | null;
