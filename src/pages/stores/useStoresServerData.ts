@@ -135,6 +135,7 @@ export function useStoresServerData(args: UseStoresServerDataArgs) {
         pg: args.currentPage, sz: args.pageSize,
         aids: args.activeStoreIds.size,
         nids: args.storeIdsWithNotes.size,
+        rv: args.reviewFilter ?? 'all',
       },
     ],
     enabled,
