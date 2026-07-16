@@ -106,7 +106,8 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach(t => t.stop());
       setMicPermission("granted");
-    } catch {
+    } catch (err: any) {
+      console.error("[VoiceDevice][getUserMedia]", { name: err?.name, message: err?.message });
       setMicPermission("denied");
     }
   }, []);
@@ -298,7 +299,18 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       device.on("error", async (err: any) => {
         const code: number | undefined = err?.code;
         const message = getErrorMessage(err, "Voice device error");
-        console.warn("[VoiceDevice] Device error:", code, message);
+        // Full diagnostic dump for debugging TwiML App / token / transport failures
+        console.error("[VoiceDevice][device.error]", {
+          code,
+          message,
+          name: err?.name,
+          causes: err?.causes,
+          solutions: err?.solutions,
+          description: err?.description,
+          explanation: err?.explanation,
+          twilioError: err?.twilioError,
+          originalError: err?.originalError?.message ?? err?.originalError,
+        });
 
         // 53000 = signaling ConnectionError. Auto-retry once with token refresh
         // before surfacing to the VA.
@@ -342,11 +354,27 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       });
 
       setDeviceState("registering");
-      await device.register();
+      try {
+        await device.register();
+      } catch (regErr: any) {
+        console.error("[VoiceDevice][register.catch]", {
+          code: regErr?.code,
+          name: regErr?.name,
+          message: regErr?.message,
+          twilioError: regErr?.twilioError,
+          originalError: regErr?.originalError?.message ?? regErr?.originalError,
+        });
+        throw regErr;
+      }
       deviceRef.current = device;
-    } catch (err) {
+    } catch (err: any) {
       const msg = getErrorMessage(err, lastErrorRef.current || deviceError || "Voice device failed to initialize");
-      console.warn("[VoiceDevice] Device init error:", msg);
+      console.error("[VoiceDevice][init.catch]", {
+        code: err?.code,
+        name: err?.name,
+        message: msg,
+        twilioError: err?.twilioError,
+      });
       setDeviceError(msg);
       lastErrorRef.current = msg;
       setDeviceState("error");
@@ -359,6 +387,18 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
 
   const makeCall = useCallback(async (to: string, params?: Record<string, string>): Promise<Call | null> => {
     lastErrorRef.current = null;
+    console.info("[VoiceDevice][makeCall] preflight", {
+      to,
+      isSecureContext: typeof window !== "undefined" ? window.isSecureContext : "n/a",
+      origin: typeof window !== "undefined" ? window.location.origin : "n/a",
+      micPermission,
+      deviceState,
+      tokenFunctionName,
+    });
+    // Ensure mic is granted before touching Device — Twilio needs it to register
+    if (micPermission !== "granted") {
+      await requestMicPermission();
+    }
     // Lazy init — only create Device when user actually tries to call
     if (!deviceRef.current) {
       await initDevice();
