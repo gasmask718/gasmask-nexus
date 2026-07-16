@@ -325,17 +325,17 @@ async function refreshMarketForProduct(
   serpKey: string,
   queryOverride?: string,
 ): Promise<{ product_id: string; samples: number; samples_raw: number; excluded: { bundles: number; low_relevance: number; outliers: number }; avg: number | null; low: number | null; high: number | null; query: string; results: SerpResult[] }> {
-  // Build a tighter query: exact-phrase product name + brand + explicit "single"
-  // hint, and negative terms for the most common bundle SKUs. Google Shopping
-  // honors quotes for phrase matching and `-term` for exclusion.
+  // Build query: brand + product name (unquoted so SerpAPI still returns
+  // candidates), plus explicit negatives for common bundle SKUs. Quoted-phrase
+  // matching proved too strict on generic product names, so we lean on the
+  // post-filter (bundle exclusions + titleRelevance) instead.
   const nameRaw = (product.product_name ?? '').trim();
   const brandRaw = (product.brand ?? '').trim();
-  const phraseQuoted = nameRaw ? `"${nameRaw}"` : '';
   const brandPart = brandRaw && !nameRaw.toLowerCase().includes(brandRaw.toLowerCase())
-    ? ` ${brandRaw}`
+    ? `${brandRaw} `
     : '';
-  const negatives = ' -"variety pack" -assortment -sampler -bundle -combo -"gift set" -case -carton -wholesale';
-  const autoQuery = (phraseQuoted + brandPart + negatives).trim();
+  const negatives = ' -"variety pack" -assortment -sampler -bundle -combo -"gift set" -"case of" -carton -wholesale -lot';
+  const autoQuery = (brandPart + nameRaw + negatives).trim();
 
   const query = (queryOverride && queryOverride.trim())
     || autoQuery
