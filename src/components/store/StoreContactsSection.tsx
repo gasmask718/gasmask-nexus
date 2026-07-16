@@ -18,6 +18,7 @@ import { ContactLastInteraction } from '@/components/contact/ContactLastInteract
 import { ContactCommunicationTimeline } from './ContactCommunicationTimeline';
 import { VerifyNumberButton } from './VerifyNumberButton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { StoreContactActions } from './StoreContactActions';
 
 interface StoreContact {
   id: string;
@@ -291,6 +292,15 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                     last_text_received_at={contact.last_text_received_at}
                     className="ml-13 pl-13"
                   />
+
+                  {/* Compliance-safe per-channel actions: mark responsive + opt-in with confirm */}
+                  <div className="pl-13 ml-13">
+                    <StoreContactActions
+                      contact={contact as any}
+                      storeId={storeId}
+                      invalidateKeys={[['store-contacts-responsiveness', storeId]]}
+                    />
+                  </div>
 
                   {/* Number verification push button */}
                   <div className="pl-13 ml-13">
