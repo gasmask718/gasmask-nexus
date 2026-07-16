@@ -325,17 +325,17 @@ async function refreshMarketForProduct(
   serpKey: string,
   queryOverride?: string,
 ): Promise<{ product_id: string; samples: number; samples_raw: number; excluded: { bundles: number; low_relevance: number; outliers: number }; avg: number | null; low: number | null; high: number | null; query: string; results: SerpResult[] }> {
-  // Build query: brand + product name (unquoted so SerpAPI still returns
-  // candidates), plus explicit negatives for common bundle SKUs. Quoted-phrase
-  // matching proved too strict on generic product names, so we lean on the
-  // post-filter (bundle exclusions + titleRelevance) instead.
+  // Build query: brand + product name. We deliberately DON'T send Google-side
+  // negative operators (google_shopping ignores/misinterprets them and often
+  // returns zero results), and DON'T quote the phrase (also collapses results
+  // for common product names). Precision comes entirely from the post-filter:
+  // BUNDLE_EXCLUSIONS + titleRelevance + tighter IQR trim.
   const nameRaw = (product.product_name ?? '').trim();
   const brandRaw = (product.brand ?? '').trim();
   const brandPart = brandRaw && !nameRaw.toLowerCase().includes(brandRaw.toLowerCase())
     ? `${brandRaw} `
     : '';
-  const negatives = ' -"variety pack" -assortment -sampler -bundle -combo -"gift set" -"case of" -carton -wholesale -lot';
-  const autoQuery = (brandPart + nameRaw + negatives).trim();
+  const autoQuery = (brandPart + nameRaw).trim();
 
   const query = (queryOverride && queryOverride.trim())
     || autoQuery
