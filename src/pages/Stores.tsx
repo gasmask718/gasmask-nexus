@@ -45,11 +45,9 @@ import { RelationshipStatusSelect } from '@/components/store/RelationshipStatusS
 import { format } from 'date-fns';
 import { useStoresServerData } from '@/pages/stores/useStoresServerData';
 
-// Phase 2A Win 2: DUAL PATH.  When true, the grid uses server-side
-// pagination/search/filtering (via useStoresServerData).  The legacy
-// full-in-memory fetch below stays intact as a fallback — flip this
-// back to false to restore it verbatim.
-const USE_SERVER_PATH = true;
+// Phase 2A Win 2: server-side pagination/search/filtering via
+// useStoresServerData is the ONLY path. Legacy in-memory fallback removed
+// after live parity confirmation.
 
 
 
@@ -274,269 +272,14 @@ const Stores = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch stores from database - RLS automatically filters by simulation mode.
-  // Under USE_SERVER_PATH this fetch is disabled and kept as a fallback only.
-  const { data: legacyStores = [], isLoading: legacyIsLoading } = useQuery({
-    queryKey: ['stores-with-contacts', simulationMode],
-    enabled: !USE_SERVER_PATH,
-    queryFn: async () => {
+  // (Legacy full-fetch removed — server path is authoritative.)
 
-      // Fetch from store_master - explicitly filter by simulation mode
-      let storesData: any[] = [];
-      let page = 0;
-      const pageSize = 1000;
-      let hasMore = true;
 
-      while (hasMore) {
-        const { data, error } = await supabase
-          .from('store_master')
-          .select('*')
-          .eq('is_simulation', simulationMode)
-          .is('deleted_at', null)
-          .order('store_name')
-          .range(page * pageSize, (page + 1) * pageSize - 1);
 
-        if (error) throw error;
 
-        if (data && data.length > 0) {
-          storesData = [...storesData, ...data];
-          if (data.length < pageSize) hasMore = false;
-          page++;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      const storesError = null; // Cleared because we threw on error above
-
-      // Map store_master fields to expected Store interface
-      const mappedStores = (storesData || []).map(store => ({
-        id: store.id,
-        name: store.store_name || '',
-        type: store.store_type || '',
-        address_street: store.address || '',
-        address_city: store.city || '',
-        address_state: store.state || '',
-        address_zip: store.zip || '',
-        phone: store.phone ? String(store.phone) : '',
-        alt_phone: null as string | null,
-        email: store.email || null,
-        status: 'active', // Default; overridden by legacy stores.status when available
-        tags: [] as string[],
-        sells_flowers: false,
-        sticker_status: '',
-        sticker_door: store.sticker_on_door || false,
-        sticker_instore: store.sticker_in_store || false,
-        sticker_phone: store.sticker_with_phone || false,
-        sticker_notes: store.sticker_notes || null,
-        payment_type: null as string | null,
-        contacts: [] as StoreContact[],
-        tubeInventory: [] as TubeInventory[],
-        owner_name: store.owner_name || null,
-        connectedStoresCount: 0,
-        created_at: store.created_at || null,
-        updated_at: store.updated_at || null,
-        notes: store.notes || null,
-        nickname: store.nickname || null,
-        country_of_origin: store.country_of_origin || null,
-        country: store.country || null,
-        languages: store.languages || null,
-        communication_preference: store.communication_preference || null,
-        personality_notes: store.personality_notes || null,
-        has_expansion: store.has_expansion || null,
-        new_store_addresses: store.new_store_addresses || null,
-        expected_open_dates: store.expected_open_dates || null,
-        expansion_notes: store.expansion_notes || null,
-        influence_level: store.influence_level || null,
-        loyalty_triggers: store.loyalty_triggers || null,
-        frustration_triggers: store.frustration_triggers || null,
-        risk_score: store.risk_score || null,
-        brand_id: store.brand_id || null,
-        borough_id: store.borough_id || null,
-        language_preference: store.language_preference || null,
-        dialect_preference: store.dialect_preference || null,
-        formality_level: store.formality_level || null,
-        preferred_channel: store.preferred_channel || null,
-        notes_for_tone: store.notes_for_tone || null,
-        personality_profile_id: store.personality_profile_id || null,
-        connected_group_id: store.connected_group_id || null,
-        sourced_by_ambassador_id: store.sourced_by_ambassador_id || null,
-        assigned_ambassador_id: store.assigned_ambassador_id || null,
-        sourced_at: store.sourced_at || null,
-        last_visit_at: store.last_visit_at || null,
-        last_order_at: store.last_order_at || null,
-        health_status: store.health_status || null,
-        contact_name: store.contact_name || null,
-        mode: store.mode || null,
-        last_order_date: store.last_order_date || null,
-        owed_amount: store.owed_amount || null,
-        invoice_amount: store.invoice_amount || null,
-        invoice_payment_status: store.invoice_payment_status || null,
-        invoice_payment_method: store.invoice_payment_method || null,
-        invoice_amount_paid: store.invoice_amount_paid || null,
-        last_active_date: null,
-        reactivation_priority: null,
-        relationship_status: (store as any).relationship_status || 'Non-active (New - need to speak)',
-      }));
-
-      // Fetch contacts for these stores
-      const storeIds = mappedStores.map(s => s.id);
-      
-      // Helper to batch .in() queries to avoid URL length limits
-      const BATCH_SIZE = 200;
-      async function batchedIn<T>(
-        queryFn: (ids: string[]) => PromiseLike<{ data: T[] | null; error: any }>
-      ): Promise<T[]> {
-        const results: T[] = [];
-        for (let i = 0; i < storeIds.length; i += BATCH_SIZE) {
-          const batch = storeIds.slice(i, i + BATCH_SIZE);
-          try {
-            const { data, error } = await queryFn(batch);
-            if (!error && data) results.push(...data);
-          } catch {
-            // Silently skip failed batches
-          }
-        }
-        return results;
-      }
-      
-      if (storeIds.length) {
-        // Fetch global tags for all stores (batched)
-        const tagAttachments = await batchedIn<any>((ids) =>
-          supabase
-            .from('tag_attachments')
-            .select(`
-              entity_id,
-              global_tags (
-                id,
-                name
-              )
-            `)
-            .eq('entity_type', 'store')
-            .in('entity_id', ids)
-        );
-
-        if (tagAttachments.length) {
-          const tagsByStore = tagAttachments.reduce((acc, attachment) => {
-            const storeId = attachment.entity_id;
-            if (!acc[storeId]) acc[storeId] = [];
-            if (attachment.global_tags?.name) {
-              acc[storeId].push(attachment.global_tags.name);
-            }
-            return acc;
-          }, {} as Record<string, string[]>);
-
-          mappedStores.forEach(store => {
-            store.tags = tagsByStore[store.id] || [];
-          });
-        }
-
-        // Fetch contacts (batched)
-        const contactsData = await batchedIn<any>((ids) =>
-          supabase
-            .from('store_contacts')
-            .select('id, store_id, name, role, phone, can_receive_sms, is_primary')
-            .in('store_id', ids)
-        );
-        
-        if (contactsData.length) {
-          const contactsByStore = contactsData.reduce((acc, contact) => {
-            if (!acc[contact.store_id]) acc[contact.store_id] = [];
-            acc[contact.store_id].push(contact);
-            return acc;
-          }, {} as Record<string, StoreContact[]>);
-          
-          mappedStores.forEach(store => {
-            store.contacts = contactsByStore[store.id] || [];
-          });
-        }
-        
-        // Fetch tube inventory (batched)
-        const tubeData = await batchedIn<any>((ids) =>
-          supabase
-            .from('store_tube_inventory')
-            .select('id, store_id, brand, current_tubes_left')
-            .in('store_id', ids)
-            .neq('brand', 'hotscolatti')
-        );
-        
-        if (tubeData.length) {
-          const inventoryByStore = tubeData.reduce((acc, item) => {
-            if (!acc[item.store_id]) acc[item.store_id] = [];
-            acc[item.store_id].push({
-              id: item.id,
-              brand: item.brand,
-              current_tubes_left: item.current_tubes_left,
-            });
-            return acc;
-          }, {} as Record<string, TubeInventory[]>);
-          
-          mappedStores.forEach(store => {
-            store.tubeInventory = inventoryByStore[store.id] || [];
-          });
-        }
-
-        // Fetch status + phone numbers from legacy stores table (batched)
-        const legacyStoresData = await batchedIn<any>((ids) =>
-          supabase
-            .from('stores')
-            .select('id, phone, alt_phone, status, last_active_date, reactivation_priority')
-            .in('id', ids)
-        );
-
-        if (legacyStoresData.length) {
-          const legacyByStore = legacyStoresData.reduce((acc, store) => {
-            acc[store.id] = {
-              phone: store.phone ? String(store.phone) : null,
-              alt_phone: store.alt_phone ? String(store.alt_phone) : null,
-              status: store.status,
-              last_active_date: store.last_active_date,
-              reactivation_priority: store.reactivation_priority,
-            };
-            return acc;
-          }, {} as Record<string, { phone: string | null; alt_phone: string | null; status: string | null; last_active_date: string | null; reactivation_priority: string | null }>);
-
-          mappedStores.forEach(store => {
-            const legacy = legacyByStore[store.id];
-            if (legacy) {
-              if (!store.phone && legacy.phone) {
-                store.phone = legacy.phone;
-              }
-              store.alt_phone = legacy.alt_phone;
-              if (legacy.status) {
-                store.status = legacy.status;
-              }
-              store.last_active_date = legacy.last_active_date;
-              store.reactivation_priority = legacy.reactivation_priority;
-            }
-          });
-        }
-
-        // Calculate connected stores count based on owner_name
-        // Stores with the same owner_name are considered connected
-        const ownerNameCounts = mappedStores.reduce((acc, store) => {
-          if (store.owner_name) {
-            if (!acc[store.owner_name]) acc[store.owner_name] = [];
-            acc[store.owner_name].push(store.id);
-          }
-          return acc;
-        }, {} as Record<string, string[]>);
-
-        mappedStores.forEach(store => {
-          if (store.owner_name && ownerNameCounts[store.owner_name]) {
-            // Count excludes the store itself
-            store.connectedStoresCount = ownerNameCounts[store.owner_name].length - 1;
-          }
-        });
-      }
-
-      return mappedStores;
-    },
-  });
-
-  // ── Phase 2A Win 2 — server-side dual path ─────────────────────────
+  // ── Phase 2A Win 2 — server-side path (single source of truth) ─────
   const server = useStoresServerData({
-    enabled: USE_SERVER_PATH,
+    enabled: true,
     simulationMode,
     searchQuery,
     activeFilter,
@@ -555,16 +298,15 @@ const Stores = () => {
     storeIdsWithNotes,
   });
 
-  // Under server path, `stores` is the lean list (all live stores, count-source
-  // columns only) and hydrated page rows come from `server.pageRows`.
-  const stores: any[] = USE_SERVER_PATH ? server.leanStores : legacyStores;
-  const isLoading = USE_SERVER_PATH ? server.isLoading : legacyIsLoading;
+  // `stores` is the lean list (all live stores, count-source columns only);
+  // hydrated page rows come from `server.pageRows`.
+  const stores: any[] = server.leanStores;
+  const isLoading = server.isLoading;
 
-  // Owner-name → connected-store counts, computed from the lean list under
-  // server path so the page rows can display connectedStoresCount.
+  // Owner-name → connected-store counts, computed from the lean list so
+  // the page rows can display connectedStoresCount.
   const ownerNameCountsMap = useMemo(() => {
     const m = new Map<string, number>();
-    if (!USE_SERVER_PATH) return m;
     for (const s of stores) {
       const on = (s as any).owner_name;
       if (!on) continue;
@@ -572,6 +314,7 @@ const Stores = () => {
     }
     return m;
   }, [stores]);
+
 
 
   // Use global tags for the filter dropdown - combines tags from stores AND all global tags
@@ -593,84 +336,8 @@ const Stores = () => {
   // Inactive = no invoice on record.
   const isStoreActive = (storeId: string) => activeStoreIds.has(storeId);
 
-  const filteredStores = stores.filter(store => {
-    // Search across name + full address fields (street, city, state, zip)
-    const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = !searchQuery ||
-      store.name.toLowerCase().includes(searchLower) ||
-      store.address_street?.toLowerCase().includes(searchLower) ||
-      store.address_city?.toLowerCase().includes(searchLower) ||
-      store.address_state?.toLowerCase().includes(searchLower) ||
-      store.address_zip?.toLowerCase().includes(searchLower) ||
-      store.phone?.includes(searchQuery) ||
-      store.owner_name?.toLowerCase().includes(searchLower) ||
-      store.tags?.some(tag => tag.toLowerCase().includes(searchLower));
-    
-    const matchesStatus = activeFilter === 'all' 
-      || (activeFilter === 'active' && isStoreActive(store.id))
-      || (activeFilter === 'inactive' && !isStoreActive(store.id));
+  // (In-memory `filteredStores` computation removed — server path filters/paginates.)
 
-    const matchesRelationship = relationshipFilter === 'all'
-      || store.relationship_status === relationshipFilter;
-    
-    const matchesTag =
-      tagFilter === 'all' ||
-      (tagFilter === 'flowers' && store.sells_flowers) ||
-      store.tags?.some(tag => tag.toLowerCase() === tagFilter.toLowerCase());
-    
-    // Sticker filter
-    const matchesSticker = stickerFilter === 'all' ||
-      (stickerFilter === 'has_door' && store.sticker_door) ||
-      (stickerFilter === 'has_instore' && store.sticker_instore) ||
-      (stickerFilter === 'has_phone' && store.sticker_phone) ||
-      (stickerFilter === 'has_any' && (store.sticker_door || store.sticker_instore || store.sticker_phone)) ||
-      (stickerFilter === 'no_sticker' && !store.sticker_door && !store.sticker_instore && !store.sticker_phone);
-    
-    // Payment type filter
-    const matchesPaymentType = 
-      paymentTypeFilter === 'all' || 
-      (paymentTypeFilter === 'not_set' && !store.payment_type) ||
-      (paymentTypeFilter !== 'not_set' && store.payment_type === paymentTypeFilter);
-    
-    // No Name filter
-    const matchesNoName = !noNameFilter || !store.name || store.name.trim() === '' || store.name.trim().toLowerCase() === 'no name';
-
-    // New stores filter (stores without notes OR created today)
-    const isCreatedToday = store.created_at 
-      ? new Date(store.created_at).toDateString() === new Date().toDateString()
-      : false;
-    const matchesNewStores = !newStoresOnly || !storeIdsWithNotes.has(store.id) || isCreatedToday;
-
-    // Month/date filter
-    const matchesMonth = (() => {
-      if (monthFilter === 'all') return true;
-      if (!store.created_at) return false;
-      const created = new Date(store.created_at);
-      const now = new Date();
-
-      if (monthFilter === 'this_month') {
-        return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
-      }
-      if (monthFilter === 'this_year') {
-        return created.getFullYear() === now.getFullYear();
-      }
-      if (monthFilter.startsWith('months_ago_')) {
-        const monthsAgo = parseInt(monthFilter.replace('months_ago_', ''), 10);
-        const cutoff = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
-        return created >= cutoff;
-      }
-      if (monthFilter === 'custom') {
-        const from = customDateFrom ? new Date(customDateFrom) : null;
-        const to = customDateTo ? new Date(customDateTo + 'T23:59:59') : null;
-        if (from && created < from) return false;
-        if (to && created > to) return false;
-        return true;
-      }
-      return true;
-    })();
-    
-    return matchesSearch && matchesStatus && matchesRelationship && matchesTag && matchesSticker && matchesPaymentType && matchesNoName && matchesNewStores && matchesMonth;
-  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -717,33 +384,25 @@ const Stores = () => {
   const noNameCount = stores.filter(s => !s.name || s.name.trim() === '' || s.name.trim().toLowerCase() === 'no name').length;
 
   // ═══════════════════════════════════════════════════════════════════════════════
-  // PAGINATION
+  // PAGINATION (server-side)
   // ═══════════════════════════════════════════════════════════════════════════════
-  // Legacy in-memory path (kept intact as fallback under !USE_SERVER_PATH).
-  const legacyTotalPages = Math.ceil(filteredStores.length / pageSize);
-  const legacyPaginatedStores = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredStores.slice(start, start + pageSize);
-  }, [filteredStores, currentPage, pageSize]);
-
-  // Server-side page rows already come pre-filtered/paginated; patch
+  // Server-side page rows come pre-filtered/paginated; patch
   // connectedStoresCount from the lean owner-name map.
-  const serverPaginatedStores = useMemo(() => {
-    if (!USE_SERVER_PATH) return [] as any[];
+  const paginatedStores: Store[] = useMemo(() => {
     return server.pageRows.map((s: any) => ({
       ...s,
       connectedStoresCount: s.owner_name
         ? Math.max(0, (ownerNameCountsMap.get(s.owner_name) ?? 0) - 1)
         : 0,
-    }));
+    })) as Store[];
   }, [server.pageRows, ownerNameCountsMap]);
 
-  const paginatedStores: Store[] = (USE_SERVER_PATH ? serverPaginatedStores : legacyPaginatedStores) as Store[];
-  const filteredStoresCount = USE_SERVER_PATH ? server.pageTotal : filteredStores.length;
-  const totalPages = USE_SERVER_PATH ? Math.max(1, Math.ceil(server.pageTotal / pageSize)) : legacyTotalPages;
+  const filteredStoresCount = server.pageTotal;
+  const totalPages = Math.max(1, Math.ceil(server.pageTotal / pageSize));
 
   // Reset to page 1 when filters change
   const handleFilterChange = () => setCurrentPage(1);
+
 
   // ═══════════════════════════════════════════════════════════════════════════════
   // TUBE KPI BATCH FETCH
@@ -984,13 +643,7 @@ const Stores = () => {
                     {tagValue}
                     <span className="text-xs text-muted-foreground">
                       (
-                      {
-                        USE_SERVER_PATH
-                          ? (server.tagCounts.get(tagValue.toLowerCase()) ?? 0)
-                          : stores.filter(store =>
-                              store.tags?.some(tag => tag.toLowerCase() === tagValue.toLowerCase())
-                            ).length
-                      }
+                      {server.tagCounts.get(tagValue.toLowerCase()) ?? 0}
                       )
                     </span>
                   </span>
