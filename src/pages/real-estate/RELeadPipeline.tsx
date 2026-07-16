@@ -332,114 +332,7 @@ export default function RELeadPipeline() {
   const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const data = await file.arrayBuffer();
-    const wb = XLSX.read(data);
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]) as any[];
-
-    // Case/space/punctuation-insensitive header lookup
-    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const pick = (row: any, ...keys: string[]): string => {
-      const map: Record<string, any> = {};
-      for (const k of Object.keys(row)) map[norm(k)] = row[k];
-      for (const k of keys) {
-        const v = map[norm(k)];
-        if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
-      }
-      return '';
-    };
-    const truthy = (v: string) => /^(y|yes|true|1|dnc)$/i.test(v.trim());
-    // DNC-specific: TCPA legal risk. Treat ANY non-empty value as DNC=true
-    // unless it's an explicit falsy token. Source data uses strings like
-    // "Public DNC", "Federal DNC", "Internal DNC", etc. — the old truthy()
-    // matched only literal "true"/"y"/"dnc" and silently dropped these,
-    // causing flagged numbers to be dialed.
-    const dncTruthy = (v: string) => {
-      const t = (v ?? '').toString().trim().toLowerCase();
-      if (!t) return false;
-      if (/^(n|no|false|0|clean|clear|ok|-|none|null|na|n\/a)$/.test(t)) return false;
-      return true;
-    };
-    const digits = (v: string) => v.replace(/\D/g, '');
-
-    const skipped = { noAddress: 0, noContact: 0 };
-    const mapped: any[] = [];
-
-    for (const r of rows) {
-      const property_address = pick(r, 'property_address', 'Address', 'Street Address', 'Property Address', 'Site Address');
-      if (!property_address) { skipped.noAddress++; continue; }
-
-      // Collect phones 1-5 with type + DNC
-      const phones_detail: { number: string; type?: string; dnc: boolean }[] = [];
-      for (let i = 1; i <= 5; i++) {
-        const num = pick(r, `Phone ${i}`, `Phone${i}`, `phone_${i}`, i === 1 ? 'Phone' : '');
-        if (!num) continue;
-        const d = digits(num);
-        if (d.length < 7) continue;
-        phones_detail.push({
-          number: d,
-          type: pick(r, `Phone ${i} Type`, `Phone${i}Type`, `phone_${i}_type`) || undefined,
-          dnc: dncTruthy(pick(r, `Phone ${i} DNC`, `Phone${i}DNC`, `phone_${i}_dnc`)),
-        });
-      }
-      // Fallback single phone
-      if (phones_detail.length === 0) {
-        const p = pick(r, 'phone', 'Phone');
-        if (p) {
-          const d = digits(p);
-          if (d.length >= 7) phones_detail.push({ number: d, dnc: dncTruthy(pick(r, 'DNC', 'Do Not Call')) });
-        }
-      }
-
-      // Emails 1-4
-      const emails_detail: string[] = [];
-      for (let i = 1; i <= 4; i++) {
-        const em = pick(r, `Email ${i}`, `Email${i}`, `email_${i}`, i === 1 ? 'Email' : '');
-        if (em && /@/.test(em)) emails_detail.push(em.toLowerCase());
-      }
-
-      if (phones_detail.length === 0 && emails_detail.length === 0) {
-        skipped.noContact++; continue;
-      }
-
-      // Promote first non-DNC phone to primary so the dialer never calls a
-      // DNC-flagged number when a clean sibling exists on the same lead.
-      const firstClean = phones_detail.find(p => !p.dnc);
-      const primaryPhone = (firstClean ?? phones_detail[0])?.number || '';
-      const allDnc = phones_detail.length > 0 && phones_detail.every(p => p.dnc);
-
-      mapped.push({
-        first_name: pick(r, 'first_name', 'FirstName', 'First Name', 'Owner First'),
-        last_name: pick(r, 'last_name', 'LastName', 'Last Name', 'Owner Last'),
-        company_name: pick(r, 'Company Name', 'company_name', 'Company', 'LLC') || null,
-        litigator: truthy(pick(r, 'Litigator', 'litigator')),
-        phone: primaryPhone,
-        email: emails_detail[0] || null,
-        phones_all: phones_detail.map(p => p.number),
-        emails_all: emails_detail,
-        phones_detail,
-        emails_detail,
-        dnc: allDnc,
-        property_address,
-        city: pick(r, 'city', 'City'),
-        state: pick(r, 'state', 'State'),
-        zip: pick(r, 'zip', 'Zip', 'Zipcode', 'Postal Code'),
-        county: pick(r, 'county', 'County'),
-        mailing_address: pick(r, 'Mail Street Address', 'Mailing Address', 'mailing_address', 'Mail Address') || null,
-        mailing_city: pick(r, 'Mail City', 'mailing_city') || null,
-        mailing_state: pick(r, 'Mail State', 'mailing_state') || null,
-        mailing_zip: pick(r, 'Mail Zip', 'mailing_zip') || null,
-        estimated_value: parseFloat(pick(r, 'estimated_value', 'Value', 'Estimated Value')) || null,
-        lead_type: pick(r, 'lead_type', 'Type'),
-        status: (() => {
-          const allowed = ['new','skip_trace_pending','phone_found','queued','called','interested','appointment_set','analyzed','offer_made','countering','under_contract','buyer_found','assigned','closed','dead','dnc','cancelled'];
-          const raw = (pick(r, 'status', 'Status') || '').toString().trim().toLowerCase().replace(/\s+/g, '_');
-          return allowed.includes(raw) ? raw : 'new';
-        })(),
-        skip_traced: phones_detail.length > 0,
-        lead_source: 'csv_upload',
-        raw_payload: r,
-      });
-    }
+    const { rows, mapped, skipped } = await parseCSVFile(file);
 
     const totalSkipped = skipped.noAddress + skipped.noContact;
     if (mapped.length === 0) {
@@ -450,11 +343,8 @@ export default function RELeadPipeline() {
       e.target.value = ''; setCsvOpen(false); return;
     }
 
-    console.log('[RE CSV upload] statuses before re_leads insert', mapped.map((lead, index) => ({
-      mappedRow: index + 1,
-      rawStatus: pick(lead.raw_payload, 'status', 'Status'),
-      insertedStatus: lead.status,
-    })));
+    console.log('[RE CSV upload] statuses before re_leads insert', mapped.length, 'rows');
+
 
     const { data: inserted, error } = await supabase.from('re_leads').insert(mapped).select('id');
     if (error) {
