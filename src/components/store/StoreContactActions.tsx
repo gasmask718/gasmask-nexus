@@ -170,82 +170,91 @@ export function StoreContactActions({
   const alreadyOptedIn = contact.sms_opt_in_status === 'opted_in' || contact.can_receive_sms === true;
   const btnSize = compact ? 'icon' : 'sm';
 
+  const rowGap = compact ? 'gap-1' : 'gap-1.5';
+  const btnH = compact ? 'h-7' : 'h-8';
+  const btnPad = compact ? 'px-2' : 'px-2.5';
+
   return (
     <>
-      <div className={compact ? 'flex flex-wrap items-center gap-1' : 'flex flex-wrap items-center gap-1.5'}>
-        <Button
-          size={btnSize as any}
-          variant="outline"
-          onClick={handleCall}
-          disabled={!contact.phone}
-          title="Call contact"
-          className={compact ? 'h-7 w-7' : ''}
-        >
-          <Phone className="h-3.5 w-3.5" />
-          {!compact && <span className="ml-1 text-xs">Call</span>}
-        </Button>
+      <div className="space-y-1.5">
+        {/* Row 1 — primary communication */}
+        <div className={`flex flex-wrap items-center ${rowGap}`}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleCall}
+            disabled={!contact.phone}
+            title="Call contact"
+            className={`${btnH} ${btnPad} gap-1 text-xs`}
+          >
+            <Phone className="h-3.5 w-3.5" />
+            <span>Call</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleText}
+            disabled={!contact.phone || contact.can_receive_sms === false}
+            title={contact.can_receive_sms === false ? 'SMS off for this contact' : 'Send SMS'}
+            className={`${btnH} ${btnPad} gap-1 text-xs`}
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            <span>Text</span>
+          </Button>
+        </div>
 
-        <Button
-          size={btnSize as any}
-          variant="outline"
-          onClick={handleText}
-          disabled={!contact.phone || contact.can_receive_sms === false}
-          title={contact.can_receive_sms === false ? 'SMS off for this contact' : 'Send SMS'}
-          className={compact ? 'h-7 w-7' : ''}
-        >
-          <MessageSquare className="h-3.5 w-3.5" />
-          {!compact && <span className="ml-1 text-xs">Text</span>}
-        </Button>
+        {/* Row 2 — responsiveness flags */}
+        <div className={`flex flex-wrap items-center ${rowGap}`}>
+          <Button
+            size="sm"
+            variant={contact.responsive_by_call ? 'secondary' : 'ghost'}
+            onClick={() => markResponsive('call')}
+            disabled={busy}
+            title="Mark responsive by call"
+            className={`${btnH} ${btnPad} gap-1 text-[10px] uppercase tracking-wider`}
+          >
+            <PhoneCall className="h-3.5 w-3.5" />
+            <span>Resp · Call</span>
+          </Button>
+          <Button
+            size="sm"
+            variant={contact.responsive_by_text ? 'secondary' : 'ghost'}
+            onClick={() => markResponsive('text')}
+            disabled={busy}
+            title="Mark responsive by text"
+            className={`${btnH} ${btnPad} gap-1 text-[10px] uppercase tracking-wider`}
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            <span>Resp · Text</span>
+          </Button>
+        </div>
 
-        <Button
-          size={btnSize as any}
-          variant={contact.responsive_by_call ? 'secondary' : 'ghost'}
-          onClick={() => markResponsive('call')}
-          disabled={busy}
-          title="Mark responsive by call"
-          className={compact ? 'h-7 px-2' : ''}
-        >
-          <PhoneCall className="h-3.5 w-3.5" />
-          <span className="ml-1 text-[10px] uppercase">Resp · Call</span>
-        </Button>
-
-        <Button
-          size={btnSize as any}
-          variant={contact.responsive_by_text ? 'secondary' : 'ghost'}
-          onClick={() => markResponsive('text')}
-          disabled={busy}
-          title="Mark responsive by text"
-          className={compact ? 'h-7 px-2' : ''}
-        >
-          <MessageCircle className="h-3.5 w-3.5" />
-          <span className="ml-1 text-[10px] uppercase">Resp · Text</span>
-        </Button>
-
+        {/* Row 3 — opt-in (only if not already opted in) */}
         {!alreadyOptedIn && (
-          <>
+          <div className={`flex flex-wrap items-center ${rowGap}`}>
             <Button
-              size={btnSize as any}
+              size="sm"
               variant="ghost"
               onClick={() => setOptInPending('va_verbal_call')}
               disabled={busy}
               title="Contact verbally agreed on a call"
-              className={compact ? 'h-7 px-2 text-emerald-600 hover:text-emerald-700' : 'text-emerald-600 hover:text-emerald-700'}
+              className={`${btnH} ${btnPad} gap-1 text-[10px] uppercase tracking-wider text-emerald-600 hover:text-emerald-700`}
             >
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span className="ml-1 text-[10px] uppercase">Opt-in · Verbal</span>
+              <span>Opt-in · Verbal</span>
             </Button>
             <Button
-              size={btnSize as any}
+              size="sm"
               variant="ghost"
               onClick={() => setOptInPending('va_text_confirm')}
               disabled={busy}
               title="Contact confirmed opt-in via text reply"
-              className={compact ? 'h-7 px-2 text-emerald-600 hover:text-emerald-700' : 'text-emerald-600 hover:text-emerald-700'}
+              className={`${btnH} ${btnPad} gap-1 text-[10px] uppercase tracking-wider text-emerald-600 hover:text-emerald-700`}
             >
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span className="ml-1 text-[10px] uppercase">Opt-in · Text</span>
+              <span>Opt-in · Text</span>
             </Button>
-          </>
+          </div>
         )}
       </div>
 

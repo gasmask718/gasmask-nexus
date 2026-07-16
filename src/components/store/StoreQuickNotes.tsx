@@ -1,10 +1,8 @@
 /**
- * StoreQuickNotes — Lightweight notes block over account_notes.
- * Same component used in the store card Quick View AND on the profile,
- * so notes are truly one shared surface.
- *
- * Writes: account_notes (entity_type='store', entity_id=storeId, note_type='quick')
- * Also stamps store_master.updated_at + updated_by so freshness signals move.
+ * StoreQuickNotes — Lightweight notes block that writes to `store_notes`,
+ * the same table the profile "ALL NOTES" section reads. Quick notes are
+ * prefixed with `[quick]` so they can be visually distinguished but stay
+ * in the single unified stream. Also stamps store_master.updated_at.
  */
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -18,11 +16,11 @@ import { formatDistanceToNow } from 'date-fns';
 
 interface Props {
   storeId: string;
-  /** Compact = card surface (small text, no card chrome). */
   compact?: boolean;
-  /** How many recent notes to show. Default 3. */
   limit?: number;
 }
+
+const QUICK_PREFIX = '[quick]';
 
 export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) {
   const qc = useQueryClient();
@@ -30,20 +28,18 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
   const [body, setBody] = useState('');
 
   const { data: notes = [], isLoading } = useQuery({
-    queryKey: ['store-quick-notes', storeId],
+    queryKey: ['store-notes-quick', storeId, limit],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('account_notes' as any)
-        .select('id, note_body, note_type, created_by, created_at')
-        .eq('entity_type', 'store')
-        .eq('entity_id', storeId)
+        .from('store_notes')
+        .select('id, note_text, created_by, created_at')
+        .eq('store_id', storeId)
         .order('created_at', { ascending: false })
         .limit(limit);
       if (error) throw error;
-      return ((data || []) as unknown) as Array<{
+      return (data || []) as Array<{
         id: string;
-        note_body: string;
-        note_type: string | null;
+        note_text: string;
         created_by: string | null;
         created_at: string;
       }>;
@@ -57,16 +53,13 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
       if (!trimmed) throw new Error('Note is empty');
       const nowIso = new Date().toISOString();
 
-      const { error } = await supabase.from('account_notes' as any).insert({
-        entity_type: 'store',
-        entity_id: storeId,
-        note_body: trimmed,
-        note_type: 'quick',
-        created_by: user?.email || user?.id || 'system',
+      const { error } = await supabase.from('store_notes').insert({
+        store_id: storeId,
+        note_text: `${QUICK_PREFIX} ${trimmed}`,
+        created_by: user?.id ?? null,
       } as any);
       if (error) throw error;
 
-      // Move freshness signals on the store record
       await supabase
         .from('store_master')
         .update({ updated_at: nowIso, updated_by: user?.id ?? null } as any)
@@ -75,7 +68,9 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
     onSuccess: () => {
       setBody('');
       toast.success('Note added');
-      qc.invalidateQueries({ queryKey: ['store-quick-notes', storeId] });
+      qc.invalidateQueries({ queryKey: ['store-notes-quick', storeId] });
+      // Profile "ALL NOTES" section reads store_notes keyed by store_master.id
+      qc.invalidateQueries({ queryKey: ['store-notes'] });
     },
     onError: (e: any) => toast.error(e?.message || 'Failed to add note'),
   });
@@ -107,7 +102,7 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
               className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5"
             >
               <p className={compact ? 'text-xs text-foreground whitespace-pre-wrap' : 'text-sm text-foreground whitespace-pre-wrap'}>
-                {n.note_body}
+                {n.note_text}
               </p>
               <p className="text-[10px] text-muted-foreground mt-0.5">
                 {n.created_by || 'unknown'} ·{' '}
