@@ -345,11 +345,11 @@ export default function REAnalyzer() {
 
               {mao > 0 && (
                 <div className="flex flex-wrap gap-2 pt-2">
-                  <Button onClick={saveDeal} disabled={saving} style={{ backgroundColor: RE_ACCENT }}>
+                  <Button size="lg" onClick={saveDeal} disabled={saving} style={{ backgroundColor: RE_ACCENT }}>
                     <Save className="h-4 w-4 mr-1" />{saving ? 'Saving...' : 'Save Deal Analysis'}
                   </Button>
-                  <Button variant="outline" disabled={saving || matching} onClick={runMatch}><Users className="h-4 w-4 mr-1" />{matching ? 'Matching…' : 'Match to Buyers'}</Button>
-                  <Button variant="outline" onClick={() => setSheetOpen(true)}><FileText className="h-4 w-4 mr-1" />Generate Deal Sheet</Button>
+                  <Button size="lg" variant="outline" disabled={saving || matching} onClick={runMatch}><Users className="h-4 w-4 mr-1" />{matching ? 'Matching…' : 'Match to Buyers'}</Button>
+                  <Button size="lg" variant="outline" onClick={() => setSheetOpen(true)}><FileText className="h-4 w-4 mr-1" />Generate Deal Sheet</Button>
                 </div>
               )}
             </div>
