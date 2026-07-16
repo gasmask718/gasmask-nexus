@@ -493,7 +493,7 @@ Deno.serve(async (req) => {
         from += PAGE;
       }
 
-      return ok({ ok: true, checked, alerts_created: alertsCreated, market_refreshed: marketRefreshed, errors });
+      return ok({ ok: true, checked, alerts_created: alertsCreated, alerts_auto_resolved: alertsAutoResolved, market_refreshed: marketRefreshed, errors });
     }
 
 
