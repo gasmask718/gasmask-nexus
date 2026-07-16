@@ -1115,6 +1115,7 @@ const Stores = () => {
                         </div>
                       </div>
                     )}
+                    <StoreCardQuickView storeId={store.id} storeName={store.owner_name || store.name} />
                  </CardContent>
               </Card>
             );
