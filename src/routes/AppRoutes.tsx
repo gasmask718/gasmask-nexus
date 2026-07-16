@@ -464,6 +464,7 @@ const SFCampaigns = lazy(() => import('@/pages/surplus-funds/SFCampaigns'));
 const SFCases = lazy(() => import('@/pages/surplus-funds/SFCases'));
 const SFAttorneys = lazy(() => import('@/pages/surplus-funds/SFAttorneys'));
 const SFDocuments = lazy(() => import('@/pages/surplus-funds/SFDocuments'));
+const SFContracts = lazy(() => import('@/pages/surplus-funds/SFContracts'));
 const SFAutomation = lazy(() => import('@/pages/surplus-funds/SFAutomation'));
 const SFAnalytics = lazy(() => import('@/pages/surplus-funds/SFAnalytics'));
 
