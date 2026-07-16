@@ -232,7 +232,7 @@ export default function RELeadPipeline() {
         phones_detail.push({
           number: d,
           type: pick(r, `Phone ${i} Type`, `Phone${i}Type`, `phone_${i}_type`) || undefined,
-          dnc: truthy(pick(r, `Phone ${i} DNC`, `Phone${i}DNC`, `phone_${i}_dnc`)),
+          dnc: dncTruthy(pick(r, `Phone ${i} DNC`, `Phone${i}DNC`, `phone_${i}_dnc`)),
         });
       }
       // Fallback single phone
