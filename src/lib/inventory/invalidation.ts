@@ -10,6 +10,7 @@ export function invalidateStoreInventoryQueries(qc: QueryClient, storeId: string
   qc.invalidateQueries({ queryKey: ['store-tube-summary', storeId] });
   qc.invalidateQueries({ queryKey: ['store-tube-brands-kpi', storeId] });
   qc.invalidateQueries({ queryKey: ['store-inventory-by-brand', storeId] });
+  qc.invalidateQueries({ queryKey: ['store-inventory-by-sku', storeId] });
   qc.invalidateQueries({ queryKey: ['store-tube-kpi-batch'] });
   qc.invalidateQueries({ queryKey: ['store-lifetime-by-brand', storeId] });
   qc.invalidateQueries({ queryKey: ['store-lifetime-by-sku', storeId] });
