@@ -348,7 +348,7 @@ export default function REAnalyzer() {
                   <Button onClick={saveDeal} disabled={saving} style={{ backgroundColor: RE_ACCENT }}>
                     <Save className="h-4 w-4 mr-1" />{saving ? 'Saving...' : 'Save Deal Analysis'}
                   </Button>
-                  <Button variant="outline" disabled={!savedId} onClick={runMatch}><Users className="h-4 w-4 mr-1" />Match to Buyers</Button>
+                  <Button variant="outline" disabled={saving || matching} onClick={runMatch}><Users className="h-4 w-4 mr-1" />{matching ? 'Matching…' : 'Match to Buyers'}</Button>
                   <Button variant="outline" onClick={() => setSheetOpen(true)}><FileText className="h-4 w-4 mr-1" />Generate Deal Sheet</Button>
                 </div>
               )}
