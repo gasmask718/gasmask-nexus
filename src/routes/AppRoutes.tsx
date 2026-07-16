@@ -3763,6 +3763,7 @@ export default function AppRoutes() {
           <Route path="cases" element={<SFCases />} />
           <Route path="attorneys" element={<SFAttorneys />} />
           <Route path="documents" element={<SFDocuments />} />
+          <Route path="contracts" element={<SFContracts />} />
           <Route path="automation" element={<SFAutomation />} />
           <Route path="analytics" element={<SFAnalytics />} />
         </Route>
