@@ -44,6 +44,7 @@ import { CanonicalStoreProfileProvider } from "@/components/store/CanonicalStore
 
 // Contacts & People
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
+import { StoreQuickNotes } from "@/components/store/StoreQuickNotes";
 import { StoreRoleSection } from "@/components/store/StoreRoleSection";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -373,6 +374,14 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
 
           {/* Store Contacts — CANONICAL */}
           <StoreContactsSection storeId={id} storeName={store.store_name} />
+
+          {/* Quick notes — shared account_notes surface */}
+          <Card>
+            <CardContent className="pt-6">
+              <StoreQuickNotes storeId={id} />
+            </CardContent>
+          </Card>
+
 
           {/* Role Tabs — Ambassadors / Drivers / Bikers / Production */}
           <Card>

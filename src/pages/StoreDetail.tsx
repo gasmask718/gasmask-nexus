@@ -25,6 +25,7 @@ import { StoreRevenueIntelligenceTab } from "@/components/revenue/StoreRevenueIn
 import { Activity, Headphones, Flame } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
+import { StoreQuickNotes } from "@/components/store/StoreQuickNotes";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
 import { StoreStreetView } from "@/components/store/StoreStreetView";
 
@@ -786,6 +787,11 @@ const StoreDetail = () => {
           {/* CANONICAL SHARED SECTIONS — Auto-synced with all profiles */}
           {/* ═══════════════════════════════════════════════════════════ */}
           <StoreContactsSection storeId={id || ""} storeName={store.name} />
+          <Card className="glass-card border-border/50">
+            <CardContent className="pt-6">
+              <StoreQuickNotes storeId={id || ""} />
+            </CardContent>
+          </Card>
           <TubesSoldHeroStrip storeId={id || ""} />
           <BagsSection storeId={id || ""} />
           <EngagementBanner storeId={id || ""} />
