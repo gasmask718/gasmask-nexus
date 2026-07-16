@@ -40,7 +40,7 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
         .order('created_at', { ascending: false })
         .limit(limit);
       if (error) throw error;
-      return (data || []) as Array<{
+      return ((data || []) as unknown) as Array<{
         id: string;
         note_body: string;
         note_type: string | null;
