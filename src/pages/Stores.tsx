@@ -672,6 +672,23 @@ const Stores = () => {
             </SelectContent>
           </Select>
 
+          {/* Review Status Filter */}
+          <Select value={reviewFilter} onValueChange={(v) => setReviewFilter(v as any)}>
+            <SelectTrigger className="w-52 bg-secondary/50 border-border/50">
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Review status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Review Status</SelectItem>
+              <SelectItem value="needs_review">Needs review (neither)</SelectItem>
+              <SelectItem value="admin_yes">Reviewed by Admin</SelectItem>
+              <SelectItem value="admin_no">Not reviewed by Admin</SelectItem>
+              <SelectItem value="va_yes">Reviewed by VA</SelectItem>
+              <SelectItem value="va_no">Not reviewed by VA</SelectItem>
+            </SelectContent>
+          </Select>
+
+
           {/* Payment Type Filter */}
           <Select value={paymentTypeFilter} onValueChange={setPaymentTypeFilter}>
             <SelectTrigger className="w-48 bg-secondary/50 border-border/50">
