@@ -990,16 +990,36 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
         </div>
       </div>
 
-      {/* Options */}
+      {/* R7 — explicit Paid / Unpaid choice at create (default Unpaid) */}
       <div className="space-y-1">
-        <label className="flex items-center gap-1.5 text-xs cursor-pointer select-none">
-          <Checkbox
-            checked={markPaid}
-            onCheckedChange={(v) => setMarkPaid(v === true)}
-            className="h-3.5 w-3.5"
-          />
-          Mark paid on create
-        </label>
+        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          Payment status
+        </Label>
+        <div className="grid grid-cols-2 gap-1">
+          {(['unpaid', 'paid'] as const).map((choice) => {
+            const active = paymentChoice === choice;
+            const label = choice === 'unpaid' ? 'Unpaid' : 'Paid';
+            return (
+              <Button
+                key={choice}
+                type="button"
+                size="sm"
+                variant={active ? 'default' : 'outline'}
+                className={cn(
+                  'h-7 text-[11px]',
+                  active && choice === 'paid' && 'bg-emerald-600 hover:bg-emerald-700 text-white',
+                  active && choice === 'unpaid' && 'bg-amber-600 hover:bg-amber-700 text-white',
+                )}
+                onClick={() => setPaymentChoice(choice)}
+              >
+                {label}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-1">
         <label
           className={cn(
             'flex items-center gap-1.5 text-xs select-none',
