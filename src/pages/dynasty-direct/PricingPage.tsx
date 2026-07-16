@@ -77,14 +77,21 @@ function computeStatus(r: PricingRow): StatusKind {
 }
 
 function StatusBadge({ s }: { s: StatusKind }) {
-  const map: Record<StatusKind, { label: string; cls: string }> = {
-    on_target:    { label: '🟢 On Target',    cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-    below_target: { label: '🟡 Below Target', cls: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
-    below_floor:  { label: '🔴 Below Floor',  cls: 'bg-rose-500/15 text-rose-400 border-rose-500/30' },
-    alert:        { label: '⚡ Alert',         cls: 'bg-purple-500/15 text-purple-300 border-purple-500/30' },
+  const map: Record<StatusKind, { label: string; cls: string; help: string }> = {
+    on_target:    { label: '🟢 On Target',    cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', help: 'On Target — price is within the optimal band (at or above target margin, at or below ceiling).' },
+    below_target: { label: '🟡 Below Target', cls: 'bg-amber-500/15 text-amber-400 border-amber-500/30',       help: 'Below Target — still above the hard floor, but leaving margin on the table. Room to raise price.' },
+    below_floor:  { label: '🔴 Below Floor',  cls: 'bg-rose-500/15 text-rose-400 border-rose-500/30',          help: 'Below Floor — price is under the hard-floor margin. Losing margin on every sale; needs override or fix.' },
+    alert:        { label: '⚡ Alert',         cls: 'bg-purple-500/15 text-purple-300 border-purple-500/30',    help: 'Alert — an active pricing alert is open on this product (see history for details).' },
   };
   const v = map[s];
-  return <Badge variant="outline" className={v.cls}>{v.label}</Badge>;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Badge variant="outline" className={`${v.cls} whitespace-nowrap text-[11px] px-2 py-0.5 cursor-help`}>{v.label}</Badge>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs text-xs leading-relaxed">{v.help}</TooltipContent>
+    </Tooltip>
+  );
 }
 
 export default function PricingPage() {
