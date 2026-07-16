@@ -764,11 +764,11 @@ const Stores = () => {
           </Button>
 
           {/* Active Filters Display */}
-          {(activeFilter !== 'all' || tagFilter !== 'all' || stickerFilter !== 'all' || paymentTypeFilter !== 'all' || newStoresOnly || noNameFilter || monthFilter !== 'all') && (
+          {(activeFilter !== 'all' || tagFilter !== 'all' || stickerFilter !== 'all' || paymentTypeFilter !== 'all' || newStoresOnly || noNameFilter || monthFilter !== 'all' || reviewFilter !== 'all') && (
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => { setActiveFilter('all'); setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); setNewStoresOnly(false); setNoNameFilter(false); setMonthFilter('all'); setCustomDateFrom(''); setCustomDateTo(''); setShowCustomDate(false); }}
+              onClick={() => { setActiveFilter('all'); setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); setNewStoresOnly(false); setNoNameFilter(false); setMonthFilter('all'); setCustomDateFrom(''); setCustomDateTo(''); setShowCustomDate(false); setReviewFilter('all'); }}
               className="text-muted-foreground"
             >
               {t('page.stores.clear_filters') || 'Clear filters'}
