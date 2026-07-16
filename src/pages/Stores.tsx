@@ -719,11 +719,28 @@ const Stores = () => {
   // ═══════════════════════════════════════════════════════════════════════════════
   // PAGINATION
   // ═══════════════════════════════════════════════════════════════════════════════
-  const totalPages = Math.ceil(filteredStores.length / pageSize);
-  const paginatedStores = useMemo(() => {
+  // Legacy in-memory path (kept intact as fallback under !USE_SERVER_PATH).
+  const legacyTotalPages = Math.ceil(filteredStores.length / pageSize);
+  const legacyPaginatedStores = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredStores.slice(start, start + pageSize);
   }, [filteredStores, currentPage, pageSize]);
+
+  // Server-side page rows already come pre-filtered/paginated; patch
+  // connectedStoresCount from the lean owner-name map.
+  const serverPaginatedStores = useMemo(() => {
+    if (!USE_SERVER_PATH) return [] as any[];
+    return server.pageRows.map((s: any) => ({
+      ...s,
+      connectedStoresCount: s.owner_name
+        ? Math.max(0, (ownerNameCountsMap.get(s.owner_name) ?? 0) - 1)
+        : 0,
+    }));
+  }, [server.pageRows, ownerNameCountsMap]);
+
+  const paginatedStores: Store[] = (USE_SERVER_PATH ? serverPaginatedStores : legacyPaginatedStores) as Store[];
+  const filteredStoresCount = USE_SERVER_PATH ? server.pageTotal : filteredStores.length;
+  const totalPages = USE_SERVER_PATH ? Math.max(1, Math.ceil(server.pageTotal / pageSize)) : legacyTotalPages;
 
   // Reset to page 1 when filters change
   const handleFilterChange = () => setCurrentPage(1);
