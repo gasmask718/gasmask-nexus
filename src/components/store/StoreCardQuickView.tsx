@@ -141,11 +141,8 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
         priority,
         route_flag: routeFlag,
         assignee: user?.id ?? null,
-        completed_by: user?.id ?? null,
       } as any);
       if (error) throw error;
-      // Unset completed_by immediately (we only set it above to satisfy any downstream created_by capture; clear it so it isn't misread as completed).
-      // (No-op if unused — kept minimal.)
 
       // Stamp store's updated_at so downstream freshness signals move.
       await supabase
