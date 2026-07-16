@@ -128633,14 +128633,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -130500,6 +130500,15 @@ export type Database = {
           store_id: string | null
           store_name: string | null
           total_revenue: number | null
+        }
+        Relationships: []
+      }
+      store_invoice_activity: {
+        Row: {
+          has_ever_invoiced: boolean | null
+          invoice_count: number | null
+          last_invoice_at: string | null
+          store_id: string | null
         }
         Relationships: []
       }
@@ -137377,6 +137386,7 @@ export type Database = {
       }
       refresh_merge_analysis_cache: { Args: never; Returns: Json }
       refresh_store_intelligence: { Args: never; Returns: undefined }
+      refresh_store_invoice_activity: { Args: never; Returns: undefined }
       reinstate_user_access: { Args: { _invite_id: string }; Returns: boolean }
       reject_enrichment_candidate: {
         Args: { p_candidate_id: string }
