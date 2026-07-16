@@ -101161,6 +101161,7 @@ export type Database = {
           total_calls_attempted: number | null
           total_texts_received: number | null
           total_texts_sent: number | null
+          updated_by: string | null
           verified_at: string | null
           verified_by: string | null
         }
@@ -101214,6 +101215,7 @@ export type Database = {
           total_calls_attempted?: number | null
           total_texts_received?: number | null
           total_texts_sent?: number | null
+          updated_by?: string | null
           verified_at?: string | null
           verified_by?: string | null
         }
@@ -101267,6 +101269,7 @@ export type Database = {
           total_calls_attempted?: number | null
           total_texts_received?: number | null
           total_texts_sent?: number | null
+          updated_by?: string | null
           verified_at?: string | null
           verified_by?: string | null
         }
@@ -104779,6 +104782,7 @@ export type Database = {
           tags: string[] | null
           type: Database["public"]["Enums"]["store_type"]
           updated_at: string | null
+          updated_by: string | null
           visit_frequency_target: number | null
           visit_risk_level: string | null
           wholesaler_name: string | null
@@ -104875,6 +104879,7 @@ export type Database = {
           tags?: string[] | null
           type: Database["public"]["Enums"]["store_type"]
           updated_at?: string | null
+          updated_by?: string | null
           visit_frequency_target?: number | null
           visit_risk_level?: string | null
           wholesaler_name?: string | null
@@ -104971,6 +104976,7 @@ export type Database = {
           tags?: string[] | null
           type?: Database["public"]["Enums"]["store_type"]
           updated_at?: string | null
+          updated_by?: string | null
           visit_frequency_target?: number | null
           visit_risk_level?: string | null
           wholesaler_name?: string | null
