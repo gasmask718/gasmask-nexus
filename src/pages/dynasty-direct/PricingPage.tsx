@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
@@ -76,14 +77,21 @@ function computeStatus(r: PricingRow): StatusKind {
 }
 
 function StatusBadge({ s }: { s: StatusKind }) {
-  const map: Record<StatusKind, { label: string; cls: string }> = {
-    on_target:    { label: '🟢 On Target',    cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-    below_target: { label: '🟡 Below Target', cls: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
-    below_floor:  { label: '🔴 Below Floor',  cls: 'bg-rose-500/15 text-rose-400 border-rose-500/30' },
-    alert:        { label: '⚡ Alert',         cls: 'bg-purple-500/15 text-purple-300 border-purple-500/30' },
+  const map: Record<StatusKind, { label: string; cls: string; help: string }> = {
+    on_target:    { label: '🟢 On Target',    cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', help: 'On Target — price is within the optimal band (at or above target margin, at or below ceiling).' },
+    below_target: { label: '🟡 Below Target', cls: 'bg-amber-500/15 text-amber-400 border-amber-500/30',       help: 'Below Target — still above the hard floor, but leaving margin on the table. Room to raise price.' },
+    below_floor:  { label: '🔴 Below Floor',  cls: 'bg-rose-500/15 text-rose-400 border-rose-500/30',          help: 'Below Floor — price is under the hard-floor margin. Losing margin on every sale; needs override or fix.' },
+    alert:        { label: '⚡ Alert',         cls: 'bg-purple-500/15 text-purple-300 border-purple-500/30',    help: 'Alert — an active pricing alert is open on this product (see history for details).' },
   };
   const v = map[s];
-  return <Badge variant="outline" className={v.cls}>{v.label}</Badge>;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Badge variant="outline" className={`${v.cls} whitespace-nowrap text-[11px] px-2 py-0.5 cursor-help`}>{v.label}</Badge>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs text-xs leading-relaxed">{v.help}</TooltipContent>
+    </Tooltip>
+  );
 }
 
 export default function PricingPage() {
@@ -412,26 +420,54 @@ export default function PricingPage() {
                         <TableCell><StatusBadge s={status} /></TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end">
-                            <Button size="sm" variant="outline" onClick={() => setEditRow(r)}>Edit</Button>
-                            <Button size="sm" variant="outline" disabled={analyzing===r.id} onClick={() => runAnalysis(r.id)} title="AI analysis">
-                              {analyzing===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                            </Button>
-                            <Button size="sm" variant="outline" disabled={refreshingMarket===r.id} onClick={() => checkMarketPrice(r.id)} title="Check market price (SerpAPI)">
-                              {refreshingMarket===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <LineChart className="h-3 w-3" />}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={applyingSweet===r.id || r.market_avg_retail == null}
-                              onClick={() => applySweetSpot(r)}
-                              title={r.market_avg_retail == null ? 'Run Check Market Price first' : 'Apply competitive sweet-spot price'}
-                              style={r.market_avg_retail != null ? { borderColor: GOLD, color: GOLD } : undefined}
-                            >
-                              {applyingSweet===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Target className="h-3 w-3" />}
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => setHistoryId(r.id)}>
-                              <History className="h-3 w-3" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="outline" onClick={() => setEditRow(r)}>Edit</Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit price (floor-guarded)</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="outline" disabled={analyzing===r.id} onClick={() => runAnalysis(r.id)}>
+                                  {analyzing===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>AI pricing analysis</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="outline" disabled={refreshingMarket===r.id} onClick={() => checkMarketPrice(r.id)}>
+                                  {refreshingMarket===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <LineChart className="h-3 w-3" />}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Check market price (SerpAPI)</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={applyingSweet===r.id || r.market_avg_retail == null}
+                                  onClick={() => applySweetSpot(r)}
+                                  style={r.market_avg_retail != null ? { borderColor: GOLD, color: GOLD } : undefined}
+                                >
+                                  {applyingSweet===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Target className="h-3 w-3" />}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {r.market_avg_retail == null
+                                  ? 'Apply sweet-spot price — run Check Market Price first'
+                                  : 'Apply competitive sweet-spot price (gold = market data available)'}
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="ghost" onClick={() => setHistoryId(r.id)}>
+                                  <History className="h-3 w-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Price change history</TooltipContent>
+                            </Tooltip>
                           </div>
                         </TableCell>
                       </TableRow>
