@@ -905,7 +905,7 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
     onSuccess: (result) => {
       toast.success(result.textSent ? 'Order created · receipt texted' : 'Order created');
       setLooseQty('');
-      setMarkPaid(false);
+      setPaymentChoice('unpaid');
       setTextOnCreate(false);
       setLastCreated({ id: result.id, number: result.number, total: result.total });
       qc.invalidateQueries({ queryKey: ['store-recent-invoices-sku', storeId] });
