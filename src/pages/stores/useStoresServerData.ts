@@ -274,6 +274,17 @@ export function useStoresServerData(args: UseStoresServerDataArgs) {
         if (args.customDateTo)   qb = qb.lte('created_at', new Date(args.customDateTo + 'T23:59:59').toISOString());
       }
 
+      // ── review status ────────────────────────────────────────────
+      switch (args.reviewFilter) {
+        case 'admin_yes': qb = qb.eq('reviewed_by_admin', true); break;
+        case 'admin_no':  qb = qb.eq('reviewed_by_admin', false); break;
+        case 'va_yes':    qb = qb.eq('reviewed_by_va', true); break;
+        case 'va_no':     qb = qb.eq('reviewed_by_va', false); break;
+        case 'needs_review':
+          qb = qb.eq('reviewed_by_admin', false).eq('reviewed_by_va', false);
+          break;
+      }
+
       const { data, count, error } = await qb;
       if (error) throw error;
 
