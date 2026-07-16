@@ -419,6 +419,16 @@ export default function PricingPage() {
                             <Button size="sm" variant="outline" disabled={refreshingMarket===r.id} onClick={() => checkMarketPrice(r.id)} title="Check market price (SerpAPI)">
                               {refreshingMarket===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <LineChart className="h-3 w-3" />}
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={applyingSweet===r.id || r.market_avg_retail == null}
+                              onClick={() => applySweetSpot(r)}
+                              title={r.market_avg_retail == null ? 'Run Check Market Price first' : 'Apply competitive sweet-spot price'}
+                              style={r.market_avg_retail != null ? { borderColor: GOLD, color: GOLD } : undefined}
+                            >
+                              {applyingSweet===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Target className="h-3 w-3" />}
+                            </Button>
                             <Button size="sm" variant="ghost" onClick={() => setHistoryId(r.id)}>
                               <History className="h-3 w-3" />
                             </Button>
