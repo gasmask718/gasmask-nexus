@@ -815,6 +815,9 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
       const invoiceNumber = generateInvoiceNumber();
       const sku = skus.find((s) => s.product_id === productId);
 
+      // R6 — always insert the invoice as a DRAFT/UNPAID shell first so the
+      // finalize-on-paid trigger cannot fire before line items exist.
+      // Sequence: (1) draft invoice, (2) line items, (3) flip payment_status to paid.
       const { data: invoice, error: invErr } = await supabase
         .from('invoices')
         .insert({
@@ -827,8 +830,8 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
           tax: 0,
           total,
           total_amount: total,
-          payment_status: markPaid ? 'paid' : 'unpaid',
-          paid_at: markPaid ? nowIso : null,
+          payment_status: 'unpaid',
+          paid_at: null,
           brand: sku?.parent_brand || null,
           created_by: user?.id || 'quickview',
           created_at: nowIso,
@@ -860,6 +863,16 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
         pricing_mode: 'retail',
       } as any);
       if (liErr) throw liErr;
+
+      // R6/R7 — only NOW mark paid, after line items exist.
+      if (paymentChoice === 'paid') {
+        const { error: payErr } = await supabase
+          .from('invoices')
+          .update({ payment_status: 'paid', paid_at: nowIso } as any)
+          .eq('id', invoice!.id);
+        if (payErr) throw payErr;
+      }
+
 
       await supabase
         .from('store_master')
