@@ -32,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Phone, MessageSquare, PhoneCall, MessageCircle, ShieldCheck } from 'lucide-react';
+import { Phone, MessageSquare, PhoneCall, MessageCircle, ShieldCheck, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ContactLike {
