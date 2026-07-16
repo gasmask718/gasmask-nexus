@@ -733,7 +733,8 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
   const [productId, setProductId] = useState<string>('');
   const [unitMode, setUnitMode] = useState<UnitMode>('box');
   const [looseQty, setLooseQty] = useState<string>('');
-  const [markPaid, setMarkPaid] = useState<boolean>(false);
+  // R7 — explicit Paid/Unpaid choice at creation (default Unpaid).
+  const [paymentChoice, setPaymentChoice] = useState<'unpaid' | 'paid'>('unpaid');
   const [textOnCreate, setTextOnCreate] = useState<boolean>(false);
   const [lastCreated, setLastCreated] = useState<{ id: string; number: string; total: number } | null>(null);
 
