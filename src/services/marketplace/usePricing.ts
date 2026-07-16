@@ -48,10 +48,11 @@ export function usePricing() {
       }
     }
 
-    // Fallback to product's direct pricing
+    // Fallback to product's direct pricing.
+    // Prefer authoritative DD columns (dtc_price_b / store_price_a) over legacy.
     const { data: product } = await supabase
       .from('products_all')
-      .select('retail_price, store_price, wholesale_price')
+      .select('retail_price, store_price, wholesale_price, dtc_price_b, store_price_a')
       .eq('id', productId)
       .single();
 
@@ -61,9 +62,9 @@ export function usePricing() {
       case 'wholesale':
         return Number(product.wholesale_price) || 0;
       case 'store':
-        return Number(product.store_price) || 0;
+        return Number(product.store_price_a) || Number(product.store_price) || 0;
       default:
-        return Number(product.retail_price) || 0;
+        return Number(product.dtc_price_b) || Number(product.retail_price) || 0;
     }
   };
 
