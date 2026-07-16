@@ -37,7 +37,8 @@ export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
       if (error) throw error;
       return data || [];
     },
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   return (
