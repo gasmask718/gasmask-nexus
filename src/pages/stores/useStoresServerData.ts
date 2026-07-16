@@ -387,6 +387,10 @@ export function useStoresServerData(args: UseStoresServerDataArgs) {
           last_active_date: legacy?.last_active_date || null,
           reactivation_priority: legacy?.reactivation_priority || null,
           relationship_status: store.relationship_status || 'Non-active (New - need to speak)',
+          reviewed_by_admin: !!store.reviewed_by_admin,
+          reviewed_by_admin_at: store.reviewed_by_admin_at || null,
+          reviewed_by_va: !!store.reviewed_by_va,
+          reviewed_by_va_at: store.reviewed_by_va_at || null,
         };
       });
 
