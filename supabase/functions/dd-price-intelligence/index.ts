@@ -470,7 +470,7 @@ async function computeAlerts(
 }
 
 const PRODUCT_COLS =
-  'id, product_name, brand, category, supplier_cost, store_price_a, dtc_price_b, map_price, target_store_margin_pct, target_dtc_margin_pct, min_store_margin_pct, min_dtc_margin_pct';
+  'id, product_name, brand, category, supplier_cost, store_price_a, dtc_price_b, map_price, target_store_margin_pct, target_dtc_margin_pct, min_store_margin_pct, min_dtc_margin_pct, market_avg_retail';
 
 const MARKET_STALE_DAYS = 7;
 const MARKET_REFRESH_CAP_PER_RUN = 40; // hard cap so a single cron run can't burn the SerpAPI budget
