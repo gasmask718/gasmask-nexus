@@ -103,13 +103,14 @@ export default function PricingPage() {
       let q = supabase
         .from('products_all')
         .select(`
-          id, sku, product_name, category,
+          id, product_name, category,
           supplier_cost, store_price_a, dtc_price_b,
           store_margin_pct, dtc_margin_pct,
           min_store_margin_pct, target_store_margin_pct,
           min_dtc_margin_pct, target_dtc_margin_pct,
           market_avg_retail
         `)
+        .neq('status', 'deleted')
         .order('product_name');
       if (category !== 'all') q = q.eq('category', category);
       const { data, error } = await q;
