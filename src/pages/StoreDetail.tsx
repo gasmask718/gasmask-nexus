@@ -770,6 +770,16 @@ const StoreDetail = () => {
             }}
           />
 
+          {/* Storefront preview — Google Street View at store's geocoded point */}
+          <StoreStreetView
+            lat={store.lat}
+            lng={store.lng}
+            storeName={store.name}
+            address={store.address}
+          />
+
+
+
           {/* ═══════════════════════════════════════════════════════════ */}
           {/* CANONICAL SHARED SECTIONS — Auto-synced with all profiles */}
           {/* ═══════════════════════════════════════════════════════════ */}
