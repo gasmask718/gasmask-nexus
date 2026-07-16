@@ -1692,6 +1692,7 @@ export default function AppRoutes() {
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/analytics/economics" element={<EconomicAnalytics />} />
         <Route path="/analytics/revenue-brain" element={<RevenueBrain />} />
+        <Route path="/reports/samples-by-brand" element={<SamplesByBrandReport />} />
         <Route path="/influencers" element={<Influencers />} />
         <Route path="/influencers/analytics" element={<InfluencerAnalyticsCenter />} />
         <Route path="/influencers/:id" element={<InfluencerDetail />} />
