@@ -270,7 +270,11 @@ const Stores = () => {
       return ids;
     },
     staleTime: 5 * 60 * 1000,
+  });
+
   // (Legacy full-fetch removed — server path is authoritative.)
+
+
 
 
   // ── Phase 2A Win 2 — server-side dual path ─────────────────────────
