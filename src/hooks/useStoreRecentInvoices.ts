@@ -10,6 +10,9 @@ export interface RecentInvoiceRow {
   tubes: number;
   boxes: number;
   created_at: string;
+  payment_status: string | null;
+  paid_at: string | null;
+  partial_amount: number | null;
 }
 
 export function useStoreRecentInvoices(
