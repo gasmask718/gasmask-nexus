@@ -391,7 +391,7 @@ Deno.serve(async (req) => {
   try {
     const { product_id, action, query } = await req.json().catch(() => ({}));
     if (!action) return ok({ error: 'action is required' });
-    if (!['analyze', 'set_optimal', 'check_alerts', 'check_all_alerts', 'refresh_market'].includes(action))
+    if (!['analyze', 'set_optimal', 'apply_sweet_spot', 'check_alerts', 'check_all_alerts', 'refresh_market'].includes(action))
       return ok({ error: `unknown action: ${action}` });
 
     const supabase = createClient(
