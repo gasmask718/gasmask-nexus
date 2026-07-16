@@ -10,6 +10,9 @@ export interface RecentInvoiceRow {
   tubes: number;
   boxes: number;
   created_at: string;
+  payment_status: string | null;
+  paid_at: string | null;
+  partial_amount: number | null;
 }
 
 export function useStoreRecentInvoices(
@@ -25,7 +28,7 @@ export function useStoreRecentInvoices(
 
       const { data: invoices, error } = await supabase
         .from('invoices')
-        .select('id, invoice_number, total, created_at')
+        .select('id, invoice_number, total, created_at, payment_status, paid_at, partial_amount')
         .eq('store_id', storeId)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
@@ -70,6 +73,9 @@ export function useStoreRecentInvoices(
           tubes,
           boxes: Math.round(tubes / 100),
           created_at: i.created_at,
+          payment_status: (i as any).payment_status ?? null,
+          paid_at: (i as any).paid_at ?? null,
+          partial_amount: (i as any).partial_amount != null ? Number((i as any).partial_amount) : null,
         };
       });
     },
