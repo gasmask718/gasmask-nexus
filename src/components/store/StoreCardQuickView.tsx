@@ -20,7 +20,7 @@ import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
-import { getSkuStatusIcon } from '@/lib/inventory/skuDisplay';
+import { getSkuStatusIcon, brandForProductId } from '@/lib/inventory/skuDisplay';
 import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
 import { useStoreRecentInvoices } from '@/hooks/useStoreRecentInvoices';
 import { StoreCardContactsQuickSection } from './StoreCardContactsQuickSection';
@@ -399,9 +399,12 @@ function InventorySection({ storeId }: { storeId: string }) {
           .eq('id', existing.id);
         if (error) throw error;
       } else {
+        const brand = brandForProductId(productId);
+        if (!brand) throw new Error(`Unknown product ${productId} — no brand mapping`);
         const { error } = await supabase.from('store_tube_inventory').insert({
           store_id: storeId,
           product_id: productId,
+          brand,
           current_tubes_left: count,
           created_by: actor,
         } as any);
@@ -481,7 +484,15 @@ function InventorySection({ storeId }: { storeId: string }) {
 }
 
 // ────────────────────────────────────────────────────────────────
-// Store flags — needs_order + bring_samples toggles on store_master.
+// Store flags — needs_order + bring_samples toggles.
+// SOURCE OF TRUTH: store_tube_inventory_status (per-brand rows).
+// The delivery scheduling page (OrdersDeliveriesPage Tab 1) and
+// useSLAAlerts + useDispatchIntakeView all read from this table.
+// Read  = ANY row for this store has the flag true.
+// Write = UPDATE all existing rows for the store; if none exist,
+//         INSERT one placeholder row (GasMask) so the flag surfaces.
+// NOTE: store_master.needs_order / bring_samples columns are legacy
+// and no longer written from here — nothing else reads them.
 // ────────────────────────────────────────────────────────────────
 function StoreFlagsSection({ storeId }: { storeId: string }) {
   const { user } = useAuth();
@@ -491,14 +502,14 @@ function StoreFlagsSection({ storeId }: { storeId: string }) {
     queryKey: ['store-flags', storeId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('store_master')
+        .from('store_tube_inventory_status')
         .select('needs_order, bring_samples')
-        .eq('id', storeId)
-        .maybeSingle();
+        .eq('store_id', storeId);
       if (error) throw error;
-      return (data ?? { needs_order: false, bring_samples: false }) as {
-        needs_order: boolean | null;
-        bring_samples: boolean | null;
+      const rows = (data ?? []) as Array<{ needs_order: boolean | null; bring_samples: boolean | null }>;
+      return {
+        needs_order: rows.some((r) => !!r.needs_order),
+        bring_samples: rows.some((r) => !!r.bring_samples),
       };
     },
     staleTime: 30_000,
@@ -507,20 +518,41 @@ function StoreFlagsSection({ storeId }: { storeId: string }) {
   const toggle = useMutation({
     mutationFn: async ({ field, value }: { field: 'needs_order' | 'bring_samples'; value: boolean }) => {
       const nowIso = new Date().toISOString();
-      const { error } = await supabase
-        .from('store_master')
+      // Update any existing per-brand rows first.
+      const { data: updated, error: updErr } = await supabase
+        .from('store_tube_inventory_status')
         .update({
           [field]: value,
-          updated_at: nowIso,
-          updated_by: user?.id ?? null,
+          last_updated_at: nowIso,
+          last_updated_by: user?.id ?? null,
+          last_updated_method: 'quickview',
         } as any)
-        .eq('id', storeId);
-      if (error) throw error;
+        .eq('store_id', storeId)
+        .select('id');
+      if (updErr) throw updErr;
+
+      // No rows yet — create a placeholder so the flag surfaces on delivery/SLA views.
+      if ((updated?.length ?? 0) === 0 && value === true) {
+        const { error: insErr } = await supabase
+          .from('store_tube_inventory_status')
+          .insert({
+            store_id: storeId,
+            brand_id: 'gasmask',
+            brand_name: 'GasMask',
+            [field]: true,
+            last_updated_at: nowIso,
+            last_updated_by: user?.id ?? null,
+            last_updated_method: 'quickview',
+          } as any);
+        if (insErr) throw insErr;
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['store-flags', storeId] });
-      qc.invalidateQueries({ queryKey: ['stores-server-page'] });
-      qc.invalidateQueries({ queryKey: ['stores-server-page-hydration'] });
+      qc.invalidateQueries({ queryKey: ['orders-requested'] });
+      qc.invalidateQueries({ queryKey: ['dispatch-intake'] });
+      qc.invalidateQueries({ queryKey: ['sla-alerts'] });
+      qc.invalidateQueries({ queryKey: ['tube-intelligence', storeId] });
     },
     onError: (e: any) => toast.error(e?.message || 'Failed to update flag'),
   });
