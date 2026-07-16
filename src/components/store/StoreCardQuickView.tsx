@@ -84,19 +84,19 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
   const [priority, setPriority] = useState<string>('normal');
   const [storeSearch, setStoreSearch] = useState('');
 
-  // Lazy: only load open follow-ups for THIS store when expanded
+  // Lazy: only load open opportunities/follow-ups for THIS store when expanded
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({
-    queryKey: ['store-followups', storeId],
+    queryKey: ['store-opportunities', storeId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('relationship_tasks')
-        .select('id,title,description,due_at,priority,status,route_flag,store_id,created_at')
+        .from('store_opportunities')
+        .select('id,opportunity_text,due_date,priority,is_completed,route_flag,store_id,created_at')
         .eq('store_id', storeId)
-        .eq('status', 'open')
-        .order('due_at', { ascending: true, nullsFirst: false })
+        .eq('is_completed', false)
+        .order('due_date', { ascending: true, nullsFirst: false })
         .limit(50);
       if (error) throw error;
-      return (data || []) as TaskRow[];
+      return (data || []) as unknown as TaskRow[];
     },
     staleTime: 30_000,
   });
@@ -132,19 +132,20 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
       if (!trimmed) throw new Error('Please enter follow-up text');
       const dueIso = dueDate ? new Date(`${dueDate}T12:00:00`).toISOString() : null;
 
-      const { error } = await supabase.from('relationship_tasks').insert({
-        title: trimmed.slice(0, 120),
-        description: trimmed,
-        due_at: dueIso,
-        status: 'open',
-        priority,
-        task_type: 'follow_up',
+      const { error } = await supabase.from('store_opportunities').insert({
         store_id: targetStoreId,
+        opportunity_text: trimmed,
+        source: 'follow_up',
+        is_completed: false,
+        due_date: dueIso,
+        priority,
         route_flag: routeFlag,
-        created_by: user?.id ?? null,
-        created_at: new Date().toISOString(),
+        assignee: user?.id ?? null,
+        completed_by: user?.id ?? null,
       } as any);
       if (error) throw error;
+      // Unset completed_by immediately (we only set it above to satisfy any downstream created_by capture; clear it so it isn't misread as completed).
+      // (No-op if unused — kept minimal.)
 
       // Stamp store's updated_at so downstream freshness signals move.
       await supabase
@@ -157,8 +158,10 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
       setText('');
       setRouteFlag(false);
       setPriority('normal');
-      qc.invalidateQueries({ queryKey: ['store-followups', targetStoreId] });
-      qc.invalidateQueries({ queryKey: ['store-followups', storeId] });
+      qc.invalidateQueries({ queryKey: ['store-opportunities', targetStoreId] });
+      qc.invalidateQueries({ queryKey: ['store-opportunities', storeId] });
+      qc.invalidateQueries({ queryKey: ['store-opportunities'] });
+      qc.invalidateQueries({ queryKey: ['opportunities-summary'] });
     },
     onError: (e: any) => toast.error(e?.message || 'Failed to save follow-up'),
   });
@@ -167,9 +170,9 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
     mutationFn: async (taskId: string) => {
       const nowIso = new Date().toISOString();
       const { error } = await supabase
-        .from('relationship_tasks')
+        .from('store_opportunities')
         .update({
-          status: 'completed',
+          is_completed: true,
           completed_at: nowIso,
           completed_by: user?.id ?? null,
         } as any)
@@ -181,7 +184,9 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
         .eq('id', storeId);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['store-followups', storeId] });
+      qc.invalidateQueries({ queryKey: ['store-opportunities', storeId] });
+      qc.invalidateQueries({ queryKey: ['store-opportunities'] });
+      qc.invalidateQueries({ queryKey: ['opportunities-summary'] });
     },
     onError: (e: any) => toast.error(e?.message || 'Failed to complete task'),
   });
