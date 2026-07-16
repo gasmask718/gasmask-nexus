@@ -50,6 +50,15 @@ interface ProductRow {
   min_dtc_margin_pct: number | null;
 }
 
+interface SweetSpot {
+  store_price: number;
+  dtc_price: number;
+  store_margin_pct: number;
+  dtc_margin_pct: number;
+  basis: 'market_avg' | 'floor_snap' | 'map_snap' | 'target_margin';
+  notes: string;
+}
+
 interface Analysis {
   recommended_store_price: number;
   recommended_dtc_price: number;
@@ -59,6 +68,60 @@ interface Analysis {
   recommendation: string;
   alert_flags: string[];
   source: 'ai' | 'placeholder';
+  sweet_spot?: SweetSpot | null;
+}
+
+/**
+ * Sweet-spot pricing: aim near market_avg_retail (competitive) but never
+ * violate the min-margin floor or MAP. Store price stays on target-margin
+ * (wholesale isn't market-comparable). Returns null if market_avg is missing.
+ */
+function computeSweetSpot(p: ProductRow, marketAvg: number | null): SweetSpot | null {
+  const cost = Number(p.supplier_cost || 0);
+  if (!cost || cost <= 0 || marketAvg == null || marketAvg <= 0) return null;
+
+  const map = Number(p.map_price || 0);
+  const minDtc = Number(p.min_dtc_margin_pct ?? 0);
+  const tgtDtc = Number(p.target_dtc_margin_pct ?? 65);
+  const tgtStore = Number(p.target_store_margin_pct ?? 40);
+
+  const dtcFloor = priceFromMargin(cost, minDtc);        // lowest legal DTC by margin
+  const dtcTarget = priceFromMargin(cost, tgtDtc);       // upper DTC (target margin)
+  const dtcHardFloor = Math.max(dtcFloor, map);          // margin OR MAP, whichever higher
+
+  let basis: SweetSpot['basis'] = 'market_avg';
+  let dtcRaw = marketAvg;
+  if (marketAvg < dtcHardFloor) {
+    dtcRaw = dtcHardFloor;
+    basis = map > dtcFloor ? 'map_snap' : 'floor_snap';
+  } else if (marketAvg > dtcTarget) {
+    // don't leave money on the table — cap at target margin
+    dtcRaw = dtcTarget;
+    basis = 'target_margin';
+  }
+  const dtc = charmRound(dtcRaw);
+  const store = charmRound(priceFromMargin(cost, tgtStore));
+
+  const dtcMargin = Number(marginPctFromPrice(dtc, cost).toFixed(2));
+  const storeMargin = Number(marginPctFromPrice(store, cost).toFixed(2));
+
+  const notes =
+    basis === 'floor_snap'
+      ? `Market avg $${marketAvg.toFixed(2)} is below min-margin floor $${dtcFloor.toFixed(2)}; snapped to floor.`
+    : basis === 'map_snap'
+      ? `Market avg $${marketAvg.toFixed(2)} is below MAP $${map.toFixed(2)}; snapped to MAP.`
+    : basis === 'target_margin'
+      ? `Market avg $${marketAvg.toFixed(2)} is above target-margin price $${dtcTarget.toFixed(2)}; capped at target.`
+      : `Priced at market avg $${marketAvg.toFixed(2)}.`;
+
+  return {
+    store_price: store,
+    dtc_price: dtc,
+    store_margin_pct: storeMargin,
+    dtc_margin_pct: dtcMargin,
+    basis,
+    notes,
+  };
 }
 
 // Deterministic fallback — reads targets and MAP directly from the product row.
