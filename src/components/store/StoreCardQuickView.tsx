@@ -186,6 +186,9 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
 
   return (
     <div className="mt-2 space-y-3 rounded-md border border-border/50 bg-muted/30 p-3">
+      <InventorySection storeId={storeId} />
+      <StoreFlagsSection storeId={storeId} />
+
       {/* Open follow-ups list */}
       <div className="space-y-1.5">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
