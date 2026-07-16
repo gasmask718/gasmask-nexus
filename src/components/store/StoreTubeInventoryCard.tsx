@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getTubeBrandColor } from '@/constants/tubeColors';
 import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
 import { getSkuStatusIcon, getSkuStatusLabel } from '@/lib/inventory/skuDisplay';
+import { unitLabelForProductId } from '@/lib/inventory/unitLabel';
 
 interface StoreTubeInventoryCardProps {
   storeId: string;
