@@ -107,7 +107,8 @@ serve(async (req) => {
         for (const it of items) {
           const p: any = byId.get(it.product_id);
           if (!p || p.status !== "active") throw new Error(`unavailable:${it.product_id}`);
-          let unitCents = Math.round(Number(p.retail_price ?? 0) * 100);
+          const effectiveRetail = Number(p.dtc_price_b) || Number(p.retail_price) || 0;
+          let unitCents = Math.round(effectiveRetail * 100);
           if (unitCents <= 0) throw new Error(`bad_price:${it.product_id}`);
 
           // Flash sale: server-side discount enforcement (never trust client price).
