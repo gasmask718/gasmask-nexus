@@ -101854,6 +101854,12 @@ export type Database = {
           photo_url: string | null
           preferred_channel: string | null
           relationship_status: string
+          reviewed_by_admin: boolean
+          reviewed_by_admin_at: string | null
+          reviewed_by_admin_by: string | null
+          reviewed_by_va: boolean
+          reviewed_by_va_at: string | null
+          reviewed_by_va_by: string | null
           risk_score: string | null
           show_on_public_site: boolean
           sms_capable: boolean | null
@@ -101943,6 +101949,12 @@ export type Database = {
           photo_url?: string | null
           preferred_channel?: string | null
           relationship_status?: string
+          reviewed_by_admin?: boolean
+          reviewed_by_admin_at?: string | null
+          reviewed_by_admin_by?: string | null
+          reviewed_by_va?: boolean
+          reviewed_by_va_at?: string | null
+          reviewed_by_va_by?: string | null
           risk_score?: string | null
           show_on_public_site?: boolean
           sms_capable?: boolean | null
@@ -102032,6 +102044,12 @@ export type Database = {
           photo_url?: string | null
           preferred_channel?: string | null
           relationship_status?: string
+          reviewed_by_admin?: boolean
+          reviewed_by_admin_at?: string | null
+          reviewed_by_admin_by?: string | null
+          reviewed_by_va?: boolean
+          reviewed_by_va_at?: string | null
+          reviewed_by_va_by?: string | null
           risk_score?: string | null
           show_on_public_site?: boolean
           sms_capable?: boolean | null
@@ -103512,6 +103530,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      store_review_events: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          note: string | null
+          review_type: string
+          reviewed_at: string
+          reviewed_by: string | null
+          store_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          review_type: string
+          reviewed_at?: string
+          reviewed_by?: string | null
+          store_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          review_type?: string
+          reviewed_at?: string
+          reviewed_by?: string | null
+          store_id?: string
+        }
+        Relationships: []
       }
       store_rewards: {
         Row: {
@@ -137732,6 +137783,12 @@ export type Database = {
           photo_url: string | null
           preferred_channel: string | null
           relationship_status: string
+          reviewed_by_admin: boolean
+          reviewed_by_admin_at: string | null
+          reviewed_by_admin_by: string | null
+          reviewed_by_va: boolean
+          reviewed_by_va_at: string | null
+          reviewed_by_va_by: string | null
           risk_score: string | null
           show_on_public_site: boolean
           sms_capable: boolean | null
