@@ -641,7 +641,7 @@ export default function RELeadPipeline() {
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Owner Info</p>
                     <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div><span className="text-muted-foreground">Name</span><p className="font-medium">{[detailLead.first_name, detailLead.last_name].filter(Boolean).join(' ') || '—'}</p></div>
+                      <div><span className="text-muted-foreground">Name</span><p className="font-medium">{[detailLead.first_name, detailLead.last_name].filter(Boolean).join(' ') || detailLead.company_name || '—'}</p></div>
                       <div><span className="text-muted-foreground">Phone</span><p className="font-medium">{detailLead.phone || '—'}</p></div>
                       <div><span className="text-muted-foreground">Email</span><p className="font-medium">{detailLead.email || '—'}</p></div>
                       <div>{!detailLead.phone && <Button size="sm" variant="outline" className="mt-1">Skip Trace Now</Button>}</div>
