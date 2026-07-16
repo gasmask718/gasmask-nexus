@@ -26,6 +26,7 @@ import { Activity, Headphones, Flame } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreQuickNotes } from "@/components/store/StoreQuickNotes";
+import { SamplesGivenSection } from "@/components/store/SamplesGivenSection";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
 import { StoreStreetView } from "@/components/store/StoreStreetView";
 
