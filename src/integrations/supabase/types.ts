@@ -131,6 +131,39 @@ export type Database = {
         }
         Relationships: []
       }
+      _cust_pairs: {
+        Row: {
+          address: string | null
+          delete_id: string
+          delete_name: string | null
+          delete_phone: string | null
+          loaded_at: string
+          survivor_id: string
+          survivor_name: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          delete_id: string
+          delete_name?: string | null
+          delete_phone?: string | null
+          loaded_at?: string
+          survivor_id: string
+          survivor_name?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          delete_id?: string
+          delete_name?: string | null
+          delete_phone?: string | null
+          loaded_at?: string
+          survivor_id?: string
+          survivor_name?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
       _dedup_merge: {
         Row: {
           action: string | null
