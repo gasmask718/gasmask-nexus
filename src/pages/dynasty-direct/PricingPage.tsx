@@ -24,7 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner';
 import {
   AlertTriangle, DollarSign, Sparkles, History, Download,
-  RefreshCw, TrendingUp, Loader2, Search, LineChart,
+  RefreshCw, TrendingUp, Loader2, Search, LineChart, Target,
 } from 'lucide-react';
 
 const GOLD = '#C9A84C';
@@ -96,6 +96,7 @@ export default function PricingPage() {
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState<string | null>(null);
   const [refreshingMarket, setRefreshingMarket] = useState<string | null>(null);
+  const [applyingSweet, setApplyingSweet] = useState<string | null>(null);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['dd-pricing-rows', category],
@@ -262,6 +263,41 @@ export default function PricingPage() {
     } finally { setRefreshingMarket(null); }
   }
 
+  async function applySweetSpot(row: PricingRow) {
+    if (row.market_avg_retail == null) {
+      toast.error('No market data yet — click "Check Market Price" first.');
+      return;
+    }
+    setApplyingSweet(row.id);
+    try {
+      // Preview
+      const { data: pre, error: preErr } = await supabase.functions.invoke('dd-price-intelligence', {
+        body: { action: 'analyze', product_id: row.id },
+      });
+      if (preErr) throw preErr;
+      const sweet = pre?.analysis?.sweet_spot;
+      if (!sweet) throw new Error('Sweet-spot unavailable (missing market or cost).');
+
+      const msg =
+        `Apply competitive sweet-spot price for "${row.product_name}"?\n\n` +
+        `Store: $${row.store_price_a ?? '—'} → $${sweet.store_price} (${sweet.store_margin_pct.toFixed(1)}% margin)\n` +
+        `DTC:   $${row.dtc_price_b ?? '—'} → $${sweet.dtc_price} (${sweet.dtc_margin_pct.toFixed(1)}% margin)\n\n` +
+        `${sweet.notes}`;
+      if (!window.confirm(msg)) return;
+
+      const { data, error } = await supabase.functions.invoke('dd-price-intelligence', {
+        body: { action: 'apply_sweet_spot', product_id: row.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Applied sweet spot: store $${data.applied.store_price_a} / DTC $${data.applied.dtc_price_b}`);
+      qc.invalidateQueries({ queryKey: ['dd-pricing-rows'] });
+      qc.invalidateQueries({ queryKey: ['dd-price-alerts-open'] });
+    } catch (e: any) {
+      toast.error(e.message ?? 'Apply sweet spot failed');
+    } finally { setApplyingSweet(null); }
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -382,6 +418,16 @@ export default function PricingPage() {
                             </Button>
                             <Button size="sm" variant="outline" disabled={refreshingMarket===r.id} onClick={() => checkMarketPrice(r.id)} title="Check market price (SerpAPI)">
                               {refreshingMarket===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <LineChart className="h-3 w-3" />}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={applyingSweet===r.id || r.market_avg_retail == null}
+                              onClick={() => applySweetSpot(r)}
+                              title={r.market_avg_retail == null ? 'Run Check Market Price first' : 'Apply competitive sweet-spot price'}
+                              style={r.market_avg_retail != null ? { borderColor: GOLD, color: GOLD } : undefined}
+                            >
+                              {applyingSweet===r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Target className="h-3 w-3" />}
                             </Button>
                             <Button size="sm" variant="ghost" onClick={() => setHistoryId(r.id)}>
                               <History className="h-3 w-3" />
