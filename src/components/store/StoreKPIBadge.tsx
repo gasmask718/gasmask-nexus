@@ -42,8 +42,9 @@ const ALL_TUBE_BRANDS = (() => {
     const key = groupKeyFor(id);
     if (seen.has(key)) continue;
     seen.add(key);
-    const canon = normalizeBrandId(key);
-    const name = canon && key === canon ? CANONICAL_BRANDS[canon].displayName : config.name;
+    // Prefer SKU-specific label from TUBE_BRAND_COLORS (e.g. "GasMask Bags")
+    // over the brand-level display name (e.g. "GasMask") so distinct SKUs stay legible.
+    const name = config.name || (canon && key === canon ? CANONICAL_BRANDS[canon].displayName : key);
     out.push({ brand_id: key, brand_name: name });
   }
   return out;
