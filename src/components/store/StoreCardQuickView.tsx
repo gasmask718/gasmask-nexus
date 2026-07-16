@@ -876,3 +876,5 @@ function PaymentSection({ storeId }: { storeId: string }) {
   );
 }
 
+
+export default StoreCardQuickView;
