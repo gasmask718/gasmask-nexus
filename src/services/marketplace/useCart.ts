@@ -187,11 +187,18 @@ export function useCart() {
       if (price == null) {
         const { data: productAll } = await supabase
           .from("products_all")
-          .select("retail_price, store_price, wholesale_price")
+          .select("retail_price, store_price, wholesale_price, dtc_price_b, store_price_a")
           .eq("id", productId)
           .single();
         if (productAll) {
-          price = getProductPriceForDisplay(productAll, effectiveTier);
+          price = getProductPriceForDisplay(
+            {
+              retail_price: (productAll as any).dtc_price_b ?? productAll.retail_price,
+              store_price:  (productAll as any).store_price_a ?? productAll.store_price,
+              wholesale_price: productAll.wholesale_price,
+            },
+            effectiveTier,
+          );
         } else {
           const { data: productLocal } = await supabase
             .from("products")
