@@ -202,6 +202,17 @@ export default function RELeadPipeline() {
       return '';
     };
     const truthy = (v: string) => /^(y|yes|true|1|dnc)$/i.test(v.trim());
+    // DNC-specific: TCPA legal risk. Treat ANY non-empty value as DNC=true
+    // unless it's an explicit falsy token. Source data uses strings like
+    // "Public DNC", "Federal DNC", "Internal DNC", etc. — the old truthy()
+    // matched only literal "true"/"y"/"dnc" and silently dropped these,
+    // causing flagged numbers to be dialed.
+    const dncTruthy = (v: string) => {
+      const t = (v ?? '').toString().trim().toLowerCase();
+      if (!t) return false;
+      if (/^(n|no|false|0|clean|clear|ok|-|none|null|na|n\/a)$/.test(t)) return false;
+      return true;
+    };
     const digits = (v: string) => v.replace(/\D/g, '');
 
     const skipped = { noAddress: 0, noContact: 0 };
