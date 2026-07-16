@@ -215,9 +215,9 @@ export default function PricingPage() {
   });
 
   function exportCsv() {
-    const header = ['sku','product_name','category','cost','store_price','dtc_price','store_margin_pct','dtc_margin_pct','market_avg_retail','ceiling','status'];
+    const header = ['product_name','category','cost','store_price','dtc_price','store_margin_pct','dtc_margin_pct','market_avg_retail','ceiling','status'];
     const rows = filtered.map(r => [
-      r.sku ?? '', r.product_name, r.category ?? '',
+      r.product_name, r.category ?? '',
       r.supplier_cost ?? '', r.store_price_a ?? '', r.dtc_price_b ?? '',
       r.store_margin_pct ?? '', r.dtc_margin_pct ?? '',
       r.market_avg_retail ?? '', ceilingOf(r) ?? '',
