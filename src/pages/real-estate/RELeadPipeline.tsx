@@ -473,6 +473,20 @@ export default function RELeadPipeline() {
           </Dialog>
           <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4 mr-1" />Upload CSV</Button>
           <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleCSVUpload} />
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
+            onClick={() => {
+              if (confirm('Backfill mode: re-parse this CSV and UPDATE existing leads in place (matched by property_address + zip). No new rows will be created and no campaign will be triggered. Use this to repair the DNC/company_name fields on already-imported data.')) {
+                backfillRef.current?.click();
+              }
+            }}
+            title="Repair DNC / company_name on already-imported rows"
+          >
+            <Upload className="h-4 w-4 mr-1" />Backfill from CSV
+          </Button>
+          <input ref={backfillRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleBackfillUpload} />
           <Button size="sm" variant="outline" onClick={handleExport}><Download className="h-4 w-4 mr-1" />Export</Button>
         </div>
       </div>
