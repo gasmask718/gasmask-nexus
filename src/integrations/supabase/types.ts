@@ -131,6 +131,48 @@ export type Database = {
         }
         Relationships: []
       }
+      _cfin_cleanup: {
+        Row: {
+          delete_id: string
+          delete_name: string | null
+          loaded_at: string
+        }
+        Insert: {
+          delete_id: string
+          delete_name?: string | null
+          loaded_at?: string
+        }
+        Update: {
+          delete_id?: string
+          delete_name?: string | null
+          loaded_at?: string
+        }
+        Relationships: []
+      }
+      _cfin_pairs: {
+        Row: {
+          delete_id: string
+          delete_name: string | null
+          loaded_at: string
+          survivor_id: string
+          survivor_name: string | null
+        }
+        Insert: {
+          delete_id: string
+          delete_name?: string | null
+          loaded_at?: string
+          survivor_id: string
+          survivor_name?: string | null
+        }
+        Update: {
+          delete_id?: string
+          delete_name?: string | null
+          loaded_at?: string
+          survivor_id?: string
+          survivor_name?: string | null
+        }
+        Relationships: []
+      }
       _cust_pairs: {
         Row: {
           address: string | null
