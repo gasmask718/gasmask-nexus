@@ -567,6 +567,7 @@ const GasmaskDriverRoutePage = lazy(() => import('@/pages/gasmask/DriverRoutePag
 // T6 cleanup: AgentCenterPage deleted — both routes redirect to /grabba/floor9
 const NoteCleanerPage = lazy(() => import('@/pages/gasmask/NoteCleanerPage'));
 const StoreIntelligencePage = lazy(() => import('@/pages/gasmask/StoreIntelligencePage'));
+const GasMaskInventoryOps = lazy(() => import('@/pages/gasmask/GasMaskInventoryOps'));
 const CommunicationOverview = lazy(() => import('@/pages/communication/CommunicationOverview'));
 const CommunicationCampaigns = lazy(() => import('@/pages/communication/CommunicationCampaigns'));
 const CommunicationCampaignNew = lazy(() => import('@/pages/communication/CommunicationCampaignNew'));
@@ -1479,6 +1480,7 @@ export default function AppRoutes() {
         <Route path="/gasmask/store-intelligence" element={<StoreIntelligencePage />} />
         <Route path="/gasmask/products" element={<Products />} />
         <Route path="/gasmask/inventory" element={<Products />} />
+        <Route path="/gasmask/inventory-ops" element={<GasMaskInventoryOps />} />
         <Route path="/gasmask/map" element={<MapPage />} />
         <Route path="/gasmask/live-map" element={<LiveMap />} />
         <Route path="/gasmask/ambassadors" element={<Ambassadors />} />

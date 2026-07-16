@@ -101750,6 +101750,39 @@ export type Database = {
           },
         ]
       }
+      store_inventory_leads: {
+        Row: {
+          created_at: string
+          id: string
+          inventory_status: string
+          last_called: string | null
+          notes: string | null
+          phone: string | null
+          store_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inventory_status?: string
+          last_called?: string | null
+          notes?: string | null
+          phone?: string | null
+          store_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inventory_status?: string
+          last_called?: string | null
+          notes?: string | null
+          phone?: string | null
+          store_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       store_master: {
         Row: {
           address: string
