@@ -210,7 +210,7 @@ Rules: prices must charm-round to .49 or .99. Never go below MAP if MAP > 0. Nev
   const raw = await res.json();
   const text = raw?.content?.[0]?.text || '{}';
   const parsed = JSON.parse(text.trim().replace(/^```json\s*|\s*```$/g, ''));
-  return { ...parsed, source: 'ai' } as Analysis;
+  return { ...parsed, source: 'ai', sweet_spot: computeSweetSpot(p, marketAvg) } as Analysis;
 }
 
 async function getDdAnthropicApiKey(supabase: ReturnType<typeof createClient>): Promise<string | null> {
