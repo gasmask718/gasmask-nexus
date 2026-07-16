@@ -174,7 +174,7 @@ export default function PricingPage() {
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     return enriched.filter(r => {
-      if (term && !`${r.product_name} ${r.sku ?? ''}`.toLowerCase().includes(term)) return false;
+      if (term && !r.product_name.toLowerCase().includes(term)) return false;
       if (alertFilter === 'above_ceiling') {
         return aboveCeilingIds.has(r.id);
       }
