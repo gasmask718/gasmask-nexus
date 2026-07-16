@@ -336,84 +336,8 @@ const Stores = () => {
   // Inactive = no invoice on record.
   const isStoreActive = (storeId: string) => activeStoreIds.has(storeId);
 
-  const filteredStores = stores.filter(store => {
-    // Search across name + full address fields (street, city, state, zip)
-    const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = !searchQuery ||
-      store.name.toLowerCase().includes(searchLower) ||
-      store.address_street?.toLowerCase().includes(searchLower) ||
-      store.address_city?.toLowerCase().includes(searchLower) ||
-      store.address_state?.toLowerCase().includes(searchLower) ||
-      store.address_zip?.toLowerCase().includes(searchLower) ||
-      store.phone?.includes(searchQuery) ||
-      store.owner_name?.toLowerCase().includes(searchLower) ||
-      store.tags?.some(tag => tag.toLowerCase().includes(searchLower));
-    
-    const matchesStatus = activeFilter === 'all' 
-      || (activeFilter === 'active' && isStoreActive(store.id))
-      || (activeFilter === 'inactive' && !isStoreActive(store.id));
+  // (In-memory `filteredStores` computation removed — server path filters/paginates.)
 
-    const matchesRelationship = relationshipFilter === 'all'
-      || store.relationship_status === relationshipFilter;
-    
-    const matchesTag =
-      tagFilter === 'all' ||
-      (tagFilter === 'flowers' && store.sells_flowers) ||
-      store.tags?.some(tag => tag.toLowerCase() === tagFilter.toLowerCase());
-    
-    // Sticker filter
-    const matchesSticker = stickerFilter === 'all' ||
-      (stickerFilter === 'has_door' && store.sticker_door) ||
-      (stickerFilter === 'has_instore' && store.sticker_instore) ||
-      (stickerFilter === 'has_phone' && store.sticker_phone) ||
-      (stickerFilter === 'has_any' && (store.sticker_door || store.sticker_instore || store.sticker_phone)) ||
-      (stickerFilter === 'no_sticker' && !store.sticker_door && !store.sticker_instore && !store.sticker_phone);
-    
-    // Payment type filter
-    const matchesPaymentType = 
-      paymentTypeFilter === 'all' || 
-      (paymentTypeFilter === 'not_set' && !store.payment_type) ||
-      (paymentTypeFilter !== 'not_set' && store.payment_type === paymentTypeFilter);
-    
-    // No Name filter
-    const matchesNoName = !noNameFilter || !store.name || store.name.trim() === '' || store.name.trim().toLowerCase() === 'no name';
-
-    // New stores filter (stores without notes OR created today)
-    const isCreatedToday = store.created_at 
-      ? new Date(store.created_at).toDateString() === new Date().toDateString()
-      : false;
-    const matchesNewStores = !newStoresOnly || !storeIdsWithNotes.has(store.id) || isCreatedToday;
-
-    // Month/date filter
-    const matchesMonth = (() => {
-      if (monthFilter === 'all') return true;
-      if (!store.created_at) return false;
-      const created = new Date(store.created_at);
-      const now = new Date();
-
-      if (monthFilter === 'this_month') {
-        return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
-      }
-      if (monthFilter === 'this_year') {
-        return created.getFullYear() === now.getFullYear();
-      }
-      if (monthFilter.startsWith('months_ago_')) {
-        const monthsAgo = parseInt(monthFilter.replace('months_ago_', ''), 10);
-        const cutoff = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
-        return created >= cutoff;
-      }
-      if (monthFilter === 'custom') {
-        const from = customDateFrom ? new Date(customDateFrom) : null;
-        const to = customDateTo ? new Date(customDateTo + 'T23:59:59') : null;
-        if (from && created < from) return false;
-        if (to && created > to) return false;
-        return true;
-      }
-      return true;
-    })();
-    
-    return matchesSearch && matchesStatus && matchesRelationship && matchesTag && matchesSticker && matchesPaymentType && matchesNoName && matchesNewStores && matchesMonth;
-  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
