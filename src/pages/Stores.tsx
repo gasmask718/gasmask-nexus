@@ -720,7 +720,7 @@ const Stores = () => {
   // PAGINATION
   // ═══════════════════════════════════════════════════════════════════════════════
   // Legacy in-memory path (kept intact as fallback under !USE_SERVER_PATH).
-  const legacyTotalPages = Math.ceil(filteredStoresCount / pageSize);
+  const legacyTotalPages = Math.ceil(filteredStores.length / pageSize);
   const legacyPaginatedStores = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredStores.slice(start, start + pageSize);
