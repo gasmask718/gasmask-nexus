@@ -118,8 +118,15 @@ export function getSkuStatusIcon(status: SkuStatus): string {
   return status === 'bought' ? '🟢' : status === 'staged' ? '🟡' : '🔴';
 }
 
-export function getSkuStatusLabel(status: SkuStatus, inventoryCount?: number): string {
+export function getSkuStatusLabel(
+  status: SkuStatus,
+  inventoryCount?: number,
+  unitLabel?: 'bags' | 'tubes',
+): string {
   if (status === 'bought') return 'sold';
-  if (status === 'staged') return `stocked: ${inventoryCount ?? 0}`;
+  if (status === 'staged') {
+    const n = inventoryCount ?? 0;
+    return unitLabel ? `stocked: ${n} ${unitLabel}` : `stocked: ${n}`;
+  }
   return 'pitch';
 }
