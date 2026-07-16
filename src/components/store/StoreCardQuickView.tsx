@@ -23,6 +23,7 @@ import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
 import { getSkuStatusIcon } from '@/lib/inventory/skuDisplay';
 import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
 import { useStoreRecentInvoices } from '@/hooks/useStoreRecentInvoices';
+import { StoreCardContactsQuickSection } from './StoreCardContactsQuickSection';
 
 interface StoreCardQuickViewProps {
   storeId: string;
@@ -189,8 +190,11 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
     <div className="mt-2 space-y-3 rounded-md border border-border/50 bg-muted/30 p-3">
       <InventorySection storeId={storeId} />
       <StoreFlagsSection storeId={storeId} />
+      <StoreCardContactsQuickSection storeId={storeId} storeName={storeName} />
       <QuickOrderSection storeId={storeId} storeName={storeName} />
       <PaymentSection storeId={storeId} storeName={storeName} />
+
+
 
 
 
