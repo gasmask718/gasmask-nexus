@@ -117,7 +117,7 @@ export function useCart() {
       const { data: productsAll } = await supabase
         .from("products_all")
         .select(
-          "id, product_name, images, retail_price, store_price, wholesale_price, wholesaler_id, inventory_qty, weight_oz",
+          "id, product_name, images, retail_price, store_price, wholesale_price, dtc_price_b, store_price_a, wholesaler_id, inventory_qty, weight_oz",
         )
         .in("id", productIds);
 
@@ -127,13 +127,14 @@ export function useCart() {
         .in("id", productIds);
 
       const productMap: Record<string, CartItem["product"]> = {};
-      (productsAll || []).forEach((p) => {
+      (productsAll || []).forEach((p: any) => {
         productMap[p.id] = {
           id: p.id,
           product_name: p.product_name || "",
           images: Array.isArray(p.images) ? (p.images as string[]) : [],
-          retail_price: p.retail_price,
-          store_price: p.store_price,
+          // Prefer authoritative DD pricing columns; fall back to legacy.
+          retail_price: p.dtc_price_b ?? p.retail_price,
+          store_price:  p.store_price_a ?? p.store_price,
           wholesale_price: p.wholesale_price,
           wholesaler_id: p.wholesaler_id,
           inventory_qty: p.inventory_qty,
@@ -186,11 +187,18 @@ export function useCart() {
       if (price == null) {
         const { data: productAll } = await supabase
           .from("products_all")
-          .select("retail_price, store_price, wholesale_price")
+          .select("retail_price, store_price, wholesale_price, dtc_price_b, store_price_a")
           .eq("id", productId)
           .single();
         if (productAll) {
-          price = getProductPriceForDisplay(productAll, effectiveTier);
+          price = getProductPriceForDisplay(
+            {
+              retail_price: (productAll as any).dtc_price_b ?? productAll.retail_price,
+              store_price:  (productAll as any).store_price_a ?? productAll.store_price,
+              wholesale_price: productAll.wholesale_price,
+            },
+            effectiveTier,
+          );
         } else {
           const { data: productLocal } = await supabase
             .from("products")

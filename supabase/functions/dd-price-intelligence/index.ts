@@ -248,16 +248,65 @@ function parsePrice(raw: unknown): number | null {
   return isFinite(n) && n > 0 ? n : null;
 }
 
-// Robust IQR-based outlier trim so a single $1 sticker or $999 bundle can't skew the avg.
+// Tighter IQR trim (1.0 instead of 1.5) so bundle/variety-pack outliers don't
+// skew the average as heavily. Also does a first-pass median-ratio trim to
+// handle small sample sizes where IQR alone can't kill a single wild value
+// (e.g. a $1000 collectible in a set of 4).
 function trimOutliers(prices: number[]): number[] {
-  if (prices.length < 4) return prices.slice();
-  const s = prices.slice().sort((a, b) => a - b);
+  if (prices.length < 2) return prices.slice();
+  const sorted0 = prices.slice().sort((a, b) => a - b);
+  const median = sorted0[Math.floor(sorted0.length / 2)];
+  // Pre-trim: drop anything more than 4× or less than 0.25× the median.
+  const preTrimmed = sorted0.filter((p) => p >= median * 0.25 && p <= median * 4);
+  if (preTrimmed.length < 4) return preTrimmed;
+  const s = preTrimmed;
   const q1 = s[Math.floor(s.length * 0.25)];
   const q3 = s[Math.floor(s.length * 0.75)];
   const iqr = q3 - q1;
-  const lo = q1 - 1.5 * iqr;
-  const hi = q3 + 1.5 * iqr;
+  const lo = q1 - 1.0 * iqr;
+  const hi = q3 + 1.0 * iqr;
   return s.filter((p) => p >= lo && p <= hi);
+}
+
+// Terms that almost always indicate a bundle / variety pack / multi-unit listing.
+// Any listing whose title contains one of these is excluded from the market avg.
+const BUNDLE_EXCLUSIONS = [
+  'variety pack', 'variety-pack', 'assortment', 'assorted', 'sampler',
+  'bundle', 'combo', 'multi-pack', 'multipack', 'gift set', 'gift box',
+  'wholesale lot', 'case of', 'display box', 'full case', 'bulk lot',
+  'carton of', 'x pack', ' pk ', ' pcs', ' pieces', ' count', 'ct pack',
+];
+
+// Words we ignore when scoring title relevance (stop words only). Do NOT put
+// category words like "paper", "papers", "roll" in here — those are often the
+// most discriminative token in a product name and dropping them lets unrelated
+// listings (posters, art, notebooks) pass the relevance filter.
+const STOP_TOKENS = new Set([
+  'the', 'a', 'an', 'of', 'and', 'or', 'for', 'with', 'in', 'on',
+  'new', 'authentic',
+]);
+
+function tokenize(s: string): string[] {
+  return s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+}
+
+/**
+ * Score how relevant a result title is to the target product name.
+ * Returns the fraction of significant product tokens present in the title (0–1).
+ * Treats singular/plural stems as equivalent so "papers" matches "paper".
+ */
+function titleRelevance(productName: string, title: string): number {
+  const pTokens = tokenize(productName).filter((t) => !STOP_TOKENS.has(t) && t.length > 1);
+  if (pTokens.length === 0) return 1;
+  const tTokens = new Set(tokenize(title));
+  // Stem: allow either singular or plural form to satisfy a token.
+  const hits = pTokens.filter((t) => {
+    if (tTokens.has(t)) return true;
+    if (t.endsWith('s') && tTokens.has(t.slice(0, -1))) return true;
+    if (!t.endsWith('s') && tTokens.has(t + 's')) return true;
+    return false;
+  }).length;
+  return hits / pTokens.length;
 }
 
 interface SerpResult { source: string; price: number; url: string | null; title: string }
@@ -292,19 +341,56 @@ async function refreshMarketForProduct(
   product: { id: string; product_name: string | null; brand: string | null },
   serpKey: string,
   queryOverride?: string,
-): Promise<{ product_id: string; samples: number; avg: number | null; low: number | null; high: number | null; query: string; results: SerpResult[] }> {
-  const query = (queryOverride && queryOverride.trim())
-    || [product.brand, product.product_name].filter(Boolean).join(' ').trim()
-    || (product.product_name ?? '');
-  if (!query) return { product_id: product.id, samples: 0, avg: null, low: null, high: null, query: '', results: [] };
+): Promise<{ product_id: string; samples: number; samples_raw: number; excluded: { bundles: number; low_relevance: number; outliers: number }; avg: number | null; low: number | null; high: number | null; query: string; results: SerpResult[] }> {
+  // Build query: brand + product name. We deliberately DON'T send Google-side
+  // negative operators (google_shopping ignores/misinterprets them and often
+  // returns zero results), and DON'T quote the phrase (also collapses results
+  // for common product names). Precision comes entirely from the post-filter:
+  // BUNDLE_EXCLUSIONS + titleRelevance + tighter IQR trim.
+  const nameRaw = (product.product_name ?? '').trim();
+  const brandRaw = (product.brand ?? '').trim();
+  const brandPart = brandRaw && !nameRaw.toLowerCase().includes(brandRaw.toLowerCase())
+    ? `${brandRaw} `
+    : '';
+  const autoQuery = (brandPart + nameRaw).trim();
 
-  const results = await serpApiShoppingSearch(serpKey, query);
+  const query = (queryOverride && queryOverride.trim())
+    || autoQuery
+    || nameRaw;
+  if (!query) return { product_id: product.id, samples: 0, samples_raw: 0, excluded: { bundles: 0, low_relevance: 0, outliers: 0 }, avg: null, low: null, high: null, query: '', results: [] };
+
+  const rawResults = await serpApiShoppingSearch(serpKey, query);
+
+  // Post-filter: drop bundle-ish titles and low-relevance titles, then IQR-trim prices.
+  let bundlesDropped = 0;
+  let lowRelevanceDropped = 0;
+  const filtered: SerpResult[] = [];
+  for (const r of rawResults) {
+    const titleLc = r.title.toLowerCase();
+    if (BUNDLE_EXCLUSIONS.some((t) => titleLc.includes(t))) {
+      bundlesDropped++;
+      continue;
+    }
+    if (nameRaw && titleRelevance(nameRaw, r.title) < 0.75) {
+      lowRelevanceDropped++;
+      continue;
+    }
+    filtered.push(r);
+  }
+
+  const results = filtered;
   if (results.length === 0) {
     await supabase
       .from('products_all')
       .update({ market_updated_at: new Date().toISOString() })
       .eq('id', product.id);
-    return { product_id: product.id, samples: 0, avg: null, low: null, high: null, query, results };
+    return {
+      product_id: product.id,
+      samples: 0,
+      samples_raw: rawResults.length,
+      excluded: { bundles: bundlesDropped, low_relevance: lowRelevanceDropped, outliers: 0 },
+      avg: null, low: null, high: null, query, results,
+    };
   }
 
   const rows = results.slice(0, 25).map((r) => ({
@@ -316,7 +402,9 @@ async function refreshMarketForProduct(
   }));
   await supabase.from('dd_market_prices').insert(rows);
 
-  const prices = trimOutliers(results.map((r) => r.price));
+  const rawPrices = results.map((r) => r.price);
+  const prices = trimOutliers(rawPrices);
+  const outliersDropped = rawPrices.length - prices.length;
   const avg = prices.reduce((s, p) => s + p, 0) / prices.length;
   const low = Math.min(...prices);
   const high = Math.max(...prices);
@@ -334,6 +422,8 @@ async function refreshMarketForProduct(
   return {
     product_id: product.id,
     samples: prices.length,
+    samples_raw: rawResults.length,
+    excluded: { bundles: bundlesDropped, low_relevance: lowRelevanceDropped, outliers: outliersDropped },
     avg: Number(avg.toFixed(2)),
     low: Number(low.toFixed(2)),
     high: Number(high.toFixed(2)),
@@ -380,7 +470,7 @@ async function computeAlerts(
 }
 
 const PRODUCT_COLS =
-  'id, product_name, brand, category, supplier_cost, store_price_a, dtc_price_b, map_price, target_store_margin_pct, target_dtc_margin_pct, min_store_margin_pct, min_dtc_margin_pct';
+  'id, product_name, brand, category, supplier_cost, store_price_a, dtc_price_b, map_price, target_store_margin_pct, target_dtc_margin_pct, min_store_margin_pct, min_dtc_margin_pct, market_avg_retail';
 
 const MARKET_STALE_DAYS = 7;
 const MARKET_REFRESH_CAP_PER_RUN = 40; // hard cap so a single cron run can't burn the SerpAPI budget
@@ -509,7 +599,11 @@ Deno.serve(async (req) => {
     if (!p) return ok({ error: 'product not found' });
     const product = p as ProductRow;
 
-    // Market context (for analyze/set_optimal)
+    // Market context (for analyze/set_optimal/apply_sweet_spot).
+    // Prefer the trimmed, stored market_avg_retail (already filtered for
+    // bundles / low-relevance titles / price outliers by refresh_market).
+    // Fall back to an untrimmed average of recent samples ONLY if the stored
+    // value is missing.
     const { data: marketRows } = await supabase
       .from('dd_market_prices')
       .select('source, price')
@@ -517,9 +611,12 @@ Deno.serve(async (req) => {
       .order('observed_at', { ascending: false })
       .limit(20);
     const samples = (marketRows || []).map((r: any) => ({ source: r.source, price: Number(r.price) }));
-    const marketAvg = samples.length
-      ? samples.reduce((s: number, r: any) => s + r.price, 0) / samples.length
-      : null;
+    const storedAvg = Number((product as any).market_avg_retail || 0);
+    const marketAvg = storedAvg > 0
+      ? storedAvg
+      : (samples.length
+          ? samples.reduce((s: number, r: any) => s + r.price, 0) / samples.length
+          : null);
 
     if (action === 'check_alerts') {
       const alerts = await computeAlerts(supabase, product);
