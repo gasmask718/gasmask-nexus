@@ -106,7 +106,8 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach(t => t.stop());
       setMicPermission("granted");
-    } catch {
+    } catch (err: any) {
+      console.error("[VoiceDevice][getUserMedia]", { name: err?.name, message: err?.message });
       setMicPermission("denied");
     }
   }, []);
