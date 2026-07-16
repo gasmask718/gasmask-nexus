@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Target, Plus, Clock, CheckCircle2, Circle, Sparkles, User } from 'lucide-react';
+import { Target, Plus, Clock, CheckCircle2, Circle, Sparkles, User, CalendarClock, Route as RouteIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { dynastyDate } from '@/lib/dates';
 import { AddOpportunityModal } from './AddOpportunityModal';
@@ -18,13 +18,17 @@ interface StoreOpportunity {
   store_id: string;
   opportunity_text: string;
   is_completed: boolean;
-  source: 'manual' | 'ai_extracted';
+  source: 'manual' | 'ai_extracted' | 'follow_up';
   detected_from_note_id: string | null;
   detected_from_interaction_id: string | null;
   completed_at: string | null;
   completed_by: string | null;
   created_at: string;
   updated_at: string;
+  due_date: string | null;
+  assignee: string | null;
+  priority: string | null;
+  route_flag: boolean | null;
 }
 
 interface OpportunitiesSectionProps {
@@ -48,10 +52,12 @@ export function OpportunitiesSection({ storeId, storeName }: OpportunitiesSectio
         .from('store_opportunities')
         .select('*')
         .eq('store_id', storeMasterId)
+        .order('is_completed', { ascending: true })
+        .order('due_date', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as StoreOpportunity[];
+      return data as unknown as StoreOpportunity[];
     },
     enabled: !!storeMasterId,
   });
@@ -219,17 +225,38 @@ function OpportunityItem({ opportunity, onToggle, isToggling }: OpportunityItemP
             className="text-xs"
           >
             {opportunity.source === 'ai_extracted' ? (
-              <>
-                <Sparkles className="h-3 w-3 mr-1" />
-                AI Detected
-              </>
+              <><Sparkles className="h-3 w-3 mr-1" /> AI Detected</>
+            ) : opportunity.source === 'follow_up' ? (
+              <><CalendarClock className="h-3 w-3 mr-1" /> Follow-up</>
             ) : (
-              <>
-                <User className="h-3 w-3 mr-1" />
-                Manual
-              </>
+              <><User className="h-3 w-3 mr-1" /> Manual</>
             )}
           </Badge>
+          {opportunity.route_flag && (
+            <Badge variant="outline" className="text-xs gap-1">
+              <RouteIcon className="h-3 w-3" /> Route
+            </Badge>
+          )}
+          {opportunity.priority && opportunity.priority !== 'normal' && (
+            <Badge
+              variant="outline"
+              className={`text-xs capitalize ${
+                opportunity.priority === 'urgent'
+                  ? 'border-red-500/40 text-red-600'
+                  : opportunity.priority === 'high'
+                  ? 'border-orange-500/40 text-orange-600'
+                  : ''
+              }`}
+            >
+              {opportunity.priority}
+            </Badge>
+          )}
+          {opportunity.due_date && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <CalendarClock className="h-3.5 w-3.5" />
+              <span>Due {format(new Date(opportunity.due_date), 'MMM d, yyyy')}</span>
+            </div>
+          )}
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Clock className="h-3.5 w-3.5" />
             <span>{dynastyDate(opportunity.created_at)}</span>

@@ -102251,40 +102251,52 @@ export type Database = {
       }
       store_opportunities: {
         Row: {
+          assignee: string | null
           completed_at: string | null
           completed_by: string | null
           created_at: string
           detected_from_interaction_id: string | null
           detected_from_note_id: string | null
+          due_date: string | null
           id: string
           is_completed: boolean
           opportunity_text: string
+          priority: string
+          route_flag: boolean
           source: string
           store_id: string
           updated_at: string
         }
         Insert: {
+          assignee?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
           detected_from_interaction_id?: string | null
           detected_from_note_id?: string | null
+          due_date?: string | null
           id?: string
           is_completed?: boolean
           opportunity_text: string
+          priority?: string
+          route_flag?: boolean
           source: string
           store_id: string
           updated_at?: string
         }
         Update: {
+          assignee?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
           detected_from_interaction_id?: string | null
           detected_from_note_id?: string | null
+          due_date?: string | null
           id?: string
           is_completed?: boolean
           opportunity_text?: string
+          priority?: string
+          route_flag?: boolean
           source?: string
           store_id?: string
           updated_at?: string

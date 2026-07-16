@@ -33,11 +33,10 @@ interface StoreCardQuickViewProps {
 
 interface TaskRow {
   id: string;
-  title: string;
-  description: string | null;
-  due_at: string | null;
+  opportunity_text: string;
+  due_date: string | null;
   priority: string | null;
-  status: string | null;
+  is_completed: boolean;
   route_flag: boolean | null;
   store_id: string | null;
   created_at: string | null;
@@ -85,19 +84,19 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
   const [priority, setPriority] = useState<string>('normal');
   const [storeSearch, setStoreSearch] = useState('');
 
-  // Lazy: only load open follow-ups for THIS store when expanded
+  // Lazy: only load open opportunities/follow-ups for THIS store when expanded
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({
-    queryKey: ['store-followups', storeId],
+    queryKey: ['store-opportunities', storeId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('relationship_tasks')
-        .select('id,title,description,due_at,priority,status,route_flag,store_id,created_at')
+        .from('store_opportunities')
+        .select('id,opportunity_text,due_date,priority,is_completed,route_flag,store_id,created_at')
         .eq('store_id', storeId)
-        .eq('status', 'open')
-        .order('due_at', { ascending: true, nullsFirst: false })
+        .eq('is_completed', false)
+        .order('due_date', { ascending: true, nullsFirst: false })
         .limit(50);
       if (error) throw error;
-      return (data || []) as TaskRow[];
+      return (data || []) as unknown as TaskRow[];
     },
     staleTime: 30_000,
   });
@@ -133,17 +132,15 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
       if (!trimmed) throw new Error('Please enter follow-up text');
       const dueIso = dueDate ? new Date(`${dueDate}T12:00:00`).toISOString() : null;
 
-      const { error } = await supabase.from('relationship_tasks').insert({
-        title: trimmed.slice(0, 120),
-        description: trimmed,
-        due_at: dueIso,
-        status: 'open',
-        priority,
-        task_type: 'follow_up',
+      const { error } = await supabase.from('store_opportunities').insert({
         store_id: targetStoreId,
+        opportunity_text: trimmed,
+        source: 'follow_up',
+        is_completed: false,
+        due_date: dueIso,
+        priority,
         route_flag: routeFlag,
-        created_by: user?.id ?? null,
-        created_at: new Date().toISOString(),
+        assignee: user?.id ?? null,
       } as any);
       if (error) throw error;
 
@@ -158,8 +155,10 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
       setText('');
       setRouteFlag(false);
       setPriority('normal');
-      qc.invalidateQueries({ queryKey: ['store-followups', targetStoreId] });
-      qc.invalidateQueries({ queryKey: ['store-followups', storeId] });
+      qc.invalidateQueries({ queryKey: ['store-opportunities', targetStoreId] });
+      qc.invalidateQueries({ queryKey: ['store-opportunities', storeId] });
+      qc.invalidateQueries({ queryKey: ['store-opportunities'] });
+      qc.invalidateQueries({ queryKey: ['opportunities-summary'] });
     },
     onError: (e: any) => toast.error(e?.message || 'Failed to save follow-up'),
   });
@@ -168,9 +167,9 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
     mutationFn: async (taskId: string) => {
       const nowIso = new Date().toISOString();
       const { error } = await supabase
-        .from('relationship_tasks')
+        .from('store_opportunities')
         .update({
-          status: 'completed',
+          is_completed: true,
           completed_at: nowIso,
           completed_by: user?.id ?? null,
         } as any)
@@ -182,7 +181,9 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
         .eq('id', storeId);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['store-followups', storeId] });
+      qc.invalidateQueries({ queryKey: ['store-opportunities', storeId] });
+      qc.invalidateQueries({ queryKey: ['store-opportunities'] });
+      qc.invalidateQueries({ queryKey: ['opportunities-summary'] });
     },
     onError: (e: any) => toast.error(e?.message || 'Failed to complete task'),
   });
@@ -225,7 +226,7 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="font-medium text-foreground">{t.title}</span>
+                    <span className="font-medium text-foreground">{t.opportunity_text}</span>
                     {t.route_flag && (
                       <Badge variant="outline" className="h-4 gap-0.5 px-1 text-[9px]">
                         <RouteIcon className="h-2.5 w-2.5" /> route
@@ -244,9 +245,9 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
                       </Badge>
                     )}
                   </div>
-                  {t.due_at && (
+                  {t.due_date && (
                     <p className="text-[10px] text-muted-foreground">
-                      Due {format(new Date(t.due_at), 'MMM d, yyyy')}
+                      Due {format(new Date(t.due_date), 'MMM d, yyyy')}
                     </p>
                   )}
                 </div>
