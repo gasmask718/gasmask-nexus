@@ -47,8 +47,14 @@ export function useDynastyDirectProducts(filters?: { search?: string }) {
       const { data, error } = await query;
       if (error) throw error;
 
-      return (data || []).map(p => ({
+      // Dynasty Direct pricing lives in dtc_price_b / store_price_a (authoritative,
+      // written by dd_update_product_pricing). Legacy retail_price / store_price
+      // columns are unused for DD storefront — prefer the real columns, fall back
+      // to legacy only if the new columns aren't populated yet.
+      return (data || []).map((p: any) => ({
         ...p,
+        retail_price: p.dtc_price_b ?? p.retail_price,
+        store_price:  p.store_price_a ?? p.store_price,
         images: Array.isArray(p.images) ? p.images : [],
         dimensions: p.dimensions as { length: number; width: number; height: number } | null,
       })) as DynastyDirectProduct[];
