@@ -456,7 +456,6 @@ export default function PricingPage() {
       {historyId && (
         <AlertHistoryDialog productId={historyId} onClose={() => setHistoryId(null)} />
       )}
-    </div>
   );
 }
 
