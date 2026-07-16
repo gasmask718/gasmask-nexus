@@ -184,6 +184,151 @@ export default function RELeadPipeline() {
   };
   const toggleAll = () => setSelected(selected.size === filtered.length ? new Set() : new Set(filtered.map((l: any) => l.id)));
 
+  // Shared row parser — used by both fresh upload and backfill so DNC/company
+  // logic is guaranteed identical between the two paths.
+  const parseCSVFile = async (file: File) => {
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data);
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]) as any[];
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const pick = (row: any, ...keys: string[]): string => {
+      const map: Record<string, any> = {};
+      for (const k of Object.keys(row)) map[norm(k)] = row[k];
+      for (const k of keys) {
+        const v = map[norm(k)];
+        if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+      }
+      return '';
+    };
+    const truthy = (v: string) => /^(y|yes|true|1|dnc)$/i.test(v.trim());
+    const dncTruthy = (v: string) => {
+      const t = (v ?? '').toString().trim().toLowerCase();
+      if (!t) return false;
+      if (/^(n|no|false|0|clean|clear|ok|-|none|null|na|n\/a)$/.test(t)) return false;
+      return true;
+    };
+    const digits = (v: string) => v.replace(/\D/g, '');
+
+    const skipped = { noAddress: 0, noContact: 0 };
+    const mapped: any[] = [];
+    for (const r of rows) {
+      const property_address = pick(r, 'property_address', 'Address', 'Street Address', 'Property Address', 'Site Address');
+      if (!property_address) { skipped.noAddress++; continue; }
+      const phones_detail: { number: string; type?: string; dnc: boolean }[] = [];
+      for (let i = 1; i <= 5; i++) {
+        const num = pick(r, `Phone ${i}`, `Phone${i}`, `phone_${i}`, i === 1 ? 'Phone' : '');
+        if (!num) continue;
+        const d = digits(num);
+        if (d.length < 7) continue;
+        phones_detail.push({
+          number: d,
+          type: pick(r, `Phone ${i} Type`, `Phone${i}Type`, `phone_${i}_type`) || undefined,
+          dnc: dncTruthy(pick(r, `Phone ${i} DNC`, `Phone${i}DNC`, `phone_${i}_dnc`)),
+        });
+      }
+      if (phones_detail.length === 0) {
+        const p = pick(r, 'phone', 'Phone');
+        if (p) {
+          const d = digits(p);
+          if (d.length >= 7) phones_detail.push({ number: d, dnc: dncTruthy(pick(r, 'DNC', 'Do Not Call')) });
+        }
+      }
+      const emails_detail: string[] = [];
+      for (let i = 1; i <= 4; i++) {
+        const em = pick(r, `Email ${i}`, `Email${i}`, `email_${i}`, i === 1 ? 'Email' : '');
+        if (em && /@/.test(em)) emails_detail.push(em.toLowerCase());
+      }
+      if (phones_detail.length === 0 && emails_detail.length === 0) { skipped.noContact++; continue; }
+      const firstClean = phones_detail.find(p => !p.dnc);
+      const primaryPhone = (firstClean ?? phones_detail[0])?.number || '';
+      const allDnc = phones_detail.length > 0 && phones_detail.every(p => p.dnc);
+      mapped.push({
+        first_name: pick(r, 'first_name', 'FirstName', 'First Name', 'Owner First'),
+        last_name: pick(r, 'last_name', 'LastName', 'Last Name', 'Owner Last'),
+        company_name: pick(r, 'Company Name', 'company_name', 'Company', 'LLC') || null,
+        litigator: truthy(pick(r, 'Litigator', 'litigator')),
+        phone: primaryPhone,
+        email: emails_detail[0] || null,
+        phones_all: phones_detail.map(p => p.number),
+        emails_all: emails_detail,
+        phones_detail,
+        emails_detail,
+        dnc: allDnc,
+        property_address,
+        city: pick(r, 'city', 'City'),
+        state: pick(r, 'state', 'State'),
+        zip: pick(r, 'zip', 'Zip', 'Zipcode', 'Postal Code'),
+        county: pick(r, 'county', 'County'),
+        mailing_address: pick(r, 'Mail Street Address', 'Mailing Address', 'mailing_address', 'Mail Address') || null,
+        mailing_city: pick(r, 'Mail City', 'mailing_city') || null,
+        mailing_state: pick(r, 'Mail State', 'mailing_state') || null,
+        mailing_zip: pick(r, 'Mail Zip', 'mailing_zip') || null,
+        estimated_value: parseFloat(pick(r, 'estimated_value', 'Value', 'Estimated Value')) || null,
+        lead_type: pick(r, 'lead_type', 'Type'),
+        status: (() => {
+          const allowed = ['new','skip_trace_pending','phone_found','queued','called','interested','appointment_set','analyzed','offer_made','countering','under_contract','buyer_found','assigned','closed','dead','dnc','cancelled'];
+          const raw = (pick(r, 'status', 'Status') || '').toString().trim().toLowerCase().replace(/\s+/g, '_');
+          return allowed.includes(raw) ? raw : 'new';
+        })(),
+        skip_traced: phones_detail.length > 0,
+        lead_source: 'csv_upload',
+        raw_payload: r,
+      });
+    }
+    return { rows, mapped, skipped };
+  };
+
+  // Backfill mode: re-parse the SAME csv and UPDATE existing rows in place
+  // (matched by property_address + zip). Never inserts, never triggers Bland.
+  // Only overwrites fields the parser derives — status/notes/etc. are untouched.
+  const handleBackfillUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const toastId = toast.loading('Parsing CSV for backfill…');
+    try {
+      const { mapped } = await parseCSVFile(file);
+      if (mapped.length === 0) {
+        toast.error('No parseable rows in file', { id: toastId });
+        e.target.value = ''; return;
+      }
+      let updated = 0, notFound = 0, failed = 0;
+      const missing: string[] = [];
+      toast.loading(`Backfilling ${mapped.length} rows…`, { id: toastId });
+      for (const row of mapped) {
+        const patch = {
+          phone: row.phone,
+          phones_all: row.phones_all,
+          phones_detail: row.phones_detail,
+          dnc: row.dnc,
+          email: row.email,
+          emails_all: row.emails_all,
+          emails_detail: row.emails_detail,
+          company_name: row.company_name,
+          litigator: row.litigator,
+        };
+        // Match by exact address + zip; ilike w/ no wildcards = case-insensitive equality.
+        const q = supabase.from('re_leads').update(patch).eq('zip', row.zip || '');
+        const { data, error } = await q.ilike('property_address', row.property_address).select('id');
+        if (error) { failed++; console.error('[RE backfill] update failed', row.property_address, error.message); continue; }
+        if (!data || data.length === 0) {
+          notFound++;
+          if (missing.length < 10) missing.push(`${row.property_address}${row.zip ? ' ' + row.zip : ''}`);
+        } else {
+          updated += data.length;
+        }
+      }
+      qc.invalidateQueries({ queryKey: ['re-leads'] });
+      const summary = `Backfill complete — ${updated} rows updated, ${notFound} not found, ${failed} failed`;
+      console.log('[RE backfill]', { updated, notFound, failed, sampleMissing: missing });
+      if (failed > 0) toast.error(summary, { id: toastId, duration: 12000 });
+      else toast.success(summary, { id: toastId, duration: 10000 });
+    } catch (err: any) {
+      toast.error('Backfill failed: ' + (err?.message || String(err)), { id: toastId });
+    } finally {
+      e.target.value = '';
+    }
+  };
+
   const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
