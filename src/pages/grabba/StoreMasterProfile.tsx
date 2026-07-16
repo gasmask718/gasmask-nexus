@@ -380,9 +380,19 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
           {/* Quick notes — shared account_notes surface */}
           <Card>
             <CardContent className="pt-6">
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Review / Sign-Off
+              </div>
+              <StoreReviewControls storeId={id} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
               <StoreQuickNotes storeId={id} />
             </CardContent>
           </Card>
+
 
           {/* Samples Given — physical samples handed to this store */}
           <Card>
