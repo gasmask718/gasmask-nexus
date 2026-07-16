@@ -567,6 +567,7 @@ const GasmaskDriverRoutePage = lazy(() => import('@/pages/gasmask/DriverRoutePag
 // T6 cleanup: AgentCenterPage deleted — both routes redirect to /grabba/floor9
 const NoteCleanerPage = lazy(() => import('@/pages/gasmask/NoteCleanerPage'));
 const StoreIntelligencePage = lazy(() => import('@/pages/gasmask/StoreIntelligencePage'));
+const GasMaskInventoryOps = lazy(() => import('@/pages/gasmask/GasMaskInventoryOps'));
 const CommunicationOverview = lazy(() => import('@/pages/communication/CommunicationOverview'));
 const CommunicationCampaigns = lazy(() => import('@/pages/communication/CommunicationCampaigns'));
 const CommunicationCampaignNew = lazy(() => import('@/pages/communication/CommunicationCampaignNew'));
