@@ -40,7 +40,6 @@ type StatusKind = 'on_target' | 'below_target' | 'below_floor' | 'alert';
 
 interface PricingRow {
   id: string;
-  sku: string | null;
   product_name: string;
   category: string | null;
   supplier_cost: number | null;
