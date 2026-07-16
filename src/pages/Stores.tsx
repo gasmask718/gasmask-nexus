@@ -43,6 +43,15 @@ import {
 } from '@/config/storeRelationshipStatus';
 import { RelationshipStatusSelect } from '@/components/store/RelationshipStatusSelect';
 import { format } from 'date-fns';
+import { useStoresServerData } from '@/pages/stores/useStoresServerData';
+
+// Phase 2A Win 2: DUAL PATH.  When true, the grid uses server-side
+// pagination/search/filtering (via useStoresServerData).  The legacy
+// full-in-memory fetch below stays intact as a fallback — flip this
+// back to false to restore it verbatim.
+const USE_SERVER_PATH = true;
+
+
 
 interface StoreContact {
   id: string;
