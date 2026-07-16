@@ -766,13 +766,14 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
         .update({ updated_at: nowIso, updated_by: user?.id ?? null } as any)
         .eq('id', storeId);
 
-      return invoice!.id;
+      return { id: invoice!.id, number: invoiceNumber, total };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       toast.success('Order created');
       setTubes('');
       setUnitPrice('');
       setMarkPaid(false);
+      setLastCreated(result);
       qc.invalidateQueries({ queryKey: ['store-recent-invoices-sku', storeId] });
       qc.invalidateQueries({ queryKey: ['store-invoices', 'store', storeId] });
       qc.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
