@@ -387,6 +387,18 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
 
   const makeCall = useCallback(async (to: string, params?: Record<string, string>): Promise<Call | null> => {
     lastErrorRef.current = null;
+    console.info("[VoiceDevice][makeCall] preflight", {
+      to,
+      isSecureContext: typeof window !== "undefined" ? window.isSecureContext : "n/a",
+      origin: typeof window !== "undefined" ? window.location.origin : "n/a",
+      micPermission,
+      deviceState,
+      tokenFunctionName,
+    });
+    // Ensure mic is granted before touching Device — Twilio needs it to register
+    if (micPermission !== "granted") {
+      await requestMicPermission();
+    }
     // Lazy init — only create Device when user actually tries to call
     if (!deviceRef.current) {
       await initDevice();
