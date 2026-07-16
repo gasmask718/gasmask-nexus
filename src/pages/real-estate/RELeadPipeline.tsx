@@ -240,7 +240,7 @@ export default function RELeadPipeline() {
         const p = pick(r, 'phone', 'Phone');
         if (p) {
           const d = digits(p);
-          if (d.length >= 7) phones_detail.push({ number: d, dnc: truthy(pick(r, 'DNC', 'Do Not Call')) });
+          if (d.length >= 7) phones_detail.push({ number: d, dnc: dncTruthy(pick(r, 'DNC', 'Do Not Call')) });
         }
       }
 
