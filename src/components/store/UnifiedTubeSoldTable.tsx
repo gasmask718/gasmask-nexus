@@ -27,7 +27,7 @@ export function UnifiedTubeSoldTable({ storeId }: Props) {
   const rows = CANONICAL_TUBE_SKUS.map((sku) => {
     const lt = lifetime.data?.find((l) => l.product_id === sku.product_id);
     const l30 = last30.data?.find((w) => w.product_id === sku.product_id);
-    const unit = unitLabelFor(sku.product_id);
+    const unit = unitLabelForProductId(sku.product_id);
     return {
       product_id: sku.product_id,
       display: sku.display,
