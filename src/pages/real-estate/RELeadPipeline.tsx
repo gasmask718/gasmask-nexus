@@ -85,6 +85,7 @@ type SortKey = 'created_at' | 'deal_score' | 'estimated_value' | 'last_called_at
 export default function RELeadPipeline() {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
+  const backfillRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeCard, setActiveCard] = useState<string | null>(null);
