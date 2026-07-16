@@ -15,24 +15,39 @@ export interface RecentInvoiceRow {
   partial_amount: number | null;
 }
 
+export interface UseStoreRecentInvoicesOptions {
+  /** Restrict to open invoices (payment_status IN ('unpaid','partial')) and drop the row cap. */
+  openOnly?: boolean;
+}
+
 export function useStoreRecentInvoices(
   storeId: string | null | undefined,
   limit: number = 5,
+  options: UseStoreRecentInvoicesOptions = {},
 ) {
+  const openOnly = !!options.openOnly;
   return useQuery({
-    queryKey: ['store-recent-invoices-sku', storeId, limit],
+    queryKey: ['store-recent-invoices-sku', storeId, limit, openOnly ? 'open' : 'all'],
     enabled: !!storeId,
     staleTime: 60_000,
     queryFn: async (): Promise<RecentInvoiceRow[]> => {
       if (!storeId) return [];
 
-      const { data: invoices, error } = await supabase
+      let q = supabase
         .from('invoices')
         .select('id, invoice_number, total, created_at, payment_status, paid_at, partial_amount')
         .eq('store_id', storeId)
         .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-        .limit(limit);
+        .order('created_at', { ascending: false });
+
+      if (openOnly) {
+        // Server-side filter — null-status rows are treated as legacy/unknown and excluded.
+        q = q.in('payment_status', ['unpaid', 'partial']);
+      } else {
+        q = q.limit(limit);
+      }
+
+      const { data: invoices, error } = await q;
       if (error) throw error;
       if (!invoices?.length) return [];
 
@@ -43,7 +58,6 @@ export function useStoreRecentInvoices(
         .in('invoice_id', invoiceIds);
       if (liErr) throw liErr;
 
-      // Per-invoice tube total + per-invoice top SKU
       const tubesByInvoice = new Map<string, number>();
       const skuTubesByInvoice = new Map<string, Map<string, number>>();
       lineItems?.forEach((li) => {
