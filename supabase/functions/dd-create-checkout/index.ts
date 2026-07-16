@@ -81,11 +81,13 @@ serve(async (req) => {
       if (!body.payment_method_id) throw new Error("missing_payment_method");
 
       // Server-side price recompute against products_all — never trust client.
-      // Express pay from the public surface charges retail_price.
+      // Express pay from the public surface charges retail (DTC) price.
+      // Prefer authoritative dtc_price_b (Dynasty Direct pricing engine),
+      // fall back to legacy retail_price for older products not yet repriced.
       const ids = items.map((i) => i.product_id);
       const { data: prodRows, error: prodErr } = await supabase
         .from("products_all")
-        .select("id, product_name, retail_price, inventory_qty, status")
+        .select("id, product_name, retail_price, dtc_price_b, inventory_qty, status")
         .in("id", ids);
       if (prodErr) throw prodErr;
       const byId = new Map((prodRows ?? []).map((p: any) => [p.id, p]));
@@ -105,7 +107,8 @@ serve(async (req) => {
         for (const it of items) {
           const p: any = byId.get(it.product_id);
           if (!p || p.status !== "active") throw new Error(`unavailable:${it.product_id}`);
-          let unitCents = Math.round(Number(p.retail_price ?? 0) * 100);
+          const effectiveRetail = Number(p.dtc_price_b) || Number(p.retail_price) || 0;
+          let unitCents = Math.round(effectiveRetail * 100);
           if (unitCents <= 0) throw new Error(`bad_price:${it.product_id}`);
 
           // Flash sale: server-side discount enforcement (never trust client price).
