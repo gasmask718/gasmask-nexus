@@ -124,7 +124,7 @@ export function StoreTubeInventoryCard({ storeId, onAddCount }: StoreTubeInvento
                       }
                       className="font-mono text-sm"
                     >
-                      {getSkuStatusLabel(sku.status, sku.tubes_remaining)}
+                      {getSkuStatusLabel(sku.status, sku.tubes_remaining, unitLabelForProductId(sku.product_id))}
                     </Badge>
                   </div>
                 );
