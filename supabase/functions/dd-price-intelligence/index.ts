@@ -364,7 +364,7 @@ async function refreshMarketForProduct(
       bundlesDropped++;
       continue;
     }
-    if (nameRaw && titleRelevance(nameRaw, r.title) < 0.6) {
+    if (nameRaw && titleRelevance(nameRaw, r.title) < 1.0) {
       lowRelevanceDropped++;
       continue;
     }
