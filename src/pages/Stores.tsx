@@ -299,6 +299,7 @@ const Stores = () => {
     pageSize,
     activeStoreIds,
     storeIdsWithNotes,
+    reviewFilter,
   });
 
   // `stores` is the lean list (all live stores, count-source columns only);
