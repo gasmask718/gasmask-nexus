@@ -775,7 +775,7 @@ const StoreDetail = () => {
             lat={store.lat}
             lng={store.lng}
             storeName={store.name}
-            address={store.address}
+            address={`${store.address_street}, ${store.address_city}`}
           />
 
 
