@@ -249,10 +249,17 @@ function parsePrice(raw: unknown): number | null {
 }
 
 // Tighter IQR trim (1.0 instead of 1.5) so bundle/variety-pack outliers don't
-// skew the average as heavily.
+// skew the average as heavily. Also does a first-pass median-ratio trim to
+// handle small sample sizes where IQR alone can't kill a single wild value
+// (e.g. a $1000 collectible in a set of 4).
 function trimOutliers(prices: number[]): number[] {
-  if (prices.length < 4) return prices.slice();
-  const s = prices.slice().sort((a, b) => a - b);
+  if (prices.length < 2) return prices.slice();
+  const sorted0 = prices.slice().sort((a, b) => a - b);
+  const median = sorted0[Math.floor(sorted0.length / 2)];
+  // Pre-trim: drop anything more than 4× or less than 0.25× the median.
+  const preTrimmed = sorted0.filter((p) => p >= median * 0.25 && p <= median * 4);
+  if (preTrimmed.length < 4) return preTrimmed;
+  const s = preTrimmed;
   const q1 = s[Math.floor(s.length * 0.25)];
   const q3 = s[Math.floor(s.length * 0.75)];
   const iqr = q3 - q1;
