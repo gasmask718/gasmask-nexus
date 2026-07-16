@@ -958,6 +958,13 @@ function PaymentSection({ storeId, storeName }: { storeId: string; storeName: st
                     {format(new Date(inv.created_at), 'MMM d')} · Balance ${balance.toFixed(2)}
                   </p>
                 </div>
+                <TextReceiptButton
+                  storeId={storeId}
+                  storeName={storeName}
+                  invoiceId={inv.id}
+                  invoiceNumber={inv.invoice_number}
+                  totalAmount={inv.total}
+                />
                 <Button
                   type="button"
                   size="sm"
