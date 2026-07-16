@@ -25,6 +25,7 @@ import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
 import { useStoreRecentInvoices } from '@/hooks/useStoreRecentInvoices';
 import { StoreCardContactsQuickSection } from './StoreCardContactsQuickSection';
 import { StoreQuickNotes } from './StoreQuickNotes';
+import { SamplesGivenSection } from './SamplesGivenSection';
 
 interface StoreCardQuickViewProps {
   storeId: string;
