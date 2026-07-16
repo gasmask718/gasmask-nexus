@@ -348,4 +348,213 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
   );
 }
 
+// ────────────────────────────────────────────────────────────────
+// Inventory section — reuses useStoreInventoryBySku (same source
+// the Store Profile tube card uses). Lazy: query only fires when
+// the parent panel is expanded (this component only mounts then).
+// Inline edit writes back to store_tube_inventory using the same
+// find-or-insert pattern as UpdateInventoryModal.
+// ────────────────────────────────────────────────────────────────
+function InventorySection({ storeId }: { storeId: string }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const { data: skus = [], isLoading } = useStoreInventoryBySku(storeId);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+
+  const saveSku = useMutation({
+    mutationFn: async ({ productId, count }: { productId: string; count: number }) => {
+      if (isNaN(count) || count < 0) throw new Error('Invalid count');
+
+      const { data: existing } = await supabase
+        .from('store_tube_inventory')
+        .select('id')
+        .eq('store_id', storeId)
+        .eq('product_id', productId)
+        .eq('is_simulation', false)
+        .maybeSingle();
+
+      const nowIso = new Date().toISOString();
+      const actor = user?.email || user?.id || 'quickview';
+
+      if (existing) {
+        const { error } = await supabase
+          .from('store_tube_inventory')
+          .update({
+            current_tubes_left: count,
+            last_updated: nowIso,
+            created_by: actor,
+          })
+          .eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('store_tube_inventory').insert({
+          store_id: storeId,
+          product_id: productId,
+          current_tubes_left: count,
+          created_by: actor,
+        } as any);
+        if (error) throw error;
+      }
+
+      // Stamp store updated_at + updated_by
+      await supabase
+        .from('store_master')
+        .update({ updated_at: nowIso, updated_by: user?.id ?? null } as any)
+        .eq('id', storeId);
+    },
+    onSuccess: (_d, vars) => {
+      toast.success('Inventory updated');
+      setDrafts((prev) => {
+        const next = { ...prev };
+        delete next[vars.productId];
+        return next;
+      });
+      invalidateStoreInventoryQueries(qc, storeId);
+    },
+    onError: (e: any) => toast.error(e?.message || 'Failed to update inventory'),
+  });
+
+  return (
+    <div className="space-y-1.5">
+      <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <Package className="h-3 w-3" /> Tube inventory
+      </p>
+      {isLoading ? (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+        </div>
+      ) : (
+        <ul className="space-y-1">
+          {skus.map((sku) => {
+            const draft = drafts[sku.product_id];
+            const currentValue = draft ?? String(sku.tubes_remaining);
+            const dirty = draft !== undefined && draft !== String(sku.tubes_remaining);
+            const pending = saveSku.isPending && saveSku.variables?.productId === sku.product_id;
+            return (
+              <li key={sku.product_id} className="flex items-center gap-2 text-xs">
+                <span className="text-sm leading-none" aria-hidden>{getSkuStatusIcon(sku.status)}</span>
+                <span className="flex-1 truncate">{sku.display}</span>
+                <Input
+                  type="number"
+                  min={0}
+                  value={currentValue}
+                  onChange={(e) =>
+                    setDrafts((prev) => ({ ...prev, [sku.product_id]: e.target.value }))
+                  }
+                  className="h-7 w-16 text-xs px-1.5 font-mono"
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  variant={dirty ? 'default' : 'ghost'}
+                  disabled={!dirty || pending}
+                  onClick={() =>
+                    saveSku.mutate({
+                      productId: sku.product_id,
+                      count: parseInt(currentValue, 10),
+                    })
+                  }
+                  className="h-7 w-7 shrink-0"
+                  aria-label="Save"
+                >
+                  {pending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────
+// Store flags — needs_order + bring_samples toggles on store_master.
+// ────────────────────────────────────────────────────────────────
+function StoreFlagsSection({ storeId }: { storeId: string }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+
+  const { data: flags, isLoading } = useQuery({
+    queryKey: ['store-flags', storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('store_master')
+        .select('needs_order, bring_samples')
+        .eq('id', storeId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? { needs_order: false, bring_samples: false }) as {
+        needs_order: boolean | null;
+        bring_samples: boolean | null;
+      };
+    },
+    staleTime: 30_000,
+  });
+
+  const toggle = useMutation({
+    mutationFn: async ({ field, value }: { field: 'needs_order' | 'bring_samples'; value: boolean }) => {
+      const nowIso = new Date().toISOString();
+      const { error } = await supabase
+        .from('store_master')
+        .update({
+          [field]: value,
+          updated_at: nowIso,
+          updated_by: user?.id ?? null,
+        } as any)
+        .eq('id', storeId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['store-flags', storeId] });
+      qc.invalidateQueries({ queryKey: ['stores-server-page'] });
+      qc.invalidateQueries({ queryKey: ['stores-server-page-hydration'] });
+    },
+    onError: (e: any) => toast.error(e?.message || 'Failed to update flag'),
+  });
+
+  const needs = !!flags?.needs_order;
+  const samples = !!flags?.bring_samples;
+
+  return (
+    <div className="space-y-1.5 border-t border-border/50 pt-2">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Flags
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <label
+          className={cn(
+            'flex items-center gap-2 rounded border px-2 py-1.5 text-xs cursor-pointer select-none transition-colors',
+            needs ? 'border-orange-500/50 bg-orange-500/10 text-orange-700' : 'border-border/60 hover:bg-muted/50'
+          )}
+        >
+          <Checkbox
+            checked={needs}
+            disabled={isLoading || toggle.isPending}
+            onCheckedChange={(v) => toggle.mutate({ field: 'needs_order', value: v === true })}
+            className="h-3.5 w-3.5"
+          />
+          <PackagePlus className="h-3 w-3" />
+          Needs order
+        </label>
+        <label
+          className={cn(
+            'flex items-center gap-2 rounded border px-2 py-1.5 text-xs cursor-pointer select-none transition-colors',
+            samples ? 'border-indigo-500/50 bg-indigo-500/10 text-indigo-700' : 'border-border/60 hover:bg-muted/50'
+          )}
+        >
+          <Checkbox
+            checked={samples}
+            disabled={isLoading || toggle.isPending}
+            onCheckedChange={(v) => toggle.mutate({ field: 'bring_samples', value: v === true })}
+            className="h-3.5 w-3.5"
+          />
+          <Sparkles className="h-3 w-3" />
+          Bring samples
+        </label>
+      </div>
+    </div>
+  );
+}
+
 export default StoreCardQuickView;
