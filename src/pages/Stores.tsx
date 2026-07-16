@@ -45,6 +45,7 @@ import { RelationshipStatusSelect } from '@/components/store/RelationshipStatusS
 import { format } from 'date-fns';
 import { useStoresServerData } from '@/pages/stores/useStoresServerData';
 import { StoreCardQuickView } from '@/components/store/StoreCardQuickView';
+import { StoreReviewBadge } from '@/components/store/StoreReviewControls';
 
 // Phase 2A Win 2: server-side pagination/search/filtering via
 // useStoresServerData is the ONLY path. Legacy in-memory fallback removed
