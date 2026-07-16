@@ -25,6 +25,7 @@ import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
 import { useStoreRecentInvoices } from '@/hooks/useStoreRecentInvoices';
 import { StoreCardContactsQuickSection } from './StoreCardContactsQuickSection';
 import { StoreQuickNotes } from './StoreQuickNotes';
+import { SamplesGivenSection } from './SamplesGivenSection';
 
 interface StoreCardQuickViewProps {
   storeId: string;
@@ -196,6 +197,8 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
       <StoreQuickNotes storeId={storeId} compact />
       <QuickOrderSection storeId={storeId} storeName={storeName} />
       <PaymentSection storeId={storeId} storeName={storeName} />
+      <SamplesGivenSection storeId={storeId} variant="compact" />
+
 
 
 

@@ -26,6 +26,7 @@ import { Activity, Headphones, Flame } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreQuickNotes } from "@/components/store/StoreQuickNotes";
+import { SamplesGivenSection } from "@/components/store/SamplesGivenSection";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
 import { StoreStreetView } from "@/components/store/StoreStreetView";
 
@@ -790,6 +791,11 @@ const StoreDetail = () => {
           <Card className="glass-card border-border/50">
             <CardContent className="pt-6">
               <StoreQuickNotes storeId={id || ""} />
+            </CardContent>
+          </Card>
+          <Card className="glass-card border-border/50">
+            <CardContent className="pt-6">
+              <SamplesGivenSection storeId={id || ""} variant="full" />
             </CardContent>
           </Card>
           <TubesSoldHeroStrip storeId={id || ""} />

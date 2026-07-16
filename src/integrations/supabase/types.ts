@@ -103583,6 +103583,71 @@ export type Database = {
           },
         ]
       }
+      store_samples_given: {
+        Row: {
+          brand: string | null
+          created_at: string
+          given_at: string
+          given_by: string | null
+          id: string
+          note: string | null
+          product_id: string | null
+          quantity: number
+          store_id: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          given_at?: string
+          given_by?: string | null
+          id?: string
+          note?: string | null
+          product_id?: string | null
+          quantity?: number
+          store_id: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          given_at?: string
+          given_by?: string | null
+          id?: string
+          note?: string | null
+          product_id?: string | null
+          quantity?: number
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_samples_given_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_samples_given_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_prior_customer_segments"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_samples_given_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_public_store_locator"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_samples_given_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       store_saved_products: {
         Row: {
           created_at: string
@@ -128743,14 +128808,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -130498,6 +130563,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      samples_given_by_brand_v: {
+        Row: {
+          brand: string | null
+          distinct_stores: number | null
+          event_count: number | null
+          last_given_at: string | null
+          product_id: string | null
+          total_units: number | null
+        }
+        Relationships: []
       }
       store_commission_totals: {
         Row: {
