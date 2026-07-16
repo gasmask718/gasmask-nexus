@@ -270,10 +270,13 @@ const BUNDLE_EXCLUSIONS = [
   'carton of', 'x pack', ' pk ', ' pcs', ' pieces', ' count', 'ct pack',
 ];
 
-// Words we ignore when scoring title relevance (stop words + generic descriptors).
+// Words we ignore when scoring title relevance (stop words only). Do NOT put
+// category words like "paper", "papers", "roll" in here — those are often the
+// most discriminative token in a product name and dropping them lets unrelated
+// listings (posters, art, notebooks) pass the relevance filter.
 const STOP_TOKENS = new Set([
   'the', 'a', 'an', 'of', 'and', 'or', 'for', 'with', 'in', 'on',
-  'pack', 'box', 'roll', 'rolls', 'papers', 'paper', 'new', 'authentic',
+  'new', 'authentic',
 ]);
 
 function tokenize(s: string): string[] {
@@ -283,12 +286,19 @@ function tokenize(s: string): string[] {
 /**
  * Score how relevant a result title is to the target product name.
  * Returns the fraction of significant product tokens present in the title (0–1).
+ * Treats singular/plural stems as equivalent so "papers" matches "paper".
  */
 function titleRelevance(productName: string, title: string): number {
   const pTokens = tokenize(productName).filter((t) => !STOP_TOKENS.has(t) && t.length > 1);
   if (pTokens.length === 0) return 1;
   const tTokens = new Set(tokenize(title));
-  const hits = pTokens.filter((t) => tTokens.has(t)).length;
+  // Stem: allow either singular or plural form to satisfy a token.
+  const hits = pTokens.filter((t) => {
+    if (tTokens.has(t)) return true;
+    if (t.endsWith('s') && tTokens.has(t.slice(0, -1))) return true;
+    if (!t.endsWith('s') && tTokens.has(t + 's')) return true;
+    return false;
+  }).length;
   return hits / pTokens.length;
 }
 
