@@ -561,4 +561,318 @@ function StoreFlagsSection({ storeId }: { storeId: string }) {
   );
 }
 
-export default StoreCardQuickView;
+// ────────────────────────────────────────────────────────────────
+// PHASE 2D-1: Quick create order (pure reuse — mirrors
+// CreateStoreInvoiceModal insert shape: invoices + invoice_line_items).
+// Minimal single-line form: pick SKU from the store's canonical
+// tube SKU list (same source as InventorySection), enter tubes qty
+// and unit price per tube (prefilled from products.price_per_tube).
+// No SMS in this phase.
+// ────────────────────────────────────────────────────────────────
+function QuickOrderSection({ storeId }: { storeId: string }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const { data: skus = [] } = useStoreInventoryBySku(storeId);
+
+  const [productId, setProductId] = useState<string>('');
+  const [tubes, setTubes] = useState<string>('');
+  const [unitPrice, setUnitPrice] = useState<string>('');
+  const [markPaid, setMarkPaid] = useState<boolean>(false);
+
+  // Lazy: fetch price + name for the selected product
+  const { data: product } = useQuery({
+    queryKey: ['quickorder-product', productId],
+    enabled: !!productId,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, brand_id, price_per_tube, store_price, units_per_box')
+        .eq('id', productId)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
+  // Prefill unit price when product loads
+  useMemo(() => {
+    if (product && !unitPrice) {
+      const p = product.price_per_tube ?? product.store_price ?? null;
+      if (p != null) setUnitPrice(String(p));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id]);
+
+  const generateInvoiceNumber = () => {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `INV-${year}${month}-${random}`;
+  };
+
+  const create = useMutation({
+    mutationFn: async () => {
+      const qty = parseInt(tubes, 10);
+      const price = parseFloat(unitPrice);
+      if (!productId) throw new Error('Pick a SKU');
+      if (!qty || qty <= 0) throw new Error('Enter tube quantity');
+      if (isNaN(price) || price < 0) throw new Error('Enter unit price');
+
+      const sku = skus.find((s) => s.product_id === productId);
+      const productName = product?.name || sku?.display || 'Tube';
+      const total = qty * price;
+      const nowIso = new Date().toISOString();
+      const invoiceNumber = generateInvoiceNumber();
+
+      const { data: invoice, error: invErr } = await supabase
+        .from('invoices')
+        .insert({
+          store_id: storeId,
+          entity_type: 'store',
+          entity_id: storeId,
+          pricing_mode: 'retail',
+          invoice_number: invoiceNumber,
+          subtotal: total,
+          tax: 0,
+          total,
+          total_amount: total,
+          payment_status: markPaid ? 'paid' : 'unpaid',
+          paid_at: markPaid ? nowIso : null,
+          brand: sku?.parent_brand || null,
+          created_by: user?.id || 'quickview',
+          created_at: nowIso,
+          status: 'draft',
+          entry_mode: 'live',
+        } as any)
+        .select('id')
+        .single();
+      if (invErr) throw invErr;
+
+      const { error: liErr } = await supabase.from('invoice_line_items').insert({
+        invoice_id: invoice!.id,
+        brand_id: product?.brand_id ?? null,
+        product_id: productId,
+        product_name: productName,
+        product_name_snapshot: productName,
+        quantity: qty,
+        unit_price: price,
+        total,
+        sale_channel: 'retail',
+        sale_unit: 'unit',
+        quantity_tubes: qty,
+        computed_tubes_total: qty,
+        list_unit_price: price,
+        unit_price_used: price,
+        line_subtotal: total,
+        pricing_mode: 'retail',
+      } as any);
+      if (liErr) throw liErr;
+
+      await supabase
+        .from('store_master')
+        .update({ updated_at: nowIso, updated_by: user?.id ?? null } as any)
+        .eq('id', storeId);
+
+      return invoice!.id;
+    },
+    onSuccess: () => {
+      toast.success('Order created');
+      setTubes('');
+      setUnitPrice('');
+      setMarkPaid(false);
+      qc.invalidateQueries({ queryKey: ['store-recent-invoices-sku', storeId] });
+      qc.invalidateQueries({ queryKey: ['store-invoices', 'store', storeId] });
+      qc.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
+    },
+    onError: (e: any) => toast.error(e?.message || 'Failed to create order'),
+  });
+
+  const totalPreview = (() => {
+    const q = parseFloat(tubes);
+    const p = parseFloat(unitPrice);
+    if (!q || !p || isNaN(q) || isNaN(p)) return null;
+    return q * p;
+  })();
+
+  return (
+    <div className="space-y-1.5 border-t border-border/50 pt-2">
+      <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <Receipt className="h-3 w-3" /> Quick order
+      </p>
+      <Select value={productId} onValueChange={setProductId}>
+        <SelectTrigger className="h-8 text-xs">
+          <SelectValue placeholder="Pick SKU" />
+        </SelectTrigger>
+        <SelectContent className="max-h-64">
+          {skus.map((s) => (
+            <SelectItem key={s.product_id} value={s.product_id} className="text-xs">
+              {s.display}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-[10px]">Tubes</Label>
+          <Input
+            type="number"
+            min={1}
+            value={tubes}
+            onChange={(e) => setTubes(e.target.value)}
+            className="h-8 text-xs"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px]">$/tube</Label>
+          <Input
+            type="number"
+            step="0.01"
+            min={0}
+            value={unitPrice}
+            onChange={(e) => setUnitPrice(e.target.value)}
+            className="h-8 text-xs"
+          />
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <label className="flex items-center gap-1.5 text-xs cursor-pointer select-none">
+          <Checkbox
+            checked={markPaid}
+            onCheckedChange={(v) => setMarkPaid(v === true)}
+            className="h-3.5 w-3.5"
+          />
+          Mark paid on create
+        </label>
+        {totalPreview != null && (
+          <span className="text-xs font-mono text-foreground">
+            ${totalPreview.toFixed(2)}
+          </span>
+        )}
+      </div>
+      <Button
+        type="button"
+        size="sm"
+        className="w-full h-8 text-xs"
+        disabled={create.isPending || !productId || !tubes || !unitPrice}
+        onClick={() => create.mutate()}
+      >
+        {create.isPending ? (
+          <>
+            <Loader2 className="h-3 w-3 mr-1 animate-spin" /> Creating…
+          </>
+        ) : (
+          'Create order'
+        )}
+      </Button>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────
+// PHASE 2D-1: Resolve payment — lists open (unpaid/partial) invoices
+// from useStoreRecentInvoices and marks paid using the same shape
+// as InvoiceHistoryCard's togglePaymentStatusMutation.
+// ────────────────────────────────────────────────────────────────
+function PaymentSection({ storeId }: { storeId: string }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const { data: recent = [], isLoading } = useStoreRecentInvoices(storeId, 10);
+
+  const open = recent.filter(
+    (r) => r.payment_status && r.payment_status !== 'paid' && r.payment_status !== 'voided'
+  );
+
+  const markPaid = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const nowIso = new Date().toISOString();
+      const { error } = await supabase
+        .from('invoices')
+        .update({ payment_status: 'paid', paid_at: nowIso } as any)
+        .eq('id', invoiceId);
+      if (error) throw error;
+      await supabase
+        .from('store_master')
+        .update({ updated_at: nowIso, updated_by: user?.id ?? null } as any)
+        .eq('id', storeId);
+    },
+    onSuccess: () => {
+      toast.success('Payment recorded');
+      qc.invalidateQueries({ queryKey: ['store-recent-invoices-sku', storeId] });
+      qc.invalidateQueries({ queryKey: ['store-invoices', 'store', storeId] });
+      qc.invalidateQueries({ queryKey: ['all-invoices'] });
+      qc.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
+    },
+    onError: (e: any) => toast.error(e?.message || 'Failed to mark paid'),
+  });
+
+  return (
+    <div className="space-y-1.5 border-t border-border/50 pt-2">
+      <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <DollarSign className="h-3 w-3" /> Resolve payment
+      </p>
+      {isLoading ? (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+        </div>
+      ) : open.length === 0 ? (
+        <p className="text-xs italic text-muted-foreground">No open invoices</p>
+      ) : (
+        <ul className="space-y-1">
+          {open.map((inv) => {
+            const balance =
+              inv.payment_status === 'partial' && inv.partial_amount != null
+                ? Math.max(0, inv.total - inv.partial_amount)
+                : inv.total;
+            const pending = markPaid.isPending && markPaid.variables === inv.id;
+            return (
+              <li
+                key={inv.id}
+                className="flex items-center gap-2 rounded border border-border/50 bg-background/40 px-2 py-1 text-xs"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium truncate">
+                      {inv.invoice_number || inv.id.slice(0, 8)}
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'h-4 px-1 text-[9px] capitalize',
+                        inv.payment_status === 'partial'
+                          ? 'border-amber-500/50 text-amber-600'
+                          : 'border-red-500/50 text-red-600'
+                      )}
+                    >
+                      {inv.payment_status}
+                    </Badge>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    {format(new Date(inv.created_at), 'MMM d')} · Balance ${balance.toFixed(2)}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() => markPaid.mutate(inv.id)}
+                  className="h-7 px-2 text-[11px] gap-1"
+                >
+                  {pending ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-3 w-3" />
+                  )}
+                  Mark paid
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
