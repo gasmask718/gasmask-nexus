@@ -739,7 +739,7 @@ const Stores = () => {
   }, [server.pageRows, ownerNameCountsMap]);
 
   const paginatedStores: Store[] = (USE_SERVER_PATH ? serverPaginatedStores : legacyPaginatedStores) as Store[];
-  const filteredStoresCount = USE_SERVER_PATH ? server.pageTotal : filteredStoresCount;
+  const filteredStoresCount = USE_SERVER_PATH ? server.pageTotal : filteredStores.length;
   const totalPages = USE_SERVER_PATH ? Math.max(1, Math.ceil(server.pageTotal / pageSize)) : legacyTotalPages;
 
   // Reset to page 1 when filters change
