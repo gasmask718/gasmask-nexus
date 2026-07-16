@@ -155,6 +155,7 @@ function placeholderAnalysis(p: ProductRow, marketAvg: number | null): Analysis 
     recommendation: `Deterministic pricing from row targets (store ${targetStore}% / dtc ${targetDtc}%)${map > 0 ? `, MAP ${map} enforced` : ''}.`,
     alert_flags: flags,
     source: 'placeholder',
+    sweet_spot: computeSweetSpot(p, marketAvg),
   };
 }
 
