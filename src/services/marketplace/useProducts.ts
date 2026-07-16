@@ -53,9 +53,13 @@ export function useProducts(filters?: {
       const { data, error } = await query;
 
       if (error) throw error;
-      
-      return (data || []).map(p => ({
+
+      // Prefer authoritative Dynasty Direct pricing columns (dtc_price_b / store_price_a);
+      // fall back to legacy retail_price / store_price for non-DD rows.
+      return (data || []).map((p: any) => ({
         ...p,
+        retail_price: p.dtc_price_b ?? p.retail_price,
+        store_price:  p.store_price_a ?? p.store_price,
         images: Array.isArray(p.images) ? p.images : [],
         dimensions: p.dimensions as { length: number; width: number; height: number } | null,
       })) as MarketplaceProduct[];
@@ -78,11 +82,14 @@ export function useProduct(productId: string) {
         .single();
 
       if (error) throw error;
-      
+
+      const p: any = data;
       return {
-        ...data,
-        images: Array.isArray(data.images) ? data.images : [],
-        dimensions: data.dimensions as { length: number; width: number; height: number } | null,
+        ...p,
+        retail_price: p.dtc_price_b ?? p.retail_price,
+        store_price:  p.store_price_a ?? p.store_price,
+        images: Array.isArray(p.images) ? p.images : [],
+        dimensions: p.dimensions as { length: number; width: number; height: number } | null,
       } as MarketplaceProduct;
     },
     enabled: !!productId,
