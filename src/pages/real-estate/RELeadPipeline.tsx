@@ -202,6 +202,17 @@ export default function RELeadPipeline() {
       return '';
     };
     const truthy = (v: string) => /^(y|yes|true|1|dnc)$/i.test(v.trim());
+    // DNC-specific: TCPA legal risk. Treat ANY non-empty value as DNC=true
+    // unless it's an explicit falsy token. Source data uses strings like
+    // "Public DNC", "Federal DNC", "Internal DNC", etc. — the old truthy()
+    // matched only literal "true"/"y"/"dnc" and silently dropped these,
+    // causing flagged numbers to be dialed.
+    const dncTruthy = (v: string) => {
+      const t = (v ?? '').toString().trim().toLowerCase();
+      if (!t) return false;
+      if (/^(n|no|false|0|clean|clear|ok|-|none|null|na|n\/a)$/.test(t)) return false;
+      return true;
+    };
     const digits = (v: string) => v.replace(/\D/g, '');
 
     const skipped = { noAddress: 0, noContact: 0 };
@@ -221,7 +232,7 @@ export default function RELeadPipeline() {
         phones_detail.push({
           number: d,
           type: pick(r, `Phone ${i} Type`, `Phone${i}Type`, `phone_${i}_type`) || undefined,
-          dnc: truthy(pick(r, `Phone ${i} DNC`, `Phone${i}DNC`, `phone_${i}_dnc`)),
+          dnc: dncTruthy(pick(r, `Phone ${i} DNC`, `Phone${i}DNC`, `phone_${i}_dnc`)),
         });
       }
       // Fallback single phone
@@ -229,7 +240,7 @@ export default function RELeadPipeline() {
         const p = pick(r, 'phone', 'Phone');
         if (p) {
           const d = digits(p);
-          if (d.length >= 7) phones_detail.push({ number: d, dnc: truthy(pick(r, 'DNC', 'Do Not Call')) });
+          if (d.length >= 7) phones_detail.push({ number: d, dnc: dncTruthy(pick(r, 'DNC', 'Do Not Call')) });
         }
       }
 
@@ -557,7 +568,7 @@ export default function RELeadPipeline() {
                           <div className="text-xs text-muted-foreground">{[l.city, l.state, l.zip].filter(Boolean).join(', ')}</div>
                         </td>
                         <td className="p-3">
-                          <div>{[l.first_name, l.last_name].filter(Boolean).join(' ') || '—'}</div>
+                          <div>{[l.first_name, l.last_name].filter(Boolean).join(' ') || l.company_name || '—'}</div>
                           {l.phone && <div className="text-xs text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" />{l.phone}</div>}
                         </td>
                         <td className="p-3">
@@ -630,7 +641,7 @@ export default function RELeadPipeline() {
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Owner Info</p>
                     <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div><span className="text-muted-foreground">Name</span><p className="font-medium">{[detailLead.first_name, detailLead.last_name].filter(Boolean).join(' ') || '—'}</p></div>
+                      <div><span className="text-muted-foreground">Name</span><p className="font-medium">{[detailLead.first_name, detailLead.last_name].filter(Boolean).join(' ') || detailLead.company_name || '—'}</p></div>
                       <div><span className="text-muted-foreground">Phone</span><p className="font-medium">{detailLead.phone || '—'}</p></div>
                       <div><span className="text-muted-foreground">Email</span><p className="font-medium">{detailLead.email || '—'}</p></div>
                       <div>{!detailLead.phone && <Button size="sm" variant="outline" className="mt-1">Skip Trace Now</Button>}</div>
