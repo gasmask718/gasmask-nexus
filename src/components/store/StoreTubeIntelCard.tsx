@@ -4,6 +4,7 @@ import { Package, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
 import { getSkuStatusIcon, getSkuStatusLabel } from '@/lib/inventory/skuDisplay';
+import { unitLabelForProductId } from '@/lib/inventory/unitLabel';
 import { getTubeBrandColor } from '@/constants/tubeColors';
 
 interface StoreTubeIntelCardProps {
