@@ -75,8 +75,8 @@ export default function REAnalyzer() {
   };
   useEffect(() => { fetchSaved(); }, []);
 
-  const saveDeal = async () => {
-    if (!form.address || !form.state) { toast.error('Address and state are required.'); return; }
+  const saveDeal = async (): Promise<string | null> => {
+    if (!form.address || !form.state) { toast.error('Address and state are required.'); return null; }
     setSaving(true);
     try {
       const { data, error } = await supabase.from('re_properties').insert({
@@ -94,32 +94,132 @@ export default function REAnalyzer() {
       setSavedId(data!.id);
       toast.success('Deal saved!');
       fetchSaved();
+      return data!.id;
     } catch (e: any) {
       toast.error(`Save failed: ${e.message}`);
+      return null;
     } finally {
       setSaving(false);
     }
   };
 
+  // Client-side fallback matcher (mirrors re-match-buyers edge function scoring)
+  const matchBuyersLocal = async () => {
+    const { data, error } = await supabase
+      .from('re_buyers')
+      .select('id, name, company, email, phone, status, buyer_type, states, buy_box_min, buy_box_max, property_types, re_buyer_criteria(states, cities, property_types, min_beds, max_price, min_arv, max_arv, condition_acceptable, max_repair_cost, active)')
+      .or('status.eq.active,status.is.null');
+    if (error) throw error;
+
+    const scored = (data ?? []).map((b: any) => {
+      const crit = (b.re_buyer_criteria ?? []).find((c: any) => c.active) ?? (b.re_buyer_criteria ?? [])[0];
+      let score = 0;
+      let maxScore = 0;
+      const state = form.state;
+      const city = (form.city ?? '').toLowerCase();
+      const propType = (form.property_type ?? '').toLowerCase();
+      const beds = form.bedrooms ? Number(form.bedrooms) : null;
+
+      // Buyer-level buy box + states
+      if (b.states?.length) { maxScore++; if (b.states.includes(state)) score++; }
+      if (b.property_types?.length) { maxScore++; if (b.property_types.includes(propType)) score++; }
+      if (b.buy_box_min != null || b.buy_box_max != null) {
+        maxScore++;
+        const okMin = b.buy_box_min == null || ourOffer >= Number(b.buy_box_min);
+        const okMax = b.buy_box_max == null || ourOffer <= Number(b.buy_box_max);
+        if (okMin && okMax) score++;
+      }
+
+      // Criteria-level refinements
+      if (crit) {
+        if (crit.states?.length) { maxScore++; if (crit.states.includes(state)) score++; }
+        if (crit.cities?.length) {
+          maxScore++;
+          if (crit.cities.some((c: string) => city.includes(c.toLowerCase()))) score++;
+        }
+        if (crit.property_types?.length) { maxScore++; if (crit.property_types.includes(propType)) score++; }
+        if (crit.min_beds != null && beds != null) { maxScore++; if (beds >= Number(crit.min_beds)) score++; }
+        if (crit.max_price != null) { maxScore++; if (ourOffer <= Number(crit.max_price)) score++; }
+        if (crit.min_arv != null || crit.max_arv != null) {
+          maxScore++;
+          const okMin = crit.min_arv == null || arv >= Number(crit.min_arv);
+          const okMax = crit.max_arv == null || arv <= Number(crit.max_arv);
+          if (okMin && okMax) score++;
+        }
+        if (crit.max_repair_cost != null) {
+          maxScore++;
+          if (repairs <= Number(crit.max_repair_cost)) score++;
+        }
+        if (crit.condition_acceptable?.length) {
+          maxScore++;
+          if (crit.condition_acceptable.includes(form.condition)) score++;
+        }
+      }
+
+      if (maxScore === 0) { score = 3; maxScore = 6; }
+
+      return {
+        id: b.id,
+        name: b.name,
+        company: b.company,
+        email: b.email,
+        phone: b.phone,
+        buyer_type: b.buyer_type,
+        match_score: score,
+        max_score: maxScore,
+        match_pct: Math.round((score / Math.max(maxScore, 1)) * 100),
+      };
+    });
+
+    scored.sort((a, b) => b.match_pct - a.match_pct || b.match_score - a.match_score);
+    return scored;
+  };
+
   const runMatch = async () => {
-    if (!savedId) { toast.error('Save the deal first.'); return; }
+    // Auto-save first if the deal hasn't been persisted yet
+    let propertyId = savedId;
+    if (!propertyId) {
+      if (!form.address || !form.state) {
+        toast.error('Enter address + state before matching buyers.');
+        return;
+      }
+      propertyId = await saveDeal();
+      if (!propertyId) return;
+    }
+
     setMatchOpen(true); setMatching(true); setMatches([]);
     try {
+      // Try the edge function first (service-role scoring, canonical)
       const { data, error } = await supabase.functions.invoke('re-match-buyers', {
         body: {
-          property_id: savedId, state: form.state, city: form.city,
+          property_id: propertyId, state: form.state, city: form.city,
           property_type: form.property_type, arv_estimate: arv,
           repair_estimate: repairs, asking_price: ourOffer,
         },
       });
       if (error) throw error;
-      setMatches((data as any)?.matches ?? []);
+      const list = (data as any)?.matches ?? [];
+      if (list.length > 0) {
+        setMatches(list);
+      } else {
+        // Fall through to client-side query
+        const local = await matchBuyersLocal();
+        setMatches(local);
+      }
     } catch (e: any) {
-      toast.error(`Match failed: ${e.message}`);
+      console.warn('[re-match-buyers] edge failed, using client fallback:', e?.message);
+      try {
+        const local = await matchBuyersLocal();
+        setMatches(local);
+        if (local.length === 0) toast.info('No buyers in the database yet — add some in the Buyer Network tab.');
+      } catch (fallbackErr: any) {
+        toast.error(`Match failed: ${fallbackErr.message}`);
+      }
     } finally {
       setMatching(false);
     }
   };
+
 
   const sendOffer = async (buyer: any) => {
     if (!savedId) return;
