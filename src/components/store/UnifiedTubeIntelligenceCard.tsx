@@ -599,25 +599,30 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                       </div>
                       {/* Tube count input */}
                       <div className="flex items-center gap-2">
-                        {canEditCounts ? (
-                          <>
-                            <Input
-                              type="number"
-                              min={0}
-                              value={count}
-                              onChange={(e) => handleCountChange(brand.id, e.target.value)}
-                              className="w-20 h-8 text-right bg-background text-sm"
-                            />
-                            <span className="text-xs text-muted-foreground">{t('card.tube_intel.tubes')}</span>
-                          </>
-                        ) : (
-                          <Badge
-                            variant={count === 0 ? 'destructive' : count < 20 ? 'secondary' : 'default'}
-                            className="font-mono"
-                          >
-                            {count} {t('card.tube_intel.tubes')}
-                          </Badge>
-                        )}
+                        {(() => {
+                          // R4 — unit label follows product: GasMask Bags → "bags", all others → "tubes".
+                          // Mirrors the order-create unit label rule (products.track_by / unit_type).
+                          const unitLabel = brand.id === 'gasmask' ? 'bags' : t('card.tube_intel.tubes');
+                          return canEditCounts ? (
+                            <>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={count}
+                                onChange={(e) => handleCountChange(brand.id, e.target.value)}
+                                className="w-20 h-8 text-right bg-background text-sm"
+                              />
+                              <span className="text-xs text-muted-foreground">{unitLabel}</span>
+                            </>
+                          ) : (
+                            <Badge
+                              variant={count === 0 ? 'destructive' : count < 20 ? 'secondary' : 'default'}
+                              className="font-mono"
+                            >
+                              {count} {unitLabel}
+                            </Badge>
+                          );
+                        })()}
                       </div>
                     </div>
 
