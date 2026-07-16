@@ -274,10 +274,13 @@ const Stores = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch stores from database - RLS automatically filters by simulation mode
-  const { data: stores = [], isLoading } = useQuery({
+  // Fetch stores from database - RLS automatically filters by simulation mode.
+  // Under USE_SERVER_PATH this fetch is disabled and kept as a fallback only.
+  const { data: legacyStores = [], isLoading: legacyIsLoading } = useQuery({
     queryKey: ['stores-with-contacts', simulationMode],
+    enabled: !USE_SERVER_PATH,
     queryFn: async () => {
+
       // Fetch from store_master - explicitly filter by simulation mode
       let storesData: any[] = [];
       let page = 0;
