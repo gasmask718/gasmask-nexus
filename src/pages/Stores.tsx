@@ -985,9 +985,11 @@ const Stores = () => {
                     <span className="text-xs text-muted-foreground">
                       (
                       {
-                        stores.filter(store =>
-                          store.tags?.some(tag => tag.toLowerCase() === tagValue.toLowerCase())
-                        ).length
+                        USE_SERVER_PATH
+                          ? (server.tagCounts.get(tagValue.toLowerCase()) ?? 0)
+                          : stores.filter(store =>
+                              store.tags?.some(tag => tag.toLowerCase() === tagValue.toLowerCase())
+                            ).length
                       }
                       )
                     </span>
