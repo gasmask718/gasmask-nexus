@@ -27,6 +27,7 @@ import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreQuickNotes } from "@/components/store/StoreQuickNotes";
 import { SamplesGivenSection } from "@/components/store/SamplesGivenSection";
+import { StoreReviewControls } from "@/components/store/StoreReviewControls";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
 import { StoreStreetView } from "@/components/store/StoreStreetView";
 
@@ -788,6 +789,14 @@ const StoreDetail = () => {
           {/* CANONICAL SHARED SECTIONS — Auto-synced with all profiles */}
           {/* ═══════════════════════════════════════════════════════════ */}
           <StoreContactsSection storeId={id || ""} storeName={store.name} />
+          <Card className="glass-card border-border/50">
+            <CardContent className="pt-6">
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Review / Sign-Off
+              </div>
+              <StoreReviewControls storeId={id || ""} />
+            </CardContent>
+          </Card>
           <Card className="glass-card border-border/50">
             <CardContent className="pt-6">
               <StoreQuickNotes storeId={id || ""} />

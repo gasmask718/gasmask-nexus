@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, MapPin, Phone, Plus, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload, Package, Sparkles, CalendarDays, ShoppingCart, Clock, Route as RouteIcon } from 'lucide-react';
+import { Search, MapPin, Phone, Plus, Users, Flower2, Sticker, Tag, Edit, CreditCard, Loader2, Link, Upload, Package, Sparkles, CalendarDays, ShoppingCart, Clock, Route as RouteIcon, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
@@ -45,6 +45,7 @@ import { RelationshipStatusSelect } from '@/components/store/RelationshipStatusS
 import { format } from 'date-fns';
 import { useStoresServerData } from '@/pages/stores/useStoresServerData';
 import { StoreCardQuickView } from '@/components/store/StoreCardQuickView';
+import { StoreReviewBadge } from '@/components/store/StoreReviewControls';
 
 // Phase 2A Win 2: server-side pagination/search/filtering via
 // useStoresServerData is the ONLY path. Legacy in-memory fallback removed
@@ -149,6 +150,7 @@ const Stores = () => {
   const [customDateFrom, setCustomDateFrom] = useState<string>('');
   const [customDateTo, setCustomDateTo] = useState<string>('');
   const [showCustomDate, setShowCustomDate] = useState(false);
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'admin_yes' | 'admin_no' | 'va_yes' | 'va_no' | 'needs_review'>('all');
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [newStoreName, setNewStoreName] = useState('');
   
@@ -297,6 +299,7 @@ const Stores = () => {
     pageSize,
     activeStoreIds,
     storeIdsWithNotes,
+    reviewFilter,
   });
 
   // `stores` is the lean list (all live stores, count-source columns only);
@@ -669,6 +672,23 @@ const Stores = () => {
             </SelectContent>
           </Select>
 
+          {/* Review Status Filter */}
+          <Select value={reviewFilter} onValueChange={(v) => setReviewFilter(v as any)}>
+            <SelectTrigger className="w-52 bg-secondary/50 border-border/50">
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Review status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Review Status</SelectItem>
+              <SelectItem value="needs_review">Needs review (neither)</SelectItem>
+              <SelectItem value="admin_yes">Reviewed by Admin</SelectItem>
+              <SelectItem value="admin_no">Not reviewed by Admin</SelectItem>
+              <SelectItem value="va_yes">Reviewed by VA</SelectItem>
+              <SelectItem value="va_no">Not reviewed by VA</SelectItem>
+            </SelectContent>
+          </Select>
+
+
           {/* Payment Type Filter */}
           <Select value={paymentTypeFilter} onValueChange={setPaymentTypeFilter}>
             <SelectTrigger className="w-48 bg-secondary/50 border-border/50">
@@ -744,11 +764,11 @@ const Stores = () => {
           </Button>
 
           {/* Active Filters Display */}
-          {(activeFilter !== 'all' || tagFilter !== 'all' || stickerFilter !== 'all' || paymentTypeFilter !== 'all' || newStoresOnly || noNameFilter || monthFilter !== 'all') && (
+          {(activeFilter !== 'all' || tagFilter !== 'all' || stickerFilter !== 'all' || paymentTypeFilter !== 'all' || newStoresOnly || noNameFilter || monthFilter !== 'all' || reviewFilter !== 'all') && (
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => { setActiveFilter('all'); setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); setNewStoresOnly(false); setNoNameFilter(false); setMonthFilter('all'); setCustomDateFrom(''); setCustomDateTo(''); setShowCustomDate(false); }}
+              onClick={() => { setActiveFilter('all'); setTagFilter('all'); setStickerFilter('all'); setPaymentTypeFilter('all'); setNewStoresOnly(false); setNoNameFilter(false); setMonthFilter('all'); setCustomDateFrom(''); setCustomDateTo(''); setShowCustomDate(false); setReviewFilter('all'); }}
               className="text-muted-foreground"
             >
               {t('page.stores.clear_filters') || 'Clear filters'}
@@ -841,6 +861,10 @@ const Stores = () => {
                     <Badge className={getStatusColor(store.status)}>
                       {store.status === 'needsFollowUp' ? 'Follow-up' : store.status}
                     </Badge>
+                    <StoreReviewBadge
+                      reviewedByAdmin={(store as any).reviewed_by_admin}
+                      reviewedByVa={(store as any).reviewed_by_va}
+                    />
                     <Button
                       type="button"
                       variant="ghost"

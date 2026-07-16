@@ -53,6 +53,7 @@ export interface UseStoresServerDataArgs {
   pageSize: number;
   activeStoreIds: Set<string>;
   storeIdsWithNotes: Set<string>;
+  reviewFilter?: 'all' | 'admin_yes' | 'admin_no' | 'va_yes' | 'va_no' | 'needs_review';
 }
 
 export function useStoresServerData(args: UseStoresServerDataArgs) {
@@ -134,6 +135,7 @@ export function useStoresServerData(args: UseStoresServerDataArgs) {
         pg: args.currentPage, sz: args.pageSize,
         aids: args.activeStoreIds.size,
         nids: args.storeIdsWithNotes.size,
+        rv: args.reviewFilter ?? 'all',
       },
     ],
     enabled,
@@ -272,6 +274,17 @@ export function useStoresServerData(args: UseStoresServerDataArgs) {
         if (args.customDateTo)   qb = qb.lte('created_at', new Date(args.customDateTo + 'T23:59:59').toISOString());
       }
 
+      // ── review status ────────────────────────────────────────────
+      switch (args.reviewFilter) {
+        case 'admin_yes': qb = qb.eq('reviewed_by_admin', true); break;
+        case 'admin_no':  qb = qb.eq('reviewed_by_admin', false); break;
+        case 'va_yes':    qb = qb.eq('reviewed_by_va', true); break;
+        case 'va_no':     qb = qb.eq('reviewed_by_va', false); break;
+        case 'needs_review':
+          qb = qb.eq('reviewed_by_admin', false).eq('reviewed_by_va', false);
+          break;
+      }
+
       const { data, count, error } = await qb;
       if (error) throw error;
 
@@ -374,6 +387,10 @@ export function useStoresServerData(args: UseStoresServerDataArgs) {
           last_active_date: legacy?.last_active_date || null,
           reactivation_priority: legacy?.reactivation_priority || null,
           relationship_status: store.relationship_status || 'Non-active (New - need to speak)',
+          reviewed_by_admin: !!store.reviewed_by_admin,
+          reviewed_by_admin_at: store.reviewed_by_admin_at || null,
+          reviewed_by_va: !!store.reviewed_by_va,
+          reviewed_by_va_at: store.reviewed_by_va_at || null,
         };
       });
 
