@@ -203,28 +203,38 @@ export function StoreContactActions({
           </Button>
         </div>
 
-        {/* Row 2 — responsiveness flags */}
+        {/* Row 2 — responsiveness flags. Lit ON state reflects DB value on load so VAs can see prior marks. */}
         <div className={`flex flex-wrap items-center ${rowGap}`}>
           <Button
             size="sm"
-            variant={contact.responsive_by_call ? 'secondary' : 'ghost'}
+            variant={contact.responsive_by_call ? 'default' : 'outline'}
             onClick={() => markResponsive('call')}
             disabled={busy}
-            title="Mark responsive by call"
-            className={`${btnH} ${btnPad} gap-1 text-[10px] uppercase tracking-wider`}
+            aria-pressed={!!contact.responsive_by_call}
+            title={contact.responsive_by_call ? 'Marked responsive by call' : 'Mark responsive by call'}
+            className={`${btnH} ${btnPad} gap-1 text-[10px] uppercase tracking-wider ${
+              contact.responsive_by_call
+                ? 'bg-emerald-600 hover:bg-emerald-600/90 text-white border border-emerald-500 shadow-sm ring-1 ring-emerald-400/40'
+                : ''
+            }`}
           >
-            <PhoneCall className="h-3.5 w-3.5" />
+            {contact.responsive_by_call ? <Check className="h-3.5 w-3.5" /> : <PhoneCall className="h-3.5 w-3.5" />}
             <span>Resp · Call</span>
           </Button>
           <Button
             size="sm"
-            variant={contact.responsive_by_text ? 'secondary' : 'ghost'}
+            variant={contact.responsive_by_text ? 'default' : 'outline'}
             onClick={() => markResponsive('text')}
             disabled={busy}
-            title="Mark responsive by text"
-            className={`${btnH} ${btnPad} gap-1 text-[10px] uppercase tracking-wider`}
+            aria-pressed={!!contact.responsive_by_text}
+            title={contact.responsive_by_text ? 'Marked responsive by text' : 'Mark responsive by text'}
+            className={`${btnH} ${btnPad} gap-1 text-[10px] uppercase tracking-wider ${
+              contact.responsive_by_text
+                ? 'bg-emerald-600 hover:bg-emerald-600/90 text-white border border-emerald-500 shadow-sm ring-1 ring-emerald-400/40'
+                : ''
+            }`}
           >
-            <MessageCircle className="h-3.5 w-3.5" />
+            {contact.responsive_by_text ? <Check className="h-3.5 w-3.5" /> : <MessageCircle className="h-3.5 w-3.5" />}
             <span>Resp · Text</span>
           </Button>
         </div>
