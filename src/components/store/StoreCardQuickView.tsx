@@ -668,6 +668,7 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
   const [tubes, setTubes] = useState<string>('');
   const [unitPrice, setUnitPrice] = useState<string>('');
   const [markPaid, setMarkPaid] = useState<boolean>(false);
+  const [lastCreated, setLastCreated] = useState<{ id: string; number: string; total: number } | null>(null);
 
   // Lazy: fetch price + name for the selected product
   const { data: product } = useQuery({
