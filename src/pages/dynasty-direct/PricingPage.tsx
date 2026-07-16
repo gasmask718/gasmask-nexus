@@ -400,7 +400,7 @@ export default function PricingPage() {
                       <TableRow key={r.id}>
                         <TableCell>
                           <div className="font-medium">{r.product_name}</div>
-                          <div className="text-[10px] font-mono text-muted-foreground">{r.sku ?? '—'}</div>
+                          <div className="text-[10px] font-mono text-muted-foreground">{r.category ?? '—'}</div>
                         </TableCell>
                         <TableCell className="text-right">{money(r.supplier_cost)}</TableCell>
                         <TableCell className="text-right">{money(r.store_price_a)}</TableCell>
