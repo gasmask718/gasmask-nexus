@@ -46,6 +46,7 @@ import { CanonicalStoreProfileProvider } from "@/components/store/CanonicalStore
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreQuickNotes } from "@/components/store/StoreQuickNotes";
 import { SamplesGivenSection } from "@/components/store/SamplesGivenSection";
+import { StoreReviewControls } from "@/components/store/StoreReviewControls";
 import { StoreRoleSection } from "@/components/store/StoreRoleSection";
 
 // ═══════════════════════════════════════════════════════════════════════════════
