@@ -263,6 +263,41 @@ export default function PricingPage() {
     } finally { setRefreshingMarket(null); }
   }
 
+  async function applySweetSpot(row: PricingRow) {
+    if (row.market_avg_retail == null) {
+      toast.error('No market data yet — click "Check Market Price" first.');
+      return;
+    }
+    setApplyingSweet(row.id);
+    try {
+      // Preview
+      const { data: pre, error: preErr } = await supabase.functions.invoke('dd-price-intelligence', {
+        body: { action: 'analyze', product_id: row.id },
+      });
+      if (preErr) throw preErr;
+      const sweet = pre?.analysis?.sweet_spot;
+      if (!sweet) throw new Error('Sweet-spot unavailable (missing market or cost).');
+
+      const msg =
+        `Apply competitive sweet-spot price for "${row.product_name}"?\n\n` +
+        `Store: $${row.store_price_a ?? '—'} → $${sweet.store_price} (${sweet.store_margin_pct.toFixed(1)}% margin)\n` +
+        `DTC:   $${row.dtc_price_b ?? '—'} → $${sweet.dtc_price} (${sweet.dtc_margin_pct.toFixed(1)}% margin)\n\n` +
+        `${sweet.notes}`;
+      if (!window.confirm(msg)) return;
+
+      const { data, error } = await supabase.functions.invoke('dd-price-intelligence', {
+        body: { action: 'apply_sweet_spot', product_id: row.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Applied sweet spot: store $${data.applied.store_price_a} / DTC $${data.applied.dtc_price_b}`);
+      qc.invalidateQueries({ queryKey: ['dd-pricing-rows'] });
+      qc.invalidateQueries({ queryKey: ['dd-price-alerts-open'] });
+    } catch (e: any) {
+      toast.error(e.message ?? 'Apply sweet spot failed');
+    } finally { setApplyingSweet(null); }
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
