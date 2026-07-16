@@ -225,17 +225,38 @@ function OpportunityItem({ opportunity, onToggle, isToggling }: OpportunityItemP
             className="text-xs"
           >
             {opportunity.source === 'ai_extracted' ? (
-              <>
-                <Sparkles className="h-3 w-3 mr-1" />
-                AI Detected
-              </>
+              <><Sparkles className="h-3 w-3 mr-1" /> AI Detected</>
+            ) : opportunity.source === 'follow_up' ? (
+              <><CalendarClock className="h-3 w-3 mr-1" /> Follow-up</>
             ) : (
-              <>
-                <User className="h-3 w-3 mr-1" />
-                Manual
-              </>
+              <><User className="h-3 w-3 mr-1" /> Manual</>
             )}
           </Badge>
+          {opportunity.route_flag && (
+            <Badge variant="outline" className="text-xs gap-1">
+              <RouteIcon className="h-3 w-3" /> Route
+            </Badge>
+          )}
+          {opportunity.priority && opportunity.priority !== 'normal' && (
+            <Badge
+              variant="outline"
+              className={`text-xs capitalize ${
+                opportunity.priority === 'urgent'
+                  ? 'border-red-500/40 text-red-600'
+                  : opportunity.priority === 'high'
+                  ? 'border-orange-500/40 text-orange-600'
+                  : ''
+              }`}
+            >
+              {opportunity.priority}
+            </Badge>
+          )}
+          {opportunity.due_date && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <CalendarClock className="h-3.5 w-3.5" />
+              <span>Due {format(new Date(opportunity.due_date), 'MMM d, yyyy')}</span>
+            </div>
+          )}
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Clock className="h-3.5 w-3.5" />
             <span>{dynastyDate(opportunity.created_at)}</span>
