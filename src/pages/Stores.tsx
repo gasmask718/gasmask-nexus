@@ -534,6 +534,46 @@ const Stores = () => {
     },
   });
 
+  // ── Phase 2A Win 2 — server-side dual path ─────────────────────────
+  const server = useStoresServerData({
+    enabled: USE_SERVER_PATH,
+    simulationMode,
+    searchQuery,
+    activeFilter,
+    relationshipFilter,
+    tagFilter,
+    stickerFilter,
+    paymentTypeFilter,
+    noNameFilter,
+    newStoresOnly,
+    monthFilter,
+    customDateFrom,
+    customDateTo,
+    currentPage,
+    pageSize,
+    activeStoreIds,
+    storeIdsWithNotes,
+  });
+
+  // Under server path, `stores` is the lean list (all live stores, count-source
+  // columns only) and hydrated page rows come from `server.pageRows`.
+  const stores: any[] = USE_SERVER_PATH ? server.leanStores : legacyStores;
+  const isLoading = USE_SERVER_PATH ? server.isLoading : legacyIsLoading;
+
+  // Owner-name → connected-store counts, computed from the lean list under
+  // server path so the page rows can display connectedStoresCount.
+  const ownerNameCountsMap = useMemo(() => {
+    const m = new Map<string, number>();
+    if (!USE_SERVER_PATH) return m;
+    for (const s of stores) {
+      const on = (s as any).owner_name;
+      if (!on) continue;
+      m.set(on, (m.get(on) ?? 0) + 1);
+    }
+    return m;
+  }, [stores]);
+
+
   // Use global tags for the filter dropdown - combines tags from stores AND all global tags
   const availableStoreTags = useMemo(() => {
     const storeTagsSet = new Set(
