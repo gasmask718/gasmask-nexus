@@ -101712,6 +101712,7 @@ export type Database = {
           assigned_ambassador_id: string | null
           borough_id: string | null
           brand_id: string | null
+          bring_samples: boolean | null
           city: string
           communication_preference: string | null
           connected_group_id: string | null
@@ -101759,6 +101760,7 @@ export type Database = {
           last_visit_at: string | null
           loyalty_triggers: string[] | null
           mode: string | null
+          needs_order: boolean | null
           new_store_addresses: string[] | null
           nickname: string | null
           notes: string | null
@@ -101791,6 +101793,7 @@ export type Database = {
           total_answers: number | null
           total_attempts: number | null
           updated_at: string | null
+          updated_by: string | null
           zip: string
         }
         Insert: {
@@ -101798,6 +101801,7 @@ export type Database = {
           assigned_ambassador_id?: string | null
           borough_id?: string | null
           brand_id?: string | null
+          bring_samples?: boolean | null
           city: string
           communication_preference?: string | null
           connected_group_id?: string | null
@@ -101845,6 +101849,7 @@ export type Database = {
           last_visit_at?: string | null
           loyalty_triggers?: string[] | null
           mode?: string | null
+          needs_order?: boolean | null
           new_store_addresses?: string[] | null
           nickname?: string | null
           notes?: string | null
@@ -101877,6 +101882,7 @@ export type Database = {
           total_answers?: number | null
           total_attempts?: number | null
           updated_at?: string | null
+          updated_by?: string | null
           zip: string
         }
         Update: {
@@ -101884,6 +101890,7 @@ export type Database = {
           assigned_ambassador_id?: string | null
           borough_id?: string | null
           brand_id?: string | null
+          bring_samples?: boolean | null
           city?: string
           communication_preference?: string | null
           connected_group_id?: string | null
@@ -101931,6 +101938,7 @@ export type Database = {
           last_visit_at?: string | null
           loyalty_triggers?: string[] | null
           mode?: string | null
+          needs_order?: boolean | null
           new_store_addresses?: string[] | null
           nickname?: string | null
           notes?: string | null
@@ -101963,6 +101971,7 @@ export type Database = {
           total_answers?: number | null
           total_attempts?: number | null
           updated_at?: string | null
+          updated_by?: string | null
           zip?: string
         }
         Relationships: [
@@ -137493,6 +137502,7 @@ export type Database = {
           assigned_ambassador_id: string | null
           borough_id: string | null
           brand_id: string | null
+          bring_samples: boolean | null
           city: string
           communication_preference: string | null
           connected_group_id: string | null
@@ -137540,6 +137550,7 @@ export type Database = {
           last_visit_at: string | null
           loyalty_triggers: string[] | null
           mode: string | null
+          needs_order: boolean | null
           new_store_addresses: string[] | null
           nickname: string | null
           notes: string | null
@@ -137572,6 +137583,7 @@ export type Database = {
           total_answers: number | null
           total_attempts: number | null
           updated_at: string | null
+          updated_by: string | null
           zip: string
         }
         SetofOptions: {
