@@ -793,6 +793,11 @@ const StoreDetail = () => {
               <StoreQuickNotes storeId={id || ""} />
             </CardContent>
           </Card>
+          <Card className="glass-card border-border/50">
+            <CardContent className="pt-6">
+              <SamplesGivenSection storeId={id || ""} variant="full" />
+            </CardContent>
+          </Card>
           <TubesSoldHeroStrip storeId={id || ""} />
           <BagsSection storeId={id || ""} />
           <EngagementBanner storeId={id || ""} />
