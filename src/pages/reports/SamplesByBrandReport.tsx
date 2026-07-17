@@ -42,6 +42,34 @@ export default function SamplesByBrandReport() {
         </p>
       </div>
 
+      {(() => {
+        const totalUnits = data.reduce((s, r) => s + (r.total_units || 0), 0);
+        const brandCount = new Set(data.map((r) => r.brand).filter(Boolean)).size;
+        const perBrand = brandCount ? Math.round(totalUnits / brandCount) : 0;
+        const distinctStoresByBrand = new Map<string, number>();
+        for (const r of data) {
+          const key = r.brand ?? '—';
+          distinctStoresByBrand.set(key, Math.max(distinctStoresByBrand.get(key) ?? 0, r.distinct_stores || 0));
+        }
+        const totalDistinctStores = Array.from(distinctStoresByBrand.values()).reduce((a, b) => a + b, 0);
+        const best = [...data].sort((a, b) => (b.distinct_stores || 0) - (a.distinct_stores || 0))[0];
+        const bestLabel = best ? (productDisplay(best.product_id) ?? brandDisplayName(best.brand)) : '—';
+        const StatCard = ({ label, value }: { label: string; value: string | number }) => (
+          <Card><CardContent className="p-4">
+            <p className="text-xs uppercase text-muted-foreground tracking-wide">{label}</p>
+            <p className="text-2xl font-semibold mt-1">{value}</p>
+          </CardContent></Card>
+        );
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard label="Samples given" value={totalUnits} />
+            <StatCard label="Samples / brand" value={perBrand} />
+            <StatCard label="Distinct stores (sum)" value={totalDistinctStores} />
+            <StatCard label="Best converting" value={bestLabel} />
+          </div>
+        );
+      })()}
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Per-brand rollup</CardTitle>
