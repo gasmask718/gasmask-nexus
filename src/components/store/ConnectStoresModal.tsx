@@ -42,6 +42,8 @@ interface ConnectStoresModalProps {
   storeId: string;
   storeName: string;
   currentGroupId: string | null;
+  /** 'add' opens capture form immediately; 'search' opens the picker. */
+  initialMode?: 'search' | 'add';
   onSuccess?: () => void;
 }
 
@@ -51,14 +53,26 @@ export function ConnectStoresModal({
   storeId,
   storeName,
   currentGroupId,
+  initialMode = 'search',
   onSuccess,
 }: ConnectStoresModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStores, setSelectedStores] = useState<string[]>([]);
-  const [showCaptureForm, setShowCaptureForm] = useState(false);
+  const [showCaptureForm, setShowCaptureForm] = useState(initialMode === 'add');
   // Stable group ID used during capture (generated lazily if parent has none yet).
   const [pendingGroupId, setPendingGroupId] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  // Sync mode when the modal is re-opened.
+  useMemo(() => {
+    if (open) {
+      setShowCaptureForm(initialMode === 'add');
+      if (initialMode === 'add' && !currentGroupId && !pendingGroupId) {
+        setPendingGroupId(crypto.randomUUID());
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialMode]);
 
   const captureGroupId = useMemo(() => {
     return currentGroupId ?? pendingGroupId;
