@@ -1471,7 +1471,7 @@ export default function AppRoutes() {
         <Route path="/gasmask/billing-center" element={<BillingCenter />} />
         <Route path="/gasmask/billing/invoices" element={<BillingInvoices />} />
         <Route path="/gasmask/billing/invoices/new" element={<BillingInvoiceNew />} />
-        <Route path="/gasmask/payroll" element={<Payroll />} />
+        <Route path="/gasmask/payroll" element={<RequireRole allowedRoles={['owner','admin']} showLocked><Payroll /></RequireRole>} />
         <Route path="/gasmask/biker-payouts" element={<BikerPayouts />} />
         <Route path="/gasmask/delivery-capacity" element={<DeliveryCapacity />} />
         <Route path="/gasmask/subscriptions" element={<Subscriptions />} />
