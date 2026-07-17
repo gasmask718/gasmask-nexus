@@ -19,6 +19,7 @@ import {
 import { useUpdateDeliveryTaskStatus } from "@/hooks/useDeliveryTasks";
 import { useMyAssignedRoutes } from "@/hooks/delivery/useMyAssignedRoutes";
 import { StopBalanceCallout } from "@/components/portal/field/StopBalanceCallout";
+import { StoreCallTextButtons } from "@/components/portal/field/StoreCallTextButtons";
 
 const STATUS_FLOW: Record<string, { next: string; label: string; variant: "default" | "destructive" }[]> = {
   assigned: [{ next: "picked_up", label: "Mark Picked Up", variant: "default" }],
@@ -124,7 +125,7 @@ export function BikerDeliveryTasks() {
 
               <StopBalanceCallout storeId={stop.store_id} storeName={stop.store?.store_name} />
 
-              <div className="flex gap-2 mt-3">
+              <div className="flex gap-2 mt-3 flex-wrap items-center">
                 {/* Status actions */}
                 {actions.map((action) => (
                   <Button
@@ -145,6 +146,12 @@ export function BikerDeliveryTasks() {
                     {action.label}
                   </Button>
                 ))}
+                <StoreCallTextButtons
+                  phone={stop.store?.phone}
+                  storeId={stop.store_id}
+                  storeName={stop.store?.store_name || "Store"}
+                  compact
+                />
               </div>
             </CardContent>
           </Card>

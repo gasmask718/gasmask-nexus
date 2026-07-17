@@ -16,6 +16,7 @@ import { SLAAlertBadges } from "@/components/delivery/SLAAlertBadges";
 import { useSLAAlertForStore } from "@/hooks/useSLAAlerts";
 import { StopResolutionDialog } from "@/components/delivery/StopResolutionDialog";
 import { StopBalanceCallout } from "@/components/portal/field/StopBalanceCallout";
+import { StoreCallTextButtons } from "@/components/portal/field/StoreCallTextButtons";
 
 export function DriverDeliveryTasks() {
   const navigate = useNavigate();
@@ -114,7 +115,7 @@ export function DriverDeliveryTasks() {
                 </div>
               )}
 
-              <div className="flex gap-2 mt-3">
+              <div className="flex gap-2 mt-3 items-center">
                 <Button
                   size="sm"
                   variant="default"
@@ -127,6 +128,12 @@ export function DriverDeliveryTasks() {
                   <Navigation className="h-3 w-3 mr-1" />
                   Start Delivery
                 </Button>
+                <StoreCallTextButtons
+                  phone={stop.store?.phone}
+                  storeId={stop.store_id}
+                  storeName={stop.store?.store_name || "Store"}
+                  compact
+                />
               </div>
             </CardContent>
           </Card>
