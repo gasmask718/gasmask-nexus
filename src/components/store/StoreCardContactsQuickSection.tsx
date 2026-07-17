@@ -10,9 +10,10 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Star, User } from 'lucide-react';
+import { Loader2, Plus, Star, User, MessageSquare, ChevronDown } from 'lucide-react';
 import { StoreContactActions } from './StoreContactActions';
 import { AddContactModal } from './AddContactModal';
+import { ContactCommunicationTimeline } from './ContactCommunicationTimeline';
 
 interface Props {
   storeId: string;
@@ -21,6 +22,7 @@ interface Props {
 
 export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
   const [addOpen, setAddOpen] = useState(false);
+  const [openHistory, setOpenHistory] = useState<Record<string, boolean>>({});
 
   const { data: contacts = [], isLoading, refetch } = useQuery({
     queryKey: ['store-contacts', storeId],
@@ -100,6 +102,31 @@ export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
                 compact
                 invalidateKeys={[['store-contacts', storeId]]}
               />
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2 text-[10px] w-full justify-start text-muted-foreground hover:text-foreground"
+                onClick={() =>
+                  setOpenHistory((s) => ({ ...s, [c.id]: !s[c.id] }))
+                }
+              >
+                <MessageSquare className="h-3 w-3 mr-1" />
+                {openHistory[c.id] ? 'Hide' : 'View'} conversation history
+                <ChevronDown
+                  className={`h-3 w-3 ml-auto transition-transform ${openHistory[c.id] ? 'rotate-180' : ''}`}
+                />
+              </Button>
+              {openHistory[c.id] && (
+                <div className="pt-2 border-t border-border/40">
+                  <ContactCommunicationTimeline
+                    storeId={storeId}
+                    contactId={c.id}
+                    contactName={c.name}
+                    contactPhone={c.phone}
+                    canReceiveSms={c.can_receive_sms}
+                  />
+                </div>
+              )}
             </li>
           ))}
         </ul>
