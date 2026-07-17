@@ -256,6 +256,10 @@ const DYNASTY_NAVIGATION = {
         { path: '/sell-through-analytics', label: 'Sell-Through Analytics', icon: BarChart3 },
         { path: '/crm', label: 'Global CRM', icon: UserCheck },
         { path: '/crm/contacts', label: 'CRM Contacts', icon: User },
+        { path: '/crm/customers', label: 'Customers', icon: Users },
+        { path: '/brand-crm', label: 'Brand CRM', icon: Target },
+        { path: '/sales/prospects', label: 'Sales Prospects', icon: TrendingUp },
+        { path: '/sales/report', label: 'Sales Report', icon: BarChart3 },
         // T3 M4: CRM Customers is a tab inside Global CRM; sidebar entry removed.
         { path: '/crm/follow-ups', label: 'Follow-Ups', icon: Clock },
         { path: '/opportunities', label: 'All Opportunities', icon: Target },
@@ -264,6 +268,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/reports/samples-by-brand', label: '🥧 Samples by Brand', icon: PieChart },
       ],
     },
+
     {
       id: 'floor-2',
       name: '📞 Floor 2 — Communication Hub',
