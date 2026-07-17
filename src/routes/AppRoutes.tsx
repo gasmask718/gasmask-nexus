@@ -1569,17 +1569,20 @@ export default function AppRoutes() {
         <Route path="/text-center" element={<TextCenter />} />
         <Route path="/email-center" element={<EmailCenter />} />
 
-        {/* Legacy callcenter routes */}
-        <Route path="/callcenter" element={<CallCenterDashboard />} />
-        <Route path="/callcenter/dashboard" element={<CallCenterDashboard />} />
-        <Route path="/callcenter/numbers" element={<PhoneNumbers />} />
-        <Route path="/callcenter/logs" element={<CallLogs />} />
-        <Route path="/callcenter/ai" element={<AIAgents />} />
-        <Route path="/callcenter/ai-agents" element={<AIAgents />} />
-        <Route path="/callcenter/live-monitoring" element={<LiveMonitoring />} />
-        <Route path="/callcenter/messages" element={<Messages />} />
-        <Route path="/callcenter/emails" element={<Emails />} />
-        <Route path="/callcenter/settings" element={<CallCenterSettings />} />
+        {/* Legacy /callcenter/* → canonical /call-center/* (Pass 1B redirects; bookmarks preserved) */}
+        <Route path="/callcenter" element={<Navigate to="/call-center" replace />} />
+        <Route path="/callcenter/dashboard" element={<Navigate to="/call-center/dashboard" replace />} />
+        <Route path="/callcenter/numbers" element={<Navigate to="/call-center/numbers" replace />} />
+        <Route path="/callcenter/logs" element={<Navigate to="/call-center/logs" replace />} />
+        <Route path="/callcenter/ai" element={<Navigate to="/call-center/ai-agents" replace />} />
+        <Route path="/callcenter/ai-agents" element={<Navigate to="/call-center/ai-agents" replace />} />
+        <Route path="/callcenter/live-monitoring" element={<Navigate to="/call-center/live-monitoring" replace />} />
+        <Route path="/callcenter/live" element={<Navigate to="/call-center/monitoring" replace />} />
+        <Route path="/callcenter/dialer" element={<Navigate to="/call-center/dialer" replace />} />
+        <Route path="/callcenter/analytics" element={<Navigate to="/call-center/analytics" replace />} />
+        <Route path="/callcenter/messages" element={<Navigate to="/call-center/messages" replace />} />
+        <Route path="/callcenter/emails" element={<Navigate to="/call-center/emails" replace />} />
+        <Route path="/callcenter/settings" element={<Navigate to="/call-center/settings" replace />} />
 
         {/* 📞 Dynasty Connect Hub */}
         <Route path="/dynasty-connect" element={<DCLayout />}>
@@ -2805,13 +2808,7 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
-      <Route path="/grabba/communications" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee']} showLocked>
-            <Layout><CommunicationHubLayout /></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
+      <Route path="/grabba/communications" element={<Navigate to="/grabba/communication" replace />} />
       <Route path="/grabba/unified-upload" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee']} showLocked>
@@ -3021,34 +3018,11 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
-      <Route path="/grabba/text-center" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
-            <Layout><CommunicationHubLayout /></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
-      <Route path="/grabba/email-center" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
-            <Layout><CommunicationHubLayout /></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
-      <Route path="/grabba/call-center" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
-            <Layout><CommunicationHubLayout /></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
-      <Route path="/grabba/communication-logs" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
-            <Layout><CommunicationHubLayout /></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
+      {/* Legacy grabba comm aliases → canonical /grabba/communication (Pass 1B redirects) */}
+      <Route path="/grabba/text-center" element={<Navigate to="/grabba/communication" replace />} />
+      <Route path="/grabba/email-center" element={<Navigate to="/grabba/communication" replace />} />
+      <Route path="/grabba/call-center" element={<Navigate to="/grabba/communication" replace />} />
+      <Route path="/grabba/communication-logs" element={<Navigate to="/grabba/communication" replace />} />
       <Route path="/grabba/brand/:brand/communications" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
