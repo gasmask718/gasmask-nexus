@@ -29,12 +29,15 @@ const TYPE_META: Record<CandidateType, { label: string; icon: any; color: string
 
 const ALL_TYPES: CandidateType[] = ['reorder', 'owner_order', 'collect_payment', 'follow_up', 'prospect', 'bring_samples', 'win_back', 'at_risk'];
 
+type DueFilter = 'today_overdue' | 'week' | 'all';
+
 export default function RouteCommandCenter() {
   const { data: candidates = [], isLoading } = useRouteCandidates();
   const [search, setSearch] = useState('');
   const [neighborhood, setNeighborhood] = useState<string>('all');
   const [city, setCity] = useState<string>('all');
   const [activeTypes, setActiveTypes] = useState<Set<CandidateType>>(new Set(ALL_TYPES));
+  const [dueFilter, setDueFilter] = useState<DueFilter>('today_overdue');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [assignOpen, setAssignOpen] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
@@ -81,6 +84,11 @@ export default function RouteCommandCenter() {
         existing.reasons.push(r.why);
         existing.priority = Math.max(existing.priority, r.priority);
         existing.value += r.value || 0;
+        // Keep earliest due_date across signals (most urgent).
+        if (r.due_date && (!existing.due_date || new Date(r.due_date) < new Date(existing.due_date))) {
+          existing.due_date = r.due_date;
+        }
+        if (r.opportunity_id && !existing.opportunity_id) existing.opportunity_id = r.opportunity_id;
       } else {
         map.set(r.store_id, { ...r, types: [r.candidate_type], reasons: [r.why] });
       }
@@ -90,14 +98,26 @@ export default function RouteCommandCenter() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekOut = new Date(today);
+    weekOut.setDate(weekOut.getDate() + 7);
+
     return merged.filter(r => {
       if (!r.types.some(t => activeTypes.has(t))) return false;
       if (neighborhood !== 'all' && r.neighborhood !== neighborhood) return false;
       if (city !== 'all' && r.city !== city) return false;
       if (q && !(r.store_name?.toLowerCase().includes(q) || r.address?.toLowerCase().includes(q))) return false;
+      // Due-date filter only constrains rows that HAVE a due_date (route-flag opportunities).
+      if (r.due_date && dueFilter !== 'all') {
+        const d = new Date(r.due_date);
+        d.setHours(0, 0, 0, 0);
+        if (dueFilter === 'today_overdue' && d.getTime() > today.getTime()) return false;
+        if (dueFilter === 'week' && d.getTime() > weekOut.getTime()) return false;
+      }
       return true;
     });
-  }, [merged, search, neighborhood, city, activeTypes]);
+  }, [merged, search, neighborhood, city, activeTypes, dueFilter]);
 
   const toggleType = (t: CandidateType) => {
     setActiveTypes(prev => {
@@ -244,6 +264,14 @@ export default function RouteCommandCenter() {
               {cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={dueFilter} onValueChange={(v) => setDueFilter(v as DueFilter)}>
+            <SelectTrigger className="w-[220px]"><SelectValue placeholder="Follow-ups due" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today_overdue">Follow-ups: today &amp; overdue</SelectItem>
+              <SelectItem value="week">Follow-ups: next 7 days</SelectItem>
+              <SelectItem value="all">Follow-ups: all upcoming</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="flex-1" />
           <Button variant="outline" size="sm" onClick={selectAllFiltered}>
             Select all filtered ({filtered.length})
@@ -283,12 +311,25 @@ export default function RouteCommandCenter() {
                     <TableHead>Neighborhood</TableHead>
                     <TableHead>City</TableHead>
                     <TableHead className="text-right">Value</TableHead>
+                    <TableHead>Due</TableHead>
                     <TableHead>Last visit</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.slice(0, 500).map(r => {
                     const checked = selected.has(r.store_id);
+                    const dueDate = r.due_date ? new Date(r.due_date) : null;
+                    const today0 = new Date(); today0.setHours(0,0,0,0);
+                    const dueLabel = dueDate
+                      ? (() => {
+                          const d0 = new Date(dueDate); d0.setHours(0,0,0,0);
+                          const diff = Math.round((d0.getTime() - today0.getTime()) / 86400000);
+                          if (diff < 0) return { text: `${Math.abs(diff)}d overdue`, cls: 'text-rose-400' };
+                          if (diff === 0) return { text: 'Today', cls: 'text-amber-400 font-medium' };
+                          if (diff === 1) return { text: 'Tomorrow', cls: 'text-foreground' };
+                          return { text: dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), cls: 'text-muted-foreground' };
+                        })()
+                      : null;
                     return (
                       <TableRow
                         key={r.store_id}
@@ -321,6 +362,9 @@ export default function RouteCommandCenter() {
                         <TableCell className="text-sm">{r.city || '—'}</TableCell>
                         <TableCell className="text-right tabular-nums">
                           {r.value ? `$${r.value.toFixed(0)}` : '—'}
+                        </TableCell>
+                        <TableCell className={`text-xs ${dueLabel?.cls ?? 'text-muted-foreground'}`}>
+                          {dueLabel?.text ?? '—'}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {r.last_visit_date ? new Date(r.last_visit_date).toLocaleDateString() : 'never'}
