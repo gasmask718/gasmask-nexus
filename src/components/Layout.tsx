@@ -301,6 +301,7 @@ const DYNASTY_NAVIGATION = {
       name: '📦 Floor 3 — Inventory Engine',
       items: [
         { path: '/grabba/inventory', label: 'Inventory Dashboard', icon: Boxes },
+        { path: '/os/inventory/dashboard', label: 'Inventory Dashboard (OS)', icon: Boxes },
         { path: '/products', label: 'Products', icon: Package },
         { path: '/os/inventory/product-inventory', label: 'Product Inventory', icon: BarChart3 },
         { path: '/os/product-conversions', label: 'Product Conversions', icon: Settings },
