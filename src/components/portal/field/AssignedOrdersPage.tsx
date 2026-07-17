@@ -411,7 +411,28 @@ export function AssignedOrdersPage({ portalType }: AssignedOrdersPageProps) {
                       <div className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /> {selectedTask.recipient_name}</div>
                     )}
                     {selectedTask.recipient_phone && (
-                      <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {selectedTask.recipient_phone}</div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {selectedTask.recipient_phone}</div>
+                        <StoreCallTextButtons
+                          phone={selectedTask.recipient_phone}
+                          storeId={selectedTask.store_order?.store?.id || selectedTask.store_order?.store_id || ''}
+                          storeName={selectedTask.recipient_name || selectedTask.store_order?.store?.store_name || 'Recipient'}
+                          compact
+                        />
+                      </div>
+                    )}
+                    {selectedTask.store_order?.store?.phone && (
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Phone className="h-4 w-4" /> Store: {selectedTask.store_order.store.phone}
+                        </div>
+                        <StoreCallTextButtons
+                          phone={selectedTask.store_order.store.phone}
+                          storeId={selectedTask.store_order.store.id}
+                          storeName={selectedTask.store_order.store.store_name || 'Store'}
+                          compact
+                        />
+                      </div>
                     )}
                     {selectedTask.delivery_address && (
                       <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /> {selectedTask.delivery_address}</div>
