@@ -68,10 +68,34 @@ export function useRouteCandidates() {
       if (flagRes.error) throw flagRes.error;
 
       const viewRows = (viewRes.data || []) as RouteCandidate[];
+      const flagRaw = (flagRes.data || []) as Array<{
+        id: string;
+        store_id: string;
+        opportunity_text: string;
+        due_date: string | null;
+        created_at: string;
+      }>;
 
-      const flagRows: RouteCandidate[] = (flagRes.data || [])
-        .filter((r: any) => r.store)
-        .map((r: any) => {
+      // Fetch matching store geo/context in a single call.
+      const storeIds = Array.from(new Set(flagRaw.map((r) => r.store_id).filter(Boolean)));
+      let storesById = new Map<string, any>();
+      if (storeIds.length > 0) {
+        const { data: storesData, error: storesErr } = await (supabase as any)
+          .from('stores')
+          .select('id, name, address_street, address_city, neighborhood, boro, last_visit_date, deleted_at')
+          .in('id', storeIds);
+        if (storesErr) throw storesErr;
+        storesById = new Map(
+          (storesData || [])
+            .filter((s: any) => !s.deleted_at)
+            .map((s: any) => [s.id, s]),
+        );
+      }
+
+      const flagRows: RouteCandidate[] = flagRaw
+        .map((r) => {
+          const s = storesById.get(r.store_id);
+          if (!s) return null;
           const dueLabel = r.due_date
             ? ` (due ${new Date(r.due_date).toLocaleDateString(undefined, {
                 month: 'short',
@@ -80,23 +104,24 @@ export function useRouteCandidates() {
             : '';
           const why = `Route follow-up: ${r.opportunity_text}${dueLabel}`;
           return {
-            store_id: r.store.id,
-            store_name: r.store.store_name,
-            address: r.store.address ?? null,
-            city: r.store.city ?? null,
-            neighborhood: r.store.neighborhood ?? null,
-            boro: r.store.boro ?? null,
+            store_id: s.id,
+            store_name: s.name,
+            address: s.address_street ?? null,
+            city: s.address_city ?? null,
+            neighborhood: s.neighborhood ?? null,
+            boro: s.boro ?? null,
             candidate_type: 'follow_up' as CandidateType,
             why,
             priority: priorityForDue(r.due_date),
             value: 0,
-            last_visit_date: r.store.last_visit_date ?? null,
+            last_visit_date: s.last_visit_date ?? null,
             signal_at: r.created_at ?? null,
             due_date: r.due_date ?? null,
             opportunity_id: r.id,
             signal_source: 'route_flag',
-          };
-        });
+          } as RouteCandidate;
+        })
+        .filter((x): x is RouteCandidate => x !== null);
 
       return [...viewRows, ...flagRows];
     },
