@@ -26,9 +26,13 @@ Deno.serve(async (req) => {
     });
 
     if (createErr) {
-      // Look up existing
-      const { data: list } = await admin.auth.admin.listUsers();
-      const existing = list?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+      // Paginate to find existing
+      let existing: any = null;
+      for (let page = 1; page <= 20 && !existing; page++) {
+        const { data: list } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+        existing = list?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+        if (!list?.users?.length || list.users.length < 200) break;
+      }
       if (!existing) throw createErr;
       userId = existing.id;
       await admin.auth.admin.updateUserById(userId, { password, email_confirm: true });
