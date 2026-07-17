@@ -343,6 +343,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/billing/invoices', label: 'Invoices', icon: FileText },
         { path: '/admin/legacy-invoice-repair', label: 'Legacy Invoice Repair ⚠️', icon: AlertTriangle },
         { path: '/billing/center', label: 'Billing Center', icon: CreditCard },
+        { path: '/billing-center', label: 'Billing Center (New)', icon: CreditCard },
         { path: '/unpaid-accounts', label: 'Unpaid Accounts', icon: AlertTriangle },
         { path: '/wholesale/fulfillment', label: 'Wholesale Fulfillment', icon: Package },
         { path: '/payroll', label: 'Payroll', icon: Wallet },
