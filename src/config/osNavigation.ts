@@ -124,9 +124,9 @@ export const FLOOR_2_OPERATIONS: OSFloor = {
   roles: ['ceo', 'admin', 'va'],
   items: [
     { id: 'communication-hub', label: 'Communication Hub', path: '/grabba/communication', icon: MessageSquare, roles: ['ceo', 'admin', 'va'] },
-    { id: 'text-center', label: 'Text Center', path: '/grabba/text-center', icon: Phone, roles: ['ceo', 'admin', 'va'] },
-    { id: 'email-center', label: 'Email Center', path: '/grabba/email-center', icon: Mail, roles: ['ceo', 'admin', 'va'] },
-    { id: 'call-center', label: 'Call Center', path: '/grabba/call-center', icon: Phone, roles: ['ceo', 'admin', 'va'] },
+    { id: 'text-center', label: 'Text Center', path: '/grabba/communication', icon: Phone, roles: ['ceo', 'admin', 'va'] },
+    { id: 'email-center', label: 'Email Center', path: '/grabba/communication', icon: Mail, roles: ['ceo', 'admin', 'va'] },
+    { id: 'call-center', label: 'Call Center', path: '/grabba/communication', icon: Phone, roles: ['ceo', 'admin', 'va'] },
     { id: 'task-center', label: 'Task Center', path: '/tasks', icon: CheckSquare, roles: ['ceo', 'admin', 'va'] },
     { id: 'automation', label: 'Automation', path: '/grabba/autopilot', icon: Zap, roles: ['ceo', 'admin'] },
     { id: 'daily-briefing', label: 'Daily Briefing', path: '/grabba/daily-briefing', icon: Calendar, roles: ['ceo', 'admin', 'va'] },
