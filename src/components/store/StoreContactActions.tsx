@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Phone, MessageSquare, PhoneCall, MessageCircle, ShieldCheck, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
 
 interface ContactLike {
   id: string;
@@ -100,19 +101,19 @@ export function StoreContactActions({
     });
   };
 
-  const markResponsive = async (channel: 'call' | 'text') => {
+  const markResponsive = async (channel: 'call' | 'text', turnOff = false) => {
     setBusy(true);
     try {
-      const patch: Record<string, unknown> = {
-        last_responded_at: new Date().toISOString(),
-        updated_by: user?.id ?? null,
-      };
+      const nowIso = new Date().toISOString();
+      const patch: Record<string, unknown> = { updated_by: user?.id ?? null };
       if (channel === 'call') {
-        patch.responsive_by_call = true;
-        patch.last_call_answered_at = patch.last_responded_at;
+        patch.responsive_by_call = !turnOff;
+        patch.last_call_answered_at = turnOff ? null : nowIso;
+        if (!turnOff) patch.last_responded_at = nowIso;
       } else {
-        patch.responsive_by_text = true;
-        patch.last_text_received_at = patch.last_responded_at;
+        patch.responsive_by_text = !turnOff;
+        patch.last_text_received_at = turnOff ? null : nowIso;
+        if (!turnOff) patch.last_responded_at = nowIso;
       }
 
       const { error } = await supabase
@@ -121,7 +122,20 @@ export function StoreContactActions({
         .eq('id', contact.id);
       if (error) throw error;
 
-      toast.success(`${contact.name} marked responsive by ${channel}`);
+      // Audit trail for both mark and un-mark
+      await supabase.from('account_notes' as any).insert({
+        entity_type: 'store_contact',
+        entity_id: contact.id,
+        note_type: 'responsiveness',
+        note_body: `${turnOff ? 'Un-marked' : 'Marked'} responsive by ${channel} by ${user?.email || user?.id || 'unknown'}.`,
+        created_by: user?.email || user?.id || 'system',
+      } as any);
+
+      toast.success(
+        turnOff
+          ? `${contact.name}: responsive-by-${channel} cleared`
+          : `${contact.name} marked responsive by ${channel}`,
+      );
       invalidate();
     } catch (e: any) {
       toast.error(e?.message || 'Failed to update');
@@ -212,15 +226,19 @@ export function StoreContactActions({
           </Button>
         </div>
 
-        {/* Row 2 — responsiveness flags. Lit ON state reflects DB value on load so VAs can see prior marks. */}
+        {/* Row 2 — responsiveness flags. Toggle: click on green pill un-marks it. */}
         <div className={`flex flex-wrap items-center ${rowGap}`}>
           <Button
             size="sm"
             variant={callIsResponsive ? 'default' : 'outline'}
-            onClick={() => markResponsive('call')}
+            onClick={() => markResponsive('call', callIsResponsive)}
             disabled={busy}
             aria-pressed={callIsResponsive}
-            title={callIsResponsive ? 'Marked responsive by call' : 'Mark responsive by call'}
+            title={
+              callIsResponsive
+                ? `Click to un-mark. Marked ${formatDistanceToNow(new Date(contact.last_call_answered_at!), { addSuffix: true })}`
+                : 'Mark responsive by call'
+            }
             className={`${btnH} ${btnPad} gap-1 text-[10px] uppercase tracking-wider ${
               callIsResponsive
                 ? 'bg-emerald-600 hover:bg-emerald-600/90 text-white border border-emerald-500 shadow-sm ring-1 ring-emerald-400/40'
@@ -229,14 +247,23 @@ export function StoreContactActions({
           >
             {callIsResponsive ? <Check className="h-3.5 w-3.5" /> : <PhoneCall className="h-3.5 w-3.5" />}
             <span>Resp · Call</span>
+            {callIsResponsive && contact.last_call_answered_at && (
+              <span className="ml-1 normal-case tracking-normal opacity-90">
+                · {formatDistanceToNow(new Date(contact.last_call_answered_at), { addSuffix: true })}
+              </span>
+            )}
           </Button>
           <Button
             size="sm"
             variant={textIsResponsive ? 'default' : 'outline'}
-            onClick={() => markResponsive('text')}
+            onClick={() => markResponsive('text', textIsResponsive)}
             disabled={busy}
             aria-pressed={textIsResponsive}
-            title={textIsResponsive ? 'Marked responsive by text' : 'Mark responsive by text'}
+            title={
+              textIsResponsive
+                ? `Click to un-mark. Marked ${formatDistanceToNow(new Date(contact.last_text_received_at!), { addSuffix: true })}`
+                : 'Mark responsive by text'
+            }
             className={`${btnH} ${btnPad} gap-1 text-[10px] uppercase tracking-wider ${
               textIsResponsive
                 ? 'bg-emerald-600 hover:bg-emerald-600/90 text-white border border-emerald-500 shadow-sm ring-1 ring-emerald-400/40'
@@ -245,6 +272,11 @@ export function StoreContactActions({
           >
             {textIsResponsive ? <Check className="h-3.5 w-3.5" /> : <MessageCircle className="h-3.5 w-3.5" />}
             <span>Resp · Text</span>
+            {textIsResponsive && contact.last_text_received_at && (
+              <span className="ml-1 normal-case tracking-normal opacity-90">
+                · {formatDistanceToNow(new Date(contact.last_text_received_at), { addSuffix: true })}
+              </span>
+            )}
           </Button>
 
         </div>
