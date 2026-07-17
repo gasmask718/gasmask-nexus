@@ -342,6 +342,12 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
           </table>
         </div>
       )}
+
+      <SendReceptionistLinkModal
+        lead={receptionistLead ? { id: receptionistLead.id, business_name: receptionistLead.business_name, phone_number: receptionistLead.phone } : null}
+        open={!!receptionistLead}
+        onOpenChange={(o) => { if (!o) setReceptionistLead(null); }}
+      />
     </div>
   );
 }
