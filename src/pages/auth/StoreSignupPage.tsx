@@ -50,7 +50,7 @@ export default function StoreSignupPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/owner`,
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/owner')}`,
           data: { linked_store_id: store.id, source: 'order_receipt_signup' },
         },
       });
