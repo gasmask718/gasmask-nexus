@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { email, password } = await req.json();
+    const { email, password, user_id: forceId } = await req.json();
     if (!email || !password) {
       return new Response(JSON.stringify({ error: 'email + password required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -17,32 +17,21 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // Try create; if exists, update password + confirm
-    let userId: string | null = null;
-    const { data: created, error: createErr } = await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
+    let userId: string | null = forceId ?? null;
 
-    if (createErr) {
-      // Query GoTrue admin REST directly by email
-      const url = Deno.env.get('SUPABASE_URL')!;
-      const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-      const res = await fetch(`${url}/auth/v1/admin/users?email=${encodeURIComponent(email)}`, {
-        headers: { Authorization: `Bearer ${srk}`, apikey: srk },
+    if (!userId) {
+      const { data: created, error: createErr } = await admin.auth.admin.createUser({
+        email, password, email_confirm: true,
       });
-      const body = await res.json();
-      const existing = body?.users?.[0] ?? (body?.id ? body : null);
-      if (!existing?.id) {
-        return new Response(JSON.stringify({ error: createErr.message, lookup: body }), {
+      if (createErr) {
+        return new Response(JSON.stringify({ error: createErr.message, hint: 'Pass user_id to update existing' }), {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      userId = existing.id;
-      await admin.auth.admin.updateUserById(userId, { password, email_confirm: true });
-    } else {
       userId = created.user!.id;
+    } else {
+      const { error: updErr } = await admin.auth.admin.updateUserById(userId, { password, email_confirm: true });
+      if (updErr) throw updErr;
     }
 
     // Insert va role
