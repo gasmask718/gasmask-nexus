@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Package,
-  ClipboardList
+  ClipboardList,
+  Route as RouteIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
