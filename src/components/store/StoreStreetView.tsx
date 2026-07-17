@@ -25,8 +25,8 @@ interface StoreStreetViewProps {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
 // Module-level singleton so the Maps JS script is loaded at most once per page.
-let mapsLoader: Promise<typeof google> | null = null;
-function loadMapsJs(apiKey: string): Promise<typeof google> {
+let mapsLoader: Promise<any> | null = null;
+function loadMapsJs(apiKey: string): Promise<any> {
   if (mapsLoader) return mapsLoader;
   mapsLoader = new Promise((resolve, reject) => {
     if (typeof window !== "undefined" && (window as any).google?.maps) {
