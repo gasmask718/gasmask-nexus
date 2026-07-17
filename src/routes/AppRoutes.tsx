@@ -1471,7 +1471,7 @@ export default function AppRoutes() {
         <Route path="/gasmask/billing-center" element={<BillingCenter />} />
         <Route path="/gasmask/billing/invoices" element={<BillingInvoices />} />
         <Route path="/gasmask/billing/invoices/new" element={<BillingInvoiceNew />} />
-        <Route path="/gasmask/payroll" element={<Payroll />} />
+        <Route path="/gasmask/payroll" element={<RequireRole allowedRoles={['owner','admin']} showLocked><Payroll /></RequireRole>} />
         <Route path="/gasmask/biker-payouts" element={<BikerPayouts />} />
         <Route path="/gasmask/delivery-capacity" element={<DeliveryCapacity />} />
         <Route path="/gasmask/subscriptions" element={<Subscriptions />} />
@@ -1645,14 +1645,14 @@ export default function AppRoutes() {
         <Route path="/va-ranking" element={<VARanking />} />
         <Route path="/va-task-center" element={<VATaskCenter />} />
         <Route path="/batch-import" element={<BatchImport />} />
-        <Route path="/hr" element={<HR />} />
-        <Route path="/hr/applicants" element={<HRApplicants />} />
-        <Route path="/hr/applicants/:id" element={<HRApplicantDetail />} />
-        <Route path="/hr/employees" element={<HREmployees />} />
-        <Route path="/hr/employees/:id" element={<HREmployeeDetail />} />
-        <Route path="/hr/interviews" element={<HRInterviews />} />
-        <Route path="/hr/documents" element={<HRDocuments />} />
-        <Route path="/hr/onboarding" element={<HROnboarding />} />
+        <Route path="/hr" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HR /></RequireRole>} />
+        <Route path="/hr/applicants" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HRApplicants /></RequireRole>} />
+        <Route path="/hr/applicants/:id" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HRApplicantDetail /></RequireRole>} />
+        <Route path="/hr/employees" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HREmployees /></RequireRole>} />
+        <Route path="/hr/employees/:id" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HREmployeeDetail /></RequireRole>} />
+        <Route path="/hr/interviews" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HRInterviews /></RequireRole>} />
+        <Route path="/hr/documents" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HRDocuments /></RequireRole>} />
+        <Route path="/hr/onboarding" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HROnboarding /></RequireRole>} />
         {/* T3 K6: HR Payroll merged into Floor 5 Payroll Manager */}
         <Route path="/hr/payroll" element={<Navigate to="/grabba/payroll-manager" replace />} />
         <Route path="/my-hr" element={<MyHR />} />
@@ -1705,7 +1705,7 @@ export default function AppRoutes() {
         {/* T3 K11: orphan comm pages → canonical hub redirects */}
         <Route path="/communications/ai-insights" element={<Navigate to="/communication/agents" replace />} />
         <Route path="/communications/insights" element={<Navigate to="/communication/analytics" replace />} />
-        <Route path="/settings/automation" element={<AutomationSettings />} />
+        <Route path="/settings/automation" element={<RequireRole allowedRoles={['owner','admin']} showLocked><AutomationSettings /></RequireRole>} />
         <Route path="/settings/automation/communications" element={<Navigate to="/settings/automation" replace />} />
         <Route path="/training" element={<Training />} />
         <Route path="/ambassadors" element={<AllAmbassadorsTable />} />
@@ -1720,7 +1720,7 @@ export default function AppRoutes() {
         <Route path="/rewards" element={<Rewards />} />
         <Route path="/driver" element={<Navigate to="/delivery/driver" replace />} />
         <Route path="/drivers/leaderboard" element={<Leaderboard />} />
-        <Route path="/drivers/payroll" element={<Payroll />} />
+        <Route path="/drivers/payroll" element={<RequireRole allowedRoles={['owner','admin']} showLocked><Payroll /></RequireRole>} />
         {/* T2: de-dup Meta AI; /meta-ai is canonical (line 1448). Legacy /ai/meta redirects. */}
         <Route path="/ai/meta" element={<Navigate to="/meta-ai" replace />} />
         {/* T2 legacy sidebar redirects (kept so old bookmarks still resolve) */}
@@ -1747,18 +1747,18 @@ export default function AppRoutes() {
         {/* Floor 5 - Finance & Orders */}
         <Route path="/floor5" element={<Floor5Dashboard />} />
         <Route path="/floor5/dashboard" element={<Floor5Dashboard />} />
-        <Route path="/floor5/invoices" element={<BillingInvoices />} />
-        <Route path="/floor5/billing" element={<BillingCenter />} />
-        <Route path="/floor5/payroll" element={<Payroll />} />
+        <Route path="/floor5/invoices" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingInvoices /></RequireRole>} />
+        <Route path="/floor5/billing" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingCenter /></RequireRole>} />
+        <Route path="/floor5/payroll" element={<RequireRole allowedRoles={['owner','admin']} showLocked><Payroll /></RequireRole>} />
         <Route path="/floor5/unpaid" element={<UnpaidAccounts />} />
         <Route path="/floor5/fulfillment" element={<WholesaleFulfillment />} />
-        <Route path="/billing" element={<Billing />} />
-        <Route path="/billing/center" element={<BillingCenter />} />
-        <Route path="/billing-center" element={<BillingCenter />} />
-        <Route path="/billing/invoices" element={<BillingInvoices />} />
-        <Route path="/billing/invoices/new" element={<BillingInvoiceNew />} />
-        <Route path="/billing/invoices/:id" element={<BillingInvoiceDetail />} />
-        <Route path="/payroll" element={<Payroll />} />
+        <Route path="/billing" element={<RequireRole allowedRoles={['owner','admin']} showLocked><Billing /></RequireRole>} />
+        <Route path="/billing/center" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingCenter /></RequireRole>} />
+        <Route path="/billing-center" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingCenter /></RequireRole>} />
+        <Route path="/billing/invoices" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingInvoices /></RequireRole>} />
+        <Route path="/billing/invoices/new" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingInvoiceNew /></RequireRole>} />
+        <Route path="/billing/invoices/:id" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingInvoiceDetail /></RequireRole>} />
+        <Route path="/payroll" element={<RequireRole allowedRoles={['owner','admin']} showLocked><Payroll /></RequireRole>} />
         <Route path="/unpaid-accounts" element={<UnpaidAccounts />} />
         {/* Communication Center - Redirect to modular hub */}
         <Route path="/communication-center" element={<Navigate to="/communication" replace />} />
