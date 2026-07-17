@@ -259,6 +259,9 @@ const DYNASTY_NAVIGATION = {
         // T3 M4: CRM Customers is a tab inside Global CRM; sidebar entry removed.
         { path: '/crm/follow-ups', label: 'Follow-Ups', icon: Clock },
         { path: '/opportunities', label: 'All Opportunities', icon: Target },
+        { path: '/reports/account-activity', label: '📊 Account Activity Report', icon: Activity },
+        { path: '/reports/samples-by-store', label: '🎁 Samples by Store', icon: Gift },
+        { path: '/reports/samples-by-brand', label: '🥧 Samples by Brand', icon: PieChart },
       ],
     },
     {
