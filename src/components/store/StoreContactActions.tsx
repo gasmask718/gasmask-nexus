@@ -101,19 +101,19 @@ export function StoreContactActions({
     });
   };
 
-  const markResponsive = async (channel: 'call' | 'text') => {
+  const markResponsive = async (channel: 'call' | 'text', turnOff = false) => {
     setBusy(true);
     try {
-      const patch: Record<string, unknown> = {
-        last_responded_at: new Date().toISOString(),
-        updated_by: user?.id ?? null,
-      };
+      const nowIso = new Date().toISOString();
+      const patch: Record<string, unknown> = { updated_by: user?.id ?? null };
       if (channel === 'call') {
-        patch.responsive_by_call = true;
-        patch.last_call_answered_at = patch.last_responded_at;
+        patch.responsive_by_call = !turnOff;
+        patch.last_call_answered_at = turnOff ? null : nowIso;
+        if (!turnOff) patch.last_responded_at = nowIso;
       } else {
-        patch.responsive_by_text = true;
-        patch.last_text_received_at = patch.last_responded_at;
+        patch.responsive_by_text = !turnOff;
+        patch.last_text_received_at = turnOff ? null : nowIso;
+        if (!turnOff) patch.last_responded_at = nowIso;
       }
 
       const { error } = await supabase
@@ -122,7 +122,20 @@ export function StoreContactActions({
         .eq('id', contact.id);
       if (error) throw error;
 
-      toast.success(`${contact.name} marked responsive by ${channel}`);
+      // Audit trail for both mark and un-mark
+      await supabase.from('account_notes' as any).insert({
+        entity_type: 'store_contact',
+        entity_id: contact.id,
+        note_type: 'responsiveness',
+        note_body: `${turnOff ? 'Un-marked' : 'Marked'} responsive by ${channel} by ${user?.email || user?.id || 'unknown'}.`,
+        created_by: user?.email || user?.id || 'system',
+      } as any);
+
+      toast.success(
+        turnOff
+          ? `${contact.name}: responsive-by-${channel} cleared`
+          : `${contact.name} marked responsive by ${channel}`,
+      );
       invalidate();
     } catch (e: any) {
       toast.error(e?.message || 'Failed to update');
