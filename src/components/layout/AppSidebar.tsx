@@ -649,27 +649,27 @@ export default function AppSidebar() {
               </div>
 
               {renderSection('callcenter-os', 'AI Call Center OS', '📞', [
-                { path: '/callcenter', label: 'Call Center Dashboard', emoji: '📊' },
-                { path: '/callcenter/dialer', label: 'Cloud Dialer', emoji: '📞' },
-                { path: '/callcenter/ai-agents', label: 'AI Agents', emoji: '🤖' },
-                { path: '/callcenter/logs', label: 'Call Logs', emoji: '📝' },
-                { path: '/callcenter/live', label: 'Live Monitoring', emoji: '📡' },
-                { path: '/callcenter/analytics', label: 'Analytics', emoji: '📈' },
-                { path: '/callcenter/numbers', label: 'Phone Numbers', emoji: '📱' },
-                { path: '/callcenter/settings', label: 'Settings', emoji: '⚙️' },
+                { path: '/call-center', label: 'Call Center Dashboard', emoji: '📊' },
+                { path: '/call-center/dialer', label: 'Cloud Dialer', emoji: '📞' },
+                { path: '/call-center/ai-agents', label: 'AI Agents', emoji: '🤖' },
+                { path: '/call-center/logs', label: 'Call Logs', emoji: '📝' },
+                { path: '/call-center/monitoring', label: 'Live Monitoring', emoji: '📡' },
+                { path: '/call-center/analytics', label: 'Analytics', emoji: '📈' },
+                { path: '/call-center/numbers', label: 'Phone Numbers', emoji: '📱' },
+                { path: '/call-center/settings', label: 'Settings', emoji: '⚙️' },
               ], "text-blue-400 hover:bg-blue-500/10")}
 
               {renderSection('textcenter-os', 'AI Text Center OS', '💬', [
-                { path: '/grabba/text-center', label: 'Text Center', emoji: '📱' },
+                { path: '/grabba/communication', label: 'Text Center', emoji: '📱' },
                 { path: '/communication/sms', label: 'SMS Hub', emoji: '💬' },
-                { path: '/callcenter/messages', label: 'Messages', emoji: '✉️' },
+                { path: '/call-center/messages', label: 'Messages', emoji: '✉️' },
                 { path: '/communication/campaigns', label: 'SMS Campaigns', emoji: '📢' },
               ], "text-green-400 hover:bg-green-500/10")}
 
               {renderSection('emailcenter-os', 'Email Center OS', '📧', [
-                { path: '/grabba/email-center', label: 'Email Center', emoji: '📧' },
+                { path: '/grabba/communication', label: 'Email Center', emoji: '📧' },
                 { path: '/communication/email', label: 'Email Hub', emoji: '✉️' },
-                { path: '/callcenter/emails', label: 'Email Logs', emoji: '📝' },
+                { path: '/call-center/emails', label: 'Email Logs', emoji: '📝' },
                 { path: '/communication/campaigns', label: 'Email Campaigns', emoji: '📢' },
               ], "text-purple-400 hover:bg-purple-500/10")}
 
