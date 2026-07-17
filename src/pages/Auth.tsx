@@ -196,7 +196,7 @@ const Auth = () => {
                     id="signin-email"
                     placeholder="you@example.com"
                     value={email}
-                    onChange={setEmail}
+                    onChange={(v) => { setEmail(v); if (needsConfirm) setNeedsConfirm(false); }}
                     required
                     className="bg-secondary/50 border-border/50"
                   />
@@ -220,6 +220,23 @@ const Auth = () => {
                 >
                   {loading ? 'Signing in...' : 'Sign In'}
                 </Button>
+                {needsConfirm && (
+                  <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
+                    <p className="text-sm text-amber-100">
+                      We haven't verified this email yet. Check your inbox for the confirmation link,
+                      or resend it below.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full"
+                      onClick={handleResendConfirmation}
+                      disabled={loading}
+                    >
+                      {loading ? 'Sending...' : 'Resend verification email'}
+                    </Button>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-sm">
                   <Link to="/forgot-password" className="text-muted-foreground hover:text-foreground">
                     Forgot password?
