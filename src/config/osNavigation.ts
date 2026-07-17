@@ -109,6 +109,9 @@ export const FLOOR_1_CRM: OSFloor = {
     { id: 'sales-report', label: 'Sales Report', path: '/sales/report', icon: BarChart3, roles: ['ceo', 'admin', 'va'] },
     { id: 'store-performance', label: 'Store Performance', path: '/store-performance', icon: TrendingUp, roles: ['ceo', 'admin', 'va'] },
     { id: 'opportunities', label: 'All Opportunities', path: '/opportunities', icon: Target, roles: ['ceo', 'admin', 'va', 'csr'] },
+    { id: 'report-account-activity', label: 'Account Activity Report', path: '/reports/account-activity', icon: Activity, roles: ['ceo', 'admin', 'va'] },
+    { id: 'report-samples-by-store', label: 'Samples by Store', path: '/reports/samples-by-store', icon: Gift, roles: ['ceo', 'admin', 'va'] },
+    { id: 'report-samples-by-brand', label: 'Samples by Brand', path: '/reports/samples-by-brand', icon: PieChart, roles: ['ceo', 'admin', 'va'] },
   ],
 };
 
