@@ -59,6 +59,7 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
   const [quickPhone, setQuickPhone] = useState('');
   const [quickName, setQuickName] = useState('');
   const [languageFilter, setLanguageFilter] = useState<'all' | 'spanish'>('all');
+  const [receptionistLead, setReceptionistLead] = useState<Lead | null>(null);
 
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ['va-leads', user?.id],
