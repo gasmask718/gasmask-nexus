@@ -26,14 +26,19 @@ Deno.serve(async (req) => {
     });
 
     if (createErr) {
-      // Paginate to find existing
-      let existing: any = null;
-      for (let page = 1; page <= 20 && !existing; page++) {
-        const { data: list } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-        existing = list?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
-        if (!list?.users?.length || list.users.length < 200) break;
+      // Query GoTrue admin REST directly by email
+      const url = Deno.env.get('SUPABASE_URL')!;
+      const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const res = await fetch(`${url}/auth/v1/admin/users?email=${encodeURIComponent(email)}`, {
+        headers: { Authorization: `Bearer ${srk}`, apikey: srk },
+      });
+      const body = await res.json();
+      const existing = body?.users?.[0] ?? (body?.id ? body : null);
+      if (!existing?.id) {
+        return new Response(JSON.stringify({ error: createErr.message, lookup: body }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
-      if (!existing) throw createErr;
       userId = existing.id;
       await admin.auth.admin.updateUserById(userId, { password, email_confirm: true });
     } else {
