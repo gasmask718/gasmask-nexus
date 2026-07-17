@@ -324,6 +324,15 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
                         >
                           <Send className="h-3 w-3" /> {t('va.leads.sendInvoice')}
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs hover:bg-accent/50 gap-1"
+                          style={{ color: "hsl(var(--hud-cyan))" }}
+                          onClick={() => setReceptionistLead(lead)}
+                        >
+                          <Sparkles className="h-3 w-3" /> Receptionist
+                        </Button>
                       </div>
                     </td>
                   </motion.tr>
