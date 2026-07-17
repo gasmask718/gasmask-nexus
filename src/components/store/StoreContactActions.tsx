@@ -226,15 +226,19 @@ export function StoreContactActions({
           </Button>
         </div>
 
-        {/* Row 2 — responsiveness flags. Lit ON state reflects DB value on load so VAs can see prior marks. */}
+        {/* Row 2 — responsiveness flags. Toggle: click on green pill un-marks it. */}
         <div className={`flex flex-wrap items-center ${rowGap}`}>
           <Button
             size="sm"
             variant={callIsResponsive ? 'default' : 'outline'}
-            onClick={() => markResponsive('call')}
+            onClick={() => markResponsive('call', callIsResponsive)}
             disabled={busy}
             aria-pressed={callIsResponsive}
-            title={callIsResponsive ? 'Marked responsive by call' : 'Mark responsive by call'}
+            title={
+              callIsResponsive
+                ? `Click to un-mark. Marked ${formatDistanceToNow(new Date(contact.last_call_answered_at!), { addSuffix: true })}`
+                : 'Mark responsive by call'
+            }
             className={`${btnH} ${btnPad} gap-1 text-[10px] uppercase tracking-wider ${
               callIsResponsive
                 ? 'bg-emerald-600 hover:bg-emerald-600/90 text-white border border-emerald-500 shadow-sm ring-1 ring-emerald-400/40'
@@ -243,14 +247,23 @@ export function StoreContactActions({
           >
             {callIsResponsive ? <Check className="h-3.5 w-3.5" /> : <PhoneCall className="h-3.5 w-3.5" />}
             <span>Resp · Call</span>
+            {callIsResponsive && contact.last_call_answered_at && (
+              <span className="ml-1 normal-case tracking-normal opacity-90">
+                · {formatDistanceToNow(new Date(contact.last_call_answered_at), { addSuffix: true })}
+              </span>
+            )}
           </Button>
           <Button
             size="sm"
             variant={textIsResponsive ? 'default' : 'outline'}
-            onClick={() => markResponsive('text')}
+            onClick={() => markResponsive('text', textIsResponsive)}
             disabled={busy}
             aria-pressed={textIsResponsive}
-            title={textIsResponsive ? 'Marked responsive by text' : 'Mark responsive by text'}
+            title={
+              textIsResponsive
+                ? `Click to un-mark. Marked ${formatDistanceToNow(new Date(contact.last_text_received_at!), { addSuffix: true })}`
+                : 'Mark responsive by text'
+            }
             className={`${btnH} ${btnPad} gap-1 text-[10px] uppercase tracking-wider ${
               textIsResponsive
                 ? 'bg-emerald-600 hover:bg-emerald-600/90 text-white border border-emerald-500 shadow-sm ring-1 ring-emerald-400/40'
@@ -259,6 +272,11 @@ export function StoreContactActions({
           >
             {textIsResponsive ? <Check className="h-3.5 w-3.5" /> : <MessageCircle className="h-3.5 w-3.5" />}
             <span>Resp · Text</span>
+            {textIsResponsive && contact.last_text_received_at && (
+              <span className="ml-1 normal-case tracking-normal opacity-90">
+                · {formatDistanceToNow(new Date(contact.last_text_received_at), { addSuffix: true })}
+              </span>
+            )}
           </Button>
 
         </div>
