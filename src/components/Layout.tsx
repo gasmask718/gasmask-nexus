@@ -277,6 +277,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/grabba/communication', label: 'Communication Hub', icon: MessageSquare },
         { path: '/grabba/daily-briefing', label: '🌅 Daily Briefing', icon: Sunrise },
         { path: '/tasks', label: 'Task Center', icon: CheckSquare },
+        { path: '/messages', label: 'Messages', icon: MessageSquare },
 
         { path: '/communication/inbox', label: 'Inbox', icon: MessageSquare },
         { path: '/communication/follow-ups', label: 'Follow-Up Manager', icon: Clock },
@@ -300,6 +301,7 @@ const DYNASTY_NAVIGATION = {
       name: '📦 Floor 3 — Inventory Engine',
       items: [
         { path: '/grabba/inventory', label: 'Inventory Dashboard', icon: Boxes },
+        { path: '/os/inventory/dashboard', label: 'Inventory Dashboard (OS)', icon: Boxes },
         { path: '/products', label: 'Products', icon: Package },
         { path: '/os/inventory/product-inventory', label: 'Product Inventory', icon: BarChart3 },
         { path: '/os/product-conversions', label: 'Product Conversions', icon: Settings },
@@ -329,6 +331,8 @@ const DYNASTY_NAVIGATION = {
         { path: '/operations/live-map', label: 'Live Map (Ops)', icon: MapPin },
         { path: '/my-route', label: 'My Route', icon: MapPin },
         { path: '/delivery-capacity', label: 'Delivery Capacity', icon: BarChart3 },
+        { path: '/delivery/deliveries', label: 'Deliveries', icon: Truck },
+        { path: '/delivery/route-manager', label: 'Route Manager (Status)', icon: Route },
       ],
     },
     {
@@ -339,6 +343,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/billing/invoices', label: 'Invoices', icon: FileText },
         { path: '/admin/legacy-invoice-repair', label: 'Legacy Invoice Repair ⚠️', icon: AlertTriangle },
         { path: '/billing/center', label: 'Billing Center', icon: CreditCard },
+        { path: '/billing-center', label: 'Billing Center (New)', icon: CreditCard },
         { path: '/unpaid-accounts', label: 'Unpaid Accounts', icon: AlertTriangle },
         { path: '/wholesale/fulfillment', label: 'Wholesale Fulfillment', icon: Package },
         { path: '/payroll', label: 'Payroll', icon: Wallet },
