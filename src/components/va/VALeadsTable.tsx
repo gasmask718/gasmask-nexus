@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Phone, FileText, Send, Search, Loader2, Users, Zap, PhoneCall } from 'lucide-react';
+import { Phone, FileText, Send, Search, Loader2, Users, Zap, PhoneCall, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { isSpanishLead } from '@/lib/spanishLeadDetector';
+import { SendReceptionistLinkModal } from '@/components/brandaro/SendReceptionistLinkModal';
 
 interface Lead {
   id: string;
@@ -58,6 +59,7 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
   const [quickPhone, setQuickPhone] = useState('');
   const [quickName, setQuickName] = useState('');
   const [languageFilter, setLanguageFilter] = useState<'all' | 'spanish'>('all');
+  const [receptionistLead, setReceptionistLead] = useState<Lead | null>(null);
 
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ['va-leads', user?.id],
@@ -322,6 +324,15 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
                         >
                           <Send className="h-3 w-3" /> {t('va.leads.sendInvoice')}
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs hover:bg-accent/50 gap-1"
+                          style={{ color: "hsl(var(--hud-cyan))" }}
+                          onClick={() => setReceptionistLead(lead)}
+                        >
+                          <Sparkles className="h-3 w-3" /> Receptionist
+                        </Button>
                       </div>
                     </td>
                   </motion.tr>
@@ -331,6 +342,12 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
           </table>
         </div>
       )}
+
+      <SendReceptionistLinkModal
+        lead={receptionistLead ? { id: receptionistLead.id, business_name: receptionistLead.business_name, phone_number: receptionistLead.phone } : null}
+        open={!!receptionistLead}
+        onOpenChange={(o) => { if (!o) setReceptionistLead(null); }}
+      />
     </div>
   );
 }

@@ -1361,9 +1361,9 @@ export default function AppRoutes() {
       <Route path="/brandaro/pay/:code" element={<ShortLinkRedirect />} />
 
       {/* VA Portal — Protected routes */}
-      <Route path="/va/dashboard" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
-      <Route path="/va/profile" element={<ProtectedRoute><VAProfilePage /></ProtectedRoute>} />
-      <Route path="/va/lead-discovery" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
+      <Route path="/va/dashboard" element={<ProtectedRoute><RequireRole allowedRoles={['va','admin','owner']}><VADashboard /></RequireRole></ProtectedRoute>} />
+      <Route path="/va/profile" element={<ProtectedRoute><RequireRole allowedRoles={['va','admin','owner']}><VAProfilePage /></RequireRole></ProtectedRoute>} />
+      <Route path="/va/lead-discovery" element={<ProtectedRoute><RequireRole allowedRoles={['va','admin','owner']}><VADashboard /></RequireRole></ProtectedRoute>} />
 
       {/* Penthouse VA Management (admin only) */}
       <Route path="/penthouse/va-management" element={
