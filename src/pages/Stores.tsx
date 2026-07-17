@@ -396,11 +396,11 @@ const Stores = () => {
   const paginatedStores: Store[] = useMemo(() => {
     return server.pageRows.map((s: any) => ({
       ...s,
-      connectedStoresCount: s.owner_name
-        ? Math.max(0, (ownerNameCountsMap.get(s.owner_name) ?? 0) - 1)
+      connectedStoresCount: s.connected_group_id
+        ? Math.max(0, (groupIdCountsMap.get(s.connected_group_id) ?? 0) - 1)
         : 0,
     })) as Store[];
-  }, [server.pageRows, ownerNameCountsMap]);
+  }, [server.pageRows, groupIdCountsMap]);
 
   const filteredStoresCount = server.pageTotal;
   const totalPages = Math.max(1, Math.ceil(server.pageTotal / pageSize));
