@@ -132,7 +132,7 @@ export default function VAAuthPage() {
           password: form.password,
           options: {
             data: { full_name: form.fullName },
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         });
         if (error) throw error;

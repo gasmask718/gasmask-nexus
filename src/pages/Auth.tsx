@@ -21,12 +21,23 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [needsConfirm, setNeedsConfirm] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   const markManualSignIn = useMarkManualSignIn();
   const { data: profileData, isLoading: profileLoading } = useCurrentUserProfile();
   const { role: rbacRole, loading: rbacLoading } = useUserRole();
+
+  // Surface failed verification bounced back from /auth/callback
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('verify') === 'failed') {
+      const reason = params.get('reason') || 'Verification link is invalid or expired.';
+      setNeedsConfirm(true);
+      toast.error(`Email not verified: ${reason}`);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (!user) return;
@@ -63,7 +74,15 @@ const Auth = () => {
     });
 
     if (error) {
-      toast.error(error.message);
+      const isUnconfirmed =
+        /email not confirmed/i.test(error.message) ||
+        (error as any).code === 'email_not_confirmed';
+      if (isUnconfirmed) {
+        setNeedsConfirm(true);
+        toast.error("Your email isn't confirmed yet. Resend the verification email below.");
+      } else {
+        toast.error(error.message);
+      }
     } else {
       toast.success('Signed in successfully');
     }
@@ -79,7 +98,7 @@ const Auth = () => {
       password,
       options: {
         data: { name },
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
@@ -100,7 +119,7 @@ const Auth = () => {
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email,
-      options: { emailRedirectTo: `${window.location.origin}/` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) {
       toast.error(error.message);
@@ -177,7 +196,7 @@ const Auth = () => {
                     id="signin-email"
                     placeholder="you@example.com"
                     value={email}
-                    onChange={setEmail}
+                    onChange={(v) => { setEmail(v); if (needsConfirm) setNeedsConfirm(false); }}
                     required
                     className="bg-secondary/50 border-border/50"
                   />
@@ -201,6 +220,23 @@ const Auth = () => {
                 >
                   {loading ? 'Signing in...' : 'Sign In'}
                 </Button>
+                {needsConfirm && (
+                  <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
+                    <p className="text-sm text-amber-100">
+                      We haven't verified this email yet. Check your inbox for the confirmation link,
+                      or resend it below.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full"
+                      onClick={handleResendConfirmation}
+                      disabled={loading}
+                    >
+                      {loading ? 'Sending...' : 'Resend verification email'}
+                    </Button>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-sm">
                   <Link to="/forgot-password" className="text-muted-foreground hover:text-foreground">
                     Forgot password?

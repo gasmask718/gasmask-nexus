@@ -35,6 +35,7 @@ const LandingPage = lazy(() => import('@/pages/public/LandingPage'));
 const AboutPage = lazy(() => import('@/pages/public/AboutPage'));
 const ContactPage = lazy(() => import('@/pages/public/ContactPage'));
 const Auth = lazy(() => import('@/pages/Auth'));
+const AuthCallback = lazy(() => import('@/pages/auth/AuthCallback'));
 const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 const PendingApproval = lazy(() => import('@/pages/PendingApproval'));
@@ -1318,6 +1319,7 @@ export default function AppRoutes() {
       <Route path="/partner/portal" element={<ProtectedRoute><PartnerPortal /></ProtectedRoute>} />
       <Route path="/admin/partners/import" element={<PartnersImport />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
