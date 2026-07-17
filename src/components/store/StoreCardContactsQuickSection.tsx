@@ -22,6 +22,7 @@ interface Props {
 
 export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
   const [addOpen, setAddOpen] = useState(false);
+  const [openHistory, setOpenHistory] = useState<Record<string, boolean>>({});
 
   const { data: contacts = [], isLoading, refetch } = useQuery({
     queryKey: ['store-contacts', storeId],
