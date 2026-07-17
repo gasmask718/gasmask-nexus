@@ -82,7 +82,7 @@ export function StoreStreetView({ lat, lng, storeName, address, height = 260 }: 
         const resp = await fetch(`${SUPABASE_URL}/functions/v1/get-maps-browser-key`);
         const { key } = await resp.json();
         if (!key) throw new Error("Browser Maps key not configured");
-        const google = await loadMapsJs(key);
+        const google: any = await loadMapsJs(key);
         if (cancelled || !panoRef.current) return;
 
         const location = { lat: lat as number, lng: lng as number };
