@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Phone, MessageSquare, PhoneCall, MessageCircle, ShieldCheck, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
 
 interface ContactLike {
   id: string;
