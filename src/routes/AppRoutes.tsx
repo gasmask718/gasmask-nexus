@@ -1720,7 +1720,7 @@ export default function AppRoutes() {
         <Route path="/rewards" element={<Rewards />} />
         <Route path="/driver" element={<Navigate to="/delivery/driver" replace />} />
         <Route path="/drivers/leaderboard" element={<Leaderboard />} />
-        <Route path="/drivers/payroll" element={<Payroll />} />
+        <Route path="/drivers/payroll" element={<RequireRole allowedRoles={['owner','admin']} showLocked><Payroll /></RequireRole>} />
         {/* T2: de-dup Meta AI; /meta-ai is canonical (line 1448). Legacy /ai/meta redirects. */}
         <Route path="/ai/meta" element={<Navigate to="/meta-ai" replace />} />
         {/* T2 legacy sidebar redirects (kept so old bookmarks still resolve) */}
