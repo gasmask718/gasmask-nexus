@@ -32,8 +32,18 @@ export function ContactResponsivenessBadge({
   total_texts_received = 0,
   compact = false,
 }: ContactResponsivenessBadgeProps) {
-  const status = responsiveness_status || 'unknown';
-  
+  // Strict: only truly-responsive when flag === true AND channel evidence exists.
+  const callResponsive = responsive_by_call === true && !!last_call_answered_at;
+  const textResponsive = responsive_by_text === true && !!last_text_received_at;
+  const isResponsive = callResponsive || textResponsive;
+  const hasAttempts = (total_calls_attempted || 0) > 0 || (total_texts_sent || 0) > 0;
+  const derivedStatus: 'responsive' | 'unresponsive' | 'unknown' = isResponsive
+    ? 'responsive'
+    : hasAttempts
+      ? 'unresponsive'
+      : 'unknown';
+  const status = derivedStatus;
+
   const statusConfig = {
     responsive: {
       label: 'Responsive',
