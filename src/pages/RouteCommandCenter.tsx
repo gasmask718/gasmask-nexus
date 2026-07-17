@@ -264,6 +264,14 @@ export default function RouteCommandCenter() {
               {cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={dueFilter} onValueChange={(v) => setDueFilter(v as DueFilter)}>
+            <SelectTrigger className="w-[220px]"><SelectValue placeholder="Follow-ups due" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today_overdue">Follow-ups: today &amp; overdue</SelectItem>
+              <SelectItem value="week">Follow-ups: next 7 days</SelectItem>
+              <SelectItem value="all">Follow-ups: all upcoming</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="flex-1" />
           <Button variant="outline" size="sm" onClick={selectAllFiltered}>
             Select all filtered ({filtered.length})
