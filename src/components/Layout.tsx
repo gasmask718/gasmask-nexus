@@ -331,6 +331,8 @@ const DYNASTY_NAVIGATION = {
         { path: '/operations/live-map', label: 'Live Map (Ops)', icon: MapPin },
         { path: '/my-route', label: 'My Route', icon: MapPin },
         { path: '/delivery-capacity', label: 'Delivery Capacity', icon: BarChart3 },
+        { path: '/delivery/deliveries', label: 'Deliveries', icon: Truck },
+        { path: '/delivery/route-manager', label: 'Route Manager (Status)', icon: Route },
       ],
     },
     {
