@@ -58,21 +58,7 @@ export function useRouteCandidates() {
           .limit(5000),
         (supabase as any)
           .from('store_opportunities')
-          .select(`
-            id,
-            opportunity_text,
-            due_date,
-            created_at,
-            store:store_master!store_id (
-              id,
-              store_name,
-              address,
-              city,
-              neighborhood,
-              boro,
-              last_visit_date
-            )
-          `)
+          .select('id, store_id, opportunity_text, due_date, created_at')
           .eq('route_flag', true)
           .eq('is_completed', false)
           .limit(2000),
