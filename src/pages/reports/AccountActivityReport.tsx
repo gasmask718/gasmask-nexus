@@ -211,20 +211,191 @@ export function AccountActivityTable({ storeId, compact, limit = 500, dateFrom, 
   );
 }
 
+type RangePreset = 'today' | 'week' | 'month' | 'custom';
+
+function rangeFor(preset: RangePreset): { from: string; to: string } {
+  const today = new Date();
+  const to = format(today, 'yyyy-MM-dd');
+  if (preset === 'today') return { from: to, to };
+  const start = new Date(today);
+  if (preset === 'week') start.setDate(today.getDate() - 6);
+  else if (preset === 'month') start.setDate(today.getDate() - 29);
+  return { from: format(start, 'yyyy-MM-dd'), to };
+}
+
 export default function AccountActivityReport() {
+  const [preset, setPreset] = useState<RangePreset>('today');
+  const { from, to } = useMemo(() => rangeFor(preset), [preset]);
+
+  // Summary query — same view, larger limit so counts are meaningful.
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ['account-activity-summary', from, to],
+    queryFn: async () => {
+      let q = (supabase as any)
+        .from('store_activity_feed_v')
+        .select('*')
+        .order('occurred_at', { ascending: false })
+        .limit(5000);
+      if (from) q = q.gte('occurred_at', `${from}T00:00:00`);
+      if (to) q = q.lte('occurred_at', `${to}T23:59:59`);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data || []) as ActivityRow[];
+    },
+  });
+
+  const actorIds = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.actor_id).filter(Boolean))) as string[],
+    [rows]
+  );
+  const { data: actors = [] } = useQuery({
+    queryKey: ['actor-directory-summary', actorIds],
+    enabled: actorIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('actor_directory_v')
+        .select('actor_id, actor_name, actor_kind')
+        .in('actor_id', actorIds);
+      if (error) throw error;
+      return data as { actor_id: string; actor_name: string; actor_kind: string }[];
+    },
+  });
+  const actorMap = useMemo(() => {
+    const m = new Map<string, { name: string; kind: string }>();
+    actors.forEach((a) => m.set(a.actor_id, { name: a.actor_name, kind: a.actor_kind }));
+    return m;
+  }, [actors]);
+
+  const totals = useMemo(() => {
+    const t = { all: 0, review: 0, call: 0, text: 0, visit: 0 };
+    const stores = new Set<string>();
+    for (const r of rows) {
+      t.all += 1;
+      if (r.kind in t) (t as any)[r.kind] += 1;
+      if (r.store_id) stores.add(r.store_id);
+    }
+    return { ...t, stores: stores.size };
+  }, [rows]);
+
+  const scorecard = useMemo(() => {
+    const map = new Map<string, { actorId: string; review: number; call: number; text: number; visit: number; total: number }>();
+    for (const r of rows) {
+      if (!r.actor_id) continue;
+      const cur = map.get(r.actor_id) ?? { actorId: r.actor_id, review: 0, call: 0, text: 0, visit: 0, total: 0 };
+      if (r.kind in cur) (cur as any)[r.kind] += 1;
+      cur.total += 1;
+      map.set(r.actor_id, cur);
+    }
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [rows]);
+
+  const StatCard = ({ label, value }: { label: string; value: number | string }) => (
+    <Card>
+      <CardContent className="p-4">
+        <p className="text-xs uppercase text-muted-foreground tracking-wide">{label}</p>
+        <p className="text-2xl font-semibold mt-1">{value}</p>
+      </CardContent>
+    </Card>
+  );
+
+  const PresetBtn = ({ id, label }: { id: RangePreset; label: string }) => (
+    <button
+      onClick={() => setPreset(id)}
+      className={`px-3 py-1.5 rounded-md text-sm border transition ${
+        preset === id
+          ? 'bg-primary text-primary-foreground border-primary'
+          : 'bg-background hover:bg-muted border-border'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <div className="container max-w-6xl py-6 space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold flex items-center gap-2">
-          <Activity className="h-6 w-6 text-primary" /> Account Activity Feed
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Unified stream of reviews, calls, texts, and visits across every account.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold flex items-center gap-2">
+            <Activity className="h-6 w-6 text-primary" /> Account Activity Feed
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Unified stream of reviews, calls, texts, and visits — with per-person scorecard.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <PresetBtn id="today" label="Today" />
+          <PresetBtn id="week" label="This Week" />
+          <PresetBtn id="month" label="This Month" />
+        </div>
       </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <StatCard label="Total activities" value={totals.all} />
+        <StatCard label="Calls" value={totals.call} />
+        <StatCard label="Texts" value={totals.text} />
+        <StatCard label="Reviews" value={totals.review} />
+        <StatCard label="Visits" value={totals.visit} />
+        <StatCard label="Unique stores" value={totals.stores} />
+      </div>
+
       <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-base">All activity</CardTitle></CardHeader>
-        <CardContent><AccountActivityTable /></CardContent>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Per-person scorecard · {preset === 'today' ? 'Today' : preset === 'week' ? 'Last 7 days' : 'Last 30 days'}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading scorecard…
+            </div>
+          ) : scorecard.length === 0 ? (
+            <p className="text-sm italic text-muted-foreground">No activity in this range.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs uppercase text-muted-foreground">
+                    <th className="py-2 pr-3">Actor</th>
+                    <th className="py-2 pr-3 text-right">Reviews</th>
+                    <th className="py-2 pr-3 text-right">Calls</th>
+                    <th className="py-2 pr-3 text-right">Texts</th>
+                    <th className="py-2 pr-3 text-right">Visits</th>
+                    <th className="py-2 pr-3 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {scorecard.map((s, i) => {
+                    const meta = actorMap.get(s.actorId);
+                    return (
+                      <tr key={s.actorId} className="border-b last:border-0">
+                        <td className="py-2 pr-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground w-5">{i + 1}.</span>
+                            <div>
+                              <div className="font-medium">{meta?.name ?? s.actorId.slice(0, 8)}</div>
+                              {meta?.kind && (
+                                <div className="text-xs text-muted-foreground uppercase">{meta.kind}</div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-2 pr-3 text-right">{s.review || '—'}</td>
+                        <td className="py-2 pr-3 text-right">{s.call || '—'}</td>
+                        <td className="py-2 pr-3 text-right">{s.text || '—'}</td>
+                        <td className="py-2 pr-3 text-right">{s.visit || '—'}</td>
+                        <td className="py-2 pr-3 text-right font-semibold">{s.total}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Detailed activity feed</CardTitle></CardHeader>
+        <CardContent><AccountActivityTable dateFrom={from} dateTo={to} /></CardContent>
       </Card>
     </div>
   );
