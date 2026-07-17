@@ -104,15 +104,15 @@ export function ContactResponsivenessBadge({
 
       <div className="border-t pt-2 mt-2 flex gap-3">
         <div className="flex items-center gap-1">
-          <Phone className={`h-3 w-3 ${responsive_by_call ? 'text-green-500' : 'text-muted-foreground'}`} />
-          <span className={responsive_by_call ? 'text-green-600' : 'text-muted-foreground'}>
-            {responsive_by_call ? 'Answers' : 'No answer'}
+          <Phone className={`h-3 w-3 ${callResponsive ? 'text-green-500' : 'text-muted-foreground'}`} />
+          <span className={callResponsive ? 'text-green-600' : 'text-muted-foreground'}>
+            {callResponsive ? 'Answers' : 'No answer'}
           </span>
         </div>
         <div className="flex items-center gap-1">
-          <MessageSquare className={`h-3 w-3 ${responsive_by_text ? 'text-green-500' : 'text-muted-foreground'}`} />
-          <span className={responsive_by_text ? 'text-green-600' : 'text-muted-foreground'}>
-            {responsive_by_text ? 'Replies' : 'No reply'}
+          <MessageSquare className={`h-3 w-3 ${textResponsive ? 'text-green-500' : 'text-muted-foreground'}`} />
+          <span className={textResponsive ? 'text-green-600' : 'text-muted-foreground'}>
+            {textResponsive ? 'Replies' : 'No reply'}
           </span>
         </div>
       </div>
