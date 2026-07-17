@@ -2808,13 +2808,7 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
-      <Route path="/grabba/communications" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee']} showLocked>
-            <Layout><CommunicationHubLayout /></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
+      <Route path="/grabba/communications" element={<Navigate to="/grabba/communication" replace />} />
       <Route path="/grabba/unified-upload" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee']} showLocked>
