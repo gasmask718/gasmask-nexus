@@ -1294,6 +1294,8 @@ export default function AppRoutes() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/gasmask/locations" element={<GasMaskStoreLocator />} />
         <Route path="/locations" element={<GasMaskStoreLocator />} />
       </Route>
