@@ -1037,7 +1037,7 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
 
       // Optional: text receipt on create (respects phone/opt-out gate)
       let textSent = false;
-      if (textOnCreate && recipient?.phone && !recipient.blocked) {
+      if (textOnCreate && selectedRecipient?.phone && !selectedRecipient.blocked) {
         try {
           const { data, error } = await supabase.functions.invoke('send-invoice-receipt', {
             body: {
@@ -1046,7 +1046,7 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
               invoice_number: invoiceNumber,
               total_amount: total,
               store_name: storeName,
-              recipient_phone: recipient.phone,
+              recipient_phone: selectedRecipient.phone,
               manual_resend: false,
             },
           });
