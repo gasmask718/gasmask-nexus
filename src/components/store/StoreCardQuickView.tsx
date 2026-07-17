@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ChevronDown, ChevronUp, Loader2, Route as RouteIcon, CalendarClock, Package, PackagePlus, Sparkles, Save, Receipt, DollarSign, CheckCircle2, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -606,34 +607,103 @@ function StoreFlagsSection({ storeId }: { storeId: string }) {
 }
 
 // ────────────────────────────────────────────────────────────────
-// Shared: resolve textable recipient for a store.
-// Priority: primary store_contacts.phone (unless opted out / sms_opt_in=false)
-// → store_master.phone → store_master.alt_phone.
+// Shared: resolve textable recipients for a store.
+// Returns ALL contacts with a phone (so the VA can pick when there are
+// multiple), plus the store-level fallback. `primary` is the default pick.
+// Opted-out / can_receive_sms=false contacts are included but marked blocked.
 // ────────────────────────────────────────────────────────────────
+export interface TextableCandidate {
+  key: string;
+  phone: string;
+  label: string;
+  sublabel?: string | null;
+  contactId: string | null;
+  isPrimary: boolean;
+  blocked: boolean;
+  blockReason: string | null;
+  responsive: boolean;
+}
+
+export interface TextableRecipientData {
+  candidates: TextableCandidate[];
+  primary: TextableCandidate | null;
+  // Legacy shape kept for existing call sites that read .phone/.blocked/.reason
+  phone: string | null;
+  source: string;
+  blocked: boolean;
+  reason: string | null;
+}
+
 function useTextableRecipient(storeId: string) {
   return useQuery({
     queryKey: ['textable-recipient', storeId],
     staleTime: 60_000,
-    queryFn: async (): Promise<{ phone: string | null; source: string; blocked: boolean; reason: string | null }> => {
-      const { data: contact } = await supabase
+    queryFn: async (): Promise<TextableRecipientData> => {
+      const { data: contacts } = await supabase
         .from('store_contacts')
-        .select('phone, opted_out, can_receive_sms, name')
+        .select('id, name, phone, is_primary, opted_out, can_receive_sms, responsive_by_text, last_text_received_at, role')
         .eq('store_id', storeId)
-        .eq('is_primary', true)
-        .maybeSingle();
-      if (contact) {
-        if (contact.opted_out) return { phone: null, source: 'contact', blocked: true, reason: 'Primary contact opted out' };
-        if (contact.can_receive_sms === false) return { phone: null, source: 'contact', blocked: true, reason: 'Primary contact SMS off' };
-        if (contact.phone) return { phone: contact.phone, source: `contact:${contact.name || 'primary'}`, blocked: false, reason: null };
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: true });
+
+      const candidates: TextableCandidate[] = [];
+      for (const c of contacts || []) {
+        if (!c.phone) continue;
+        const blocked = c.opted_out === true || c.can_receive_sms === false;
+        const blockReason = c.opted_out
+          ? 'Opted out'
+          : c.can_receive_sms === false
+          ? 'SMS off'
+          : null;
+        candidates.push({
+          key: `c:${c.id}`,
+          phone: c.phone,
+          label: c.name || 'Contact',
+          sublabel: [c.role, c.phone].filter(Boolean).join(' · '),
+          contactId: c.id,
+          isPrimary: c.is_primary === true,
+          blocked,
+          blockReason,
+          responsive: c.responsive_by_text === true && !!c.last_text_received_at,
+        });
       }
-      const { data: store } = await supabase
-        .from('store_master')
-        .select('phone')
-        .eq('id', storeId)
-        .maybeSingle();
-      const fallback = store?.phone || null;
-      if (fallback) return { phone: fallback, source: 'store_master', blocked: false, reason: null };
-      return { phone: null, source: 'none', blocked: false, reason: 'No phone on file' };
+
+      // Fallback: store_master.phone if no contact phones at all
+      if (candidates.length === 0) {
+        const { data: store } = await supabase
+          .from('store_master')
+          .select('phone')
+          .eq('id', storeId)
+          .maybeSingle();
+        if (store?.phone) {
+          candidates.push({
+            key: 'store:phone',
+            phone: store.phone,
+            label: 'Store phone',
+            sublabel: store.phone,
+            contactId: null,
+            isPrimary: true,
+            blocked: false,
+            blockReason: null,
+            responsive: false,
+          });
+        }
+      }
+
+      const primary =
+        candidates.find((c) => c.isPrimary && !c.blocked) ||
+        candidates.find((c) => !c.blocked) ||
+        candidates[0] ||
+        null;
+
+      return {
+        candidates,
+        primary,
+        phone: primary && !primary.blocked ? primary.phone : null,
+        source: primary?.contactId ? `contact:${primary.label}` : primary ? 'store_master' : 'none',
+        blocked: !!(primary && primary.blocked),
+        reason: primary?.blockReason || (primary ? null : 'No phone on file'),
+      };
     },
   });
 }
@@ -654,9 +724,11 @@ function TextReceiptButton({
   label?: string;
 }) {
   const { data: recipient, isLoading } = useTextableRecipient(storeId);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const send = useMutation({
-    mutationFn: async () => {
-      if (!recipient?.phone) throw new Error(recipient?.reason || 'No textable number');
+    mutationFn: async (target: TextableCandidate) => {
+      if (!target?.phone) throw new Error('No textable number');
+      if (target.blocked) throw new Error(target.blockReason || 'Recipient blocked');
       const { data, error } = await supabase.functions.invoke('send-invoice-receipt', {
         body: {
           invoice_id: invoiceId,
@@ -664,7 +736,7 @@ function TextReceiptButton({
           invoice_number: invoiceNumber || invoiceId.slice(0, 8),
           total_amount: totalAmount,
           store_name: storeName,
-          recipient_phone: recipient.phone,
+          recipient_phone: target.phone,
           manual_resend: true,
         },
       });
@@ -672,28 +744,103 @@ function TextReceiptButton({
       if (data && (data as any).sent === false) throw new Error((data as any).reason || 'Send skipped');
       return data;
     },
-    onSuccess: () => toast.success('Receipt texted'),
+    onSuccess: () => {
+      setPickerOpen(false);
+      toast.success('Receipt texted');
+    },
     onError: (e: any) => toast.error(e?.message || 'Failed to text receipt'),
   });
-  const disabled = isLoading || send.isPending || !recipient?.phone || recipient?.blocked;
-  const title = recipient?.blocked
-    ? recipient.reason || 'Opted out'
-    : !recipient?.phone
+
+  const candidates = recipient?.candidates || [];
+  const primary = recipient?.primary || null;
+  const multi = candidates.length > 1;
+  const disabledSingle = isLoading || send.isPending || !primary || primary.blocked;
+  const singleTitle = primary?.blocked
+    ? primary.blockReason || 'Opted out'
+    : !primary
     ? 'No textable number'
-    : `Text to ${recipient.phone}`;
+    : `Text to ${primary.phone}`;
+
+  if (!multi) {
+    return (
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        disabled={disabledSingle}
+        onClick={() => primary && send.mutate(primary)}
+        className="h-7 px-2 text-[11px] gap-1"
+        title={singleTitle}
+      >
+        {send.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3 w-3" />}
+        {label}
+      </Button>
+    );
+  }
+
   return (
-    <Button
-      type="button"
-      size="sm"
-      variant="outline"
-      disabled={disabled}
-      onClick={() => send.mutate()}
-      className="h-7 px-2 text-[11px] gap-1"
-      title={title}
-    >
-      {send.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3 w-3" />}
-      {label}
-    </Button>
+    <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={isLoading || send.isPending}
+          className="h-7 px-2 text-[11px] gap-1"
+          title="Choose recipient"
+        >
+          {send.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3 w-3" />}
+          {label}
+          <ChevronDown className="h-3 w-3 opacity-60" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-64 p-1">
+        <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+          Send to
+        </div>
+        <ul className="space-y-0.5">
+          {candidates.map((c) => (
+            <li key={c.key}>
+              <button
+                type="button"
+                disabled={c.blocked || send.isPending}
+                onClick={() => send.mutate(c)}
+                className={cn(
+                  'w-full text-left rounded px-2 py-1.5 text-xs flex items-start gap-2',
+                  c.blocked
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:bg-accent hover:text-accent-foreground',
+                )}
+                title={c.blocked ? c.blockReason || 'Opted out' : `Text ${c.phone}`}
+              >
+                <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
+                <span className="flex-1 min-w-0">
+                  <span className="flex items-center gap-1 flex-wrap">
+                    <span className="font-medium truncate">{c.label}</span>
+                    {c.isPrimary && (
+                      <Badge variant="secondary" className="h-3.5 px-1 text-[8px]">Primary</Badge>
+                    )}
+                    {c.responsive && (
+                      <Badge variant="outline" className="h-3.5 px-1 text-[8px] border-emerald-500/40 text-emerald-600">
+                        Responsive
+                      </Badge>
+                    )}
+                    {c.blocked && (
+                      <Badge variant="outline" className="h-3.5 px-1 text-[8px] border-destructive/40 text-destructive">
+                        {c.blockReason}
+                      </Badge>
+                    )}
+                  </span>
+                  <span className="block text-[10px] text-muted-foreground truncate">
+                    {c.phone}
+                  </span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -739,10 +886,16 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
   // R7 — explicit Paid/Unpaid choice at creation (default Unpaid).
   const [paymentChoice, setPaymentChoice] = useState<'unpaid' | 'paid'>('unpaid');
   const [textOnCreate, setTextOnCreate] = useState<boolean>(false);
+  const [selectedRecipientKey, setSelectedRecipientKey] = useState<string>('');
   const [lastCreated, setLastCreated] = useState<{ id: string; number: string; total: number } | null>(null);
 
-  // Textable recipient — used to gate the "text on create" checkbox
+  // Textable recipients — used to gate the "text on create" checkbox and picker
   const { data: recipient } = useTextableRecipient(storeId);
+  const textCandidates = recipient?.candidates || [];
+  const selectedRecipient =
+    textCandidates.find((c) => c.key === selectedRecipientKey && !c.blocked) ||
+    recipient?.primary ||
+    null;
 
   const { data: product } = useQuery({
     queryKey: ['quickorder-product', productId],
@@ -884,7 +1037,7 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
 
       // Optional: text receipt on create (respects phone/opt-out gate)
       let textSent = false;
-      if (textOnCreate && recipient?.phone && !recipient.blocked) {
+      if (textOnCreate && selectedRecipient?.phone && !selectedRecipient.blocked) {
         try {
           const { data, error } = await supabase.functions.invoke('send-invoice-receipt', {
             body: {
@@ -893,7 +1046,7 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
               invoice_number: invoiceNumber,
               total_amount: total,
               store_name: storeName,
-              recipient_phone: recipient.phone,
+              recipient_phone: selectedRecipient.phone,
               manual_resend: false,
             },
           });
@@ -1031,7 +1184,7 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
           title={
             textOnCreateBlocked
               ? recipient?.reason || 'No textable number on file'
-              : `Will text ${recipient?.phone}`
+              : `Will text ${selectedRecipient?.phone}`
           }
         >
           <Checkbox
@@ -1042,11 +1195,40 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
           />
           <MessageSquare className="h-3 w-3" />
           Text receipt on create
-          {recipient?.phone && !recipient.blocked && (
-            <span className="text-[10px] text-muted-foreground truncate">→ {recipient.phone}</span>
+          {selectedRecipient?.phone && !selectedRecipient.blocked && textCandidates.length <= 1 && (
+            <span className="text-[10px] text-muted-foreground truncate">→ {selectedRecipient.phone}</span>
           )}
         </label>
+        {textOnCreate && textCandidates.length > 1 && (
+          <Select
+            value={selectedRecipient?.key || ''}
+            onValueChange={(v) => setSelectedRecipientKey(v)}
+          >
+            <SelectTrigger className="h-7 text-[11px]">
+              <SelectValue placeholder="Choose recipient" />
+            </SelectTrigger>
+            <SelectContent>
+              {textCandidates.map((c) => (
+                <SelectItem key={c.key} value={c.key} disabled={c.blocked} className="text-xs">
+                  <span className="flex items-center gap-1">
+                    <span className="font-medium">{c.label}</span>
+                    <span className="text-muted-foreground">· {c.phone}</span>
+                    {c.isPrimary && (
+                      <Badge variant="secondary" className="h-3.5 px-1 text-[8px]">Primary</Badge>
+                    )}
+                    {c.blocked && (
+                      <Badge variant="outline" className="h-3.5 px-1 text-[8px] border-destructive/40 text-destructive">
+                        {c.blockReason}
+                      </Badge>
+                    )}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
+
 
       <Button
         type="button"
