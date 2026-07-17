@@ -1645,14 +1645,14 @@ export default function AppRoutes() {
         <Route path="/va-ranking" element={<VARanking />} />
         <Route path="/va-task-center" element={<VATaskCenter />} />
         <Route path="/batch-import" element={<BatchImport />} />
-        <Route path="/hr" element={<HR />} />
-        <Route path="/hr/applicants" element={<HRApplicants />} />
-        <Route path="/hr/applicants/:id" element={<HRApplicantDetail />} />
-        <Route path="/hr/employees" element={<HREmployees />} />
-        <Route path="/hr/employees/:id" element={<HREmployeeDetail />} />
-        <Route path="/hr/interviews" element={<HRInterviews />} />
-        <Route path="/hr/documents" element={<HRDocuments />} />
-        <Route path="/hr/onboarding" element={<HROnboarding />} />
+        <Route path="/hr" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HR /></RequireRole>} />
+        <Route path="/hr/applicants" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HRApplicants /></RequireRole>} />
+        <Route path="/hr/applicants/:id" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HRApplicantDetail /></RequireRole>} />
+        <Route path="/hr/employees" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HREmployees /></RequireRole>} />
+        <Route path="/hr/employees/:id" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HREmployeeDetail /></RequireRole>} />
+        <Route path="/hr/interviews" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HRInterviews /></RequireRole>} />
+        <Route path="/hr/documents" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HRDocuments /></RequireRole>} />
+        <Route path="/hr/onboarding" element={<RequireRole allowedRoles={['owner','admin']} showLocked><HROnboarding /></RequireRole>} />
         {/* T3 K6: HR Payroll merged into Floor 5 Payroll Manager */}
         <Route path="/hr/payroll" element={<Navigate to="/grabba/payroll-manager" replace />} />
         <Route path="/my-hr" element={<MyHR />} />
