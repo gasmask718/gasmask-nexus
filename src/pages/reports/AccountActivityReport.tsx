@@ -30,15 +30,21 @@ interface Props {
   storeId?: string;      // when set, embedded per-store mode
   compact?: boolean;
   limit?: number;
+  /** When provided, replaces the internal date inputs and hides them. */
+  dateFrom?: string;
+  dateTo?: string;
 }
 
-export function AccountActivityTable({ storeId, compact, limit = 500 }: Props) {
+export function AccountActivityTable({ storeId, compact, limit = 500, dateFrom, dateTo }: Props) {
   const [kind, setKind] = useState<string>('all');
   const [actor, setActor] = useState<string>('all');
   const [store, setStore] = useState<string>('all');
   const [q, setQ] = useState('');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+  const [fromLocal, setFromLocal] = useState('');
+  const [toLocal, setToLocal] = useState('');
+  const dateControlled = dateFrom !== undefined || dateTo !== undefined;
+  const from = dateControlled ? (dateFrom ?? '') : fromLocal;
+  const to = dateControlled ? (dateTo ?? '') : toLocal;
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['account-activity', storeId, limit],
@@ -147,8 +153,12 @@ export function AccountActivityTable({ storeId, compact, limit = 500 }: Props) {
               </SelectContent>
             </Select>
           )}
-          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} placeholder="From" />
-          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} placeholder="To" />
+          {!dateControlled && (
+            <>
+              <Input type="date" value={fromLocal} onChange={(e) => setFromLocal(e.target.value)} placeholder="From" />
+              <Input type="date" value={toLocal} onChange={(e) => setToLocal(e.target.value)} placeholder="To" />
+            </>
+          )}
           <Input placeholder="Search notes…" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
       )}
