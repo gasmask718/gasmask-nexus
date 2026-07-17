@@ -277,6 +277,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/grabba/communication', label: 'Communication Hub', icon: MessageSquare },
         { path: '/grabba/daily-briefing', label: '🌅 Daily Briefing', icon: Sunrise },
         { path: '/tasks', label: 'Task Center', icon: CheckSquare },
+        { path: '/messages', label: 'Messages', icon: MessageSquare },
 
         { path: '/communication/inbox', label: 'Inbox', icon: MessageSquare },
         { path: '/communication/follow-ups', label: 'Follow-Up Manager', icon: Clock },
