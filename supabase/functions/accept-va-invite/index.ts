@@ -110,6 +110,11 @@ Deno.serve(async (req) => {
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
+        if (maybeExisting.email_confirmed_at) {
+          return new Response(JSON.stringify({ error: 'Account already exists. Please sign in, then accept the invite.' }),
+            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
         const { error: updateErr } = await admin.auth.admin.updateUserById(maybeExisting.id, {
           password,
           email_confirm: true,
