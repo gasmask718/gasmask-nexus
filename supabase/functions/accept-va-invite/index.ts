@@ -1,10 +1,30 @@
-// Public: validate a token (lookup), then (after user is authenticated) provision membership atomically.
+// Public: validate a token (lookup), create pre-confirmed invited users, then provision membership atomically.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+type InviteResult = {
+  success?: boolean;
+  error?: string;
+  va_user_id?: string;
+  company_id?: string;
+  role?: string;
+};
+
+async function findUserByEmail(admin: ReturnType<typeof createClient>, email: string) {
+  const normalized = email.toLowerCase();
+  for (let page = 1; page <= 20; page += 1) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw error;
+    const user = data.users.find((candidate) => candidate.email?.toLowerCase() === normalized);
+    if (user) return user;
+    if (data.users.length < 1000) break;
+  }
+  return null;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
@@ -17,7 +37,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const token = (body.token ?? '').toString();
-    const action = (body.action ?? 'lookup').toString(); // 'lookup' | 'accept'
+    const action = (body.action ?? 'lookup').toString(); // 'lookup' | 'complete_signup' | 'accept'
 
     if (!token) {
       return new Response(JSON.stringify({ error: 'token required' }),
@@ -51,6 +71,96 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({
         email: invite.email,
         role: invite.role,
+        company: invite.va_companies,
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'complete_signup') {
+      const password = (body.password ?? '').toString();
+      const fullName = (body.fullName ?? '').toString().trim();
+
+      if (invite.status !== 'pending') {
+        return new Response(JSON.stringify({ error: `Invite is ${invite.status}` }),
+          { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (new Date(invite.expires_at) < new Date()) {
+        return new Response(JSON.stringify({ error: 'Invite expired' }),
+          { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (password.length < 6) {
+        return new Response(JSON.stringify({ error: 'Password must be at least 6 characters' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const userMetadata = fullName ? { full_name: fullName } : {};
+      let createdUserId: string | undefined;
+
+      const { data: created, error: createErr } = await admin.auth.admin.createUser({
+        email: invite.email.toLowerCase(),
+        password,
+        email_confirm: true,
+        user_metadata: userMetadata,
+      });
+
+      if (createErr) {
+        const maybeExisting = await findUserByEmail(admin, invite.email);
+        if (!maybeExisting) {
+          console.error('admin createUser failed', createErr);
+          return new Response(JSON.stringify({ error: createErr.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        const { error: updateErr } = await admin.auth.admin.updateUserById(maybeExisting.id, {
+          password,
+          email_confirm: true,
+          user_metadata: {
+            ...(maybeExisting.user_metadata ?? {}),
+            ...userMetadata,
+          },
+        });
+        if (updateErr) {
+          console.error('admin updateUserById failed', updateErr);
+          return new Response(JSON.stringify({ error: updateErr.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        createdUserId = maybeExisting.id;
+      } else {
+        createdUserId = created.user?.id;
+      }
+
+      if (!createdUserId) {
+        return new Response(JSON.stringify({ error: 'Unable to create invited user' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const { data: rpcData, error: rpcErr } = await admin.rpc('accept_va_invite_atomic', {
+        p_token: token,
+        p_accepting_user_id: createdUserId,
+        p_accepting_email: invite.email.toLowerCase(),
+      });
+
+      if (rpcErr) {
+        console.error('accept_va_invite_atomic rpc error', rpcErr);
+        return new Response(JSON.stringify({ error: rpcErr.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const result = (rpcData ?? {}) as InviteResult;
+      if (!result.success) {
+        const code = result.error ?? 'accept_failed';
+        const status =
+          code === 'invite_not_found' ? 404 :
+          code === 'invite_expired' || code.startsWith('invite_') ? 410 :
+          code === 'email_mismatch' ? 403 :
+          500;
+        return new Response(JSON.stringify({ error: code }),
+          { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        email: invite.email,
+        userId: createdUserId,
         company: invite.va_companies,
       }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -91,7 +201,7 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const result = (rpcData ?? {}) as { success?: boolean; error?: string };
+    const result = (rpcData ?? {}) as InviteResult;
     if (!result.success) {
       const code = result.error ?? 'accept_failed';
       const status =
