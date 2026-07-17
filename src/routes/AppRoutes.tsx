@@ -1747,18 +1747,18 @@ export default function AppRoutes() {
         {/* Floor 5 - Finance & Orders */}
         <Route path="/floor5" element={<Floor5Dashboard />} />
         <Route path="/floor5/dashboard" element={<Floor5Dashboard />} />
-        <Route path="/floor5/invoices" element={<BillingInvoices />} />
-        <Route path="/floor5/billing" element={<BillingCenter />} />
-        <Route path="/floor5/payroll" element={<Payroll />} />
+        <Route path="/floor5/invoices" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingInvoices /></RequireRole>} />
+        <Route path="/floor5/billing" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingCenter /></RequireRole>} />
+        <Route path="/floor5/payroll" element={<RequireRole allowedRoles={['owner','admin']} showLocked><Payroll /></RequireRole>} />
         <Route path="/floor5/unpaid" element={<UnpaidAccounts />} />
         <Route path="/floor5/fulfillment" element={<WholesaleFulfillment />} />
-        <Route path="/billing" element={<Billing />} />
-        <Route path="/billing/center" element={<BillingCenter />} />
-        <Route path="/billing-center" element={<BillingCenter />} />
-        <Route path="/billing/invoices" element={<BillingInvoices />} />
-        <Route path="/billing/invoices/new" element={<BillingInvoiceNew />} />
-        <Route path="/billing/invoices/:id" element={<BillingInvoiceDetail />} />
-        <Route path="/payroll" element={<Payroll />} />
+        <Route path="/billing" element={<RequireRole allowedRoles={['owner','admin']} showLocked><Billing /></RequireRole>} />
+        <Route path="/billing/center" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingCenter /></RequireRole>} />
+        <Route path="/billing-center" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingCenter /></RequireRole>} />
+        <Route path="/billing/invoices" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingInvoices /></RequireRole>} />
+        <Route path="/billing/invoices/new" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingInvoiceNew /></RequireRole>} />
+        <Route path="/billing/invoices/:id" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingInvoiceDetail /></RequireRole>} />
+        <Route path="/payroll" element={<RequireRole allowedRoles={['owner','admin']} showLocked><Payroll /></RequireRole>} />
         <Route path="/unpaid-accounts" element={<UnpaidAccounts />} />
         {/* Communication Center - Redirect to modular hub */}
         <Route path="/communication-center" element={<Navigate to="/communication" replace />} />
