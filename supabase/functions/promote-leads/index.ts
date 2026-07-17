@@ -171,6 +171,27 @@ Deno.serve(async (req) => {
     if (flagError) {
       errors.push(`bulk flag insert failed: ${flagError.message}`);
     } else {
+      // CRITICAL: also mark these rows as processed (promoted_at set, but
+      // promoted_to_lead_id left null since nothing was actually created
+      // in surplus_funds_leads). Without this, a flagged row never gets
+      // marked as "done" - the next run's `.is('promoted_at', null)`
+      // fetch picks it right back up and flags it again, forever,
+      // duplicating rows in raw_scraper_leads_flagged every single week.
+      // Real bug found on Brevard's first Railway run: 75 rows were
+      // re-flagged identically on a second run of unchanged data.
+      const flagNow = new Date().toISOString();
+      const flagUpdateResults = await Promise.all(
+        toFlag.map(({ row }) =>
+          supabase
+            .from("raw_scraper_leads")
+            .update({ promoted_at: flagNow, promoted_to_lead_id: null })
+            .eq("id", row.id)
+        )
+      );
+      const flagUpdateErrors = flagUpdateResults.filter((r) => r.error);
+      if (flagUpdateErrors.length > 0) {
+        errors.push(`${flagUpdateErrors.length} flagged-row status update(s) failed: ${flagUpdateErrors[0].error?.message}`);
+      }
       flagged = toFlag.length;
     }
   }
