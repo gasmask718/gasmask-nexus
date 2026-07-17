@@ -17,6 +17,7 @@ export interface CanonicalRouteStop {
     id: string;
     store_name: string;
     address: string | null;
+    phone: string | null;
   };
 }
 
