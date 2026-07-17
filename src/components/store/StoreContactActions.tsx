@@ -42,6 +42,8 @@ interface ContactLike {
   can_receive_sms: boolean | null;
   responsive_by_call?: boolean | null;
   responsive_by_text?: boolean | null;
+  last_call_answered_at?: string | null;
+  last_text_received_at?: string | null;
   sms_opt_in_status?: string | null;
 }
 
@@ -105,8 +107,13 @@ export function StoreContactActions({
         last_responded_at: new Date().toISOString(),
         updated_by: user?.id ?? null,
       };
-      if (channel === 'call') patch.responsive_by_call = true;
-      else patch.responsive_by_text = true;
+      if (channel === 'call') {
+        patch.responsive_by_call = true;
+        patch.last_call_answered_at = patch.last_responded_at;
+      } else {
+        patch.responsive_by_text = true;
+        patch.last_text_received_at = patch.last_responded_at;
+      }
 
       const { error } = await supabase
         .from('store_contacts')
@@ -169,6 +176,8 @@ export function StoreContactActions({
 
   const alreadyOptedIn = contact.sms_opt_in_status === 'opted_in' || contact.can_receive_sms === true;
   const btnSize = compact ? 'icon' : 'sm';
+  const callIsResponsive = contact.responsive_by_call === true && !!contact.last_call_answered_at;
+  const textIsResponsive = contact.responsive_by_text === true && !!contact.last_text_received_at;
 
   const rowGap = compact ? 'gap-1' : 'gap-1.5';
   const btnH = compact ? 'h-7' : 'h-8';
@@ -207,34 +216,34 @@ export function StoreContactActions({
         <div className={`flex flex-wrap items-center ${rowGap}`}>
           <Button
             size="sm"
-            variant={contact.responsive_by_call === true ? 'default' : 'outline'}
+            variant={callIsResponsive ? 'default' : 'outline'}
             onClick={() => markResponsive('call')}
             disabled={busy}
-            aria-pressed={contact.responsive_by_call === true}
-            title={contact.responsive_by_call === true ? 'Marked responsive by call' : 'Mark responsive by call'}
+            aria-pressed={callIsResponsive}
+            title={callIsResponsive ? 'Marked responsive by call' : 'Mark responsive by call'}
             className={`${btnH} ${btnPad} gap-1 text-[10px] uppercase tracking-wider ${
-              contact.responsive_by_call === true
+              callIsResponsive
                 ? 'bg-emerald-600 hover:bg-emerald-600/90 text-white border border-emerald-500 shadow-sm ring-1 ring-emerald-400/40'
                 : ''
             }`}
           >
-            {contact.responsive_by_call === true ? <Check className="h-3.5 w-3.5" /> : <PhoneCall className="h-3.5 w-3.5" />}
+            {callIsResponsive ? <Check className="h-3.5 w-3.5" /> : <PhoneCall className="h-3.5 w-3.5" />}
             <span>Resp · Call</span>
           </Button>
           <Button
             size="sm"
-            variant={contact.responsive_by_text === true ? 'default' : 'outline'}
+            variant={textIsResponsive ? 'default' : 'outline'}
             onClick={() => markResponsive('text')}
             disabled={busy}
-            aria-pressed={contact.responsive_by_text === true}
-            title={contact.responsive_by_text === true ? 'Marked responsive by text' : 'Mark responsive by text'}
+            aria-pressed={textIsResponsive}
+            title={textIsResponsive ? 'Marked responsive by text' : 'Mark responsive by text'}
             className={`${btnH} ${btnPad} gap-1 text-[10px] uppercase tracking-wider ${
-              contact.responsive_by_text === true
+              textIsResponsive
                 ? 'bg-emerald-600 hover:bg-emerald-600/90 text-white border border-emerald-500 shadow-sm ring-1 ring-emerald-400/40'
                 : ''
             }`}
           >
-            {contact.responsive_by_text === true ? <Check className="h-3.5 w-3.5" /> : <MessageCircle className="h-3.5 w-3.5" />}
+            {textIsResponsive ? <Check className="h-3.5 w-3.5" /> : <MessageCircle className="h-3.5 w-3.5" />}
             <span>Resp · Text</span>
           </Button>
 

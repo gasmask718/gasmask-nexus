@@ -11,8 +11,10 @@ export interface RecentInvoiceRow {
   boxes: number;
   created_at: string;
   payment_status: string | null;
+  status: string | null;
   paid_at: string | null;
   partial_amount: number | null;
+  amount_paid: number | null;
 }
 
 export interface UseStoreRecentInvoicesOptions {
@@ -35,14 +37,15 @@ export function useStoreRecentInvoices(
 
       let q = supabase
         .from('invoices')
-        .select('id, invoice_number, total, created_at, payment_status, paid_at, partial_amount')
+        .select('id, invoice_number, total, created_at, payment_status, status, paid_at, partial_amount, amount_paid')
         .eq('store_id', storeId)
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (openOnly) {
-        // Server-side filter — null-status rows are treated as legacy/unknown and excluded.
-        q = q.in('payment_status', ['unpaid', 'partial']);
+        // Server-side filter — only finalized/open invoices belong in Resolve Payment.
+        // Draft/draft_ai/null-status legacy order shells are excluded.
+        q = q.eq('status', 'finalized').in('payment_status', ['unpaid', 'partial']).gt('total', 0);
       } else {
         q = q.limit(limit);
       }
@@ -51,7 +54,18 @@ export function useStoreRecentInvoices(
       if (error) throw error;
       if (!invoices?.length) return [];
 
-      const invoiceIds = invoices.map((i) => i.id);
+      const openInvoices = openOnly
+        ? invoices.filter((i: any) => {
+            const total = Number(i.total ?? 0);
+            const paid = Number(i.amount_paid ?? i.partial_amount ?? 0);
+            return i.status === 'finalized'
+              && ['unpaid', 'partial'].includes(i.payment_status ?? '')
+              && Math.max(total - paid, 0) > 0;
+          })
+        : invoices;
+      if (!openInvoices.length) return [];
+
+      const invoiceIds = openInvoices.map((i) => i.id);
       const { data: lineItems, error: liErr } = await supabase
         .from('invoice_line_items')
         .select('invoice_id, product_id, product_name, product_name_snapshot, computed_tubes_total')
@@ -70,7 +84,7 @@ export function useStoreRecentInvoices(
         skuTubesByInvoice.set(id, inner);
       });
 
-      return invoices.map((i) => {
+      return openInvoices.map((i) => {
         const tubes = tubesByInvoice.get(i.id) ?? 0;
         const skuMap = skuTubesByInvoice.get(i.id);
         let topSku: string | null = null;
@@ -88,8 +102,10 @@ export function useStoreRecentInvoices(
           boxes: Math.round(tubes / 100),
           created_at: i.created_at,
           payment_status: (i as any).payment_status ?? null,
+          status: (i as any).status ?? null,
           paid_at: (i as any).paid_at ?? null,
           partial_amount: (i as any).partial_amount != null ? Number((i as any).partial_amount) : null,
+          amount_paid: (i as any).amount_paid != null ? Number((i as any).amount_paid) : null,
         };
       });
     },

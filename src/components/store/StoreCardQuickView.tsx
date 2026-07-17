@@ -1091,8 +1091,8 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
 function PaymentSection({ storeId, storeName }: { storeId: string; storeName: string }) {
   const { user } = useAuth();
   const qc = useQueryClient();
-  // Server-side open-only filter (payment_status IN ('unpaid','partial')).
-  // Nulls are excluded — treated as legacy/unknown, not "open".
+  // Server-side open-only filter: finalized invoices with payment_status IN ('unpaid','partial').
+  // Draft/draft_ai/null-status legacy order shells are excluded from Resolve Payment.
   const { data: open = [], isLoading } = useStoreRecentInvoices(storeId, 100, { openOnly: true });
 
 
@@ -1135,7 +1135,7 @@ function PaymentSection({ storeId, storeName }: { storeId: string; storeName: st
           {open.map((inv) => {
             const balance =
               inv.payment_status === 'partial' && inv.partial_amount != null
-                ? Math.max(0, inv.total - inv.partial_amount)
+                ? Math.max(0, inv.total - Math.max(inv.partial_amount, inv.amount_paid ?? 0))
                 : inv.total;
             const pending = markPaid.isPending && markPaid.variables === inv.id;
             return (
