@@ -2330,7 +2330,8 @@ export default function AppRoutes() {
         <Route path="/os/sbo" element={<SBODashboard />} />
         <Route path="/os/sbo/picks" element={<SBOAllPicks />} />
         <Route path="/admin/system-integrity" element={<SystemIntegrity />} />
-        <Route path="/biker/home" element={<BikerDashboard />} />
+        <Route path="/biker/home" element={<Navigate to="/portal/biker" replace />} />
+        <Route path="/biker/admin" element={<BikerDashboard />} />
         <Route path="/biker/route" element={<BikerTodaysRoutesPage />} />
         <Route path="/biker/routes" element={<BikerTodaysRoutesPage />} />
 
