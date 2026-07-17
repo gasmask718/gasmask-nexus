@@ -71,6 +71,8 @@ const Team = lazy(() => import('@/pages/Team'));
 const Products = lazy(() => import('@/pages/Products'));
 const Analytics = lazy(() => import('@/pages/Analytics'));
 const SamplesByBrandReport = lazy(() => import('@/pages/reports/SamplesByBrandReport'));
+const SamplesByStoreReport = lazy(() => import('@/pages/reports/SamplesByStoreReport'));
+const AccountActivityReport = lazy(() => import('@/pages/reports/AccountActivityReport'));
 const Influencers = lazy(() => import('@/pages/Influencers'));
 const Missions = lazy(() => import('@/pages/Missions'));
 const InfluencerCampaigns = lazy(() => import('@/pages/InfluencerCampaigns'));
