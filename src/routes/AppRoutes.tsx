@@ -1705,7 +1705,7 @@ export default function AppRoutes() {
         {/* T3 K11: orphan comm pages → canonical hub redirects */}
         <Route path="/communications/ai-insights" element={<Navigate to="/communication/agents" replace />} />
         <Route path="/communications/insights" element={<Navigate to="/communication/analytics" replace />} />
-        <Route path="/settings/automation" element={<AutomationSettings />} />
+        <Route path="/settings/automation" element={<RequireRole allowedRoles={['owner','admin']} showLocked><AutomationSettings /></RequireRole>} />
         <Route path="/settings/automation/communications" element={<Navigate to="/settings/automation" replace />} />
         <Route path="/training" element={<Training />} />
         <Route path="/ambassadors" element={<AllAmbassadorsTable />} />
