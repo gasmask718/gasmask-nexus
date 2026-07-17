@@ -24,9 +24,9 @@ Deno.serve(async (req) => {
     });
   }
 
-  const key = Deno.env.get("GOOGLE_PLACES_API_KEY");
+  const key = Deno.env.get("GOOGLE_STREETVIEW_API_KEY") ?? Deno.env.get("GOOGLE_PLACES_API_KEY");
   if (!key) {
-    return new Response(JSON.stringify({ error: "GOOGLE_PLACES_API_KEY not configured" }), {
+    return new Response(JSON.stringify({ error: "GOOGLE_STREETVIEW_API_KEY not configured" }), {
       status: 500,
       headers: { ...CORS, "Content-Type": "application/json" },
     });
