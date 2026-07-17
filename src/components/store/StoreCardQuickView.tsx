@@ -1184,7 +1184,7 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
           title={
             textOnCreateBlocked
               ? recipient?.reason || 'No textable number on file'
-              : `Will text ${recipient?.phone}`
+              : `Will text ${selectedRecipient?.phone}`
           }
         >
           <Checkbox
@@ -1195,11 +1195,40 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
           />
           <MessageSquare className="h-3 w-3" />
           Text receipt on create
-          {recipient?.phone && !recipient.blocked && (
-            <span className="text-[10px] text-muted-foreground truncate">→ {recipient.phone}</span>
+          {selectedRecipient?.phone && !selectedRecipient.blocked && textCandidates.length <= 1 && (
+            <span className="text-[10px] text-muted-foreground truncate">→ {selectedRecipient.phone}</span>
           )}
         </label>
+        {textOnCreate && textCandidates.length > 1 && (
+          <Select
+            value={selectedRecipient?.key || ''}
+            onValueChange={(v) => setSelectedRecipientKey(v)}
+          >
+            <SelectTrigger className="h-7 text-[11px]">
+              <SelectValue placeholder="Choose recipient" />
+            </SelectTrigger>
+            <SelectContent>
+              {textCandidates.map((c) => (
+                <SelectItem key={c.key} value={c.key} disabled={c.blocked} className="text-xs">
+                  <span className="flex items-center gap-1">
+                    <span className="font-medium">{c.label}</span>
+                    <span className="text-muted-foreground">· {c.phone}</span>
+                    {c.isPrimary && (
+                      <Badge variant="secondary" className="h-3.5 px-1 text-[8px]">Primary</Badge>
+                    )}
+                    {c.blocked && (
+                      <Badge variant="outline" className="h-3.5 px-1 text-[8px] border-destructive/40 text-destructive">
+                        {c.blockReason}
+                      </Badge>
+                    )}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
+
 
       <Button
         type="button"
