@@ -109,6 +109,35 @@ export default function SamplesByStoreReport() {
         <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
       </div>
 
+      {(() => {
+        const totalUnits = rows.reduce((s, r) => s + (r.total_units || 0), 0);
+        const storesSampled = new Set(rows.map((r) => r.store_id)).size;
+        const storesReordered = new Set(rows.filter((r) => r.first_order_after).map((r) => r.store_id)).size;
+        const convRate = storesSampled ? Math.round((storesReordered / storesSampled) * 100) : 0;
+        const daysArr = rows.map((r) => r.days_to_first_order).filter((v): v is number => v != null);
+        const avgDays = daysArr.length ? (daysArr.reduce((a, b) => a + b, 0) / daysArr.length).toFixed(1) : '—';
+        // Revenue is store-level; sum unique stores' revenue_90d (view repeats by brand row).
+        const revByStore = new Map<string, number>();
+        for (const r of rows) if (!revByStore.has(r.store_id)) revByStore.set(r.store_id, r.revenue_90d || 0);
+        const totalRev = Array.from(revByStore.values()).reduce((a, b) => a + b, 0);
+        const StatCard = ({ label, value }: { label: string; value: string | number }) => (
+          <Card><CardContent className="p-4">
+            <p className="text-xs uppercase text-muted-foreground tracking-wide">{label}</p>
+            <p className="text-2xl font-semibold mt-1">{value}</p>
+          </CardContent></Card>
+        );
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+            <StatCard label="Samples given" value={totalUnits} />
+            <StatCard label="Stores sampled" value={storesSampled} />
+            <StatCard label="Stores reordered" value={storesReordered} />
+            <StatCard label="Conversion" value={`${convRate}%`} />
+            <StatCard label="Avg days → sale" value={avgDays} />
+            <StatCard label="Revenue 90d" value={`$${totalRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+          </div>
+        );
+      })()}
+
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Per-store rollup</CardTitle></CardHeader>
         <CardContent>
