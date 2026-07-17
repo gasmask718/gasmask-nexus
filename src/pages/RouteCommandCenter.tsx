@@ -84,6 +84,11 @@ export default function RouteCommandCenter() {
         existing.reasons.push(r.why);
         existing.priority = Math.max(existing.priority, r.priority);
         existing.value += r.value || 0;
+        // Keep earliest due_date across signals (most urgent).
+        if (r.due_date && (!existing.due_date || new Date(r.due_date) < new Date(existing.due_date))) {
+          existing.due_date = r.due_date;
+        }
+        if (r.opportunity_id && !existing.opportunity_id) existing.opportunity_id = r.opportunity_id;
       } else {
         map.set(r.store_id, { ...r, types: [r.candidate_type], reasons: [r.why] });
       }
@@ -93,14 +98,26 @@ export default function RouteCommandCenter() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekOut = new Date(today);
+    weekOut.setDate(weekOut.getDate() + 7);
+
     return merged.filter(r => {
       if (!r.types.some(t => activeTypes.has(t))) return false;
       if (neighborhood !== 'all' && r.neighborhood !== neighborhood) return false;
       if (city !== 'all' && r.city !== city) return false;
       if (q && !(r.store_name?.toLowerCase().includes(q) || r.address?.toLowerCase().includes(q))) return false;
+      // Due-date filter only constrains rows that HAVE a due_date (route-flag opportunities).
+      if (r.due_date && dueFilter !== 'all') {
+        const d = new Date(r.due_date);
+        d.setHours(0, 0, 0, 0);
+        if (dueFilter === 'today_overdue' && d.getTime() > today.getTime()) return false;
+        if (dueFilter === 'week' && d.getTime() > weekOut.getTime()) return false;
+      }
       return true;
     });
-  }, [merged, search, neighborhood, city, activeTypes]);
+  }, [merged, search, neighborhood, city, activeTypes, dueFilter]);
 
   const toggleType = (t: CandidateType) => {
     setActiveTypes(prev => {
