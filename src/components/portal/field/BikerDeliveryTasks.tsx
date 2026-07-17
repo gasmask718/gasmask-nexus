@@ -125,7 +125,7 @@ export function BikerDeliveryTasks() {
 
               <StopBalanceCallout storeId={stop.store_id} storeName={stop.store?.store_name} />
 
-              <div className="flex gap-2 mt-3">
+              <div className="flex gap-2 mt-3 flex-wrap items-center">
                 {/* Status actions */}
                 {actions.map((action) => (
                   <Button
@@ -146,6 +146,12 @@ export function BikerDeliveryTasks() {
                     {action.label}
                   </Button>
                 ))}
+                <StoreCallTextButtons
+                  phone={stop.store?.phone}
+                  storeId={stop.store_id}
+                  storeName={stop.store?.store_name || "Store"}
+                  compact
+                />
               </div>
             </CardContent>
           </Card>
