@@ -123,7 +123,6 @@ export function ConnectStoresModal({
           .from('stores')
           .update({ connected_group_id: groupId })
           .eq('id', storeId);
-
         if (currentError) throw currentError;
       }
 
@@ -132,14 +131,20 @@ export function ConnectStoresModal({
         .from('stores')
         .update({ connected_group_id: groupId })
         .in('id', storeIds);
-
       if (error) throw error;
+
+      // Belt-and-suspenders sync (a DB trigger also mirrors this).
+      await supabase
+        .from('store_master')
+        .update({ connected_group_id: groupId })
+        .in('id', [storeId, ...storeIds]);
 
       return { groupId, count: storeIds.length };
     },
     onSuccess: (result) => {
       toast.success(`Connected ${result.count} store(s) successfully`);
       queryClient.invalidateQueries({ queryKey: ['connected-stores'] });
+      queryClient.invalidateQueries({ queryKey: ['connected-stores-count'] });
       queryClient.invalidateQueries({ queryKey: ['stores'] });
       setSelectedStores([]);
       onOpenChange(false);
@@ -157,8 +162,11 @@ export function ConnectStoresModal({
         .from('stores')
         .update({ connected_group_id: null })
         .eq('id', disconnectStoreId);
-
       if (error) throw error;
+      await supabase
+        .from('store_master')
+        .update({ connected_group_id: null })
+        .eq('id', disconnectStoreId);
     },
     onSuccess: () => {
       toast.success('Store disconnected');
