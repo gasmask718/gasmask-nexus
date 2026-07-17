@@ -3,6 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { getRoleRedirectPath, type OSRole } from '@/config/osNavigation';
+
+async function resolveRoleDestination(fallback: string): Promise<string> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return fallback;
+    const { data: rows } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+    const roles = (rows ?? []).map((r: any) => String(r.role).toLowerCase());
+    // Priority: admin/owner/ceo > va > any assigned > fallback
+    if (roles.some((r) => ['admin', 'owner', 'ceo'].includes(r))) return '/';
+    if (roles.includes('va')) return getRoleRedirectPath('va' as OSRole);
+    if (roles[0]) return getRoleRedirectPath(roles[0] as OSRole);
+    return fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 /**
  * Handles Supabase auth email redirects (PKCE ?code=... or implicit
@@ -46,7 +66,8 @@ export default function AuthCallback() {
             return;
           }
           toast.success('Email verified');
-          navigate(safeNext, { replace: true });
+          const dest = nextParam ? safeNext : await resolveRoleDestination(safeNext);
+          navigate(dest, { replace: true });
           return;
         }
 
@@ -65,7 +86,8 @@ export default function AuthCallback() {
               return;
             }
             toast.success('Email verified');
-            navigate(safeNext, { replace: true });
+            const dest = nextParam ? safeNext : await resolveRoleDestination(safeNext);
+            navigate(dest, { replace: true });
             return;
           }
         }

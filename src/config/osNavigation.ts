@@ -786,6 +786,8 @@ export function getRoleRedirectPath(role: OSRole): string {
   if (role === 'pending') return '/pending-approval';
   // Admin-tier roles land on the main OS dashboard.
   if (role === 'admin' || role === 'ceo') return '/';
+  // VAs land on the VA Portal dashboard (aligned with VAAuthPage post-login nav).
+  if (role === 'va') return '/va/dashboard';
   const normalizedRole = role === 'store_owner' ? 'store' : role;
   const portal = getPortalForRole(normalizedRole);
   return portal?.path || '/portal/home';
