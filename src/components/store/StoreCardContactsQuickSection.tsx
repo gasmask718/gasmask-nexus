@@ -102,6 +102,31 @@ export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
                 compact
                 invalidateKeys={[['store-contacts', storeId]]}
               />
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2 text-[10px] w-full justify-start text-muted-foreground hover:text-foreground"
+                onClick={() =>
+                  setOpenHistory((s) => ({ ...s, [c.id]: !s[c.id] }))
+                }
+              >
+                <MessageSquare className="h-3 w-3 mr-1" />
+                {openHistory[c.id] ? 'Hide' : 'View'} conversation history
+                <ChevronDown
+                  className={`h-3 w-3 ml-auto transition-transform ${openHistory[c.id] ? 'rotate-180' : ''}`}
+                />
+              </Button>
+              {openHistory[c.id] && (
+                <div className="pt-2 border-t border-border/40">
+                  <ContactCommunicationTimeline
+                    storeId={storeId}
+                    contactId={c.id}
+                    contactName={c.name}
+                    contactPhone={c.phone}
+                    canReceiveSms={c.can_receive_sms}
+                  />
+                </div>
+              )}
             </li>
           ))}
         </ul>
