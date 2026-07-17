@@ -66,7 +66,8 @@ export default function AuthCallback() {
             return;
           }
           toast.success('Email verified');
-          navigate(safeNext, { replace: true });
+          const dest = nextParam ? safeNext : await resolveRoleDestination(safeNext);
+          navigate(dest, { replace: true });
           return;
         }
 
@@ -85,7 +86,8 @@ export default function AuthCallback() {
               return;
             }
             toast.success('Email verified');
-            navigate(safeNext, { replace: true });
+            const dest = nextParam ? safeNext : await resolveRoleDestination(safeNext);
+            navigate(dest, { replace: true });
             return;
           }
         }
