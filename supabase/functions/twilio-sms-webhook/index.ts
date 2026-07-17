@@ -180,26 +180,31 @@ Deno.serve(async (req) => {
     console.error("[twilio-sms-webhook][VERIFY] error:", (vErr as Error).message);
   }
 
-  // Lookup store_contact (must NOT be opted out)
+  // Lookup store_contact by normalized last-10 digits (handles non-E.164 storage)
+  const fromLast10 = (From || "").replace(/\D/g, "").slice(-10);
 
-  const { data: contact } = await sb
-    .from("store_contacts")
-    .select("id, store_id")
-    .eq("phone", From)
-    .eq("opted_out", false)
-    .limit(1)
-    .maybeSingle();
+  let contact: { id: string; store_id: string } | null = null;
+  if (fromLast10.length === 10) {
+    const { data: c } = await sb
+      .from("store_contacts")
+      .select("id, store_id")
+      .ilike("phone", `%${fromLast10}`)
+      .eq("opted_out", false)
+      .limit(1)
+      .maybeSingle();
+    contact = c as any;
+  }
 
   let store_id: string | null = contact?.store_id ?? null;
   // store_contacts.id is NOT FK-compatible with communication_logs.contact_id (which references `people`)
   let contact_id: string | null = null;
 
-  // Fallback: stores.phone
-  if (!store_id) {
+  // Fallback: stores.phone (last-10)
+  if (!store_id && fromLast10.length === 10) {
     const { data: store } = await sb
       .from("stores")
       .select("id")
-      .eq("phone", From)
+      .ilike("phone", `%${fromLast10}`)
       .limit(1)
       .maybeSingle();
     store_id = store?.id ?? null;
