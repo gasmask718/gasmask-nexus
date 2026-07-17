@@ -311,12 +311,25 @@ export default function RouteCommandCenter() {
                     <TableHead>Neighborhood</TableHead>
                     <TableHead>City</TableHead>
                     <TableHead className="text-right">Value</TableHead>
+                    <TableHead>Due</TableHead>
                     <TableHead>Last visit</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.slice(0, 500).map(r => {
                     const checked = selected.has(r.store_id);
+                    const dueDate = r.due_date ? new Date(r.due_date) : null;
+                    const today0 = new Date(); today0.setHours(0,0,0,0);
+                    const dueLabel = dueDate
+                      ? (() => {
+                          const d0 = new Date(dueDate); d0.setHours(0,0,0,0);
+                          const diff = Math.round((d0.getTime() - today0.getTime()) / 86400000);
+                          if (diff < 0) return { text: `${Math.abs(diff)}d overdue`, cls: 'text-rose-400' };
+                          if (diff === 0) return { text: 'Today', cls: 'text-amber-400 font-medium' };
+                          if (diff === 1) return { text: 'Tomorrow', cls: 'text-foreground' };
+                          return { text: dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), cls: 'text-muted-foreground' };
+                        })()
+                      : null;
                     return (
                       <TableRow
                         key={r.store_id}
