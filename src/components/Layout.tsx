@@ -256,6 +256,10 @@ const DYNASTY_NAVIGATION = {
         { path: '/sell-through-analytics', label: 'Sell-Through Analytics', icon: BarChart3 },
         { path: '/crm', label: 'Global CRM', icon: UserCheck },
         { path: '/crm/contacts', label: 'CRM Contacts', icon: User },
+        { path: '/crm/customers', label: 'Customers', icon: Users },
+        { path: '/brand-crm', label: 'Brand CRM', icon: Target },
+        { path: '/sales/prospects', label: 'Sales Prospects', icon: TrendingUp },
+        { path: '/sales/report', label: 'Sales Report', icon: BarChart3 },
         // T3 M4: CRM Customers is a tab inside Global CRM; sidebar entry removed.
         { path: '/crm/follow-ups', label: 'Follow-Ups', icon: Clock },
         { path: '/opportunities', label: 'All Opportunities', icon: Target },
@@ -264,11 +268,16 @@ const DYNASTY_NAVIGATION = {
         { path: '/reports/samples-by-brand', label: '🥧 Samples by Brand', icon: PieChart },
       ],
     },
+
     {
       id: 'floor-2',
       name: '📞 Floor 2 — Communication Hub',
       items: [
         { path: '/communication', label: 'Command Center', icon: Radio },
+        { path: '/grabba/communication', label: 'Communication Hub', icon: MessageSquare },
+        { path: '/grabba/daily-briefing', label: '🌅 Daily Briefing', icon: Sunrise },
+        { path: '/tasks', label: 'Task Center', icon: CheckSquare },
+
         { path: '/communication/inbox', label: 'Inbox', icon: MessageSquare },
         { path: '/communication/follow-ups', label: 'Follow-Up Manager', icon: Clock },
         { path: '/communication/field-submissions', label: 'Field Activity Review', icon: ClipboardList, adminOnly: true },
@@ -315,6 +324,10 @@ const DYNASTY_NAVIGATION = {
         { path: '/route-ops-center', label: 'Route Ops Center', icon: Target },
         { path: '/routes/command-center', label: '🚀 Route Command Center', icon: Target },
         { path: '/live-map', label: 'Live Map', icon: MapPin },
+        { path: '/routes', label: 'Route Plans', icon: Route },
+        { path: '/route-optimizer', label: 'Route Optimizer', icon: Route },
+        { path: '/operations/live-map', label: 'Live Map (Ops)', icon: MapPin },
+        { path: '/my-route', label: 'My Route', icon: MapPin },
         { path: '/delivery-capacity', label: 'Delivery Capacity', icon: BarChart3 },
       ],
     },
@@ -367,6 +380,10 @@ const DYNASTY_NAVIGATION = {
         { path: '/ambassador-payouts', label: 'Ambassador Payouts', icon: DollarSign },
         { path: '/influencers', label: 'Influencers', icon: Star },
         { path: '/influencers/campaigns', label: 'Influencer Campaigns', icon: Target },
+        { path: '/leaderboard', label: '🏆 Leaderboard', icon: Award },
+        { path: '/grabba/risk-radar', label: '⚠️ Risk Radar', icon: AlertTriangle },
+        { path: '/opportunity-radar', label: '🎯 Opportunity Radar', icon: Target },
+        { path: '/revenue-brain', label: '🧠 Revenue Brain', icon: Brain },
       ],
     },
     {
