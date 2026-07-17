@@ -91,13 +91,13 @@ export function useMyAssignedRoutes(): MyAssignedRoutesResult {
       if (storeIds.length > 0) {
         const { data: storesData } = await supabase
           .from('store_master')
-          .select('id, store_name, address')
+          .select('id, store_name, address, phone')
           .in('id', storeIds);
 
         storeMap = Object.fromEntries(
           (storesData || []).map((s: any) => [
             s.id,
-            { id: s.id, store_name: s.store_name, address: s.address },
+            { id: s.id, store_name: s.store_name, address: s.address, phone: s.phone },
           ])
         );
       }
@@ -109,6 +109,7 @@ export function useMyAssignedRoutes(): MyAssignedRoutesResult {
           id: stop.store_id,
           store_name: 'Unknown Store',
           address: null,
+          phone: null,
         },
       }));
 
