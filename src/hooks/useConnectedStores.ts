@@ -44,7 +44,7 @@ export function useConnectedStores(
       const { data: storesData, error: storesError } = await supabase
         .from('stores')
         .select(
-          'id, name, address_street, address_city, address_state, address_zip, phone, primary_contact_name, connected_group_id, status, last_order_date',
+          'id, name, address_street, address_city, address_state, address_zip, phone, primary_contact_name, connected_group_id, status',
         )
         .eq('connected_group_id', groupId)
         .eq('approval_status', 'approved')
@@ -57,7 +57,7 @@ export function useConnectedStores(
       const storeIds = storesData.map((s) => s.id);
 
       // Parallel enrichment.
-      const [contactsRes, inventoryRes, needsOrderRes] = await Promise.all([
+      const [contactsRes, inventoryRes, needsOrderRes, masterRes] = await Promise.all([
         supabase
           .from('store_contacts')
           .select('id, store_id, name, role, phone')
@@ -71,6 +71,10 @@ export function useConnectedStores(
           .select('store_id, needs_order')
           .in('store_id', storeIds)
           .eq('needs_order', true),
+        supabase
+          .from('store_master')
+          .select('id, last_order_at')
+          .in('id', storeIds),
       ]);
 
       const contactsByStore = (contactsRes.data || []).reduce(
