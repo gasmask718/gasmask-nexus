@@ -43,6 +43,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ErrorBoundary>
+          <AuthTokenCatcher />
           <BackendMismatchGuard>
             <AuthProvider>
               <BusinessProvider>
