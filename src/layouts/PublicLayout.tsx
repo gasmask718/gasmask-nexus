@@ -74,6 +74,7 @@ export default function PublicLayout() {
               <Link to="/shop" className="hover:text-foreground transition-colors">Shop</Link>
               <Link to="/about" className="hover:text-foreground transition-colors">About</Link>
               <Link to="/contact" className="hover:text-foreground transition-colors">Contact</Link>
+              <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
               <Link to="/auth" className="hover:text-foreground transition-colors">Login</Link>
             </div>
             <p className="text-xs text-muted-foreground">
