@@ -15,6 +15,8 @@ import {
   EndOfDayNotes,
 } from "@/components/portal/field";
 import { AssignedOrdersPage } from "@/components/portal/field/AssignedOrdersPage";
+import { lazy, Suspense } from "react";
+const DriverMyRoute = lazy(() => import("@/pages/delivery/MyRoute"));
 import { PortalAuthGuard } from "@/components/portal/PortalAuthGuard";
 import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
 import { Button } from "@/components/ui/button";
