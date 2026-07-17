@@ -886,10 +886,16 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
   // R7 — explicit Paid/Unpaid choice at creation (default Unpaid).
   const [paymentChoice, setPaymentChoice] = useState<'unpaid' | 'paid'>('unpaid');
   const [textOnCreate, setTextOnCreate] = useState<boolean>(false);
+  const [selectedRecipientKey, setSelectedRecipientKey] = useState<string>('');
   const [lastCreated, setLastCreated] = useState<{ id: string; number: string; total: number } | null>(null);
 
-  // Textable recipient — used to gate the "text on create" checkbox
+  // Textable recipients — used to gate the "text on create" checkbox and picker
   const { data: recipient } = useTextableRecipient(storeId);
+  const textCandidates = recipient?.candidates || [];
+  const selectedRecipient =
+    textCandidates.find((c) => c.key === selectedRecipientKey && !c.blocked) ||
+    recipient?.primary ||
+    null;
 
   const { data: product } = useQuery({
     queryKey: ['quickorder-product', productId],
