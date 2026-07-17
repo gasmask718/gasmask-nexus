@@ -49,6 +49,8 @@ export default function DriverPortal() {
           <Route path="delivery/:deliveryId" element={<MakeDeliveryPage portalType="driver" />} />
           <Route path="delivery-tasks" element={<DriverDeliveryTasks />} />
           <Route path="assigned-orders" element={<AssignedOrdersPage portalType="driver" />} />
+          <Route path="route" element={<Suspense fallback={null}><DriverMyRoute /></Suspense>} />
+          <Route path="routes" element={<Suspense fallback={null}><DriverMyRoute /></Suspense>} />
           <Route path="changes" element={<ChangeListsPage portalType="driver" />} />
           <Route path="history" element={<HistoryPage portalType="driver" />} />
           <Route path="messages" element={<MessagesPage portalType="driver" />} />
