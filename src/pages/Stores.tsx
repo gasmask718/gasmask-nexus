@@ -307,14 +307,15 @@ const Stores = () => {
   const stores: any[] = server.leanStores;
   const isLoading = server.isLoading;
 
-  // Owner-name → connected-store counts, computed from the lean list so
+  // Group-id → connected-store counts, computed from the lean list so
   // the page rows can display connectedStoresCount.
-  const ownerNameCountsMap = useMemo(() => {
+  // NOTE: linking is by connected_group_id ONLY — owner_name is display only.
+  const groupIdCountsMap = useMemo(() => {
     const m = new Map<string, number>();
     for (const s of stores) {
-      const on = (s as any).owner_name;
-      if (!on) continue;
-      m.set(on, (m.get(on) ?? 0) + 1);
+      const gid = (s as any).connected_group_id;
+      if (!gid) continue;
+      m.set(gid, (m.get(gid) ?? 0) + 1);
     }
     return m;
   }, [stores]);
