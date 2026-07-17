@@ -127,7 +127,35 @@ export default function VAAuthPage() {
         await acceptInviteIfNeeded();
         navigate('/va/dashboard');
       } else {
-        const { data: signed, error } = await supabase.auth.signUp({
+        if (hasInvite) {
+          const { data, error } = await supabase.functions.invoke('accept-va-invite', {
+            body: {
+              token: inviteToken,
+              action: 'complete_signup',
+              password: form.password,
+              fullName: form.fullName,
+            },
+          });
+          if (error) throw error;
+          if ((data as any)?.error) throw new Error((data as any).error);
+
+          markManualSignIn();
+          const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: form.email,
+            password: form.password,
+          });
+          if (signInError) throw signInError;
+          if (authData.user && !(await verifyVAAccessOrSignOut(authData.user.id))) {
+            return;
+          }
+
+          try { sessionStorage.removeItem('va_invite_token'); } catch {}
+          toast.success(`Welcome${companyName ? ` to ${companyName}` : ''}!`);
+          navigate('/va/dashboard');
+          return;
+        }
+
+        const { error } = await supabase.auth.signUp({
           email: form.email,
           password: form.password,
           options: {
@@ -137,32 +165,9 @@ export default function VAAuthPage() {
         });
         if (error) throw error;
 
-        // If we have a session immediately, accept the invite & route to dashboard
-        if (signed.session && hasInvite) {
-          await acceptInviteIfNeeded();
-          toast.success(`Welcome${companyName ? ` to ${companyName}` : ''}!`);
-          navigate('/va/dashboard');
-          return;
-        }
-
-        if (hasInvite) {
-          // Try immediate sign-in (if email confirmation isn't required)
-          const { error: siErr } = await supabase.auth.signInWithPassword({
-            email: form.email,
-            password: form.password,
-          });
-          if (!siErr) {
-            await acceptInviteIfNeeded();
-            toast.success(`Welcome${companyName ? ` to ${companyName}` : ''}!`);
-            navigate('/va/dashboard');
-            return;
-          }
-          toast.success('Account created! Verify your email, then return to the invite link.');
-        } else {
-          toast.success(
-            'Account created! Check your email to verify, then click the invite link from your admin to join a company.',
-          );
-        }
+        toast.success(
+          'Account created! Check your email to verify, then click the invite link from your admin to join a company.',
+        );
         setIsLogin(true);
       }
     } catch (err: any) {
