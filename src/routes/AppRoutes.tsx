@@ -3018,34 +3018,11 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
-      <Route path="/grabba/text-center" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
-            <Layout><CommunicationHubLayout /></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
-      <Route path="/grabba/email-center" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
-            <Layout><CommunicationHubLayout /></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
-      <Route path="/grabba/call-center" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
-            <Layout><CommunicationHubLayout /></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
-      <Route path="/grabba/communication-logs" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
-            <Layout><CommunicationHubLayout /></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
+      {/* Legacy grabba comm aliases → canonical /grabba/communication (Pass 1B redirects) */}
+      <Route path="/grabba/text-center" element={<Navigate to="/grabba/communication" replace />} />
+      <Route path="/grabba/email-center" element={<Navigate to="/grabba/communication" replace />} />
+      <Route path="/grabba/call-center" element={<Navigate to="/grabba/communication" replace />} />
+      <Route path="/grabba/communication-logs" element={<Navigate to="/grabba/communication" replace />} />
       <Route path="/grabba/brand/:brand/communications" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
