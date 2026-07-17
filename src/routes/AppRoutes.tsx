@@ -71,6 +71,8 @@ const Team = lazy(() => import('@/pages/Team'));
 const Products = lazy(() => import('@/pages/Products'));
 const Analytics = lazy(() => import('@/pages/Analytics'));
 const SamplesByBrandReport = lazy(() => import('@/pages/reports/SamplesByBrandReport'));
+const SamplesByStoreReport = lazy(() => import('@/pages/reports/SamplesByStoreReport'));
+const AccountActivityReport = lazy(() => import('@/pages/reports/AccountActivityReport'));
 const Influencers = lazy(() => import('@/pages/Influencers'));
 const Missions = lazy(() => import('@/pages/Missions'));
 const InfluencerCampaigns = lazy(() => import('@/pages/InfluencerCampaigns'));
@@ -1685,6 +1687,8 @@ export default function AppRoutes() {
         <Route path="/analytics/economics" element={<EconomicAnalytics />} />
         <Route path="/analytics/revenue-brain" element={<RevenueBrain />} />
         <Route path="/reports/samples-by-brand" element={<SamplesByBrandReport />} />
+        <Route path="/reports/samples-by-store" element={<SamplesByStoreReport />} />
+        <Route path="/reports/account-activity" element={<AccountActivityReport />} />
         <Route path="/influencers" element={<Influencers />} />
         <Route path="/influencers/analytics" element={<InfluencerAnalyticsCenter />} />
         <Route path="/influencers/:id" element={<InfluencerDetail />} />

@@ -128237,6 +128237,14 @@ export type Database = {
       }
     }
     Views: {
+      actor_directory_v: {
+        Row: {
+          actor_id: string | null
+          actor_kind: string | null
+          actor_name: string | null
+        }
+        Relationships: []
+      }
       admin_commission_overview: {
         Row: {
           ambassador_email: string | null
@@ -130615,6 +130623,51 @@ export type Database = {
           },
         ]
       }
+      samples_by_store_v: {
+        Row: {
+          brand: string | null
+          days_to_first_order: number | null
+          first_order_after: string | null
+          first_sample_at: string | null
+          last_sample_at: string | null
+          orders_90d: number | null
+          repeat_count: number | null
+          revenue_90d: number | null
+          store_id: string | null
+          store_name: string | null
+          total_units: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_samples_given_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_samples_given_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_prior_customer_segments"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_samples_given_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_public_store_locator"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_samples_given_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       samples_given_by_brand_v: {
         Row: {
           brand: string | null
@@ -130623,6 +130676,19 @@ export type Database = {
           last_given_at: string | null
           product_id: string | null
           total_units: number | null
+        }
+        Relationships: []
+      }
+      store_activity_feed_v: {
+        Row: {
+          actor_id: string | null
+          body: string | null
+          detail: string | null
+          id: string | null
+          kind: string | null
+          occurred_at: string | null
+          store_id: string | null
+          subtype: string | null
         }
         Relationships: []
       }
