@@ -350,10 +350,6 @@ export const FLOOR_ROUTE_MAP: Record<string, string[]> = {
   ],
   'floor-2-communication': [
     '/grabba/communication',
-    '/grabba/text-center',
-    '/grabba/email-center',
-    '/grabba/call-center',
-    '/grabba/communication-logs',
     '/grabba/brand/*/communications',
   ],
   'floor-3-inventory': [
