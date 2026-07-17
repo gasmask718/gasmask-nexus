@@ -181,9 +181,7 @@ export function StoreCaptureForm({
       // 2. Build store row — auto-approve all captures.
       // Owner reviews via Recently Added dashboard, not as a gate.
       const nowIso = new Date().toISOString();
-      const composedNotes = ownerName.trim()
-        ? `Owner: ${ownerName.trim()}${notes.trim() ? `\n${notes.trim()}` : ''}`
-        : notes.trim() || null;
+      const trimmedOwner = ownerName.trim();
 
       const insertPayload: Record<string, unknown> = {
         name: name.trim(),
@@ -192,7 +190,9 @@ export function StoreCaptureForm({
         address_city: addressCity.trim(),
         address_state: addressState.trim(),
         phone: phone.trim() || null,
-        notes: composedNotes,
+        // Owner is written to its dedicated column (NOT jammed into notes).
+        primary_contact_name: trimmedOwner || null,
+        notes: notes.trim() || null,
         lat: coords?.lat ?? null,
         lng: coords?.lng ?? null,
         storefront_photo_url: storefrontPhotoUrl,

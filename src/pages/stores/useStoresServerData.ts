@@ -70,7 +70,7 @@ export function useStoresServerData(args: UseStoresServerDataArgs) {
       for (let page = 0; ; page++) {
         const { data, error } = await (supabase as any)
           .from('store_master')
-          .select(sel('id, store_name, owner_name, sticker_on_door, sticker_in_store, sticker_with_phone, relationship_status, created_at'))
+          .select(sel('id, store_name, owner_name, sticker_on_door, sticker_in_store, sticker_with_phone, relationship_status, created_at, connected_group_id'))
           .eq('is_simulation', simulationMode)
           .is('deleted_at', null)
           .order('store_name')
@@ -92,6 +92,7 @@ export function useStoresServerData(args: UseStoresServerDataArgs) {
         created_at: r.created_at || null,
         relationship_status: r.relationship_status || 'Non-active (New - need to speak)',
         tags: [],
+        connected_group_id: r.connected_group_id || null,
       }));
     },
   });

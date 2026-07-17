@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -42,6 +42,8 @@ interface ConnectStoresModalProps {
   storeId: string;
   storeName: string;
   currentGroupId: string | null;
+  /** 'add' opens capture form immediately; 'search' opens the picker. */
+  initialMode?: 'search' | 'add';
   onSuccess?: () => void;
 }
 
@@ -51,14 +53,26 @@ export function ConnectStoresModal({
   storeId,
   storeName,
   currentGroupId,
+  initialMode = 'search',
   onSuccess,
 }: ConnectStoresModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStores, setSelectedStores] = useState<string[]>([]);
-  const [showCaptureForm, setShowCaptureForm] = useState(false);
+  const [showCaptureForm, setShowCaptureForm] = useState(initialMode === 'add');
   // Stable group ID used during capture (generated lazily if parent has none yet).
   const [pendingGroupId, setPendingGroupId] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  // Sync mode when the modal is (re-)opened.
+  useEffect(() => {
+    if (open) {
+      setShowCaptureForm(initialMode === 'add');
+      if (initialMode === 'add' && !currentGroupId && !pendingGroupId) {
+        setPendingGroupId(crypto.randomUUID());
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialMode]);
 
   const captureGroupId = useMemo(() => {
     return currentGroupId ?? pendingGroupId;
@@ -109,7 +123,6 @@ export function ConnectStoresModal({
           .from('stores')
           .update({ connected_group_id: groupId })
           .eq('id', storeId);
-
         if (currentError) throw currentError;
       }
 
@@ -118,14 +131,20 @@ export function ConnectStoresModal({
         .from('stores')
         .update({ connected_group_id: groupId })
         .in('id', storeIds);
-
       if (error) throw error;
+
+      // Belt-and-suspenders sync (a DB trigger also mirrors this).
+      await supabase
+        .from('store_master')
+        .update({ connected_group_id: groupId })
+        .in('id', [storeId, ...storeIds]);
 
       return { groupId, count: storeIds.length };
     },
     onSuccess: (result) => {
       toast.success(`Connected ${result.count} store(s) successfully`);
       queryClient.invalidateQueries({ queryKey: ['connected-stores'] });
+      queryClient.invalidateQueries({ queryKey: ['connected-stores-count'] });
       queryClient.invalidateQueries({ queryKey: ['stores'] });
       setSelectedStores([]);
       onOpenChange(false);
@@ -143,8 +162,11 @@ export function ConnectStoresModal({
         .from('stores')
         .update({ connected_group_id: null })
         .eq('id', disconnectStoreId);
-
       if (error) throw error;
+      await supabase
+        .from('store_master')
+        .update({ connected_group_id: null })
+        .eq('id', disconnectStoreId);
     },
     onSuccess: () => {
       toast.success('Store disconnected');
@@ -187,11 +209,56 @@ export function ConnectStoresModal({
           .update({ connected_group_id: pendingGroupId })
           .eq('id', storeId);
         if (error) throw error;
+        // Mirror to store_master (trigger handles this too).
+        await supabase
+          .from('store_master')
+          .update({ connected_group_id: pendingGroupId })
+          .eq('id', storeId);
       }
-      toast.success('Store captured & connected');
+
+      // Also make sure the newly-captured store's store_master row carries the group_id.
+      const effectiveGroupId = currentGroupId ?? pendingGroupId;
+      if (effectiveGroupId) {
+        await supabase
+          .from('store_master')
+          .update({ connected_group_id: effectiveGroupId })
+          .eq('id', newStoreId);
+      }
+
+      // Seed needs_order = true on store_tube_inventory_status, using the
+      // brand set from the source store (owner probably sells the same brands).
+      // Falls back to no-op if source store has no tracked brands yet.
+      const { data: sourceBrands } = await supabase
+        .from('store_tube_inventory_status')
+        .select('brand_id, brand_name')
+        .eq('store_id', storeId);
+
+      const uniqueBrands = Array.from(
+        new Map(
+          (sourceBrands || [])
+            .filter((b: any) => b.brand_id)
+            .map((b: any) => [b.brand_id, b]),
+        ).values(),
+      );
+
+      if (uniqueBrands.length > 0) {
+        const rows = uniqueBrands.map((b: any) => ({
+          store_id: newStoreId,
+          brand_id: b.brand_id,
+          brand_name: b.brand_name,
+          needs_order: true,
+        }));
+        await supabase
+          .from('store_tube_inventory_status')
+          .upsert(rows as any, { onConflict: 'store_id,brand_id' });
+      }
+
+      toast.success('Store captured, linked & flagged needs-order');
       queryClient.invalidateQueries({ queryKey: ['stores-for-connection', storeId] });
       queryClient.invalidateQueries({ queryKey: ['connected-stores'] });
+      queryClient.invalidateQueries({ queryKey: ['connected-stores-count'] });
       queryClient.invalidateQueries({ queryKey: ['stores'] });
+      queryClient.invalidateQueries({ queryKey: ['store-tube-kpi'] });
       setShowCaptureForm(false);
       onSuccess?.();
     } catch (err: any) {
