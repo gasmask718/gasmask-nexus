@@ -7,10 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Crown, Loader2, AlertCircle, UserPlus } from "lucide-react";
-import { validateInviteToken, acceptInvitation, type Invitation } from "@/services/invitationService";
+import { validateInviteToken, type Invitation } from "@/services/invitationService";
 import { supabase } from "@/integrations/supabase/client";
 import { getRoleDisplayName } from "@/services/roleService";
-import { createUserProfile, createRoleProfile } from "@/services/roleService";
 import { OSRole } from "@/config/osNavigation";
 
 export default function InviteSignup() {
@@ -74,66 +73,36 @@ export default function InviteSignup() {
     setSubmitting(true);
 
     try {
-      // 1. Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data, error: inviteError } = await supabase.functions.invoke("complete-user-invite", {
+        body: { token, password, fullName },
+      });
+
+      if (inviteError) throw new Error(inviteError.message);
+      if ((data as any)?.error) throw new Error((data as any).error);
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email: invitation.email,
         password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            full_name: fullName,
-            role: invitation.role,
-          },
-        },
       });
+      if (signInError) throw new Error(signInError.message);
 
-      if (authError) throw new Error(authError.message);
-      if (!authData.user) throw new Error("Failed to create user account");
+      toast.success("Account created successfully! Redirecting...");
 
-      const userId = authData.user.id;
-
-      // 2. Accept invitation FIRST — source of truth mutation
-      const { success: accepted, error: acceptError } = await acceptInvitation(token, userId);
-      if (!accepted) {
-        console.error("Accept invitation failed:", acceptError);
-      }
-
-      // 3. Create user profile
-      await createUserProfile(userId, {
-        full_name: fullName,
-        primary_role: invitation.role as OSRole,
-        preferred_language: "en",
-      });
-
-      // 4. Create role-specific profile if needed
-      const roleData: Record<string, any> = {};
-      if (invitation.metadata?.assigned_store_id) {
-        roleData.assigned_store_id = invitation.metadata.assigned_store_id;
-      }
-      if (invitation.metadata?.assigned_brand_id) {
-        roleData.assigned_brand_id = invitation.metadata.assigned_brand_id;
-      }
-
-      await createRoleProfile(userId, invitation.role as OSRole, roleData);
-
-      // 5. Add to user_roles table
-      await supabase.from("user_roles").insert({ user_id: userId, role: invitation.role as any });
-
-      toast.success("Account created successfully! Redirecting to login...");
-
-      // 6. Redirect to appropriate login page based on role
-      let redirectPath = "/auth"; // Default fallback
+      let redirectPath = "/auth";
 
       switch (invitation.role) {
+        case "va":
+          redirectPath = "/va/dashboard";
+          break;
         case "biker":
-          redirectPath = "/portal/biker/login";
+          redirectPath = "/portal/biker";
           break;
         case "driver":
-          redirectPath = "/portal/driver/login";
+          redirectPath = "/portal/driver";
           break;
         case "customer":
         case "user":
-          redirectPath = "/portal/login";
+          redirectPath = "/portal";
           break;
         default:
           redirectPath = "/auth";
@@ -142,7 +111,7 @@ export default function InviteSignup() {
 
       setTimeout(() => {
         navigate(redirectPath, { replace: true });
-      }, 1000); // Increased delay slightly to let the toast be seen
+      }, 700);
     } catch (err: any) {
       console.error("Signup error:", err);
       toast.error(err.message || "Failed to create account");
