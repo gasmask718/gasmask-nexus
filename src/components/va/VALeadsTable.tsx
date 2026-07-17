@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Phone, FileText, Send, Search, Loader2, Users, Zap, PhoneCall } from 'lucide-react';
+import { Phone, FileText, Send, Search, Loader2, Users, Zap, PhoneCall, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { isSpanishLead } from '@/lib/spanishLeadDetector';
+import { SendReceptionistLinkModal } from '@/components/brandaro/SendReceptionistLinkModal';
 
 interface Lead {
   id: string;
