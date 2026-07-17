@@ -155,7 +155,7 @@ export default function VAAuthPage() {
           return;
         }
 
-        const { data: signed, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email: form.email,
           password: form.password,
           options: {
