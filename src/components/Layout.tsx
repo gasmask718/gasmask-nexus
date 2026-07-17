@@ -380,6 +380,10 @@ const DYNASTY_NAVIGATION = {
         { path: '/ambassador-payouts', label: 'Ambassador Payouts', icon: DollarSign },
         { path: '/influencers', label: 'Influencers', icon: Star },
         { path: '/influencers/campaigns', label: 'Influencer Campaigns', icon: Target },
+        { path: '/leaderboard', label: '🏆 Leaderboard', icon: Award },
+        { path: '/grabba/risk-radar', label: '⚠️ Risk Radar', icon: AlertTriangle },
+        { path: '/opportunity-radar', label: '🎯 Opportunity Radar', icon: Target },
+        { path: '/revenue-brain', label: '🧠 Revenue Brain', icon: Brain },
       ],
     },
     {
