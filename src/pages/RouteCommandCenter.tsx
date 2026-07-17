@@ -363,6 +363,9 @@ export default function RouteCommandCenter() {
                         <TableCell className="text-right tabular-nums">
                           {r.value ? `$${r.value.toFixed(0)}` : '—'}
                         </TableCell>
+                        <TableCell className={`text-xs ${dueLabel?.cls ?? 'text-muted-foreground'}`}>
+                          {dueLabel?.text ?? '—'}
+                        </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {r.last_visit_date ? new Date(r.last_visit_date).toLocaleDateString() : 'never'}
                         </TableCell>
