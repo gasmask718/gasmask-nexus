@@ -29,12 +29,15 @@ const TYPE_META: Record<CandidateType, { label: string; icon: any; color: string
 
 const ALL_TYPES: CandidateType[] = ['reorder', 'owner_order', 'collect_payment', 'follow_up', 'prospect', 'bring_samples', 'win_back', 'at_risk'];
 
+type DueFilter = 'today_overdue' | 'week' | 'all';
+
 export default function RouteCommandCenter() {
   const { data: candidates = [], isLoading } = useRouteCandidates();
   const [search, setSearch] = useState('');
   const [neighborhood, setNeighborhood] = useState<string>('all');
   const [city, setCity] = useState<string>('all');
   const [activeTypes, setActiveTypes] = useState<Set<CandidateType>>(new Set(ALL_TYPES));
+  const [dueFilter, setDueFilter] = useState<DueFilter>('today_overdue');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [assignOpen, setAssignOpen] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
