@@ -105,8 +105,13 @@ export function useConnectedStores(
         (needsOrderRes.data || []).map((r: any) => r.store_id),
       );
 
+      const lastOrderByStore = new Map<string, string | null>(
+        (masterRes.data || []).map((r: any) => [r.id, r.last_order_at ?? null]),
+      );
+
       return storesData.map((s: any) => ({
         ...s,
+        last_order_date: lastOrderByStore.get(s.id) ?? null,
         needs_order: needsOrderStores.has(s.id),
         contacts: contactsByStore[s.id] || [],
         inventory: inventoryByStore[s.id] || [],
