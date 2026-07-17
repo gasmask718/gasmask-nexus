@@ -63,8 +63,8 @@ export function ConnectStoresModal({
   const [pendingGroupId, setPendingGroupId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  // Sync mode when the modal is re-opened.
-  useMemo(() => {
+  // Sync mode when the modal is (re-)opened.
+  useEffect(() => {
     if (open) {
       setShowCaptureForm(initialMode === 'add');
       if (initialMode === 'add' && !currentGroupId && !pendingGroupId) {
