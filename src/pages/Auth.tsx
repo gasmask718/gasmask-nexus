@@ -21,12 +21,23 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [needsConfirm, setNeedsConfirm] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   const markManualSignIn = useMarkManualSignIn();
   const { data: profileData, isLoading: profileLoading } = useCurrentUserProfile();
   const { role: rbacRole, loading: rbacLoading } = useUserRole();
+
+  // Surface failed verification bounced back from /auth/callback
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('verify') === 'failed') {
+      const reason = params.get('reason') || 'Verification link is invalid or expired.';
+      setNeedsConfirm(true);
+      toast.error(`Email not verified: ${reason}`);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (!user) return;
@@ -63,7 +74,15 @@ const Auth = () => {
     });
 
     if (error) {
-      toast.error(error.message);
+      const isUnconfirmed =
+        /email not confirmed/i.test(error.message) ||
+        (error as any).code === 'email_not_confirmed';
+      if (isUnconfirmed) {
+        setNeedsConfirm(true);
+        toast.error("Your email isn't confirmed yet. Resend the verification email below.");
+      } else {
+        toast.error(error.message);
+      }
     } else {
       toast.success('Signed in successfully');
     }
@@ -79,7 +98,7 @@ const Auth = () => {
       password,
       options: {
         data: { name },
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
