@@ -274,6 +274,10 @@ const DYNASTY_NAVIGATION = {
       name: '📞 Floor 2 — Communication Hub',
       items: [
         { path: '/communication', label: 'Command Center', icon: Radio },
+        { path: '/grabba/communication', label: 'Communication Hub', icon: MessageSquare },
+        { path: '/grabba/daily-briefing', label: '🌅 Daily Briefing', icon: Sunrise },
+        { path: '/tasks', label: 'Task Center', icon: CheckSquare },
+
         { path: '/communication/inbox', label: 'Inbox', icon: MessageSquare },
         { path: '/communication/follow-ups', label: 'Follow-Up Manager', icon: Clock },
         { path: '/communication/field-submissions', label: 'Field Activity Review', icon: ClipboardList, adminOnly: true },
