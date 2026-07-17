@@ -38,23 +38,28 @@ Deno.serve(async (req) => {
 
   const sb = svc();
 
-  // Lookup store_contact
-  const { data: contact } = await sb
-    .from("store_contacts")
-    .select("id, store_id")
-    .eq("phone", From)
-    .limit(1)
-    .maybeSingle();
+  // Lookup store_contact by normalized last-10 digits (handles non-E.164 storage)
+  const fromLast10 = (From || "").replace(/\D/g, "").slice(-10);
+  let contact: { id: string; store_id: string } | null = null;
+  if (fromLast10.length === 10) {
+    const { data: c } = await sb
+      .from("store_contacts")
+      .select("id, store_id")
+      .ilike("phone", `%${fromLast10}`)
+      .limit(1)
+      .maybeSingle();
+    contact = c as any;
+  }
 
   let store_id: string | null = contact?.store_id ?? null;
   // store_contacts.id is NOT FK-compatible with communication_logs.contact_id (which references `people`)
   let contact_id: string | null = null;
 
-  if (!store_id) {
+  if (!store_id && fromLast10.length === 10) {
     const { data: store } = await sb
       .from("stores")
       .select("id")
-      .eq("phone", From)
+      .ilike("phone", `%${fromLast10}`)
       .limit(1)
       .maybeSingle();
     store_id = store?.id ?? null;
