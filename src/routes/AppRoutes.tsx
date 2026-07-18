@@ -3818,6 +3818,7 @@ export default function AppRoutes() {
           <Route path="follow-ups" element={<FollowUpEnginePage />} />
           <Route path="proposals" element={<ProposalBuilderPage />} />
           <Route path="build-pipeline" element={<BuildPipelinePage />} />
+          <Route path="builder" element={<BuilderHubPage />} />
           <Route path="demo-engine" element={<DemoEnginePage />} />
 
           {/* ── Execution ── */}
