@@ -68,6 +68,7 @@ const sidebarItems: SidebarItem[] = [
   // ── Production & Revenue ──
   { path: '/os/brandaro/production', label: 'Production', icon: Hammer },
   { path: '/os/brandaro/build-pipeline', label: 'Build Pipeline', icon: Factory },
+  { path: '/os/brandaro/builder', label: 'Website Builder', icon: Wand2 },
   { path: '/os/brandaro/results', label: 'Result Engine', icon: TrendingUp },
   { path: '/os/brandaro/review-queue', label: 'Quality Review', icon: ShieldCheck },
   { path: '/os/brandaro/clients', label: 'Client Portal', icon: Users },
