@@ -1,65 +1,95 @@
-# Fix: "Email not Confirmed" after clicking verify link
+## Scope
 
-## Root cause
+Three builds, all in Dynasty OS (`e9aba3c3` + Supabase `qalaaroashbggynpvqct`). No cross-project work.
 
-`src/pages/Auth.tsx` sends signup/resend with `emailRedirectTo: ${origin}/`. The Supabase client (default PKCE flow) drops the user on `/` with a `?code=...` in the URL. `/` is the app's Index route — it doesn't call `exchangeCodeForSession`, so the code is never exchanged, the email never gets confirmed, and the next sign‑in fails with `Email not confirmed`. PKCE also fails silently if the link is opened in a browser that doesn't have the original `code_verifier` in localStorage.
+---
 
-## Fix
+## 1. `/brandaro/builder` Hub (Dynasty OS)
 
-### 1. Dedicated callback route `/auth/callback`
+**New page:** `src/pages/brandaro/BuilderHubPage.tsx`
+- Header: "Website Builder Engine" + live stats (demos generated today, ready-to-send, paid tier queue).
+- **Generate section** — pick a qualified lead (dropdown from `brandaro_qualified_leads`), choose engine (`native` / `durable`), "Generate Demo" button → invokes `brandaro-generate-demo`.
+- **Recent Demos table** — from `brandaro_demo_sites` (last 50): business, industry, engine, status (generating/ready/error), demo URL (open), audit score, "Send SMS" button (invokes `brandaro-send-demo`).
+- **Design system status** — counts `.md` files in `brandaro-design-mds` bucket; lists missing industries (from a hardcoded expected set of 16) with a badge.
+- **Durable job monitor** — separate tab showing rows where `generation_engine='durable'` with `durable_job_status` and `durable_last_error`.
 
-New file `src/pages/auth/AuthCallback.tsx`:
-- Parse `window.location` for a `code` query param (PKCE) or an `#access_token=` hash (implicit / recovery links).
-- If `code` present → `supabase.auth.exchangeCodeForSession(code)`.
-- If hash tokens present → `supabase.auth.setSession({ access_token, refresh_token })`.
-- On success: `toast.success('Email verified')` and navigate to `/` (role router takes over).
-- On error: navigate to `/auth?verify=failed&reason=<msg>` so the sign‑in page can surface it and offer resend.
-- Render a small centered spinner while running.
+**Route:** register `/brandaro/builder` in `src/routes/AppRoutes.tsx` under the Brandaro protected block. Sidebar entry in `src/modules/brandaro/index.ts` → "Builder Hub" under Brandaro group.
 
-Register the route in `src/routes/AppRoutes.tsx` as a public route (before the ProtectedRoute tree), path `/auth/callback`.
+**Guards:** admin + brandaro roles only (matches other Brandaro pages).
 
-### 2. Point every verification link at the callback
+---
 
-In `src/pages/Auth.tsx` change both `emailRedirectTo` values (signup + resend) to:
-```
-`${window.location.origin}/auth/callback`
-```
-Also audit and update the other signup entry points that already exist so their verify links land on the same handler:
-- `src/pages/auth/StoreSignupPage.tsx` (`emailRedirectTo: '/owner'` → `/auth/callback?next=/owner`)
-- `src/pages/auth/InviteSignup.tsx` and `src/pages/va/VAAuthPage.tsx` — same treatment, preserving their post‑verify destination via a `next` query param the callback honors.
+## 2. Wire real AI pipeline into `brandaro-generate-demo`
 
-The callback reads `next` (validated as a same‑origin relative path) and redirects there after exchange; otherwise it falls through to `/` and the role router decides.
+Rewrite the `engine === "native"` branch. Preserve fallback so it still works even if a piece is missing.
 
-### 3. Error handling + inline Resend on the sign‑in form
+**Steps inside function:**
+1. Fetch lead (already done).
+2. Map `lead.industry` → design filename (e.g. `restaurant`, `cleaning`, `landscaping` etc.); default to `general.md`.
+3. `supabase.storage.from('brandaro-design-mds').download(<industry>.md)` → decode as text. If missing, continue with empty design context (log warning, still generate).
+4. Call Lovable AI (`https://ai.gateway.lovable.dev/v1/chat/completions`, header `Authorization: Bearer ${LOVABLE_API_KEY}`, model `google/gemini-2.5-flash`, `response_format: json_object`) with:
+   - System: "You are a senior web copywriter. Follow the DESIGN.md system precisely. Return JSON matching the schema."
+   - User: lead fields (business_name, industry, city, state, services, phone, google reviews if present) + full DESIGN.md content as reference.
+   - Expected JSON:
+     ```json
+     {
+       "hero_headline": "string",
+       "hero_subheadline": "string",
+       "services": [{"name":"string","description":"string"}],
+       "about_paragraph": "string",
+       "cta_text": "string",
+       "color_primary": "#hex",
+       "color_secondary": "#hex",
+       "font_recommendation": "string"
+     }
+     ```
+   - Handle `429` / `402` → set `generation_status='error'`, `error_message=<gateway reason>`, return early with clean error.
+5. Merge AI JSON into `generateNativeHtml`, using AI colors/fonts + services structure. Save AI JSON to `content_blocks`, colors to `generated_colors`.
+6. Insert into `brandaro_demo_sites` with `generation_status='ready'`, `template_used=<industry>`, `content_blocks`, `generated_colors`, `demo_url`, `generated_html`.
 
-In `src/pages/Auth.tsx`:
-- Add `const [needsConfirm, setNeedsConfirm] = useState(false)`.
-- In `handleSignIn`, if `error.message` matches `/email not confirmed/i` (or `error.code === 'email_not_confirmed'`), set `needsConfirm = true` and show a targeted toast: *"Your email isn't confirmed yet."* Other errors keep the current generic toast.
-- Below the sign‑in submit button, when `needsConfirm` is true, render a highlighted block:
-  - message: "We haven't verified this email yet."
-  - primary button "Resend verification email" wired to the existing `handleResendConfirmation` (already implemented — just promote it from the tiny secondary link into a real button in this state).
-- On mount, read `?verify=failed` from the URL. If present, set `needsConfirm = true` and toast the reason so users returning from a broken callback see the resend button immediately.
-- Clear `needsConfirm` whenever the email field changes.
+**Vercel deploy-hook path (optional/env-gated):** if `VERCEL_DEPLOY_HOOK_<industry>` secret exists AND `deploy_vercel=true` in request body, POST to it with `DESIGN_MD_CONTENT` (base64) + business content payload. Store returned deployment id in `vercel_deployment_id`. If secret missing, silently skip Vercel and keep the native HTML as the demo. No blocker.
 
-### 4. Do NOT auto‑log‑in from the callback beyond what `exchangeCodeForSession` already does
+**Secrets:** `LOVABLE_API_KEY` (already present). No new secrets required to ship — Vercel hooks are opt-in per industry.
 
-`exchangeCodeForSession` establishes the session itself. The existing `AuthProvider` `onAuthStateChange` listener will pick it up and the `useEffect` in `Auth.tsx` / role router will route the user — no extra sign‑in call needed. This matches the project's existing auth pattern and avoids the `await`‑inside‑`onAuthStateChange` deadlock warning.
+---
 
-## Files touched
+## 3. Durable API integration (Tier-1 auto-build)
 
-- **new** `src/pages/auth/AuthCallback.tsx`
-- `src/routes/AppRoutes.tsx` — register `/auth/callback`
-- `src/pages/Auth.tsx` — redirect URL, `needsConfirm` state, inline resend block, URL‑param handling
-- `src/pages/auth/StoreSignupPage.tsx` — `emailRedirectTo` → callback with `next=/owner`
-- `src/pages/auth/InviteSignup.tsx` — same treatment
-- `src/pages/va/VAAuthPage.tsx` — same treatment (only the email redirect URL, not the VA invite acceptance logic)
+**Rewrite `engine === "durable"` branch:**
+1. Insert `brandaro_demo_sites` row with `generation_engine='durable'`, `durable_job_status='queued'`.
+2. `POST https://api.durable.co/v1/sites` (or the current Durable endpoint — will use their docs; using `Authorization: Bearer ${DURABLE_API_KEY}`) with body:
+   - business_name, industry, city, state, phone, services, brand colors (from any prior native generation on same lead if available).
+3. Store returned `site_id` in `durable_site_id`, `site_url` in `durable_generated_url`, set `durable_job_status='processing'`.
+4. On non-200 → `durable_job_status='error'`, `durable_last_error=<body>`, `generation_status='error'`.
 
-## Out of scope
+**New callback function:** `supabase/functions/brandaro-durable-webhook/index.ts`
+- Receives Durable webhook (site.ready / site.failed).
+- Verifies via shared secret header `X-Durable-Signature` (compare to `DURABLE_WEBHOOK_SECRET`).
+- Updates matching `brandaro_demo_sites` row by `durable_site_id`: sets `durable_job_status`, `durable_generated_url`, `durable_screenshot_url`, `generation_status='ready'`, `demo_ready_for_conversion=true`.
 
-- No changes to `AuthContext` internals, `onAuthStateChange`, or role routing.
-- No changes to password‑reset flow (`/reset-password` already exists).
-- No changes to Supabase project auth settings.
+**Secrets required (I will request via add_secret in a follow-up message, not this turn):**
+- `DURABLE_API_KEY` — from durable.co dashboard
+- `DURABLE_WEBHOOK_SECRET` — user creates + pastes into Durable webhook config
 
-## Summary
+The Durable branch will insert a queued row and return a clear error if the key is missing — no crash.
 
-Add `/auth/callback` that exchanges the PKCE code (or sets session from hash tokens), point every `emailRedirectTo` at it, and give the sign‑in form an inline "Resend verification email" button when the user hits `Email not confirmed`.
+---
+
+## Technical Notes
+
+- No destructive migrations. `brandaro_demo_sites` already has every column needed (`content_blocks`, `generated_colors`, `durable_*`, `vercel_*`, `audit_*`).
+- All edge functions auto-deploy on save.
+- Model: `google/gemini-2.5-flash` (fast/cheap, JSON-capable, well within Lovable AI catalog).
+- No changes to existing `brandaro_qualified_leads`, VA UI, or receptionist flow.
+- Reuse existing `SendReceptionistLinkModal` pattern for the send-demo action wiring.
+
+## Out of Scope (per your instructions)
+
+- Uploading the 16 DESIGN.md files (you'll do it).
+- Adding Durable / Vercel secrets (I'll request in a follow-up once you approve).
+- Building the 16 Vercel industry templates (out of Lovable).
+- Master template GitHub repo work.
+
+---
+
+**On approval, I'll ship all three in one batch of parallel writes**, then ask you for the Durable API key + webhook secret to activate Tier-1.
