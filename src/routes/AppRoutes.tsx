@@ -168,6 +168,7 @@ const BrandaroWarRoom = lazy(() => import('@/pages/brandaro/BrandaroWarRoom'));
 const FollowUpEnginePage = lazy(() => import('@/pages/brandaro/FollowUpEnginePage'));
 const ProposalBuilderPage = lazy(() => import('@/pages/brandaro/ProposalBuilderPage'));
 const BuildPipelinePage = lazy(() => import('@/pages/brandaro/BuildPipelinePage'));
+const BuilderHubPage = lazy(() => import('@/pages/brandaro/BuilderHubPage'));
 const ResultEnginePage = lazy(() => import('@/pages/brandaro/ResultEnginePage'));
 const CampaignManagerPage = lazy(() => import('@/pages/brandaro/CampaignManagerPage'));
 const ReviewQueuePage = lazy(() => import('@/pages/brandaro/ReviewQueuePage'));
