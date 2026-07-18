@@ -16,6 +16,7 @@ import ProductionPipelinePage from '@/pages/brandaro/ProductionPipelinePage';
 import ClientPortalPage from '@/pages/brandaro/ClientPortalPage';
 import RevenueAnalyticsPage from '@/pages/brandaro/RevenueAnalyticsPage';
 import BuildPipelinePage from '@/pages/brandaro/BuildPipelinePage';
+import BuilderHubPage from '@/pages/brandaro/BuilderHubPage';
 import ResultEnginePage from '@/pages/brandaro/ResultEnginePage';
 import ReviewQueuePage from '@/pages/brandaro/ReviewQueuePage';
 import CloserAIPage from '@/pages/brandaro/CloserAIPage';
