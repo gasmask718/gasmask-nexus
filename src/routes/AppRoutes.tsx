@@ -168,6 +168,7 @@ const BrandaroWarRoom = lazy(() => import('@/pages/brandaro/BrandaroWarRoom'));
 const FollowUpEnginePage = lazy(() => import('@/pages/brandaro/FollowUpEnginePage'));
 const ProposalBuilderPage = lazy(() => import('@/pages/brandaro/ProposalBuilderPage'));
 const BuildPipelinePage = lazy(() => import('@/pages/brandaro/BuildPipelinePage'));
+const BuilderHubPage = lazy(() => import('@/pages/brandaro/BuilderHubPage'));
 const ResultEnginePage = lazy(() => import('@/pages/brandaro/ResultEnginePage'));
 const CampaignManagerPage = lazy(() => import('@/pages/brandaro/CampaignManagerPage'));
 const ReviewQueuePage = lazy(() => import('@/pages/brandaro/ReviewQueuePage'));
@@ -3817,6 +3818,7 @@ export default function AppRoutes() {
           <Route path="follow-ups" element={<FollowUpEnginePage />} />
           <Route path="proposals" element={<ProposalBuilderPage />} />
           <Route path="build-pipeline" element={<BuildPipelinePage />} />
+          <Route path="builder" element={<BuilderHubPage />} />
           <Route path="demo-engine" element={<DemoEnginePage />} />
 
           {/* ── Execution ── */}

@@ -6,10 +6,88 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const KNOWN_INDUSTRIES = [
+  "cleaning", "landscaping", "restaurant", "plumbing", "electrician",
+  "hvac", "roofing", "auto_repair", "salon", "gym", "dentist", "legal",
+  "real_estate", "photography", "construction", "general",
+];
+
 interface GenerateRequest {
   lead_id: string;
   engine: "native" | "durable";
   dry_run?: boolean;
+  deploy_vercel?: boolean;
+}
+
+interface AiContent {
+  hero_headline: string;
+  hero_subheadline: string;
+  services: Array<{ name: string; description: string }>;
+  about_paragraph: string;
+  cta_text: string;
+  color_primary: string;
+  color_secondary: string;
+  font_recommendation: string;
+}
+
+function normalizeIndustry(raw?: string): string {
+  const s = (raw || "general").toLowerCase().replace(/[^a-z0-9]+/g, "_");
+  return KNOWN_INDUSTRIES.includes(s) ? s : "general";
+}
+
+async function loadDesignMd(supabase: any, industry: string): Promise<string | null> {
+  for (const name of [`${industry}.md`, "general.md"]) {
+    const { data, error } = await supabase.storage.from("brandaro-design-mds").download(name);
+    if (!error && data) {
+      try { return await data.text(); } catch { /* fallthrough */ }
+    }
+  }
+  return null;
+}
+
+async function callLovableAi(lead: any, industry: string, designMd: string | null): Promise<{ ok: true; content: AiContent } | { ok: false; status: number; error: string }> {
+  const key = Deno.env.get("LOVABLE_API_KEY");
+  if (!key) return { ok: false, status: 500, error: "LOVABLE_API_KEY not configured" };
+
+  const services = (lead.services_inferred || []).slice(0, 8);
+  const reviews = Array.isArray(lead.reviews) ? lead.reviews.slice(0, 5) : [];
+
+  const system = `You are a senior web copywriter and brand designer. You will be given a DESIGN.md system for the ${industry} industry, plus real business data. Produce website copy that follows the DESIGN.md voice, tone, color, and structural guidance precisely. Return ONLY valid JSON matching the schema — no prose, no markdown fences.`;
+
+  const user = `DESIGN.md (${industry}):\n${designMd ? designMd.slice(0, 12000) : "(none — use industry best practices)"}\n\nBUSINESS DATA:\n${JSON.stringify({
+    business_name: lead.business_name,
+    industry: lead.industry,
+    city: lead.city,
+    state: lead.state,
+    phone: lead.phone,
+    services,
+    reviews_sample: reviews,
+  }, null, 2)}\n\nReturn JSON:\n{\n  "hero_headline": "string (concise, local, 10 words max)",\n  "hero_subheadline": "string (1 sentence, benefit-driven)",\n  "services": [{"name":"string","description":"1-sentence value prop"}],\n  "about_paragraph": "string (2-3 sentences, warm + trustworthy)",\n  "cta_text": "string (2-4 words, action verb)",\n  "color_primary": "#hex",\n  "color_secondary": "#hex",\n  "font_recommendation": "string (e.g. Inter, Playfair Display)"\n}`;
+
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [{ role: "system", content: system }, { role: "user", content: user }],
+      response_format: { type: "json_object" },
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    return { ok: false, status: res.status, error: `Lovable AI ${res.status}: ${text.slice(0, 500)}` };
+  }
+
+  const data = await res.json();
+  const raw = data?.choices?.[0]?.message?.content;
+  if (!raw) return { ok: false, status: 502, error: "AI returned empty content" };
+  try {
+    const parsed = JSON.parse(raw);
+    return { ok: true, content: parsed as AiContent };
+  } catch (e) {
+    return { ok: false, status: 502, error: `AI JSON parse failed: ${String(e)}` };
+  }
 }
 
 function generateNativeHtml(data: {
@@ -17,242 +95,247 @@ function generateNativeHtml(data: {
   industry: string;
   city: string;
   state: string;
-  services: string[];
   phone?: string;
-  template: any;
+  ai: AiContent;
 }): string {
-  const { business_name, industry, city, state, services, phone, template } = data;
-  const colors = template.color_scheme || { primary: "#2563eb", accent: "#f59e0b" };
-  const cta = template.cta_text || "Get Your Free Quote";
-  const headline = template.hero_headline.replace(/Your/g, `${city}'s`);
+  const { business_name, industry, city, state, phone, ai } = data;
+  const primary = ai.color_primary || "#2563eb";
+  const secondary = ai.color_secondary || "#f59e0b";
+  const font = ai.font_recommendation || "Inter";
+  const services = ai.services?.length ? ai.services : [{ name: "Professional Service", description: "Trusted local expertise." }];
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${business_name} — ${industry} Services in ${city}, ${state}</title>
-<meta name="description" content="${business_name} provides top-quality ${industry} services in ${city}, ${state}. Contact us today.">
+<title>${business_name} — ${industry} in ${city}, ${state}</title>
+<meta name="description" content="${ai.about_paragraph.slice(0, 155)}">
+<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(font)}:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a2e}
-.hero{background:linear-gradient(135deg,${colors.primary},${colors.primary}dd);color:#fff;padding:80px 20px;text-align:center}
-.hero h1{font-size:2.5rem;margin-bottom:16px;font-weight:800}
-.hero p{font-size:1.2rem;opacity:0.9;max-width:600px;margin:0 auto 32px}
-.cta-btn{background:${colors.accent};color:#fff;border:none;padding:16px 40px;font-size:1.1rem;border-radius:8px;cursor:pointer;font-weight:700;text-decoration:none;display:inline-block}
-.cta-btn:hover{opacity:0.9}
-.services{padding:60px 20px;background:#f8fafc;text-align:center}
-.services h2{font-size:2rem;margin-bottom:40px;color:${colors.primary}}
-.services-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;max-width:900px;margin:0 auto}
-.service-card{background:#fff;padding:32px 24px;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
-.service-card h3{font-size:1.1rem;margin-bottom:8px;color:${colors.primary}}
-.location{padding:60px 20px;text-align:center;background:#fff}
-.location h2{font-size:2rem;margin-bottom:16px;color:${colors.primary}}
-.location p{font-size:1.1rem;color:#555;max-width:600px;margin:0 auto 32px}
-.contact{padding:60px 20px;background:${colors.primary};color:#fff;text-align:center}
+body{font-family:'${font}',-apple-system,BlinkMacSystemFont,sans-serif;color:#1a1a2e;line-height:1.6}
+.hero{background:linear-gradient(135deg,${primary},${primary}dd);color:#fff;padding:96px 20px;text-align:center}
+.hero h1{font-size:2.75rem;margin-bottom:16px;font-weight:800;max-width:900px;margin-left:auto;margin-right:auto}
+.hero p{font-size:1.25rem;opacity:0.95;max-width:640px;margin:0 auto 36px}
+.cta-btn{background:${secondary};color:#fff;border:none;padding:16px 40px;font-size:1.05rem;border-radius:10px;cursor:pointer;font-weight:700;text-decoration:none;display:inline-block;transition:transform .15s}
+.cta-btn:hover{transform:translateY(-2px)}
+.services{padding:72px 20px;background:#f8fafc;text-align:center}
+.services h2{font-size:2rem;margin-bottom:48px;color:${primary}}
+.services-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;max-width:1080px;margin:0 auto}
+.service-card{background:#fff;padding:32px 24px;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.06);text-align:left}
+.service-card h3{font-size:1.15rem;margin-bottom:8px;color:${primary};font-weight:700}
+.service-card p{color:#555;font-size:0.95rem}
+.about{padding:72px 20px;text-align:center;background:#fff;max-width:820px;margin:0 auto}
+.about h2{font-size:2rem;margin-bottom:20px;color:${primary}}
+.about p{font-size:1.1rem;color:#333}
+.contact{padding:72px 20px;background:${primary};color:#fff;text-align:center}
 .contact h2{font-size:2rem;margin-bottom:16px}
-.contact p{font-size:1.1rem;opacity:0.9;margin-bottom:32px}
-${phone ? `.phone{font-size:1.8rem;font-weight:800;margin-bottom:24px}` : ''}
-.footer{padding:24px;text-align:center;background:#1a1a2e;color:#fff;font-size:0.9rem;opacity:0.7}
+${phone ? `.phone{font-size:1.9rem;font-weight:800;margin:20px 0}` : ""}
+.footer{padding:24px;text-align:center;background:#0f0f1e;color:#fff;font-size:0.85rem;opacity:0.8}
 </style>
 </head>
 <body>
-<section class="hero">
-<h1>${headline}</h1>
-<p>${template.hero_subheadline}</p>
-<a href="#contact" class="cta-btn">${cta}</a>
-</section>
-<section class="services">
-<h2>Our Services</h2>
-<div class="services-grid">
-${services.map(s => `<div class="service-card"><h3>${s}</h3><p>Professional ${s.toLowerCase()} services backed by years of experience.</p></div>`).join('\n')}
-</div>
-</section>
-<section class="location">
-<h2>Proudly Serving ${city}, ${state}</h2>
-<p>${business_name} is a trusted local ${industry} company serving ${city} and surrounding areas. We're committed to quality workmanship and customer satisfaction.</p>
-<a href="#contact" class="cta-btn">${cta}</a>
-</section>
-<section class="contact" id="contact">
-<h2>Ready to Get Started?</h2>
-<p>Contact ${business_name} today for a free consultation.</p>
-${phone ? `<div class="phone">${phone}</div>` : ''}
-<a href="#" class="cta-btn">${cta}</a>
-</section>
+<section class="hero"><h1>${ai.hero_headline}</h1><p>${ai.hero_subheadline}</p><a href="#contact" class="cta-btn">${ai.cta_text}</a></section>
+<section class="services"><h2>Our Services</h2><div class="services-grid">${services.map(s => `<div class="service-card"><h3>${s.name}</h3><p>${s.description}</p></div>`).join("")}</div></section>
+<section class="about"><h2>About ${business_name}</h2><p>${ai.about_paragraph}</p></section>
+<section class="contact" id="contact"><h2>Ready to Get Started?</h2>${phone ? `<div class="phone">${phone}</div>` : ""}<a href="${phone ? `tel:${phone}` : "#"}" class="cta-btn">${ai.cta_text}</a></section>
 <footer class="footer">© ${new Date().getFullYear()} ${business_name} — ${city}, ${state}</footer>
-<script>
-(function(){
-  const tid='${Date.now()}';
-  fetch('/functions/v1/brandaro-track-demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({demo_id:tid,event_type:'page_view'})}).catch(()=>{});
-})();
-</script>
 </body>
 </html>`;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+async function callDurable(payload: any): Promise<{ ok: true; site_id: string; site_url?: string; screenshot_url?: string } | { ok: false; status: number; error: string }> {
+  const key = Deno.env.get("DURABLE_API_KEY");
+  if (!key) return { ok: false, status: 500, error: "DURABLE_API_KEY not configured" };
+
+  const res = await fetch("https://api.durable.co/v1/sites", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await res.text();
+  if (!res.ok) return { ok: false, status: res.status, error: `Durable ${res.status}: ${text.slice(0, 500)}` };
+  try {
+    const data = JSON.parse(text);
+    return {
+      ok: true,
+      site_id: data.id || data.site_id || data.data?.id,
+      site_url: data.url || data.site_url || data.data?.url,
+      screenshot_url: data.screenshot_url || data.data?.screenshot_url,
+    };
+  } catch {
+    return { ok: false, status: 502, error: "Durable returned non-JSON" };
   }
+}
+
+async function tryVercelHook(industry: string, aiContent: AiContent, designMd: string | null, lead: any): Promise<string | null> {
+  const secretName = `VERCEL_DEPLOY_HOOK_${industry.toUpperCase()}`;
+  const hook = Deno.env.get(secretName);
+  if (!hook) return null;
+  try {
+    const res = await fetch(hook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        DESIGN_MD_CONTENT: designMd ? btoa(unescape(encodeURIComponent(designMd))) : "",
+        business: {
+          name: lead.business_name, city: lead.city, state: lead.state, phone: lead.phone,
+        },
+        content: aiContent,
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => ({}));
+    return data.job?.id || data.deployment_id || null;
+  } catch {
+    return null;
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceKey);
-
-    const { lead_id, engine = "native", dry_run } = (await req.json()) as GenerateRequest;
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { lead_id, engine = "native", dry_run, deploy_vercel } = (await req.json()) as GenerateRequest;
 
     if (dry_run) {
       return new Response(JSON.stringify({ ok: true, dry_run: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
     if (!lead_id) {
       return new Response(JSON.stringify({ error: "lead_id required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Fetch lead
     const { data: lead, error: leadErr } = await supabase
-      .from("brandaro_qualified_leads")
-      .select("*")
-      .eq("id", lead_id)
-      .single();
-
+      .from("brandaro_qualified_leads").select("*").eq("id", lead_id).single();
     if (leadErr || !lead) {
       return new Response(JSON.stringify({ error: "Lead not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const industry = (lead.industry || "general").toLowerCase();
+    const industry = normalizeIndustry(lead.industry);
 
     if (engine === "native") {
-      // Fetch template
-      const { data: template } = await supabase
-        .from("brandaro_demo_templates")
-        .select("*")
-        .eq("industry", industry)
-        .single();
+      const designMd = await loadDesignMd(supabase, industry);
+      const aiRes = await callLovableAi(lead, industry, designMd);
 
-      const tmpl = template || {
-        hero_headline: "Excellence in Every Detail",
-        hero_subheadline: "Trusted professionals dedicated to quality and customer satisfaction",
-        cta_text: "Contact Us Today",
-        color_scheme: { primary: "#2563eb", accent: "#f59e0b" },
-      };
+      if (!aiRes.ok) {
+        const { data: errDemo } = await supabase.from("brandaro_demo_sites").insert({
+          lead_id, business_name: lead.business_name, industry: lead.industry,
+          city: lead.city, state: lead.state,
+          generation_status: "error", generation_engine: "native",
+          engine_status: "error", template_used: industry, error_message: aiRes.error,
+        }).select().single();
 
-      const services = lead.services_inferred || [
-        "Professional Services",
-        "Free Consultation",
-        "Licensed & Insured",
-        "Customer Satisfaction",
-      ];
+        const status = aiRes.status === 429 || aiRes.status === 402 ? aiRes.status : 500;
+        return new Response(JSON.stringify({ error: aiRes.error, demo: errDemo }), {
+          status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
       const html = generateNativeHtml({
-        business_name: lead.business_name,
-        industry,
-        city: lead.city || "Your City",
-        state: lead.state || "US",
-        services,
-        phone: lead.phone,
-        template: tmpl,
+        business_name: lead.business_name, industry,
+        city: lead.city || "Your City", state: lead.state || "US",
+        phone: lead.phone, ai: aiRes.content,
       });
 
       const demoSlug = `${industry}-${(lead.city || "local").toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`;
       const demoUrl = `https://demo.brandaro.com/${demoSlug}`;
 
-      // Insert demo record
-      const { data: demo, error: insertErr } = await supabase
-        .from("brandaro_demo_sites")
-        .insert({
-          lead_id,
-          business_name: lead.business_name,
-          industry: lead.industry,
-          city: lead.city,
-          state: lead.state,
-          services_inferred: services,
-          seo_text: `${lead.business_name} provides top-quality ${industry} services in ${lead.city || "your area"}, ${lead.state || "US"}.`,
-          generation_status: "ready",
-          generation_engine: "native",
-          engine_status: "ready",
-          template_used: industry,
-          demo_url: demoUrl,
-          hosting_path: `/demos/${demoSlug}`,
-          generated_html: html,
-        })
-        .select()
-        .single();
+      let vercelDeploymentId: string | null = null;
+      if (deploy_vercel) {
+        vercelDeploymentId = await tryVercelHook(industry, aiRes.content, designMd, lead);
+      }
+
+      const { data: demo, error: insertErr } = await supabase.from("brandaro_demo_sites").insert({
+        lead_id, business_name: lead.business_name, industry: lead.industry,
+        city: lead.city, state: lead.state,
+        services_inferred: aiRes.content.services.map(s => s.name),
+        seo_text: aiRes.content.about_paragraph,
+        generation_status: "ready", generation_engine: "native",
+        engine_status: "ready", template_used: industry,
+        demo_url: demoUrl, hosting_path: `/demos/${demoSlug}`,
+        generated_html: html,
+        content_blocks: aiRes.content,
+        generated_colors: { primary: aiRes.content.color_primary, secondary: aiRes.content.color_secondary, font: aiRes.content.font_recommendation },
+        vercel_deployment_id: vercelDeploymentId,
+        demo_ready_for_conversion: true,
+      }).select().single();
 
       if (insertErr) {
         return new Response(JSON.stringify({ error: insertErr.message }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Update lead status
-      await supabase
-        .from("brandaro_qualified_leads")
-        .update({ demo_status: "generated" })
-        .eq("id", lead_id);
+      await supabase.from("brandaro_qualified_leads").update({ demo_status: "generated" }).eq("id", lead_id);
 
-      return new Response(JSON.stringify({ success: true, demo, engine: "native" }), {
+      return new Response(JSON.stringify({ success: true, demo, engine: "native", design_md_loaded: !!designMd }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (engine === "durable") {
-      // Durable integration scaffold — insert pending record
-      const demoSlug = `durable-${(lead.city || "local").toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`;
-
-      const { data: demo, error: insertErr } = await supabase
-        .from("brandaro_demo_sites")
-        .insert({
-          lead_id,
-          business_name: lead.business_name,
-          industry: lead.industry,
-          city: lead.city,
-          state: lead.state,
-          services_inferred: lead.services_inferred,
-          seo_text: `${lead.business_name} — ${lead.industry} in ${lead.city}, ${lead.state}`,
-          generation_status: "generating",
-          generation_engine: "durable",
-          engine_status: "pending",
-          template_used: null,
-        })
-        .select()
-        .single();
+      const { data: demo, error: insertErr } = await supabase.from("brandaro_demo_sites").insert({
+        lead_id, business_name: lead.business_name, industry: lead.industry,
+        city: lead.city, state: lead.state,
+        services_inferred: lead.services_inferred,
+        seo_text: `${lead.business_name} — ${lead.industry} in ${lead.city}, ${lead.state}`,
+        generation_status: "generating", generation_engine: "durable",
+        engine_status: "queued", durable_job_status: "queued",
+      }).select().single();
 
       if (insertErr) {
         return new Response(JSON.stringify({ error: insertErr.message }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // TODO: Wire Durable.co API here
-      // For now, simulate generation after a brief delay
-      // In production, this would call the Durable API and update on callback
+      const durableRes = await callDurable({
+        business_name: lead.business_name,
+        industry: lead.industry,
+        location: { city: lead.city, state: lead.state },
+        phone: lead.phone,
+        services: lead.services_inferred || [],
+        webhook_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/brandaro-durable-webhook`,
+        external_reference: demo.id,
+      });
 
-      return new Response(
-        JSON.stringify({
-          success: true,
-          demo,
-          engine: "durable",
-          message: "Durable generation queued. Will update when API is wired.",
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      if (!durableRes.ok) {
+        await supabase.from("brandaro_demo_sites").update({
+          durable_job_status: "error",
+          durable_last_error: durableRes.error,
+          generation_status: "error",
+          engine_status: "error",
+          error_message: durableRes.error,
+        }).eq("id", demo.id);
+        return new Response(JSON.stringify({ error: durableRes.error, demo }), {
+          status: durableRes.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: updated } = await supabase.from("brandaro_demo_sites").update({
+        durable_site_id: durableRes.site_id,
+        durable_generated_url: durableRes.site_url,
+        durable_screenshot_url: durableRes.screenshot_url,
+        durable_job_status: "processing",
+        engine_status: "processing",
+      }).eq("id", demo.id).select().single();
+
+      return new Response(JSON.stringify({ success: true, demo: updated, engine: "durable" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify({ error: "Invalid engine" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("Demo generation error:", err);

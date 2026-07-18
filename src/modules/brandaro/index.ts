@@ -16,6 +16,7 @@ import ProductionPipelinePage from '@/pages/brandaro/ProductionPipelinePage';
 import ClientPortalPage from '@/pages/brandaro/ClientPortalPage';
 import RevenueAnalyticsPage from '@/pages/brandaro/RevenueAnalyticsPage';
 import BuildPipelinePage from '@/pages/brandaro/BuildPipelinePage';
+import BuilderHubPage from '@/pages/brandaro/BuilderHubPage';
 import ResultEnginePage from '@/pages/brandaro/ResultEnginePage';
 import ReviewQueuePage from '@/pages/brandaro/ReviewQueuePage';
 import CloserAIPage from '@/pages/brandaro/CloserAIPage';
@@ -68,6 +69,7 @@ const sidebarItems: SidebarItem[] = [
   // ── Production & Revenue ──
   { path: '/os/brandaro/production', label: 'Production', icon: Hammer },
   { path: '/os/brandaro/build-pipeline', label: 'Build Pipeline', icon: Factory },
+  { path: '/os/brandaro/builder', label: 'Website Builder', icon: Wand2 },
   { path: '/os/brandaro/results', label: 'Result Engine', icon: TrendingUp },
   { path: '/os/brandaro/review-queue', label: 'Quality Review', icon: ShieldCheck },
   { path: '/os/brandaro/clients', label: 'Client Portal', icon: Users },
@@ -132,6 +134,7 @@ export const BrandaroModule: DynastyModule = {
     // Production & Revenue
     { path: '/production', component: ProductionPipelinePage, label: 'Production', icon: Hammer, requiresAuth: true },
     { path: '/build-pipeline', component: BuildPipelinePage, label: 'Build Pipeline', icon: Factory, requiresAuth: true },
+    { path: '/builder', component: BuilderHubPage, label: 'Website Builder', icon: Wand2, requiresAuth: true },
     { path: '/results', component: ResultEnginePage, label: 'Result Engine', icon: TrendingUp, requiresAuth: true },
     { path: '/review-queue', component: ReviewQueuePage, label: 'Quality Review', icon: ShieldCheck, requiresAuth: true },
     { path: '/clients', component: ClientPortalPage, label: 'Client Portal', icon: Users, requiresAuth: true },
