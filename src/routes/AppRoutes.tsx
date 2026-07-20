@@ -1239,15 +1239,22 @@ const DPCreatePartner = lazy(() => import('@/pages/admin/dp/CreatePartner'));
 /**
  * ProtectedLayout - Wraps all protected routes with auth and layout
  */
-const ProtectedLayout = () => (
-  <ProtectedRoute>
-    <RoleRouteGuard>
-      <Layout>
-        <Outlet />
-      </Layout>
-    </RoleRouteGuard>
-  </ProtectedRoute>
-);
+const ProtectedLayout = () => {
+  const { userRole, loading } = useAuth();
+  // VAs must never see the Dynasty OS admin layout/sidebar — bounce to their portal.
+  if (!loading && userRole === 'va') {
+    return <Navigate to="/va/dashboard" replace />;
+  }
+  return (
+    <ProtectedRoute>
+      <RoleRouteGuard>
+        <Layout>
+          <Outlet />
+        </Layout>
+      </RoleRouteGuard>
+    </ProtectedRoute>
+  );
+};
 
 /**
  * ProtectedNoLayout - Protected routes without main layout (portal pages)
