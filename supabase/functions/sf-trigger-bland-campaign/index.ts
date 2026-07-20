@@ -61,12 +61,37 @@ serve(async (req) => {
       .from('surplus_funds_leads')
       .select('*')
       .in('id', ids)
-      .not('phone', 'is', null);
+      .not('phone', 'is', null)
+      .eq('dnc', false); // TCPA: never dial DNC-flagged leads
     if (leadsErr) throw leadsErr;
     if (!leads || leads.length === 0) {
-      return new Response(JSON.stringify({ success: false, error: 'No callable leads found' }), {
+      return new Response(JSON.stringify({ success: false, error: 'No callable leads found (all filtered by DNC or missing phone)' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Cross-check global dnc_list by phone (last-10-digit match) as belt-and-suspenders
+    const phoneDigits = leads.map((l: any) => (l.phone || '').replace(/\D/g, '').slice(-10)).filter(Boolean);
+    if (phoneDigits.length > 0) {
+      const { data: dncHits } = await supabase.from('dnc_list').select('phone_number');
+      const dncSet = new Set((dncHits || []).map((r: any) => (r.phone_number || '').replace(/\D/g, '').slice(-10)));
+      const blocked: string[] = [];
+      const safeLeads = leads.filter((l: any) => {
+        const d = (l.phone || '').replace(/\D/g, '').slice(-10);
+        if (dncSet.has(d)) { blocked.push(l.id); return false; }
+        return true;
+      });
+      if (blocked.length > 0) {
+        await supabase.from('surplus_funds_leads').update({ dnc: true }).in('id', blocked);
+        console.warn(`[sf-trigger-bland] Blocked ${blocked.length} DNC leads and flagged them`);
+      }
+      leads.length = 0;
+      leads.push(...safeLeads);
+      if (leads.length === 0) {
+        return new Response(JSON.stringify({ success: false, error: 'All leads blocked by DNC list' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     // Insert into dc_leads
