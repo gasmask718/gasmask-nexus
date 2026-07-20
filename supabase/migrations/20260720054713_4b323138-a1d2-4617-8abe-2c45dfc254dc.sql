@@ -1,0 +1,2 @@
+ALTER TABLE public.surplus_funds_leads ADD COLUMN IF NOT EXISTS skip_trace_attempted_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_sf_leads_skip_trace_attempted_at ON public.surplus_funds_leads (skip_trace_attempted_at) WHERE skip_trace_attempted_at IS NULL;

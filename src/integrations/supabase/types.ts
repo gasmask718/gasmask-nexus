@@ -106198,6 +106198,7 @@ export type Database = {
           recommended_action: string | null
           referrer: string | null
           sale_price: number | null
+          skip_trace_attempted_at: string | null
           skip_traced: boolean | null
           sms_notification_sent: boolean | null
           sms_notification_sent_at: string | null
@@ -106257,6 +106258,7 @@ export type Database = {
           recommended_action?: string | null
           referrer?: string | null
           sale_price?: number | null
+          skip_trace_attempted_at?: string | null
           skip_traced?: boolean | null
           sms_notification_sent?: boolean | null
           sms_notification_sent_at?: string | null
@@ -106316,6 +106318,7 @@ export type Database = {
           recommended_action?: string | null
           referrer?: string | null
           sale_price?: number | null
+          skip_trace_attempted_at?: string | null
           skip_traced?: boolean | null
           sms_notification_sent?: boolean | null
           sms_notification_sent_at?: string | null
