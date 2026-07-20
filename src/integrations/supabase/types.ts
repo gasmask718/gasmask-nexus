@@ -106179,6 +106179,7 @@ export type Database = {
           court_case_number: string | null
           created_at: string | null
           dc_campaign_id: string | null
+          dnc: boolean
           email: string | null
           email_notification_sent: boolean | null
           email_notification_sent_at: string | null
@@ -106237,6 +106238,7 @@ export type Database = {
           court_case_number?: string | null
           created_at?: string | null
           dc_campaign_id?: string | null
+          dnc?: boolean
           email?: string | null
           email_notification_sent?: boolean | null
           email_notification_sent_at?: string | null
@@ -106295,6 +106297,7 @@ export type Database = {
           court_case_number?: string | null
           created_at?: string | null
           dc_campaign_id?: string | null
+          dnc?: boolean
           email?: string | null
           email_notification_sent?: boolean | null
           email_notification_sent_at?: string | null
