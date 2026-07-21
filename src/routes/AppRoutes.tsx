@@ -473,6 +473,8 @@ const SFDocuments = lazy(() => import('@/pages/surplus-funds/SFDocuments'));
 const SFContracts = lazy(() => import('@/pages/surplus-funds/SFContracts'));
 const SFAutomation = lazy(() => import('@/pages/surplus-funds/SFAutomation'));
 const SFAnalytics = lazy(() => import('@/pages/surplus-funds/SFAnalytics'));
+const SFHumanQueue = lazy(() => import('@/pages/surplus-funds/SFHumanQueue').then(m => ({ default: m.SFHumanQueue })));
+
 
 // BrightSun Solar OS
 const SolarLayout = lazy(() => import('@/pages/solar/SolarLayout'));
@@ -504,6 +506,7 @@ const REAnalyzer = lazy(() => import('@/pages/real-estate/REAnalyzer'));
 const REAutomation = lazy(() => import('@/pages/real-estate/REAutomation'));
 const REMarkets = lazy(() => import('@/pages/real-estate/REMarkets'));
 const REAnalytics = lazy(() => import('@/pages/real-estate/REAnalytics'));
+const REContracts = lazy(() => import('@/pages/real-estate/REContracts'));
 
 const CommunicationHubLayout = lazy(() => import('@/pages/communication/CommunicationHubLayout'));
 const InboxPage = lazy(() => import('@/pages/communication/inbox/InboxPage'));
@@ -1886,28 +1889,8 @@ export default function AppRoutes() {
         <Route path="/driver-debt-collection" element={<DriverDebtCollection />} />
         <Route path="/brand/:brand" element={<BrandDashboard />} />
 
-        {/* Legacy Real Estate routes (kept under legacy paths to avoid overriding new Real Estate OS hub) */}
-        <Route path="/real-estate-legacy" element={<RealEstateLayout><RealEstate /></RealEstateLayout>} />
-        <Route path="/real-estate-legacy/leads" element={<RealEstateLayout><RealEstateLeads /></RealEstateLayout>} />
-        <Route path="/real-estate/pipeline" element={<RealEstateLayout><RealEstatePipeline /></RealEstateLayout>} />
-        <Route path="/real-estate/investors" element={<RealEstateLayout><RealEstateInvestors /></RealEstateLayout>} />
-        <Route path="/real-estate/investors/blast" element={<RealEstateLayout><InvestorBlastSystem /></RealEstateLayout>} />
-        <Route path="/real-estate/closings" element={<RealEstateLayout><RealEstateClosings /></RealEstateLayout>} />
-        <Route path="/real-estate/expansion" element={<RealEstateLayout><RealEstateExpansion /></RealEstateLayout>} />
-        <Route path="/real-estate/subscriptions" element={<RealEstateLayout><RealEstateSubscriptions /></RealEstateLayout>} />
-        <Route path="/real-estate/partners" element={<RealEstateLayout><RealEstatePartners /></RealEstateLayout>} />
-        <Route path="/real-estate/pl" element={<RealEstateLayout><RealEstatePL /></RealEstateLayout>} />
-        <Route path="/real-estate/loans" element={<RealEstateLayout><LoanProducts /></RealEstateLayout>} />
-        <Route path="/real-estate/lenders" element={<RealEstateLayout><LenderDirectory /></RealEstateLayout>} />
-        <Route path="/real-estate/calculators" element={<RealEstateLayout><LoanCalculators /></RealEstateLayout>} />
-        <Route path="/real-estate/funding" element={<RealEstateLayout><FundingRequests /></RealEstateLayout>} />
-        <Route path="/real-estate/va/performance" element={<RealEstateLayout><VAPerformance /></RealEstateLayout>} />
-        <Route path="/real-estate/va/ranking" element={<RealEstateLayout><VARanking /></RealEstateLayout>} />
-        <Route path="/real-estate/va/tasks" element={<RealEstateLayout><VATaskCenter /></RealEstateLayout>} />
-        <Route path="/real-estate/deal-sheets" element={<RealEstateLayout><DealSheetsGenerator /></RealEstateLayout>} />
-        <Route path="/real-estate/offers/analyzer" element={<RealEstateLayout><OfferAnalyzer /></RealEstateLayout>} />
-        <Route path="/real-estate/assignment-optimizer" element={<RealEstateLayout><AssignmentFeeOptimizer /></RealEstateLayout>} />
-        <Route path="/real-estate/ceo" element={<RealEstateLayout><AICEOControlRoom /></RealEstateLayout>} />
+        {/* Legacy Real Estate routes removed — see Real Estate OS hub at /real-estate (RELayout) */}
+
 
         {/* POD Routes */}
         <Route path="/pod" element={<PodLayout title="POD Dashboard"><PODOverview /></PodLayout>} />
@@ -3740,10 +3723,11 @@ export default function AppRoutes() {
       {/* SURPLUS FUNDS OS                                                              */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
-        <Route path="/surplus-funds" element={<SFLayout />}>
+        <Route path="/surplus-funds" element={<RequireRole allowedRoles={['admin','owner']} showLocked><SFLayout /></RequireRole>}>
           <Route index element={<SFCommandCenter />} />
           <Route path="leads" element={<SFLeadPipeline />} />
           <Route path="discovery" element={<SFDiscovery />} />
+          <Route path="human-queue" element={<SFHumanQueue />} />
           <Route path="campaigns" element={<SFCampaigns />} />
           <Route path="cases" element={<SFCases />} />
           <Route path="attorneys" element={<SFAttorneys />} />
@@ -3752,6 +3736,7 @@ export default function AppRoutes() {
           <Route path="automation" element={<SFAutomation />} />
           <Route path="analytics" element={<SFAnalytics />} />
         </Route>
+
       </Route>
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
@@ -3781,7 +3766,7 @@ export default function AppRoutes() {
       {/* REAL ESTATE OS                                                             */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
-        <Route path="/real-estate" element={<RELayout />}>
+        <Route path="/real-estate" element={<RequireRole allowedRoles={['admin','owner']} showLocked><RELayout /></RequireRole>}>
           <Route index element={<RECommandCenter />} />
           <Route path="leads" element={<RELeadPipeline />} />
           <Route path="campaigns" element={<RECampaigns />} />
@@ -3792,6 +3777,7 @@ export default function AppRoutes() {
           <Route path="automation" element={<REAutomation />} />
           <Route path="markets" element={<REMarkets />} />
           <Route path="analytics" element={<REAnalytics />} />
+          <Route path="contracts" element={<REContracts />} />
         </Route>
       </Route>
 

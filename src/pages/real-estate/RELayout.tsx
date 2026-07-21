@@ -1,7 +1,7 @@
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
-  BarChart3, Target, Phone, FileText, Building2, Users, Calculator, MapPin, TrendingUp, Bot
+  BarChart3, Target, Phone, FileText, Building2, Users, Calculator, MapPin, TrendingUp, Bot, FileCheck
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -26,6 +26,7 @@ const reNavSections = [
     items: [
       { path: '/real-estate/deals', label: 'Floor 3 — Active Deals', icon: FileText },
       { path: '/real-estate/buyers', label: 'Floor 4 — Buyer Network', icon: Building2 },
+      { path: '/real-estate/contracts', label: 'Contracts', icon: FileCheck },
     ],
   },
   {
