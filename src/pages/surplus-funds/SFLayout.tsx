@@ -17,6 +17,7 @@ const sfNavSections = [
     title: '🏢 Acquisition',
     items: [
       { path: '/surplus-funds/leads', label: 'Floor 1 — Lead Intelligence', icon: FileText },
+      { path: '/surplus-funds/discovery', label: 'Discovery', icon: Search },
       { path: '/surplus-funds/campaigns', label: 'Floor 2 — DC Campaigns', icon: Phone },
     ],
   },
@@ -27,6 +28,7 @@ const sfNavSections = [
       { path: '/surplus-funds/attorneys', label: 'Floor 4 — Attorney Network', icon: Scale },
       { path: '/surplus-funds/documents', label: 'Floor 5 — Documents', icon: FileCheck },
       { path: '/surplus-funds/contracts', label: 'Contracts', icon: FileCheck },
+      { path: '/surplus-funds/human-queue', label: 'Human Queue', icon: Users },
     ],
   },
   {
