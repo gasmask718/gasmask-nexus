@@ -3723,7 +3723,7 @@ export default function AppRoutes() {
       {/* SURPLUS FUNDS OS                                                              */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
-        <Route path="/surplus-funds" element={<RequireRole allowedRoles={['admin','owner']} showLocked><SFLayout /></RequireRole>}>
+        <Route path="/surplus-funds" element={<RequireRole allowedRoles={['owner','admin','va','employee','staff']} showLocked><SFLayout /></RequireRole>}>
           <Route index element={<SFCommandCenter />} />
           <Route path="leads" element={<SFLeadPipeline />} />
           <Route path="discovery" element={<SFDiscovery />} />
