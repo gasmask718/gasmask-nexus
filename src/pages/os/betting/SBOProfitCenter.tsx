@@ -84,13 +84,13 @@ function DailyPlanSection({ bankroll, predictions }: { bankroll: any; prediction
     if (!predictions?.length) return null;
 
     const scored = predictions
-      .filter((p: any) => p.confidence_score >= 55)
+      .filter((p: any) => p.final_confidence >= 55)
       .map((p: any) => {
-        const edge = p.edge_vs_line || (p.confidence_score - 50) / 10;
-        const sizing = calculateBetSize(p.confidence_score, edge, unitSize, bankroll?.kelly_fraction || 0.25);
+        const edge = p.edge_vs_line || (p.final_confidence - 50) / 10;
+        const sizing = calculateBetSize(p.final_confidence, edge, unitSize, bankroll?.kelly_fraction || 0.25);
         return { ...p, sizing, edge };
       })
-      .sort((a: any, b: any) => b.confidence_score - a.confidence_score);
+      .sort((a: any, b: any) => b.final_confidence - a.final_confidence);
 
     const topPlays = scored.slice(0, 5);
     const safePlays = scored.filter((p: any) => p.sizing.tier === 'conservative' || p.sizing.tier === 'standard').slice(0, 3);
@@ -98,7 +98,7 @@ function DailyPlanSection({ bankroll, predictions }: { bankroll: any; prediction
 
     const totalExposure = topPlays.reduce((s: number, p: any) => s + p.sizing.dollarAmount, 0);
     const projectedProfit = topPlays.reduce((s: number, p: any) => {
-      const winProb = p.confidence_score / 100;
+      const winProb = p.final_confidence / 100;
       return s + (p.sizing.dollarAmount * winProb * 0.9 - p.sizing.dollarAmount * (1 - winProb));
     }, 0);
 
@@ -232,7 +232,7 @@ function PickCard({ pick, rank }: { pick: any; rank: number }) {
       </div>
       <div className="text-right shrink-0 space-y-1">
         <div className="flex items-center gap-1.5 justify-end">
-          <Badge className="text-[10px]">{pick.confidence_score}%</Badge>
+          <Badge className="text-[10px]">{pick.final_confidence}%</Badge>
           {pick.edge > 0 && (
             <Badge variant="outline" className="text-[10px] text-emerald-500">+{pick.edge.toFixed(1)}</Badge>
           )}
@@ -250,7 +250,7 @@ function MiniPickCard({ pick }: { pick: any }) {
     <div className="flex items-center justify-between text-xs p-2 rounded bg-muted/30">
       <span className="truncate font-medium">{pick.player_name || pick.home_team}</span>
       <div className="flex items-center gap-1.5 shrink-0">
-        <Badge variant="outline" className="text-[9px]">{pick.confidence_score}%</Badge>
+        <Badge variant="outline" className="text-[9px]">{pick.final_confidence}%</Badge>
         <span className="text-muted-foreground">{pick.sizing?.units}u</span>
       </div>
     </div>
@@ -426,7 +426,7 @@ export default function SBOProfitCenter() {
         .from('sbo_predictions')
         .select('*')
         .gte('created_at', `${today}T00:00:00`)
-        .order('confidence_score', { ascending: false });
+        .order('final_confidence', { ascending: false });
       return data || [];
     },
   });

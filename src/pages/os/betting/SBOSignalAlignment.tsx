@@ -244,7 +244,7 @@ export default function SBOSignalAlignment() {
         .from('sbo_predictions')
         .select('*')
         .gte('created_at', `${today}T00:00:00`)
-        .order('confidence_score', { ascending: false });
+        .order('final_confidence', { ascending: false });
       return data || [];
     },
   });
@@ -333,7 +333,7 @@ export default function SBOSignalAlignment() {
         if (ms >= MATCH_THRESHOLD && capperDir !== 'unknown' && predDir !== 'unknown' && capperDir !== predDir) conflictCount++;
       });
 
-      const aiConf = pred.confidence_score || 50;
+      const aiConf = pred.final_confidence || 50;
       const walletScore = calcWalletScoreTiered(matchedWallets);
       const capperScore = calcCapperScoreTiered(matchedCappers);
 
