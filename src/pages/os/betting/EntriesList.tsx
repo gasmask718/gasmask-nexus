@@ -75,10 +75,10 @@ export default function EntriesList() {
 
       if (filters.dateFrom) query = query.gte('date', filters.dateFrom);
       if (filters.dateTo) query = query.lte('date', filters.dateTo);
-      if (filters.state) query = query.eq('state', filters.state);
-      if (filters.platform) query = query.eq('platform', filters.platform);
-      if (filters.sport) query = query.eq('sport', filters.sport);
-      if (filters.status) query = query.eq('status', filters.status);
+      if (filters.state && filters.state !== 'all') query = query.eq('state', filters.state);
+      if (filters.platform && filters.platform !== 'all') query = query.eq('platform', filters.platform);
+      if (filters.sport && filters.sport !== 'all') query = query.eq('sport', filters.sport);
+      if (filters.status && filters.status !== 'all') query = query.eq('status', filters.status);
 
       const { data, error } = await query.limit(100);
       if (error) throw error;
