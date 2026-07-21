@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import * as XLSX from 'xlsx';
 import { formatDistanceToNow } from 'date-fns';
+import { CaseActionButtons } from './components/CaseActionButtons';
 
 const AMBER = '#BA7517';
 
@@ -832,7 +833,7 @@ export default function SFLeadPipeline() {
                     </div>
                   </div>
                   {detailLead.status === 'agreement_signed' && (
-                    <Button className="w-full" style={{ backgroundColor: AMBER }}>Create Case →</Button>
+                    <LeadCaseActions leadId={detailLead.id} />
                   )}
                 </TabsContent>
                 <TabsContent value="calls" className="mt-4 pb-6">
@@ -854,4 +855,29 @@ export default function SFLeadPipeline() {
       </Sheet>
     </div>
   );
+}
+
+function LeadCaseActions({ leadId }: { leadId: string }) {
+  const { data: linkedCase, isLoading } = useQuery({
+    queryKey: ['sf-case-for-lead', leadId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('surplus_funds_cases')
+        .select('*')
+        .eq('lead_id', leadId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  if (isLoading) return null;
+  if (!linkedCase) {
+    return (
+      <Button className="w-full" style={{ backgroundColor: AMBER }} disabled>
+        Create Case → (coming soon)
+      </Button>
+    );
+  }
+  return <CaseActionButtons case={linkedCase} />;
 }
