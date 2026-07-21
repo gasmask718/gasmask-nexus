@@ -3723,7 +3723,7 @@ export default function AppRoutes() {
       {/* SURPLUS FUNDS OS                                                              */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
-        <Route path="/surplus-funds" element={<RequireRole allowedRoles={['admin','owner']} showLocked><SFLayout /></RequireRole>}>
+        <Route path="/surplus-funds" element={<RequireRole allowedRoles={['owner','admin','va','employee','staff']} showLocked><SFLayout /></RequireRole>}>
           <Route index element={<SFCommandCenter />} />
           <Route path="leads" element={<SFLeadPipeline />} />
           <Route path="discovery" element={<SFDiscovery />} />
@@ -3766,7 +3766,7 @@ export default function AppRoutes() {
       {/* REAL ESTATE OS                                                             */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
-        <Route path="/real-estate" element={<RequireRole allowedRoles={['admin','owner']} showLocked><RELayout /></RequireRole>}>
+        <Route path="/real-estate" element={<RequireRole allowedRoles={['owner','admin','va','employee','staff','realestate_worker']} showLocked><RELayout /></RequireRole>}>
           <Route index element={<RECommandCenter />} />
           <Route path="leads" element={<RELeadPipeline />} />
           <Route path="campaigns" element={<RECampaigns />} />
