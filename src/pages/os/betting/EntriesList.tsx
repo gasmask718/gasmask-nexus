@@ -40,10 +40,10 @@ export default function EntriesList() {
   const [filters, setFilters] = useState({
     dateFrom: '',
     dateTo: '',
-    state: '' as SupportedState | '',
-    platform: '',
-    sport: '',
-    status: '' as 'open' | 'settled' | '',
+    state: 'all' as SupportedState | 'all',
+    platform: 'all',
+    sport: 'all',
+    status: 'all' as 'open' | 'settled' | 'all',
   });
 
   const [settleModal, setSettleModal] = useState<SettleModalState>({
