@@ -3766,7 +3766,7 @@ export default function AppRoutes() {
       {/* REAL ESTATE OS                                                             */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
-        <Route path="/real-estate" element={<RequireRole allowedRoles={['admin','owner']} showLocked><RELayout /></RequireRole>}>
+        <Route path="/real-estate" element={<RequireRole allowedRoles={['owner','admin','va','employee','staff','realestate_worker']} showLocked><RELayout /></RequireRole>}>
           <Route index element={<RECommandCenter />} />
           <Route path="leads" element={<RELeadPipeline />} />
           <Route path="campaigns" element={<RECampaigns />} />
