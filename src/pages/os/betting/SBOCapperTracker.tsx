@@ -1627,7 +1627,7 @@ export default function SBOCapperTracker() {
                         <div className="text-right shrink-0">
                           <p className="text-lg font-bold text-emerald-400">+{p.value_score}</p>
                           <p className="text-[10px] text-muted-foreground">edge score</p>
-                          {p.ai_recommendation && <Badge variant="outline" className={`text-[10px] mt-1 ${p.ai_recommendation?.toUpperCase() === 'OVER' ? 'text-emerald-400 border-emerald-400/30' : 'text-blue-400 border-blue-400/30'}`}>AI: {p.ai_recommendation}</Badge>}
+                          {p.prediction && <Badge variant="outline" className={`text-[10px] mt-1 ${p.prediction?.toUpperCase() === 'OVER' || p.prediction?.toLowerCase() === 'more' ? 'text-emerald-400 border-emerald-400/30' : 'text-blue-400 border-blue-400/30'}`}>AI: {p.prediction}</Badge>}
                         </div>
                       </div>
                     </CardContent>
