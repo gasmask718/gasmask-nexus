@@ -142,7 +142,9 @@ serve(async (req) => {
     ) => {
       const costInfo = API_COSTS[step.fn];
       const records = opts.records ?? 0;
-      if (opts.status !== 'skipped' && opts.status !== 'error') {
+      if (opts.status === 'skipped') {
+        skippedCount += 1;
+      } else if (opts.status !== 'error') {
         totalRecords += records;
         totalCalls += 1;
         totalCostCents += costInfo?.cost_cents || 0;
