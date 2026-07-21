@@ -100,21 +100,33 @@ serve(async (req) => {
     }
 
     // ── 2. Build consensus for today's props ──
-    const { data: todayProps } = await supabase
+    const { data: todayProps, error: propsError } = await supabase
       .from('props_master')
-      .select('id, player_name, stat_type, line, game_date, ai_confidence, ai_recommendation')
+      .select('id, player_name, stat_type, line, game_date, confidence_score, prediction')
       .eq('game_date', gameDate);
+    if (propsError) {
+      console.error('❌ props_master query failed:', propsError);
+      throw new Error(`props_master: ${propsError.message}`);
+    }
 
-    const { data: todayPicks } = await supabase
+    const { data: todayPicks, error: todayPicksError } = await supabase
       .from('sbo_capper_picks')
       .select('id, player_name, prop_type, line, direction, capper_id, matched_prop_id, sport, edge_score')
       .eq('game_date', gameDate)
       .eq('review_status', 'verified');
+    if (todayPicksError) {
+      console.error('❌ sbo_capper_picks (today) query failed:', todayPicksError);
+      throw new Error(`sbo_capper_picks(today): ${todayPicksError.message}`);
+    }
 
     // Get capper grades for weighting
-    const { data: capperPerfs } = await supabase
+    const { data: capperPerfs, error: perfError } = await supabase
       .from('sbo_capper_performance')
       .select('capper_id, sport, win_rate, confidence_grade, hot_streak');
+    if (perfError) {
+      console.error('❌ sbo_capper_performance query failed:', perfError);
+      throw new Error(`sbo_capper_performance: ${perfError.message}`);
+    }
 
     const capperGradeMap: Record<string, { grade: string; wr: number; hot: number }> = {};
     for (const cp of capperPerfs || []) {
