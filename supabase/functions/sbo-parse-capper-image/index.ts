@@ -272,10 +272,82 @@ RULES:
           resolvedCapperId = created?.id || null;
         }
       }
-    } else if (group_type === 'direct' && !resolvedCapperId && extractedCapperName) {
-      // Even in direct groups, use extracted name if available
-      const existing = await resolveCapperByName(supabase, extractedCapperName);
-      if (existing) resolvedCapperId = existing.id;
+    } else if (group_type === 'direct' && !resolvedCapperId) {
+      // Resolution order for direct dispatches:
+      // 1) caller-provided capper_name (from sbo-telegram-intake: capper_name || channel_name || channel_username)
+      // 2) AI-extracted capper_name from the image
+      // 3) auto-create (if we have any usable name) → else Unknown Capper bucket
+      const callerName = (capper_name || '').trim();
+      if (callerName) {
+        const existing = await resolveCapperByName(supabase, callerName);
+        if (existing) {
+          resolvedCapperId = existing.id;
+          resolvedCapperName = existing.name;
+        }
+      }
+
+      if (!resolvedCapperId && extractedCapperName) {
+        const existing = await resolveCapperByName(supabase, extractedCapperName);
+        if (existing) {
+          resolvedCapperId = existing.id;
+          resolvedCapperName = existing.name;
+        }
+      }
+
+      // Auto-create using best available name (caller-provided preferred, else AI-extracted)
+      if (!resolvedCapperId) {
+        const autoName = callerName || (extractedCapperName || '').trim();
+        if (autoName) {
+          const normalized = normalizeName(autoName);
+          const { data: newCapper, error: createErr } = await supabase
+            .from('sbo_cappers')
+            .insert({
+              name: autoName,
+              normalized_name: normalized || null,
+              source: callerName ? 'telegram_direct' : 'image_extract',
+              source_handle: extractedCapperHandle || null,
+              tier: 'unproven',
+              confidence_grade: 'D',
+              is_active: true,
+              total_picks: 0,
+              group_type: 'direct',
+            })
+            .select('id, name')
+            .single();
+
+          if (createErr) {
+            // Race condition retry
+            const retry = await resolveCapperByName(supabase, autoName);
+            resolvedCapperId = retry?.id || null;
+            resolvedCapperName = retry?.name || null;
+          } else {
+            resolvedCapperId = newCapper.id;
+            resolvedCapperName = newCapper.name;
+          }
+        }
+      }
+    }
+
+    // Final safety net — never silently drop. If still unresolved, use Unknown Capper bucket.
+    if (!resolvedCapperId) {
+      const { data: unknown } = await supabase
+        .from('sbo_cappers').select('id, name')
+        .eq('normalized_name', 'unknowncapper').maybeSingle();
+      if (unknown) {
+        resolvedCapperId = unknown.id;
+        resolvedCapperName = unknown.name;
+      } else {
+        const { data: created, error: unkErr } = await supabase
+          .from('sbo_cappers')
+          .insert({ name: 'Unknown Capper', normalized_name: 'unknowncapper', source: 'system', tier: 'unproven', confidence_grade: 'D', is_active: true, total_picks: 0 })
+          .select('id, name').single();
+        if (unkErr) {
+          console.error('FATAL: could not resolve or create Unknown Capper bucket:', unkErr);
+        } else {
+          resolvedCapperId = created?.id || null;
+          resolvedCapperName = created?.name || null;
+        }
+      }
     }
 
     // Determine review status based on both parse and capper detection confidence
