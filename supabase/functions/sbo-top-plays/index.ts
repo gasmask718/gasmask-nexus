@@ -112,13 +112,21 @@ Deno.serve(async (req) => {
                      Math.max(quarterKelly, 0.01);
       const betAmount = Math.round(bankroll * betPct);
 
-      // Direction
-      const direction = (prop.consensus_over || 0) >= (prop.consensus_under || 0) 
-        ? (prop.ai_recommendation || "OVER") 
+      // Direction — map internal `prediction` ('more'/'less'/'hold') to outbound OVER/UNDER
+      const predUpper = (prop.prediction || "").toString().toUpperCase();
+      const recommendationOut =
+        predUpper === "MORE" || predUpper === "OVER" ? "OVER" :
+        predUpper === "LESS" || predUpper === "UNDER" ? "UNDER" :
+        "OVER";
+      const direction = (prop.consensus_over || 0) >= (prop.consensus_under || 0)
+        ? recommendationOut
         : "UNDER";
 
       return {
         ...prop,
+        // Preserve outbound contract: consumers (TopPlayCard, sbo_top_plays.signal_sources) read ai_confidence / ai_recommendation
+        ai_confidence: prop.confidence_score,
+        ai_recommendation: recommendationOut,
         composite_score: composite,
         capper_confidence: capperConf,
         sharp_indicator: sharpIndicator,
