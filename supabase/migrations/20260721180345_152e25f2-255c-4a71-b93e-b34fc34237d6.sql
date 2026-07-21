@@ -1,0 +1,1 @@
+DELETE FROM public.sbo_capper_picks WHERE source_group_id='test-fix-verify-2';
