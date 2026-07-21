@@ -148,14 +148,18 @@ serve(async (req) => {
         const isPush = actualValue === line;
 
         let wasCorrect: boolean | null = null;
-        if (!isPush) {
+        let verdict: 'correct' | 'incorrect' | 'push';
+        if (isPush) {
+          verdict = 'push';
+        } else {
           wasCorrect = pred.predicted_outcome === 'over' ? hitOver : hitUnder;
+          verdict = wasCorrect ? 'correct' : 'incorrect';
         }
 
         await supabase
           .from('sbo_predictions')
           .update({
-            actual_outcome: isPush ? 'push' : hitOver ? 'over' : 'under',
+            actual_outcome: verdict,
             was_correct: isPush ? null : wasCorrect,
             updated_at: new Date().toISOString(),
           })
