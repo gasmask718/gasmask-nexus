@@ -432,7 +432,8 @@ export default function NightlyBoardTab() {
 
   const { data: counts = {} } = useGameCounts();
   const { data: stats, isLoading: statsLoading } = useSportStats(selectedSport);
-  const { data: games = [], isLoading: gamesLoading } = useNightlyGames(selectedSport);
+  const { data: gamesData, isLoading: gamesLoading } = useNightlyGames(selectedSport);
+  const games = useMemo(() => gamesData ?? [], [gamesData]);
   const { data: bestBets = [], isLoading: bestBetsLoading } = useBestBets(selectedSport);
 
   const [runningPrediction, setRunningPrediction] = useState<string | null>(null);
@@ -445,7 +446,10 @@ export default function NightlyBoardTab() {
   const dateLabel = format(new Date(), 'EEEE, MMMM d yyyy');
 
   useEffect(() => {
-    if (!games.length) { setPropCounts({}); return; }
+    if (!games.length) {
+      setPropCounts((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+      return;
+    }
     const ids = games.map((g: any) => g.id);
     let cancelled = false;
     (async () => {
