@@ -24,9 +24,9 @@ Deno.serve(async (req) => {
     // 1. Fetch all props with consensus data for today
     const { data: props, error: propsErr } = await supabase
       .from("props_master")
-      .select("id, player_name, stat_type, line, platform, ai_confidence, ai_recommendation, consensus_score, consensus_over, consensus_under, signal_strength, is_value_play, value_score, over_odds, under_odds")
+      .select("id, player_name, stat_type, line, platform, confidence_score, prediction, consensus_score, consensus_over, consensus_under, signal_strength, is_value_play, value_score, over_odds, under_odds")
       .eq("game_date", gameDate)
-      .not("ai_confidence", "is", null);
+      .not("confidence_score", "is", null);
 
     if (propsErr) throw propsErr;
     if (!props || props.length === 0) {
@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
 
     // 3. Score each prop
     const scored = props.map((prop: any) => {
-      const aiConf = prop.ai_confidence || 0;
+      const aiConf = prop.confidence_score || 0;
       const consensusScore = prop.consensus_score || 0;
       const valueScore = prop.value_score || 0;
 
@@ -112,13 +112,21 @@ Deno.serve(async (req) => {
                      Math.max(quarterKelly, 0.01);
       const betAmount = Math.round(bankroll * betPct);
 
-      // Direction
-      const direction = (prop.consensus_over || 0) >= (prop.consensus_under || 0) 
-        ? (prop.ai_recommendation || "OVER") 
+      // Direction — map internal `prediction` ('more'/'less'/'hold') to outbound OVER/UNDER
+      const predUpper = (prop.prediction || "").toString().toUpperCase();
+      const recommendationOut =
+        predUpper === "MORE" || predUpper === "OVER" ? "OVER" :
+        predUpper === "LESS" || predUpper === "UNDER" ? "UNDER" :
+        "OVER";
+      const direction = (prop.consensus_over || 0) >= (prop.consensus_under || 0)
+        ? recommendationOut
         : "UNDER";
 
       return {
         ...prop,
+        // Preserve outbound contract: consumers (TopPlayCard, sbo_top_plays.signal_sources) read ai_confidence / ai_recommendation
+        ai_confidence: prop.confidence_score,
+        ai_recommendation: recommendationOut,
         composite_score: composite,
         capper_confidence: capperConf,
         sharp_indicator: sharpIndicator,
