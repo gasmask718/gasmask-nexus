@@ -204,6 +204,7 @@ serve(async (req) => {
       message_id,
       message_text,
       image_url,
+      image_data,
       has_media,
       edited,
       deleted,
@@ -259,8 +260,11 @@ serve(async (req) => {
     // Dispatch pipeline (fire-and-forget after ACK)
     const runPipeline = async () => {
       // Image branch: unchanged — hand off to sbo-parse-capper-image
-      if (has_media && image_url) {
-        const dataUrl = await fetchImageAsDataUrl(image_url);
+      if (has_media && (image_data || image_url)) {
+        // Prefer inline base64 payload (image_data) when provided; otherwise fetch image_url.
+        const dataUrl = (typeof image_data === "string" && image_data.length > 0)
+          ? image_data
+          : await fetchImageAsDataUrl(image_url);
         if (!dataUrl) {
           await supabase
             .from("sbo_telegram_posts")
