@@ -128,6 +128,9 @@ export default function SFCases() {
               </div>
               {detailCase.hearing_date && <div className="flex items-center gap-2 text-amber-500"><Calendar className="h-4 w-4" /><span>Hearing: {new Date(detailCase.hearing_date).toLocaleDateString()}</span></div>}
               {detailCase.amount_received && <div className="flex items-center gap-2 text-green-500"><DollarSign className="h-4 w-4" /><span>Received: ${Number(detailCase.amount_received).toLocaleString()}</span></div>}
+              <div className="pt-2 border-t border-border">
+                <CaseActionButtons case={detailCase} />
+              </div>
               {detailCase.notes && <div><span className="text-muted-foreground">Notes</span><p>{detailCase.notes}</p></div>}
             </div>
           )}
