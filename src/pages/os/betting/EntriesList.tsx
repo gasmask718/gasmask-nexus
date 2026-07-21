@@ -289,10 +289,10 @@ export default function EntriesList() {
             </div>
             <div className="space-y-2">
               <Label>State</Label>
-              <Select value={filters.state} onValueChange={(v) => setFilters(prev => ({ ...prev, state: v as SupportedState }))}>
+              <Select value={filters.state} onValueChange={(v) => setFilters(prev => ({ ...prev, state: v as SupportedState | 'all' }))}>
                 <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="NY">New York</SelectItem>
                   <SelectItem value="GA">Georgia</SelectItem>
                   <SelectItem value="CA">California</SelectItem>
@@ -304,7 +304,7 @@ export default function EntriesList() {
               <Select value={filters.platform} onValueChange={(v) => setFilters(prev => ({ ...prev, platform: v }))}>
                 <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   {platforms?.map(p => (
                     <SelectItem key={p.platform_key} value={p.platform_key}>{p.platform_name}</SelectItem>
                   ))}
@@ -316,7 +316,7 @@ export default function EntriesList() {
               <Select value={filters.sport} onValueChange={(v) => setFilters(prev => ({ ...prev, sport: v }))}>
                 <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="NBA">NBA</SelectItem>
                   <SelectItem value="NFL">NFL</SelectItem>
                   <SelectItem value="MLB">MLB</SelectItem>
@@ -326,10 +326,10 @@ export default function EntriesList() {
             </div>
             <div className="space-y-2">
               <Label>Status</Label>
-              <Select value={filters.status} onValueChange={(v) => setFilters(prev => ({ ...prev, status: v as 'open' | 'settled' }))}>
+              <Select value={filters.status} onValueChange={(v) => setFilters(prev => ({ ...prev, status: v as 'open' | 'settled' | 'all' }))}>
                 <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="open">Open</SelectItem>
                   <SelectItem value="settled">Settled</SelectItem>
                 </SelectContent>
