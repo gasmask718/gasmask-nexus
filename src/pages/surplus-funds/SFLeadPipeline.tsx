@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import * as XLSX from 'xlsx';
 import { formatDistanceToNow } from 'date-fns';
+import { CaseActionButtons } from './components/CaseActionButtons';
 
 const AMBER = '#BA7517';
 
