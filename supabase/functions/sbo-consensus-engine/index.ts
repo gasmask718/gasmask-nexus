@@ -21,10 +21,14 @@ serve(async (req) => {
     );
 
     // ── 1. Rebuild sbo_capper_performance ──
-    const { data: allPicks } = await supabase
+    const { data: allPicks, error: picksError } = await supabase
       .from('sbo_capper_picks')
       .select('capper_id, sport, prop_type, result, odds, created_at, direction')
       .neq('result', 'pending');
+    if (picksError) {
+      console.error('❌ sbo_capper_picks query failed:', picksError);
+      throw new Error(`sbo_capper_picks: ${picksError.message}`);
+    }
 
     if (allPicks && allPicks.length > 0) {
       // Group by capper+sport+prop_type
