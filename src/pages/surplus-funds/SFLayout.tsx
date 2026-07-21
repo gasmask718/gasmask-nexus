@@ -2,7 +2,7 @@ import { Outlet, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   BarChart3, FileText, Search, Phone, Briefcase, Scale, TrendingUp,
-  DollarSign, Bot, FileCheck
+  DollarSign, Bot, FileCheck, Users
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
