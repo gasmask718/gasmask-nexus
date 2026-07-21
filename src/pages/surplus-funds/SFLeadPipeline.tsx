@@ -833,7 +833,7 @@ export default function SFLeadPipeline() {
                     </div>
                   </div>
                   {detailLead.status === 'agreement_signed' && (
-                    <Button className="w-full" style={{ backgroundColor: AMBER }}>Create Case →</Button>
+                    <LeadCaseActions leadId={detailLead.id} />
                   )}
                 </TabsContent>
                 <TabsContent value="calls" className="mt-4 pb-6">
