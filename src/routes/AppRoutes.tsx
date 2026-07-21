@@ -1886,28 +1886,8 @@ export default function AppRoutes() {
         <Route path="/driver-debt-collection" element={<DriverDebtCollection />} />
         <Route path="/brand/:brand" element={<BrandDashboard />} />
 
-        {/* Legacy Real Estate routes (kept under legacy paths to avoid overriding new Real Estate OS hub) */}
-        <Route path="/real-estate-legacy" element={<RealEstateLayout><RealEstate /></RealEstateLayout>} />
-        <Route path="/real-estate-legacy/leads" element={<RealEstateLayout><RealEstateLeads /></RealEstateLayout>} />
-        <Route path="/real-estate/pipeline" element={<RealEstateLayout><RealEstatePipeline /></RealEstateLayout>} />
-        <Route path="/real-estate/investors" element={<RealEstateLayout><RealEstateInvestors /></RealEstateLayout>} />
-        <Route path="/real-estate/investors/blast" element={<RealEstateLayout><InvestorBlastSystem /></RealEstateLayout>} />
-        <Route path="/real-estate/closings" element={<RealEstateLayout><RealEstateClosings /></RealEstateLayout>} />
-        <Route path="/real-estate/expansion" element={<RealEstateLayout><RealEstateExpansion /></RealEstateLayout>} />
-        <Route path="/real-estate/subscriptions" element={<RealEstateLayout><RealEstateSubscriptions /></RealEstateLayout>} />
-        <Route path="/real-estate/partners" element={<RealEstateLayout><RealEstatePartners /></RealEstateLayout>} />
-        <Route path="/real-estate/pl" element={<RealEstateLayout><RealEstatePL /></RealEstateLayout>} />
-        <Route path="/real-estate/loans" element={<RealEstateLayout><LoanProducts /></RealEstateLayout>} />
-        <Route path="/real-estate/lenders" element={<RealEstateLayout><LenderDirectory /></RealEstateLayout>} />
-        <Route path="/real-estate/calculators" element={<RealEstateLayout><LoanCalculators /></RealEstateLayout>} />
-        <Route path="/real-estate/funding" element={<RealEstateLayout><FundingRequests /></RealEstateLayout>} />
-        <Route path="/real-estate/va/performance" element={<RealEstateLayout><VAPerformance /></RealEstateLayout>} />
-        <Route path="/real-estate/va/ranking" element={<RealEstateLayout><VARanking /></RealEstateLayout>} />
-        <Route path="/real-estate/va/tasks" element={<RealEstateLayout><VATaskCenter /></RealEstateLayout>} />
-        <Route path="/real-estate/deal-sheets" element={<RealEstateLayout><DealSheetsGenerator /></RealEstateLayout>} />
-        <Route path="/real-estate/offers/analyzer" element={<RealEstateLayout><OfferAnalyzer /></RealEstateLayout>} />
-        <Route path="/real-estate/assignment-optimizer" element={<RealEstateLayout><AssignmentFeeOptimizer /></RealEstateLayout>} />
-        <Route path="/real-estate/ceo" element={<RealEstateLayout><AICEOControlRoom /></RealEstateLayout>} />
+        {/* Legacy Real Estate routes removed — see Real Estate OS hub at /real-estate (RELayout) */}
+
 
         {/* POD Routes */}
         <Route path="/pod" element={<PodLayout title="POD Dashboard"><PODOverview /></PodLayout>} />
