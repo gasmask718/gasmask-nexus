@@ -1021,7 +1021,7 @@ export default function SBOCapperTracker() {
     queryFn: async () => {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
       const { data } = await (supabase as any).from('props_master')
-        .select('id, player_name, stat_type, line, consensus_over, consensus_under, consensus_score, signal_strength, is_value_play, value_score, ai_confidence, ai_recommendation')
+        .select('id, player_name, stat_type, line, consensus_over, consensus_under, consensus_score, signal_strength, is_value_play, value_score, confidence_score, prediction')
         .eq('game_date', today)
         .not('consensus_score', 'is', null)
         .order('consensus_score', { ascending: false })
