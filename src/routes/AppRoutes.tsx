@@ -473,7 +473,7 @@ const SFDocuments = lazy(() => import('@/pages/surplus-funds/SFDocuments'));
 const SFContracts = lazy(() => import('@/pages/surplus-funds/SFContracts'));
 const SFAutomation = lazy(() => import('@/pages/surplus-funds/SFAutomation'));
 const SFAnalytics = lazy(() => import('@/pages/surplus-funds/SFAnalytics'));
-const SFHumanQueue = lazy(() => import('@/pages/surplus-funds/SFHumanQueue'));
+const SFHumanQueue = lazy(() => import('@/pages/surplus-funds/SFHumanQueue').then(m => ({ default: m.SFHumanQueue })));
 
 
 // BrightSun Solar OS
