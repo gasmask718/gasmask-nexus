@@ -311,15 +311,28 @@ serve(async (req) => {
 
     const duration = Math.round((Date.now() - startTime) / 1000);
     const totalStepsPlanned = (perSportSteps.length * sportsToRun.length) + globalSteps.length + postgameSteps.length;
+    const realStepsPlanned = totalStepsPlanned - skippedCount;
     const errorCount = failed.length;
     const status = errorCount === 0 ? 'completed'
-      : errorCount === totalStepsPlanned ? 'failed' : 'partial';
+      : (realStepsPlanned > 0 && errorCount === realStepsPlanned) ? 'failed'
+      : 'partial';
+
+    // Lightweight duration safety net — Supabase edge function wall-clock is 150s.
+    // Warn at >120s so we notice ceiling pressure before a real timeout.
+    const DURATION_WARN_THRESHOLD_S = 120;
+    const durationWarning = duration > DURATION_WARN_THRESHOLD_S
+      ? `⚠️ Run took ${duration}s — approaching 150s edge-function wall-clock limit. Consider adding chunked concurrency to per-game prediction fanout if this recurs.`
+      : null;
 
     // Nest per-sport summary metadata into steps_completed payload (no schema migration).
     const stepsCompletedPayload = {
       sports_run: sportsToRun,
       sports_skipped_unsupported: sportsSkippedUnsupported,
       allowlist: Array.from(SUPPORTED_ALLOWLIST),
+      steps_planned: totalStepsPlanned,
+      steps_skipped: skippedCount,
+      real_steps_planned: realStepsPlanned,
+      ...(durationWarning ? { duration_warning: durationWarning } : {}),
       steps: completed,
     };
 
