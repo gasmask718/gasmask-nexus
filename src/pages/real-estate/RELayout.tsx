@@ -1,7 +1,7 @@
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
-  BarChart3, Target, Phone, FileText, Building2, Users, Calculator, MapPin, TrendingUp, Bot
+  BarChart3, Target, Phone, FileText, Building2, Users, Calculator, MapPin, TrendingUp, Bot, FileCheck
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
