@@ -183,7 +183,9 @@ serve(async (req) => {
         const weightedBias = weightedOver > weightedUnder ? 'OVER' : 'UNDER';
 
         // Model alignment bonus
-        const modelDir = (prop.ai_recommendation || '').toUpperCase();
+        // props_master.prediction stores 'more'/'less' — normalize to OVER/UNDER
+        const rawPred = (prop.prediction || '').toString().toUpperCase();
+        const modelDir = rawPred === 'MORE' ? 'OVER' : rawPred === 'LESS' ? 'UNDER' : rawPred;
         const modelAligns = modelDir === weightedBias;
         const alignmentBonus = modelAligns ? 10 : -5;
 
@@ -198,7 +200,7 @@ serve(async (req) => {
         // ── Value detection ──
         // Implied probability from standard -110 odds ≈ 52.4%
         // If model + consensus agree and confidence > implied, it's value
-        const modelConf = prop.ai_confidence || 50;
+        const modelConf = prop.confidence_score || 50;
         const impliedProb = 52.4; // standard -110
         const edgeVsImplied = modelConf - impliedProb;
         const isValue = edgeVsImplied > 5 && consensusScore >= 65 && modelAligns;
