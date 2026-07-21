@@ -432,7 +432,8 @@ export default function NightlyBoardTab() {
 
   const { data: counts = {} } = useGameCounts();
   const { data: stats, isLoading: statsLoading } = useSportStats(selectedSport);
-  const { data: games = [], isLoading: gamesLoading } = useNightlyGames(selectedSport);
+  const { data: gamesData, isLoading: gamesLoading } = useNightlyGames(selectedSport);
+  const games = useMemo(() => gamesData ?? [], [gamesData]);
   const { data: bestBets = [], isLoading: bestBetsLoading } = useBestBets(selectedSport);
 
   const [runningPrediction, setRunningPrediction] = useState<string | null>(null);
