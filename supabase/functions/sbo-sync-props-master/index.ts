@@ -34,16 +34,22 @@ Deno.serve(async (req) => {
     }
     console.log(`📦 Fetched ${allProps.length} props from sbo_player_props`);
 
-    // ── 2. Get predictions from sbo_predictions ──
-    const { data: predictions } = await supabase
+    // ── 2. Get predictions from sbo_predictions (joined by prop_id → sbo_player_props.id) ──
+    const { data: predictions, error: predError } = await supabase
       .from('sbo_predictions')
-      .select('player_name, prop_type, prediction, confidence, edge_score, reasoning, season_avg, last_5_avg, last_10_avg, hit_rate_pct, vs_opp_avg');
+      .select('prop_id, predicted_outcome, final_confidence, confidence_tier, stats_brain_reasoning, market_brain_reasoning, context_brain_reasoning, polymarket_brain_reasoning');
+
+    if (predError) {
+      console.error('❌ sbo_predictions query failed:', predError);
+      throw new Error(`sbo_predictions query failed: ${predError.message}`);
+    }
 
     const predMap = new Map<string, any>();
     for (const p of (predictions || [])) {
-      predMap.set(`${p.player_name}|${p.prop_type}`, p);
+      if (p.prop_id) predMap.set(p.prop_id, p);
     }
     console.log(`🧠 Predictions from sbo_predictions: ${predMap.size}`);
+
 
     // ── 3. Also get predictions from sbo_unified_props (analysis output) ──
     const { data: unifiedPreds } = await supabase
@@ -58,21 +64,33 @@ Deno.serve(async (req) => {
 
     // ── 4. Transform and upsert into props_master ──
     const upsertRows = allProps.map(p => {
-      const pred = predMap.get(`${p.player_name}|${p.prop_type}`);
+      const pred = predMap.get(p.id);
       const unified = unifiedMap.get(`${p.player_name}|${p.prop_type}|${p.source}|${p.line}`);
 
-      // Prefer sbo_predictions, fallback to sbo_unified_props
-      let prediction = pred?.prediction || null;
+      // Prefer sbo_predictions (predicted_outcome is already 'more'/'less'/'hold'-style),
+      // fallback to sbo_unified_props ai_direction (OVER/UNDER → more/less).
+      let prediction = pred?.predicted_outcome || null;
       if (!prediction && unified?.ai_direction) {
         prediction = unified.ai_direction === 'OVER' ? 'more'
           : unified.ai_direction === 'UNDER' ? 'less'
           : 'hold';
       }
-      const confidence = pred?.confidence || unified?.ai_confidence || null;
-      const edgeScore = pred?.edge_score || unified?.edge_vs_line || null;
-      const seasonAvg = pred?.season_avg || unified?.season_avg || null;
-      const l5Avg = pred?.last_5_avg || unified?.l5_avg || null;
-      const l10Avg = pred?.last_10_avg || unified?.l10_avg || null;
+      const confidence = pred?.final_confidence ?? unified?.ai_confidence ?? null;
+      // edge_score has no equivalent in sbo_predictions → fallback to unified only
+      const edgeScore = unified?.edge_vs_line ?? null;
+      // season/l5/l10/hit_rate/matchup have no equivalent in sbo_predictions → unified only
+      const seasonAvg = unified?.season_avg ?? null;
+      const l5Avg = unified?.l5_avg ?? null;
+      const l10Avg = unified?.l10_avg ?? null;
+
+      // Reasoning: combine the 4 brain reasonings into a JSON blob (was single `reasoning` text)
+      const reasoningJson = pred ? {
+        stats: pred.stats_brain_reasoning || null,
+        market: pred.market_brain_reasoning || null,
+        context: pred.context_brain_reasoning || null,
+        polymarket: pred.polymarket_brain_reasoning || null,
+        confidence_tier: pred.confidence_tier || null,
+      } : null;
 
       return {
         player_name: p.player_name,
@@ -89,18 +107,19 @@ Deno.serve(async (req) => {
         prediction,
         confidence_score: confidence,
         edge_score: edgeScore,
-        reasoning_json: pred?.reasoning || null,
+        reasoning_json: reasoningJson,
         season_avg: seasonAvg,
         last_5_avg: l5Avg,
         last_10_avg: l10Avg,
-        hit_rate: pred?.hit_rate_pct || null,
-        matchup_avg: pred?.vs_opp_avg || null,
+        hit_rate: null,
+        matchup_avg: null,
         actual_result: p.actual_value || null,
         result: p.verdict === 'hit' ? 'win' : p.verdict === 'miss' ? 'loss' : 'pending',
         settled_at: p.verified_at || null,
         batch_id: `sync-${new Date().toISOString().split('T')[0]}`,
       };
     });
+
 
     // Upsert in chunks
     let synced = 0;
