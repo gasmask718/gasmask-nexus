@@ -26,6 +26,7 @@ const reNavSections = [
     items: [
       { path: '/real-estate/deals', label: 'Floor 3 — Active Deals', icon: FileText },
       { path: '/real-estate/buyers', label: 'Floor 4 — Buyer Network', icon: Building2 },
+      { path: '/real-estate/contracts', label: 'Contracts', icon: FileCheck },
     ],
   },
   {
