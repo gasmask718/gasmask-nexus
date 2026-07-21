@@ -23,7 +23,7 @@ export default function LineShopping() {
       const { data, error } = await supabase
         .from('sportsbook_lines')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('uploaded_at', { ascending: false })
         .limit(200);
       
       if (error) throw error;
