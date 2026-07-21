@@ -1,181 +1,65 @@
-## Root cause
+## Scope
 
-The audit's symptom ("silent failures") is real but the diagnosis is slightly off. Current state on all six tables:
+Add three Supabase Edge Functions for Surplus Funds, mirroring the Real Estate architecture. Lovable Cloud auto-deploys them — no CLI/GitHub Actions step needed.
 
-- RLS is enabled
-- One policy exists per table: `FOR ALL TO authenticated USING (true)` — permissive, not admin-only
-- **No `GRANT` to `authenticated`, `anon`, or `service_role`** — only the sandbox role
+## Files to create
 
-Without table-level `GRANT`s, PostgREST returns a permission error before RLS is even evaluated. That's why non-admins (and technically everyone via the Data API) hit silent failures. So the fix is two parts: add grants, and tighten the overly-permissive `USING (true)` policy into a role-scoped one that matches the app's RBAC (`public.has_role(auth.uid(), 'role')`).
+1. `supabase/functions/sf-send-contract/index.ts`
+2. `supabase/functions/sf-assign-attorney/index.ts`
+3. `supabase/functions/sf-payment-handler/index.ts`
 
-## Role mapping
+No changes to `supabase/config.toml` (default `verify_jwt=false` already applies to Lovable-managed functions).
 
-Project uses `public.user_roles` + `public.has_role(_user_id, _role app_role)`. There is no `team_member` role in the enum. Closest working roles for RE/SF back-office access:
+## 1. sf-send-contract
 
-- `owner`, `admin` — full access
-- `va`, `employee`, `staff` — SELECT / INSERT / UPDATE (no DELETE)
-- `realestate_worker` — same as va/employee, RE tables only
+- **Trigger**: POST `{ case_id, contract_type? }` from UI.
+- **Template**: `re-send-purchase-contract` (DocuSign JWT flow).
+- **Logic**:
+  - Load row from `surplus_funds_cases` by `case_id`.
+  - Get DocuSign access token; env: `DOCUSIGN_INTEGRATION_KEY`, `DOCUSIGN_SECRET_KEY`, `DOCUSIGN_ACCOUNT_ID`, `DOCUSIGN_BASE_URL`, new `DOCUSIGN_TEMPLATE_SF_CLAIM_ID`. If missing → 500 "DocuSign not configured" (same soft-fail pattern as RE).
+  - Create envelope with claimant fields (name, property_address, state, court_case_number, surplus_amount, our_percentage).
+  - Insert row into `surplus_funds_contracts` with `case_id`, `lead_id`, `claimant_name/email/phone`, `state`, `surplus_amount`, `our_percentage`, `contract_type` (default `claim_agreement`), `status='sent'`, `docusign_envelope_id`.
+  - Update `surplus_funds_cases.status='contract_sent'`.
+  - Optional SMS to claimant + David via existing `send-sms` function (guarded by `DAVID_PHONE`).
+- **Response**: `{ success, contract_id, envelope_id }`.
 
-DELETE stays admin/owner only to protect the ledger.
+## 2. sf-assign-attorney
 
-## SQL to paste into the Supabase SQL Editor
+- **Trigger**: POST `{ case_id, attorney_id, attorney_fee_percentage?, notes? }`.
+- **Template**: `re-match-buyers` (matching + assignment pattern), simplified.
+- **Logic**:
+  - Load `surplus_funds_cases` row; verify attorney exists in `surplus_funds_attorneys` and covers the case's `state` (attorney.states array) and is `status='active'`.
+  - Insert `surplus_funds_attorney_assignments` (`case_id`, `attorney_id`, `status='pending'`, `attorney_fee_percentage`, `notes`).
+  - Update `surplus_funds_cases` with `attorney_id`, `attorney_name`, `status='attorney_assigned'`.
+  - Increment `surplus_funds_attorneys.cases_total`.
+  - Optional SMS notification to attorney.phone and David.
+- **Response**: `{ success, assignment_id }`.
 
-```sql
--- ============================================================
--- RE + SF core tables: GRANTs + role-scoped RLS
--- Safe to re-run: drops old permissive policy, recreates scoped ones
--- ============================================================
+## 3. sf-payment-handler
 
--- Helper: consistent role check (already exists as public.has_role)
--- SELECT public.has_role(auth.uid(), 'admin'::app_role);
+- **Trigger**: POST from Stripe/manual webhook. Accepts `{ case_id, contract_id?, amount, our_fee_amount?, attorney_fee_amount?, claimant_net_amount?, payment_method?, court_order_date?, disbursement_date?, our_fee_received_date? }`.
+- **Template**: `re-docusign-webhook` (webhook shape + idempotent upsert).
+- **Logic**:
+  - Public endpoint (no JWT). Optional Stripe signature validation via `STRIPE_WEBHOOK_SECRET` if header present (soft-check, mirrors RE pattern).
+  - Load case for `claimant_name` and `our_percentage`; compute defaults for fee split if not supplied.
+  - Upsert into `surplus_funds_payments` keyed on `(case_id, contract_id)`; set `status='received'` when `our_fee_received_date` present, else `'pending'`.
+  - If `disbursement_date` present → update `surplus_funds_cases.funds_released_at` and `amount_received`; set `status='paid'`.
+  - Optional SMS to David: "💰 SF payment received: $X — {claimant}".
+- **Response**: `{ success, payment_id }`.
 
-DO $$
-DECLARE
-  t text;
-  re_tables text[]  := ARRAY['re_leads','re_deals','re_buyers'];
-  sf_tables text[]  := ARRAY['surplus_funds_leads','surplus_funds_cases','surplus_funds_attorneys'];
-  all_tables text[] := re_tables || sf_tables;
-BEGIN
-  FOREACH t IN ARRAY all_tables LOOP
-    -- 1. Grants (PostgREST cannot see the table without these)
-    EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON public.%I TO authenticated;', t);
-    EXECUTE format('GRANT ALL ON public.%I TO service_role;', t);
+## Conventions (all three)
 
-    -- 2. Drop the old "authenticated can do anything" policy
-    EXECUTE format('DROP POLICY IF EXISTS "Authenticated users can manage %I" ON public.%I;', t, t);
-    -- Also drop any prior scoped policies so this script is idempotent
-    EXECUTE format('DROP POLICY IF EXISTS "%I_select_team"  ON public.%I;', t, t);
-    EXECUTE format('DROP POLICY IF EXISTS "%I_insert_team"  ON public.%I;', t, t);
-    EXECUTE format('DROP POLICY IF EXISTS "%I_update_team"  ON public.%I;', t, t);
-    EXECUTE format('DROP POLICY IF EXISTS "%I_delete_admin" ON public.%I;', t, t);
-  END LOOP;
-END $$;
+- Use `esm.sh/@supabase/supabase-js@2` with `SUPABASE_SERVICE_ROLE_KEY` (matches RE template).
+- Standard CORS headers, `OPTIONS` short-circuit.
+- Try/catch with 500 JSON error on failure.
+- No new secrets requested in this task; DocuSign secrets are shared with RE. `DOCUSIGN_TEMPLATE_SF_CLAIM_ID` will be requested only if/when SF contract sending is turned on (function returns a clear 500 until then, same as RE).
 
--- ---------- Real Estate (owner/admin/va/employee/staff/realestate_worker) ----------
-DO $$
-DECLARE t text;
-BEGIN
-  FOREACH t IN ARRAY ARRAY['re_leads','re_deals','re_buyers'] LOOP
-    EXECUTE format($f$
-      CREATE POLICY "%1$I_select_team" ON public.%1$I
-        FOR SELECT TO authenticated
-        USING (
-          public.has_role(auth.uid(),'owner')
-          OR public.has_role(auth.uid(),'admin')
-          OR public.has_role(auth.uid(),'va')
-          OR public.has_role(auth.uid(),'employee')
-          OR public.has_role(auth.uid(),'staff')
-          OR public.has_role(auth.uid(),'realestate_worker')
-        );
-    $f$, t);
+## Deployment
 
-    EXECUTE format($f$
-      CREATE POLICY "%1$I_insert_team" ON public.%1$I
-        FOR INSERT TO authenticated
-        WITH CHECK (
-          public.has_role(auth.uid(),'owner')
-          OR public.has_role(auth.uid(),'admin')
-          OR public.has_role(auth.uid(),'va')
-          OR public.has_role(auth.uid(),'employee')
-          OR public.has_role(auth.uid(),'staff')
-          OR public.has_role(auth.uid(),'realestate_worker')
-        );
-    $f$, t);
+Lovable Cloud auto-deploys these on save. No manual CLI or GitHub Actions step. I'll confirm each function appears in the deployed list after creation.
 
-    EXECUTE format($f$
-      CREATE POLICY "%1$I_update_team" ON public.%1$I
-        FOR UPDATE TO authenticated
-        USING (
-          public.has_role(auth.uid(),'owner')
-          OR public.has_role(auth.uid(),'admin')
-          OR public.has_role(auth.uid(),'va')
-          OR public.has_role(auth.uid(),'employee')
-          OR public.has_role(auth.uid(),'staff')
-          OR public.has_role(auth.uid(),'realestate_worker')
-        )
-        WITH CHECK (
-          public.has_role(auth.uid(),'owner')
-          OR public.has_role(auth.uid(),'admin')
-          OR public.has_role(auth.uid(),'va')
-          OR public.has_role(auth.uid(),'employee')
-          OR public.has_role(auth.uid(),'staff')
-          OR public.has_role(auth.uid(),'realestate_worker')
-        );
-    $f$, t);
+## Out of scope
 
-    EXECUTE format($f$
-      CREATE POLICY "%1$I_delete_admin" ON public.%1$I
-        FOR DELETE TO authenticated
-        USING (
-          public.has_role(auth.uid(),'owner')
-          OR public.has_role(auth.uid(),'admin')
-        );
-    $f$, t);
-  END LOOP;
-END $$;
-
--- ---------- Surplus Funds (owner/admin/va/employee/staff) ----------
-DO $$
-DECLARE t text;
-BEGIN
-  FOREACH t IN ARRAY ARRAY['surplus_funds_leads','surplus_funds_cases','surplus_funds_attorneys'] LOOP
-    EXECUTE format($f$
-      CREATE POLICY "%1$I_select_team" ON public.%1$I
-        FOR SELECT TO authenticated
-        USING (
-          public.has_role(auth.uid(),'owner')
-          OR public.has_role(auth.uid(),'admin')
-          OR public.has_role(auth.uid(),'va')
-          OR public.has_role(auth.uid(),'employee')
-          OR public.has_role(auth.uid(),'staff')
-        );
-    $f$, t);
-
-    EXECUTE format($f$
-      CREATE POLICY "%1$I_insert_team" ON public.%1$I
-        FOR INSERT TO authenticated
-        WITH CHECK (
-          public.has_role(auth.uid(),'owner')
-          OR public.has_role(auth.uid(),'admin')
-          OR public.has_role(auth.uid(),'va')
-          OR public.has_role(auth.uid(),'employee')
-          OR public.has_role(auth.uid(),'staff')
-        );
-    $f$, t);
-
-    EXECUTE format($f$
-      CREATE POLICY "%1$I_update_team" ON public.%1$I
-        FOR UPDATE TO authenticated
-        USING (
-          public.has_role(auth.uid(),'owner')
-          OR public.has_role(auth.uid(),'admin')
-          OR public.has_role(auth.uid(),'va')
-          OR public.has_role(auth.uid(),'employee')
-          OR public.has_role(auth.uid(),'staff')
-        )
-        WITH CHECK (
-          public.has_role(auth.uid(),'owner')
-          OR public.has_role(auth.uid(),'admin')
-          OR public.has_role(auth.uid(),'va')
-          OR public.has_role(auth.uid(),'employee')
-          OR public.has_role(auth.uid(),'staff')
-        );
-    $f$, t);
-
-    EXECUTE format($f$
-      CREATE POLICY "%1$I_delete_admin" ON public.%1$I
-        FOR DELETE TO authenticated
-        USING (
-          public.has_role(auth.uid(),'owner')
-          OR public.has_role(auth.uid(),'admin')
-        );
-    $f$, t);
-  END LOOP;
-END $$;
-```
-
-## Notes
-
-- `anon` is intentionally NOT granted — none of these tables should be public.
-- No `team_member` role exists in `app_role`; `va`, `employee`, `staff` cover that intent. Say the word if you want a new `team_member` enum value added instead.
-- If you'd prefer I run this through the migration tool (with approval flow) instead of you pasting it, approve this plan and I'll switch to build and run `supabase--migration`.
+- No frontend wiring (UI buttons to invoke these); can follow in a next task.
+- No new tables, no migrations.
+- No RLS changes (functions use service role).
