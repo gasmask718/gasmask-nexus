@@ -204,6 +204,7 @@ serve(async (req) => {
       message_id,
       message_text,
       image_url,
+      image_data,
       has_media,
       edited,
       deleted,
