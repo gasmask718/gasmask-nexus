@@ -446,7 +446,10 @@ export default function NightlyBoardTab() {
   const dateLabel = format(new Date(), 'EEEE, MMMM d yyyy');
 
   useEffect(() => {
-    if (!games.length) { setPropCounts({}); return; }
+    if (!games.length) {
+      setPropCounts((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+      return;
+    }
     const ids = games.map((g: any) => g.id);
     let cancelled = false;
     (async () => {
