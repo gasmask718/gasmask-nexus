@@ -78,7 +78,7 @@ serve(async (req) => {
         await supabase
           .from('sbo_predictions')
           .update({
-            actual_outcome: game.winner,
+            actual_outcome: wasCorrect ? 'correct' : 'incorrect',
             was_correct: wasCorrect,
             updated_at: new Date().toISOString(),
           })
