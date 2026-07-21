@@ -506,6 +506,7 @@ const REAnalyzer = lazy(() => import('@/pages/real-estate/REAnalyzer'));
 const REAutomation = lazy(() => import('@/pages/real-estate/REAutomation'));
 const REMarkets = lazy(() => import('@/pages/real-estate/REMarkets'));
 const REAnalytics = lazy(() => import('@/pages/real-estate/REAnalytics'));
+const REContracts = lazy(() => import('@/pages/real-estate/REContracts'));
 
 const CommunicationHubLayout = lazy(() => import('@/pages/communication/CommunicationHubLayout'));
 const InboxPage = lazy(() => import('@/pages/communication/inbox/InboxPage'));
