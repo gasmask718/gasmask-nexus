@@ -133,6 +133,7 @@ serve(async (req) => {
     let totalRecords = 0;
     let totalCalls = 0;
     let totalCostCents = 0;
+    let skippedCount = 0;
     const startTime = Date.now();
 
     const recordStep = async (
