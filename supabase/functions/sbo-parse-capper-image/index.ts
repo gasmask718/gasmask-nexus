@@ -353,8 +353,19 @@ RULES:
     // Determine review status based on both parse and capper detection confidence
     const needsCapperReview = group_type === 'aggregator' && capperDetectionConfidence < 70;
 
-    // Insert picks
-    if (resolvedCapperId) {
+    // Insert picks — resolvedCapperId is guaranteed by the fallback chain above.
+    if (!resolvedCapperId) {
+      console.error('FATAL: resolvedCapperId still null after fallback chain — refusing to silently drop', {
+        group_type, capper_name, extractedCapperName, picks_count: scoredPicks.length,
+      });
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Could not resolve or create any capper (including Unknown bucket)',
+        extracted_capper_name: extractedCapperName,
+        picks_count: scoredPicks.length,
+      }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
       const rows = scoredPicks.map((p: any) => ({
         capper_id: resolvedCapperId,
