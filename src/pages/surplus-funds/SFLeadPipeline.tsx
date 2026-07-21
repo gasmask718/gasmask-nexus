@@ -856,3 +856,28 @@ export default function SFLeadPipeline() {
     </div>
   );
 }
+
+function LeadCaseActions({ leadId }: { leadId: string }) {
+  const { data: linkedCase, isLoading } = useQuery({
+    queryKey: ['sf-case-for-lead', leadId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('surplus_funds_cases')
+        .select('*')
+        .eq('lead_id', leadId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  if (isLoading) return null;
+  if (!linkedCase) {
+    return (
+      <Button className="w-full" style={{ backgroundColor: AMBER }} disabled>
+        Create Case → (coming soon)
+      </Button>
+    );
+  }
+  return <CaseActionButtons case={linkedCase} />;
+}
