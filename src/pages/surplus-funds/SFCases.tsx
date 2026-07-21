@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Briefcase, DollarSign, Calendar, Scale, FileText, Clock } from 'lucide-react';
+import { CaseActionButtons } from './components/CaseActionButtons';
 
 const CASE_TABS = [
   { value: 'all', label: 'All' },
