@@ -3720,10 +3720,11 @@ export default function AppRoutes() {
       {/* SURPLUS FUNDS OS                                                              */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
-        <Route path="/surplus-funds" element={<SFLayout />}>
+        <Route path="/surplus-funds" element={<RequireRole allowedRoles={['admin','owner']} showLocked><SFLayout /></RequireRole>}>
           <Route index element={<SFCommandCenter />} />
           <Route path="leads" element={<SFLeadPipeline />} />
           <Route path="discovery" element={<SFDiscovery />} />
+          <Route path="human-queue" element={<SFHumanQueue />} />
           <Route path="campaigns" element={<SFCampaigns />} />
           <Route path="cases" element={<SFCases />} />
           <Route path="attorneys" element={<SFAttorneys />} />
@@ -3732,6 +3733,7 @@ export default function AppRoutes() {
           <Route path="automation" element={<SFAutomation />} />
           <Route path="analytics" element={<SFAnalytics />} />
         </Route>
+
       </Route>
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
