@@ -208,15 +208,23 @@ serve(async (req) => {
               .lt('game_date', dayEnd);
             if (gamesErr) throw gamesErr;
 
-            let predsMade = 0;
+            let predsInvoked = 0;
+            let predsSaved = 0;
+            let predsSkipped = 0;
             let predsFailed = 0;
             for (const g of (games ?? [])) {
               try {
-                const { error: pErr } = await supabase.functions.invoke('sbo-run-predictions', {
+                const { data: pData, error: pErr } = await supabase.functions.invoke('sbo-run-predictions', {
                   body: { game_id: g.id, sport_key: sport, prediction_type: 'moneyline' },
                 });
-                if (pErr) { predsFailed += 1; console.error(`[${sport}] prediction failed for game ${g.id}:`, pErr.message); }
-                else predsMade += 1;
+                if (pErr) {
+                  predsFailed += 1;
+                  console.error(`[${sport}] prediction failed for game ${g.id}:`, pErr.message);
+                } else {
+                  predsInvoked += 1;
+                  if (pData?.saved === true) predsSaved += 1;
+                  else if (pData?.skipped === true) predsSkipped += 1;
+                }
               } catch (perGameErr: any) {
                 predsFailed += 1;
                 console.error(`[${sport}] prediction threw for game ${g.id}:`, perGameErr?.message);
@@ -226,11 +234,11 @@ serve(async (req) => {
 
             await recordStep(step, {
               sport,
-              status: predsFailed === 0 ? 'success' : (predsMade === 0 ? 'error' : 'warning'),
-              records: predsMade,
+              status: predsFailed === 0 ? 'success' : (predsInvoked === 0 ? 'error' : 'warning'),
+              records: predsSaved,
               duration_ms: Date.now() - stepStart,
-              note: `${predsMade} predictions generated, ${predsFailed} failed, ${(games ?? []).length} games queried`,
-              ...(predsMade === 0 && predsFailed > 0 ? { error: `All ${predsFailed} per-game predictions failed` } : {}),
+              note: `${(games ?? []).length} games queried, ${predsInvoked} invoked, ${predsSaved} saved, ${predsSkipped} skipped (below confidence threshold), ${predsFailed} failed`,
+              ...(predsInvoked === 0 && predsFailed > 0 ? { error: `All ${predsFailed} per-game predictions failed` } : {}),
             });
             continue;
           }
