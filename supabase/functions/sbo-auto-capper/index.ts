@@ -330,7 +330,8 @@ serve(async (req) => {
         group_type: groupType,
         has_betting_signal: true,
         capper_detection_confidence: capperDetectionConfidence,
-        extracted_from_content: groupType === 'aggregator' && capperDetectionConfidence >= 70,
+        extracted_from_content: !!extractedFromText && capperDetectionConfidence >= 70,
+        extracted_capper_name: extractedFromText,
         needs_review: capperDetectionConfidence < 70,
       }), {
         status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
