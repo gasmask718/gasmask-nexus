@@ -786,6 +786,8 @@ CRITICAL RULES FROM CALIBRATION DATA:
 
     return new Response(JSON.stringify({
       success: true,
+      saved: true,
+      skipped: false,
       prediction_id: prediction?.id,
       sport_key,
       final_confidence: finalScore,
