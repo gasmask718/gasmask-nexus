@@ -698,7 +698,7 @@ CRITICAL RULES FROM CALIBRATION DATA:
 
     const tier = finalScore >= 85 ? 'elite' : finalScore >= 70 ? 'strong' : finalScore >= 55 ? 'moderate' : 'weak';
 
-    const { data: prediction } = await supabase.from('sbo_predictions').insert({
+    const { data: prediction, error: insertError } = await supabase.from('sbo_predictions').insert({
       game_id: game_id || null,
       prop_id: prop_id || null,
       prediction_type,
@@ -718,6 +718,9 @@ CRITICAL RULES FROM CALIBRATION DATA:
       weights_used: weights,
       data_quality: dataQuality,
     }).select().single();
+    if (insertError) {
+      console.error('sbo_predictions insert failed:', insertError);
+    }
 
     // ═══ INCREMENT sbo_sports.total_predictions (non-fatal) ═══
     if (prediction?.id) {
