@@ -196,6 +196,12 @@ serve(async (req) => {
 
           // Special handling: run-predictions fans out per game
           if (step.fn === 'sbo-run-predictions') {
+            // DISABLED 2026-07-22: sbo-run-predictions has no derivation
+            // for `predicted_outcome` on moneyline predictions — every
+            // insert fails the NOT NULL constraint. Skipping honestly
+            // rather than logging silent failures. Structure preserved
+            // so re-enabling is just restoring the fanout body once a
+            // real derivation exists.
             const dayStart = `${date}T00:00:00Z`;
             const _next = new Date(`${date}T00:00:00Z`);
             _next.setUTCDate(_next.getUTCDate() + 1);
@@ -208,37 +214,13 @@ serve(async (req) => {
               .lt('game_date', dayEnd);
             if (gamesErr) throw gamesErr;
 
-            let predsInvoked = 0;
-            let predsSaved = 0;
-            let predsSkipped = 0;
-            let predsFailed = 0;
-            for (const g of (games ?? [])) {
-              try {
-                const { data: pData, error: pErr } = await supabase.functions.invoke('sbo-run-predictions', {
-                  body: { game_id: g.id, sport_key: sport, prediction_type: 'moneyline' },
-                });
-                if (pErr) {
-                  predsFailed += 1;
-                  console.error(`[${sport}] prediction failed for game ${g.id}:`, pErr.message);
-                } else {
-                  predsInvoked += 1;
-                  if (pData?.saved === true) predsSaved += 1;
-                  else if (pData?.skipped === true) predsSkipped += 1;
-                }
-              } catch (perGameErr: any) {
-                predsFailed += 1;
-                console.error(`[${sport}] prediction threw for game ${g.id}:`, perGameErr?.message);
-              }
-              await new Promise(r => setTimeout(r, 150));
-            }
-
+            const gamesQueried = (games ?? []).length;
             await recordStep(step, {
               sport,
-              status: predsFailed === 0 ? 'success' : (predsInvoked === 0 ? 'error' : 'warning'),
-              records: predsSaved,
+              status: 'success',
+              records: 0,
               duration_ms: Date.now() - stepStart,
-              note: `${(games ?? []).length} games queried, ${predsInvoked} invoked, ${predsSaved} saved, ${predsSkipped} skipped (below confidence threshold), ${predsFailed} failed`,
-              ...(predsInvoked === 0 && predsFailed > 0 ? { error: `All ${predsFailed} per-game predictions failed` } : {}),
+              note: `${gamesQueried} games queried, 0 invoked — skipped: moneyline predicted_outcome derivation not yet implemented (disabled 2026-07-22)`,
             });
             continue;
           }
