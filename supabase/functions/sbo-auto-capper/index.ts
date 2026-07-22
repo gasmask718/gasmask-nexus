@@ -154,6 +154,10 @@ serve(async (req) => {
       let wasCreated = false;
       let capperDetectionConfidence = 100;
       let postedBy = displayName || username || telegramUserId;
+      // Raw per-poster identity extracted from message text (independent of resolution outcome).
+      // Populated on BOTH aggregator and direct paths so downstream picks can preserve it
+      // even when capper_id falls back to a channel-level record.
+      let extractedFromText: string | null = null;
 
       if (groupType === 'aggregator') {
         // Extract capper name from the message text
