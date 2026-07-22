@@ -196,11 +196,16 @@ serve(async (req) => {
 
           // Special handling: run-predictions fans out per game
           if (step.fn === 'sbo-run-predictions') {
+            const dayStart = `${date}T00:00:00Z`;
+            const _next = new Date(`${date}T00:00:00Z`);
+            _next.setUTCDate(_next.getUTCDate() + 1);
+            const dayEnd = _next.toISOString();
             const { data: games, error: gamesErr } = await supabase
               .from('sbo_games')
               .select('id')
               .eq('sport_key', sport)
-              .eq('game_date', date);
+              .gte('game_date', dayStart)
+              .lt('game_date', dayEnd);
             if (gamesErr) throw gamesErr;
 
             let predsMade = 0;
