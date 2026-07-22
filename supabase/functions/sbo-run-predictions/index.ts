@@ -688,7 +688,9 @@ CRITICAL RULES FROM CALIBRATION DATA:
     if (finalScore < 50) {
       console.log(`Prediction below 50% threshold (${finalScore}%) — not saving`);
       return new Response(JSON.stringify({
-        success: false,
+        success: true,
+        saved: false,
+        skipped: true,
         reason: `Confidence ${finalScore}% below 50% minimum — prediction not saved`,
         confidence: finalScore,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -696,7 +698,7 @@ CRITICAL RULES FROM CALIBRATION DATA:
 
     const tier = finalScore >= 85 ? 'elite' : finalScore >= 70 ? 'strong' : finalScore >= 55 ? 'moderate' : 'weak';
 
-    const { data: prediction } = await supabase.from('sbo_predictions').insert({
+    const { data: prediction, error: insertError } = await supabase.from('sbo_predictions').insert({
       game_id: game_id || null,
       prop_id: prop_id || null,
       prediction_type,
@@ -716,6 +718,9 @@ CRITICAL RULES FROM CALIBRATION DATA:
       weights_used: weights,
       data_quality: dataQuality,
     }).select().single();
+    if (insertError) {
+      console.error('sbo_predictions insert failed:', insertError);
+    }
 
     // ═══ INCREMENT sbo_sports.total_predictions (non-fatal) ═══
     if (prediction?.id) {
@@ -784,6 +789,9 @@ CRITICAL RULES FROM CALIBRATION DATA:
 
     return new Response(JSON.stringify({
       success: true,
+      saved: !!prediction?.id,
+      skipped: false,
+      insert_error: insertError?.message ?? null,
       prediction_id: prediction?.id,
       sport_key,
       final_confidence: finalScore,
