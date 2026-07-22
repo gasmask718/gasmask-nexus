@@ -688,7 +688,9 @@ CRITICAL RULES FROM CALIBRATION DATA:
     if (finalScore < 50) {
       console.log(`Prediction below 50% threshold (${finalScore}%) — not saving`);
       return new Response(JSON.stringify({
-        success: false,
+        success: true,
+        saved: false,
+        skipped: true,
         reason: `Confidence ${finalScore}% below 50% minimum — prediction not saved`,
         confidence: finalScore,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
