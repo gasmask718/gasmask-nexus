@@ -164,6 +164,7 @@ serve(async (req) => {
         const extracted = extractCapperFromText(messageText || '');
 
         if (extracted) {
+          extractedFromText = extracted.name;
           resolvedCapperName = extracted.name;
           capperDetectionConfidence = extracted.confidence;
           const normalized = normalizeName(extracted.name);
@@ -204,6 +205,58 @@ serve(async (req) => {
             }
           }
           // If confidence < 70, fall through to sender fallback
+        }
+      } else if (groupType === 'direct') {
+        // Per-poster text extraction inside a direct channel (e.g. "VegasKing:" posting inside
+        // "ALL CAPPERS VIP FREE"). Mirrors aggregator's extractor + confidence gate.
+        // Only used when we successfully identify a real per-poster name; otherwise the existing
+        // telegram_user_id (channel-level) fallback below runs unchanged.
+        const extracted = extractCapperFromText(messageText || '');
+        if (extracted) {
+          extractedFromText = extracted.name;
+          if (extracted.confidence >= 70) {
+            const normalized = normalizeName(extracted.name);
+            const existing = await resolveCapperByName(supabase, extracted.name);
+            if (existing) {
+              resolvedCapperId = existing.id;
+              resolvedCapperName = existing.name;
+              capperDetectionConfidence = extracted.confidence;
+              await supabase.from('sbo_cappers')
+                .update({ last_active: new Date().toISOString(), updated_at: new Date().toISOString() })
+                .eq('id', resolvedCapperId);
+            } else {
+              const { data: newCapper, error: createError } = await supabase
+                .from('sbo_cappers')
+                .insert({
+                  name: extracted.name,
+                  normalized_name: normalized || null,
+                  source: 'direct_extract',
+                  tier: 'unproven',
+                  confidence_grade: 'D',
+                  is_active: true,
+                  total_picks: 0,
+                  group_type: 'direct',
+                  last_active: new Date().toISOString(),
+                })
+                .select('id, name')
+                .single();
+
+              if (createError) {
+                const retry = await resolveCapperByName(supabase, extracted.name);
+                if (retry) {
+                  resolvedCapperId = retry.id;
+                  resolvedCapperName = retry.name;
+                  capperDetectionConfidence = extracted.confidence;
+                }
+              } else {
+                resolvedCapperId = newCapper.id;
+                resolvedCapperName = newCapper.name;
+                capperDetectionConfidence = extracted.confidence;
+                wasCreated = true;
+              }
+            }
+          }
+          // confidence < 70 → keep extractedFromText for downstream, fall through to sender fallback
         }
       }
 
