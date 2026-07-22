@@ -273,12 +273,25 @@ RULES:
         }
       }
     } else if (group_type === 'direct' && !resolvedCapperId) {
-      // Resolution order for direct dispatches:
-      // 1) caller-provided capper_name (from sbo-telegram-intake: capper_name || channel_name || channel_username)
-      // 2) AI-extracted capper_name from the image
-      // 3) auto-create (if we have any usable name) → else Unknown Capper bucket
+      // Resolution order for direct dispatches (per-poster identity wins over channel fallback):
+      // 1) AI-extracted capper_name from the image → resolve
+      // 2) caller-provided capper_name (intake: capper_name || channel_name || channel_username) → resolve
+      // 3) auto-create from extracted name (gated: len>=3 AND not equal to channel-name normalization)
+      // 4) auto-create from caller name (permissive — it's a real Telegram-supplied string)
       const callerName = (capper_name || '').trim();
-      if (callerName) {
+      const extractedName = (extractedCapperName || '').trim();
+      const callerNorm = normalizeName(callerName);
+      const extractedNorm = normalizeName(extractedName);
+
+      if (extractedName) {
+        const existing = await resolveCapperByName(supabase, extractedName);
+        if (existing) {
+          resolvedCapperId = existing.id;
+          resolvedCapperName = existing.name;
+        }
+      }
+
+      if (!resolvedCapperId && callerName) {
         const existing = await resolveCapperByName(supabase, callerName);
         if (existing) {
           resolvedCapperId = existing.id;
@@ -286,17 +299,14 @@ RULES:
         }
       }
 
-      if (!resolvedCapperId && extractedCapperName) {
-        const existing = await resolveCapperByName(supabase, extractedCapperName);
-        if (existing) {
-          resolvedCapperId = existing.id;
-          resolvedCapperName = existing.name;
-        }
-      }
-
-      // Auto-create using best available name (caller-provided preferred, else AI-extracted)
+      // Auto-create — prefer extracted (real per-poster identity) over caller (channel-level fallback)
       if (!resolvedCapperId) {
-        const autoName = callerName || (extractedCapperName || '').trim();
+        const extractedIsRealName =
+          !!extractedName &&
+          extractedNorm.length >= 3 &&
+          extractedNorm !== callerNorm;
+        const autoName = extractedIsRealName ? extractedName : callerName;
+        const autoSource = extractedIsRealName ? 'image_extract' : 'telegram_direct';
         if (autoName) {
           const normalized = normalizeName(autoName);
           const { data: newCapper, error: createErr } = await supabase
@@ -304,7 +314,7 @@ RULES:
             .insert({
               name: autoName,
               normalized_name: normalized || null,
-              source: callerName ? 'telegram_direct' : 'image_extract',
+              source: autoSource,
               source_handle: extractedCapperHandle || null,
               tier: 'unproven',
               confidence_grade: 'D',

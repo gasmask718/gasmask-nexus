@@ -439,7 +439,7 @@ serve(async (req) => {
         source_group: channel_name || channel_username || null,
         source_group_id: String(channel_id),
         posted_by: channel_username ? `@${channel_username}` : channel_name || null,
-        extracted_capper_name: capperResp?.capper_name ?? null,
+        extracted_capper_name: capperResp?.extracted_capper_name ?? null,
         capper_detection_confidence: capperResp?.capper_detection_confidence ?? null,
       };
 
