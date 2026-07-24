@@ -228,21 +228,25 @@ Deno.serve(async (req) => {
   try {
     const { data: picks, error } = await supabase
       .from("sbo_capper_picks")
-      .select("id, capper_id, sport, game_date, direction, bet_type, stake, odds, line, team, player_name")
+      .select("id, capper_id, sport, game_date, direction, bet_type, stake, odds, line, team, player_name, pick_text")
       .eq("result", "pending")
       .in("sport", Object.keys(ESPN_ENDPOINTS))
       .limit(5000);
     if (error) throw error;
 
     for (const p of picks ?? []) {
-      const side = p.direction || p.team || "";
-      const game = findGameForRow(allGames, p.sport, p.game_date, side, null);
+      // Decouple game lookup from bet direction: team is the team hint,
+      // pick_text is fallback for multi-team strings. direction is only
+      // used later for actual over/under/moneyline resolution.
+      const teamHint = p.team || "";
+      const game = findGameForRow(allGames, p.sport, p.game_date, teamHint, p.pick_text ?? null);
       if (!game) continue;
       const kind = classifyBetType(p.bet_type);
       if (kind === "unknown" || kind === "prop") continue;
       const stake = Number(p.stake ?? 1);
       const odds = p.odds ?? null;
       const line = Number(p.line ?? 0);
+      const side = String(p.direction || p.team || "");
       let r: Resolution;
       if (kind === "spread")     r = resolveSpread(game, side, line, stake, odds);
       else if (kind === "total") r = resolveTotal(game, side, line, stake, odds);
