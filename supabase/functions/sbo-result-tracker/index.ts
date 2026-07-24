@@ -28,6 +28,7 @@ const ESPN_ENDPOINTS: Record<string, string> = {
   NCAAB: "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard",
   MLS:   "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard",
   UFC:   "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard",
+  WNBA:  "https://site.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard",
 };
 
 type Game = {
