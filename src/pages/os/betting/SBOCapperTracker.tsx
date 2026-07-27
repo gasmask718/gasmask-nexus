@@ -528,7 +528,7 @@ function ReviewQueue({ onResolved }: { onResolved: () => void }) {
                   <span className="text-[10px] text-orange-400">⚠️ {p.capper_detection_confidence}% capper ID</span>
                 )}
               </div>
-              <p className="text-sm mt-1">{p.player_name} {p.direction} {p.line} {p.prop_type}</p>
+              <p className="text-sm mt-1">{p.player_name && p.team && p.team !== p.player_name ? `${p.player_name} (${p.team})` : (p.player_name || p.team || '')} {p.direction} {p.line} {p.prop_type}</p>
               <p className="text-[10px] text-muted-foreground truncate">{p.pick_text}</p>
               {p.extracted_capper_name && <p className="text-[10px] text-orange-400">Detected capper: {p.extracted_capper_name}</p>}
               {p.source_group && <p className="text-[10px] text-muted-foreground">Source: {p.source_group} {p.posted_by ? `· by ${p.posted_by}` : ''}</p>}
