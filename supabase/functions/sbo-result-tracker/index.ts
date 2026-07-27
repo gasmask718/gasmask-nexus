@@ -359,6 +359,7 @@ Deno.serve(async (req) => {
       .from("sbo_capper_picks")
       .select("id, capper_id, sport, game_date, direction, bet_type, stake, odds, line, team, player_name, pick_text")
       .eq("result", "pending")
+      .eq("unsupported", false)
       .in("sport", Object.keys(ESPN_ENDPOINTS))
       .limit(5000);
     if (error) throw error;
