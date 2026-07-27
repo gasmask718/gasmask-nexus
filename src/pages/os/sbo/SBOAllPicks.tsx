@@ -62,7 +62,7 @@ export default function SBOAllPicks() {
     queryFn: async () => {
       let q = (supabase as any)
         .from('sbo_capper_picks')
-        .select('id,sport,pick_text,bet_type,line,stake,parse_confidence,result,created_at', { count: 'exact' })
+        .select('id,sport,team,player_name,pick_text,bet_type,line,stake,parse_confidence,result,created_at', { count: 'exact' })
         .order('parse_confidence', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
