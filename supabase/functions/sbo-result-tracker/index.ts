@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   // Reset the module-level ambiguity counter per invocation.
-  nylaSkippedCount = 0;
+  resetNylaSkipped();
 
   // ?mark_unsupported=true → flag MLB prop/parlay pending picks (past dates) as
   // ungradeable by this source. Leaves result='pending' untouched → downstream
@@ -436,7 +436,7 @@ Deno.serve(async (req) => {
     summary.errors.push({ stage: "combiner_invoke_exception", message: e?.message });
   }
 
-  summary.nyla_skipped = nylaSkippedCount;
+  summary.nyla_skipped = getNylaSkipped();
   return new Response(JSON.stringify(summary), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
     status: 200,
