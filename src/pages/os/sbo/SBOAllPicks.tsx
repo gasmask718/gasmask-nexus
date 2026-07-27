@@ -129,6 +129,7 @@ export default function SBOAllPicks() {
             <TableHeader>
               <TableRow>
                 <TableHead>Sport</TableHead>
+                <TableHead>Player / Team</TableHead>
                 <TableHead>Pick</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Line</TableHead>
