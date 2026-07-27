@@ -22,6 +22,8 @@ const PAGE_SIZE = 50;
 type Row = {
   id: string;
   sport: string | null;
+  team: string | null;
+  player_name: string | null;
   pick_text: string | null;
   bet_type: string | null;
   line: number | null;
@@ -60,7 +62,7 @@ export default function SBOAllPicks() {
     queryFn: async () => {
       let q = (supabase as any)
         .from('sbo_capper_picks')
-        .select('id,sport,pick_text,bet_type,line,stake,parse_confidence,result,created_at', { count: 'exact' })
+        .select('id,sport,team,player_name,pick_text,bet_type,line,stake,parse_confidence,result,created_at', { count: 'exact' })
         .order('parse_confidence', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
@@ -127,6 +129,7 @@ export default function SBOAllPicks() {
             <TableHeader>
               <TableRow>
                 <TableHead>Sport</TableHead>
+                <TableHead>Player / Team</TableHead>
                 <TableHead>Pick</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Line</TableHead>
@@ -140,22 +143,26 @@ export default function SBOAllPicks() {
               {isLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 8 }).map((_, j) => (
+                    {Array.from({ length: 9 }).map((_, j) => (
                       <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                     No picks match these filters.
                   </TableCell>
                 </TableRow>
               ) : rows.map((r) => {
                 const cb = confidenceBadge(r.parse_confidence);
+                const playerTeam = r.player_name && r.team && r.team !== r.player_name
+                  ? `${r.player_name} (${r.team})`
+                  : (r.player_name || r.team || '—');
                 return (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.sport ?? '—'}</TableCell>
+                    <TableCell className="whitespace-nowrap">{playerTeam}</TableCell>
                     <TableCell className="max-w-md truncate" title={r.pick_text ?? ''}>{r.pick_text ?? '—'}</TableCell>
                     <TableCell>{r.bet_type ?? '—'}</TableCell>
                     <TableCell>{r.line ?? '—'}</TableCell>

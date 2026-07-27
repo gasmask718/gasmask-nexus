@@ -309,7 +309,7 @@ function PhotoUploadDialog({ cappers, onAdded }: { cappers: any[]; onAdded: () =
                     {img.picks.map((p: any, i: number) => (
                       <div key={i} className="flex items-center gap-1.5 text-xs flex-wrap">
                         <Badge className={`text-[9px] ${sportColors[p.sport] || ''}`}>{p.sport}</Badge>
-                        <span className="font-medium">{p.player_name || p.team}</span>
+                        <span className="font-medium">{p.player_name && p.team && p.team !== p.player_name ? `${p.player_name} (${p.team})` : (p.player_name || p.team || '—')}</span>
                         {p.direction && <Badge variant="outline" className={`text-[9px] ${p.direction === 'OVER' || p.direction === 'WIN' ? 'text-emerald-500 border-emerald-500/30' : 'text-blue-500 border-blue-500/30'}`}>{p.direction}</Badge>}
                         {p.line != null && <span className="text-[10px]">{p.line}</span>}
                         {p.stat_type && <span className="text-[10px] text-muted-foreground">{p.stat_type}</span>}
@@ -528,7 +528,7 @@ function ReviewQueue({ onResolved }: { onResolved: () => void }) {
                   <span className="text-[10px] text-orange-400">⚠️ {p.capper_detection_confidence}% capper ID</span>
                 )}
               </div>
-              <p className="text-sm mt-1">{p.player_name} {p.direction} {p.line} {p.prop_type}</p>
+              <p className="text-sm mt-1">{p.player_name && p.team && p.team !== p.player_name ? `${p.player_name} (${p.team})` : (p.player_name || p.team || '')} {p.direction} {p.line} {p.prop_type}</p>
               <p className="text-[10px] text-muted-foreground truncate">{p.pick_text}</p>
               {p.extracted_capper_name && <p className="text-[10px] text-orange-400">Detected capper: {p.extracted_capper_name}</p>}
               {p.source_group && <p className="text-[10px] text-muted-foreground">Source: {p.source_group} {p.posted_by ? `· by ${p.posted_by}` : ''}</p>}
@@ -581,7 +581,7 @@ function TopPlayCard({ play, rank }: { play: any; rank: number }) {
             <span className="text-2xl font-black leading-none mt-0.5">{rankEmoji}</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-base">{play.player_name}</span>
+                <span className="font-bold text-base">{play.player_name && play.team && play.team !== play.player_name ? `${play.player_name} (${play.team})` : (play.player_name || play.team || '—')}</span>
                 <Badge variant="outline" className="text-[10px]">{play.stat_type}</Badge>
                 <Badge variant="outline" className={`text-[10px] font-bold ${
                   play.direction === 'OVER' ? 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10' : 'text-blue-400 border-blue-400/30 bg-blue-400/10'
@@ -870,7 +870,7 @@ function ProfitCenter({ bankroll, onBankrollChange }: { bankroll: number; onBank
             <CardContent className="p-3 flex items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-medium text-sm">{b.player_name}</span>
+                  <span className="font-medium text-sm">{b.player_name && b.team && b.team !== b.player_name ? `${b.player_name} (${b.team})` : (b.player_name || b.team || '—')}</span>
                   <Badge variant="outline" className="text-[10px]">{b.stat_type}</Badge>
                   <Badge variant="outline" className={`text-[10px] ${b.direction === 'OVER' ? 'text-emerald-400 border-emerald-400/30' : 'text-blue-400 border-blue-400/30'}`}>{b.direction} {b.line}</Badge>
                   {b.is_lock_play && <Badge className="text-[8px] bg-amber-500/20 text-amber-400 border-amber-500/30">🔒 LOCK</Badge>}
@@ -1617,7 +1617,7 @@ export default function SBOCapperTracker() {
                       <div className="flex items-center justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm">{p.player_name}</span>
+                            <span className="font-semibold text-sm">{p.player_name && p.team && p.team !== p.player_name ? `${p.player_name} (${p.team})` : (p.player_name || p.team || '—')}</span>
                             <Badge variant="outline" className="text-[10px]">{p.stat_type}</Badge>
                             <span className="text-xs font-medium">{p.line}</span>
                             <Badge className="text-[10px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30">💰 VALUE</Badge>
@@ -1645,7 +1645,7 @@ export default function SBOCapperTracker() {
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">{p.player_name}</span>
+                            <span className="font-medium text-sm">{p.player_name && p.team && p.team !== p.player_name ? `${p.player_name} (${p.team})` : (p.player_name || p.team || '—')}</span>
                             <Badge variant="outline" className="text-[10px]">{p.stat_type}</Badge>
                             <span className="text-xs">{p.line}</span>
                             <Badge className="text-[10px] bg-amber-500/20 text-amber-400 border-amber-500/30">🔥 STRONG</Badge>
@@ -1671,7 +1671,7 @@ export default function SBOCapperTracker() {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm">{p.player_name}</span>
+                          <span className="text-sm">{p.player_name && p.team && p.team !== p.player_name ? `${p.player_name} (${p.team})` : (p.player_name || p.team || '—')}</span>
                           <Badge variant="outline" className="text-[10px]">{p.stat_type}</Badge>
                           <span className="text-xs">{p.line}</span>
                         </div>
