@@ -870,7 +870,7 @@ function ProfitCenter({ bankroll, onBankrollChange }: { bankroll: number; onBank
             <CardContent className="p-3 flex items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-medium text-sm">{b.player_name}</span>
+                  <span className="font-medium text-sm">{b.player_name && b.team && b.team !== b.player_name ? `${b.player_name} (${b.team})` : (b.player_name || b.team || '—')}</span>
                   <Badge variant="outline" className="text-[10px]">{b.stat_type}</Badge>
                   <Badge variant="outline" className={`text-[10px] ${b.direction === 'OVER' ? 'text-emerald-400 border-emerald-400/30' : 'text-blue-400 border-blue-400/30'}`}>{b.direction} {b.line}</Badge>
                   {b.is_lock_play && <Badge className="text-[8px] bg-amber-500/20 text-amber-400 border-amber-500/30">🔒 LOCK</Badge>}
