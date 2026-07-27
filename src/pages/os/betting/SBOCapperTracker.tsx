@@ -1645,7 +1645,7 @@ export default function SBOCapperTracker() {
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">{p.player_name}</span>
+                            <span className="font-medium text-sm">{p.player_name && p.team && p.team !== p.player_name ? `${p.player_name} (${p.team})` : (p.player_name || p.team || '—')}</span>
                             <Badge variant="outline" className="text-[10px]">{p.stat_type}</Badge>
                             <span className="text-xs">{p.line}</span>
                             <Badge className="text-[10px] bg-amber-500/20 text-amber-400 border-amber-500/30">🔥 STRONG</Badge>
