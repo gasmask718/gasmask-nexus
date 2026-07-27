@@ -581,7 +581,7 @@ function TopPlayCard({ play, rank }: { play: any; rank: number }) {
             <span className="text-2xl font-black leading-none mt-0.5">{rankEmoji}</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-base">{play.player_name}</span>
+                <span className="font-bold text-base">{play.player_name && play.team && play.team !== play.player_name ? `${play.player_name} (${play.team})` : (play.player_name || play.team || '—')}</span>
                 <Badge variant="outline" className="text-[10px]">{play.stat_type}</Badge>
                 <Badge variant="outline" className={`text-[10px] font-bold ${
                   play.direction === 'OVER' ? 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10' : 'text-blue-400 border-blue-400/30 bg-blue-400/10'
