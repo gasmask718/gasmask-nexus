@@ -1,0 +1,1 @@
+ALTER TABLE public.sbo_capper_picks ADD COLUMN opponent text NULL;

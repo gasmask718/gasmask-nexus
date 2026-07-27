@@ -92054,6 +92054,7 @@ export type Database = {
           line: number | null
           matched_prop_id: string | null
           odds: number | null
+          opponent: string | null
           parse_confidence: number | null
           parsed_by_ai: boolean | null
           pick_text: string
@@ -92095,6 +92096,7 @@ export type Database = {
           line?: number | null
           matched_prop_id?: string | null
           odds?: number | null
+          opponent?: string | null
           parse_confidence?: number | null
           parsed_by_ai?: boolean | null
           pick_text: string
@@ -92136,6 +92138,7 @@ export type Database = {
           line?: number | null
           matched_prop_id?: string | null
           odds?: number | null
+          opponent?: string | null
           parse_confidence?: number | null
           parsed_by_ai?: boolean | null
           pick_text?: string

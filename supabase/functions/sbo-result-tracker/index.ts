@@ -8,6 +8,13 @@
 // for result resolution — leaving as pending for now.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  type Game,
+  findGameForRow,
+  getNylaSkipped,
+  resetNylaSkipped,
+  sideMatchesTeam,
+} from "../_shared/teamMatcher.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,15 +38,7 @@ const ESPN_ENDPOINTS: Record<string, string> = {
   WNBA:  "https://site.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard",
 };
 
-type Game = {
-  sport: string;
-  game_date: string;
-  home_team: string;
-  away_team: string;
-  home_score: number;
-  away_score: number;
-  final_total: number;
-};
+// Game type + team-matching primitives imported from _shared/teamMatcher.ts
 
 async function fetchCompletedGames(sport: string, url: string, errors: any[], dateYYYYMMDD?: string): Promise<Game[]> {
   try {
@@ -77,89 +76,10 @@ async function fetchCompletedGames(sport: string, url: string, errors: any[], da
   }
 }
 
-function norm(s: unknown): string { return String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
+// norm / MLB_ALIASES / AMBIGUOUS_MLB_TOKENS / splitSideCandidates /
+// sideMatchesTeam / findGameForRow moved to ../_shared/teamMatcher.ts
+// (imported at top). Behavior unchanged.
 
-// MLB alias map: any of these tokens (normalized) → canonical ESPN displayName.
-// Ambiguous 2-letter codes NY/LA/SF are intentionally omitted — see splitSideCandidates + nyla counter.
-const MLB_ALIASES: Record<string, string> = {
-  ari: "Arizona Diamondbacks", diamondbacks: "Arizona Diamondbacks",
-  atl: "Atlanta Braves", braves: "Atlanta Braves",
-  bal: "Baltimore Orioles", orioles: "Baltimore Orioles",
-  bos: "Boston Red Sox", redsox: "Boston Red Sox",
-  chc: "Chicago Cubs", cubs: "Chicago Cubs",
-  cws: "Chicago White Sox", chw: "Chicago White Sox", whitesox: "Chicago White Sox",
-  cin: "Cincinnati Reds", reds: "Cincinnati Reds",
-  cle: "Cleveland Guardians", guardians: "Cleveland Guardians",
-  col: "Colorado Rockies", rockies: "Colorado Rockies",
-  det: "Detroit Tigers", tigers: "Detroit Tigers",
-  hou: "Houston Astros", astros: "Houston Astros",
-  kc: "Kansas City Royals", kcr: "Kansas City Royals", royals: "Kansas City Royals",
-  laa: "Los Angeles Angels", angels: "Los Angeles Angels",
-  lad: "Los Angeles Dodgers", dodgers: "Los Angeles Dodgers",
-  mia: "Miami Marlins", marlins: "Miami Marlins",
-  mil: "Milwaukee Brewers", brewers: "Milwaukee Brewers",
-  min: "Minnesota Twins", twins: "Minnesota Twins",
-  nym: "New York Mets", mets: "New York Mets",
-  nyy: "New York Yankees", yankees: "New York Yankees",
-  oak: "Oakland Athletics", ath: "Oakland Athletics", athletics: "Oakland Athletics",
-  phi: "Philadelphia Phillies", phillies: "Philadelphia Phillies",
-  pit: "Pittsburgh Pirates", pirates: "Pittsburgh Pirates",
-  sd: "San Diego Padres", sdp: "San Diego Padres", padres: "San Diego Padres",
-  sfg: "San Francisco Giants", giants: "San Francisco Giants",
-  sea: "Seattle Mariners", mariners: "Seattle Mariners",
-  stl: "St. Louis Cardinals", cardinals: "St. Louis Cardinals",
-  tb: "Tampa Bay Rays", tbr: "Tampa Bay Rays", rays: "Tampa Bay Rays",
-  tex: "Texas Rangers", rangers: "Texas Rangers",
-  tor: "Toronto Blue Jays", bluejays: "Toronto Blue Jays",
-  wsh: "Washington Nationals", was: "Washington Nationals", nationals: "Washington Nationals",
-};
-
-// Tokens that are ambiguous between MLB teams (NY = Yankees|Mets, LA = Angels|Dodgers, SF = Giants only but historically ambiguous).
-const AMBIGUOUS_MLB_TOKENS = new Set(["ny", "la"]);
-
-// Module-level counter for ambiguous NY/LA skips observed during a run.
-let nylaSkippedCount = 0;
-
-// Split multi-team strings ("Yankees/Phillies", "SEA-TEX", "TB Rays vs BOS")
-// into individual candidate tokens for matching. Preserves the original as fallback.
-function splitSideCandidates(side: string): string[] {
-  const raw = String(side ?? "").trim();
-  if (!raw) return [];
-  const parts = raw.split(/[\/\-,]|\s+vs\.?\s+|\s+@\s+/i).map(x => x.trim()).filter(Boolean);
-  return parts.length > 1 ? [raw, ...parts] : [raw];
-}
-
-function sideMatchesTeam(side: string, team: string, sport?: string): boolean {
-  const t = norm(team);
-  if (!t) return false;
-  const isMlb = (sport ?? "").toUpperCase() === "MLB";
-  for (const candidate of splitSideCandidates(side)) {
-    const c = norm(candidate);
-    if (!c) continue;
-    if (isMlb && AMBIGUOUS_MLB_TOKENS.has(c)) { nylaSkippedCount++; continue; }
-    if (c === t || c.includes(t) || t.includes(c)) return true;
-    if (isMlb) {
-      const canonical = MLB_ALIASES[c];
-      if (canonical && norm(canonical) === t) return true;
-    }
-  }
-  return false;
-}
-
-function findGameForRow(games: Game[], sport: string, gameDate: string, side: string | null, gameStr: string | null): Game | null {
-  const candidates = games.filter(g => g.sport === sport && g.game_date === gameDate);
-  if (candidates.length === 0) return null;
-  if (side) {
-    const bySide = candidates.find(g => sideMatchesTeam(side, g.home_team, sport) || sideMatchesTeam(side, g.away_team, sport));
-    if (bySide) return bySide;
-  }
-  if (gameStr) {
-    const g = norm(gameStr);
-    const byGame = candidates.find(c => g.includes(norm(c.home_team)) || g.includes(norm(c.away_team)));
-    if (byGame) return byGame;
-  }
-  return null;
-}
 
 type Resolution = { result: "win" | "loss" | "push"; pnl: number };
 
@@ -211,7 +131,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   // Reset the module-level ambiguity counter per invocation.
-  nylaSkippedCount = 0;
+  resetNylaSkipped();
 
   // ?mark_unsupported=true → flag MLB prop/parlay pending picks (past dates) as
   // ungradeable by this source. Leaves result='pending' untouched → downstream
@@ -516,7 +436,7 @@ Deno.serve(async (req) => {
     summary.errors.push({ stage: "combiner_invoke_exception", message: e?.message });
   }
 
-  summary.nyla_skipped = nylaSkippedCount;
+  summary.nyla_skipped = getNylaSkipped();
   return new Response(JSON.stringify(summary), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
     status: 200,
