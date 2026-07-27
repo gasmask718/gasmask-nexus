@@ -41,10 +41,11 @@ type Game = {
   final_total: number;
 };
 
-async function fetchCompletedGames(sport: string, url: string, errors: any[]): Promise<Game[]> {
+async function fetchCompletedGames(sport: string, url: string, errors: any[], dateYYYYMMDD?: string): Promise<Game[]> {
   try {
-    const res = await fetch(url);
-    if (!res.ok) { errors.push({ sport, stage: "fetch", status: res.status }); return []; }
+    const finalUrl = dateYYYYMMDD ? `${url}?dates=${dateYYYYMMDD}` : url;
+    const res = await fetch(finalUrl);
+    if (!res.ok) { errors.push({ sport, stage: "fetch", status: res.status, date: dateYYYYMMDD ?? "today" }); return []; }
     const json = await res.json();
     const events = json?.events ?? [];
     const games: Game[] = [];
