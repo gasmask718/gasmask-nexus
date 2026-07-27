@@ -31,6 +31,9 @@ type Row = {
   parse_confidence: number | null;
   result: string | null;
   created_at: string;
+  extracted_capper_name: string | null;
+  capper_detection_confidence: number | null;
+  sbo_cappers: { name: string | null } | null;
 };
 
 function confidenceBadge(v: number | null) {
@@ -62,7 +65,7 @@ export default function SBOAllPicks() {
     queryFn: async () => {
       let q = (supabase as any)
         .from('sbo_capper_picks')
-        .select('id,sport,team,player_name,pick_text,bet_type,line,stake,parse_confidence,result,created_at', { count: 'exact' })
+        .select('id,sport,team,player_name,pick_text,bet_type,line,stake,parse_confidence,result,created_at,extracted_capper_name,capper_detection_confidence,sbo_cappers(name)', { count: 'exact' })
         .order('parse_confidence', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
@@ -129,6 +132,7 @@ export default function SBOAllPicks() {
             <TableHeader>
               <TableRow>
                 <TableHead>Sport</TableHead>
+                <TableHead>Capper</TableHead>
                 <TableHead>Player / Team</TableHead>
                 <TableHead>Pick</TableHead>
                 <TableHead>Type</TableHead>
@@ -143,14 +147,14 @@ export default function SBOAllPicks() {
               {isLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 9 }).map((_, j) => (
+                    {Array.from({ length: 10 }).map((_, j) => (
                       <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                     No picks match these filters.
                   </TableCell>
                 </TableRow>
@@ -159,9 +163,30 @@ export default function SBOAllPicks() {
                 const playerTeam = r.player_name && r.team && r.team !== r.player_name
                   ? `${r.player_name} (${r.team})`
                   : (r.player_name || r.team || '—');
+                const resolved = r.sbo_cappers?.name ?? null;
+                const extracted = r.extracted_capper_name ?? null;
+                const conf = r.capper_detection_confidence;
+                const norm = (s: string | null) => (s ?? '').trim().toLowerCase();
+                const mismatch = !!extracted && !!resolved && norm(extracted) !== norm(resolved);
+                const missingExtraction = !extracted;
+                const capperCls = mismatch
+                  ? 'text-amber-500'
+                  : missingExtraction
+                    ? 'text-muted-foreground'
+                    : 'text-emerald-500';
                 return (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.sport ?? '—'}</TableCell>
+                    <TableCell className="whitespace-nowrap align-top">
+                      <div className={`text-sm font-medium ${mismatch ? 'text-amber-500' : ''}`}>
+                        {resolved ?? '—'}
+                      </div>
+                      <div className={`text-[10px] ${capperCls}`}>
+                        {extracted
+                          ? `Extracted: ${extracted}${conf != null ? ` · ${Number(conf).toFixed(0)}%` : ''}`
+                          : 'no extraction'}
+                      </div>
+                    </TableCell>
                     <TableCell className="whitespace-nowrap">{playerTeam}</TableCell>
                     <TableCell className="max-w-md truncate" title={r.pick_text ?? ''}>{r.pick_text ?? '—'}</TableCell>
                     <TableCell>{r.bet_type ?? '—'}</TableCell>

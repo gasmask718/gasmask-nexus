@@ -355,7 +355,13 @@ export function CapperPicksFeed({ cappers, onRefetch }: CapperPicksFeedProps) {
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <Badge variant="outline" className={`text-[10px] ${tierColors[p.sbo_cappers?.tier] || ''}`}>
+                      <Badge variant="outline" className={`text-[10px] ${tierColors[p.sbo_cappers?.tier] || ''} ${
+                        p.extracted_capper_name &&
+                        p.sbo_cappers?.name &&
+                        (p.extracted_capper_name || '').trim().toLowerCase() !== (p.sbo_cappers?.name || '').trim().toLowerCase()
+                          ? 'border-amber-500/60 text-amber-500'
+                          : ''
+                      }`}>
                         {p.sbo_cappers?.name || 'Unknown'}
                       </Badge>
                       <Badge className={`text-[10px] ${sportColors[p.sport] || sportColors.NBA}`}>
@@ -379,6 +385,24 @@ export function CapperPicksFeed({ cappers, onRefetch }: CapperPicksFeedProps) {
                       )}
                       {p.player_name && <span className="text-sm font-medium">{p.player_name}</span>}
                     </div>
+                    {(() => {
+                      const resolved = p.sbo_cappers?.name ?? null;
+                      const extracted = p.extracted_capper_name ?? null;
+                      if (!extracted && !resolved) return null;
+                      const norm = (s: string | null) => (s ?? '').trim().toLowerCase();
+                      const mismatch = !!extracted && !!resolved && norm(extracted) !== norm(resolved);
+                      const cls = !extracted
+                        ? 'text-muted-foreground'
+                        : mismatch ? 'text-amber-500' : 'text-emerald-500/80';
+                      const conf = p.capper_detection_confidence;
+                      return (
+                        <p className={`text-[10px] mt-0.5 ${cls}`}>
+                          {extracted
+                            ? `Extracted: ${extracted}${conf != null ? ` · ${Number(conf).toFixed(0)}%` : ''}`
+                            : 'no extraction'}
+                        </p>
+                      );
+                    })()}
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       {p.direction && (
                         <Badge variant="outline" className={`text-[10px] ${
