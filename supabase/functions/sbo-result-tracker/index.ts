@@ -41,10 +41,11 @@ type Game = {
   final_total: number;
 };
 
-async function fetchCompletedGames(sport: string, url: string, errors: any[]): Promise<Game[]> {
+async function fetchCompletedGames(sport: string, url: string, errors: any[], dateYYYYMMDD?: string): Promise<Game[]> {
   try {
-    const res = await fetch(url);
-    if (!res.ok) { errors.push({ sport, stage: "fetch", status: res.status }); return []; }
+    const finalUrl = dateYYYYMMDD ? `${url}?dates=${dateYYYYMMDD}` : url;
+    const res = await fetch(finalUrl);
+    if (!res.ok) { errors.push({ sport, stage: "fetch", status: res.status, date: dateYYYYMMDD ?? "today" }); return []; }
     const json = await res.json();
     const events = json?.events ?? [];
     const games: Game[] = [];
@@ -154,10 +155,49 @@ Deno.serve(async (req) => {
 
   const sportsList = Object.entries(ESPN_ENDPOINTS);
   summary.sports_checked = sportsList.length;
-  const perSportGames = await Promise.all(
-    sportsList.map(([sport, url]) => fetchCompletedGames(sport, url, summary.errors))
-  );
-  const allGames: Game[] = perSportGames.flat();
+
+  // 180-day historical backfill: query distinct (sport, game_date) from pending capper picks,
+  // then call ESPN once per (sport, date) using ?dates=YYYYMMDD. Today always included.
+  const CUTOFF_DAYS = 180;
+  const cutoffIso = new Date(Date.now() - CUTOFF_DAYS * 86400_000).toISOString().slice(0, 10);
+  const todayYmd = new Date().toISOString().slice(0, 10);
+
+  const supportedSports = new Set(Object.keys(ESPN_ENDPOINTS));
+  const dateSetBySport = new Map<string, Set<string>>();
+  for (const s of supportedSports) dateSetBySport.set(s, new Set([todayYmd]));
+
+  const { data: pendingRows, error: pendErr } = await supabase
+    .from("sbo_capper_picks")
+    .select("sport, game_date")
+    .or("result.is.null,result.eq.pending")
+    .gte("game_date", cutoffIso)
+    .not("game_date", "is", null);
+  if (pendErr) {
+    summary.errors.push({ stage: "pending_scan", message: pendErr.message });
+  } else {
+    for (const r of pendingRows ?? []) {
+      const sport = String((r as any).sport ?? "").toUpperCase();
+      if (!supportedSports.has(sport)) continue;
+      const d = String((r as any).game_date).slice(0, 10);
+      if (d < cutoffIso) continue;
+      dateSetBySport.get(sport)!.add(d);
+    }
+  }
+
+  const allGames: Game[] = [];
+  const fetchPlan: Array<{ sport: string; date: string }> = [];
+  for (const [sport, url] of sportsList) {
+    for (const ymd of dateSetBySport.get(sport) ?? []) {
+      const isToday = ymd === todayYmd;
+      const dateArg = isToday ? undefined : ymd.replace(/-/g, "");
+      fetchPlan.push({ sport, date: dateArg ?? "today" });
+      const games = await fetchCompletedGames(sport, url, summary.errors, dateArg);
+      allGames.push(...games);
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+  (summary as any).fetch_plan_count = fetchPlan.length;
+  (summary as any).cutoff_date = cutoffIso;
   summary.games_resolved = allGames.length;
 
   const capperDeltas = new Map<string, { w: number; l: number; p: number }>();
