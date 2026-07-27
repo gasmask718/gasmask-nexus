@@ -169,7 +169,7 @@ function winPnl(stake: number, oddsIn: number | null): number {
   return stake * (100 / Math.abs(odds));
 }
 function resolveSpread(game: Game, side: string, line: number, stake: number, odds: number | null): Resolution {
-  const takingHome = sideMatchesTeam(side, game.home_team);
+  const takingHome = sideMatchesTeam(side, game.home_team, game.sport);
   const margin = takingHome ? game.home_score - game.away_score : game.away_score - game.home_score;
   const spreadLine = takingHome ? line : Math.abs(line);
   if (margin === spreadLine) return { result: "push", pnl: 0 };
@@ -186,8 +186,8 @@ function resolveTotal(game: Game, side: string, line: number, stake: number, odd
   return { result: won ? "win" : "loss", pnl: won ? winPnl(stake, odds) : -stake };
 }
 function resolveMoneyline(game: Game, side: string, stake: number, odds: number | null): Resolution {
-  const takingHome = sideMatchesTeam(side, game.home_team);
-  const takingAway = sideMatchesTeam(side, game.away_team);
+  const takingHome = sideMatchesTeam(side, game.home_team, game.sport);
+  const takingAway = sideMatchesTeam(side, game.away_team, game.sport);
   if (!takingHome && !takingAway) return { result: "loss", pnl: -stake };
   const won = takingHome ? game.home_score > game.away_score : game.away_score > game.home_score;
   return { result: won ? "win" : "loss", pnl: won ? winPnl(stake, odds) : -stake };
