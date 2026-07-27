@@ -22,6 +22,8 @@ const PAGE_SIZE = 50;
 type Row = {
   id: string;
   sport: string | null;
+  team: string | null;
+  player_name: string | null;
   pick_text: string | null;
   bet_type: string | null;
   line: number | null;
