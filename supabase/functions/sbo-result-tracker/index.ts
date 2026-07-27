@@ -78,16 +78,79 @@ async function fetchCompletedGames(sport: string, url: string, errors: any[], da
 }
 
 function norm(s: unknown): string { return String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
-function sideMatchesTeam(side: string, team: string): boolean {
-  const s = norm(side), t = norm(team);
-  if (!s || !t) return false;
-  return s === t || s.includes(t) || t.includes(s);
+
+// MLB alias map: any of these tokens (normalized) → canonical ESPN displayName.
+// Ambiguous 2-letter codes NY/LA/SF are intentionally omitted — see splitSideCandidates + nyla counter.
+const MLB_ALIASES: Record<string, string> = {
+  ari: "Arizona Diamondbacks", diamondbacks: "Arizona Diamondbacks",
+  atl: "Atlanta Braves", braves: "Atlanta Braves",
+  bal: "Baltimore Orioles", orioles: "Baltimore Orioles",
+  bos: "Boston Red Sox", redsox: "Boston Red Sox",
+  chc: "Chicago Cubs", cubs: "Chicago Cubs",
+  cws: "Chicago White Sox", chw: "Chicago White Sox", whitesox: "Chicago White Sox",
+  cin: "Cincinnati Reds", reds: "Cincinnati Reds",
+  cle: "Cleveland Guardians", guardians: "Cleveland Guardians",
+  col: "Colorado Rockies", rockies: "Colorado Rockies",
+  det: "Detroit Tigers", tigers: "Detroit Tigers",
+  hou: "Houston Astros", astros: "Houston Astros",
+  kc: "Kansas City Royals", kcr: "Kansas City Royals", royals: "Kansas City Royals",
+  laa: "Los Angeles Angels", angels: "Los Angeles Angels",
+  lad: "Los Angeles Dodgers", dodgers: "Los Angeles Dodgers",
+  mia: "Miami Marlins", marlins: "Miami Marlins",
+  mil: "Milwaukee Brewers", brewers: "Milwaukee Brewers",
+  min: "Minnesota Twins", twins: "Minnesota Twins",
+  nym: "New York Mets", mets: "New York Mets",
+  nyy: "New York Yankees", yankees: "New York Yankees",
+  oak: "Oakland Athletics", ath: "Oakland Athletics", athletics: "Oakland Athletics",
+  phi: "Philadelphia Phillies", phillies: "Philadelphia Phillies",
+  pit: "Pittsburgh Pirates", pirates: "Pittsburgh Pirates",
+  sd: "San Diego Padres", sdp: "San Diego Padres", padres: "San Diego Padres",
+  sfg: "San Francisco Giants", giants: "San Francisco Giants",
+  sea: "Seattle Mariners", mariners: "Seattle Mariners",
+  stl: "St. Louis Cardinals", cardinals: "St. Louis Cardinals",
+  tb: "Tampa Bay Rays", tbr: "Tampa Bay Rays", rays: "Tampa Bay Rays",
+  tex: "Texas Rangers", rangers: "Texas Rangers",
+  tor: "Toronto Blue Jays", bluejays: "Toronto Blue Jays",
+  wsh: "Washington Nationals", was: "Washington Nationals", nationals: "Washington Nationals",
+};
+
+// Tokens that are ambiguous between MLB teams (NY = Yankees|Mets, LA = Angels|Dodgers, SF = Giants only but historically ambiguous).
+const AMBIGUOUS_MLB_TOKENS = new Set(["ny", "la"]);
+
+// Module-level counter for ambiguous NY/LA skips observed during a run.
+let nylaSkippedCount = 0;
+
+// Split multi-team strings ("Yankees/Phillies", "SEA-TEX", "TB Rays vs BOS")
+// into individual candidate tokens for matching. Preserves the original as fallback.
+function splitSideCandidates(side: string): string[] {
+  const raw = String(side ?? "").trim();
+  if (!raw) return [];
+  const parts = raw.split(/[\/\-,]|\s+vs\.?\s+|\s+@\s+/i).map(x => x.trim()).filter(Boolean);
+  return parts.length > 1 ? [raw, ...parts] : [raw];
 }
+
+function sideMatchesTeam(side: string, team: string, sport?: string): boolean {
+  const t = norm(team);
+  if (!t) return false;
+  const isMlb = (sport ?? "").toUpperCase() === "MLB";
+  for (const candidate of splitSideCandidates(side)) {
+    const c = norm(candidate);
+    if (!c) continue;
+    if (isMlb && AMBIGUOUS_MLB_TOKENS.has(c)) { nylaSkippedCount++; continue; }
+    if (c === t || c.includes(t) || t.includes(c)) return true;
+    if (isMlb) {
+      const canonical = MLB_ALIASES[c];
+      if (canonical && norm(canonical) === t) return true;
+    }
+  }
+  return false;
+}
+
 function findGameForRow(games: Game[], sport: string, gameDate: string, side: string | null, gameStr: string | null): Game | null {
   const candidates = games.filter(g => g.sport === sport && g.game_date === gameDate);
   if (candidates.length === 0) return null;
   if (side) {
-    const bySide = candidates.find(g => sideMatchesTeam(side, g.home_team) || sideMatchesTeam(side, g.away_team));
+    const bySide = candidates.find(g => sideMatchesTeam(side, g.home_team, sport) || sideMatchesTeam(side, g.away_team, sport));
     if (bySide) return bySide;
   }
   if (gameStr) {
@@ -106,7 +169,7 @@ function winPnl(stake: number, oddsIn: number | null): number {
   return stake * (100 / Math.abs(odds));
 }
 function resolveSpread(game: Game, side: string, line: number, stake: number, odds: number | null): Resolution {
-  const takingHome = sideMatchesTeam(side, game.home_team);
+  const takingHome = sideMatchesTeam(side, game.home_team, game.sport);
   const margin = takingHome ? game.home_score - game.away_score : game.away_score - game.home_score;
   const spreadLine = takingHome ? line : Math.abs(line);
   if (margin === spreadLine) return { result: "push", pnl: 0 };
@@ -123,8 +186,8 @@ function resolveTotal(game: Game, side: string, line: number, stake: number, odd
   return { result: won ? "win" : "loss", pnl: won ? winPnl(stake, odds) : -stake };
 }
 function resolveMoneyline(game: Game, side: string, stake: number, odds: number | null): Resolution {
-  const takingHome = sideMatchesTeam(side, game.home_team);
-  const takingAway = sideMatchesTeam(side, game.away_team);
+  const takingHome = sideMatchesTeam(side, game.home_team, game.sport);
+  const takingAway = sideMatchesTeam(side, game.away_team, game.sport);
   if (!takingHome && !takingAway) return { result: "loss", pnl: -stake };
   const won = takingHome ? game.home_score > game.away_score : game.away_score > game.home_score;
   return { result: won ? "win" : "loss", pnl: won ? winPnl(stake, odds) : -stake };
@@ -147,9 +210,34 @@ function weekStartUTC(d = new Date()): string {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  // Reset the module-level ambiguity counter per invocation.
+  nylaSkippedCount = 0;
+
+  // ?mark_unsupported=true → flag MLB prop/parlay pending picks (past dates) as
+  // ungradeable by this source. Leaves result='pending' untouched → downstream
+  // rollups (win_rate, consensus, weekly buckets) unaffected.
+  const reqUrl = new URL(req.url);
+  if (reqUrl.searchParams.get("mark_unsupported") === "true") {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await supabase
+      .from("sbo_capper_picks")
+      .update({ unsupported: true })
+      .eq("sport", "MLB")
+      .eq("result", "pending")
+      .eq("unsupported", false)
+      .in("bet_type", ["prop", "parlay"])
+      .lt("game_date", today)
+      .select("id");
+    return new Response(
+      JSON.stringify({ ok: !error, marked: data?.length ?? 0, error: error?.message ?? null }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
   const summary = {
     sports_checked: 0, games_resolved: 0,
     signals_updated: 0, picks_updated: 0, props_updated: 0, cappers_updated: 0,
+    nyla_skipped: 0,
     errors: [] as any[],
   };
 
@@ -170,6 +258,7 @@ Deno.serve(async (req) => {
     .from("sbo_capper_picks")
     .select("sport, game_date")
     .or("result.is.null,result.eq.pending")
+    .eq("unsupported", false)
     .gte("game_date", cutoffIso)
     .not("game_date", "is", null);
   if (pendErr) {
@@ -270,6 +359,7 @@ Deno.serve(async (req) => {
       .from("sbo_capper_picks")
       .select("id, capper_id, sport, game_date, direction, bet_type, stake, odds, line, team, player_name, pick_text")
       .eq("result", "pending")
+      .eq("unsupported", false)
       .in("sport", Object.keys(ESPN_ENDPOINTS))
       .limit(5000);
     if (error) throw error;
@@ -426,6 +516,7 @@ Deno.serve(async (req) => {
     summary.errors.push({ stage: "combiner_invoke_exception", message: e?.message });
   }
 
+  summary.nyla_skipped = nylaSkippedCount;
   return new Response(JSON.stringify(summary), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
     status: 200,
