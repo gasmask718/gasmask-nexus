@@ -210,9 +210,34 @@ function weekStartUTC(d = new Date()): string {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  // Reset the module-level ambiguity counter per invocation.
+  nylaSkippedCount = 0;
+
+  // ?mark_unsupported=true → flag MLB prop/parlay pending picks (past dates) as
+  // ungradeable by this source. Leaves result='pending' untouched → downstream
+  // rollups (win_rate, consensus, weekly buckets) unaffected.
+  const reqUrl = new URL(req.url);
+  if (reqUrl.searchParams.get("mark_unsupported") === "true") {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await supabase
+      .from("sbo_capper_picks")
+      .update({ unsupported: true })
+      .eq("sport", "MLB")
+      .eq("result", "pending")
+      .eq("unsupported", false)
+      .in("bet_type", ["prop", "parlay"])
+      .lt("game_date", today)
+      .select("id");
+    return new Response(
+      JSON.stringify({ ok: !error, marked: data?.length ?? 0, error: error?.message ?? null }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
   const summary = {
     sports_checked: 0, games_resolved: 0,
     signals_updated: 0, picks_updated: 0, props_updated: 0, cappers_updated: 0,
+    nyla_skipped: 0,
     errors: [] as any[],
   };
 
