@@ -274,15 +274,48 @@ RULES:
       }
     } else if (group_type === 'direct' && !resolvedCapperId) {
       // Resolution order for direct dispatches (per-poster identity wins over channel fallback):
-      // 1) AI-extracted capper_name from the image → resolve
-      // 2) caller-provided capper_name (intake: capper_name || channel_name || channel_username) → resolve
-      // 3) auto-create from extracted name (gated: len>=3 AND not equal to channel-name normalization)
-      // 4) auto-create from caller name (permissive — it's a real Telegram-supplied string)
+      // 1) Resolve AI-extracted capper_name against existing sbo_cappers
+      // 2) If extracted passes quality gate (len>=3 AND != channel-name normalization),
+      //    auto-create a new per-poster capper from it — BEFORE caller/channel fallback.
+      //    (Critical: channel row almost always exists after first message; if we resolve
+      //     channel first, per-poster identity gets swallowed forever.)
+      // 3) Resolve caller-provided name (intake: capper_name || channel_name || channel_username)
+      // 4) Auto-create from caller name (permissive fallback)
       const callerName = (capper_name || '').trim();
       const extractedName = (extractedCapperName || '').trim();
       const callerNorm = normalizeName(callerName);
       const extractedNorm = normalizeName(extractedName);
 
+      const autoCreate = async (autoName: string, autoSource: string) => {
+        const normalized = normalizeName(autoName);
+        const { data: newCapper, error: createErr } = await supabase
+          .from('sbo_cappers')
+          .insert({
+            name: autoName,
+            normalized_name: normalized || null,
+            source: autoSource,
+            source_handle: extractedCapperHandle || null,
+            tier: 'unproven',
+            confidence_grade: 'D',
+            is_active: true,
+            total_picks: 0,
+            group_type: 'direct',
+          })
+          .select('id, name')
+          .single();
+
+        if (createErr) {
+          // Race condition retry
+          const retry = await resolveCapperByName(supabase, autoName);
+          resolvedCapperId = retry?.id || null;
+          resolvedCapperName = retry?.name || null;
+        } else {
+          resolvedCapperId = newCapper.id;
+          resolvedCapperName = newCapper.name;
+        }
+      };
+
+      // 1) Try resolving extracted name against existing cappers
       if (extractedName) {
         const existing = await resolveCapperByName(supabase, extractedName);
         if (existing) {
@@ -291,6 +324,18 @@ RULES:
         }
       }
 
+      // 2) Auto-create from extracted name if it passes the quality gate — BEFORE caller fallback
+      if (!resolvedCapperId) {
+        const extractedIsRealName =
+          !!extractedName &&
+          extractedNorm.length >= 3 &&
+          extractedNorm !== callerNorm;
+        if (extractedIsRealName) {
+          await autoCreate(extractedName, 'image_extract');
+        }
+      }
+
+      // 3) Fall back to caller/channel name resolution
       if (!resolvedCapperId && callerName) {
         const existing = await resolveCapperByName(supabase, callerName);
         if (existing) {
@@ -299,42 +344,9 @@ RULES:
         }
       }
 
-      // Auto-create — prefer extracted (real per-poster identity) over caller (channel-level fallback)
-      if (!resolvedCapperId) {
-        const extractedIsRealName =
-          !!extractedName &&
-          extractedNorm.length >= 3 &&
-          extractedNorm !== callerNorm;
-        const autoName = extractedIsRealName ? extractedName : callerName;
-        const autoSource = extractedIsRealName ? 'image_extract' : 'telegram_direct';
-        if (autoName) {
-          const normalized = normalizeName(autoName);
-          const { data: newCapper, error: createErr } = await supabase
-            .from('sbo_cappers')
-            .insert({
-              name: autoName,
-              normalized_name: normalized || null,
-              source: autoSource,
-              source_handle: extractedCapperHandle || null,
-              tier: 'unproven',
-              confidence_grade: 'D',
-              is_active: true,
-              total_picks: 0,
-              group_type: 'direct',
-            })
-            .select('id, name')
-            .single();
-
-          if (createErr) {
-            // Race condition retry
-            const retry = await resolveCapperByName(supabase, autoName);
-            resolvedCapperId = retry?.id || null;
-            resolvedCapperName = retry?.name || null;
-          } else {
-            resolvedCapperId = newCapper.id;
-            resolvedCapperName = newCapper.name;
-          }
-        }
+      // 4) Last resort — auto-create from caller name (permissive)
+      if (!resolvedCapperId && callerName) {
+        await autoCreate(callerName, 'telegram_direct');
       }
     }
 
