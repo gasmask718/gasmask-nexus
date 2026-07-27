@@ -516,6 +516,7 @@ Deno.serve(async (req) => {
     summary.errors.push({ stage: "combiner_invoke_exception", message: e?.message });
   }
 
+  summary.nyla_skipped = nylaSkippedCount;
   return new Response(JSON.stringify(summary), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
     status: 200,
