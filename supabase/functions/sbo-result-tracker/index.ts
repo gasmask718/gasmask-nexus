@@ -8,6 +8,13 @@
 // for result resolution — leaving as pending for now.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  type Game,
+  findGameForRow,
+  getNylaSkipped,
+  resetNylaSkipped,
+  sideMatchesTeam,
+} from "../_shared/teamMatcher.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,15 +38,7 @@ const ESPN_ENDPOINTS: Record<string, string> = {
   WNBA:  "https://site.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard",
 };
 
-type Game = {
-  sport: string;
-  game_date: string;
-  home_team: string;
-  away_team: string;
-  home_score: number;
-  away_score: number;
-  final_total: number;
-};
+// Game type + team-matching primitives imported from _shared/teamMatcher.ts
 
 async function fetchCompletedGames(sport: string, url: string, errors: any[], dateYYYYMMDD?: string): Promise<Game[]> {
   try {
