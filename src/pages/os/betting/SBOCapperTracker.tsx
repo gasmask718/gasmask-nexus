@@ -521,7 +521,32 @@ function ReviewQueue({ onResolved }: { onResolved: () => void }) {
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="outline" className="text-[10px]">{p.sbo_cappers?.name}</Badge>
+                {(() => {
+                  const resolved = p.sbo_cappers?.name ?? null;
+                  const extracted = p.extracted_capper_name ?? null;
+                  const norm = (s: string | null) => (s ?? '').trim().toLowerCase();
+                  const mismatch = !!extracted && !!resolved && norm(extracted) !== norm(resolved);
+                  return (
+                    <>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] ${mismatch ? 'border-amber-500/50 text-amber-500' : ''}`}
+                      >
+                        {resolved ?? 'Unknown'}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] ${
+                          !extracted
+                            ? 'text-muted-foreground'
+                            : mismatch ? 'border-amber-500/50 text-amber-500' : 'border-emerald-500/40 text-emerald-500'
+                        }`}
+                      >
+                        {extracted ? `Extracted: ${extracted}` : 'no extraction'}
+                      </Badge>
+                    </>
+                  );
+                })()}
                 <Badge className={`text-[10px] ${sportColors[p.sport] || ''}`}>{p.sport}</Badge>
                 <span className="text-[10px] text-amber-500">{p.parse_confidence}% parse</span>
                 {p.capper_detection_confidence != null && p.capper_detection_confidence < 70 && (
@@ -530,7 +555,6 @@ function ReviewQueue({ onResolved }: { onResolved: () => void }) {
               </div>
               <p className="text-sm mt-1">{p.player_name && p.team && p.team !== p.player_name ? `${p.player_name} (${p.team})` : (p.player_name || p.team || '')} {p.direction} {p.line} {p.prop_type}</p>
               <p className="text-[10px] text-muted-foreground truncate">{p.pick_text}</p>
-              {p.extracted_capper_name && <p className="text-[10px] text-orange-400">Detected capper: {p.extracted_capper_name}</p>}
               {p.source_group && <p className="text-[10px] text-muted-foreground">Source: {p.source_group} {p.posted_by ? `· by ${p.posted_by}` : ''}</p>}
             </div>
             <div className="flex gap-1 shrink-0">
