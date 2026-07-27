@@ -31,6 +31,9 @@ type Row = {
   parse_confidence: number | null;
   result: string | null;
   created_at: string;
+  extracted_capper_name: string | null;
+  capper_detection_confidence: number | null;
+  sbo_cappers: { name: string | null } | null;
 };
 
 function confidenceBadge(v: number | null) {
