@@ -258,6 +258,7 @@ Deno.serve(async (req) => {
     .from("sbo_capper_picks")
     .select("sport, game_date")
     .or("result.is.null,result.eq.pending")
+    .eq("unsupported", false)
     .gte("game_date", cutoffIso)
     .not("game_date", "is", null);
   if (pendErr) {
