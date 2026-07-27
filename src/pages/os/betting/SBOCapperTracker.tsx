@@ -309,7 +309,7 @@ function PhotoUploadDialog({ cappers, onAdded }: { cappers: any[]; onAdded: () =
                     {img.picks.map((p: any, i: number) => (
                       <div key={i} className="flex items-center gap-1.5 text-xs flex-wrap">
                         <Badge className={`text-[9px] ${sportColors[p.sport] || ''}`}>{p.sport}</Badge>
-                        <span className="font-medium">{p.player_name || p.team}</span>
+                        <span className="font-medium">{p.player_name && p.team && p.team !== p.player_name ? `${p.player_name} (${p.team})` : (p.player_name || p.team || '—')}</span>
                         {p.direction && <Badge variant="outline" className={`text-[9px] ${p.direction === 'OVER' || p.direction === 'WIN' ? 'text-emerald-500 border-emerald-500/30' : 'text-blue-500 border-blue-500/30'}`}>{p.direction}</Badge>}
                         {p.line != null && <span className="text-[10px]">{p.line}</span>}
                         {p.stat_type && <span className="text-[10px] text-muted-foreground">{p.stat_type}</span>}
