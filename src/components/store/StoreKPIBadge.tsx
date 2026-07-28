@@ -202,15 +202,17 @@ export function StoreKPIBadge({ summary, isLoading, intelSummary, skuStamps, sto
                 </span>
               </div>
 
-              {/* Inventory-check stamp — per product line */}
-              {checkLookup.get(brand.brand_id) && (
+              {/* Inventory-check stamp — per product line (falls back to the
+                  canonical store-level check when this SKU has no own stamp) */}
+              {(checkLookup.get(brand.brand_id) || storeStamps?.lastChecked) && (
                 <div className="flex items-center justify-between mt-0.5">
                   <span className="text-[10px] text-muted-foreground">Inventory checked:</span>
                   <span className="text-[10px] text-muted-foreground font-medium">
-                    {dynastyStamp(checkLookup.get(brand.brand_id)!)}
+                    {dynastyStamp((checkLookup.get(brand.brand_id) || storeStamps?.lastChecked)!)}
                   </span>
                 </div>
               )}
+
 
               {/* Status warnings inline */}
               {isOutOfStock && (
