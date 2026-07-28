@@ -30,9 +30,10 @@ export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
       const { data, error } = await supabase
         .from('store_contacts')
         .select(
-          'id, name, phone, role, is_primary, can_receive_sms, responsive_by_call, responsive_by_text, last_call_answered_at, last_text_received_at, sms_opt_in_status'
+          'id, name, phone, role, is_primary, can_receive_sms, responsive_by_call, responsive_by_text, last_call_answered_at, last_text_received_at, sms_opt_in_status, owner_confirmed, owner_confirmed_at, owner_confirmed_by, is_homie, homie_set_at, homie_set_by'
         )
         .eq('store_id', storeId)
+        .order('is_homie', { ascending: false })
         .order('is_primary', { ascending: false })
         .order('created_at', { ascending: true })
         .limit(50);
