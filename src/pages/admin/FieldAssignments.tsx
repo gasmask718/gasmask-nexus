@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, MapPin, Search, Trash2, Route as RouteIcon, UserCog, AlertCircle } from "lucide-react";
 import {
   useFieldWorkers,
@@ -65,13 +66,45 @@ export default function FieldAssignments() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <UserCog className="h-6 w-6 text-primary" /> Field Store Assignments
+            <UserCog className="h-6 w-6 text-primary" /> People &amp; Access
           </h1>
           <p className="text-sm text-muted-foreground">
-            Permanent store ownership for drivers, bikers and ambassadors. Route-based access is automatic
-            (last 30 days) and shown read-only alongside.
+            One canonical workspace for worker invites, store assignments, and access governance.
           </p>
         </div>
+      </div>
+
+      <Tabs defaultValue="assignments" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="invites">Invites</TabsTrigger>
+          <TabsTrigger value="assignments">Assignments</TabsTrigger>
+          <TabsTrigger value="governance">Governance</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="invites" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Unified Invite Sender</CardTitle>
+              <CardDescription>All worker invites use the same secure invite link and acceptance flow.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              <InviteButton role="driver" label="Invite driver" />
+              <InviteButton role="biker" label="Invite biker" />
+              <InviteButton role="ambassador" label="Invite ambassador" />
+              <InviteButton role="va" label="Invite VA" />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="assignments" className="space-y-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold">Field Store Assignments</h2>
+              <p className="text-sm text-muted-foreground">
+                Permanent store ownership for drivers, bikers and ambassadors. Route-based access is automatic
+                (last 30 days) and shown read-only alongside.
+              </p>
+            </div>
         <div className="flex flex-wrap gap-2">
           <InviteButton role="driver" label="Invite driver" />
           <InviteButton role="biker" label="Invite biker" />
@@ -261,6 +294,28 @@ export default function FieldAssignments() {
           </div>
         )}
       </div>
+        </TabsContent>
+
+        <TabsContent value="governance" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Access Governance</CardTitle>
+              <CardDescription>Roles, security review, and invite oversight remain restricted to owner/admin access.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              <Button variant="outline" asChild>
+                <a href="/security/users">User Management</a>
+              </Button>
+              <Button variant="outline" asChild>
+                <a href="/security/roles">Roles &amp; Permissions</a>
+              </Button>
+              <Button variant="outline" asChild>
+                <a href="/security/console">Security Console</a>
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
