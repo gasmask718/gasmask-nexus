@@ -120,11 +120,9 @@ export default function UTPlacesLeadFinder() {
     setSelected(new Set());
     setDetailTarget(null);
     setImportResult(null);
-    setSearchProgress("Loading existing leads for dedup...");
+    setSearchProgress("Searching Google Places (up to 60 results)...");
 
     try {
-      await loadExistingLeads();
-      setSearchProgress("Searching Google Places (up to 60 results)...");
 
       const { data, error } = await supabase.functions.invoke("ut-places-search", {
         body: { action: "search_all", query: fullQuery, max_pages: 3 },
@@ -138,7 +136,7 @@ export default function UTPlacesLeadFinder() {
           ...p,
           ut_category: category,
           category_confidence: confidence,
-          duplicate_status: getDupStatus(p),
+          duplicate_status: getDupStatus(),
         };
       });
       setResults(enriched);
@@ -183,7 +181,7 @@ export default function UTPlacesLeadFinder() {
       setSearching(false);
       setSearchProgress("");
     }
-  }, [keyword, city, state, loadExistingLeads, getDupStatus]);
+  }, [keyword, city, state, getDupStatus]);
 
   // ── ENRICH: batch-fetch phone numbers for results missing them ──
   const handleEnrichPhones = useCallback(async () => {
