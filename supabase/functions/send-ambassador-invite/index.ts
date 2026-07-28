@@ -95,7 +95,12 @@ Deno.serve(async (req) => {
         const { data: smsData, error: smsErr } = await admin.functions.invoke("send-sms", {
           body: { to: toPhone, message: msg },
         });
-        sendLog.push({ channel: "sms", to: toPhone, ok: !smsErr, error: smsErr?.message, data: smsData });
+        let smsDetail: string | undefined = smsErr?.message;
+        const ctx = (smsErr as any)?.context;
+        if (ctx && typeof ctx.text === "function") {
+          try { smsDetail = (await ctx.text())?.slice(0, 300) || smsDetail; } catch { /* ignore */ }
+        }
+        sendLog.push({ channel: "sms", to: toPhone, ok: !smsErr, error: smsDetail, data: smsData });
       } catch (e) {
         sendLog.push({ channel: "sms", to: toPhone, ok: false, error: String(e) });
       }
