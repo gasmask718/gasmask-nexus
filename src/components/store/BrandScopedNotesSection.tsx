@@ -147,15 +147,18 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
 
   const totalCount = allNotes?.length ?? 0;
 
-  // Filter notes by active tab
-  const filteredNotes =
+  // Filter notes by active tab — always newest-first by created_at
+  const filteredNotes = (
     activeTab === 'all'
       ? allNotes
       : allNotes?.filter((n) =>
           activeTab === 'general'
             ? n.brand_scope === null
             : n.brand_scope === activeTab
-        );
+        )
+  )
+    ?.slice()
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   if (resolving || isLoading) {
     return (
