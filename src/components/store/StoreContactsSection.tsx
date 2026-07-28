@@ -254,6 +254,13 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                             storeId={storeId}
                             invalidateKeys={[['store-contacts-responsiveness', storeId]]}
                           />
+                          {/* Per-number note (field context) */}
+                          <ContactPhoneNote
+                            contactId={contact.id}
+                            phoneNote={(contact as any).phone_note}
+                            invalidateKeys={[['store-contacts-responsiveness', storeId]]}
+                          />
+                        </div>
                         </div>
                       </div>
                     </div>
