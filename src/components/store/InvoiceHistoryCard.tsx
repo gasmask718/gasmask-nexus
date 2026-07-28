@@ -138,10 +138,7 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
     },
     onSuccess: () => {
       toast.success(`Invoice status updated to ${newStatus}`);
-      queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
-      queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
-      // CRITICAL: Invalidate unified feed to sync Floor 5
-      queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
+      refreshInvoiceViews();
       setConfirmDialogOpen(false);
       setSelectedInvoice(null);
     },
@@ -152,25 +149,25 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
 
   const deleteInvoiceMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
-      // Hard delete - permanently remove
-      const { error } = await supabase
-        .from('invoices')
-        .delete()
-        .eq('id', invoiceId);
-
+      // Hard delete via SECURITY DEFINER RPC: also clears dependent ledger /
+      // payment / transaction rows that hold RESTRICT + NO ACTION foreign keys.
+      const { data, error } = await (supabase as any).rpc('delete_invoice_cascade', {
+        p_invoice_id: invoiceId,
+      });
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
-      toast.success('Invoice permanently deleted');
-      queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
-      queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
-      // CRITICAL: Invalidate unified feed to sync Floor 5
-      queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
+    onSuccess: (data: any) => {
+      const extra = data?.tube_sale_ledger_deleted
+        ? ` (${data.tube_sale_ledger_deleted} ledger row(s) removed)`
+        : '';
+      toast.success(`Invoice permanently deleted${extra}`);
+      refreshInvoiceViews();
       setDeleteDialogOpen(false);
       setSelectedInvoice(null);
     },
     onError: (error: any) => {
-      toast.error(`Failed to delete: ${error.message}`);
+      toast.error(`Failed to delete: ${error.message || error.details || 'unknown error'}`);
     },
   });
 
@@ -187,10 +184,7 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
     },
     onSuccess: () => {
       toast.success('Invoice voided');
-      queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
-      queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
-      // CRITICAL: Invalidate unified feed to sync Floor 5
-      queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
+      refreshInvoiceViews();
       setVoidDialogOpen(false);
       setSelectedInvoice(null);
     },
@@ -198,6 +192,7 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
       toast.error(`Failed to void: ${error.message}`);
     },
   });
+
 
   const handleToggleStatus = (invoice: Invoice) => {
     const currentStatus = invoice.payment_status;
