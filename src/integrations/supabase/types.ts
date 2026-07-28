@@ -123708,6 +123708,7 @@ export type Database = {
       }
       voice_routing_settings: {
         Row: {
+          ai_agent_timeout_seconds: number
           business: string
           created_at: string
           disclosure_text: string
@@ -123717,6 +123718,7 @@ export type Database = {
           hours_timezone: string
           id: string
           is_active: boolean
+          no_answer_action: string
           owner_forward_number: string | null
           owner_ring_timeout_seconds: number
           recording_enabled: boolean
@@ -123728,6 +123730,7 @@ export type Database = {
           voicemail_greeting: string
         }
         Insert: {
+          ai_agent_timeout_seconds?: number
           business: string
           created_at?: string
           disclosure_text?: string
@@ -123737,6 +123740,7 @@ export type Database = {
           hours_timezone?: string
           id?: string
           is_active?: boolean
+          no_answer_action?: string
           owner_forward_number?: string | null
           owner_ring_timeout_seconds?: number
           recording_enabled?: boolean
@@ -123748,6 +123752,7 @@ export type Database = {
           voicemail_greeting?: string
         }
         Update: {
+          ai_agent_timeout_seconds?: number
           business?: string
           created_at?: string
           disclosure_text?: string
@@ -123757,6 +123762,7 @@ export type Database = {
           hours_timezone?: string
           id?: string
           is_active?: boolean
+          no_answer_action?: string
           owner_forward_number?: string | null
           owner_ring_timeout_seconds?: number
           recording_enabled?: boolean
