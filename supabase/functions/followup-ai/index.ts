@@ -167,11 +167,16 @@ serve(async (req) => {
       reasoning: reasoning.join('; '),
     };
 
-    const { data: saved } = await supabase
+    const { data: saved, error: saveError } = await supabase
       .from('followup_recommendations')
       .upsert(recommendation, { onConflict: 'store_id' })
       .select()
       .single();
+
+    if (saveError) {
+      console.error('followup_recommendations upsert failed:', saveError);
+      throw new Error(`Failed to save recommendation: ${saveError.message}`);
+    }
 
     return new Response(
       JSON.stringify(saved),
