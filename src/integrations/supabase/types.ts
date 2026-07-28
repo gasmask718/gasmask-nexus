@@ -137456,6 +137456,7 @@ export type Database = {
       debug_auth: { Args: never; Returns: Json }
       decay_risk_scores: { Args: never; Returns: undefined }
       default_cadence_days: { Args: { status: string }; Returns: number }
+      delete_invoice_cascade: { Args: { p_invoice_id: string }; Returns: Json }
       detect_data_duplicates_in_group: {
         Args: { p_group_id: number }
         Returns: {
