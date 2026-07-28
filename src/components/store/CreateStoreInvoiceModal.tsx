@@ -371,16 +371,17 @@ export function CreateStoreInvoiceModal({
           profit: (item.unit_price_used - item.cost_per_unit) * newQuantity,
         };
         if (updatedItem.sale_unit === 'pack') {
-          updatedItem.quantity_tubes = newQuantity * updatedItem.pack_size_snapshot;
-          updatedItem.computed_tubes_total = newQuantity * updatedItem.pack_size_snapshot;
+          updatedItem.quantity_tubes = Math.round(newQuantity * updatedItem.pack_size_snapshot);
+          updatedItem.computed_tubes_total = Math.round(newQuantity * updatedItem.pack_size_snapshot);
         } else if (updatedItem.sale_unit === 'box') {
           updatedItem.quantity_boxes = newQuantity;
           if (updatedItem.packs_per_box_snapshot && updatedItem.pack_size_snapshot > 1) {
-            updatedItem.computed_tubes_total = newQuantity * updatedItem.packs_per_box_snapshot * updatedItem.pack_size_snapshot;
+            updatedItem.computed_tubes_total = Math.round(newQuantity * updatedItem.packs_per_box_snapshot * updatedItem.pack_size_snapshot);
           } else {
-            updatedItem.computed_tubes_total = newQuantity * updatedItem.units_per_box;
+            updatedItem.computed_tubes_total = Math.round(newQuantity * updatedItem.units_per_box);
           }
         } else {
+
           updatedItem.quantity_tubes = newQuantity;
           updatedItem.computed_tubes_total = newQuantity;
         }
