@@ -126,7 +126,10 @@ Deno.serve(async (req) => {
   // ── Build action callback URL for missed-call recovery ──
   const u = new URL(canonicalUrl(req));
   const supaUrl = `${u.protocol}//${u.host}`;
-  const actionUrl = `${supaUrl}/functions/v1/gasmask-missed-call-handler?business=${encodeURIComponent(business || "")}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+  // vm=1 → this is the AI-agent FALLBACK leg of gasmask-inbound-voice; if the
+  // AI agent doesn't pick up either, the missed-call handler takes a voicemail.
+  const vm = new URL(req.url).searchParams.get("vm") === "1" ? "1" : "0";
+  const actionUrl = `${supaUrl}/functions/v1/gasmask-missed-call-handler?business=${encodeURIComponent(business || "")}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&vm=${vm}`;
 
   return twiml(`
   <Dial answerOnBridge="true" timeout="20"

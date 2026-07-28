@@ -27,6 +27,10 @@ export interface VoiceRoutingSettings {
   voicemail_enabled: boolean;
   sms_transcript_to_owner: boolean;
   is_active: boolean;
+  /** What happens when no human answers: hand off to the AI phone agent (legacy
+   *  inbound behaviour) or go straight to voicemail. */
+  no_answer_action: "ai_agent" | "voicemail";
+  ai_agent_timeout_seconds: number;
 }
 
 export function svcClient(): SupabaseClient {
