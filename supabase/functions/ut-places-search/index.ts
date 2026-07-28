@@ -46,12 +46,19 @@ async function placeDetails(placeId: string, apiKey: string) {
   return res.json();
 }
 
+// Normalise to the exact 2-char uppercase form the ut_upsert RPC / CHECK requires.
+// Returns '' when unresolvable — callers MUST skip those rows before calling the RPC.
+function normState(raw: string | null | undefined): string {
+  const s = (raw || '').toUpperCase().slice(0, 2);
+  return s.length === 2 ? s : '';
+}
+
 function parseCityState(addressComponents: any[]): { city: string; state: string } {
   let city = '', state = '';
   if (!addressComponents) return { city, state };
   for (const c of addressComponents) {
     if (c.types?.includes('locality')) city = c.longText || c.shortText || '';
-    if (c.types?.includes('administrative_area_level_1')) state = c.shortText || '';
+    if (c.types?.includes('administrative_area_level_1')) state = normState(c.shortText);
   }
   return { city, state };
 }
@@ -66,12 +73,16 @@ function mapPlace(p: any) {
     state,
     types: p.types || [],
     rating: p.rating || null,
+    rating_count: p.userRatingCount ?? null,
     business_status: p.businessStatus || null,
     maps_url: p.googleMapsUri || null,
     phone: p.nationalPhoneNumber || null,
     website: p.websiteUri || null,
+    latitude: typeof p.location?.latitude === 'number' ? p.location.latitude : null,
+    longitude: typeof p.location?.longitude === 'number' ? p.location.longitude : null,
   };
 }
+
 
 // ── Delay helper ─────────────────────────────────────────────────
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
