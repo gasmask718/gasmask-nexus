@@ -333,7 +333,7 @@ export function useUnifiedInbox(filters: InboxFilters = {}) {
       .channel("unified-inbox-realtime")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "communication_messages" },
+        { event: "INSERT", schema: "public", table: "communication_logs" },
         (payload) => {
           console.log("New message received:", payload);
           queryClient.invalidateQueries({ queryKey: ["unified-inbox-messages"] });
