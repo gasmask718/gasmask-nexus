@@ -193,7 +193,7 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
   return (
     <div className="mt-2 space-y-3 rounded-md border border-border/50 bg-muted/30 p-3">
       <InventorySection storeId={storeId} />
-      <StoreFlagsSection storeId={storeId} />
+      <StoreBrandFlagStickers storeId={storeId} compact />
       <StoreCardContactsQuickSection storeId={storeId} storeName={storeName} />
       <StoreQuickNotes storeId={storeId} compact />
       <QuickOrderSection storeId={storeId} storeName={storeName} />
