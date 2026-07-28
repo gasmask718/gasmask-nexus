@@ -47,6 +47,8 @@ import { useStoresServerData } from '@/pages/stores/useStoresServerData';
 import { StoreCardQuickView } from '@/components/store/StoreCardQuickView';
 import { StoreContactGlanceIcons } from '@/components/store/StoreContactGlanceIcons';
 import { useStoreContactGlance } from '@/hooks/useStoreContactGlance';
+import { useStoreInventoryStampsBatch } from '@/hooks/useStoreInventoryStamps';
+import { StoreInventoryStamps } from '@/components/store/StoreInventoryStamps';
 import { StoreReviewBadge } from '@/components/store/StoreReviewControls';
 
 // Phase 2A Win 2: server-side pagination/search/filtering via
