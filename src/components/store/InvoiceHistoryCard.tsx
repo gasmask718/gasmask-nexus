@@ -420,15 +420,19 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         <span>
-                          {invoice.created_at
-                            ? dynastyDate(invoice.created_at)
-                            : 'N/A'}
+                          Issued:{' '}
+                          <span className="text-foreground">
+                            {invoice.created_at ? dynastyStamp(invoice.created_at) : 'N/A'}
+                          </span>
                         </span>
                       </div>
                       {invoice.due_date && (
                         <div className="flex items-center gap-1">
                           <span>Due:</span>
-                          <span>{dynastyDate(invoice.due_date)}</span>
+                          <span className="text-foreground font-medium">
+                            {dynastyDateWithWeekday(invoice.due_date)}
+                          </span>
+                          <span className="opacity-80">({dynastyRelative(invoice.due_date)})</span>
                         </div>
                       )}
                       {invoice.payment_method && (
