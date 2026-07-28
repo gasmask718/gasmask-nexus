@@ -116303,6 +116303,9 @@ export type Database = {
           business_name: string
           callback_due_at: string | null
           category: string
+          category_confidence: number | null
+          category_group: string | null
+          category_original: string | null
           city: string | null
           contact_name: string | null
           created_at: string
@@ -116311,22 +116314,30 @@ export type Database = {
           external_source: string | null
           follow_up_at: string | null
           full_address: string | null
+          geocode_source: string | null
+          geocoded_at: string | null
           google_rating: number | null
           google_types: string[] | null
           id: string
           last_contacted_at: string | null
           last_outcome: string | null
           last_sms_template: string | null
+          latitude: number | null
+          longitude: number | null
           maps_url: string | null
+          metro: string | null
           next_step: string | null
           notes: string | null
           onboarded_at: string | null
           onboarding_link_sent_at: string | null
           outreach_count: number
           owner_verified: boolean
+          partner_id: string | null
           phone: string | null
           priority_bucket: string | null
+          priority_score: number | null
           recommended_ai_agent: string | null
+          review_count: number | null
           sms_count: number | null
           source: string | null
           state: string | null
@@ -116349,6 +116360,9 @@ export type Database = {
           business_name: string
           callback_due_at?: string | null
           category?: string
+          category_confidence?: number | null
+          category_group?: string | null
+          category_original?: string | null
           city?: string | null
           contact_name?: string | null
           created_at?: string
@@ -116357,22 +116371,30 @@ export type Database = {
           external_source?: string | null
           follow_up_at?: string | null
           full_address?: string | null
+          geocode_source?: string | null
+          geocoded_at?: string | null
           google_rating?: number | null
           google_types?: string[] | null
           id?: string
           last_contacted_at?: string | null
           last_outcome?: string | null
           last_sms_template?: string | null
+          latitude?: number | null
+          longitude?: number | null
           maps_url?: string | null
+          metro?: string | null
           next_step?: string | null
           notes?: string | null
           onboarded_at?: string | null
           onboarding_link_sent_at?: string | null
           outreach_count?: number
           owner_verified?: boolean
+          partner_id?: string | null
           phone?: string | null
           priority_bucket?: string | null
+          priority_score?: number | null
           recommended_ai_agent?: string | null
+          review_count?: number | null
           sms_count?: number | null
           source?: string | null
           state?: string | null
@@ -116395,6 +116417,9 @@ export type Database = {
           business_name?: string
           callback_due_at?: string | null
           category?: string
+          category_confidence?: number | null
+          category_group?: string | null
+          category_original?: string | null
           city?: string | null
           contact_name?: string | null
           created_at?: string
@@ -116403,22 +116428,30 @@ export type Database = {
           external_source?: string | null
           follow_up_at?: string | null
           full_address?: string | null
+          geocode_source?: string | null
+          geocoded_at?: string | null
           google_rating?: number | null
           google_types?: string[] | null
           id?: string
           last_contacted_at?: string | null
           last_outcome?: string | null
           last_sms_template?: string | null
+          latitude?: number | null
+          longitude?: number | null
           maps_url?: string | null
+          metro?: string | null
           next_step?: string | null
           notes?: string | null
           onboarded_at?: string | null
           onboarding_link_sent_at?: string | null
           outreach_count?: number
           owner_verified?: boolean
+          partner_id?: string | null
           phone?: string | null
           priority_bucket?: string | null
+          priority_score?: number | null
           recommended_ai_agent?: string | null
+          review_count?: number | null
           sms_count?: number | null
           source?: string | null
           state?: string | null
