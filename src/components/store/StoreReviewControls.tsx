@@ -256,5 +256,3 @@ export function StoreReviewBadge({
     </div>
   );
 }
-
-}
