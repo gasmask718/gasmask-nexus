@@ -160,7 +160,13 @@ export function useStoreContactsWithResponsiveness(storeId: string) {
           number_verification_sent_at,
           number_verification_delivered_at,
           number_verification_confirmed_at,
-          number_verification_error
+          number_verification_error,
+          owner_confirmed,
+          owner_confirmed_at,
+          owner_confirmed_by,
+          is_homie,
+          homie_set_at,
+          homie_set_by
         `)
         .eq('store_id', storeId)
         .eq('is_simulation', false)
