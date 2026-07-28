@@ -28,7 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { FileText, DollarSign, Calendar, Package, Plus, Loader2, MoreVertical, Edit, Trash2, Ban, Eye, Upload } from 'lucide-react';
+import { FileText, DollarSign, Calendar, Package, Plus, Loader2, MoreVertical, Edit, Trash2, Ban, Eye, Upload, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { dynastyDate, dynastyStamp, dynastyRelative, dynastyDateWithWeekday } from '@/lib/dates';
 import { toast } from 'sonner';
@@ -80,8 +80,22 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
   const resolvedEntityType = entityType || 'store';
   const resolvedEntityId = entityId || storeId;
 
-  const { data: invoices = [], isLoading } = useQuery({
-    queryKey: ['store-invoices', resolvedEntityType, resolvedEntityId],
+  const invoicesQueryKey = ['store-invoices', resolvedEntityType, resolvedEntityId];
+
+  /** Repaint every surface that reads invoices for this entity. */
+  const refreshInvoiceViews = () => {
+    queryClient.invalidateQueries({ queryKey: ['store-invoices'] });
+    queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
+    queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
+    queryClient.invalidateQueries({ queryKey: ['store-recent-invoices', storeId] });
+    queryClient.invalidateQueries({ queryKey: ['store-recent-invoices-sku', storeId] });
+    queryClient.invalidateQueries({ queryKey: ['store-tube-kpi', storeId] });
+    queryClient.invalidateQueries({ queryKey: ['store-tube-kpi-batch'] });
+    queryClient.invalidateQueries({ queryKey: ['store-inventory-stamps'] });
+  };
+
+  const { data: invoices = [], isLoading, isFetching, refetch } = useQuery({
+    queryKey: invoicesQueryKey,
     queryFn: async () => {
       let query = supabase
         .from('invoices')
@@ -101,6 +115,7 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
     },
     enabled: !!resolvedEntityId,
   });
+
 
   const togglePaymentStatusMutation = useMutation({
     mutationFn: async ({ invoiceId, newStatus }: { invoiceId: string; newStatus: string }) => {
@@ -123,10 +138,7 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
     },
     onSuccess: () => {
       toast.success(`Invoice status updated to ${newStatus}`);
-      queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
-      queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
-      // CRITICAL: Invalidate unified feed to sync Floor 5
-      queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
+      refreshInvoiceViews();
       setConfirmDialogOpen(false);
       setSelectedInvoice(null);
     },
@@ -137,25 +149,25 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
 
   const deleteInvoiceMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
-      // Hard delete - permanently remove
-      const { error } = await supabase
-        .from('invoices')
-        .delete()
-        .eq('id', invoiceId);
-
+      // Hard delete via SECURITY DEFINER RPC: also clears dependent ledger /
+      // payment / transaction rows that hold RESTRICT + NO ACTION foreign keys.
+      const { data, error } = await (supabase as any).rpc('delete_invoice_cascade', {
+        p_invoice_id: invoiceId,
+      });
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
-      toast.success('Invoice permanently deleted');
-      queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
-      queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
-      // CRITICAL: Invalidate unified feed to sync Floor 5
-      queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
+    onSuccess: (data: any) => {
+      const extra = data?.tube_sale_ledger_deleted
+        ? ` (${data.tube_sale_ledger_deleted} ledger row(s) removed)`
+        : '';
+      toast.success(`Invoice permanently deleted${extra}`);
+      refreshInvoiceViews();
       setDeleteDialogOpen(false);
       setSelectedInvoice(null);
     },
     onError: (error: any) => {
-      toast.error(`Failed to delete: ${error.message}`);
+      toast.error(`Failed to delete: ${error.message || error.details || 'unknown error'}`);
     },
   });
 
@@ -172,10 +184,7 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
     },
     onSuccess: () => {
       toast.success('Invoice voided');
-      queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
-      queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
-      // CRITICAL: Invalidate unified feed to sync Floor 5
-      queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
+      refreshInvoiceViews();
       setVoidDialogOpen(false);
       setSelectedInvoice(null);
     },
@@ -183,6 +192,7 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
       toast.error(`Failed to void: ${error.message}`);
     },
   });
+
 
   const handleToggleStatus = (invoice: Invoice) => {
     const currentStatus = invoice.payment_status;
@@ -292,6 +302,19 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
             </CardTitle>
             <div className="flex gap-2">
               <Button
+                onClick={() => {
+                  refreshInvoiceViews();
+                  refetch();
+                }}
+                size="sm"
+                variant="outline"
+                disabled={isFetching}
+                title="Refresh invoice list"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button
                 onClick={() => setBulkUploadOpen(true)}
                 size="sm"
                 variant="outline"
@@ -299,6 +322,7 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
                 <Upload className="h-4 w-4 mr-2" />
                 Bulk Add
               </Button>
+
               {onCreateInvoice && (
                 <Button
                   onClick={onCreateInvoice}

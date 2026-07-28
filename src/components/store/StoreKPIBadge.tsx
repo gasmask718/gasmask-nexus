@@ -8,7 +8,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TubeIntelAttribution } from '@/components/store/TubeIntelAttribution';
 import { normalizeBrandId, CANONICAL_BRANDS } from '@/config/brands';
 import { dynastyStamp } from '@/lib/dates';
-import type { SkuStamp } from '@/hooks/useStoreInventoryStamps';
+import type { SkuStamp, StoreInventoryStampData } from '@/hooks/useStoreInventoryStamps';
+import { StoreInventoryStamps } from '@/components/store/StoreInventoryStamps';
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE KPI BADGE — CANONICAL RENDERER
@@ -25,7 +27,10 @@ interface StoreKPIBadgeProps {
   intelSummary?: TubeIntelSummary | null;
   /** Per-SKU inventory-check stamps (store_tube_inventory_status.brand_id keyed) */
   skuStamps?: Record<string, SkuStamp>;
+  /** Store-level canonical stamps — rendered as the summary header above the list */
+  storeStamps?: StoreInventoryStampData | null;
 }
+
 
 // Group key: canonical id ONLY when the raw key is an exact alias of a
 // canonical brand (so 'grabba' → 'grabba_r_us'). SKU variants like
@@ -55,7 +60,7 @@ const ALL_TUBE_BRANDS = (() => {
   return out;
 })();
 
-export function StoreKPIBadge({ summary, isLoading, intelSummary, skuStamps }: StoreKPIBadgeProps) {
+export function StoreKPIBadge({ summary, isLoading, intelSummary, skuStamps, storeStamps }: StoreKPIBadgeProps) {
   // Loading state — show skeleton for all brands
   if (isLoading) {
     return (
@@ -121,8 +126,20 @@ export function StoreKPIBadge({ summary, isLoading, intelSummary, skuStamps }: S
         </span>
       </div>
 
+      {/* Canonical inventory stamps — SUMMARY HEADER above the product list */}
+      {(storeStamps?.lastUpdated || storeStamps?.lastChecked) && (
+        <StoreInventoryStamps
+          lastUpdated={storeStamps?.lastUpdated}
+          lastChecked={storeStamps?.lastChecked}
+          checkedBy={storeStamps?.checkedBy}
+          compact
+          className="pb-0.5"
+        />
+      )}
+
       {/* Tube Intel Attribution — additive, non-destructive */}
       <TubeIntelAttribution summary={intelSummary} compact className="pb-1" />
+
 
       {/* ALL brands — ALWAYS rendered, NO truncation */}
       <div className="space-y-1.5">
@@ -185,15 +202,17 @@ export function StoreKPIBadge({ summary, isLoading, intelSummary, skuStamps }: S
                 </span>
               </div>
 
-              {/* Inventory-check stamp — per product line */}
-              {checkLookup.get(brand.brand_id) && (
+              {/* Inventory-check stamp — per product line (falls back to the
+                  canonical store-level check when this SKU has no own stamp) */}
+              {(checkLookup.get(brand.brand_id) || storeStamps?.lastChecked) && (
                 <div className="flex items-center justify-between mt-0.5">
                   <span className="text-[10px] text-muted-foreground">Inventory checked:</span>
                   <span className="text-[10px] text-muted-foreground font-medium">
-                    {dynastyStamp(checkLookup.get(brand.brand_id)!)}
+                    {dynastyStamp((checkLookup.get(brand.brand_id) || storeStamps?.lastChecked)!)}
                   </span>
                 </div>
               )}
+
 
               {/* Status warnings inline */}
               {isOutOfStock && (

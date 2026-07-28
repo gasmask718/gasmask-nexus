@@ -1102,7 +1102,9 @@ const Stores = () => {
                           isLoading={kpiLoading}
                           intelSummary={tubeIntelMap?.get(store.id)}
                           skuStamps={inventoryStampMap?.get(store.id)?.perSku}
+                          storeStamps={inventoryStampMap?.get(store.id) ?? null}
                         />
+
 
                        {(() => {
                          const ts = tubeSummaryMap.get(store.id);
