@@ -10,8 +10,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Star, User, MessageSquare, ChevronDown } from 'lucide-react';
+import { Loader2, Plus, Star, User, MessageSquare, ChevronDown, Handshake, BadgeCheck } from 'lucide-react';
 import { StoreContactActions } from './StoreContactActions';
+import { ContactRelationshipMarkers } from './ContactRelationshipMarkers';
 import { AddContactModal } from './AddContactModal';
 import { ContactCommunicationTimeline } from './ContactCommunicationTimeline';
 
@@ -30,9 +31,10 @@ export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
       const { data, error } = await supabase
         .from('store_contacts')
         .select(
-          'id, name, phone, role, is_primary, can_receive_sms, responsive_by_call, responsive_by_text, last_call_answered_at, last_text_received_at, sms_opt_in_status'
+          'id, name, phone, role, is_primary, can_receive_sms, responsive_by_call, responsive_by_text, last_call_answered_at, last_text_received_at, sms_opt_in_status, owner_confirmed, owner_confirmed_at, owner_confirmed_by, is_homie, homie_set_at, homie_set_by'
         )
         .eq('store_id', storeId)
+        .order('is_homie', { ascending: false })
         .order('is_primary', { ascending: false })
         .order('created_at', { ascending: true })
         .limit(50);
@@ -76,6 +78,22 @@ export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
               <div className="flex items-center gap-2 flex-wrap">
                 <User className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-xs font-medium">{c.name}</span>
+                {(c as any).is_homie && (
+                  <Badge
+                    variant="outline"
+                    className="h-4 px-1 text-[9px] gap-0.5 border-amber-500/50 bg-amber-500/20 text-amber-700"
+                  >
+                    <Handshake className="h-2.5 w-2.5" /> My Homie
+                  </Badge>
+                )}
+                {(c as any).owner_confirmed && (
+                  <Badge
+                    variant="outline"
+                    className="h-4 px-1 text-[9px] gap-0.5 border-emerald-500/40 bg-emerald-500/10 text-emerald-600"
+                  >
+                    <BadgeCheck className="h-2.5 w-2.5" /> Owner ✓
+                  </Badge>
+                )}
                 {c.is_primary && (
                   <Badge
                     variant="outline"
@@ -96,6 +114,12 @@ export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
                   </Badge>
                 )}
               </div>
+              <ContactRelationshipMarkers
+                contact={c as any}
+                storeId={storeId}
+                compact
+                invalidateKeys={[['store-contacts', storeId]]}
+              />
               <StoreContactActions
                 contact={c as any}
                 storeId={storeId}

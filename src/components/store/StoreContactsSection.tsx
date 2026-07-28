@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Phone, MessageSquare, Star, User, Eye, Edit, Trash2, History, ChevronDown } from 'lucide-react';
+import { Users, Plus, Phone, MessageSquare, Star, User, Eye, Edit, Trash2, History, ChevronDown, Handshake, BadgeCheck } from 'lucide-react';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { toast } from 'sonner';
 import { AddContactModal } from './AddContactModal';
@@ -19,6 +19,7 @@ import { ContactCommunicationTimeline } from './ContactCommunicationTimeline';
 import { VerifyNumberButton } from './VerifyNumberButton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { StoreContactActions } from './StoreContactActions';
+import { ContactRelationshipMarkers } from './ContactRelationshipMarkers';
 
 interface StoreContact {
   id: string;
@@ -50,6 +51,12 @@ interface StoreContact {
   number_verification_delivered_at?: string | null;
   number_verification_confirmed_at?: string | null;
   number_verification_error?: string | null;
+  owner_confirmed?: boolean | null;
+  owner_confirmed_at?: string | null;
+  owner_confirmed_by?: string | null;
+  is_homie?: boolean | null;
+  homie_set_at?: string | null;
+  homie_set_by?: string | null;
 }
 
 interface StoreContactsSectionProps {
@@ -201,6 +208,18 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium">{contact.name}</span>
+                          {(contact as any).is_homie && (
+                            <Badge variant="outline" className="text-xs gap-1 border-amber-500/50 bg-amber-500/20 text-amber-700">
+                              <Handshake className="h-3 w-3" />
+                              My Homie
+                            </Badge>
+                          )}
+                          {(contact as any).owner_confirmed && (
+                            <Badge variant="outline" className="text-xs gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-600">
+                              <BadgeCheck className="h-3 w-3" />
+                              Owner ✓
+                            </Badge>
+                          )}
                           {contact.is_primary && (
                             <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
                               <Star className="h-3 w-3 mr-1" />
@@ -292,6 +311,15 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                     last_text_received_at={contact.last_text_received_at}
                     className="ml-13 pl-13"
                   />
+
+                  {/* Relationship markers: Confirm Owner + My Homie (independent) */}
+                  <div className="pl-13 ml-13">
+                    <ContactRelationshipMarkers
+                      contact={contact as any}
+                      storeId={storeId}
+                      invalidateKeys={[['store-contacts-responsiveness', storeId]]}
+                    />
+                  </div>
 
                   {/* Compliance-safe per-channel actions: mark responsive + opt-in with confirm */}
                   <div className="pl-13 ml-13">

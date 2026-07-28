@@ -101226,8 +101226,11 @@ export type Database = {
           created_via_session: string | null
           email: string | null
           escalation_flag: boolean | null
+          homie_set_at: string | null
+          homie_set_by: string | null
           id: string
           influence_level: string | null
+          is_homie: boolean
           is_primary: boolean | null
           is_simulation: boolean
           last_call_answered_at: string | null
@@ -101249,6 +101252,9 @@ export type Database = {
           opted_out_at: string | null
           opted_out_method: string | null
           original_store_id: string | null
+          owner_confirmed: boolean
+          owner_confirmed_at: string | null
+          owner_confirmed_by: string | null
           phone: string | null
           preferred_sms_provider: string | null
           relationship_type: string | null
@@ -101280,8 +101286,11 @@ export type Database = {
           created_via_session?: string | null
           email?: string | null
           escalation_flag?: boolean | null
+          homie_set_at?: string | null
+          homie_set_by?: string | null
           id?: string
           influence_level?: string | null
+          is_homie?: boolean
           is_primary?: boolean | null
           is_simulation?: boolean
           last_call_answered_at?: string | null
@@ -101303,6 +101312,9 @@ export type Database = {
           opted_out_at?: string | null
           opted_out_method?: string | null
           original_store_id?: string | null
+          owner_confirmed?: boolean
+          owner_confirmed_at?: string | null
+          owner_confirmed_by?: string | null
           phone?: string | null
           preferred_sms_provider?: string | null
           relationship_type?: string | null
@@ -101334,8 +101346,11 @@ export type Database = {
           created_via_session?: string | null
           email?: string | null
           escalation_flag?: boolean | null
+          homie_set_at?: string | null
+          homie_set_by?: string | null
           id?: string
           influence_level?: string | null
+          is_homie?: boolean
           is_primary?: boolean | null
           is_simulation?: boolean
           last_call_answered_at?: string | null
@@ -101357,6 +101372,9 @@ export type Database = {
           opted_out_at?: string | null
           opted_out_method?: string | null
           original_store_id?: string | null
+          owner_confirmed?: boolean
+          owner_confirmed_at?: string | null
+          owner_confirmed_by?: string | null
           phone?: string | null
           preferred_sms_provider?: string | null
           relationship_type?: string | null
