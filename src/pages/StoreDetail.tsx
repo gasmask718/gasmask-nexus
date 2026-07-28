@@ -763,8 +763,15 @@ const StoreDetail = () => {
                             name: data.name || prev.name,
                             phone: data.phone || prev.phone,
                             alt_phone: data.alt_phone || prev.alt_phone,
+                            email: data.email || prev.email,
+                            address_street: data.address_street || prev.address_street,
+                            address_city: data.address_city || prev.address_city,
+                            address_state: data.address_state || prev.address_state,
+                            address_zip: data.address_zip || prev.address_zip,
+                            notes: data.notes || prev.notes,
                             responsiveness: data.responsiveness || prev.responsiveness,
                             payment_type: data.payment_type || prev.payment_type,
+
                             // Trigger trg_sync_store_primary_contact_name keeps stores.primary_contact_name in sync
                             primary_contact_name: data.primary_contact_name || prev.primary_contact_name,
                             owner_name: data.primary_contact_name || prev.owner_name,
