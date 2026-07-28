@@ -25,7 +25,10 @@ interface StoreKPIBadgeProps {
   intelSummary?: TubeIntelSummary | null;
   /** Per-SKU inventory-check stamps (store_tube_inventory_status.brand_id keyed) */
   skuStamps?: Record<string, SkuStamp>;
+  /** Store-level canonical stamps — rendered as the summary header above the list */
+  storeStamps?: StoreInventoryStampData | null;
 }
+
 
 // Group key: canonical id ONLY when the raw key is an exact alias of a
 // canonical brand (so 'grabba' → 'grabba_r_us'). SKU variants like
