@@ -78,6 +78,22 @@ export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
               <div className="flex items-center gap-2 flex-wrap">
                 <User className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-xs font-medium">{c.name}</span>
+                {(c as any).is_homie && (
+                  <Badge
+                    variant="outline"
+                    className="h-4 px-1 text-[9px] gap-0.5 border-amber-500/50 bg-amber-500/20 text-amber-700"
+                  >
+                    <Handshake className="h-2.5 w-2.5" /> My Homie
+                  </Badge>
+                )}
+                {(c as any).owner_confirmed && (
+                  <Badge
+                    variant="outline"
+                    className="h-4 px-1 text-[9px] gap-0.5 border-emerald-500/40 bg-emerald-500/10 text-emerald-600"
+                  >
+                    <BadgeCheck className="h-2.5 w-2.5" /> Owner ✓
+                  </Badge>
+                )}
                 {c.is_primary && (
                   <Badge
                     variant="outline"
