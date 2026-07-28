@@ -43,7 +43,12 @@ export function ContactResponsivenessBadge({
     : hasAttempts
       ? 'unresponsive'
       : 'unknown';
-  const status = derivedStatus;
+  // A manually-set BAD NUMBER always wins over evidence-derived responsiveness:
+  // the line itself is dead/wrong, so retry evidence is meaningless.
+  const stored = normalizePhoneStatus(responsiveness_status);
+  const badNumber = isBadNumber(responsiveness_status);
+  const status: 'responsive' | 'unresponsive' | 'unknown' | 'wrong_number' | 'not_active' =
+    badNumber ? stored : derivedStatus;
 
   const statusConfig = {
     responsive: {
