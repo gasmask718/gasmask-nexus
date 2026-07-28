@@ -13,8 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   FileText, Plus, User, Clock, Pencil, Trash2, Upload,
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { dynastyDate } from '@/lib/dates';
+import { dynastyStampWithRelative } from '@/lib/dates';
 import { AddNoteModal } from './AddNoteModal';
 import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
 import { toast } from 'sonner';
@@ -148,15 +147,18 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
 
   const totalCount = allNotes?.length ?? 0;
 
-  // Filter notes by active tab
-  const filteredNotes =
+  // Filter notes by active tab — always newest-first by created_at
+  const filteredNotes = (
     activeTab === 'all'
       ? allNotes
       : allNotes?.filter((n) =>
           activeTab === 'general'
             ? n.brand_scope === null
             : n.brand_scope === activeTab
-        );
+        )
+  )
+    ?.slice()
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   if (resolving || isLoading) {
     return (
@@ -359,9 +361,7 @@ function NotesList({
             <div className="flex items-center gap-4 pt-2 border-t border-border/20">
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                 <Clock className="h-4 w-4 text-primary" />
-                <span>{dynastyDate(note.created_at)}</span>
-                <span className="text-muted-foreground font-normal">at</span>
-                <span>{format(new Date(note.created_at), 'h:mm a')}</span>
+                <span>{dynastyStampWithRelative(note.created_at)}</span>
               </div>
               <div className="flex items-center gap-2 ml-auto">
                 {(note.profile as any)?.name && (

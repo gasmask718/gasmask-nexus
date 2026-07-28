@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, StickyNote } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatDistanceToNow } from 'date-fns';
+import { dynastyStampWithRelative } from '@/lib/dates';
 
 interface Props {
   storeId: string;
@@ -37,14 +37,34 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
         .order('created_at', { ascending: false })
         .limit(limit);
       if (error) throw error;
-      return (data || []) as Array<{
+      const rows = (data || []) as Array<{
         id: string;
         note_text: string;
         created_by: string | null;
         created_at: string;
       }>;
+      // Defensive: always newest-first regardless of server ordering
+      return rows
+        .slice()
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
     staleTime: 30_000,
+  });
+
+  const authorIds = Array.from(new Set(notes.map((n) => n.created_by).filter(Boolean))) as string[];
+  const { data: authors = {} } = useQuery({
+    queryKey: ['store-notes-quick-authors', authorIds.sort().join(',')],
+    queryFn: async () => {
+      if (!authorIds.length) return {};
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', authorIds);
+      if (error) throw error;
+      return Object.fromEntries((data || []).map((p: any) => [p.id, p.name])) as Record<string, string>;
+    },
+    enabled: authorIds.length > 0,
+    staleTime: 5 * 60_000,
   });
 
   const addNote = useMutation({
@@ -105,8 +125,8 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
                 {n.note_text}
               </p>
               <p className="text-[10px] text-muted-foreground mt-0.5">
-                {n.created_by || 'unknown'} ·{' '}
-                {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                {(n.created_by && authors[n.created_by]) || n.created_by || 'unknown'} ·{' '}
+                {dynastyStampWithRelative(n.created_at)}
               </p>
             </li>
           ))}

@@ -40,6 +40,7 @@ interface RouteStop {
   planned_order: number;
   status: string;
   notes_to_worker: string;
+  stop_reason?: string | null;
   store: {
     id: string;
     name: string;
@@ -68,7 +69,7 @@ const RouteDetail = () => {
           .from('routes')
           .select(`
             *,
-            assigned_user:profiles(name, phone)
+            assigned_user:profiles!routes_assigned_to_fkey(name, phone)
           `)
           .eq('id', id)
           .single();
@@ -84,6 +85,7 @@ const RouteDetail = () => {
             planned_order,
             status,
             notes_to_worker,
+            stop_reason,
             store:stores(
               id,
               name,
@@ -319,6 +321,16 @@ const RouteDetail = () => {
                             {stop.status}
                           </Badge>
                         </div>
+
+                        {stop.stop_reason && (
+                          <Badge variant="outline" className="border-primary/40 text-primary">
+                            {stop.stop_reason === 'physical_inventory_check'
+                              ? '📦 Physical inventory check'
+                              : stop.stop_reason === 'update_contact_details'
+                              ? '📞 Update contact details'
+                              : stop.stop_reason}
+                          </Badge>
+                        )}
 
                         {stop.notes_to_worker && (
                           <div className="text-sm text-muted-foreground bg-secondary/30 p-2 rounded">
