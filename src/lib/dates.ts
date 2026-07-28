@@ -72,3 +72,57 @@ export function dynastyDateAbsolute(
   if (!date) return options?.fallback ?? '—';
   return format(date, 'MMM d, yyyy');
 }
+
+/**
+ * ALWAYS shows the real calendar date + clock time — never collapses to
+ * "3 days ago". Use for any "when did this actually change" surface
+ * (tube counts, inventory checks, VA/admin checkers, audit stamps).
+ *
+ * "Jul 28, 2026 3:42 PM"
+ */
+export function dynastyStamp(
+  value: Date | string | null | undefined,
+  options?: { fallback?: string }
+): string {
+  const date = toDate(value);
+  if (!date) return options?.fallback ?? '—';
+  return format(date, 'MMM d, yyyy h:mm a');
+}
+
+/**
+ * Real date + time WITH a relative hint appended.
+ * "Jul 28, 2026 3:42 PM (3 days ago)"
+ */
+export function dynastyStampWithRelative(
+  value: Date | string | null | undefined,
+  options?: { fallback?: string }
+): string {
+  const date = toDate(value);
+  if (!date) return options?.fallback ?? '—';
+  return `${dynastyStamp(date)} (${formatDistanceToNowStrict(date, { addSuffix: true })})`;
+}
+
+/**
+ * Day-count FIRST, real date second — for "days since / days until" surfaces.
+ * "12 days ago (Jul 16, 2026)"
+ */
+export function dynastyDaysWithDate(
+  value: Date | string | null | undefined,
+  options?: { fallback?: string; prefix?: string }
+): string {
+  const date = toDate(value);
+  if (!date) return options?.fallback ?? '—';
+  const rel = formatDistanceToNowStrict(date, { addSuffix: true });
+  return `${options?.prefix ?? ''}${rel} (${format(date, 'MMM d, yyyy')})`;
+}
+
+/** Calendar date with weekday — for date pickers / due dates. "Tue, Jul 28, 2026" */
+export function dynastyDateWithWeekday(
+  value: Date | string | null | undefined,
+  options?: { fallback?: string }
+): string {
+  const date = toDate(value);
+  if (!date) return options?.fallback ?? '—';
+  return format(date, 'EEE, MMM d, yyyy');
+}
+
