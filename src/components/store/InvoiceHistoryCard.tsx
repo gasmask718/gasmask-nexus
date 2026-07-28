@@ -302,6 +302,19 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
             </CardTitle>
             <div className="flex gap-2">
               <Button
+                onClick={() => {
+                  refreshInvoiceViews();
+                  refetch();
+                }}
+                size="sm"
+                variant="outline"
+                disabled={isFetching}
+                title="Refresh invoice list"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button
                 onClick={() => setBulkUploadOpen(true)}
                 size="sm"
                 variant="outline"
@@ -309,6 +322,7 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
                 <Upload className="h-4 w-4 mr-2" />
                 Bulk Add
               </Button>
+
               {onCreateInvoice && (
                 <Button
                   onClick={onCreateInvoice}
