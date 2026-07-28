@@ -28,7 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { FileText, DollarSign, Calendar, Package, Plus, Loader2, MoreVertical, Edit, Trash2, Ban, Eye, Upload } from 'lucide-react';
+import { FileText, DollarSign, Calendar, Package, Plus, Loader2, MoreVertical, Edit, Trash2, Ban, Eye, Upload, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { dynastyDate, dynastyStamp, dynastyRelative, dynastyDateWithWeekday } from '@/lib/dates';
 import { toast } from 'sonner';
