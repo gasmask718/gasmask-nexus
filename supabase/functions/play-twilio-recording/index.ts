@@ -1,6 +1,12 @@
 // Streams a Twilio recording (or transcript) through our backend so the
 // browser <audio> element can play it without prompting for Twilio login.
-// Public function — no JWT required (config in supabase/config.toml).
+//
+// ACCESS CONTROLLED: recordings are sensitive. The caller must present a
+// valid Supabase session — either an Authorization: Bearer header, or a
+// ?token= query param (needed because <audio src> cannot set headers) —
+// and hold one of the roles below. Anonymous access is rejected with 401/403.
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,6 +15,47 @@ const corsHeaders = {
   'Access-Control-Expose-Headers': 'content-length, content-range, accept-ranges, content-type',
 };
 
+const ALLOWED_ROLES = ['owner', 'admin', 'developer', 'va', 'staff'];
+
+/** Returns null when authorized, or a Response when the caller is denied. */
+async function authorize(req: Request, url: URL): Promise<Response | null> {
+  const headerToken = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+  const token = headerToken || url.searchParams.get('token') || '';
+
+  const deny = (status: number, error: string) =>
+    new Response(JSON.stringify({ error }), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  if (!token) return deny(401, 'Authentication required to access call recordings');
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+  );
+
+  const { data: claims, error } = await supabase.auth.getClaims(token);
+  const userId = claims?.claims?.sub as string | undefined;
+  if (error || !userId) return deny(401, 'Invalid or expired session');
+
+  const admin = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  );
+  const { data: roles } = await admin
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId);
+
+  const has = (roles || []).some((r: { role: string }) => ALLOWED_ROLES.includes(r.role));
+  if (!has) {
+    console.warn(`[play-twilio-recording] user ${userId} denied — roles=${JSON.stringify(roles)}`);
+    return deny(403, 'You do not have permission to listen to call recordings');
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -16,10 +63,15 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
+
+    const denied = await authorize(req, url);
+    if (denied) return denied;
+
     // Accept either ?url=<full twilio url> or ?sid=<RecordingSid>&fmt=mp3
     let target = url.searchParams.get('url') || '';
     const sid = url.searchParams.get('sid');
     const fmt = (url.searchParams.get('fmt') || 'mp3').toLowerCase();
+
 
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');

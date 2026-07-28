@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { StorePhoneLogSection } from "@/components/phone/StorePhoneLogSection";
 import { StorePerformanceTab } from "@/components/store/StorePerformanceTab";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -1076,9 +1077,11 @@ const StoreDetail = () => {
               <StorePerformanceTab storeId={id!} storeName={store.name} />
             </TabsContent>
 
-            <TabsContent value="calls">
+            <TabsContent value="calls" className="space-y-4">
               <StoreCallIntelligenceTab storeId={id!} />
+              <StorePhoneLogSection storeId={id!} />
             </TabsContent>
+
 
             <TabsContent value="route-coverage">
               <Card className="glass-card border-border/50">

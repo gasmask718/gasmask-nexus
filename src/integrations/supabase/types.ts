@@ -123744,6 +123744,111 @@ export type Database = {
           },
         ]
       }
+      voice_routing_settings: {
+        Row: {
+          business: string
+          created_at: string
+          disclosure_text: string
+          hours_days: number[]
+          hours_end_minute: number
+          hours_start_minute: number
+          hours_timezone: string
+          id: string
+          is_active: boolean
+          owner_forward_number: string | null
+          owner_ring_timeout_seconds: number
+          recording_enabled: boolean
+          ring_model: string
+          sms_transcript_to_owner: boolean
+          updated_at: string
+          va_ring_timeout_seconds: number
+          voicemail_enabled: boolean
+          voicemail_greeting: string
+        }
+        Insert: {
+          business: string
+          created_at?: string
+          disclosure_text?: string
+          hours_days?: number[]
+          hours_end_minute?: number
+          hours_start_minute?: number
+          hours_timezone?: string
+          id?: string
+          is_active?: boolean
+          owner_forward_number?: string | null
+          owner_ring_timeout_seconds?: number
+          recording_enabled?: boolean
+          ring_model?: string
+          sms_transcript_to_owner?: boolean
+          updated_at?: string
+          va_ring_timeout_seconds?: number
+          voicemail_enabled?: boolean
+          voicemail_greeting?: string
+        }
+        Update: {
+          business?: string
+          created_at?: string
+          disclosure_text?: string
+          hours_days?: number[]
+          hours_end_minute?: number
+          hours_start_minute?: number
+          hours_timezone?: string
+          id?: string
+          is_active?: boolean
+          owner_forward_number?: string | null
+          owner_ring_timeout_seconds?: number
+          recording_enabled?: boolean
+          ring_model?: string
+          sms_transcript_to_owner?: boolean
+          updated_at?: string
+          va_ring_timeout_seconds?: number
+          voicemail_enabled?: boolean
+          voicemail_greeting?: string
+        }
+        Relationships: []
+      }
+      voice_va_forwarding: {
+        Row: {
+          business: string
+          created_at: string
+          display_name: string
+          forward_number: string
+          id: string
+          is_active: boolean
+          is_available: boolean
+          last_status_change: string
+          ring_order: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          business?: string
+          created_at?: string
+          display_name: string
+          forward_number: string
+          id?: string
+          is_active?: boolean
+          is_available?: boolean
+          last_status_change?: string
+          ring_order?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          business?: string
+          created_at?: string
+          display_name?: string
+          forward_number?: string
+          id?: string
+          is_active?: boolean
+          is_available?: boolean
+          last_status_change?: string
+          ring_order?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       voicemails: {
         Row: {
           ai_analyzed_at: string | null

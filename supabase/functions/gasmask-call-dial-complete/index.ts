@@ -1,0 +1,123 @@
+/**
+ * GASMASK CALL DIAL-COMPLETE
+ *
+ * Fires as the <Dial action> callback. Decides what happens when the
+ * primary ring leg ends:
+ *   - answered  → mark the call answered/completed in the phone log
+ *   - not answered:
+ *       next=owner|va → ring the second leg (sequential ring models)
+ *       otherwise     → record a voicemail (or hang up if VM disabled)
+ *
+ * A missed call is ALWAYS written to communication_logs so it can never
+ * silently vanish from the phone log.
+ */
+
+import { corsHeaders, readForm, verifyTwilio, xmlHeaders, escapeXml, canonicalUrl } from "../_shared/dialer.ts";
+import { voicemailTwiml } from "../_shared/voicemailTwiml.ts";
+import {
+  svcClient,
+  loadRoutingSettings,
+  loadAvailableVas,
+  upsertCallLog,
+  patchCallLog,
+  normalizePhone,
+} from "../_shared/gasmaskVoice.ts";
+
+const ANSWERED = new Set(["completed", "answered"]);
+
+function twiml(body: string): Response {
+  return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<Response>${body}</Response>`, {
+    headers: xmlHeaders,
+  });
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const params = await readForm(req);
+  const v = verifyTwilio(req, params);
+  if (!v.ok) {
+    console.error(`[gasmask-call-dial-complete] signature invalid: ${v.reason}`);
+    return new Response("Forbidden", { status: 403, headers: corsHeaders });
+  }
+
+  const url = new URL(req.url);
+  const next = url.searchParams.get("next") || "voicemail";
+
+  const callSid = params.CallSid || "";
+  const from = normalizePhone(params.From || "");
+  const to = normalizePhone(params.To || "");
+  const dialStatus = (params.DialCallStatus || "").toLowerCase();
+  const dialDuration = parseInt(params.DialCallDuration || "0", 10) || 0;
+  const answeredBy = normalizePhone(params.DialCallSid ? (params.To || "") : "");
+
+  console.log(`[gasmask-call-dial-complete] sid=${callSid} status=${dialStatus} next=${next} dur=${dialDuration}`);
+
+  const supabase = svcClient();
+
+  // ── Answered: close the log entry out and end the call ──
+  if (ANSWERED.has(dialStatus) && dialDuration > 0) {
+    await patchCallLog(supabase, callSid, {
+      status: "answered",
+      outcome: "answered",
+      call_duration: dialDuration,
+      duration_seconds: dialDuration,
+      answered_at: new Date(Date.now() - dialDuration * 1000).toISOString(),
+      ended_at: new Date().toISOString(),
+      summary: `Answered inbound call (${dialDuration}s)`,
+    });
+    return twiml("<Hangup/>");
+  }
+
+  const settings = await loadRoutingSettings(supabase, "gasmask");
+  const u = new URL(canonicalUrl(req));
+  const base = `${u.protocol}//${u.host}/functions/v1`;
+
+  // ── Second leg for sequential ring models ──
+  if (settings && (next === "owner" || next === "va")) {
+    const legTargets = next === "owner"
+      ? (settings.owner_forward_number ? [settings.owner_forward_number] : [])
+      : (await loadAvailableVas(supabase, "gasmask")).map((x) => x.forward_number);
+
+    if (legTargets.length) {
+      await patchCallLog(supabase, callSid, {
+        status: "ringing",
+        summary: next === "owner" ? "Unanswered by VA — forwarding to owner" : "Unanswered by owner — forwarding to VA",
+      });
+
+      const recCb = `${base}/gasmask-call-recording-status`;
+      const recordAttrs = settings.recording_enabled
+        ? ` record="record-from-answer-dual" recordingStatusCallback="${escapeXml(recCb)}" recordingStatusCallbackMethod="POST" recordingStatusCallbackEvent="completed"`
+        : "";
+      const numbers = legTargets.map((n) => `<Number>${escapeXml(n)}</Number>`).join("");
+
+      return twiml(`
+  <Dial answerOnBridge="true" timeout="${settings.owner_ring_timeout_seconds}" callerId="${escapeXml(to)}"
+        action="${escapeXml(`${base}/gasmask-call-dial-complete?next=voicemail`)}" method="POST"${recordAttrs}>
+    ${numbers}
+  </Dial>`);
+    }
+  }
+
+  // ── Nobody answered: log the miss, then take a voicemail ──
+  await upsertCallLog(supabase, {
+    callSid,
+    from,
+    to,
+    status: "missed",
+    summary: `Missed inbound call from ${from} (${dialStatus || "no-answer"})`,
+    extra: {
+      outcome: "missed",
+      ended_at: new Date().toISOString(),
+      event_type: "missed_call",
+      next_action: "Call back",
+      follow_up_required: true,
+    },
+  });
+
+  if (!settings?.voicemail_enabled) {
+    return twiml(`<Say voice="alice">Sorry we missed you. Please try again later.</Say><Hangup/>`);
+  }
+
+  return twiml(voicemailTwiml(base, settings.voicemail_greeting));
+});

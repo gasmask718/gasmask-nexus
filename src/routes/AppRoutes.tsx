@@ -591,6 +591,7 @@ const CommunicationAnalytics = lazy(() => import('@/pages/communication/Communic
 const CommunicationSettings = lazy(() => import('@/pages/communication/CommunicationSettings'));
 const CallCenter = lazy(() => import('@/pages/CallCenter'));
 const TextCenter = lazy(() => import('@/pages/TextCenter'));
+const PhoneLog = lazy(() => import('@/pages/PhoneLog'));
 const EmailCenter = lazy(() => import('@/pages/EmailCenter'));
 
 // Comm Systems
@@ -1584,6 +1585,7 @@ export default function AppRoutes() {
         <Route path="/call-center/emails" element={<Emails />} />
         <Route path="/call-center/settings" element={<CallCenterSettings />} />
         <Route path="/text-center" element={<TextCenter />} />
+        <Route path="/phone-log" element={<PhoneLog />} />
         <Route path="/email-center" element={<EmailCenter />} />
 
         {/* Legacy /callcenter/* → canonical /call-center/* (Pass 1B redirects; bookmarks preserved) */}
