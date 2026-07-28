@@ -16,6 +16,7 @@ import { LastOrderKPIBadge } from '@/components/store/LastOrderKPIBadge';
 import { useEscalationFlagsBatch, type EscalationFlag } from '@/hooks/useEscalationFlags';
 import { EscalationFlagBadge } from '@/components/delivery/EscalationFlagBadge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useMyFieldStoreIds } from '@/hooks/useFieldStoreComms';
 
 interface StoreItem {
   id: string;
@@ -35,8 +36,13 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
   const [stores, setStores] = useState<StoreItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  // "My stores" = explicitly assigned OR on a route assigned to me in the last 30 days.
+  const [onlyMine, setOnlyMine] = useState(true);
+  const { data: myStoreIds, isLoading: myStoresLoading } = useMyFieldStoreIds();
+  const hasAssignments = (myStoreIds?.length ?? 0) > 0;
 
   useEffect(() => {
+    if (myStoresLoading) return;
     async function fetchStores() {
       try {
         let query = supabase
@@ -44,6 +50,12 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
           .select('id, store_name, address, city, state')
           .order('store_name')
           .limit(50);
+
+        // Only narrow to assigned stores when the worker actually has some,
+        // otherwise the portal would show an empty list and block field work.
+        if (onlyMine && hasAssignments) {
+          query = query.in('id', myStoreIds!);
+        }
 
         if (search) {
           query = query.or(`store_name.ilike.%${search}%,address.ilike.%${search}%,city.ilike.%${search}%`);
@@ -62,7 +74,7 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
 
     const debounce = setTimeout(fetchStores, 300);
     return () => clearTimeout(debounce);
-  }, [search]);
+  }, [search, onlyMine, hasAssignments, myStoreIds, myStoresLoading]);
 
   const basePath = portalType === 'driver' ? '/portal/driver' : '/portal/biker';
   const accentClass = portalType === 'driver' ? 'text-hud-cyan' : 'text-hud-green';
@@ -126,6 +138,28 @@ export function StoreListPage({ portalType }: StoreListPageProps) {
           className="pl-10"
         />
       </div>
+
+      {/* My stores / All stores scope */}
+      {hasAssignments && (
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant={onlyMine ? 'default' : 'outline'}
+            onClick={() => setOnlyMine(true)}
+          >
+            My stores ({myStoreIds!.length})
+          </Button>
+          <Button
+            size="sm"
+            variant={onlyMine ? 'outline' : 'default'}
+            onClick={() => setOnlyMine(false)}
+          >
+            All stores
+          </Button>
+        </div>
+      )}
+
+
 
       {/* Store List */}
       <Card>
