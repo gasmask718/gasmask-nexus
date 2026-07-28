@@ -402,6 +402,11 @@ const Stores = () => {
     })) as Store[];
   }, [server.pageRows, groupIdCountsMap]);
 
+  // At-a-glance contact markers (homie / owner confirmed / no good number)
+  const { data: contactGlance } = useStoreContactGlance(
+    paginatedStores.map((s) => s.id),
+  );
+
   const filteredStoresCount = server.pageTotal;
   const totalPages = Math.max(1, Math.ceil(server.pageTotal / pageSize));
 
