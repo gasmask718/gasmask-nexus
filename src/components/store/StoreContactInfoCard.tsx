@@ -283,12 +283,23 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
         await queryClient.invalidateQueries({ queryKey: ['store-owner', store.id] });
       }
 
+      // Refetch every surface that reads this store's address/contact fields.
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['store-context', store.id] }),
+        queryClient.invalidateQueries({ queryKey: ['store-master', store.id] }),
+        queryClient.invalidateQueries({ queryKey: ['store-master-resolve', store.id] }),
+        queryClient.invalidateQueries({ queryKey: ['legacy-store-info', store.id] }),
+        queryClient.invalidateQueries({ queryKey: ['store-contacts', store.id] }),
+      ]);
+
       toast.success('Contact information updated');
       setEditOpen(false);
       onUpdate();
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       console.error('Error updating store:', error);
-      toast.error('Failed to update contact information');
+      toast.error(`Failed to update contact information: ${message}`);
+
     } finally {
       setSaving(false);
     }
