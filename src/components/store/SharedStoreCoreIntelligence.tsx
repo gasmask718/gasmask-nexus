@@ -88,6 +88,11 @@ export function SharedStoreCoreIntelligence({
       {/* ══════════════ Last Order Snapshot Intelligence ══════════════ */}
       <LastOrderSnapshotPanel storeId={storeId} />
 
+      {/* ══════════════ Per-brand flags (same control as quick-view) ══════════════ */}
+      <div className="rounded-lg border border-border/60 bg-card p-4">
+        <StoreBrandFlagStickers storeId={storeId} className="border-t-0 pt-0" />
+      </div>
+
       {/* ══════════════ Inventory Intelligence ══════════════ */}
       <UnifiedTubeIntelligenceCard storeId={storeId} role={role} />
       <SellThroughIntelCard storeId={storeId} />
