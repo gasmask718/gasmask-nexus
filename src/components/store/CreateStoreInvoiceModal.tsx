@@ -257,19 +257,19 @@ export function CreateStoreInvoiceModal({
     let computedTubesTotal: number;
 
     if (saleUnit === 'pack') {
-      // Pack: quantity packs × pack_size = canonical units
+      // Pack: quantity packs × pack_size = canonical units (halves rounded)
       quantityBoxes = null;
-      quantityTubes = quantity * packSize;
-      computedTubesTotal = quantity * packSize;
+      quantityTubes = Math.round(quantity * packSize);
+      computedTubesTotal = Math.round(quantity * packSize);
     } else if (saleUnit === 'box') {
       quantityBoxes = quantity;
       quantityTubes = null;
       if (packsPerBox && packSize > 1) {
         // New path: boxes × packs_per_box × pack_size
-        computedTubesTotal = quantity * packsPerBox * packSize;
+        computedTubesTotal = Math.round(quantity * packsPerBox * packSize);
       } else {
         // Legacy path: boxes × units_per_box
-        computedTubesTotal = quantity * unitsPerBox;
+        computedTubesTotal = Math.round(quantity * unitsPerBox);
       }
     } else {
       // Unit: 1:1 canonical
@@ -277,6 +277,7 @@ export function CreateStoreInvoiceModal({
       quantityTubes = quantity;
       computedTubesTotal = quantity;
     }
+
 
     const lineSubtotal = unitPrice * quantity;
 
@@ -294,19 +295,20 @@ export function CreateStoreInvoiceModal({
       existing.profit = (existing.unit_price_used - existing.cost_per_unit) * existing.quantity;
       // Recompute canonical units for updated quantity
       if (existing.sale_unit === 'pack') {
-        existing.quantity_tubes = existing.quantity * existing.pack_size_snapshot;
-        existing.computed_tubes_total = existing.quantity * existing.pack_size_snapshot;
+        existing.quantity_tubes = Math.round(existing.quantity * existing.pack_size_snapshot);
+        existing.computed_tubes_total = Math.round(existing.quantity * existing.pack_size_snapshot);
       } else if (existing.sale_unit === 'box') {
         existing.quantity_boxes = existing.quantity;
         if (existing.packs_per_box_snapshot && existing.pack_size_snapshot > 1) {
-          existing.computed_tubes_total = existing.quantity * existing.packs_per_box_snapshot * existing.pack_size_snapshot;
+          existing.computed_tubes_total = Math.round(existing.quantity * existing.packs_per_box_snapshot * existing.pack_size_snapshot);
         } else {
-          existing.computed_tubes_total = existing.quantity * existing.units_per_box;
+          existing.computed_tubes_total = Math.round(existing.quantity * existing.units_per_box);
         }
       } else {
         existing.quantity_tubes = existing.quantity;
         existing.computed_tubes_total = existing.quantity;
       }
+
       setLineItems(updated);
     } else {
       setLineItems([
@@ -369,16 +371,17 @@ export function CreateStoreInvoiceModal({
           profit: (item.unit_price_used - item.cost_per_unit) * newQuantity,
         };
         if (updatedItem.sale_unit === 'pack') {
-          updatedItem.quantity_tubes = newQuantity * updatedItem.pack_size_snapshot;
-          updatedItem.computed_tubes_total = newQuantity * updatedItem.pack_size_snapshot;
+          updatedItem.quantity_tubes = Math.round(newQuantity * updatedItem.pack_size_snapshot);
+          updatedItem.computed_tubes_total = Math.round(newQuantity * updatedItem.pack_size_snapshot);
         } else if (updatedItem.sale_unit === 'box') {
           updatedItem.quantity_boxes = newQuantity;
           if (updatedItem.packs_per_box_snapshot && updatedItem.pack_size_snapshot > 1) {
-            updatedItem.computed_tubes_total = newQuantity * updatedItem.packs_per_box_snapshot * updatedItem.pack_size_snapshot;
+            updatedItem.computed_tubes_total = Math.round(newQuantity * updatedItem.packs_per_box_snapshot * updatedItem.pack_size_snapshot);
           } else {
-            updatedItem.computed_tubes_total = newQuantity * updatedItem.units_per_box;
+            updatedItem.computed_tubes_total = Math.round(newQuantity * updatedItem.units_per_box);
           }
         } else {
+
           updatedItem.quantity_tubes = newQuantity;
           updatedItem.computed_tubes_total = newQuantity;
         }
@@ -930,7 +933,7 @@ export function CreateStoreInvoiceModal({
               </div>
             )}
 
-            {/* Quantity */}
+            {/* Quantity — supports halves (1/2) */}
             {selectedProductId && (
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">
@@ -941,15 +944,34 @@ export function CreateStoreInvoiceModal({
                     return (product?.track_by || 'tubes') === 'bags' ? 'Bags' : 'Tubes';
                   })()})
                 </Label>
+                <div className="flex gap-2">
+                  {[0.5, 1, 2, 3].map((q) => (
+                    <Button
+                      key={q}
+                      type="button"
+                      size="sm"
+                      variant={quantity === q ? 'default' : 'outline'}
+                      onClick={() => setQuantity(q)}
+                      className="text-xs px-3"
+                    >
+                      {q === 0.5 ? '½' : q}
+                    </Button>
+                  ))}
+                </div>
                 <Input
                   type="number"
-                  min="1"
+                  min="0.5"
+                  step="0.5"
                   value={quantity}
-                  onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    setQuantity(!isNaN(v) && v > 0 ? v : 0.5);
+                  }}
                   className="bg-background"
                 />
               </div>
             )}
+
 
             {/* Add Button */}
             {selectedProductId && (
@@ -1020,11 +1042,13 @@ export function CreateStoreInvoiceModal({
                     <div className="flex items-center gap-2">
                       <Input
                         type="number"
-                        min="1"
+                        min="0.5"
+                        step="0.5"
                         value={item.quantity}
-                        onChange={(e) => handleUpdateQuantity(item.id, parseInt(e.target.value) || 1)}
+                        onChange={(e) => handleUpdateQuantity(item.id, parseFloat(e.target.value) || 0.5)}
                         className="w-16 h-8 text-sm"
                       />
+
                       <span className="text-xs text-muted-foreground">×</span>
                       {priceOverrideEnabled ? (
                         <Input

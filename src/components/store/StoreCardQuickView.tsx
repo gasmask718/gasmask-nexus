@@ -22,6 +22,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { StoreBrandFlagStickers } from '@/components/store/StoreBrandFlagStickers';
 import { cn } from '@/lib/utils';
 import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
+import { useStoreInventoryStamps } from '@/hooks/useStoreInventoryStamps';
+import { dynastyStamp } from '@/lib/dates';
+import { Eye } from 'lucide-react';
 import { getSkuStatusIcon, brandForProductId } from '@/lib/inventory/skuDisplay';
 import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
 import { useStoreRecentInvoices } from '@/hooks/useStoreRecentInvoices';
@@ -377,6 +380,7 @@ function InventorySection({ storeId }: { storeId: string }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: skus = [], isLoading } = useStoreInventoryBySku(storeId);
+  const { data: stamps } = useStoreInventoryStamps(storeId);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   const saveSku = useMutation({
@@ -454,7 +458,20 @@ function InventorySection({ storeId }: { storeId: string }) {
             return (
               <li key={sku.product_id} className="flex items-center gap-2 text-xs">
                 <span className="text-sm leading-none" aria-hidden>{getSkuStatusIcon(sku.status)}</span>
-                <span className="flex-1 truncate">{sku.display}</span>
+                <span className="flex-1 min-w-0">
+                  <span className="block truncate">{sku.display}</span>
+                  {/* Store-level inventory-check date, shown per product line */}
+                  {stamps?.lastChecked && (
+                    <span
+                      className="flex items-center gap-1 text-[9px] leading-tight text-muted-foreground"
+                      title={`Inventory checked ${dynastyStamp(stamps.lastChecked)}`}
+                    >
+                      <Eye className="h-2.5 w-2.5" />
+                      Checked {dynastyStamp(stamps.lastChecked)}
+                    </span>
+                  )}
+                </span>
+
                 <Input
                   type="number"
                   min={0}
