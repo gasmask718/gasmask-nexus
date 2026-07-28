@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 
     await sb.from("communication_logs").insert({
       store_id: contact?.store_id ?? null,
-      contact_id: null, // store_contacts.id is not FK-compatible with communication_logs.contact_id (people)
+      contact_id: contact?.id ?? null, // no FK on communication_logs.contact_id
       channel: "sms",
       direction: "inbound",
       message_content: Body,
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
 
     await sb.from("communication_logs").insert({
       store_id: contact?.store_id ?? null,
-      contact_id: null, // store_contacts.id is not FK-compatible with communication_logs.contact_id (people)
+      contact_id: contact?.id ?? null, // no FK on communication_logs.contact_id
       channel: "sms",
       direction: "inbound",
       message_content: Body,
