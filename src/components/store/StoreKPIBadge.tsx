@@ -8,7 +8,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TubeIntelAttribution } from '@/components/store/TubeIntelAttribution';
 import { normalizeBrandId, CANONICAL_BRANDS } from '@/config/brands';
 import { dynastyStamp } from '@/lib/dates';
-import type { SkuStamp } from '@/hooks/useStoreInventoryStamps';
+import type { SkuStamp, StoreInventoryStampData } from '@/hooks/useStoreInventoryStamps';
+import { StoreInventoryStamps } from '@/components/store/StoreInventoryStamps';
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE KPI BADGE — CANONICAL RENDERER
