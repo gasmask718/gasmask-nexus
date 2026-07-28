@@ -13,6 +13,7 @@ import { AmbassadorPortalNav } from '@/components/ambassador/AmbassadorPortalNav
 import { AmbassadorMobileBottomNav } from '@/components/ambassador/AmbassadorMobileBottomNav';
 import { FeedbackFloatingButton } from '@/components/feedback/FeedbackFloatingButton';
 import { AmbassadorFieldSession } from '@/components/ambassador/AmbassadorFieldSession';
+import InstallAppPrompt from '@/components/pwa/InstallAppPrompt';
 
 interface AmbassadorLayoutProps {
   children: ReactNode;
@@ -47,6 +48,9 @@ export function AmbassadorLayout({
     >
       <AmbassadorPortalNav />
       <AmbassadorFieldSession />
+      <div className="md:hidden mb-3">
+        <InstallAppPrompt compact />
+      </div>
       {/* Mobile-only bottom-pad so fixed nav doesn't cover content */}
       <div className="pb-20 md:pb-0">{children}</div>
       <FeedbackFloatingButton />
