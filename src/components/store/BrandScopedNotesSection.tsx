@@ -13,8 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   FileText, Plus, User, Clock, Pencil, Trash2, Upload,
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { dynastyDate } from '@/lib/dates';
+import { dynastyStampWithRelative } from '@/lib/dates';
 import { AddNoteModal } from './AddNoteModal';
 import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
 import { toast } from 'sonner';
