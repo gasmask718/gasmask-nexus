@@ -20,6 +20,7 @@ import { BrandScopedNotesSection } from '@/components/store/BrandScopedNotesSect
 import { OpportunitiesSection } from '@/components/store/OpportunitiesSection';
 import { ConnectedStoresCard } from '@/components/store/ConnectedStoresCard';
 import { UnifiedTubeIntelligenceCard } from '@/components/store/UnifiedTubeIntelligenceCard';
+import { StoreBrandFlagStickers } from '@/components/store/StoreBrandFlagStickers';
 import { SellThroughIntelCard } from '@/components/store/SellThroughIntelCard';
 import { BrandStickersCard } from '@/components/store/BrandStickersCard';
 import { StoreVisitInventoryCard } from '@/components/store/StoreVisitInventoryCard';
