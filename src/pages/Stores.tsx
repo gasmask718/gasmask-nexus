@@ -873,6 +873,10 @@ const Stores = () => {
                     <StoreReviewBadge
                       reviewedByAdmin={(store as any).reviewed_by_admin}
                       reviewedByVa={(store as any).reviewed_by_va}
+                      reviewedByAdminAt={(store as any).reviewed_by_admin_at}
+                      reviewedByAdminBy={(store as any).reviewed_by_admin_by}
+                      reviewedByVaAt={(store as any).reviewed_by_va_at}
+                      reviewedByVaBy={(store as any).reviewed_by_va_by}
                     />
                     <Button
                       type="button"
