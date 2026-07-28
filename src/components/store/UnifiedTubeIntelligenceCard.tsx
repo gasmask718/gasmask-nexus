@@ -17,10 +17,16 @@ import { useStoreBrandRelationships } from '@/hooks/useStoreBrandRelationships';
 import {
   Package, Save, RefreshCw, Clock, Calendar, ShoppingCart, FlaskConical,
   Gift, ThumbsUp, ThumbsDown, AlertTriangle, User, MapPin, Phone, MessageSquare, Monitor,
-  Power, Repeat
+  Power, Repeat, Eye
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
-import { dynastyDate } from '@/lib/dates';
+import {
+  dynastyDate,
+  dynastyDateAbsolute,
+  dynastyDaysWithDate,
+  dynastyStamp,
+  dynastyStampWithRelative,
+} from '@/lib/dates';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
@@ -65,6 +71,7 @@ interface TubeInventoryRecord {
   brand: string;
   current_tubes_left: number;
   last_updated: string;
+  last_checked_at: string | null;
   created_by: string;
 }
 
