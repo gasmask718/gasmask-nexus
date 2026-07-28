@@ -46,7 +46,9 @@ export function StoreBrandFlagStickers({ storeId, compact = false, className, up
   const { data: brands = [], isLoading: brandsLoading, error: brandsError } = useFlagBrands();
   const { data: flags = [], isLoading: flagsLoading, error: flagsError } = useStoreBrandFlags(storeId);
   const toggle = useToggleStoreBrandFlag(storeId);
+  const { data: stamps } = useStoreInventoryStamps(storeId);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
 
   const runToggle = (products: FlagProduct[], type: StoreFlagType, next: boolean) => {
     toggle.mutate(
