@@ -33,6 +33,7 @@ import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
 import { resolveProductIdForBrand } from '@/lib/inventory/skuDisplay';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TUBE_BRAND_COLORS } from '@/constants/tubeColors';
+import { StoreInventoryStamps } from '@/components/store/StoreInventoryStamps';
 import { UnifiedTubeSoldTable } from '@/components/store/UnifiedTubeSoldTable';
 import { CardHelper } from '@/components/portal/guidance';
 import { useTranslation } from '@/hooks/useTranslation';
