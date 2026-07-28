@@ -99,46 +99,16 @@ export default function UTPlacesLeadFinder() {
 
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
-  // Existing place_ids for dedup
-  const [existingPlaceIds, setExistingPlaceIds] = useState<Set<string>>(new Set());
-  const [existingPhones, setExistingPhones] = useState<Set<string>>(new Set());
-  const [existingBizKeys, setExistingBizKeys] = useState<Set<string>>(new Set());
+  // Dedup is handled by the database (ut_upsert_partner_lead + partial unique index
+  // on external_place_id). No client-side pre-check: re-imports come back as skips.
+  const getDupStatus = useCallback((): "new" | "probable_duplicate" | "exact_duplicate" => "new", []);
 
-  const loadExistingLeads = useCallback(async () => {
-    let all: any[] = [];
-    let from = 0;
-    const PAGE = 1000;
-    let hasMore = true;
-    while (hasMore) {
-      const { data } = await (supabase.from("ut_partner_leads") as any)
-        .select("external_place_id,phone,business_name,city")
-        .range(from, from + PAGE - 1);
-      if (data && data.length > 0) {
-        all = all.concat(data);
-        from += PAGE;
-        if (data.length < PAGE) hasMore = false;
-      } else hasMore = false;
-    }
-    const pids = new Set<string>();
-    const phones = new Set<string>();
-    const bkeys = new Set<string>();
-    for (const l of all) {
-      if (l.external_place_id) pids.add(l.external_place_id);
-      if (l.phone) phones.add(l.phone);
-      if (l.business_name && l.city) bkeys.add(`${l.business_name.toLowerCase()}|${(l.city || "").toLowerCase()}`);
-    }
-    setExistingPlaceIds(pids);
-    setExistingPhones(phones);
-    setExistingBizKeys(bkeys);
-  }, []);
+  // Exactly 2 uppercase chars or '' — '' must never reach the RPC (CHECK constraint).
+  const normState = (raw: string | null | undefined) => {
+    const s = (raw || "").toUpperCase().slice(0, 2);
+    return s.length === 2 ? s : "";
+  };
 
-  const getDupStatus = useCallback((p: { place_id: string; name: string; city: string; phone: string | null }): "new" | "probable_duplicate" | "exact_duplicate" => {
-    if (existingPlaceIds.has(p.place_id)) return "exact_duplicate";
-    if (p.phone && existingPhones.has(p.phone)) return "exact_duplicate";
-    const key = `${p.name.toLowerCase()}|${(p.city || "").toLowerCase()}`;
-    if (existingBizKeys.has(key)) return "probable_duplicate";
-    return "new";
-  }, [existingPlaceIds, existingPhones, existingBizKeys]);
 
   // ── SEARCH: uses search_all for auto-pagination (up to 60 results) ──
   const handleSearch = useCallback(async (overrideQuery?: string) => {
