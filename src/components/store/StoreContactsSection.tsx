@@ -261,7 +261,6 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                             invalidateKeys={[['store-contacts-responsiveness', storeId]]}
                           />
                         </div>
-                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 flex-wrap">
