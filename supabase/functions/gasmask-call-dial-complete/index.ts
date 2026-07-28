@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
     await patchCallLog(supabase, callSid, {
       summary: `No human answer (${dialStatus || "no-answer"}) — handing off to AI phone agent`,
     });
-    const aiUrl = `${base}/dc-inbound-call?vm=${settings?.voicemail_enabled ? "1" : "0"}&stage=ai_fallback`;
+    const aiUrl = `${base}/dc-inbound-call?biz=gasmask&vm=${settings?.voicemail_enabled ? "1" : "0"}&stage=ai_fallback`;
     return twiml(`<Redirect method="POST">${escapeXml(aiUrl)}</Redirect>`);
   }
 

@@ -89,6 +89,10 @@ Deno.serve(async (req) => {
     assignedAgentId = dirRow.assigned_agent_id || null;
   }
 
+  // Caller-supplied business hint (used by the gasmask-inbound-voice fallback
+  // redirect, and as a safety net when the directory view is unavailable).
+  if (!business) business = new URL(req.url).searchParams.get("biz");
+
   // ── Resolve Bland DID ──
   let blandDid = assignedAgentId || "";
   let source = assignedAgentId ? "directory" : "";
