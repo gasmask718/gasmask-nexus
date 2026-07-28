@@ -17,7 +17,7 @@ async function textSearch(query: string, apiKey: string, pageToken?: string) {
     headers: {
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': apiKey,
-      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.types,places.rating,places.googleMapsUri,places.businessStatus,places.nationalPhoneNumber,places.websiteUri,places.addressComponents,nextPageToken',
+      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.types,places.rating,places.userRatingCount,places.googleMapsUri,places.businessStatus,places.nationalPhoneNumber,places.websiteUri,places.addressComponents,places.location,nextPageToken',
     },
     body: JSON.stringify(body),
   });
@@ -192,6 +192,7 @@ serve(async (req) => {
       enriched_count: enrichedCount,
       updated_at: new Date().toISOString(),
     }).eq('id', job_id);
+    if (failedCount > 0) console.warn(`Job ${job_id}: ${failedCount} places failed to upsert`);
 
     // 8. Update state coverage
     const { data: stateRow } = await sb.from('ut_state_coverage').select('*').eq('state', job.state).single();
