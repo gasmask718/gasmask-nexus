@@ -187,7 +187,6 @@ const AmbassadorInviteGovernance = lazy(() => import('@/pages/admin/AmbassadorIn
 // Profile pages
 const AmbassadorProfilePage = lazy(() => import('@/pages/profile').then(m => ({ default: m.AmbassadorProfilePage })));
 const WholesalerProfilePage = lazy(() => import('@/pages/profile').then(m => ({ default: m.WholesalerProfilePage })));
-const StoreProfilePage = lazy(() => import('@/pages/profile').then(m => ({ default: m.StoreProfilePage })));
 const InfluencerProfilePage = lazy(() => import('@/pages/profile').then(m => ({ default: m.InfluencerProfilePage })));
 
 // Floor 8
