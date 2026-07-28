@@ -390,8 +390,10 @@ export function useStoresServerData(args: UseStoresServerDataArgs) {
           relationship_status: store.relationship_status || 'Non-active (New - need to speak)',
           reviewed_by_admin: !!store.reviewed_by_admin,
           reviewed_by_admin_at: store.reviewed_by_admin_at || null,
+          reviewed_by_admin_by: store.reviewed_by_admin_by || null,
           reviewed_by_va: !!store.reviewed_by_va,
           reviewed_by_va_at: store.reviewed_by_va_at || null,
+          reviewed_by_va_by: store.reviewed_by_va_by || null,
         };
       });
 
