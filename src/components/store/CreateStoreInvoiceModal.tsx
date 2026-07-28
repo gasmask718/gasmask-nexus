@@ -1041,11 +1041,13 @@ export function CreateStoreInvoiceModal({
                     <div className="flex items-center gap-2">
                       <Input
                         type="number"
-                        min="1"
+                        min="0.5"
+                        step="0.5"
                         value={item.quantity}
-                        onChange={(e) => handleUpdateQuantity(item.id, parseInt(e.target.value) || 1)}
+                        onChange={(e) => handleUpdateQuantity(item.id, parseFloat(e.target.value) || 0.5)}
                         className="w-16 h-8 text-sm"
                       />
+
                       <span className="text-xs text-muted-foreground">×</span>
                       {priceOverrideEnabled ? (
                         <Input
