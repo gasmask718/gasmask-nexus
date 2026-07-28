@@ -37,15 +37,23 @@ async function placeDetails(placeId: string, apiKey: string) {
   return res.json();
 }
 
+// Normalise to the exact 2-char uppercase form the ut_upsert RPC / CHECK requires.
+// Returns '' when unresolvable — those places are skipped, never sent to the RPC.
+function normState(raw: string | null | undefined): string {
+  const s = (raw || '').toUpperCase().slice(0, 2);
+  return s.length === 2 ? s : '';
+}
+
 function parseCityState(addressComponents: any[]): { city: string; state: string } {
   let city = '', state = '';
   if (!addressComponents) return { city, state };
   for (const c of addressComponents) {
     if (c.types?.includes('locality')) city = c.longText || c.shortText || '';
-    if (c.types?.includes('administrative_area_level_1')) state = c.longText || c.shortText || '';
+    if (c.types?.includes('administrative_area_level_1')) state = normState(c.shortText);
   }
   return { city, state };
 }
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
