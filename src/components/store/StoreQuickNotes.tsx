@@ -125,8 +125,8 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
                 {n.note_text}
               </p>
               <p className="text-[10px] text-muted-foreground mt-0.5">
-                {n.created_by || 'unknown'} ·{' '}
-                {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                {(n.created_by && authors[n.created_by]) || n.created_by || 'unknown'} ·{' '}
+                {dynastyStampWithRelative(n.created_at)}
               </p>
             </li>
           ))}
