@@ -417,6 +417,18 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
 
   const lastUpdated = getLastUpdated();
 
+  // "Last inventory check" — most recent touch of ANY inventory row for this
+  // store (canonical: store_tube_inventory.last_checked_at, DB-trigger driven),
+  // falling back to the per-brand intelligence check stamp.
+  const lastChecked = useMemo(() => {
+    const stamps = [
+      ...(inventory || []).map(i => i.last_checked_at).filter(Boolean),
+      ...intelData.map(i => i.last_inventory_check_at).filter(Boolean),
+    ] as string[];
+    if (!stamps.length) return null;
+    return stamps.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
+  }, [inventory, intelData]);
+
   // ══════════════════════════════════════════════
   // RENDER GUARD — If no brand intelligence rows → show system warning
   // ══════════════════════════════════════════════
