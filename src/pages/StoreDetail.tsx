@@ -27,6 +27,7 @@ import { Activity, Headphones, Flame } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreQuickNotes } from "@/components/store/StoreQuickNotes";
+import { StoreTaskRouteButtons } from "@/components/store/StoreTaskRouteButtons";
 import { SamplesGivenSection } from "@/components/store/SamplesGivenSection";
 import { StoreReviewControls } from "@/components/store/StoreReviewControls";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
@@ -796,6 +797,7 @@ const StoreDetail = () => {
           {/* ═══════════════════════════════════════════════════════════ */}
           {/* CANONICAL SHARED SECTIONS — Auto-synced with all profiles */}
           {/* ═══════════════════════════════════════════════════════════ */}
+          <StoreTaskRouteButtons storeId={id || ""} storeName={store.name} />
           <StoreContactsSection storeId={id || ""} storeName={store.name} />
           <Card className="glass-card border-border/50">
             <CardContent className="pt-6">
