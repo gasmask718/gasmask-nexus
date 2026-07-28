@@ -716,6 +716,7 @@ const DYNASTY_NAVIGATION = {
     id: 'systems-hr',
     name: '⚙️ Systems & HR',
     items: [
+      { path: '/admin/field-assignments', label: '🔴 Field Assignments & Invites', icon: Users, highlight: true },
       { path: '/hr', label: '👔 HR OS', icon: Briefcase },
       { path: '/hr/applicants', label: 'HR Applicants', icon: UserPlus },
       { path: '/hr/employees', label: 'HR Employees', icon: Users },
@@ -731,7 +732,6 @@ const DYNASTY_NAVIGATION = {
       { path: '/portal/ambassador', label: '🎖️ Ambassador OS', icon: Award },
       { path: '/admin/feedback', label: '📣 Feedback Inbox', icon: MessageSquareWarning },
       { path: '/admin/field-day-notes', label: '📋 Field Day Notes', icon: ClipboardList },
-      { path: '/admin/field-assignments', label: '🗺️ Field Store Assignments', icon: Users },
     ],
   },
   brandaroHub: {
@@ -971,7 +971,7 @@ const Layout = ({ children }: LayoutProps) => {
     );
   }
 
-  const renderSection = (id: string, name: string, items: Array<{ path: string; label: string; icon: any; testId?: string; badge?: number }>) => {
+  const renderSection = (id: string, name: string, items: Array<{ path: string; label: string; icon: any; testId?: string; badge?: number; highlight?: boolean }>) => {
     const isOpen = openSections.includes(id);
     const sectionWired = sectionHasDispatch(items.map(i => i.path));
 
@@ -1003,9 +1003,11 @@ const Layout = ({ children }: LayoutProps) => {
                   data-testid={item.testId}
                   className={cn(
                     "flex items-center gap-2 px-2 py-1 text-xs rounded-md transition-colors",
-                    isPathActive(item.path)
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    item.highlight
+                      ? "bg-destructive/15 text-destructive font-semibold ring-1 ring-destructive/50 hover:bg-destructive/25"
+                      : isPathActive(item.path)
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   )}
                 >
                   <item.icon className="h-3 w-3 shrink-0" />
