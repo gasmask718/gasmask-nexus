@@ -12,7 +12,7 @@ import { useSimulationSafeMutation } from '@/hooks/useSimulationSafeMutation';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { Package, Save, RefreshCw, Clock, Filter, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
-import { dynastyDateTime } from '@/lib/dates';
+import { dynastyStampWithRelative } from '@/lib/dates';
 import { toast } from 'sonner';
 import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
 import { resolveProductIdForBrand } from '@/lib/inventory/skuDisplay';
@@ -318,7 +318,7 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
                         </span>
                         {originalItem?.last_updated && (
                           <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {dynastyDateTime(originalItem.last_updated)}
+                            {dynastyStampWithRelative(originalItem.last_updated)}
                           </span>
                         )}
                       </div>
@@ -370,7 +370,7 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
                             </span>
                             {originalItem?.last_updated && (
                               <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                {dynastyDateTime(originalItem.last_updated)}
+                                {dynastyStampWithRelative(originalItem.last_updated)}
                               </span>
                             )}
                           </div>
