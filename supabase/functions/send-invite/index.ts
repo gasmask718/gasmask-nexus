@@ -173,15 +173,24 @@ Deno.serve(async (req) => {
   }
 });
 
-// Normalize loose user input ("718-427-8155", "(718) 427 8155") to E.164.
+// Normalize loose user input ("718-427-8155", "(718) 427 8155", "+63 936 356 7216")
+// to E.164. Handles international numbers, and strips a mistakenly-typed US "1"
+// prefix in front of an already-international number (e.g. "+1 +63..." => "1639...").
 function toE164(raw: string): string | null {
   const trimmed = String(raw).trim();
   if (/^\+[1-9]\d{7,14}$/.test(trimmed)) return trimmed;
-  const digits = trimmed.replace(/\D/g, "");
+  let digits = trimmed.replace(/\D/g, "");
   if (digits.length === 10) return `+1${digits}`;
   if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  // Longer than NANP: a leading "1" here is a stray country code typed in front
+  // of a foreign number (NANP numbers are never > 11 digits).
+  if (digits.length > 11 && digits.startsWith("1")) digits = digits.slice(1);
+  if (digits.length >= 8 && digits.length <= 15 && !digits.startsWith("0")) {
+    return `+${digits}`;
+  }
   return null;
 }
+
 
 function json(b: unknown, status = 200) {
   return new Response(JSON.stringify(b), {
