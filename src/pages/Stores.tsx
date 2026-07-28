@@ -47,6 +47,9 @@ import { useStoresServerData } from '@/pages/stores/useStoresServerData';
 import { StoreCardQuickView } from '@/components/store/StoreCardQuickView';
 import { StoreContactGlanceIcons } from '@/components/store/StoreContactGlanceIcons';
 import { useStoreContactGlance } from '@/hooks/useStoreContactGlance';
+import { dynastyStamp } from '@/lib/dates';
+import { useStoreInventoryStampsBatch } from '@/hooks/useStoreInventoryStamps';
+import { StoreInventoryStamps } from '@/components/store/StoreInventoryStamps';
 import { StoreReviewBadge } from '@/components/store/StoreReviewControls';
 
 // Phase 2A Win 2: server-side pagination/search/filtering via
@@ -425,6 +428,7 @@ const Stores = () => {
   const { data: tubeIntelMap } = useStoreTubeIntelSummaryBatch(paginatedStoreIds);
   const { data: losMap } = useLastOrderSnapshotBatch(paginatedStoreIds);
   const { map: tubeSummaryMap } = useStoreTubeSummariesBulk();
+  const { data: inventoryStampMap } = useStoreInventoryStampsBatch(paginatedStoreIds);
   const { data: paymentStatusMap } = useStorePaymentStatusMap();
 
   const formatBrandName = (brand: string) => {
@@ -1120,7 +1124,26 @@ const Stores = () => {
                            </div>
                          );
                         })()}
+                       {/* SHARED with the store profile (UnifiedTubeIntelligenceCard) */}
+                       <StoreInventoryStamps
+                         compact
+                         className="mt-1.5"
+                         lastUpdated={inventoryStampMap?.get(store.id)?.lastUpdated}
+                         lastChecked={inventoryStampMap?.get(store.id)?.lastChecked}
+                         checkedBy={inventoryStampMap?.get(store.id)?.checkedBy}
+                       />
+                       {(store.last_visit_at || store.last_order_at) && (
+                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[10px] text-muted-foreground">
+                           {store.last_visit_at && (
+                             <span>Last visit: <span className="text-foreground font-medium">{dynastyStamp(store.last_visit_at)}</span></span>
+                           )}
+                           {store.last_order_at && (
+                             <span>Last order: <span className="text-foreground font-medium">{dynastyStamp(store.last_order_at)}</span></span>
+                           )}
+                         </div>
+                       )}
                      </div>
+
 
                     {/* Inactive Store Triage — last_active_date + reactivation_priority */}
                     {!isStoreActive(store.id) && (store.last_active_date || store.reactivation_priority) && (
