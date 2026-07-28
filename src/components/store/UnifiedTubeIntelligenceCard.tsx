@@ -915,16 +915,10 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                       {/* Attribution: Date + Relative Time + Method Badge + Role */}
                       {intel && (
                         <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground pt-1.5 border-t border-border/20 mt-1">
-                          {/* Date + relative time */}
                           <span className="flex items-center gap-1">
                             <Clock className="h-2.5 w-2.5" />
                             {intel.last_updated_at
-                              ? <>
-                                  {dynastyDate(intel.last_updated_at)}
-                                  <span className="opacity-70">
-                                    ({formatDistanceToNow(new Date(intel.last_updated_at), { addSuffix: false })} ago)
-                                  </span>
-                                </>
+                              ? <span className="text-foreground/90">{dynastyStampWithRelative(intel.last_updated_at)}</span>
                               : <span className="italic">Unknown · Legacy data</span>
                             }
                           </span>
