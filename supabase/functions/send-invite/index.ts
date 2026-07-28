@@ -11,6 +11,9 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const APP_URL = Deno.env.get("APP_PUBLIC_URL") || "https://gasmask-os-nexus.lovable.app";
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
+// resend.dev only delivers to the Resend account owner. Set INVITE_FROM_EMAIL
+// to an address on a verified domain once one is configured.
+const FROM_EMAIL = Deno.env.get("INVITE_FROM_EMAIL") || "Dynasty Direct <onboarding@resend.dev>";
 
 const ROLE_COPY: Record<string, { title: string; line: string }> = {
   wholesaler: { title: "Dynasty Direct — Wholesaler Invite", line: "You've been invited as a Wholesaler on Dynasty Direct." },
@@ -56,19 +59,58 @@ Deno.serve(async (req) => {
     const msg = `${copy.line} Tap to set up your account: ${link}`;
 
     const sendLog: any[] = [];
+    const attempted: string[] = [];
 
     if ((channel === "sms" || channel === "both") && phone) {
-      try {
-        const { data: smsData, error: smsErr } = await admin.functions.invoke("send-sms", {
-          body: { to: phone, message: msg },
+      attempted.push("sms");
+      const to = toE164(phone);
+      if (!to) {
+        sendLog.push({
+          channel: "sms",
+          to: phone,
+          ok: false,
+          error: `invalid_phone: "${phone}" could not be normalized to E.164`,
         });
-        sendLog.push({ channel: "sms", to: phone, ok: !smsErr, data: smsData, error: smsErr?.message });
-      } catch (e) {
-        sendLog.push({ channel: "sms", to: phone, ok: false, error: String(e) });
+      } else {
+        try {
+          // send-sms requires { to_number, message_body, idempotency_key } —
+          // passing { to, message } fails validation with a 400 and the invite
+          // silently never goes out.
+          // skip_cooldown: an invite is a one-off, human-triggered send; the
+          // 60-minute per-number cooldown is for campaign traffic and would
+          // otherwise 429 any invite/resend to a recently-contacted number.
+          const { data: smsData, error: smsErr } = await admin.functions.invoke("send-sms", {
+            body: {
+              to_number: to,
+              message_body: msg,
+              idempotency_key: `invite-${invite.id}-${Date.now()}`,
+              skip_cooldown: true,
+              purpose: `${role}_invite`,
+            },
+          });
+          // functions.invoke collapses any non-2xx into a generic message —
+          // read the response body so the real reason is recorded.
+          let detail: string | null = smsErr?.message ?? smsData?.error_message ?? null;
+          if (smsErr && (smsErr as any).context?.text) {
+            detail = (await (smsErr as any).context.text().catch(() => null)) || detail;
+          }
+          const ok = !smsErr && smsData?.success !== false;
+          sendLog.push({
+            channel: "sms",
+            to,
+            ok,
+            provider_message_id: smsData?.provider_message_id ?? null,
+            data: smsData,
+            error: ok ? null : detail,
+          });
+        } catch (e) {
+          sendLog.push({ channel: "sms", to, ok: false, error: String(e) });
+        }
       }
     }
 
     if ((channel === "email" || channel === "both") && email) {
+      attempted.push("email");
       if (!RESEND_KEY) {
         sendLog.push({ channel: "email", to: email, ok: false, error: "RESEND_API_KEY not configured" });
       } else {
@@ -77,13 +119,23 @@ Deno.serve(async (req) => {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_KEY}` },
             body: JSON.stringify({
-              from: "Dynasty Direct <onboarding@resend.dev>",
+              from: FROM_EMAIL,
               to: [email],
               subject: copy.title,
               html: `<p>${copy.line}</p><p><a href="${link}">${link}</a></p>`,
             }),
           });
-          sendLog.push({ channel: "email", to: email, ok: r.ok, status: r.status });
+          const payload = await r.json().catch(() => null);
+          sendLog.push({
+            channel: "email",
+            to: email,
+            ok: r.ok,
+            status: r.status,
+            provider_message_id: payload?.id ?? null,
+            // Surface the provider's real reason (e.g. unverified sender domain)
+            // instead of a bare status code.
+            error: r.ok ? null : payload?.message || payload?.error || `resend_http_${r.status}`,
+          });
         } catch (e) {
           sendLog.push({ channel: "email", to: email, ok: false, error: String(e) });
         }
@@ -95,11 +147,41 @@ Deno.serve(async (req) => {
       .update({ send_log: sendLog, message_preview: msg })
       .eq("id", invite.id);
 
-    return json({ success: true, invite, link, send_log: sendLog });
+    const delivered = sendLog.some((s) => s.ok);
+    const failures = sendLog.filter((s) => !s.ok);
+
+    // The invite row is always usable via `link`, but never report success when
+    // nothing actually reached the recipient — that is a silent failure.
+    if (attempted.length > 0 && !delivered) {
+      return json(
+        {
+          success: false,
+          delivered: false,
+          error: "delivery_failed",
+          error_detail: failures.map((f) => `${f.channel}: ${f.error ?? "unknown error"}`).join("; "),
+          invite,
+          link,
+          send_log: sendLog,
+        },
+        502,
+      );
+    }
+
+    return json({ success: true, delivered, invite, link, send_log: sendLog, failures });
   } catch (e) {
     return json({ error: String(e) }, 500);
   }
 });
+
+// Normalize loose user input ("718-427-8155", "(718) 427 8155") to E.164.
+function toE164(raw: string): string | null {
+  const trimmed = String(raw).trim();
+  if (/^\+[1-9]\d{7,14}$/.test(trimmed)) return trimmed;
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return null;
+}
 
 function json(b: unknown, status = 200) {
   return new Response(JSON.stringify(b), {
