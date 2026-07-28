@@ -20,6 +20,8 @@ interface Props {
   /** compact = quick-view KPI card sizing */
   compact?: boolean;
   className?: string;
+  /** How this state was captured — 'in_person' (default) or 'call' */
+  updateMethod?: 'in_person' | 'call' | 'brand_sticker';
 }
 
 const ROWS: Array<{ type: StoreFlagType; label: string; icon: typeof PackagePlus; accent: string }> = [
@@ -27,7 +29,7 @@ const ROWS: Array<{ type: StoreFlagType; label: string; icon: typeof PackagePlus
   { type: 'bring_samples', label: 'Bring samples', icon: Sparkles, accent: 'text-indigo-600' },
 ];
 
-export function StoreBrandFlagStickers({ storeId, compact = false, className }: Props) {
+export function StoreBrandFlagStickers({ storeId, compact = false, className, updateMethod = 'in_person' }: Props) {
   const { user } = useAuth();
   const { data: brands = [], isLoading: brandsLoading, error: brandsError } = useFlagBrands();
   const { data: flags = [], isLoading: flagsLoading, error: flagsError } = useStoreBrandFlags(storeId);
@@ -38,12 +40,13 @@ export function StoreBrandFlagStickers({ storeId, compact = false, className }: 
 
   const handleTap = (brand: FlagBrand, type: StoreFlagType) => {
     toggle.mutate(
-      { brand, flagType: type, next: !isOn(brand.id, type), userId: user?.id ?? null },
+      { brand, flagType: type, next: !isOn(brand.id, type), userId: user?.id ?? null, updateMethod },
       {
         onError: (e: any) => toast.error(e?.message || 'Failed to save brand flag'),
       }
     );
   };
+
 
   const err = (brandsError || flagsError) as Error | null;
   if (err) {
