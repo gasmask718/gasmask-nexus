@@ -425,6 +425,7 @@ const Stores = () => {
   const { data: tubeIntelMap } = useStoreTubeIntelSummaryBatch(paginatedStoreIds);
   const { data: losMap } = useLastOrderSnapshotBatch(paginatedStoreIds);
   const { map: tubeSummaryMap } = useStoreTubeSummariesBulk();
+  const { data: inventoryStampMap } = useStoreInventoryStampsBatch(paginatedStoreIds);
   const { data: paymentStatusMap } = useStorePaymentStatusMap();
 
   const formatBrandName = (brand: string) => {
