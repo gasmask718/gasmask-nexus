@@ -20,6 +20,7 @@ import { VerifyNumberButton } from './VerifyNumberButton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { StoreContactActions } from './StoreContactActions';
 import { ContactRelationshipMarkers } from './ContactRelationshipMarkers';
+import { PhoneStatusControl } from './PhoneStatusControl';
 
 interface StoreContact {
   id: string;
