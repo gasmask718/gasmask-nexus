@@ -51,6 +51,12 @@ interface StoreContact {
   number_verification_delivered_at?: string | null;
   number_verification_confirmed_at?: string | null;
   number_verification_error?: string | null;
+  owner_confirmed?: boolean | null;
+  owner_confirmed_at?: string | null;
+  owner_confirmed_by?: string | null;
+  is_homie?: boolean | null;
+  homie_set_at?: string | null;
+  homie_set_by?: string | null;
 }
 
 interface StoreContactsSectionProps {
