@@ -188,6 +188,7 @@ export function useTubeIntelligence(storeId: string | null) {
           last_updated_by_role: effectiveRole || null,
           last_updated_at: new Date().toISOString(),
           last_updated_method: effectiveMethod,
+          last_inventory_check_by: user?.id || null,
         };
         // When toggling switch off, clear quantity/notes/flagged fields
         if (field === 'needs_switch' && value === false) {
