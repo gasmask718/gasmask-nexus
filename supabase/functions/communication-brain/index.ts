@@ -21,8 +21,14 @@ serve(async (req) => {
     // Fetch entity data
     let entityData: any = null;
     if (entityType === 'store') {
-      const { data } = await supabase.from('stores').select('*').eq('id', entityId).single();
-      entityData = data;
+      // Canonical store id resolves against store_master first, then stores.
+      const { data: master } = await supabase.from('store_master').select('*').eq('id', entityId).maybeSingle();
+      if (master) {
+        entityData = { ...master, name: master.store_name };
+      } else {
+        const { data } = await supabase.from('stores').select('*').eq('id', entityId).maybeSingle();
+        entityData = data;
+      }
     } else if (entityType === 'wholesaler') {
       const { data } = await supabase.from('wholesale_hubs').select('*').eq('id', entityId).single();
       entityData = data;
@@ -32,12 +38,16 @@ serve(async (req) => {
     }
 
     // Fetch communication history
-    const { data: communications } = await supabase
-      .from('communication_events')
+    // Canonical: communication_logs. Match by store_id for stores, else linked_entity_*.
+    const commQuery = supabase
+      .from('communication_logs')
       .select('*')
-      .eq('linked_entity_type', entityType)
-      .eq('linked_entity_id', entityId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500);
+
+    const { data: communications } = entityType === 'store'
+      ? await commQuery.eq('store_id', entityId)
+      : await commQuery.eq('linked_entity_type', entityType).eq('linked_entity_id', entityId);
 
     // Fetch reminders
     const reminderField = entityType === 'store' ? 'store_id' : 
