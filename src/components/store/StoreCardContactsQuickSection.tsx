@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Star, User, MessageSquare, ChevronDown } from 'lucide-react';
 import { StoreContactActions } from './StoreContactActions';
+import { ContactRelationshipMarkers } from './ContactRelationshipMarkers';
 import { AddContactModal } from './AddContactModal';
 import { ContactCommunicationTimeline } from './ContactCommunicationTimeline';
 
