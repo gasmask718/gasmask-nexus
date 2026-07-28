@@ -208,6 +208,18 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium">{contact.name}</span>
+                          {(contact as any).is_homie && (
+                            <Badge variant="outline" className="text-xs gap-1 border-amber-500/50 bg-amber-500/20 text-amber-700">
+                              <Handshake className="h-3 w-3" />
+                              My Homie
+                            </Badge>
+                          )}
+                          {(contact as any).owner_confirmed && (
+                            <Badge variant="outline" className="text-xs gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-600">
+                              <BadgeCheck className="h-3 w-3" />
+                              Owner ✓
+                            </Badge>
+                          )}
                           {contact.is_primary && (
                             <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
                               <Star className="h-3 w-3 mr-1" />
