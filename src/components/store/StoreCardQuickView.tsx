@@ -19,6 +19,7 @@ import { ChevronDown, ChevronUp, Loader2, Route as RouteIcon, CalendarClock, Pac
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
+import { StoreBrandFlagStickers } from '@/components/store/StoreBrandFlagStickers';
 import { cn } from '@/lib/utils';
 import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
 import { getSkuStatusIcon, brandForProductId } from '@/lib/inventory/skuDisplay';
