@@ -562,3 +562,18 @@ verify_jwt = false
 [functions.street-view-image]
 verify_jwt = false
 
+
+[functions.gasmask-inbound-voice]
+verify_jwt = false
+
+[functions.gasmask-call-dial-complete]
+verify_jwt = false
+
+[functions.gasmask-call-recording-status]
+verify_jwt = false
+
+[functions.gasmask-voicemail-complete]
+verify_jwt = false
+
+[functions.gasmask-voicemail-transcription]
+verify_jwt = false
