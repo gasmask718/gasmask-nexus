@@ -43,10 +43,23 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
         created_by: string | null;
         created_at: string;
       }>;
-      // Defensive: always newest-first regardless of server ordering
-      return rows
-        .slice()
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      // Defensive: always newest-first regardless of server ordering.
+      // Many legacy/imported notes share an identical created_at (bulk import),
+      // so tie-break on a leading date written inside the note text
+      // (e.g. "• 10/10/2025 - Paid 140$").
+      const textDate = (t: string): number => {
+        const m = t.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
+        if (!m) return 0;
+        const [, mm, dd, yy] = m;
+        const year = yy.length === 2 ? 2000 + Number(yy) : Number(yy);
+        const d = new Date(year, Number(mm) - 1, Number(dd));
+        return isNaN(d.getTime()) ? 0 : d.getTime();
+      };
+      return rows.slice().sort((a, b) => {
+        const diff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        if (diff !== 0) return diff;
+        return textDate(b.note_text || '') - textDate(a.note_text || '');
+      });
     },
     staleTime: 30_000,
   });

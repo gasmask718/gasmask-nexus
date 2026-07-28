@@ -13,10 +13,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface SkuStamp {
+  lastChecked: string | null;
+  lastUpdated: string | null;
+}
+
 export interface StoreInventoryStampData {
   lastUpdated: string | null;
   lastChecked: string | null;
   checkedBy: string | null;
+  /** Per-SKU (store_tube_inventory_status.brand_id) check/update stamps */
+  perSku: Record<string, SkuStamp>;
 }
 
 const newest = (stamps: (string | null | undefined)[]): string | null => {
@@ -39,7 +46,7 @@ export function useStoreInventoryStampsBatch(storeIds: string[]) {
           .in('store_id', ids),
         (supabase as any)
           .from('store_tube_inventory_status')
-          .select('store_id, last_updated_at, last_inventory_check_at, last_inventory_check_by')
+          .select('store_id, brand_id, last_updated_at, last_inventory_check_at, last_inventory_check_by')
           .in('store_id', ids),
       ]);
       if (invRes.error) throw invRes.error;
@@ -48,7 +55,7 @@ export function useStoreInventoryStampsBatch(storeIds: string[]) {
       const map = new Map<string, StoreInventoryStampData>();
       const get = (id: string) => {
         let e = map.get(id);
-        if (!e) { e = { lastUpdated: null, lastChecked: null, checkedBy: null }; map.set(id, e); }
+        if (!e) { e = { lastUpdated: null, lastChecked: null, checkedBy: null, perSku: {} }; map.set(id, e); }
         return e;
       };
 
@@ -64,6 +71,13 @@ export function useStoreInventoryStampsBatch(storeIds: string[]) {
         e.lastChecked = newest([prev, r.last_inventory_check_at]);
         if (r.last_inventory_check_by && e.lastChecked === r.last_inventory_check_at) {
           e.checkedBy = r.last_inventory_check_by;
+        }
+        if (r.brand_id) {
+          const cur = e.perSku[r.brand_id] ?? { lastChecked: null, lastUpdated: null };
+          e.perSku[r.brand_id] = {
+            lastChecked: newest([cur.lastChecked, r.last_inventory_check_at]),
+            lastUpdated: newest([cur.lastUpdated, r.last_updated_at]),
+          };
         }
       }
       return map;

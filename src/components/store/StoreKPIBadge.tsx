@@ -7,6 +7,8 @@ import { getColorStatusClasses } from '@/hooks/useStoreTubeKPI';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TubeIntelAttribution } from '@/components/store/TubeIntelAttribution';
 import { normalizeBrandId, CANONICAL_BRANDS } from '@/config/brands';
+import { dynastyStamp } from '@/lib/dates';
+import type { SkuStamp } from '@/hooks/useStoreInventoryStamps';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE KPI BADGE — CANONICAL RENDERER
@@ -21,6 +23,8 @@ interface StoreKPIBadgeProps {
   summary: StoreKPISummary | undefined;
   isLoading?: boolean;
   intelSummary?: TubeIntelSummary | null;
+  /** Per-SKU inventory-check stamps (store_tube_inventory_status.brand_id keyed) */
+  skuStamps?: Record<string, SkuStamp>;
 }
 
 // Group key: canonical id ONLY when the raw key is an exact alias of a
@@ -51,7 +55,7 @@ const ALL_TUBE_BRANDS = (() => {
   return out;
 })();
 
-export function StoreKPIBadge({ summary, isLoading, intelSummary }: StoreKPIBadgeProps) {
+export function StoreKPIBadge({ summary, isLoading, intelSummary, skuStamps }: StoreKPIBadgeProps) {
   // Loading state — show skeleton for all brands
   if (isLoading) {
     return (
@@ -90,6 +94,15 @@ export function StoreKPIBadge({ summary, isLoading, intelSummary }: StoreKPIBadg
       }
       if (existing.color_status === 'muted' && row.color_status) existing.color_status = row.color_status;
     }
+  }
+
+  // Per-product inventory-check stamps, collapsed onto the same group keys.
+  const checkLookup = new Map<string, string>();
+  for (const [rawId, stamp] of Object.entries(skuStamps ?? {})) {
+    const key = groupKeyFor(rawId);
+    const prev = checkLookup.get(key);
+    const val = stamp?.lastChecked;
+    if (val && (!prev || val > prev)) checkLookup.set(key, val);
   }
 
   // Calculate total tubes across all brands
@@ -171,6 +184,16 @@ export function StoreKPIBadge({ summary, isLoading, intelSummary }: StoreKPIBadg
                   }
                 </span>
               </div>
+
+              {/* Inventory-check stamp — per product line */}
+              {checkLookup.get(brand.brand_id) && (
+                <div className="flex items-center justify-between mt-0.5">
+                  <span className="text-[10px] text-muted-foreground">Inventory checked:</span>
+                  <span className="text-[10px] text-muted-foreground font-medium">
+                    {dynastyStamp(checkLookup.get(brand.brand_id)!)}
+                  </span>
+                </div>
+              )}
 
               {/* Status warnings inline */}
               {isOutOfStock && (

@@ -1097,11 +1097,13 @@ const Stores = () => {
                        dataSource={t('card.tube_inventory.source') || 'v_store_tube_kpi'}
                        variant="inline"
                      />
-                       <StoreKPIBadge
-                         summary={tubeKPIMap?.get(store.id)}
-                         isLoading={kpiLoading}
-                         intelSummary={tubeIntelMap?.get(store.id)}
-                       />
+                        <StoreKPIBadge
+                          summary={tubeKPIMap?.get(store.id)}
+                          isLoading={kpiLoading}
+                          intelSummary={tubeIntelMap?.get(store.id)}
+                          skuStamps={inventoryStampMap?.get(store.id)?.perSku}
+                        />
+
                        {(() => {
                          const ts = tubeSummaryMap.get(store.id);
                          const sold = Number(ts?.lifetime_tubes_delivered || 0);
