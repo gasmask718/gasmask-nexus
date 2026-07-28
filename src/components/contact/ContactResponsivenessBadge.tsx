@@ -1,10 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Phone, MessageSquare, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
+import { Phone, MessageSquare, CheckCircle2, XCircle, HelpCircle, AlertTriangle, PhoneOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { isBadNumber, normalizePhoneStatus, PHONE_STATUS_META } from "@/lib/phoneStatus";
 
 interface ContactResponsivenessBadgeProps {
-  responsiveness_status: 'responsive' | 'unresponsive' | 'unknown' | null;
+  responsiveness_status: 'responsive' | 'unresponsive' | 'unknown' | 'wrong_number' | 'not_active' | null;
   responsive_by_call?: boolean | null;
   responsive_by_text?: boolean | null;
   last_call_attempt_at?: string | null;
