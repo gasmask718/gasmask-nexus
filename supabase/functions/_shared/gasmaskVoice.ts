@@ -208,7 +208,8 @@ export async function upsertCallLog(
       brand: "gasmask",
       source_business: "gasmask",
       provider: "twilio",
-      performed_by: "inbound-routing",
+      // performed_by is constrained to ai|va|system — routing is a system action.
+      performed_by: "system",
       started_at: new Date().toISOString(),
       summary: args.summary || `Inbound call from ${match.store_name || match.contact_name || args.from}`,
       event_type: "inbound_call",
