@@ -6,7 +6,7 @@
 import { PackagePlus, Sparkles, Loader2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   useFlagBrands,
   useStoreBrandFlags,
