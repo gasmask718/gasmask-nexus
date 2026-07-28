@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 
     await sb.from("communication_logs").insert({
       store_id: contact?.store_id ?? null,
-      contact_id: null, // store_contacts.id is not FK-compatible with communication_logs.contact_id (people)
+      contact_id: contact?.id ?? null, // no FK on communication_logs.contact_id
       channel: "sms",
       direction: "inbound",
       message_content: Body,
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
 
     await sb.from("communication_logs").insert({
       store_id: contact?.store_id ?? null,
-      contact_id: null, // store_contacts.id is not FK-compatible with communication_logs.contact_id (people)
+      contact_id: contact?.id ?? null, // no FK on communication_logs.contact_id
       channel: "sms",
       direction: "inbound",
       message_content: Body,
@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
 
           await sb.from("communication_logs").insert({
             store_id: pendingVerif.store_id ?? null,
-            contact_id: null, // store_contacts.id not FK-compatible with people
+            contact_id: pendingVerif.id, // store_contacts.id — no FK on communication_logs.contact_id
             channel: "sms",
             direction: "inbound",
             summary: `Number verification CONFIRMED by ${pendingVerif.name}`,
@@ -196,8 +196,9 @@ Deno.serve(async (req) => {
   }
 
   let store_id: string | null = contact?.store_id ?? null;
-  // store_contacts.id is NOT FK-compatible with communication_logs.contact_id (which references `people`)
-  let contact_id: string | null = null;
+  // communication_logs.contact_id has no FK — store the store_contacts.id so the
+  // per-contact timeline on the store profile can match inbound messages.
+  let contact_id: string | null = contact?.id ?? null;
 
   // Fallback: stores.phone (last-10)
   if (!store_id && fromLast10.length === 10) {

@@ -20,11 +20,23 @@ serve(async (req) => {
     const { storeId } = await req.json();
 
     // Fetch store data
-    const { data: store } = await supabase
+    // Canonical store id: try stores (has related state), fall back to store_master.
+    let { data: store } = await supabase
       .from('stores')
       .select('*, store_product_state(*), route_insights(*)')
       .eq('id', storeId)
-      .single();
+      .maybeSingle();
+
+    if (!store) {
+      const { data: master } = await supabase
+        .from('store_master')
+        .select('*')
+        .eq('id', storeId)
+        .maybeSingle();
+      if (master) {
+        store = { ...master, name: master.store_name, store_product_state: [], route_insights: [] };
+      }
+    }
 
     if (!store) {
       throw new Error('Store not found');
@@ -32,7 +44,7 @@ serve(async (req) => {
 
     // Fetch recent communication events
     const { data: communications } = await supabase
-      .from('communication_events')
+      .from('communication_logs')
       .select('*')
       .eq('store_id', storeId)
       .order('created_at', { ascending: false })
@@ -155,11 +167,16 @@ serve(async (req) => {
       reasoning: reasoning.join('; '),
     };
 
-    const { data: saved } = await supabase
+    const { data: saved, error: saveError } = await supabase
       .from('followup_recommendations')
       .upsert(recommendation, { onConflict: 'store_id' })
       .select()
       .single();
+
+    if (saveError) {
+      console.error('followup_recommendations upsert failed:', saveError);
+      throw new Error(`Failed to save recommendation: ${saveError.message}`);
+    }
 
     return new Response(
       JSON.stringify(saved),

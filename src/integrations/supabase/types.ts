@@ -36407,8 +36407,10 @@ export type Database = {
           call_duration: number | null
           call_objective: string | null
           call_type: string | null
+          campaign_id: string | null
           channel: string
           contact_id: string | null
+          cost_amount: number | null
           created_at: string
           created_by: string | null
           delivery_status: string | null
@@ -36416,18 +36418,29 @@ export type Database = {
           driver_id: string | null
           duration_seconds: number | null
           ended_at: string | null
+          error_code: string | null
+          error_message: string | null
+          event_type: string | null
           follow_up_date: string | null
           follow_up_required: boolean | null
           full_message: string | null
           id: string
           idempotency_key: string | null
           influencer_id: string | null
+          linked_entity_id: string | null
+          linked_entity_type: string | null
+          media_urls: Json | null
           message_content: string | null
+          message_hash: string | null
+          metadata: Json | null
+          next_action: string | null
           notes: string | null
           operator_id: string | null
           order_intent: boolean | null
           outcome: string | null
           performed_by: string | null
+          provider: string | null
+          provider_message_id: string | null
           recipient_email: string | null
           recipient_phone: string | null
           recording_url: string | null
@@ -36435,6 +36448,7 @@ export type Database = {
           script_template_id: string | null
           sender_email: string | null
           sender_phone: string | null
+          sent_at: string | null
           sentiment: string | null
           source_business: string | null
           source_id: string | null
@@ -36442,6 +36456,7 @@ export type Database = {
           started_at: string | null
           status: string | null
           store_id: string | null
+          subject: string | null
           summary: string
           thread_id: string | null
           transcript: string | null
@@ -36465,8 +36480,10 @@ export type Database = {
           call_duration?: number | null
           call_objective?: string | null
           call_type?: string | null
+          campaign_id?: string | null
           channel: string
           contact_id?: string | null
+          cost_amount?: number | null
           created_at?: string
           created_by?: string | null
           delivery_status?: string | null
@@ -36474,18 +36491,29 @@ export type Database = {
           driver_id?: string | null
           duration_seconds?: number | null
           ended_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          event_type?: string | null
           follow_up_date?: string | null
           follow_up_required?: boolean | null
           full_message?: string | null
           id?: string
           idempotency_key?: string | null
           influencer_id?: string | null
+          linked_entity_id?: string | null
+          linked_entity_type?: string | null
+          media_urls?: Json | null
           message_content?: string | null
+          message_hash?: string | null
+          metadata?: Json | null
+          next_action?: string | null
           notes?: string | null
           operator_id?: string | null
           order_intent?: boolean | null
           outcome?: string | null
           performed_by?: string | null
+          provider?: string | null
+          provider_message_id?: string | null
           recipient_email?: string | null
           recipient_phone?: string | null
           recording_url?: string | null
@@ -36493,6 +36521,7 @@ export type Database = {
           script_template_id?: string | null
           sender_email?: string | null
           sender_phone?: string | null
+          sent_at?: string | null
           sentiment?: string | null
           source_business?: string | null
           source_id?: string | null
@@ -36500,6 +36529,7 @@ export type Database = {
           started_at?: string | null
           status?: string | null
           store_id?: string | null
+          subject?: string | null
           summary: string
           thread_id?: string | null
           transcript?: string | null
@@ -36523,8 +36553,10 @@ export type Database = {
           call_duration?: number | null
           call_objective?: string | null
           call_type?: string | null
+          campaign_id?: string | null
           channel?: string
           contact_id?: string | null
+          cost_amount?: number | null
           created_at?: string
           created_by?: string | null
           delivery_status?: string | null
@@ -36532,18 +36564,29 @@ export type Database = {
           driver_id?: string | null
           duration_seconds?: number | null
           ended_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          event_type?: string | null
           follow_up_date?: string | null
           follow_up_required?: boolean | null
           full_message?: string | null
           id?: string
           idempotency_key?: string | null
           influencer_id?: string | null
+          linked_entity_id?: string | null
+          linked_entity_type?: string | null
+          media_urls?: Json | null
           message_content?: string | null
+          message_hash?: string | null
+          metadata?: Json | null
+          next_action?: string | null
           notes?: string | null
           operator_id?: string | null
           order_intent?: boolean | null
           outcome?: string | null
           performed_by?: string | null
+          provider?: string | null
+          provider_message_id?: string | null
           recipient_email?: string | null
           recipient_phone?: string | null
           recording_url?: string | null
@@ -36551,6 +36594,7 @@ export type Database = {
           script_template_id?: string | null
           sender_email?: string | null
           sender_phone?: string | null
+          sent_at?: string | null
           sentiment?: string | null
           source_business?: string | null
           source_id?: string | null
@@ -36558,6 +36602,7 @@ export type Database = {
           started_at?: string | null
           status?: string | null
           store_id?: string | null
+          subject?: string | null
           summary?: string
           thread_id?: string | null
           transcript?: string | null
@@ -130781,6 +130826,18 @@ export type Database = {
           raw_phone: string | null
           source: string | null
           store_id: string | null
+        }
+        Relationships: []
+      }
+      store_directory: {
+        Row: {
+          id: string | null
+          phone: string | null
+          relationship_status: string | null
+          source: string | null
+          status: string | null
+          store_name: string | null
+          store_type: string | null
         }
         Relationships: []
       }

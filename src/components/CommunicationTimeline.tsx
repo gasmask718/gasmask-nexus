@@ -21,14 +21,17 @@ export function CommunicationTimeline({ entityType, entityId }: CommunicationTim
   const { data: communications } = useQuery({
     queryKey: ['communications', entityType, entityId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('communication_events')
-        .select('*, profiles(name)')
-        .eq('linked_entity_type', entityType)
-        .eq('linked_entity_id', entityId)
+      // Canonical source: communication_logs.
+      const base = supabase
+        .from('communication_logs')
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
-      
+
+      const { data, error } = entityType === 'store'
+        ? await base.eq('store_id', entityId)
+        : await base.eq('linked_entity_type', entityType).eq('linked_entity_id', entityId);
+
       if (error) throw error;
       return data;
     },
@@ -89,7 +92,7 @@ export function CommunicationTimeline({ entityType, entityId }: CommunicationTim
               <div className="flex-1 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-semibold">{comm.event_type}</h4>
+                    <h4 className="font-semibold">{comm.event_type || comm.channel}</h4>
                     <Badge variant="outline" className="text-xs">
                       {getDirectionBadge(comm.direction)}
                     </Badge>
@@ -99,18 +102,18 @@ export function CommunicationTimeline({ entityType, entityId }: CommunicationTim
                   </time>
                 </div>
 
-                <p className="text-sm">{comm.summary}</p>
+                <p className="text-sm">{comm.summary || comm.message_content}</p>
 
-                {comm.external_contact && (
+                {(comm.recipient_phone || comm.sender_phone) && (
                   <p className="text-xs text-muted-foreground">
-                    Contact: {comm.external_contact}
+                    Contact: {comm.direction === 'inbound' ? comm.sender_phone : comm.recipient_phone}
                   </p>
                 )}
 
-                {comm.profiles?.name && (
+                {comm.performed_by && (
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <User className="h-3 w-3" />
-                    <span>{comm.profiles.name}</span>
+                    <span>{comm.performed_by}</span>
                   </div>
                 )}
               </div>

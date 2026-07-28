@@ -15,7 +15,7 @@ export default function CommunicationHeatmap({ businessId }: CommunicationHeatma
     queryFn: async () => {
       // Get message counts
       let messagesQuery = supabase
-        .from('communication_messages')
+        .from('communication_logs')
         .select('id, channel, direction, created_at', { count: 'exact' });
       if (businessId) messagesQuery = messagesQuery.eq('business_id', businessId);
       const { data: messages, count: totalMessages } = await messagesQuery;
@@ -51,7 +51,7 @@ export default function CommunicationHeatmap({ businessId }: CommunicationHeatma
     queryFn: async () => {
       // Fetch recent messages grouped by day
       const { data: messages } = await supabase
-        .from('communication_messages')
+        .from('communication_logs')
         .select('created_at, channel')
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
       

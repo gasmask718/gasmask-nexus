@@ -58,6 +58,13 @@ export const CommunicationStats = ({ entityType, entityId }: CommunicationStatsP
         .eq('store_id', entityId)
         .order('created_at', { ascending: false });
 
+      // Fetch canonical communication logs (SMS, calls, email — all writers land here)
+      const { data: logs } = await supabase
+        .from('communication_logs')
+        .select('id, channel, direction, outcome, event_type, summary, message_content, created_at')
+        .eq('store_id', entityId)
+        .order('created_at', { ascending: false });
+
       // Fetch visit logs (in-person visits)
       const { data: visits } = await supabase
         .from('visit_logs')
@@ -114,6 +121,32 @@ export const CommunicationStats = ({ entityType, entityId }: CommunicationStatsP
           });
         });
       }
+
+      // Add canonical communication log entries (SMS / calls / email)
+      if (logs) {
+        const seenLogIds = new Set(allComms.map((c) => c.id));
+        logs.forEach((log) => {
+          if (seenLogIds.has(log.id)) return;
+          const raw = (log.channel || 'sms').toUpperCase();
+          const channel =
+            raw === 'IN-PERSON' || raw === 'VISIT' ? 'IN_PERSON'
+            : raw === 'AI_CALL' || raw === 'VOICE' ? 'CALL'
+            : raw;
+
+          allComms.push({
+            id: log.id,
+            date: log.created_at,
+            channel,
+            type: 'interaction',
+            direction: (log.direction || '').toUpperCase(),
+            outcome: log.outcome || undefined,
+            subject: log.event_type || undefined,
+            summary: log.summary || log.message_content || undefined,
+            responsive: log.direction === 'inbound',
+          });
+        });
+      }
+
 
       // Sort by date (most recent first)
       allComms.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
