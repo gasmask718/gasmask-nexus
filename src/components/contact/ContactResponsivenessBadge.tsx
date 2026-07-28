@@ -148,6 +148,7 @@ export function ContactResponsivenessBadge({
           <TooltipTrigger asChild>
             <div className="flex items-center gap-1">
               <StatusIcon className={`h-4 w-4 ${
+                badNumber ? 'text-red-600' :
                 status === 'responsive' ? 'text-green-500' :
                 status === 'unresponsive' ? 'text-red-500' :
                 'text-muted-foreground'
