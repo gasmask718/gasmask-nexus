@@ -28,6 +28,18 @@ export default function UniversalInviteAccept() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [awaitingConfirm, setAwaitingConfirm] = useState(false);
+
+  async function finishAccept() {
+    if (!token) return false;
+    const { data: acc, error: accErr } = await supabase.rpc("accept_invite", { p_token: token });
+    if (accErr) throw accErr;
+    const r = acc as any;
+    if (!r?.success) throw new Error(r?.error || "accept_failed");
+    toast.success(`Welcome — you're set up as ${r.role}`);
+    navigate(r.redirect || "/");
+    return true;
+  }
 
   useEffect(() => {
     (async () => {
@@ -44,8 +56,21 @@ export default function UniversalInviteAccept() {
         supabase.rpc("mark_invite_opened", { p_token: token });
 
         if (row.status === "accepted") setErr("This invite has already been used.");
-        if (row.status === "revoked") setErr("This invite was revoked.");
-        if (row.status === "expired" || (row.expires_at && new Date(row.expires_at) < new Date())) setErr("This invite has expired.");
+        else if (row.status === "revoked") setErr("This invite was revoked.");
+        else if (row.status === "expired" || (row.expires_at && new Date(row.expires_at) < new Date())) {
+          setErr("This invite has expired.");
+        } else {
+          // Returning from the email-confirmation link: session now exists, finish automatically.
+          const { data: sess } = await supabase.auth.getSession();
+          if (sess?.session) {
+            try {
+              await finishAccept();
+              return;
+            } catch (e: any) {
+              toast.error(e.message || String(e));
+            }
+          }
+        }
       }
       setLoading(false);
     })();
@@ -58,9 +83,10 @@ export default function UniversalInviteAccept() {
     setSubmitting(true);
     try {
       const credEmail = email || `${phone.replace(/\D/g, "")}@invite.dynasty.local`;
-      const { data: sess } = await supabase.auth.getSession();
+      let { data: sess } = await supabase.auth.getSession();
+
       if (!sess?.session) {
-        const { error: suErr } = await supabase.auth.signUp({
+        const { data: su, error: suErr } = await supabase.auth.signUp({
           email: credEmail,
           password,
           options: {
@@ -69,17 +95,27 @@ export default function UniversalInviteAccept() {
           },
         });
         if (suErr) {
-          // try sign-in fallback
+          // Account already exists — sign in instead.
           const { error: siErr } = await supabase.auth.signInWithPassword({ email: credEmail, password });
-          if (siErr) throw suErr;
+          if (siErr) throw siErr;
+        } else if (!su.session) {
+          // Email confirmation is required: no session yet, so accept_invite would fail.
+          const { data: si } = await supabase.auth.signInWithPassword({ email: credEmail, password });
+          if (!si?.session) {
+            setAwaitingConfirm(true);
+            setSubmitting(false);
+            return;
+          }
+        }
+        ({ data: sess } = await supabase.auth.getSession());
+        if (!sess?.session) {
+          setAwaitingConfirm(true);
+          setSubmitting(false);
+          return;
         }
       }
-      const { data: acc, error: accErr } = await supabase.rpc("accept_invite", { p_token: token });
-      if (accErr) throw accErr;
-      const r = acc as any;
-      if (!r?.success) throw new Error(r?.error || "accept_failed");
-      toast.success(`Welcome — you're set up as ${r.role}`);
-      navigate(r.redirect || "/");
+
+      await finishAccept();
     } catch (e: any) {
       toast.error(e.message || String(e));
     } finally {
@@ -96,6 +132,20 @@ export default function UniversalInviteAccept() {
       </div>
     </div>
   );
+
+  if (awaitingConfirm) return (
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="max-w-md text-center space-y-3">
+        <h1 className="text-xl font-semibold">Confirm your email</h1>
+        <p className="text-sm text-muted-foreground">
+          We sent a confirmation link to <strong>{email}</strong>. Open it on this device to finish
+          activating your account — you'll come right back here and we'll complete setup automatically.
+        </p>
+        <p className="text-xs text-muted-foreground">Your invite link stays valid until you confirm.</p>
+      </div>
+    </div>
+  );
+
 
   const theme = ROLE_THEME[invite.role] || ROLE_THEME.customer;
 
