@@ -1035,6 +1035,18 @@ const Layout = ({ children }: LayoutProps) => {
 
   const NavigationContent = () => (
     <div className="space-y-2">
+      {/* 🔴 PINNED — Field Assignments & Invites (owner/admin) */}
+      {['owner', 'admin', 'ceo'].includes(role || '') && (
+        <Link
+          to="/admin/field-assignments"
+          data-testid="pinned-field-assignments"
+          className="flex items-center gap-2 px-2 py-2 text-xs rounded-md font-semibold bg-destructive/20 text-destructive ring-1 ring-destructive/60 hover:bg-destructive/30 transition-colors"
+        >
+          <Users className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate flex-1">🔴 Field Assignments &amp; Invites</span>
+        </Link>
+      )}
+
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 👑 PENTHOUSE — COMMAND CENTER */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
