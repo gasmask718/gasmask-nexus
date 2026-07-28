@@ -187,11 +187,13 @@ export default function AmbassadorInviteAccept() {
                 Your ambassador account has been created successfully.
               </CardDescription>
             </CardHeader>
-            <CardContent className="text-center">
+            <CardContent className="space-y-4 text-center">
+              <InstallAppPrompt compact />
               <Button onClick={() => navigate('/ambassador/dashboard')}>
                 Go to Dashboard
               </Button>
             </CardContent>
+
           </>
         )}
       </Card>
