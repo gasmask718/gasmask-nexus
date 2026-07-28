@@ -222,6 +222,7 @@ const AdminNotificationLog = lazy(() => import('@/pages/admin/AdminNotificationL
 const AdminDailyReports = lazy(() => import('@/pages/admin/AdminDailyReports'));
 const AdminPartnerPerformance = lazy(() => import('@/pages/admin/AdminPartnerPerformance'));
 const AdminOpsDashboard = lazy(() => import('@/pages/admin/AdminOpsDashboard'));
+const FieldAssignments = lazy(() => import('@/pages/admin/FieldAssignments'));
 const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
 
 // VA Portal
@@ -1326,6 +1327,7 @@ export default function AppRoutes() {
       <Route path="/admin/daily-reports" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><AdminDailyReports /></RequireRole></ProtectedRoute>} />
       <Route path="/admin/partner-performance" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><AdminPartnerPerformance /></RequireRole></ProtectedRoute>} />
       <Route path="/admin/ops-dashboard" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><AdminOpsDashboard /></RequireRole></ProtectedRoute>} />
+      <Route path="/admin/field-assignments" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><FieldAssignments /></RequireRole></ProtectedRoute>} />
       <Route path="/twl-landing" element={<TWLLanding />} />
       <Route path="/partner/respond/:token" element={<PartnerRespond />} />
       <Route path="/tt/partner/accept/:token" element={<TTPartnerAccept />} />

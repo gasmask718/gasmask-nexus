@@ -17,14 +17,19 @@ const ROLE_COPY: Record<string, { title: string; line: string }> = {
   ambassador: { title: "Dynasty Direct — Ambassador Invite", line: "You've been invited to join as a Dynasty Ambassador." },
   store: { title: "Dynasty Direct — Store Portal Invite", line: "Your store has been invited to the Dynasty Direct store portal." },
   customer: { title: "Dynasty Direct — Customer Portal Invite", line: "You've been invited to your Dynasty Direct customer portal." },
+  va: { title: "GasMask — VA Invite", line: "You've been invited to join GasMask as a Virtual Assistant." },
+  driver: { title: "GasMask — Driver Invite", line: "You've been invited to join GasMask as a Driver." },
+  biker: { title: "GasMask — Biker Invite", line: "You've been invited to join GasMask as a Biker." },
 };
+
+const INVITABLE_ROLES = Object.keys(ROLE_COPY);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const body = await req.json();
     const { role, target_link = {}, phone, email, name, channel = "sms" } = body;
-    if (!role || !["wholesaler", "ambassador", "store", "customer"].includes(role)) {
+    if (!role || !INVITABLE_ROLES.includes(role)) {
       return json({ error: "invalid_role" }, 400);
     }
     if (!phone && !email) return json({ error: "phone_or_email_required" }, 400);

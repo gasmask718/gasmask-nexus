@@ -12,6 +12,9 @@ const ROLE_THEME: Record<string, { title: string; sub: string; color: string }> 
   ambassador: { title: "Ambassador", sub: "Join Dynasty as an Ambassador.", color: "bg-amber-600" },
   store: { title: "Store Owner", sub: "Your store has been invited to the Dynasty Direct store portal.", color: "bg-emerald-600" },
   customer: { title: "Customer", sub: "Welcome to your Dynasty Direct customer portal.", color: "bg-sky-600" },
+  va: { title: "Virtual Assistant", sub: "You've been invited to the GasMask VA workspace.", color: "bg-cyan-600" },
+  driver: { title: "Driver", sub: "You've been invited to the GasMask driver portal.", color: "bg-slate-700" },
+  biker: { title: "Biker", sub: "You've been invited to the GasMask biker portal.", color: "bg-orange-600" },
 };
 
 export default function UniversalInviteAccept() {

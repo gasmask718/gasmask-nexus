@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Send } from "lucide-react";
 
-export type InviteRole = "wholesaler" | "ambassador" | "store" | "customer";
+export type InviteRole = "wholesaler" | "ambassador" | "store" | "customer" | "va" | "driver" | "biker";
 
 interface Props {
   role: InviteRole;
