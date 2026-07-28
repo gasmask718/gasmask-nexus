@@ -38231,6 +38231,13 @@ export type Database = {
             referencedColumns: ["contact_id"]
           },
           {
+            foreignKeyName: "contact_interactions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contacts_needing_new_number"
+            referencedColumns: ["contact_id"]
+          },
+          {
             foreignKeyName: "contact_interactions_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
@@ -77600,6 +77607,13 @@ export type Database = {
             referencedColumns: ["contact_id"]
           },
           {
+            foreignKeyName: "outreach_plan_items_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contacts_needing_new_number"
+            referencedColumns: ["contact_id"]
+          },
+          {
             foreignKeyName: "outreach_plan_items_plan_id_fkey"
             columns: ["plan_id"]
             isOneToOne: false
@@ -80424,6 +80438,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "v_contact_responsiveness_summary"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "pinned_notes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contacts_needing_new_number"
             referencedColumns: ["contact_id"]
           },
           {
@@ -128942,14 +128963,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -132241,6 +132262,68 @@ export type Database = {
           total_calls_attempted: number | null
           total_texts_received: number | null
           total_texts_sent: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_intelligence_v"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_gm_cadence_due"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_merge_orphan_candidates"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_reactivation_targets"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
+      v_contacts_needing_new_number: {
+        Row: {
+          bad_phone: string | null
+          contact_id: string | null
+          contact_name: string | null
+          contact_role: string | null
+          is_homie: boolean | null
+          is_primary: boolean | null
+          last_responded_at: string | null
+          owner_confirmed: boolean | null
+          responsiveness_status: string | null
+          store_address: string | null
+          store_city: string | null
+          store_id: string | null
+          store_name: string | null
+          store_state: string | null
         }
         Relationships: [
           {
