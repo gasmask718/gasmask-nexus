@@ -246,7 +246,13 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                               {ROLE_LABELS[contact.role] || contact.role}
                             </Badge>
                           )}
-                          {contact.phone && <span>{contact.phone}</span>}
+                          <PhoneStatusControl
+                            contactId={contact.id}
+                            phone={contact.phone}
+                            status={contact.responsiveness_status}
+                            storeId={storeId}
+                            invalidateKeys={[['store-contacts-responsiveness', storeId]]}
+                          />
                         </div>
                       </div>
                     </div>
