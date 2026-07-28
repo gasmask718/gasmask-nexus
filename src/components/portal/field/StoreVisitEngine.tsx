@@ -26,6 +26,7 @@ import { VisitHistoryTab } from './visit-tabs/VisitHistoryTab';
 import { TubeIntelTab } from './visit-tabs/TubeIntelTab';
 import { DeliveryTasksTab } from './visit-tabs/DeliveryTasksTab';
 import { FieldOrder } from './visit-tabs/CreateOrderSection';
+import { StoreCommsPanel } from './StoreCommsPanel';
 import { InvoiceMode } from '@/components/invoice/InvoiceModeSelector';
 
 // Updated contact interface with shirt size
@@ -120,7 +121,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
   const [activeTab, setActiveTab] = useState('tasks');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [store, setStore] = useState<{ id: string; store_name: string; address: string } | null>(null);
+  const [store, setStore] = useState<{ id: string; store_name: string; address: string; phone?: string | null } | null>(null);
   const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
   const [products, setProducts] = useState<{ id: string; name: string; brand_id: string; category: string }[]>([]);
   const [invoiceMode, setInvoiceMode] = useState<InvoiceMode>('live');
@@ -162,7 +163,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
         // Fetch store
         const { data: storeData } = await supabase
           .from('store_master')
-          .select('id, store_name, address, city, state')
+          .select('id, store_name, address, city, state, phone')
           .eq('id', storeId)
           .single();
 
@@ -660,7 +661,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10 h-auto">
+        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-11 h-auto">
           <TabsTrigger value="tasks" className="text-xs">✅ Tasks</TabsTrigger>
           <TabsTrigger value="billing" className="text-xs">Billing</TabsTrigger>
           <TabsTrigger value="stickers" className="text-xs">Stickers</TabsTrigger>
@@ -670,6 +671,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
           <TabsTrigger value="questionnaire" className="text-xs">Questionnaire</TabsTrigger>
           <TabsTrigger value="notes" className="text-xs">Notes</TabsTrigger>
           <TabsTrigger value="changes" className="text-xs">Change List</TabsTrigger>
+          <TabsTrigger value="comms" className="text-xs">📞 Calls & Texts</TabsTrigger>
           <TabsTrigger value="history" className="text-xs">History</TabsTrigger>
         </TabsList>
 
@@ -747,6 +749,14 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
               visitData={visitData}
               brands={brands}
               products={products}
+            />
+          </TabsContent>
+
+          <TabsContent value="comms">
+            <StoreCommsPanel
+              storeId={storeId!}
+              storeName={store?.store_name || 'Store'}
+              storePhone={store?.phone}
             />
           </TabsContent>
 

@@ -35,7 +35,11 @@ Deno.serve(async (req) => {
 
     const { data: store } = await admin.from('store_master').select('id, store_name, phone, assigned_ambassador_id, status').eq('id', store_id).maybeSingle();
     if (!store) return new Response(JSON.stringify({ error: 'Store not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    if (store.assigned_ambassador_id !== amb.id) return new Response(JSON.stringify({ error: 'Store not assigned to you' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // Unified assignment rule (explicit assignment OR active route stop) — same
+    // check used by RLS and the field portal, instead of the legacy
+    // store_master.assigned_ambassador_id pointer only.
+    const { data: isAssigned } = await admin.rpc('field_worker_has_store', { _user_id: userId, _store_id: store_id });
+    if (isAssigned !== true) return new Response(JSON.stringify({ error: 'Store not assigned to you' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     if (!store.phone) return new Response(JSON.stringify({ error: 'Store missing phone number' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     if (store.status === 'blacklisted') return new Response(JSON.stringify({ error: 'Store is blacklisted' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     if (isQuietHours()) return new Response(JSON.stringify({ error: 'Quiet hours — calls allowed 8am–9pm ET' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

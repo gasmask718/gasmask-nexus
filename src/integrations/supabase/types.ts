@@ -12762,6 +12762,13 @@ export type Database = {
             referencedRelation: "communication_logs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "automation_logs_communication_log_id_fkey"
+            columns: ["communication_log_id"]
+            isOneToOne: false
+            referencedRelation: "v_field_store_comms"
+            referencedColumns: ["id"]
+          },
         ]
       }
       automation_rules: {
@@ -132604,6 +132611,191 @@ export type Database = {
           },
         ]
       }
+      v_field_store_comms: {
+        Row: {
+          ambassador_id: string | null
+          answered_at: string | null
+          call_duration: number | null
+          call_type: string | null
+          channel: string | null
+          contact_id: string | null
+          created_at: string | null
+          created_by: string | null
+          delivery_status: string | null
+          direction: string | null
+          driver_id: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          event_type: string | null
+          id: string | null
+          message_content: string | null
+          notes: string | null
+          outcome: string | null
+          performed_by: string | null
+          recipient_phone: string | null
+          sender_phone: string | null
+          sent_at: string | null
+          started_at: string | null
+          status: string | null
+          store_id: string | null
+          summary: string | null
+          thread_id: string | null
+          transcription: string | null
+        }
+        Insert: {
+          ambassador_id?: string | null
+          answered_at?: string | null
+          call_duration?: number | null
+          call_type?: string | null
+          channel?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          delivery_status?: string | null
+          direction?: string | null
+          driver_id?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          event_type?: string | null
+          id?: string | null
+          message_content?: string | null
+          notes?: string | null
+          outcome?: string | null
+          performed_by?: string | null
+          recipient_phone?: string | null
+          sender_phone?: string | null
+          sent_at?: string | null
+          started_at?: string | null
+          status?: string | null
+          store_id?: string | null
+          summary?: string | null
+          thread_id?: string | null
+          transcription?: string | null
+        }
+        Update: {
+          ambassador_id?: string | null
+          answered_at?: string | null
+          call_duration?: number | null
+          call_type?: string | null
+          channel?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          delivery_status?: string | null
+          direction?: string | null
+          driver_id?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          event_type?: string | null
+          id?: string | null
+          message_content?: string | null
+          notes?: string | null
+          outcome?: string | null
+          performed_by?: string | null
+          recipient_phone?: string | null
+          sender_phone?: string | null
+          sent_at?: string | null
+          started_at?: string | null
+          status?: string | null
+          store_id?: string | null
+          summary?: string | null
+          thread_id?: string | null
+          transcription?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_logs_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "communication_logs_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "communication_logs_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_logs_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "communication_logs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_logs_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_intelligence_v"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "communication_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_gm_cadence_due"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "communication_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_merge_orphan_candidates"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "communication_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_reactivation_targets"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "communication_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "communication_logs_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "communication_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_financial_period_summary: {
         Row: {
           active_ambassadors: number | null
@@ -137342,6 +137534,10 @@ export type Database = {
         }[]
       }
       extract_address_from_name: { Args: { p_name: string }; Returns: string }
+      field_worker_has_store: {
+        Args: { _store_id: string; _user_id: string }
+        Returns: boolean
+      }
       finalize_invoice: {
         Args: { p_invoice_id: string; p_user_id?: string }
         Returns: Json
@@ -137591,6 +137787,7 @@ export type Database = {
       }
       has_audit_engine_access: { Args: { _user_id: string }; Returns: boolean }
       has_finance_access: { Args: { _user_id: string }; Returns: boolean }
+      has_full_comms_access: { Args: { _user_id: string }; Returns: boolean }
       has_org_role: {
         Args: {
           _org_id: string
@@ -137922,6 +138119,12 @@ export type Database = {
         Returns: string
       }
       merge_survivor_score: { Args: { _store_id: string }; Returns: number }
+      my_field_store_ids: {
+        Args: never
+        Returns: {
+          store_id: string
+        }[]
+      }
       normalize_brand_name: { Args: { raw_brand: string }; Returns: string }
       normalize_phone: { Args: { raw_phone: string }; Returns: string }
       normalize_store_address: {

@@ -141,6 +141,26 @@ Deno.serve(async (req) => {
     .single();
   if (insErr) return json({ error: insErr.message }, 500);
 
+  // 5b. Mirror into the CANONICAL unified phone log so the owner sees
+  //     ambassador texts alongside every other call/text for the store.
+  const { error: mirrorErr } = await admin.from("communication_logs").insert({
+    store_id: body.store_id,
+    channel: "sms",
+    direction: "outbound",
+    status: providerStatus,
+    delivery_status: providerStatus,
+    message_content: body.body,
+    sender_phone: fromNumber || null,
+    recipient_phone: body.to_phone,
+    sent_at: new Date().toISOString(),
+    created_by: userId,
+    ambassador_id: amb.id,
+    twilio_message_sid: twilioSid,
+    metadata: { source: "ambassador_portal", actor_name: amb.name, message_id: msgRow.id },
+  });
+  if (mirrorErr) console.error("[ambassador-send-sms] unified log mirror failed", mirrorErr);
+
+
   // 6. Activity log
   await admin.from("ambassador_activity_log").insert({
     ambassador_id: amb.id,
