@@ -76,13 +76,24 @@ Deno.serve(async (req) => {
           // send-sms requires { to_number, message_body, idempotency_key } —
           // passing { to, message } fails validation with a 400 and the invite
           // silently never goes out.
+          // skip_cooldown: an invite is a one-off, human-triggered send; the
+          // 60-minute per-number cooldown is for campaign traffic and would
+          // otherwise 429 any invite/resend to a recently-contacted number.
           const { data: smsData, error: smsErr } = await admin.functions.invoke("send-sms", {
             body: {
               to_number: to,
               message_body: msg,
               idempotency_key: `invite-${invite.id}-${Date.now()}`,
+              skip_cooldown: true,
+              purpose: `${role}_invite`,
             },
           });
+          // functions.invoke collapses any non-2xx into a generic message —
+          // read the response body so the real reason is recorded.
+          let detail: string | null = smsErr?.message ?? smsData?.error_message ?? null;
+          if (smsErr && (smsErr as any).context?.text) {
+            detail = (await (smsErr as any).context.text().catch(() => null)) || detail;
+          }
           const ok = !smsErr && smsData?.success !== false;
           sendLog.push({
             channel: "sms",
@@ -90,7 +101,7 @@ Deno.serve(async (req) => {
             ok,
             provider_message_id: smsData?.provider_message_id ?? null,
             data: smsData,
-            error: smsErr?.message ?? smsData?.error_message ?? null,
+            error: ok ? null : detail,
           });
         } catch (e) {
           sendLog.push({ channel: "sms", to, ok: false, error: String(e) });
