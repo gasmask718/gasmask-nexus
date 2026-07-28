@@ -631,26 +631,54 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                     {(() => {
                       const los = getLOSForBrand(brand.id);
                       return (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                           <Calendar className="h-3 w-3" />
                           <span>
                             {t('card.tube_intel.last_order')}:{' '}
                             {los && !los.is_placeholder && los.last_order_date ? (
                               <span className="text-foreground">
-                                {dynastyDate(los.last_order_date)} · {los.last_order_size_label}
+                                {dynastyDateAbsolute(los.last_order_date)}
+                                {' · '}{los.last_order_size_label}
                                 <span className="text-muted-foreground"> · {los.days_since_last_order}d ago</span>
                               </span>
                             ) : (
                               <span className={cn(
                                 kpi?.last_order_date ? 'text-foreground' : 'text-warning font-medium'
                               )}>
-                                {kpi?.last_order_label || t('card.tube_intel.never_ordered')}
+                                {kpi?.last_order_date
+                                  ? dynastyDaysWithDate(kpi.last_order_date)
+                                  : (kpi?.last_order_label || t('card.tube_intel.never_ordered'))}
                               </span>
                             )}
                           </span>
                         </div>
                       );
                     })()}
+
+                    {/* ── Counts last updated / last inventory check (FIX 1-3) ── */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground mb-3">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Counts updated:{' '}
+                        <span className="text-foreground font-medium">
+                          {originalItem?.last_updated
+                            ? dynastyStampWithRelative(originalItem.last_updated)
+                            : 'never'}
+                        </span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Eye className="h-3 w-3" />
+                        Inventory checked:{' '}
+                        <span className="text-foreground font-medium">
+                          {(originalItem as any)?.last_checked_at
+                            ? dynastyStamp((originalItem as any).last_checked_at)
+                            : (intel?.last_inventory_check_at
+                                ? dynastyStamp(intel.last_inventory_check_at)
+                                : 'never')}
+                        </span>
+                      </span>
+                    </div>
+
 
                     {/* ═══════════════════════════════════════════════════ */}
                     {/* PER-BRAND OPERATIONAL SIGNALS (RESTORED)          */}
