@@ -90189,6 +90189,7 @@ export type Database = {
           planned_order: number
           route_id: string | null
           status: string | null
+          stop_reason: string | null
           store_id: string | null
           updated_at: string | null
           was_on_time: boolean | null
@@ -90208,6 +90209,7 @@ export type Database = {
           planned_order: number
           route_id?: string | null
           status?: string | null
+          stop_reason?: string | null
           store_id?: string | null
           updated_at?: string | null
           was_on_time?: boolean | null
@@ -90227,6 +90229,7 @@ export type Database = {
           planned_order?: number
           route_id?: string | null
           status?: string | null
+          stop_reason?: string | null
           store_id?: string | null
           updated_at?: string | null
           was_on_time?: boolean | null
