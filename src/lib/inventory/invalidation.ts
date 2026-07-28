@@ -19,4 +19,7 @@ export function invalidateStoreInventoryQueries(qc: QueryClient, storeId: string
   qc.invalidateQueries({ queryKey: ['store-recent-invoices', storeId] });
   qc.invalidateQueries({ queryKey: ['store-recent-invoices-sku', storeId] });
   qc.invalidateQueries({ queryKey: ['tube-intelligence', storeId] });
+  // Canonical inventory-check / counts-updated stamps (all product-card surfaces)
+  qc.invalidateQueries({ queryKey: ['store-inventory-stamps'] });
+
 }
