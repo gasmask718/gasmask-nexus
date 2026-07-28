@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { useAllInvites, useRevokeInvite, useInvitesEnabled, useToggleInvites } from '@/hooks/useAmbassadorInvites';
+import { useAllInvites, useRevokeInvite, useInvitesEnabled, useToggleInvites, useResendAmbassadorInvite } from '@/hooks/useAmbassadorInvites';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -27,6 +27,7 @@ export default function AmbassadorInviteGovernance() {
   const toggleInvites = useToggleInvites();
   const { data: invites = [], isLoading } = useAllInvites();
   const revokeInvite = useRevokeInvite();
+  const resendInvite = useResendAmbassadorInvite();
 
   const filteredInvites = invites.filter(inv => {
     if (statusFilter !== 'all' && inv.status !== statusFilter) return false;
@@ -178,6 +179,17 @@ export default function AmbassadorInviteGovernance() {
                       : '—'}
                   </TableCell>
                   <TableCell>
+                    {inv.status === 'pending' && (inv.email || inv.phone) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mr-2"
+                        disabled={resendInvite.isPending}
+                        onClick={() => resendInvite.mutate({ inviteId: inv.id, channel: inv.phone ? 'sms' : 'email' })}
+                      >
+                        Resend
+                      </Button>
+                    )}
                     {inv.status === 'pending' && (
                       <Button
                         variant="destructive"
