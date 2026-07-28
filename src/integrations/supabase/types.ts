@@ -116309,6 +116309,8 @@ export type Database = {
           city: string | null
           contact_name: string | null
           created_at: string
+          duplicate_of: string | null
+          duplicate_reason: string | null
           email: string | null
           external_place_id: string | null
           external_source: string | null
@@ -116342,6 +116344,7 @@ export type Database = {
           source: string | null
           state: string | null
           status: string
+          times_seen: number
           updated_at: string
           website: string | null
         }
@@ -116366,6 +116369,8 @@ export type Database = {
           city?: string | null
           contact_name?: string | null
           created_at?: string
+          duplicate_of?: string | null
+          duplicate_reason?: string | null
           email?: string | null
           external_place_id?: string | null
           external_source?: string | null
@@ -116399,6 +116404,7 @@ export type Database = {
           source?: string | null
           state?: string | null
           status?: string
+          times_seen?: number
           updated_at?: string
           website?: string | null
         }
@@ -116423,6 +116429,8 @@ export type Database = {
           city?: string | null
           contact_name?: string | null
           created_at?: string
+          duplicate_of?: string | null
+          duplicate_reason?: string | null
           email?: string | null
           external_place_id?: string | null
           external_source?: string | null
@@ -116456,10 +116464,19 @@ export type Database = {
           source?: string | null
           state?: string | null
           status?: string
+          times_seen?: number
           updated_at?: string
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ut_partner_media: {
         Row: {
