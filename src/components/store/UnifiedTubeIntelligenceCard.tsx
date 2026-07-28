@@ -993,13 +993,23 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
               </Alert>
             )}
 
-            {/* Last updated (inventory counts) */}
-            {lastUpdated && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
-                <Clock className="h-3 w-3" />
-                <span>
-                  Inventory updated {formatDistanceToNow(new Date(lastUpdated), { addSuffix: true })}
-                </span>
+            {/* Counts last updated + last inventory check (store-wide) */}
+            {(lastUpdated || lastChecked) && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2 border-t border-border/30">
+                {lastUpdated && (
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-3 w-3" />
+                    Counts last updated:{' '}
+                    <span className="text-foreground font-medium">{dynastyStampWithRelative(lastUpdated)}</span>
+                  </span>
+                )}
+                {lastChecked && (
+                  <span className="flex items-center gap-1.5">
+                    <Eye className="h-3 w-3" />
+                    Last inventory check:{' '}
+                    <span className="text-foreground font-medium">{dynastyStamp(lastChecked)}</span>
+                  </span>
+                )}
               </div>
             )}
           </>
