@@ -80,8 +80,22 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
   const resolvedEntityType = entityType || 'store';
   const resolvedEntityId = entityId || storeId;
 
-  const { data: invoices = [], isLoading } = useQuery({
-    queryKey: ['store-invoices', resolvedEntityType, resolvedEntityId],
+  const invoicesQueryKey = ['store-invoices', resolvedEntityType, resolvedEntityId];
+
+  /** Repaint every surface that reads invoices for this entity. */
+  const refreshInvoiceViews = () => {
+    queryClient.invalidateQueries({ queryKey: ['store-invoices'] });
+    queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
+    queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
+    queryClient.invalidateQueries({ queryKey: ['store-recent-invoices', storeId] });
+    queryClient.invalidateQueries({ queryKey: ['store-recent-invoices-sku', storeId] });
+    queryClient.invalidateQueries({ queryKey: ['store-tube-kpi', storeId] });
+    queryClient.invalidateQueries({ queryKey: ['store-tube-kpi-batch'] });
+    queryClient.invalidateQueries({ queryKey: ['store-inventory-stamps'] });
+  };
+
+  const { data: invoices = [], isLoading, isFetching, refetch } = useQuery({
+    queryKey: invoicesQueryKey,
     queryFn: async () => {
       let query = supabase
         .from('invoices')
@@ -101,6 +115,7 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
     },
     enabled: !!resolvedEntityId,
   });
+
 
   const togglePaymentStatusMutation = useMutation({
     mutationFn: async ({ invoiceId, newStatus }: { invoiceId: string; newStatus: string }) => {
