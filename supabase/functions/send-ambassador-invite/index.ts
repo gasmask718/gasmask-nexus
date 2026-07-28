@@ -93,7 +93,13 @@ Deno.serve(async (req) => {
     if ((channel === "sms" || channel === "both") && toPhone) {
       try {
         const { data: smsData, error: smsErr } = await admin.functions.invoke("send-sms", {
-          body: { to: toPhone, message: msg },
+          body: {
+            to_number: toPhone,
+            message_body: msg,
+            idempotency_key: `amb-invite-${invite.id}-${Date.now()}`,
+            purpose: "ambassador_invite",
+            metadata: { invite_id: invite.id, resend: !!invite_id },
+          },
         });
         let smsDetail: string | undefined = smsErr?.message;
         const ctx = (smsErr as any)?.context;
