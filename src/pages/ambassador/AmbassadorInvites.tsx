@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useMyInvites, useCreateInvite, useInvitesEnabled } from '@/hooks/useAmbassadorInvites';
+import { useMyInvites, useCreateInvite, useInvitesEnabled, useSendAmbassadorInvite, useResendAmbassadorInvite } from '@/hooks/useAmbassadorInvites';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -20,11 +20,15 @@ function InvitesContent() {
   const [showCreate, setShowCreate] = useState(false);
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [inviteeName, setInviteeName] = useState('');
+  const [channel, setChannel] = useState<'sms' | 'email' | 'both'>('sms');
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
 
   const { data: enabled } = useInvitesEnabled();
   const { data: invites = [], isLoading } = useMyInvites();
   const createInvite = useCreateInvite();
+  const sendInvite = useSendAmbassadorInvite();
+  const resendInvite = useResendAmbassadorInvite();
 
   const stats = {
     total: invites.length,
@@ -32,6 +36,20 @@ function InvitesContent() {
     accepted: invites.filter(i => i.status === 'accepted').length,
     expired: invites.filter(i => i.status === 'expired').length,
     revoked: invites.filter(i => i.status === 'revoked').length,
+  };
+
+  const handleSend = async () => {
+    if (!email && !phone) {
+      toast.error('Enter an email or phone number');
+      return;
+    }
+    const result = await sendInvite.mutateAsync({
+      name: inviteeName || undefined,
+      email: email || undefined,
+      phone: phone || undefined,
+      channel,
+    });
+    if (result?.link) setGeneratedLink(result.link);
   };
 
   const handleCreate = async () => {
@@ -50,6 +68,8 @@ function InvitesContent() {
     setShowCreate(false);
     setEmail('');
     setPhone('');
+    setInviteeName('');
+    setChannel('sms');
     setGeneratedLink(null);
   };
 
@@ -156,6 +176,17 @@ function InvitesContent() {
                         Copy
                       </Button>
                     )}
+                    {invite.status === 'pending' && (invite.email || invite.phone) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={resendInvite.isPending}
+                        onClick={() => resendInvite.mutate({ inviteId: invite.id, channel: invite.phone ? 'sms' : 'email' })}
+                      >
+                        <Send className="h-3 w-3 mr-1" />
+                        Resend
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -176,12 +207,28 @@ function InvitesContent() {
           {!generatedLink ? (
             <div className="space-y-4">
               <div className="space-y-2">
+                <Label>Name (optional)</Label>
+                <Input placeholder="Invitee name" value={inviteeName} onChange={e => setInviteeName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
                 <Label>Email (optional)</Label>
                 <Input placeholder="email@example.com" value={email} onChange={e => setEmail(e.target.value)} type="email" />
               </div>
               <div className="space-y-2">
                 <Label>Phone (optional)</Label>
                 <Input placeholder="+1234567890" value={phone} onChange={e => setPhone(e.target.value)} type="tel" />
+              </div>
+              <div className="space-y-2">
+                <Label>Send via</Label>
+                <select
+                  value={channel}
+                  onChange={e => setChannel(e.target.value as 'sms' | 'email' | 'both')}
+                  className="w-full h-10 rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="sms">SMS</option>
+                  <option value="email">Email</option>
+                  <option value="both">Both</option>
+                </select>
               </div>
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
                 <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
@@ -191,8 +238,12 @@ function InvitesContent() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={handleClose}>Cancel</Button>
-                <Button onClick={handleCreate} disabled={createInvite.isPending}>
-                  {createInvite.isPending ? 'Creating...' : 'Generate Invite'}
+                <Button variant="outline" onClick={handleCreate} disabled={createInvite.isPending || sendInvite.isPending}>
+                  {createInvite.isPending ? 'Creating...' : 'Link only'}
+                </Button>
+                <Button onClick={handleSend} disabled={sendInvite.isPending || createInvite.isPending}>
+                  <Send className="h-4 w-4 mr-2" />
+                  {sendInvite.isPending ? 'Sending...' : 'Send Invite'}
                 </Button>
               </DialogFooter>
             </div>

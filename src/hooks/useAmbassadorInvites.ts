@@ -159,3 +159,67 @@ export function useToggleInvites() {
     },
   });
 }
+
+// Send a new invite (create + deliver via SMS/email)
+export function useSendAmbassadorInvite() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      channel: 'sms' | 'email' | 'both';
+      targetAmbassadorId?: string;
+    }) => {
+      const { data, error } = await supabase.functions.invoke('send-ambassador-invite', {
+        body: {
+          name: payload.name || '',
+          email: payload.email || '',
+          phone: payload.phone || '',
+          channel: payload.channel,
+          target_ambassador_id: payload.targetAmbassadorId || null,
+        },
+      });
+      if (error) {
+        const details = (error as any)?.context ? await (error as any).context.text() : error.message;
+        throw new Error(details || error.message);
+      }
+      const r = data as any;
+      if (!r?.success) throw new Error(r?.error || 'Invite send failed');
+      return r as { invite_id: string; token: string; link: string; send_log: any[] };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-ambassador-invites'] });
+      queryClient.invalidateQueries({ queryKey: ['all-ambassador-invites'] });
+      toast.success('Invite sent');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+// Resend an existing pending invite
+export function useResendAmbassadorInvite() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ inviteId, channel = 'both' }: { inviteId: string; channel?: 'sms' | 'email' | 'both' }) => {
+      const { data, error } = await supabase.functions.invoke('send-ambassador-invite', {
+        body: { invite_id: inviteId, channel },
+      });
+      if (error) {
+        const details = (error as any)?.context ? await (error as any).context.text() : error.message;
+        throw new Error(details || error.message);
+      }
+      const r = data as any;
+      if (!r?.success) throw new Error(r?.error || 'Resend failed');
+      return r;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-ambassador-invites'] });
+      queryClient.invalidateQueries({ queryKey: ['all-ambassador-invites'] });
+      toast.success('Invite resent');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
