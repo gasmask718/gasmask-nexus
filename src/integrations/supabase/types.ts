@@ -100261,6 +100261,74 @@ export type Database = {
         }
         Relationships: []
       }
+      store_additional_stores_log: {
+        Row: {
+          contact_id: string | null
+          created_at: string
+          discussed_at: string
+          id: string
+          logged_by: string | null
+          notes: string | null
+          spoke: boolean
+          store_id: string
+          stores_reported: number | null
+          updated_at: string
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string
+          discussed_at?: string
+          id?: string
+          logged_by?: string | null
+          notes?: string | null
+          spoke?: boolean
+          store_id: string
+          stores_reported?: number | null
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string
+          discussed_at?: string
+          id?: string
+          logged_by?: string | null
+          notes?: string | null
+          spoke?: boolean
+          store_id?: string
+          stores_reported?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_additional_stores_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "store_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_additional_stores_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_cadence_intelligence"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "store_additional_stores_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_responsiveness_summary"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "store_additional_stores_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contacts_needing_new_number"
+            referencedColumns: ["contact_id"]
+          },
+        ]
+      }
       store_ai_insights: {
         Row: {
           brand: Database["public"]["Enums"]["brand_type"] | null
@@ -102001,6 +102069,11 @@ export type Database = {
           sticker_with_phone: boolean | null
           store_name: string
           store_type: string | null
+          storefront_photo_attempted_at: string | null
+          storefront_photo_fetched_at: string | null
+          storefront_photo_source: string | null
+          storefront_photo_status: string
+          storefront_photo_url: string | null
           total_answers: number | null
           total_attempts: number | null
           updated_at: string | null
@@ -102096,6 +102169,11 @@ export type Database = {
           sticker_with_phone?: boolean | null
           store_name: string
           store_type?: string | null
+          storefront_photo_attempted_at?: string | null
+          storefront_photo_fetched_at?: string | null
+          storefront_photo_source?: string | null
+          storefront_photo_status?: string
+          storefront_photo_url?: string | null
           total_answers?: number | null
           total_attempts?: number | null
           updated_at?: string | null
@@ -102191,6 +102269,11 @@ export type Database = {
           sticker_with_phone?: boolean | null
           store_name?: string
           store_type?: string | null
+          storefront_photo_attempted_at?: string | null
+          storefront_photo_fetched_at?: string | null
+          storefront_photo_source?: string | null
+          storefront_photo_status?: string
+          storefront_photo_url?: string | null
           total_answers?: number | null
           total_attempts?: number | null
           updated_at?: string | null
@@ -138076,6 +138159,11 @@ export type Database = {
           sticker_with_phone: boolean | null
           store_name: string
           store_type: string | null
+          storefront_photo_attempted_at: string | null
+          storefront_photo_fetched_at: string | null
+          storefront_photo_source: string | null
+          storefront_photo_status: string
+          storefront_photo_url: string | null
           total_answers: number | null
           total_attempts: number | null
           updated_at: string | null
