@@ -251,7 +251,7 @@ export function StoreReviewBadge({
         vaBy={reviewedByVaBy}
         adminAt={reviewedByAdmin ? reviewedByAdminAt : null}
         adminBy={reviewedByAdminBy}
-        className="text-[10px] leading-tight"
+        className="text-[10px] leading-tight min-w-[160px]"
       />
     </div>
   );
