@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, MapPin, Search, Trash2, Route as RouteIcon, UserCog, AlertCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   useFieldWorkers,
   useWorkerEffectiveStores,
@@ -97,21 +98,13 @@ export default function FieldAssignments() {
         </TabsContent>
 
         <TabsContent value="assignments" className="space-y-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold">Field Store Assignments</h2>
-              <p className="text-sm text-muted-foreground">
-                Permanent store ownership for drivers, bikers and ambassadors. Route-based access is automatic
-                (last 30 days) and shown read-only alongside.
-              </p>
-            </div>
-        <div className="flex flex-wrap gap-2">
-          <InviteButton role="driver" label="Invite driver" />
-          <InviteButton role="biker" label="Invite biker" />
-          <InviteButton role="ambassador" label="Invite ambassador" />
-          <InviteButton role="va" label="Invite VA" />
-        </div>
-      </div>
+          <div>
+            <h2 className="text-lg font-semibold">Field Store Assignments</h2>
+            <p className="text-sm text-muted-foreground">
+              Permanent store ownership for drivers, bikers and ambassadors. Route-based access is automatic
+              (last 30 days) and shown read-only alongside.
+            </p>
+          </div>
 
       {(workersError || storesError) && (
         <Alert variant="destructive">
@@ -304,13 +297,13 @@ export default function FieldAssignments() {
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2">
               <Button variant="outline" asChild>
-                <a href="/security/users">User Management</a>
+                <Link to="/security/users">User Management</Link>
               </Button>
               <Button variant="outline" asChild>
-                <a href="/security/roles">Roles &amp; Permissions</a>
+                <Link to="/security/roles">Roles &amp; Permissions</Link>
               </Button>
               <Button variant="outline" asChild>
-                <a href="/security/console">Security Console</a>
+                <Link to="/security/console">Security Console</Link>
               </Button>
             </CardContent>
           </Card>
