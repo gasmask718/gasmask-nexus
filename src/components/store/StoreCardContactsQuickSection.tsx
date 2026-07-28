@@ -102,9 +102,6 @@ export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
                     <Star className="h-2.5 w-2.5 mr-0.5" /> Primary
                   </Badge>
                 )}
-                {c.phone && (
-                  <span className="text-[10px] text-muted-foreground">{c.phone}</span>
-                )}
                 {c.sms_opt_in_status === 'opted_in' && (
                   <Badge
                     variant="outline"
@@ -114,6 +111,14 @@ export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
                   </Badge>
                 )}
               </div>
+              <PhoneStatusControl
+                contactId={c.id}
+                phone={c.phone}
+                status={(c as any).responsiveness_status}
+                storeId={storeId}
+                compact
+                invalidateKeys={[['store-contacts', storeId]]}
+              />
               <ContactRelationshipMarkers
                 contact={c as any}
                 storeId={storeId}
