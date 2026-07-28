@@ -40,6 +40,7 @@ interface RouteStop {
   planned_order: number;
   status: string;
   notes_to_worker: string;
+  stop_reason?: string | null;
   store: {
     id: string;
     name: string;
