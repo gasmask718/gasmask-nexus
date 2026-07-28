@@ -60,7 +60,7 @@ const ALL_TUBE_BRANDS = (() => {
   return out;
 })();
 
-export function StoreKPIBadge({ summary, isLoading, intelSummary, skuStamps }: StoreKPIBadgeProps) {
+export function StoreKPIBadge({ summary, isLoading, intelSummary, skuStamps, storeStamps }: StoreKPIBadgeProps) {
   // Loading state — show skeleton for all brands
   if (isLoading) {
     return (
