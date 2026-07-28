@@ -44,25 +44,11 @@ export function StoreReviewControls({ storeId, compact = false }: Props) {
     },
   });
 
-  // Resolve WHO completed each check (id → display name).
-  const reviewerIds = [state?.reviewed_by_admin_by, state?.reviewed_by_va_by].filter(Boolean) as string[];
-  const { data: reviewers } = useQuery({
-    queryKey: ['store-review-reviewers', reviewerIds.sort().join(',')],
-    enabled: reviewerIds.length > 0,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, name, email')
-        .in('id', reviewerIds);
-      if (error) throw error;
-      const map: Record<string, string> = {};
-      (data || []).forEach((p: any) => { map[p.id] = p.name || p.email || 'Unknown user'; });
-      return map;
-    },
-  });
-
+  // Resolve WHO completed each check (id → display name) — shared hook.
+  const reviewers = useReviewerNames([state?.reviewed_by_admin_by, state?.reviewed_by_va_by]);
   const nameFor = (id: string | null | undefined) =>
-    (id && reviewers?.[id]) || (id ? 'Unknown user' : 'Unknown user');
+    (id && reviewers?.[id]) || 'Unknown user';
+
 
   const toggle = useMutation({
     mutationFn: async (vars: { type: 'admin' | 'va'; next: boolean }) => {
