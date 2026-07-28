@@ -223,6 +223,35 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
 
       if (error) throw error;
 
+      // ─── Canonical mirror: store_master ───
+      // Readers (StoreDetail, StoreMasterProfile, get_store_context) prefer
+      // store_master.address/city/state/zip over the legacy stores.address_* columns.
+      // Writing only to `stores` left the profile showing the stale master value.
+      const { data: masterRow, error: masterLookupErr } = await supabase
+        .from('store_master')
+        .select('id')
+        .eq('id', store.id)
+        .maybeSingle();
+      if (masterLookupErr) throw masterLookupErr;
+
+      if (masterRow) {
+        const { error: masterErr } = await supabase
+          .from('store_master')
+          .update({
+            store_name: formData.name || null,
+            phone: formData.phone || null,
+            email: formData.email || null,
+            address: formData.address_street || null,
+            city: formData.address_city || null,
+            state: formData.address_state || null,
+            zip: formData.address_zip || null,
+            notes: formData.notes || null,
+          })
+          .eq('id', store.id);
+        if (masterErr) throw masterErr;
+      }
+
+
       // ─── Canonical Owner Name persistence (Layer 2 → store_contacts) ───
       // Save primary_contact_name through canonical store_contacts table.
       // The trigger trg_sync_store_primary_contact_name mirrors this to stores.primary_contact_name.
