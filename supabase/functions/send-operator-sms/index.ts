@@ -85,16 +85,26 @@ Deno.serve(async (req) => {
       return json({ error: "to_phone must be E.164" }, 400);
     }
 
-    // Opt-out check
+    // Opt-out + bad-number check
+    const BAD_PHONE_STATUSES = ["wrong_number", "not_active"];
     if (contact_id) {
       const { data: contact } = await svc
         .from("store_contacts")
-        .select("opted_out")
+        .select("opted_out, responsiveness_status")
         .eq("id", contact_id)
         .maybeSingle();
       if (contact?.opted_out) {
         return json(
           { error: "Recipient has opted out", code: "OPTED_OUT" },
+          403,
+        );
+      }
+      if (BAD_PHONE_STATUSES.includes(contact?.responsiveness_status)) {
+        return json(
+          {
+            error: `Number is marked ${contact.responsiveness_status} — needs replacement before texting`,
+            code: "BAD_NUMBER",
+          },
           403,
         );
       }
