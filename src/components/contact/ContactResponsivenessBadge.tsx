@@ -66,6 +66,16 @@ export function ContactResponsivenessBadge({
       color: 'bg-muted text-muted-foreground border-border',
       icon: HelpCircle,
     },
+    wrong_number: {
+      label: PHONE_STATUS_META.wrong_number.label,
+      color: PHONE_STATUS_META.wrong_number.className,
+      icon: AlertTriangle,
+    },
+    not_active: {
+      label: PHONE_STATUS_META.not_active.label,
+      color: PHONE_STATUS_META.not_active.className,
+      icon: PhoneOff,
+    },
   };
 
   const config = statusConfig[status];
