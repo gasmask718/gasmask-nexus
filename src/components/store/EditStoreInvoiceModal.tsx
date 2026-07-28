@@ -555,6 +555,11 @@ export function EditStoreInvoiceModal({
                 onChange={setDueDate}
                 placeholder="Select due date"
               />
+              <p className="text-xs text-muted-foreground">
+                {dueDate
+                  ? <>Due <span className="text-foreground font-medium">{dynastyDateWithWeekday(dueDate)}</span> ({dynastyRelative(dueDate)})</>
+                  : 'No due date set'}
+              </p>
             </div>
 
             {/* Notes */}
