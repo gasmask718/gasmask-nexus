@@ -19,6 +19,7 @@ import { ChevronDown, ChevronUp, Loader2, Route as RouteIcon, CalendarClock, Pac
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
+import { StoreBrandFlagStickers } from '@/components/store/StoreBrandFlagStickers';
 import { cn } from '@/lib/utils';
 import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
 import { getSkuStatusIcon, brandForProductId } from '@/lib/inventory/skuDisplay';
@@ -193,7 +194,7 @@ function QuickViewPanel({ storeId, storeName }: { storeId: string; storeName: st
   return (
     <div className="mt-2 space-y-3 rounded-md border border-border/50 bg-muted/30 p-3">
       <InventorySection storeId={storeId} />
-      <StoreFlagsSection storeId={storeId} />
+      <StoreBrandFlagStickers storeId={storeId} compact />
       <StoreCardContactsQuickSection storeId={storeId} storeName={storeName} />
       <StoreQuickNotes storeId={storeId} compact />
       <QuickOrderSection storeId={storeId} storeName={storeName} />
@@ -484,124 +485,6 @@ function InventorySection({ storeId }: { storeId: string }) {
           })}
         </ul>
       )}
-    </div>
-  );
-}
-
-// ────────────────────────────────────────────────────────────────
-// Store flags — needs_order + bring_samples toggles.
-// SOURCE OF TRUTH: store_tube_inventory_status (per-brand rows).
-// The delivery scheduling page (OrdersDeliveriesPage Tab 1) and
-// useSLAAlerts + useDispatchIntakeView all read from this table.
-// Read  = ANY row for this store has the flag true.
-// Write = UPDATE all existing rows for the store; if none exist,
-//         INSERT one placeholder row (GasMask) so the flag surfaces.
-// NOTE: store_master.needs_order / bring_samples columns are legacy
-// and no longer written from here — nothing else reads them.
-// ────────────────────────────────────────────────────────────────
-function StoreFlagsSection({ storeId }: { storeId: string }) {
-  const { user } = useAuth();
-  const qc = useQueryClient();
-
-  const { data: flags, isLoading } = useQuery({
-    queryKey: ['store-flags', storeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('store_tube_inventory_status')
-        .select('needs_order, bring_samples')
-        .eq('store_id', storeId);
-      if (error) throw error;
-      const rows = (data ?? []) as Array<{ needs_order: boolean | null; bring_samples: boolean | null }>;
-      return {
-        needs_order: rows.some((r) => !!r.needs_order),
-        bring_samples: rows.some((r) => !!r.bring_samples),
-      };
-    },
-    staleTime: 30_000,
-  });
-
-  const toggle = useMutation({
-    mutationFn: async ({ field, value }: { field: 'needs_order' | 'bring_samples'; value: boolean }) => {
-      const nowIso = new Date().toISOString();
-      // Update any existing per-brand rows first.
-      const { data: updated, error: updErr } = await supabase
-        .from('store_tube_inventory_status')
-        .update({
-          [field]: value,
-          last_updated_at: nowIso,
-          last_updated_by: user?.id ?? null,
-          last_updated_method: 'quickview',
-        } as any)
-        .eq('store_id', storeId)
-        .select('id');
-      if (updErr) throw updErr;
-
-      // No rows yet — create a placeholder so the flag surfaces on delivery/SLA views.
-      if ((updated?.length ?? 0) === 0 && value === true) {
-        const { error: insErr } = await supabase
-          .from('store_tube_inventory_status')
-          .insert({
-            store_id: storeId,
-            brand_id: 'gasmask',
-            brand_name: 'GasMask',
-            [field]: true,
-            last_updated_at: nowIso,
-            last_updated_by: user?.id ?? null,
-            last_updated_method: 'quickview',
-          } as any);
-        if (insErr) throw insErr;
-      }
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['store-flags', storeId] });
-      qc.invalidateQueries({ queryKey: ['orders-requested'] });
-      qc.invalidateQueries({ queryKey: ['dispatch-intake'] });
-      qc.invalidateQueries({ queryKey: ['sla-alerts'] });
-      qc.invalidateQueries({ queryKey: ['tube-intelligence', storeId] });
-    },
-    onError: (e: any) => toast.error(e?.message || 'Failed to update flag'),
-  });
-
-  const needs = !!flags?.needs_order;
-  const samples = !!flags?.bring_samples;
-
-  return (
-    <div className="space-y-1.5 border-t border-border/50 pt-2">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-        Flags
-      </p>
-      <div className="grid grid-cols-2 gap-2">
-        <label
-          className={cn(
-            'flex items-center gap-2 rounded border px-2 py-1.5 text-xs cursor-pointer select-none transition-colors',
-            needs ? 'border-orange-500/50 bg-orange-500/10 text-orange-700' : 'border-border/60 hover:bg-muted/50'
-          )}
-        >
-          <Checkbox
-            checked={needs}
-            disabled={isLoading || toggle.isPending}
-            onCheckedChange={(v) => toggle.mutate({ field: 'needs_order', value: v === true })}
-            className="h-3.5 w-3.5"
-          />
-          <PackagePlus className="h-3 w-3" />
-          Needs order
-        </label>
-        <label
-          className={cn(
-            'flex items-center gap-2 rounded border px-2 py-1.5 text-xs cursor-pointer select-none transition-colors',
-            samples ? 'border-indigo-500/50 bg-indigo-500/10 text-indigo-700' : 'border-border/60 hover:bg-muted/50'
-          )}
-        >
-          <Checkbox
-            checked={samples}
-            disabled={isLoading || toggle.isPending}
-            onCheckedChange={(v) => toggle.mutate({ field: 'bring_samples', value: v === true })}
-            className="h-3.5 w-3.5"
-          />
-          <Sparkles className="h-3 w-3" />
-          Bring samples
-        </label>
-      </div>
     </div>
   );
 }

@@ -20,6 +20,7 @@ import { BrandScopedNotesSection } from '@/components/store/BrandScopedNotesSect
 import { OpportunitiesSection } from '@/components/store/OpportunitiesSection';
 import { ConnectedStoresCard } from '@/components/store/ConnectedStoresCard';
 import { UnifiedTubeIntelligenceCard } from '@/components/store/UnifiedTubeIntelligenceCard';
+import { StoreBrandFlagStickers } from '@/components/store/StoreBrandFlagStickers';
 import { SellThroughIntelCard } from '@/components/store/SellThroughIntelCard';
 import { BrandStickersCard } from '@/components/store/BrandStickersCard';
 import { StoreVisitInventoryCard } from '@/components/store/StoreVisitInventoryCard';
@@ -87,6 +88,11 @@ export function SharedStoreCoreIntelligence({
 
       {/* ══════════════ Last Order Snapshot Intelligence ══════════════ */}
       <LastOrderSnapshotPanel storeId={storeId} />
+
+      {/* ══════════════ Per-brand flags (same control as quick-view) ══════════════ */}
+      <div className="rounded-lg border border-border/60 bg-card p-4">
+        <StoreBrandFlagStickers storeId={storeId} className="border-t-0 pt-0" />
+      </div>
 
       {/* ══════════════ Inventory Intelligence ══════════════ */}
       <UnifiedTubeIntelligenceCard storeId={storeId} role={role} />
