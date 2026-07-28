@@ -55,18 +55,19 @@ export function useUnifiedInbox(filters: InboxFilters = {}) {
   const queryClient = useQueryClient();
   const [realtimeItems, setRealtimeItems] = useState<UnifiedInboxItem[]>([]);
 
-  // Fetch messages from communication_messages
+  // Fetch messages from communication_logs (canonical)
   const { data: messagesData = [], isLoading: messagesLoading } = useQuery({
     queryKey: ["unified-inbox-messages", filters.businessId, filters.dateRange],
     queryFn: async () => {
       let query = supabase
-        .from("communication_messages")
+        .from("communication_logs")
         .select(`
-          id, business_id, store_id, direction, channel, content, 
-          phone_number, status, ai_generated, sentiment, created_at,
-          store:store_master(id, store_name),
+          id, business_id, store_id, direction, channel, message_content, summary,
+          recipient_phone, sender_phone, delivery_status, ai_assisted, sentiment, created_at,
+          store:stores(id, name),
           business:businesses(id, name, primary_color)
         `)
+        .in("channel", ["sms", "whatsapp", "email", "call", "ai_call", "voice"])
         .order("created_at", { ascending: false })
         .limit(200);
 
@@ -77,29 +78,33 @@ export function useUnifiedInbox(filters: InboxFilters = {}) {
       const { data, error } = await query;
       if (error) throw error;
 
-      return (data || []).map((m: any): UnifiedInboxItem => ({
-        id: m.id,
-        type: m.channel?.includes("call") ? "call" : "sms",
-        channel: m.ai_generated ? "ai" : (m.channel?.includes("call") ? "voice" : "sms"),
-        store_id: m.store_id,
-        business_id: m.business_id,
-        vertical_id: null,
-        timestamp: m.created_at,
-        direction: m.direction || "outbound",
-        summary: m.content?.substring(0, 120) || "No content",
-        full_content: m.content,
-        sentiment: m.sentiment as InboxSentiment | null,
-        ai_flag: m.ai_generated || false,
-        priority_level: m.sentiment === "negative" ? "high" : "medium",
-        requires_action: m.direction === "inbound" && m.status !== "replied",
-        phone_number: m.phone_number,
-        email_address: null,
-        store: m.store,
-        business: m.business,
-        vertical: null,
-        metadata: { original_channel: m.channel, status: m.status },
-      }));
+      return (data || []).map((m: any): UnifiedInboxItem => {
+        const content = m.message_content || m.summary || "";
+        return {
+          id: m.id,
+          type: m.channel?.includes("call") ? "call" : "sms",
+          channel: m.ai_assisted ? "ai" : (m.channel?.includes("call") ? "voice" : "sms"),
+          store_id: m.store_id,
+          business_id: m.business_id,
+          vertical_id: null,
+          timestamp: m.created_at,
+          direction: m.direction || "outbound",
+          summary: content.substring(0, 120) || "No content",
+          full_content: content,
+          sentiment: m.sentiment as InboxSentiment | null,
+          ai_flag: m.ai_assisted || false,
+          priority_level: m.sentiment === "negative" ? "high" : "medium",
+          requires_action: m.direction === "inbound" && m.delivery_status !== "replied",
+          phone_number: m.direction === "inbound" ? m.sender_phone : m.recipient_phone,
+          email_address: null,
+          store: m.store ? { id: m.store.id, store_name: m.store.name } : null,
+          business: m.business,
+          vertical: null,
+          metadata: { original_channel: m.channel, status: m.delivery_status },
+        };
+      });
     },
+
   });
 
   // Fetch AI call sessions
