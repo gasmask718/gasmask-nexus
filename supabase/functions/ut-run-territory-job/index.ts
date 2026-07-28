@@ -17,7 +17,7 @@ async function textSearch(query: string, apiKey: string, pageToken?: string) {
     headers: {
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': apiKey,
-      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.types,places.rating,places.googleMapsUri,places.businessStatus,places.nationalPhoneNumber,places.websiteUri,places.addressComponents,nextPageToken',
+      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.types,places.rating,places.userRatingCount,places.googleMapsUri,places.businessStatus,places.nationalPhoneNumber,places.websiteUri,places.addressComponents,places.location,nextPageToken',
     },
     body: JSON.stringify(body),
   });
@@ -37,15 +37,23 @@ async function placeDetails(placeId: string, apiKey: string) {
   return res.json();
 }
 
+// Normalise to the exact 2-char uppercase form the ut_upsert RPC / CHECK requires.
+// Returns '' when unresolvable — those places are skipped, never sent to the RPC.
+function normState(raw: string | null | undefined): string {
+  const s = (raw || '').toUpperCase().slice(0, 2);
+  return s.length === 2 ? s : '';
+}
+
 function parseCityState(addressComponents: any[]): { city: string; state: string } {
   let city = '', state = '';
   if (!addressComponents) return { city, state };
   for (const c of addressComponents) {
     if (c.types?.includes('locality')) city = c.longText || c.shortText || '';
-    if (c.types?.includes('administrative_area_level_1')) state = c.longText || c.shortText || '';
+    if (c.types?.includes('administrative_area_level_1')) state = normState(c.shortText);
   }
   return { city, state };
 }
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
@@ -98,69 +106,82 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: true, leads_found: 0, duplicates_skipped: 0, enriched_count: 0 }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // 4. Collect place_ids for dedup check
-    const placeIds = allPlaces.map(p => p.id).filter(Boolean);
-    const { data: existing } = await sb.from('ut_partner_leads').select('external_place_id').in('external_place_id', placeIds);
-    const existingSet = new Set((existing || []).map((e: any) => e.external_place_id));
-
     let leadsFound = 0;
     let duplicatesSkipped = 0;
     let enrichedCount = 0;
+    let failedCount = 0;
 
-    // 5. Process each place
-    const leadsToInsert: any[] = [];
+    // 4. Process each place — the DB is the deduper (ut_upsert_partner_lead).
+    //    Per-place try/catch: the RPC RAISES (P0001) on a missing external_place_id
+    //    or an unresolvable state, and one bad place must never abort the run.
+    const jobState = normState(job.state);
+
     for (const p of allPlaces) {
-      if (existingSet.has(p.id)) { duplicatesSkipped++; continue; }
+      if (!p.id) {
+        duplicatesSkipped++;
+        console.warn('Skipped place with no place_id:', p.displayName?.text || 'unknown');
+        continue;
+      }
 
       const { city, state } = parseCityState(p.addressComponents);
+      const finalState = state || jobState;
+      if (finalState.length !== 2) {
+        duplicatesSkipped++;
+        console.warn(`Skipped ${p.id} (${p.displayName?.text || 'unknown'}): unresolvable state`);
+        continue;
+      }
+
       let phone = p.nationalPhoneNumber || null;
       let website = p.websiteUri || null;
       let rating = p.rating || null;
+      let reviewCount = p.userRatingCount ?? null;
 
       // Enrich if no phone
-      if (!phone && p.id) {
+      if (!phone) {
         try {
           const details = await placeDetails(p.id, apiKey);
           if (details) {
             phone = details.nationalPhoneNumber || details.internationalPhoneNumber || null;
             website = details.websiteUri || website;
             rating = details.rating || rating;
+            reviewCount = details.userRatingCount ?? reviewCount;
             enrichedCount++;
           }
           await delay(150);
         } catch { /* skip enrichment failure */ }
       }
 
-      leadsToInsert.push({
+      const placeRecord: Record<string, unknown> = {
+        external_place_id: p.id,
         business_name: p.displayName?.text || 'Unknown',
         category: job.category,
         phone,
-        city: city || job.city,
-        state: state || job.state,
-        source: 'google_places',
-        status: 'new',
-        external_place_id: p.id,
         website,
-        ai_score: 0,
-        ai_score_reasons: [],
-        outreach_count: 0,
-        sms_count: 0,
-        owner_verified: false,
-        ai_call_eligible: !!phone,
-        notes: `Auto-imported from territory job. Rating: ${rating || 'N/A'}`,
-      });
-      leadsFound++;
-    }
+        full_address: p.formattedAddress || null,
+        city: city || job.city,
+        state: finalState,
+        google_rating: rating,
+        review_count: reviewCount,
+        google_types: p.types || [],
+        maps_url: p.googleMapsUri || null,
+        source: 'google_places',
+        external_source: 'google_places',
+        status: 'new',
+      };
+      if (typeof p.location?.latitude === 'number') placeRecord.latitude = p.location.latitude;
+      if (typeof p.location?.longitude === 'number') placeRecord.longitude = p.location.longitude;
 
-    // 6. Batch insert leads
-    if (leadsToInsert.length > 0) {
-      const BATCH = 50;
-      for (let i = 0; i < leadsToInsert.length; i += BATCH) {
-        const batch = leadsToInsert.slice(i, i + BATCH);
-        const { error: insertErr } = await sb.from('ut_partner_leads').insert(batch);
-        if (insertErr) console.error('Insert error:', insertErr.message);
+      try {
+        const { data: up, error: upErr } = await sb.rpc('ut_upsert_partner_lead', { p: placeRecord });
+        if (upErr) throw upErr;
+        const row = Array.isArray(up) ? up[0] : up;
+        if (row?.was_insert) leadsFound++; else duplicatesSkipped++;
+      } catch (e) {
+        failedCount++;
+        console.error(`Upsert failed for ${p.id}:`, e instanceof Error ? e.message : e);
       }
     }
+
 
     // 7. Update job as completed
     await sb.from('ut_territory_jobs').update({
@@ -171,6 +192,7 @@ serve(async (req) => {
       enriched_count: enrichedCount,
       updated_at: new Date().toISOString(),
     }).eq('id', job_id);
+    if (failedCount > 0) console.warn(`Job ${job_id}: ${failedCount} places failed to upsert`);
 
     // 8. Update state coverage
     const { data: stateRow } = await sb.from('ut_state_coverage').select('*').eq('state', job.state).single();

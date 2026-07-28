@@ -64,14 +64,18 @@ interface PlaceResult {
   state: string;
   types: string[];
   rating: number | null;
+  rating_count?: number | null;
   business_status: string | null;
   maps_url: string | null;
   phone: string | null;
   website: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   ut_category: string;
   category_confidence: number;
   duplicate_status: "new" | "probable_duplicate" | "exact_duplicate";
 }
+
 
 export default function UTPlacesLeadFinder() {
   const navigate = useNavigate();
@@ -95,46 +99,16 @@ export default function UTPlacesLeadFinder() {
 
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
-  // Existing place_ids for dedup
-  const [existingPlaceIds, setExistingPlaceIds] = useState<Set<string>>(new Set());
-  const [existingPhones, setExistingPhones] = useState<Set<string>>(new Set());
-  const [existingBizKeys, setExistingBizKeys] = useState<Set<string>>(new Set());
+  // Dedup is handled by the database (ut_upsert_partner_lead + partial unique index
+  // on external_place_id). No client-side pre-check: re-imports come back as skips.
+  const getDupStatus = useCallback((): "new" | "probable_duplicate" | "exact_duplicate" => "new", []);
 
-  const loadExistingLeads = useCallback(async () => {
-    let all: any[] = [];
-    let from = 0;
-    const PAGE = 1000;
-    let hasMore = true;
-    while (hasMore) {
-      const { data } = await (supabase.from("ut_partner_leads") as any)
-        .select("external_place_id,phone,business_name,city")
-        .range(from, from + PAGE - 1);
-      if (data && data.length > 0) {
-        all = all.concat(data);
-        from += PAGE;
-        if (data.length < PAGE) hasMore = false;
-      } else hasMore = false;
-    }
-    const pids = new Set<string>();
-    const phones = new Set<string>();
-    const bkeys = new Set<string>();
-    for (const l of all) {
-      if (l.external_place_id) pids.add(l.external_place_id);
-      if (l.phone) phones.add(l.phone);
-      if (l.business_name && l.city) bkeys.add(`${l.business_name.toLowerCase()}|${(l.city || "").toLowerCase()}`);
-    }
-    setExistingPlaceIds(pids);
-    setExistingPhones(phones);
-    setExistingBizKeys(bkeys);
-  }, []);
+  // Exactly 2 uppercase chars or '' — '' must never reach the RPC (CHECK constraint).
+  const normState = (raw: string | null | undefined) => {
+    const s = (raw || "").toUpperCase().slice(0, 2);
+    return s.length === 2 ? s : "";
+  };
 
-  const getDupStatus = useCallback((p: { place_id: string; name: string; city: string; phone: string | null }): "new" | "probable_duplicate" | "exact_duplicate" => {
-    if (existingPlaceIds.has(p.place_id)) return "exact_duplicate";
-    if (p.phone && existingPhones.has(p.phone)) return "exact_duplicate";
-    const key = `${p.name.toLowerCase()}|${(p.city || "").toLowerCase()}`;
-    if (existingBizKeys.has(key)) return "probable_duplicate";
-    return "new";
-  }, [existingPlaceIds, existingPhones, existingBizKeys]);
 
   // ── SEARCH: uses search_all for auto-pagination (up to 60 results) ──
   const handleSearch = useCallback(async (overrideQuery?: string) => {
@@ -146,11 +120,9 @@ export default function UTPlacesLeadFinder() {
     setSelected(new Set());
     setDetailTarget(null);
     setImportResult(null);
-    setSearchProgress("Loading existing leads for dedup...");
+    setSearchProgress("Searching Google Places (up to 60 results)...");
 
     try {
-      await loadExistingLeads();
-      setSearchProgress("Searching Google Places (up to 60 results)...");
 
       const { data, error } = await supabase.functions.invoke("ut-places-search", {
         body: { action: "search_all", query: fullQuery, max_pages: 3 },
@@ -164,7 +136,7 @@ export default function UTPlacesLeadFinder() {
           ...p,
           ut_category: category,
           category_confidence: confidence,
-          duplicate_status: getDupStatus(p),
+          duplicate_status: getDupStatus(),
         };
       });
       setResults(enriched);
@@ -209,7 +181,7 @@ export default function UTPlacesLeadFinder() {
       setSearching(false);
       setSearchProgress("");
     }
-  }, [keyword, city, state, loadExistingLeads, getDupStatus]);
+  }, [keyword, city, state, getDupStatus]);
 
   // ── ENRICH: batch-fetch phone numbers for results missing them ──
   const handleEnrichPhones = useCallback(async () => {
@@ -258,56 +230,72 @@ export default function UTPlacesLeadFinder() {
     toast.success(`Enriched ${enrichedCount} leads with phone/website data`);
   }, [results]);
 
-  // ── IMPORT: with summary ──
+  // ── IMPORT: per-place ut_upsert_partner_lead RPC (DB is the deduper) ──
   const handleImport = useCallback(async () => {
-    const toImport = results.filter(r => selected.has(r.place_id) && r.duplicate_status !== "exact_duplicate");
+    const toImport = results.filter(r => selected.has(r.place_id));
     if (!toImport.length) { toast.error("No leads selected for import"); return; }
     setImporting(true);
     let imported = 0, skipped = 0, failed = 0;
     const phonesEnriched = toImport.filter(r => r.phone).length;
 
-    const BATCH = 50;
-    for (let i = 0; i < toImport.length; i += BATCH) {
-      const batch = toImport.slice(i, i + BATCH).map(p => ({
+    const upsertOne = async (p: PlaceResult) => {
+      const st = normState(p.state);
+      if (!p.place_id || st.length !== 2) {
+        // '' must never reach the RPC — the CHECK constraint requires 2 uppercase chars.
+        skipped++;
+        console.warn(`Skipped ${p.name}: ${!p.place_id ? "missing place_id" : "unresolvable state"}`);
+        return;
+      }
+      const record: Record<string, unknown> = {
+        external_place_id: p.place_id,
         business_name: p.name,
         category: p.ut_category,
         phone: p.phone || null,
-        city: p.city || null,
-        state: p.state || null,
-        source: "google_places",
-        external_source: "google_places",
-        external_place_id: p.place_id,
         website: p.website || null,
         full_address: p.address || null,
+        city: p.city || null,
+        state: st,
         google_rating: p.rating,
-        google_types: p.types,
+        review_count: p.rating_count ?? null,
+        google_types: p.types || [],
         maps_url: p.maps_url || null,
+        source: "google_places",
+        external_source: "google_places",
         status: p.phone ? "new" : "needs_enrichment",
-        ai_score: p.phone ? 50 : 30,
-        notes: p.phone ? "Imported from Google Places" : "Imported — needs phone enrichment",
-      }));
-      const { error } = await (supabase.from("ut_partner_leads") as any).insert(batch);
-      if (error) {
-        failed += batch.length;
-      } else {
-        imported += batch.length;
+      };
+      if (typeof p.latitude === "number") record.latitude = p.latitude;
+      if (typeof p.longitude === "number") record.longitude = p.longitude;
+
+      try {
+        const { data, error } = await (supabase.rpc as any)("ut_upsert_partner_lead", { p: record });
+        if (error) throw error;
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row?.was_insert) imported++; else skipped++;
+      } catch (e: any) {
+        failed++;
+        console.error(`Upsert failed for ${p.place_id}:`, e?.message || e);
       }
+    };
+
+    const CHUNK = 10;
+    for (let i = 0; i < toImport.length; i += CHUNK) {
+      await Promise.all(toImport.slice(i, i + CHUNK).map(upsertOne));
     }
-    skipped = toImport.filter(r => r.duplicate_status === "exact_duplicate").length;
+
     setImportResult({ imported, skipped, failed, phonesEnriched });
     setImporting(false);
-    if (imported > 0) {
+    if (imported > 0 || skipped > 0) {
       qc.invalidateQueries({ queryKey: ["ut-partner-leads"] });
       qc.invalidateQueries({ queryKey: ["ut-lead-stats"] });
       qc.invalidateQueries({ queryKey: ["ut-territory-heatmap"] });
-      toast.success(`Imported ${imported} leads`);
-      await loadExistingLeads();
-      setResults(prev => prev.map(r => ({
-        ...r,
-        duplicate_status: existingPlaceIds.has(r.place_id) || selected.has(r.place_id) ? "exact_duplicate" : r.duplicate_status,
-      })));
+      toast.success(`Imported ${imported} leads${skipped ? ` · ${skipped} skipped` : ""}`);
+      const importedIds = new Set(toImport.map(r => r.place_id));
+      setResults(prev => prev.map(r => (
+        importedIds.has(r.place_id) ? { ...r, duplicate_status: "exact_duplicate" as const } : r
+      )));
     }
-  }, [results, selected, qc, loadExistingLeads, existingPlaceIds]);
+  }, [results, selected, qc]);
+
 
   const toggleSelect = (pid: string) => {
     setSelected(prev => {
