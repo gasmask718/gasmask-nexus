@@ -137,35 +137,93 @@ export function StoreReviewControls({ storeId, compact = false }: Props) {
         </Button>
       </div>
 
-      {/* Inline "last time this account was worked" line — date + time + who */}
-      {(adminOn || vaOn) && (
-        <div className="flex flex-col gap-0.5 text-[11px] text-muted-foreground">
-          {vaOn && state?.reviewed_by_va_at && (
-            <span>
-              ✓ VA — <span className="text-foreground font-medium">{dynastyStamp(state.reviewed_by_va_at)}</span>
-              {' '}({dynastyRelative(state.reviewed_by_va_at)}) · {nameFor(state.reviewed_by_va_by)}
-            </span>
-          )}
-          {adminOn && state?.reviewed_by_admin_at && (
-            <span>
-              ✓ Admin — <span className="text-foreground font-medium">{dynastyStamp(state.reviewed_by_admin_at)}</span>
-              {' '}({dynastyRelative(state.reviewed_by_admin_at)}) · {nameFor(state.reviewed_by_admin_by)}
-            </span>
-          )}
-        </div>
+      {/* Inline "last time this account was worked" line — SHARED with the KPI card */}
+      <StoreCheckerStamps
+        vaAt={vaOn ? state?.reviewed_by_va_at : null}
+        vaBy={state?.reviewed_by_va_by}
+        adminAt={adminOn ? state?.reviewed_by_admin_at : null}
+        adminBy={state?.reviewed_by_admin_by}
+      />
+    </div>
+  );
+}
+
+/** Shared reviewer-name resolver (id → display name). */
+export function useReviewerNames(ids: (string | null | undefined)[]) {
+  const reviewerIds = Array.from(new Set(ids.filter(Boolean) as string[]));
+  const { data } = useQuery({
+    queryKey: ['store-review-reviewers', [...reviewerIds].sort().join(',')],
+    enabled: reviewerIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, email')
+        .in('id', reviewerIds);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      (data || []).forEach((p: any) => { map[p.id] = p.name || p.email || 'Unknown user'; });
+      return map;
+    },
+  });
+  return data;
+}
+
+/**
+ * CANONICAL VA/Admin checker date+time+who display.
+ * Used by BOTH the store profile (StoreReviewControls) and the store KPI card
+ * (StoreReviewBadge) so the two surfaces can never drift apart.
+ */
+export function StoreCheckerStamps({
+  vaAt,
+  vaBy,
+  adminAt,
+  adminBy,
+  className,
+}: {
+  vaAt?: string | null;
+  vaBy?: string | null;
+  adminAt?: string | null;
+  adminBy?: string | null;
+  className?: string;
+}) {
+  const reviewers = useReviewerNames([vaBy, adminBy]);
+  const nameFor = (id: string | null | undefined) => (id && reviewers?.[id]) || 'Unknown user';
+
+  if (!vaAt && !adminAt) return null;
+
+  return (
+    <div className={cn('flex flex-col gap-0.5 text-[11px] text-muted-foreground', className)}>
+      {vaAt && (
+        <span>
+          ✓ VA — <span className="text-foreground font-medium">{dynastyStamp(vaAt)}</span>
+          {' '}({dynastyRelative(vaAt)}) · {nameFor(vaBy)}
+        </span>
+      )}
+      {adminAt && (
+        <span>
+          ✓ Admin — <span className="text-foreground font-medium">{dynastyStamp(adminAt)}</span>
+          {' '}({dynastyRelative(adminAt)}) · {nameFor(adminBy)}
+        </span>
       )}
     </div>
   );
 }
 
-
-/** Compact status badge for grid cards. */
+/** Compact status badge + shared date/time stamps for grid (KPI) cards. */
 export function StoreReviewBadge({
   reviewedByAdmin,
   reviewedByVa,
+  reviewedByAdminAt,
+  reviewedByAdminBy,
+  reviewedByVaAt,
+  reviewedByVaBy,
 }: {
   reviewedByAdmin?: boolean | null;
   reviewedByVa?: boolean | null;
+  reviewedByAdminAt?: string | null;
+  reviewedByAdminBy?: string | null;
+  reviewedByVaAt?: string | null;
+  reviewedByVaBy?: string | null;
 }) {
   if (!reviewedByAdmin && !reviewedByVa) {
     return (
@@ -175,17 +233,28 @@ export function StoreReviewBadge({
     );
   }
   return (
-    <div className="flex gap-1">
-      {reviewedByAdmin && (
-        <Badge className="gap-1 text-[10px] bg-emerald-600 hover:bg-emerald-600 text-white">
-          <CheckCircle2 className="h-2.5 w-2.5" /> Admin
-        </Badge>
-      )}
-      {reviewedByVa && (
-        <Badge className="gap-1 text-[10px] bg-sky-600 hover:bg-sky-600 text-white">
-          <CheckCircle2 className="h-2.5 w-2.5" /> VA
-        </Badge>
-      )}
+    <div className="flex flex-col gap-1">
+      <div className="flex gap-1">
+        {reviewedByAdmin && (
+          <Badge className="gap-1 text-[10px] bg-emerald-600 hover:bg-emerald-600 text-white">
+            <CheckCircle2 className="h-2.5 w-2.5" /> Admin
+          </Badge>
+        )}
+        {reviewedByVa && (
+          <Badge className="gap-1 text-[10px] bg-sky-600 hover:bg-sky-600 text-white">
+            <CheckCircle2 className="h-2.5 w-2.5" /> VA
+          </Badge>
+        )}
+      </div>
+      <StoreCheckerStamps
+        vaAt={reviewedByVa ? reviewedByVaAt : null}
+        vaBy={reviewedByVaBy}
+        adminAt={reviewedByAdmin ? reviewedByAdminAt : null}
+        adminBy={reviewedByAdminBy}
+        className="text-[10px] leading-tight"
+      />
     </div>
   );
+}
+
 }
