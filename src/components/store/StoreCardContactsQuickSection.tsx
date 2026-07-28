@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Star, User, MessageSquare, ChevronDown, Handshake, BadgeCheck } from 'lucide-react';
 import { StoreContactActions } from './StoreContactActions';
 import { ContactRelationshipMarkers } from './ContactRelationshipMarkers';
+import { PhoneStatusControl } from './PhoneStatusControl';
 import { AddContactModal } from './AddContactModal';
 import { ContactCommunicationTimeline } from './ContactCommunicationTimeline';
 
