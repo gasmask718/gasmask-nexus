@@ -45,6 +45,8 @@ import { RelationshipStatusSelect } from '@/components/store/RelationshipStatusS
 import { format } from 'date-fns';
 import { useStoresServerData } from '@/pages/stores/useStoresServerData';
 import { StoreCardQuickView } from '@/components/store/StoreCardQuickView';
+import { StoreContactGlanceIcons } from '@/components/store/StoreContactGlanceIcons';
+import { useStoreContactGlance } from '@/hooks/useStoreContactGlance';
 import { StoreReviewBadge } from '@/components/store/StoreReviewControls';
 
 // Phase 2A Win 2: server-side pagination/search/filtering via
@@ -401,6 +403,11 @@ const Stores = () => {
         : 0,
     })) as Store[];
   }, [server.pageRows, groupIdCountsMap]);
+
+  // At-a-glance contact markers (homie / owner confirmed / no good number)
+  const { data: contactGlance } = useStoreContactGlance(
+    paginatedStores.map((s) => s.id),
+  );
 
   const filteredStoresCount = server.pageTotal;
   const totalPages = Math.max(1, Math.ceil(server.pageTotal / pageSize));
@@ -840,6 +847,7 @@ const Stores = () => {
                         <Badge variant="outline" className="text-xs">
                           {store.type.replace('_', ' ')}
                         </Badge>
+                        <StoreContactGlanceIcons glance={contactGlance?.[store.id]} />
                         {payStatus && payStatus.level !== 'paid' && (
                           <StorePaymentBadge status={payStatus} />
                         )}

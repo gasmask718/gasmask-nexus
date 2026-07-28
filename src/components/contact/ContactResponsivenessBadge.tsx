@@ -1,10 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Phone, MessageSquare, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
+import { Phone, MessageSquare, CheckCircle2, XCircle, HelpCircle, AlertTriangle, PhoneOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { isBadNumber, normalizePhoneStatus, PHONE_STATUS_META } from "@/lib/phoneStatus";
 
 interface ContactResponsivenessBadgeProps {
-  responsiveness_status: 'responsive' | 'unresponsive' | 'unknown' | null;
+  responsiveness_status: 'responsive' | 'unresponsive' | 'unknown' | 'wrong_number' | 'not_active' | null;
   responsive_by_call?: boolean | null;
   responsive_by_text?: boolean | null;
   last_call_attempt_at?: string | null;
@@ -42,7 +43,12 @@ export function ContactResponsivenessBadge({
     : hasAttempts
       ? 'unresponsive'
       : 'unknown';
-  const status = derivedStatus;
+  // A manually-set BAD NUMBER always wins over evidence-derived responsiveness:
+  // the line itself is dead/wrong, so retry evidence is meaningless.
+  const stored = normalizePhoneStatus(responsiveness_status);
+  const badNumber = isBadNumber(responsiveness_status);
+  const status: 'responsive' | 'unresponsive' | 'unknown' | 'wrong_number' | 'not_active' =
+    badNumber ? stored : derivedStatus;
 
   const statusConfig = {
     responsive: {
@@ -59,6 +65,16 @@ export function ContactResponsivenessBadge({
       label: 'No Attempts',
       color: 'bg-muted text-muted-foreground border-border',
       icon: HelpCircle,
+    },
+    wrong_number: {
+      label: PHONE_STATUS_META.wrong_number.label,
+      color: PHONE_STATUS_META.wrong_number.className,
+      icon: AlertTriangle,
+    },
+    not_active: {
+      label: PHONE_STATUS_META.not_active.label,
+      color: PHONE_STATUS_META.not_active.className,
+      icon: PhoneOff,
     },
   };
 
@@ -77,6 +93,12 @@ export function ContactResponsivenessBadge({
   const tooltipContent = (
     <div className="space-y-2 text-xs">
       <div className="font-semibold border-b pb-1 mb-2">Communication Summary</div>
+      {badNumber && (
+        <div className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-600">
+          {config.label} — excluded from all retry / follow-up / auto-outreach queues. Needs a new number.
+        </div>
+      )}
+
       
       <div className="flex items-center gap-2">
         <Phone className="h-3 w-3" />
@@ -126,6 +148,7 @@ export function ContactResponsivenessBadge({
           <TooltipTrigger asChild>
             <div className="flex items-center gap-1">
               <StatusIcon className={`h-4 w-4 ${
+                badNumber ? 'text-red-600' :
                 status === 'responsive' ? 'text-green-500' :
                 status === 'unresponsive' ? 'text-red-500' :
                 'text-muted-foreground'

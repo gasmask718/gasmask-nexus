@@ -29,14 +29,18 @@ Deno.serve(async (req) => {
     const phoneMap: Record<string, string | null> = {};
 
     // Priority 1: store_contacts
+    // Bad numbers (wrong_number / not_active) are NEVER dialed or texted again.
+    // non_responsive stays eligible — it's a good number that just hasn't replied.
+    const BAD_PHONE_STATUSES = ["wrong_number", "not_active"];
     for (let i = 0; i < store_ids.length; i += 50) {
       const chunk = store_ids.slice(i, i + 50);
       const { data } = await supabase
         .from("store_contacts")
-        .select("store_id, phone")
+        .select("store_id, phone, responsiveness_status")
         .in("store_id", chunk)
         .not("phone", "is", null);
       (data || []).forEach((r: any) => {
+        if (BAD_PHONE_STATUSES.includes(r.responsiveness_status)) return;
         if (r.phone && !phoneMap[r.store_id]) phoneMap[r.store_id] = r.phone;
       });
     }

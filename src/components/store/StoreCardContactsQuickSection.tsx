@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Star, User, MessageSquare, ChevronDown, Handshake, BadgeCheck } from 'lucide-react';
 import { StoreContactActions } from './StoreContactActions';
 import { ContactRelationshipMarkers } from './ContactRelationshipMarkers';
+import { PhoneStatusControl } from './PhoneStatusControl';
 import { AddContactModal } from './AddContactModal';
 import { ContactCommunicationTimeline } from './ContactCommunicationTimeline';
 
@@ -31,7 +32,7 @@ export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
       const { data, error } = await supabase
         .from('store_contacts')
         .select(
-          'id, name, phone, role, is_primary, can_receive_sms, responsive_by_call, responsive_by_text, last_call_answered_at, last_text_received_at, sms_opt_in_status, owner_confirmed, owner_confirmed_at, owner_confirmed_by, is_homie, homie_set_at, homie_set_by'
+          'id, name, phone, role, is_primary, can_receive_sms, responsive_by_call, responsive_by_text, last_call_answered_at, last_text_received_at, sms_opt_in_status, owner_confirmed, owner_confirmed_at, owner_confirmed_by, is_homie, homie_set_at, homie_set_by, responsiveness_status'
         )
         .eq('store_id', storeId)
         .order('is_homie', { ascending: false })
@@ -102,9 +103,6 @@ export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
                     <Star className="h-2.5 w-2.5 mr-0.5" /> Primary
                   </Badge>
                 )}
-                {c.phone && (
-                  <span className="text-[10px] text-muted-foreground">{c.phone}</span>
-                )}
                 {c.sms_opt_in_status === 'opted_in' && (
                   <Badge
                     variant="outline"
@@ -114,6 +112,14 @@ export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
                   </Badge>
                 )}
               </div>
+              <PhoneStatusControl
+                contactId={c.id}
+                phone={c.phone}
+                status={(c as any).responsiveness_status}
+                storeId={storeId}
+                compact
+                invalidateKeys={[['store-contacts', storeId]]}
+              />
               <ContactRelationshipMarkers
                 contact={c as any}
                 storeId={storeId}
