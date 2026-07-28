@@ -21,6 +21,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { StoreContactActions } from './StoreContactActions';
 import { ContactRelationshipMarkers } from './ContactRelationshipMarkers';
 import { PhoneStatusControl } from './PhoneStatusControl';
+import { ContactPhoneNote } from './ContactPhoneNote';
 
 interface StoreContact {
   id: string;
