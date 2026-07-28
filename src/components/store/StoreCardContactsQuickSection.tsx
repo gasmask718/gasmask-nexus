@@ -10,7 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Star, User, MessageSquare, ChevronDown } from 'lucide-react';
+import { Loader2, Plus, Star, User, MessageSquare, ChevronDown, Handshake, BadgeCheck } from 'lucide-react';
 import { StoreContactActions } from './StoreContactActions';
 import { ContactRelationshipMarkers } from './ContactRelationshipMarkers';
 import { AddContactModal } from './AddContactModal';
