@@ -173,11 +173,11 @@ Deno.serve(async (req) => {
         `${request.custom_message.trim()}\n\n` +
         `Payment Methods: Cash, CashApp, Zelle, Check\n` +
         reorderLine +
-        `— Dynasty OS`;
+        `— GasMask`;
     } else {
       messageBody = `🧾 Invoice Notification\n\n` +
         `Hi ${request.store_name},\n\n` +
-        `You have a new invoice from Dynasty OS:\n\n` +
+        `You have a new invoice from GasMask:\n\n` +
         `📄 Invoice #: ${request.invoice_number}\n` +
         `💰 Amount: ${formattedTotal}\n` +
         `📅 Date: ${invoiceDate}\n` +
@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
         `Payment Methods: Cash, CashApp, Zelle, Check\n` +
         reorderLine +
         `\nThank you for your business!\n` +
-        `— Dynasty OS`;
+        `— GasMask`;
     }
 
     // Check Twilio config
