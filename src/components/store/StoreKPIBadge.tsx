@@ -126,8 +126,20 @@ export function StoreKPIBadge({ summary, isLoading, intelSummary, skuStamps }: S
         </span>
       </div>
 
+      {/* Canonical inventory stamps — SUMMARY HEADER above the product list */}
+      {(storeStamps?.lastUpdated || storeStamps?.lastChecked) && (
+        <StoreInventoryStamps
+          lastUpdated={storeStamps?.lastUpdated}
+          lastChecked={storeStamps?.lastChecked}
+          checkedBy={storeStamps?.checkedBy}
+          compact
+          className="pb-0.5"
+        />
+      )}
+
       {/* Tube Intel Attribution — additive, non-destructive */}
       <TubeIntelAttribution summary={intelSummary} compact className="pb-1" />
+
 
       {/* ALL brands — ALWAYS rendered, NO truncation */}
       <div className="space-y-1.5">
