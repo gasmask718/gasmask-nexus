@@ -61,9 +61,13 @@ Deno.serve(async (req) => {
     const sendLog: any[] = [];
     const attempted: string[] = [];
 
-    if ((channel === "sms" || channel === "both") && phone) {
+    const normalizedPhone = phone ? toE164(phone) : null;
+    const isInternational = !!normalizedPhone && !normalizedPhone.startsWith("+1");
+    const shouldTrySms = (channel === "sms" || channel === "both") && !!phone;
+
+    if (shouldTrySms) {
       attempted.push("sms");
-      const to = toE164(phone);
+      const to = normalizedPhone;
       if (!to) {
         sendLog.push({
           channel: "sms",
@@ -109,7 +113,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    if ((channel === "email" || channel === "both") && email) {
+    const smsFailed = sendLog.some((s) => s.channel === "sms" && !s.ok);
+    const shouldTryEmail = !!email && (
+      channel === "email" ||
+      channel === "both" ||
+      (isInternational && channel === "sms") ||
+      (smsFailed && channel === "sms")
+    );
+
+    if (shouldTryEmail) {
       attempted.push("email");
       if (!RESEND_KEY) {
         sendLog.push({ channel: "email", to: email, ok: false, error: "RESEND_API_KEY not configured" });
@@ -174,12 +186,14 @@ Deno.serve(async (req) => {
 });
 
 // Normalize loose user input ("718-427-8155", "(718) 427 8155", "+63 936 356 7216")
-// to E.164. Handles international numbers, and strips a mistakenly-typed US "1"
-// prefix in front of an already-international number (e.g. "+1 +63..." => "1639...").
+// to E.164. Handles Philippine mobile formats (0936..., +63 0936...),
+// international numbers, and a stray US "1" typed before +63 (1639...).
 function toE164(raw: string): string | null {
   const trimmed = String(raw).trim();
-  if (/^\+[1-9]\d{7,14}$/.test(trimmed)) return trimmed;
   let digits = trimmed.replace(/\D/g, "");
+  if (digits.startsWith("163") && digits.length >= 13) digits = digits.slice(1);
+  if (digits.startsWith("630") && digits.length === 13) digits = `63${digits.slice(3)}`;
+  if (digits.startsWith("09") && digits.length === 11) digits = `63${digits.slice(1)}`;
   if (digits.length === 10) return `+1${digits}`;
   if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
   // Longer than NANP: a leading "1" here is a stray country code typed in front

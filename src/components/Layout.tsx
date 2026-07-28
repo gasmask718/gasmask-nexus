@@ -204,7 +204,6 @@ const DYNASTY_NAVIGATION = {
     items: [
       { path: '/security/console', label: 'Security Console', icon: Shield },
       { path: '/security/users', label: 'User Management', icon: Users },
-      { path: '/security/invitations', label: 'Invitations', icon: UserPlus },
       { path: '/security/roles', label: 'Roles & Permissions', icon: Lock },
       { path: '/security/devices', label: 'Device Management', icon: Key },
       { path: '/security/sessions', label: 'Active Sessions', icon: Clock },
@@ -716,7 +715,6 @@ const DYNASTY_NAVIGATION = {
     id: 'systems-hr',
     name: '⚙️ Systems & HR',
     items: [
-      { path: '/admin/field-assignments', label: '🔴 Field Assignments & Invites', icon: Users, highlight: true },
       { path: '/hr', label: '👔 HR OS', icon: Briefcase },
       { path: '/hr/applicants', label: 'HR Applicants', icon: UserPlus },
       { path: '/hr/employees', label: 'HR Employees', icon: Users },
@@ -1035,15 +1033,15 @@ const Layout = ({ children }: LayoutProps) => {
 
   const NavigationContent = () => (
     <div className="space-y-2">
-      {/* 🔴 PINNED — Field Assignments & Invites (owner/admin) */}
+      {/* 🔴 PINNED — People & Access (owner/admin) */}
       {['owner', 'admin', 'ceo'].includes(role || '') && (
         <Link
           to="/admin/field-assignments"
-          data-testid="pinned-field-assignments"
+          data-testid="pinned-people-access"
           className="flex items-center gap-2 px-2 py-2 text-xs rounded-md font-semibold bg-destructive/20 text-destructive ring-1 ring-destructive/60 hover:bg-destructive/30 transition-colors"
         >
           <Users className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate flex-1">🔴 Field Assignments &amp; Invites</span>
+          <span className="truncate flex-1">🔴 People &amp; Access</span>
         </Link>
       )}
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,8 +34,12 @@ export function InviteButton({
   const [name, setName] = useState(defaultName);
   const [phone, setPhone] = useState(defaultPhone);
   const [email, setEmail] = useState(defaultEmail);
-  const [channel, setChannel] = useState<"sms" | "email" | "both">("sms");
+  const [channel, setChannel] = useState<"sms" | "email" | "both">("email");
   const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (email && isLikelyInternationalPhone(phone)) setChannel("email");
+  }, [email, phone]);
 
   async function send() {
     if (!phone && !email) {
@@ -47,7 +51,10 @@ export function InviteButton({
       const { data, error } = await supabase.functions.invoke("send-invite", {
         body: { role, target_link: targetLink, name, phone, email, channel },
       });
-      if (error) throw error;
+      if (error) {
+        const details = (error as any)?.context ? await (error as any).context.text() : error.message;
+        throw new Error(details || error.message);
+      }
       const r = data as any;
       if (r?.error) throw new Error(r.error);
       toast.success(`Invite sent to ${phone || email}`);
@@ -78,7 +85,7 @@ export function InviteButton({
           </div>
           <div>
             <Label>Phone</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1..." />
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1... or +63..." />
           </div>
           <div>
             <Label>Email</Label>
@@ -102,5 +109,13 @@ export function InviteButton({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function isLikelyInternationalPhone(raw: string): boolean {
+  const digits = raw.replace(/\D/g, "");
+  return digits.length > 0 && !(
+    digits.length === 10 ||
+    (digits.length === 11 && digits.startsWith("1"))
   );
 }

@@ -53,8 +53,6 @@ const BikerLogin = lazy(() => import('@/pages/portal/BikerLogin'));
 const InviteSignup = lazy(() => import('@/pages/auth/InviteSignup'));
 const PublicIntakePage = lazy(() => import('@/pages/auth/PublicIntakePage'));
 const StoreSignupPage = lazy(() => import('@/pages/auth/StoreSignupPage'));
-const UserInvitations = lazy(() => import('@/pages/security/UserInvitations'));
-const InviteLanding = lazy(() => import('@/pages/portal/InviteLanding'));
 const InstallPwa = lazy(() => import('@/pages/InstallPwa'));
 const DeveloperPortal = lazy(() => import('@/pages/developer/DeveloperPortal'));
 
@@ -182,7 +180,6 @@ const ProductionPipelinePage = lazy(() => import('@/pages/brandaro/ProductionPip
 const ClientPortalPage = lazy(() => import('@/pages/brandaro/ClientPortalPage'));
 const CanvaAssetsPage = lazy(() => import('@/pages/brandaro/CanvaAssetsPage'));
 const CanvaTemplatesPage = lazy(() => import('@/pages/brandaro/CanvaTemplatesPage'));
-const AmbassadorInviteGovernance = lazy(() => import('@/pages/admin/AmbassadorInviteGovernance'));
 
 // Profile pages
 const AmbassadorProfilePage = lazy(() => import('@/pages/profile').then(m => ({ default: m.AmbassadorProfilePage })));
@@ -1422,7 +1419,7 @@ export default function AppRoutes() {
         <Route path="/security/devices" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
         <Route path="/security/sessions" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
         <Route path="/security/users" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><UserManagementPage /></RequireRole>} />
-        <Route path="/security/invitations" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><UserInvitations /></RequireRole>} />
+        <Route path="/security/invitations" element={<Navigate to="/admin/field-assignments" replace />} />
         <Route path="/security/roles" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><RolesPermissionsPage /></RequireRole>} />
         <Route path="/security/audit" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
         <Route path="/security/ambassador-requests" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><AmbassadorRequests /></RequireRole>} />
@@ -2691,7 +2688,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* Portal Invite Landing — standalone, no layout, auth optional */}
-      <Route path="/portal/invite/:token" element={<InviteLanding />} />
+      <Route path="/portal/invite/:token" element={<UniversalInviteAccept />} />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* OPS/PORTAL ROUTES — Wrapped in OpsLayout (mobile-first + bottom nav)         */}
@@ -3504,13 +3501,7 @@ export default function AppRoutes() {
       } />
 
       {/* Admin Ambassador Invite Governance */}
-      <Route path="/admin/ambassador-invites" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'owner']}>
-            <Layout><AmbassadorInviteGovernance /></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
+      <Route path="/admin/ambassador-invites" element={<Navigate to="/admin/field-assignments" replace />} />
 
       {/* Admin Payouts */}
       <Route path="/admin/payouts" element={

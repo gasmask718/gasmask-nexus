@@ -81,7 +81,7 @@ export const OWNER_PORTAL: PortalConfig = {
       titleClass: 'bg-gradient-to-r from-emerald-500/20 to-green-500/10 text-emerald-300',
       items: [
         { id: 'security-console', label: 'Security Console', path: '/security/console', icon: Shield, emoji: '🛡️' },
-        { id: 'user-invitations', label: 'User Invitations', path: '/security/invitations', icon: Users, emoji: '📧' },
+        { id: 'people-access', label: 'People & Access', path: '/admin/field-assignments', icon: Users, emoji: '📧' },
         { id: 'audit-logs', label: 'Audit Logs', path: '/security/audit', icon: Eye, emoji: '📋' },
       ],
     },
